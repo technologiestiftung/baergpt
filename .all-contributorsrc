@@ -1,0 +1,16 @@
+{
+  "projectName": "template-default",
+  "projectOwner": "technologiestiftung",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 64,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true
+}
