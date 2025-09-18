@@ -1,0 +1,73 @@
+import React from "react";
+import { DocumentFolder } from "../../../../common";
+import { useFolderStore } from "../../../../store/folder-store";
+import { AddToChatButton } from "./add-to-chat-button";
+import Checkbox from "../../../primitives/checkboxes/checkbox.tsx";
+import { DroppableFolderName } from "./droppable-folder-name.tsx";
+import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
+import Content from "../../../../content.ts";
+
+interface FolderItemProps {
+	item: DocumentFolder;
+}
+
+const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
+	const {
+		selectedChatFolders,
+		selectedFoldersForAction,
+		selectChatFolder,
+		selectFolderForAction,
+		unselectChatFolder,
+		unselectFolderForAction,
+	} = useFolderStore();
+	const { isMobileCheckboxVisible } = useMobileMenuStore();
+
+	const isSelectedForAction = selectedFoldersForAction.some(
+		(folder) => folder.id === item.id,
+	);
+	const isSelectedForChat = selectedChatFolders.some(
+		(folder) => folder.id === item.id,
+	);
+
+	const handleCheckboxChange = (checked: boolean) => {
+		if (checked) {
+			selectFolderForAction(item);
+			return;
+		}
+		unselectFolderForAction(item.id);
+	};
+
+	const handleAddFolderToChat = (folder: DocumentFolder) => {
+		if (selectedChatFolders.some((fol) => fol.id === folder.id)) {
+			unselectChatFolder(folder.id);
+			return;
+		}
+		selectChatFolder(folder);
+	};
+
+	return (
+		<>
+			<div className={`${isMobileCheckboxVisible ? "flex" : "hidden"} md:flex`}>
+				<Checkbox
+					id={`${item.id.toString()}-folder`}
+					checked={isSelectedForAction}
+					onChange={handleCheckboxChange}
+					ariaLabel={Content["documentsList.folder.checkbox.ariaLabel"]}
+				/>
+			</div>
+
+			<div
+				className={`rounded-3px h-10 px-2 gap-x-2 flex justify-between items-center w-0 grow hover:bg-hellblau-60 ${isSelectedForChat && "bg-hellblau-60"}`}
+			>
+				<DroppableFolderName item={item} />
+
+				<AddToChatButton
+					isSelectedForChat={isSelectedForChat}
+					handleAddToChat={() => handleAddFolderToChat(item)}
+				/>
+			</div>
+		</>
+	);
+};
+
+export default FolderItem;

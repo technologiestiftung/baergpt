@@ -1,0 +1,355 @@
+import { supabaseAdminClient } from "../supabase.ts";
+import { testWithLoggedInUser } from "./test-with-logged-in-user.ts";
+import { expect, Page } from "@playwright/test";
+import {
+	defaultDocumentName,
+	defaultDocumentPath,
+	chunk_index,
+	chunk_jina_embedding,
+	content,
+	created_at,
+	file_checksum,
+	file_size,
+	folder_id,
+	num_pages,
+	page,
+	processing_finished_at,
+	short_summary,
+	summary,
+	summary_jina_embedding,
+	tags,
+	defaultSourceType,
+	defaultBucketName,
+} from "../constants.ts";
+import { readFileSync } from "node:fs";
+
+export const testWithDocuments = testWithLoggedInUser.extend<{
+	documentChunkId: number;
+}>({
+	documentChunkId: [
+		async ({ account }, use) => {
+			/**
+			 * This happens before each test that uses this fixture.
+			 */
+			const documentChunkId = await mockDocumentUpload({
+				userId: account.id,
+				accessGroupId: null,
+				fileName: defaultDocumentName,
+				filePath: defaultDocumentPath,
+				sourceType: defaultSourceType,
+				bucketName: defaultBucketName,
+			});
+
+			/**
+			 * This runs the test that uses this fixture.
+			 */
+			await use(documentChunkId);
+
+			/**
+			 * This happens after each test that uses this fixture.
+			 */
+			await cleanup(account.id);
+		},
+		{ auto: true },
+	],
+});
+
+export async function mockDocumentUpload({
+	userId,
+	accessGroupId,
+	fileName,
+	filePath,
+	sourceType,
+	bucketName,
+}: {
+	userId: string;
+	accessGroupId: string | null;
+	fileName: string;
+	filePath: string;
+	sourceType: "public_document" | "personal_document";
+	bucketName: "documents" | "public_documents";
+}) {
+	const source_url = `${userId}/${fileName}`;
+	const file = readFileSync(filePath);
+
+	const { error: uploadError } = await supabaseAdminClient.storage
+		.from(bucketName)
+		.upload(
+			source_url,
+			new File([file], fileName, { type: "application/pdf" }),
+		);
+
+	expect(uploadError).toBeNull();
+
+	const { data: documentData, error: documentsInsertError } =
+		await supabaseAdminClient
+			.from("documents")
+			.insert({
+				owned_by_user_id: accessGroupId ? null : userId,
+				access_group_id: accessGroupId,
+				uploaded_by_user_id: accessGroupId ? userId : null,
+				source_type: sourceType,
+				source_url,
+				file_name: fileName,
+				file_checksum,
+				file_size,
+				num_pages,
+				folder_id,
+				created_at,
+				processing_finished_at,
+			})
+			.select()
+			.single();
+
+	expect(documentsInsertError).toBeNull();
+
+	const { error: documentSummariesInsertError } = await supabaseAdminClient
+		.from("document_summaries")
+		.insert({
+			owned_by_user_id: accessGroupId ? null : userId,
+			access_group_id: accessGroupId,
+			document_id: documentData!.id,
+			folder_id,
+			summary,
+			tags,
+			short_summary,
+			summary_jina_embedding,
+		});
+
+	expect(documentSummariesInsertError).toBeNull();
+
+	const { data: chunkData, error: documentChunksInsertError } =
+		await supabaseAdminClient
+			.from("document_chunks")
+			.insert({
+				owned_by_user_id: accessGroupId ? null : userId,
+				access_group_id: accessGroupId,
+				document_id: documentData!.id,
+				folder_id,
+				content,
+				page,
+				chunk_index,
+				chunk_jina_embedding,
+			})
+			.select()
+			.single();
+
+	expect(documentChunksInsertError).toBeNull();
+
+	return chunkData!.id;
+}
+
+export async function uploadFileViaFileChooser({
+	fileName,
+	filePath,
+	page,
+	browserName,
+	uploadButtonName,
+}: {
+	fileName: string;
+	page: Page;
+	filePath: string;
+	browserName: string;
+	uploadButtonName: string;
+}) {
+	await page.goto("/");
+
+	await page.waitForLoadState("networkidle");
+
+	if (browserName === "firefox") {
+		// Firefox: setup file chooser handler and use input element directly
+		page.on("filechooser", async (fileChooser) => {
+			// Dismiss any file chooser dialogs that might appear
+			await fileChooser.setFiles([]);
+		});
+
+		const fileInput = page.locator('input[type="file"]').first();
+		await fileInput.setInputFiles(filePath);
+	} else {
+		// Other browsers: use file chooser event
+		const fileChooserPromise = page.waitForEvent("filechooser");
+		await page.getByRole("button", { name: uploadButtonName }).click();
+		const fileChooser = await fileChooserPromise;
+		await fileChooser.setFiles(filePath);
+	}
+
+	await testWithDocuments
+		.expect(page.getByText(fileName, { exact: true }))
+		.toBeVisible();
+
+	const response = await page.waitForResponse(
+		(response) =>
+			response.url().includes("/documents/process") &&
+			response.request().method() === "POST",
+		{
+			timeout: 60_000,
+		},
+	);
+
+	expect(response.status()).toBe(204);
+
+	// Wait for the file to appear in the document list
+	const uploadedFile = page.getByRole("button", {
+		name: `Dokumente-Icon ${fileName}`,
+	});
+
+	await testWithDocuments.expect(uploadedFile).toBeVisible();
+
+	// Close the file upload dialog
+	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+
+	return uploadedFile;
+}
+
+export async function uploadFileViaDragAndDrop({
+	page,
+	filePath,
+	fileName,
+	fileType,
+}: {
+	page: Page;
+	filePath: string;
+	fileName: string;
+	fileType: string;
+}) {
+	const buffer = readFileSync(filePath).toString("base64");
+
+	const dataTransfer = await page.evaluateHandle(
+		async ({ bufferData, localFileName, localFileType }) => {
+			const dataTransfer = new DataTransfer();
+
+			const blob = await fetch(bufferData).then((res) => res.blob());
+
+			const file = new File([blob], localFileName, { type: localFileType });
+			dataTransfer.items.add(file);
+			return dataTransfer;
+		},
+		{
+			bufferData: `data:application/octet-stream;base64,${buffer}`,
+			localFileName: fileName,
+			localFileType: fileType,
+		},
+	);
+
+	const dropZone = page.getByText(
+		"Dateien ablegen, um sie hochzuladen inMeine DateienDateienMeine DateienNeuer",
+	);
+
+	await dropZone.dispatchEvent("dragenter", { dataTransfer });
+	await dropZone.dispatchEvent("dragover", { dataTransfer });
+	await dropZone.dispatchEvent("drop", { dataTransfer });
+
+	const response = await page.waitForResponse(
+		(response) =>
+			response.url().includes("/documents/process") &&
+			response.request().method() === "POST",
+		{
+			timeout: 60_000,
+		},
+	);
+
+	expect(response.status()).toBe(204);
+
+	// Wait for the file to appear in the document list
+	const uploadedFile = page.getByRole("button", {
+		name: `Dokumente-Icon ${fileName}`,
+	});
+
+	await testWithDocuments.expect(uploadedFile).toBeVisible();
+
+	// Close the file upload dialog
+	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+}
+
+export async function deleteFileViaUI({
+	page,
+	fileName,
+}: {
+	page: Page;
+	fileName: string;
+}) {
+	// Ensure the checkbox from the uploaded file is present
+	const checkbox = page
+		.getByRole("listitem")
+		.filter({ hasText: fileName })
+		.locator("label");
+
+	await expect(checkbox).toBeVisible();
+
+	// Delete the file via the UI
+	await checkbox.click();
+	await page.getByRole("button", { name: "Löschen Mülleimer-Icon" }).click();
+	await page
+		.getByRole("dialog")
+		.getByRole("button", { name: "Löschen" })
+		.click();
+
+	const deletedDocumentLocator = page.getByRole("button", {
+		name: `Dokumente-Icon ${fileName}`,
+	});
+
+	await expect(deletedDocumentLocator).not.toBeVisible();
+}
+
+async function cleanup(userId: string) {
+	const { error: deleteDocumentsError } = await supabaseAdminClient
+		.from("documents")
+		.delete()
+		.eq("owned_by_user_id", userId);
+	expect(deleteDocumentsError).toBeNull();
+
+	const { error: deleteFoldersError } = await supabaseAdminClient
+		.from("document_folders")
+		.delete()
+		.eq("user_id", userId);
+	expect(deleteFoldersError).toBeNull();
+
+	const { error: deleteDocumentChunksError } = await supabaseAdminClient
+		.from("document_chunks")
+		.delete()
+		.eq("owned_by_user_id", userId);
+	expect(deleteDocumentChunksError).toBeNull();
+
+	const { error: deleteDocumentSummariesError } = await supabaseAdminClient
+		.from("document_summaries")
+		.delete()
+		.eq("owned_by_user_id", userId);
+	expect(deleteDocumentSummariesError).toBeNull();
+
+	const { data: personalDocumentsData, error: personalDocumentsError } =
+		await supabaseAdminClient.storage.from("documents").list(`${userId}`);
+
+	expect(personalDocumentsError).toBeNull();
+
+	const personalDocumentsToRemove = personalDocumentsData!.map(
+		(file) => `${userId}/${file.name}`,
+	);
+
+	if (personalDocumentsToRemove.length > 0) {
+		const { error: deletePersonalDocumentsError } =
+			await supabaseAdminClient.storage
+				.from("documents")
+				.remove(personalDocumentsToRemove);
+		expect(deletePersonalDocumentsError).toBeNull();
+	}
+
+	const { data: publicDocumentsData, error: publicDocumentsError } =
+		await supabaseAdminClient.storage
+			.from("public_documents")
+			.list(`${userId}`);
+
+	expect(publicDocumentsError).toBeNull();
+
+	const publicDocumentsToRemove = publicDocumentsData!.map(
+		(file) => `${userId}/${file.name}`,
+	);
+
+	if (publicDocumentsToRemove.length > 0) {
+		const { error: deletePublicDocumentsError } =
+			await supabaseAdminClient.storage
+				.from("public_documents")
+				.remove(publicDocumentsToRemove);
+
+		expect(deletePublicDocumentsError).toBeNull();
+	}
+}

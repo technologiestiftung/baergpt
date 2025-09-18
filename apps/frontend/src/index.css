@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	.markdown-container p {
+		@apply my-3 hyphens-auto;
+		word-break: break-word;
+	}
+
+	.markdown-container ol {
+		@apply my-4 list-none;
+		list-style: decimal;
+		padding-left: 2rem;
+	}
+
+	.markdown-container ul {
+		@apply my-4 list-none;
+		list-style: disc;
+		padding-left: 2rem;
+	}
+
+	.markdown-container li {
+		@apply relative pl-3;
+	}
+
+	.markdown-container h1,
+	.markdown-container h2,
+	.markdown-container h3,
+	.markdown-container h4,
+	.markdown-container h5,
+	.markdown-container h6 {
+		@apply font-bold pl-3 pt-2 text-dunkelblau-200;
+	}
+
+	.markdown-container h1 {
+		@apply text-[22px] pb-4;
+	}
+
+	.markdown-container h2 {
+		@apply text-[20px];
+	}
+
+	.markdown-container h3 {
+		@apply text-[18px];
+	}
+
+	.markdown-container h4 {
+		@apply text-[16px];
+	}
+
+	.markdown-container h5 {
+		@apply text-[14px];
+	}
+
+	.markdown-container h6 {
+		@apply text-[12px];
+	}
+
+	.markdown-container a {
+		@apply text-dunkelblau-100 underline hover:text-dunkelblau-200;
+	}
+
+	.markdown-container code {
+		@apply font-arial;
+	}
+
+	.markdown-container pre {
+		@apply ml-10 whitespace-pre-wrap w-[90%] my-10;
+	}
+
+	.markdown-container blockquote {
+		@apply w-[90%] ml-5 my-5 py-5 pl-5 bg-hellblau-100;
+	}
+
+	.markdown-container hr {
+		@apply m-3;
+	}
+
+	/* .markdown-container table {
+		@apply my-5 overflow-x-scroll block max-w-[80vw] sm:w-[604px] sm:max-w-[604px];
+	} */
+
+	.markdown-container table {
+		@apply w-full;
+	}
+
+	.table-wrapper {
+		@apply py-2 overflow-x-auto max-w-[80vw] w-full;
+	}
+
+	.markdown-container {
+		tbody,
+		td,
+		tfoot,
+		th,
+		thead,
+		tr {
+			@apply text-start pl-2 pr-5 py-3 text-dunkelblau-100 h-12 text-sm;
+		}
+		thead {
+			@apply border-b-dunkelblau-100 border-b-[1px];
+		}
+		tr:nth-child(even) {
+			@apply bg-hellblau-30;
+		}
+		th {
+			@apply min-w-28 align-bottom;
+		}
+		td {
+			@apply align-top;
+		}
+	}
+
+	.markdown-container-user {
+		tr:nth-child(even) {
+			@apply bg-hellblau-50;
+		}
+		th {
+			@apply min-w-10;
+		}
+	}
+}
