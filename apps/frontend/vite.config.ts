@@ -6,9 +6,13 @@ export default defineConfig({
 	plugins: [
 		react(),
 		sentryVitePlugin({
+			// TODO: use env variables
 			org: "technologiestiftung-berlin",
 			project: "baergpt-frontend",
 			authToken: process.env.SENTRY_AUTH_TOKEN,
+			sourcemaps: {
+				disable: process.env.NODE_ENV === "test",
+			},
 		}),
 	],
 	base: "/",

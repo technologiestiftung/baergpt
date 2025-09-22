@@ -6,9 +6,7 @@ import { defineConfig, devices } from "@playwright/test";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-if (!process.env.CI) {
-	config({ path: resolve(__dirname, ".env") });
-}
+config({ path: resolve(__dirname, ".env") });
 
 const { verifyConfig } = await import("./tests/config.ts");
 
