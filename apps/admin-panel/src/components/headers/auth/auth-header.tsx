@@ -1,0 +1,25 @@
+import React from "react";
+import Content from "../../../content.ts";
+import { useAuthStore } from "../../../store/use-auth-store.ts";
+import { AuthNavLinks } from "./auth-nav-links.tsx";
+
+export const AuthHeader: React.FC = () => {
+	const { session } = useAuthStore();
+
+	return (
+		<header className="h-[50px] md:h-[80px] flex items-center justify-between z-40 bg-white p-5 border-b border-black">
+			<a href={"/"}>
+				<img
+					className="h-7 md:h-11"
+					src="/logos/baergpt-logo.svg"
+					alt={Content["header.logo.alt"]}
+				/>
+			</a>
+			{!session && (
+				<nav>
+					<AuthNavLinks />
+				</nav>
+			)}
+		</header>
+	);
+};

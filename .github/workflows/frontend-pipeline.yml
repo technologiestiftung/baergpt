@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main, staging]
 jobs:
-  pipeline:
+  frontend-pipeline:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
