@@ -18,6 +18,7 @@
   "homepage": "https://github.com/technologiestiftung/baergpt#readme",
   "workspaces": [
     "apps/frontend",
-    "apps/admin-panel"
+    "apps/admin-panel",
+    "apps/backend"
   ]
 }

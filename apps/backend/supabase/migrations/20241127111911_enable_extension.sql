@@ -1,0 +1,1 @@
+CREATE EXTENSION if NOT EXISTS "pg_hashids";

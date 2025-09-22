@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+	</head>
+	<body
+		style="
+			font-family: Arial, Helvetica, sans-serif;
+			background-color: #f2f4f6;
+			margin: 0;
+			padding: 0;
+		"
+	>
+		<table
+			width="100%"
+			cellpadding="0"
+			cellspacing="0"
+			style="background-color: #f2f4f6"
+			class="email-wrapper"
+		>
+			<tr>
+				<td align="center">
+					<table
+						width="570"
+						cellpadding="0"
+						cellspacing="0"
+						style="
+							background-color: #ffffff;
+							margin: 20px auto;
+							padding: 35px;
+							border-radius: 4px;
+						"
+						class="email-content"
+					>
+						<tr>
+							<td
+								width="100%"
+								style="padding: 25px 0; text-align: center"
+								align="center"
+							>
+								<a
+									href="https://www.baergpt.berlin/"
+									class="email-masthead_name"
+									style="
+										font-family: Arial, &quot;Helvetica Neue&quot;, Helvetica,
+											sans-serif;
+										font-size: 16px;
+										font-weight: bold;
+										color: #2f3133;
+										text-decoration: none;
+									"
+								>
+									<img
+										src="https://www.baergpt.berlin/logos/baergpt-logo.svg"
+										alt="BärGPT"
+										style="max-height: 50px"
+									/>
+								</a>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<h1 style="font-size: 16px; color: #000000; line-height: 1.5">
+									Hallo {{ .Data.first_name }} {{ .Data.last_name }},
+								</h1>
+
+								<p style="font-size: 16px; color: #000000; line-height: 1.5">
+									schön, dass Sie sich bei BärGPT registriert haben!
+								</p>
+
+								<p style="font-size: 16px; color: #000000; line-height: 1.5">
+									Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihr Konto zu
+									aktivieren:
+								</p>
+
+								<table
+									cellpadding="0"
+									cellspacing="0"
+									width="100%"
+									style="text-align: left; margin: 30px 0"
+								>
+									<tr>
+										<td align="left">
+											<a
+												href="{{ .ConfirmationURL }}account-activated/"
+												style="
+													background-color: #0c2753;
+													color: #ffffff;
+													padding: 14px 24px;
+													font-size: 16px;
+													text-decoration: none;
+													border-radius: 3px;
+													display: inline-block;
+													mso-hide: all;
+												"
+											>
+												E-Mail-Adresse bestätigen
+											</a>
+										</td>
+									</tr>
+								</table>
+
+								<p style="font-size: 16px; color: #000000; line-height: 1.5">
+									Falls der Button nicht funktioniert, kopieren Sie einfach
+									diesen Link in die Adresszeile Ihres Browsers:
+								</p>
+
+								<div
+									style="
+										background-color: #f7f7f7;
+										padding: 10px;
+										font-size: 14px;
+										color: #444;
+										word-break: break-word;
+										font-family: &quot;Courier New&quot;, Courier, monospace;
+										border-radius: 4px;
+										mso-hide: all;
+									"
+								>
+									<a
+										href="{{ .ConfirmationURL }}account-activated/"
+										style="color: #0c2753; text-decoration: none"
+									>
+										{{ .ConfirmationURL }}account-activated/
+									</a>
+								</div>
+
+								<p style="font-size: 14px; color: #666666; line-height: 1.5">
+									Der Bestätigungslink ist für <strong>1 Stunde</strong> gültig.
+									<br />
+									Wenn Sie sich nicht registriert haben, können Sie diese E-Mail
+									einfach ignorieren.
+								</p>
+
+								<p style="font-size: 14px; color: #666666; line-height: 1.5">
+									Bei Fragen stehen wir Ihnen gerne zur Verfügung:
+									<br />
+									<a href="mailto:support@baergpt.de">support@baergpt.de</a>
+								</p>
+
+								<p style="font-size: 14px; color: #666666; line-height: 1.5">
+									Viele Grüße<br />
+									Ihr <strong>BärGPT-Team</strong>
+								</p>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

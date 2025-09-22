@@ -26,17 +26,14 @@ test.describe("Auth Admin", () => {
 			throw new Error(`Failed to create admin user: ${error.message}`);
 		}
 		userId = data.user?.id;
-		if (!userId) {
-			throw new Error("User ID not found after creation");
-		}
+
+		expect(userId).toBeDefined();
 
 		const { error: adminError } = await supabaseAdminClient
 			.from("application_admins")
 			.insert([{ user_id: userId }]);
 
-		if (adminError) {
-			throw new Error(`Failed to promote user to admin: ${adminError.message}`);
-		}
+		expect(adminError).toBeNull();
 	});
 
 	test.afterAll(async () => {

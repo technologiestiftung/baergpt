@@ -1,0 +1,27 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["ESNext"],
+		"module": "NodeNext",
+		"rootDir": "./",
+		"moduleResolution": "NodeNext",
+		"typeRoots": ["./node_modules/@types"],
+		"types": ["node"],
+		"resolveJsonModule": true,
+		"outDir": "./dist",
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": false,
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"inlineSources": true,
+
+		// Set `sourceRoot` to  "/" to strip the build path prefix
+		// from generated source code references.
+		// This improves issue grouping in Sentry.
+		"sourceRoot": "/"
+	},
+	"include": ["./src/**/*.ts"],
+	"exclude": ["./src/**/*.test.ts", "./src/integration/**/*"]
+}
