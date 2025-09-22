@@ -1,0 +1,100 @@
+name: Backend Tests
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@v5
+
+      - name: install tools via asdf ⚙️
+        uses: asdf-vm/actions/install@v4
+
+      # You might wonder why we are running supabase here (before other steps) and with `&` at the end.
+      # The reason is that this will allow supabase to download/start in the background
+      # while other steps can be done in parallel. This saves time in the CI process.
+      - name: Start supabase ⚡️
+        run: cd apps/backend && supabase start --exclude studio,realtime,imgproxy,edge-runtime,logflare,supavisor,postgres-meta &
+
+      - name: Setup Node.js using .nvmrc ⚙️
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Cache npm dependencies 💾
+        id: cache-npm-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies 📦
+        if: steps.cache-npm-deps.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Install 1Password CLI 🔐
+        uses: 1password/install-cli-action@v2
+
+      - name: Fetch backend .env from 1Password ⬇️
+        run: |
+          cd apps/backend
+          echo "Fetching backend .env from 1Password..."
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Cache backend build 💾
+        id: cache-backend-build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./apps/backend/dist
+          key: ${{ runner.os }}-node-backend-${{ hashFiles('./apps/backend/**/*', '!./apps/backend/node_modules/**/*', '**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-backend-
+
+      - name: Check Build 🏗️
+        if: steps.cache-backend-build.outputs.cache-hit != 'true'
+        run: |
+          cd apps/backend
+          npm run build:tsc
+
+      - name: Wait for Supabase to be ready ⏳
+        run: |
+          timeout=600
+          counter=0
+          
+          # Sometimes the postgrest api and postgres are up, but individual postgrest endpoints are not ready yet.
+          # Therefore we check if a table (e.g. `application_admins`) is available in the postgrest api.
+          
+          until curl -sf http://localhost:54321/rest/v1/application_admins && pg_isready -U postgres -h localhost -p 54322; do
+            if [ $counter -gt $timeout ]; then
+              echo "Timed out waiting for Supabase"
+              exit 1
+            fi
+            echo "Waiting for Supabase to be ready..."
+            sleep 1
+            counter=$((counter + 1))
+          done
+          echo "Supabase is ready!"
+
+      - name: Run Database Linting 🔍
+        run: |
+          cd apps/backend
+          npm run lint:db
+
+      - name: Run integration tests 🧪
+        run: |
+          cd apps/backend
+          npm test

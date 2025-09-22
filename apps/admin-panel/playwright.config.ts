@@ -6,9 +6,7 @@ import { defineConfig, devices } from "@playwright/test";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-if (!process.env.CI) {
-	config({ path: resolve(__dirname, ".env") });
-}
+config({ path: resolve(__dirname, ".env") });
 
 const { verifyConfig } = await import("./tests/config.ts");
 
@@ -83,7 +81,13 @@ export default defineConfig({
 
 	/* Run your local dev server before starting the tests */
 	webServer: {
-		command: `npm run build && npm run preview -- --port ${port}`,
+		/**
+		 * You might wonder why we don't run a build step here when
+		 * we're in the CI before starting the preview server.
+		 * We're running the build step beforehand in the workflow
+		 * as an own step so we can cache it between jobs.
+		 */
+		command: `${process.env.CI ? "npm run preview" : "npm run dev"} -- --port ${port}`,
 		url: `http://localhost:${port}`,
 		reuseExistingServer: !process.env.CI,
 	},

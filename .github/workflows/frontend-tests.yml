@@ -1,0 +1,197 @@
+name: Frontend Tests
+permissions:
+  contents: write
+  packages: write
+on:
+  pull_request:
+    branches: [main, staging]
+jobs:
+  frontend-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        browser: [chromium, firefox, webkit, "Mobile Chrome", "Mobile Safari"]
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@v5
+
+      - name: install tools via asdf ⚙️
+        uses: asdf-vm/actions/install@v4
+
+      # You might wonder why we are running supabase before other steps and with `&` at the end.
+      # This will allow supabase to download/start in the background while other steps can
+      # be done in parallel. This saves time in the CI process.
+      - name: Start supabase ⚡️
+        run: |
+          cd apps/backend
+          supabase start --exclude studio,realtime,imgproxy,edge-runtime,logflare,supavisor,postgres-meta &
+
+      - name: Setup Node.js using .nvmrc ⚙️
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Cache npm dependencies 💾
+        id: cache-npm-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies 📦
+        if: steps.cache-npm-deps.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Install 1Password CLI 🔐
+        uses: 1password/install-cli-action@v2
+
+      - name: Fetch frontend .env from 1Password ⬇️
+        run: |
+          cd apps/frontend
+          echo "Fetching frontend .env from 1Password..."
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_FRONTEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Fetch backend .env from 1Password ⬇️
+        run: |
+          cd apps/backend
+          echo "Fetching backend .env from 1Password..."
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Cache backend build 💾
+        id: cache-backend-build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./apps/backend/dist
+          key: ${{ runner.os }}-node-backend-${{ hashFiles('./apps/backend/**/*', '!./apps/backend/node_modules/**/*', '**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-backend-
+
+      - name: Build backend 🏗️
+        if: steps.cache-backend-build.outputs.cache-hit != 'true'
+        run: |
+          cd apps/backend
+          npm run build:tsc
+
+      # You might wonder why we are running the backend with `&` at the end.
+      # This will allow the backend to start in the background while other steps can
+      # be done in parallel. This saves time in the CI process.
+      - name: Start backend server 🖥️
+        run: |
+          cd apps/backend
+          set -a && . .env && set +a
+          nohup npm run start > backend.log 2>&1 &
+          echo $! > backend.pid
+
+      - name: Install Playwright Browser 🧭
+        run: |
+          cd apps/frontend
+          BROWSER="${{ matrix.browser }}"
+          case "$BROWSER" in
+            "Mobile Chrome") npx playwright install --with-deps chromium;;
+            "Mobile Safari") npx playwright install --with-deps webkit;;
+            *) npx playwright install --with-deps "$BROWSER";;
+          esac
+
+      - name: Run frontend unit tests 🧪
+        run: |
+          cd apps/frontend
+          npm run test:unit
+
+      - name: Cache frontend build 💾
+        id: cache-frontend-build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./apps/frontend/dist
+          key: ${{ runner.os }}-node-frontend-${{ hashFiles('./apps/frontend/**/*', '!./apps/frontend/node_modules/**/*', '**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-frontend-
+
+      - name: Build frontend 🏗️
+        if: steps.cache-frontend-build.outputs.cache-hit != 'true'
+        run: |
+          cd apps/frontend
+          npm run build
+
+      - name: Wait for Backend to be ready ⏳
+        run: |
+          timeout=600
+          counter=0
+          until curl -s http://localhost:3000/ >/dev/null; do
+            if [ $counter -gt $timeout ]; then
+              echo "Timed out waiting for Backend"
+              exit 1
+            fi
+            echo "Waiting for Backend to be ready..."
+            sleep 1
+            counter=$((counter + 1))
+          done
+          echo "Backend is ready!"
+
+      - name: Wait for Supabase to be ready ⏳
+        run: |
+          timeout=600
+          counter=0
+          
+          # Sometimes the postgrest api and postgres are up, but individual postgrest endpoints are not ready yet.
+          # Therefore we check if a table (e.g. `application_admins`) is available in the postgrest api.
+          
+          until curl -sf http://localhost:54321/rest/v1/application_admins && pg_isready -U postgres -h localhost -p 54322; do
+            if [ $counter -gt $timeout ]; then
+              echo "Timed out waiting for Supabase"
+              exit 1
+            fi
+            echo "Waiting for Supabase to be ready..."
+            sleep 1
+            counter=$((counter + 1))
+          done
+          echo "Supabase is ready!"
+
+      - name: Run frontend E2E test 🎭
+        run: |
+          cd apps/frontend
+          npm run test:e2e -- --project="${{ matrix.browser }}"
+
+      - name: Capture backend logs after frontend E2E test after failure 📋
+        if: failure()
+        run: |
+          if [ -f apps/backend/backend.log ]; then
+            echo "=== Backend server logs ==="
+            cat apps/backend/backend.log
+            echo "=== End backend logs ==="
+          else
+            echo "Backend log file not found"
+          fi
+
+      - name: Upload frontend E2E test results ⬆️
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() && !cancelled() }}
+        with:
+          name: frontend-e2e-${{ matrix.browser }}-test-results
+          path: apps/frontend/test-results
+          retention-days: 30
+
+      - name: Run frontend A11y tests ♿️
+        run: |
+          cd apps/frontend
+          npm run test:a11y -- --project="${{ matrix.browser }}"
+
+      - name: Upload A11y test results ⬆️
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() && !cancelled() }}
+        with:
+          name: frontend-a11y-${{ matrix.browser }}-test-results
+          path: apps/frontend/test-results
+
