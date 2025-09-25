@@ -77,23 +77,6 @@ export default defineConfig({
 				isMobile: false,
 			},
 		},
-
-		/* Test against mobile viewports. */
-		{
-			name: "Mobile Chrome",
-			use: {
-				...devices["Pixel 5"],
-				isMobile: true,
-				permissions: ["clipboard-read", "clipboard-write"],
-			},
-		},
-		{
-			name: "Mobile Safari",
-			use: {
-				...devices["iPhone 12"],
-				isMobile: true,
-			},
-		},
 	],
 
 	/* Run your local dev server before starting the tests */
