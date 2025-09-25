@@ -98,18 +98,18 @@ jobs:
           cd apps/admin-panel 
           npx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: Cache admin-panel build 💾
-        id: cache-admin-panel-build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ./apps/admin-panel/dist
-          key: ${{ runner.os }}-node-admin-panel-${{ hashFiles('./apps/admin-panel/**/*', '!./apps/admin-panel/node_modules/**/*', '**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-admin-panel-
+#      - name: Cache admin-panel build 💾
+#        id: cache-admin-panel-build
+#        uses: actions/cache@v4
+#        with:
+#          path: |
+#            ./apps/admin-panel/dist
+#          key: ${{ runner.os }}-node-admin-panel-${{ hashFiles('./apps/admin-panel/**/*', '!./apps/admin-panel/node_modules/**/*', '**/package-lock.json') }}
+#          restore-keys: |
+#            ${{ runner.os }}-node-admin-panel-
 
       - name: Build admin-panel 🏗️
-        if: steps.cache-admin-panel-build.outputs.cache-hit != 'true'
+#        if: steps.cache-admin-panel-build.outputs.cache-hit != 'true'
         run: |
           cd apps/admin-panel 
           npm run build
