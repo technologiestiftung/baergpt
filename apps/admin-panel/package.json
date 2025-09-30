@@ -6,9 +6,10 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc -b && vite build",
-		"lint": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
-		"prettier": "prettier --write src",
-		"prettier:ci": "prettier --check src",
+		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint --fix \"src/**/*\"",
+		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
+		"prettier:write": "prettier --write src",
+		"prettier:check": "prettier --check src",
 		"preview": "vite preview",
 		"test:e2e": "playwright test"
 	},
