@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
-		"build": "tsc -b && vite build",
+		"prebuild": "tsx prebuild.ts",
+		"build": "npm run prebuild && tsc -b && vite build",
 		"lint": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
 		"prettier": "prettier --write src",
 		"prettier:ci": "prettier --check src",
@@ -37,6 +38,7 @@
 		"zustand": "4.5.5"
 	},
 	"devDependencies": {
+		"@1password/op-js": "0.1.13",
 		"@axe-core/playwright": "4.10.0",
 		"@playwright/test": "1.47.2",
 		"@technologiestiftung/eslint-config": "0.3.1",
@@ -56,6 +58,7 @@
 		"postcss": "8.4.47",
 		"prettier": "3.3.3",
 		"tailwindcss": "3.4.13",
+		"tsx": "4.20.6",
 		"typescript": "5.5.4",
 		"vite": "5.4.8",
 		"vitest": "2.1.1"
