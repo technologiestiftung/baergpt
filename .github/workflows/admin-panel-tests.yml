@@ -33,7 +33,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: ".nvmrc"
-          cache: npm
 
       - name: Cache npm dependencies 💾
         id: cache-npm-deps
