@@ -37,16 +37,16 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.10.2",
-		"@playwright/test": "1.55.0",
+		"@playwright/test": "1.55.1",
 		"@sentry/vite-plugin": "4.1.1",
 		"@technologiestiftung/eslint-config": "0.4.0",
 		"@technologiestiftung/eslint-plugin": "0.1.1",
-		"@types/node": "22.15.3",
+		"@types/node": "22.14.0",
 		"@types/react": "18.3.3",
 		"@types/react-dom": "18.3.0",
 		"@typescript-eslint/eslint-plugin": "8.32.0",
 		"@typescript-eslint/parser": "8.32.0",
-		"@vitejs/plugin-react": "4.3.1",
+		"@vitejs/plugin-react": "5.0.3",
 		"autoprefixer": "10.4.19",
 		"eslint": "9.27.0",
 		"eslint-plugin-react": "7.37.5",
@@ -56,9 +56,9 @@
 		"magnitude-test": "0.0.17",
 		"postcss": "8.4.40",
 		"tailwindcss": "3.4.7",
-		"typescript": "5.3.3",
-		"vite": "5.3.5",
-		"vitest": "3.1.1"
+		"typescript": "5.8.3",
+		"vite": "7.1.7",
+		"vitest": "3.2.4"
 	},
 	"overrides": {
 		"whatwg-url": "14.2.0"
