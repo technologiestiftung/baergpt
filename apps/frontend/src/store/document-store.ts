@@ -13,7 +13,7 @@ interface DocumentStore {
 	deleteDocument: (
 		documentId: number,
 		filePath: string,
-		owned_by_user_id?: string,
+		owned_by_user_id: string | null,
 	) => Promise<void>;
 	removeItemFromFolder: (documentId: number) => Promise<void>;
 	moveItemToFolder: (documentId: number, folderId: number) => Promise<void>;
@@ -71,7 +71,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		await updateDocumentFolder(documentId, null);
 		set((state) => ({
 			documents: state.documents.map((doc) =>
-				doc.id === documentId ? { ...doc, folder_id: undefined } : doc,
+				doc.id === documentId ? { ...doc, folder_id: null } : doc,
 			),
 		}));
 	},
