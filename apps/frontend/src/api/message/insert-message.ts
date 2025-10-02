@@ -1,5 +1,5 @@
 import { supabase } from "../../../supabase-client.ts";
-import type { NewChatMessage } from "../../common.ts";
+import type { ChatMessage, NewChatMessage } from "../../common.ts";
 
 export async function insertMessage(
 	chatId: number,
@@ -9,7 +9,7 @@ export async function insertMessage(
 		.from("chat_messages")
 		.insert({
 			chat_id: chatId,
-			created_at: new Date(),
+			created_at: new Date().toISOString(),
 			role: chatMessage.role,
 			type: chatMessage.type,
 			content: chatMessage.content,
@@ -17,11 +17,17 @@ export async function insertMessage(
 			allowed_folder_ids: chatMessage.allowed_folder_ids,
 			citations: chatMessage.citations,
 		})
-		.select("*");
+		.select("*")
+		.single();
 
 	if (error) {
 		throw error;
 	}
 
-	return data[0];
+	/**
+	 * The `citations` field inside a message is typed
+	 * as `Jsonb | null` in the DB, which does not exist in Typescript.
+	 * It actually is `number[] | null`, so we cast it here.
+	 */
+	return data as ChatMessage;
 }

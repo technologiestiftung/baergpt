@@ -8,7 +8,7 @@ import {
 	it,
 } from "vitest";
 import { createClient, type Session } from "@supabase/supabase-js";
-import type { Database } from "../../types/auto-generated-database-types";
+import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
 import { supabase as supabaseAdminClient } from "../../supabase";

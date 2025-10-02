@@ -11,7 +11,7 @@ import { cleanupDocuments, mockDocumentUpload } from "./fixtures/documents";
 import { defaultDocumentName, defaultDocumentPath } from "./fixtures/constants";
 import { supabase as supabaseAdminClient } from "../supabase";
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "../types/auto-generated-database-types";
+import type { Database } from "@repo/db-schema";
 import { config } from "../config";
 
 const supabaseAnonClient = createClient<Database>(

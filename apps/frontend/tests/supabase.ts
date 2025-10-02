@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { config } from "./config.ts";
-import { Database } from "../src/db_schema.ts";
+import type { Database } from "@repo/db-schema";
 
 export const supabaseAdminClient = createClient<Database>(
 	config.supabaseUrl,

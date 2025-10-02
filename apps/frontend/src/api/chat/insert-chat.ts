@@ -1,6 +1,5 @@
 import { supabase } from "../../../supabase-client.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
-import type { Chat } from "../../common.ts";
 
 export async function insertChat(name: string) {
 	const session = useAuthStore.getState().session;
@@ -13,15 +12,15 @@ export async function insertChat(name: string) {
 		.from("chats")
 		.insert({
 			user_id: userId,
-			created_at: new Date(),
+			created_at: new Date().toISOString(),
 			name,
 		})
 		.select("*")
-		.returns<Chat[]>();
+		.single();
 
 	if (error) {
 		throw new Error(error.message);
 	}
 
-	return data[0];
+	return data;
 }

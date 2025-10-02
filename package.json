@@ -25,6 +25,7 @@
 		"apps/backend",
 		"libs/prettier",
 		"libs/eslint",
-		"libs/typescript-config"
+		"libs/typescript-config",
+		"libs/db-schema"
 	]
 }

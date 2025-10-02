@@ -1,5 +1,6 @@
 import { supabase } from "../../../supabase-client.ts";
 import { useErrorStore } from "../../store/error-store.ts";
+import type { ChatMessage } from "../../common.ts";
 
 const { handleError } = useErrorStore.getState();
 
@@ -20,5 +21,10 @@ export async function getMessages(chatId: number, signal: AbortSignal) {
 		return [];
 	}
 
-	return data;
+	/**
+	 * The `citations` field inside a message is typed
+	 * as `Jsonb | null` in the DB, which does not exist in Typescript.
+	 * It actually is `number[] | null`, so we cast it here.
+	 */
+	return data as ChatMessage[];
 }

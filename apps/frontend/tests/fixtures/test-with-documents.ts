@@ -70,7 +70,7 @@ export async function mockDocumentUpload({
 	bucketName: "documents" | "public_documents";
 }) {
 	const source_url = `${userId}/${fileName}`;
-	const file = readFileSync(filePath);
+	const file = new Uint8Array(readFileSync(filePath));
 
 	const { error: uploadError } = await supabaseAdminClient.storage
 		.from(bucketName)

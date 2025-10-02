@@ -16,7 +16,8 @@
 		"lint:db": "./supabase/lint-database.sh",
 		"prettier:check": "prettier --check src supabase",
 		"prettier:write": "prettier --write src supabase",
-		"db:typegen": "supabase gen types --lang typescript --local > src/types/auto-generated-database-types.ts && npm run prettier:write && npm run lint:fix",
+		"db:reset": "supabase db reset && npm run db:typegen && npm run db:localseed",
+		"db:typegen": "supabase gen types --lang typescript --local > ../../libs/db-schema/index.ts && prettier --write ../../libs/db-schema/index.ts && ESLINT_USE_FLAT_CONFIG=true eslint --fix ../../libs/db-schema/index.ts",
 		"db:localseed": "tsx ./supabase/local-seed.ts"
 	},
 	"dependencies": {

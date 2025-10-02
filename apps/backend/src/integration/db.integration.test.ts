@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { supabase as supabaseAdminClient } from "../supabase";
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "../types/auto-generated-database-types";
+import type { Database } from "@repo/db-schema";
 import { config } from "../config";
 import {
 	content as snippet,
@@ -327,6 +327,11 @@ describe("Integration tests for DB", async () => {
 					await supabaseAdminClient.auth.admin.listUsers();
 
 				expect(listUsersError).toBeNull();
+
+				if (listUsersError !== null) {
+					throw new Error("User could not be listed");
+				}
+
 				expect(allUsers).toBeDefined();
 
 				const adminUser = allUsers.users.find(

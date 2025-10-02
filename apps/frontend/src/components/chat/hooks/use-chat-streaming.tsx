@@ -19,8 +19,8 @@ type StartStreamingArgs = {
 		userId?: string;
 		chatId?: number;
 		isAddressedFormal?: boolean | null;
-		allowedDocumentIds?: number[];
-		allowedFolderIds?: number[];
+		allowedDocumentIds: number[] | null;
+		allowedFolderIds: number[] | null;
 		searchType?: "all_private" | "all_public";
 	};
 };

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import app from "../../index";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { supabase as supabaseAdminClient } from "../../supabase";
-import type { Database } from "../../types/auto-generated-database-types";
+import type { Database } from "@repo/db-schema";
 import { config } from "../../config";
 
 const supabaseAnonClient = createClient<Database>(
