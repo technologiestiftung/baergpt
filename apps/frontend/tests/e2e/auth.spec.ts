@@ -403,8 +403,12 @@ test.describe("User Registration (uses different user to prevent side-effects on
 
 		expect(foundUser).toBeDefined();
 
+		if (!foundUser) {
+			throw new Error("User not found");
+		}
+
 		const { error: deleteUserError } =
-			await supabaseAdminClient.auth.admin.deleteUser(foundUser!.id);
+			await supabaseAdminClient.auth.admin.deleteUser(foundUser.id);
 
 		expect(deleteUserError).toBeNull();
 	});

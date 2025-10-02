@@ -17,7 +17,7 @@ export function verifyConfig() {
 }
 
 export const config: Config = {
-	supabaseUrl: process.env.VITE_SUPABASE_URL!,
-	supabaseServiceKey: process.env.VITE_TEST_SUPABASE_SERVICE_ROLE_KEY!,
-	supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY!,
+	supabaseUrl: process.env.VITE_SUPABASE_URL || "",
+	supabaseServiceKey: process.env.VITE_TEST_SUPABASE_SERVICE_ROLE_KEY || "",
+	supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY || "",
 };
