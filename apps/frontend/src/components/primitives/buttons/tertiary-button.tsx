@@ -1,5 +1,5 @@
 import React from "react";
-import { ButtonProps } from "./button-types";
+import type { ButtonProps } from "./button-types";
 
 export const TertiaryButton: React.FC<ButtonProps> = ({
 	onClick,

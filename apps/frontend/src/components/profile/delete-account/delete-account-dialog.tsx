@@ -1,4 +1,4 @@
-import { FormEvent, useState, useRef } from "react";
+import { type FormEvent, useState, useRef } from "react";
 import { DefaultDialog } from "../../primitives/dialogs/default-dialog.tsx";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
 import Content from "../../../content.ts";

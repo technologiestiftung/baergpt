@@ -1,6 +1,6 @@
 import React from "react";
 import { useDrop } from "react-dnd";
-import { Document, DocumentFolder } from "../../../../common";
+import type { Document, DocumentFolder } from "../../../../common";
 import FolderItem from "./folder-item";
 import DocumentItem from "./document-item";
 import { useDocumentStore } from "../../../../store/document-store";

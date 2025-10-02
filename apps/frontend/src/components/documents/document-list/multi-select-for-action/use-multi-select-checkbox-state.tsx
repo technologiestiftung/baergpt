@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Document, DocumentFolder } from "../../../../common.ts";
-import { CheckboxState } from "../../../primitives/icons/checkbox-icon.tsx";
+import type { Document, DocumentFolder } from "../../../../common.ts";
+import type { CheckboxState } from "../../../primitives/icons/checkbox-icon.tsx";
 
 export function useMultiSelectCheckboxState(
 	selectedItemsForAction: (DocumentFolder | Document)[],

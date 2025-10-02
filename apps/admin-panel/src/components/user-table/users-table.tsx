@@ -7,9 +7,9 @@ import {
 	getSortedRowModel,
 	getPaginationRowModel,
 	getFilteredRowModel,
-	SortingState,
-	ColumnFiltersState,
-	VisibilityState,
+	type SortingState,
+	type ColumnFiltersState,
+	type VisibilityState,
 } from "@tanstack/react-table";
 import { columns } from "./columns";
 import { Content } from "../../content";
@@ -19,7 +19,7 @@ import { StatusFilterDropdown } from "./dropdowns/status-filter-dropdown";
 import { PageSizeDropdown } from "./dropdowns/page-size-dropdown";
 import { UsersTableContent } from "./users-table-content";
 import { PaginationControls } from "./pagination/pagination-controls";
-import { User } from "../../common";
+import type { User } from "../../common";
 import { useUserStore } from "../../store/use-user-store";
 import { InviteNewUserForm } from "../invite-new-user/invite-new-user-form";
 

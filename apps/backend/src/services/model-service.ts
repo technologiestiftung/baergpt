@@ -6,12 +6,7 @@ import { createAzure } from "@ai-sdk/azure";
 import { mistral } from "@ai-sdk/mistral";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-enum ModelProvider {
-	OpenAI = "OpenAI",
-	Azure = "Azure",
-	Ollama = "Ollama",
-	Mistral = "Mistral",
-}
+type ModelProvider = "OpenAI" | "Azure" | "Ollama" | "Mistral";
 
 interface ModelStatus {
 	status: number;
@@ -59,7 +54,7 @@ export class ModelService {
 		"openai-gpt-4o-mini": new Model({
 			identifier: "openai-gpt-4o-mini",
 			baseModelName: "gpt-4o-mini",
-			provider: ModelProvider.OpenAI,
+			provider: "OpenAI",
 			isGdprCompliant: false,
 			contextSize: 128000,
 			isOpenSource: false,
@@ -69,7 +64,7 @@ export class ModelService {
 		"azure-gpt-4o-mini": new Model({
 			identifier: "azure-gpt-4o-mini",
 			baseModelName: "gpt-4o-mini",
-			provider: ModelProvider.Azure,
+			provider: "Azure",
 			isGdprCompliant: true,
 			contextSize: 128000,
 			isOpenSource: false,
@@ -80,7 +75,7 @@ export class ModelService {
 		"citylab-macstudio-llama-3.1": new Model({
 			identifier: "citylab-macstudio-llama-3.1",
 			baseModelName: "llama3.1",
-			provider: ModelProvider.Ollama,
+			provider: "Ollama",
 			isGdprCompliant: true,
 			contextSize: 128000,
 			isOpenSource: true,
@@ -91,7 +86,7 @@ export class ModelService {
 		"mistral-small-latest": new Model({
 			identifier: "mistral-small-latest",
 			baseModelName: "mistral-small",
-			provider: ModelProvider.Mistral,
+			provider: "Mistral",
 			isGdprCompliant: true,
 			contextSize: 128000,
 			isOpenSource: true,
@@ -101,7 +96,7 @@ export class ModelService {
 		"qwen3-30b-a3b-fp8": new Model({
 			identifier: "qwen3-30b-a3b-fp8",
 			baseModelName: "Qwen/Qwen3-30B-A3B-FP8",
-			provider: ModelProvider.OpenAI,
+			provider: "OpenAI",
 			isGdprCompliant: true,
 			contextSize: 131072,
 			isOpenSource: true,

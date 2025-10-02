@@ -1,18 +1,4 @@
 {
-	"compilerOptions": {
-		"target": "ES2022",
-		"lib": ["ES2023", "dom"],
-		"module": "ESNext",
-		"skipLibCheck": true,
-		"moduleResolution": "bundler",
-		"allowImportingTsExtensions": true,
-		"isolatedModules": true,
-		"moduleDetection": "force",
-		"noEmit": true,
-		"strict": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"noFallthroughCasesInSwitch": true
-	},
+	"extends": "../../libs/typescript-config/tsconfig.node.json",
 	"include": ["vite.config.ts", "tests", "playwright.config.ts"]
 }

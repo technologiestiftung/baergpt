@@ -1,4 +1,4 @@
-import React, { FormEvent } from "react";
+import React, { type FormEvent } from "react";
 import { useChatsStore } from "../../../../store/use-chats-store";
 import { useHistoryEntryDeleteStore } from "../../../../store/use-history-entry-delete-store";
 import { DefaultDialog } from "../../../primitives/dialogs/default-dialog";

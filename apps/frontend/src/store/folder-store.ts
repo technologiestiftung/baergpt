@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Document, DocumentFolder } from "../common";
+import type { Document, DocumentFolder } from "../common";
 import { getFolders } from "../api/folders/get-folders";
 import { deleteFolder } from "../api/folders/delete-folder";
 import { useDocumentStore } from "./document-store.ts";

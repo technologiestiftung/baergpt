@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useAuthStore } from "../store/use-auth-store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Session } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 
 export function useSessionRedirect() {
 	const session = useAuthStore((state) => state.session);

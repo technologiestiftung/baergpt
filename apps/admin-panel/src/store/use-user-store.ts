@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { UserProfile, User } from "../common";
+import type { UserProfile, User } from "../common";
 import { getUsers } from "../api/user/get-users";
 import { getUser } from "../api/user/get-user";
 import { getAdminStatus } from "../api/user/get-admin-status";

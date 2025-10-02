@@ -1,7 +1,7 @@
 import { IndeterminateCheckbox } from "../../../primitives/checkboxes/indeterminate-checkbox";
 import { useFolderStore } from "../../../../store/folder-store";
 import { useDocumentStore } from "../../../../store/document-store";
-import { CheckboxState } from "../../../primitives/icons/checkbox-icon";
+import type { CheckboxState } from "../../../primitives/icons/checkbox-icon";
 import { useMultiSelectCheckboxState } from "./use-multi-select-checkbox-state";
 import Content from "../../../../content";
 

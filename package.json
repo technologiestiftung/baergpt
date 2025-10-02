@@ -24,6 +24,7 @@
 		"apps/admin-panel",
 		"apps/backend",
 		"libs/prettier",
-		"libs/eslint"
+		"libs/eslint",
+		"libs/typescript-config"
 	]
 }

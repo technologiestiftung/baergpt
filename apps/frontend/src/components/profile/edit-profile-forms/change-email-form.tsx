@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import Content from "../../../content.ts";
 import { useAuthStore } from "../../../store/auth-store.ts";
 import { EmailInput } from "../../primitives/text-inputs/email-input.tsx";

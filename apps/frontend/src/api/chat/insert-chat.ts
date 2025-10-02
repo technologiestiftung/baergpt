@@ -1,6 +1,6 @@
 import { supabase } from "../../../supabase-client.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
-import { Chat } from "../../common.ts";
+import type { Chat } from "../../common.ts";
 
 export async function insertChat(name: string) {
 	const session = useAuthStore.getState().session;
