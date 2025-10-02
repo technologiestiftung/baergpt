@@ -9,7 +9,7 @@ export async function getChats(signal: AbortSignal) {
 	const { data, error } = await supabase
 		.from("chats")
 		.select("*")
-		.eq("user_id", useAuthStore.getState().session?.user.id)
+		.eq("user_id", useAuthStore.getState().session?.user.id || "")
 		.returns<Chat[]>()
 		.order("created_at", { ascending: false })
 		.abortSignal(signal);

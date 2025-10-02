@@ -1,6 +1,6 @@
 import { supabase } from "../../../supabase-client";
 import { useErrorStore } from "../../store/error-store.ts";
-import type { CitationWithDetails } from "../../common";
+import type { CitationWithDetails, SourceType } from "../../common";
 
 export type CitationWithChunkId = CitationWithDetails & { chunkId: number };
 
@@ -34,7 +34,7 @@ export async function getCitationDetails(
 		sourceUrl: dbCitation.source_url,
 		page: dbCitation.page,
 		createdAt: dbCitation.created_at,
-		sourceType: dbCitation.source_type,
+		sourceType: dbCitation.source_type as SourceType,
 		snippet: dbCitation.snippet,
 	}));
 }
