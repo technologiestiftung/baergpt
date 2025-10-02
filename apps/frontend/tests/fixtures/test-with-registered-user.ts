@@ -17,7 +17,7 @@ type TestWithRegisteredUser = {
 
 export const testWithRegisteredUser = baseTest.extend<TestWithRegisteredUser>({
 	account: [
-		async ({}, use) => {
+		async (_, use) => {
 			/**
 			 * This happens before each test that uses this fixture.
 			 */
@@ -37,11 +37,15 @@ export const testWithRegisteredUser = baseTest.extend<TestWithRegisteredUser>({
 			baseTest.expect(createUserError).toBeNull();
 			baseTest.expect(data).toBeDefined();
 
-			const id = data.user!.id;
+			if (createUserError) {
+				throw new Error(`Failed to create user: ${createUserError.message}`);
+			}
+
+			const id = data.user.id;
 
 			const { error: activationError } = await supabaseAdminClient
 				.from("user_active_status")
-				.update({ registration_finished_at: new Date().toISOString() } as any)
+				.update({ registration_finished_at: new Date().toISOString() })
 				.eq("id", id);
 
 			baseTest.expect(activationError).toBeNull();

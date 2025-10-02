@@ -4,7 +4,9 @@
 	"description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
 	"scripts": {
 		"prettier:write": "prettier --write .",
-		"prettier:check": "prettier --check ."
+		"prettier:check": "prettier --check .",
+		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"**/*\"",
+		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix"
 	},
 	"repository": {
 		"type": "git",
@@ -21,6 +23,7 @@
 		"apps/frontend",
 		"apps/admin-panel",
 		"apps/backend",
-		"libs/prettier"
+		"libs/prettier",
+		"libs/eslint"
 	]
 }

@@ -238,6 +238,10 @@ test.describe("Documents", () => {
 
 		expect(oldPanelWidth).toBeDefined();
 
+		if (!oldPanelWidth) {
+			throw new Error("oldPanelWidth is undefined");
+		}
+
 		// Increment to resize the panel
 		const increment = 100;
 
@@ -258,7 +262,7 @@ test.describe("Documents", () => {
 		);
 
 		// The panel width should have decreased
-		expect(newPanelWidth).toBeLessThan(oldPanelWidth!);
+		expect(newPanelWidth).toBeLessThan(oldPanelWidth);
 
 		// Close the documents panel
 		await page.getByRole("button", { name: "Ausblenden der Dateien" }).click();

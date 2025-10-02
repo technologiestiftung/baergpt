@@ -14,7 +14,7 @@ test.describe("Auth Admin", () => {
 	let testEmail: string;
 	let userId: string | undefined;
 
-	test.beforeAll(async ({}, testInfo) => {
+	test.beforeAll(async (_, testInfo) => {
 		testEmail = `admin+${testInfo.workerIndex}@berlin.de`;
 		const { data, error } = await supabaseAdminClient.auth.admin.createUser({
 			email: testEmail,
@@ -37,7 +37,9 @@ test.describe("Auth Admin", () => {
 	});
 
 	test.afterAll(async () => {
-		if (!testEmail) return;
+		if (!testEmail) {
+			return;
+		}
 		const { data, error } = await supabaseAdminClient.auth.admin.listUsers();
 		if (error) {
 			console.error("Error listing users:", error);
