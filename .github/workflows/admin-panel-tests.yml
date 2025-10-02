@@ -41,8 +41,6 @@ jobs:
           path: |
             **/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
 
       - name: Install dependencies 📦
         if: steps.cache-npm-deps.outputs.cache-hit != 'true'
@@ -74,8 +72,6 @@ jobs:
           path: |
             ./apps/backend/dist
           key: ${{ runner.os }}-node-backend-${{ hashFiles('./apps/backend/**/*', '!./apps/backend/node_modules/**/*', '**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-backend-
 
       - name: Build backend 🏗️
         if: steps.cache-backend-build.outputs.cache-hit != 'true'
@@ -105,8 +101,6 @@ jobs:
           path: |
             ./apps/admin-panel/dist
           key: ${{ runner.os }}-node-admin-panel-${{ hashFiles('./apps/admin-panel/**/*', '!./apps/admin-panel/node_modules/**/*', '**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-admin-panel-
 
       - name: Build admin-panel 🏗️
         if: steps.cache-admin-panel-build.outputs.cache-hit != 'true'
