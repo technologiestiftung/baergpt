@@ -17,7 +17,7 @@ type TestWithRegisteredUser = {
 
 export const testWithRegisteredUser = baseTest.extend<TestWithRegisteredUser>({
 	account: [
-		async ({}, use) => {
+		async (_, use) => {
 			/**
 			 * This happens before each test that uses this fixture.
 			 */
