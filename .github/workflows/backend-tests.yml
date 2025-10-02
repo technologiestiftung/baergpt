@@ -35,8 +35,6 @@ jobs:
           path: |
             **/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
 
       - name: Install dependencies 📦
         if: steps.cache-npm-deps.outputs.cache-hit != 'true'
@@ -60,8 +58,6 @@ jobs:
           path: |
             ./apps/backend/dist
           key: ${{ runner.os }}-node-backend-${{ hashFiles('./apps/backend/**/*', '!./apps/backend/node_modules/**/*', '**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-backend-
 
       - name: Check Build 🏗️
         if: steps.cache-backend-build.outputs.cache-hit != 'true'
