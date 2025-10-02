@@ -1,4 +1,4 @@
-import { Chat } from "../../common.ts";
+import type { Chat } from "../../common.ts";
 import { supabase } from "../../../supabase-client.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";

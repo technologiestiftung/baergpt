@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { User } from "../common";
+import type { User } from "../common";
 import { getUser } from "../api/user/get-user";
 import { useAuthStore } from "./auth-store";
 import { deleteUser } from "../api/auth/delete-user.ts";

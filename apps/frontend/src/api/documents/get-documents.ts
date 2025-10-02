@@ -1,5 +1,5 @@
 import { supabase } from "../../../supabase-client";
-import { Document } from "../../common";
+import type { Document } from "../../common";
 import { useAuthStore } from "../../store/auth-store";
 import { useErrorStore } from "../../store/error-store.ts";
 

@@ -1,7 +1,7 @@
 import { Button } from "../ui/button";
 import { FileText, Trash2 } from "lucide-react";
 import Content from "../../content";
-import { Document } from "../../common";
+import type { Document } from "../../common";
 import { useDocumentStore } from "../../store/use-document-store";
 import { format } from "date-fns";
 

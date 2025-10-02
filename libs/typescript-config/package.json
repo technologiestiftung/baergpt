@@ -1,0 +1,8 @@
+{
+	"name": "@repo/typescript-config",
+	"version": "0.0.0",
+	"license": "MIT",
+	"dependencies": {
+		"typescript": "5.8.3"
+	}
+}

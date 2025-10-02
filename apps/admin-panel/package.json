@@ -40,6 +40,7 @@
 	"devDependencies": {
 		"@axe-core/playwright": "4.10.2",
 		"@playwright/test": "1.55.1",
+		"@repo/typescript-config": "file:../../libs/typescript-config",
 		"@types/dotenv": "6.1.1",
 		"@types/node": "22.14.0",
 		"@types/react": "18.3.10",
@@ -50,7 +51,6 @@
 		"globals": "15.10.0",
 		"postcss": "8.4.47",
 		"tailwindcss": "3.4.13",
-		"typescript": "5.8.3",
 		"vite": "7.1.7",
 		"vitest": "3.2.4"
 	}

@@ -1,4 +1,4 @@
-import { FormEvent, useRef, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import Content from "../../../content.ts";
 import { useAuthStore } from "../../../store/auth-store.ts";
 import { TextInput } from "../../primitives/text-inputs/text-input.tsx";

@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { ChatMessage } from "../../../common.ts";
+import type { ReactNode } from "react";
+import type { ChatMessage } from "../../../common.ts";
 import { useDocumentStore } from "../../../store/document-store.ts";
 import { useFolderStore } from "../../../store/folder-store.ts";
 import { ChatItemPills } from "./chat-item-pills.tsx";

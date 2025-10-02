@@ -1,4 +1,4 @@
-import { useToastStore, Toast } from "../../../store/use-toast-store";
+import { useToastStore, type Toast } from "../../../store/use-toast-store";
 import { SuccessToast } from "./success-toast";
 import { ErrorToast } from "./error-toast";
 

@@ -1,5 +1,5 @@
 import { supabase } from "../../../supabase-client.ts";
-import { ChatMessage } from "../../common.ts";
+import type { ChatMessage } from "../../common.ts";
 
 export async function updateMessage(
 	messageId: number,

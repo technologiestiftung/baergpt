@@ -1,5 +1,5 @@
 import React from "react";
-import { Document } from "../../../../common";
+import type { Document } from "../../../../common";
 import { useDocumentStore } from "../../../../store/document-store";
 import Checkbox from "../../../primitives/checkboxes/checkbox";
 import { AddToChatButton } from "./add-to-chat-button";

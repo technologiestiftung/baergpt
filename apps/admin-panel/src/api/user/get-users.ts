@@ -1,4 +1,4 @@
-import { User } from "../../common";
+import type { User } from "../../common";
 import { supabase } from "../../../supabase-client";
 
 export async function getUsers(

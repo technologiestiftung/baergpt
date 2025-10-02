@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Document } from "../common";
+import type { Document } from "../common";
 import { getDocuments } from "../api/documents/get-documents";
 import { deleteDocument } from "../api/documents/delete-document";
 import { updateDocumentFolder } from "../api/documents/update-document-folder";
