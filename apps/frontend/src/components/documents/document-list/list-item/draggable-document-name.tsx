@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { useDocumentStore } from "../../../../store/document-store.ts";
 import { useDrag } from "react-dnd";
-import { Document } from "../../../../common.ts";
+import type { Document } from "../../../../common.ts";
 import { DocumentIcon } from "../../../primitives/icons/document-icon.tsx";
 import { getListItemName } from "./utils/get-list-item-name.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";

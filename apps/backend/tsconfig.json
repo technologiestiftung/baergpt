@@ -1,4 +1,6 @@
 {
+	"extends": "../../libs/typescript-config/tsconfig.node.json",
+
 	"compilerOptions": {
 		"target": "esnext",
 		"lib": ["ESNext"],
@@ -13,7 +15,7 @@
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": false,
-		"skipLibCheck": true,
+
 		"sourceMap": true,
 		"inlineSources": true,
 

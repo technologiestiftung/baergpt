@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import Content from "../../../content.ts";
 import { PasswordInput } from "../../primitives/text-inputs/password-input.tsx";
 import { SubmitButton } from "../../primitives/buttons/submit-button.tsx";

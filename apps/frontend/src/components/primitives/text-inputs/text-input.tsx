@@ -1,4 +1,4 @@
-import { FormEvent, RefObject, useRef, useState } from "react";
+import { type FormEvent, type RefObject, useRef, useState } from "react";
 import Content from "../../../content.ts";
 
 export function TextInput({

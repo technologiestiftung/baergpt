@@ -1,4 +1,4 @@
-import { FormEvent, RefObject, useRef, useState } from "react";
+import { type FormEvent, type RefObject, useRef, useState } from "react";
 import { emailValidationRegex } from "../../../routes/register-page/validation/email-validation.ts";
 import Content from "../../../content.ts";
 

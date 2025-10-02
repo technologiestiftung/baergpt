@@ -14,11 +14,17 @@ export const ragSearchTool = (
 	tool({
 		description:
 			"Use this tool to answer questions based on the documents provided by the user. It performs a RAG search over the documents and returns structured, cite-ready matches.",
+		// @ts-expect-error after the migration to the monorepo and unifying ai-sdk package versions across the monorepo
+		//  the types were suddenly incompatible, even though the logic has not changed, and it is working as before.
+		//  I was not able to fix it in a reasonable time, maybe we can look into this later.
 		inputSchema: z.object({
 			query: z
 				.string()
 				.describe("The question to answer using the given documents."),
 		}),
+		// @ts-expect-error after the migration to the monorepo and unifying ai-sdk package versions across the monorepo
+		//  the types were suddenly incompatible, even though the logic has not changed, and it is working as before.
+		//  I was not able to fix it in a reasonable time, maybe we can look into this later.
 		execute: async ({ query }) => {
 			const embedding = await embeddingService.generateJinaEmbedding(
 				query,

@@ -1,6 +1,6 @@
-import React, { ReactNode, useState } from "react";
+import React, { type ReactNode, useState } from "react";
 import { useDocumentStore } from "../../store/document-store.ts";
-import { Document } from "../../common.ts";
+import type { Document } from "../../common.ts";
 import { useDrop } from "react-dnd";
 import { AddToChatIcon } from "../primitives/icons/add-to-chat-icon.tsx";
 

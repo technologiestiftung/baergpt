@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 import { useDropzone } from "react-dropzone";
 import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";

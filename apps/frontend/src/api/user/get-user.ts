@@ -1,5 +1,5 @@
 import { supabase } from "../../../supabase-client";
-import { User } from "../../common";
+import type { User } from "../../common";
 import { useErrorStore } from "../../store/error-store.ts";
 
 export async function getUser(

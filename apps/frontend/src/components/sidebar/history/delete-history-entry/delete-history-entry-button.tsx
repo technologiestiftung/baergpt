@@ -1,6 +1,6 @@
 import React from "react";
 import { BucketIcon } from "../../../primitives/icons/bucket-icon";
-import { Chat } from "../../../../common";
+import type { Chat } from "../../../../common";
 import Content from "../../../../content";
 import { showDeleteHistoryEntryDialog } from "./delete-history-entry-dialog";
 import { useHistoryEntryDeleteStore } from "../../../../store/use-history-entry-delete-store";

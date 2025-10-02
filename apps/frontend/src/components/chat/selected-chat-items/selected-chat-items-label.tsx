@@ -4,7 +4,7 @@ import { useFolderStore } from "../../../store/folder-store.ts";
 import { useDocumentStore } from "../../../store/document-store.ts";
 import Content from "../../../content.ts";
 import { isDocument } from "../../documents/document-list/list-item/utils/is-document.ts";
-import { ListItem } from "../../documents/document-list/list-item/utils/types.ts";
+import type { ListItem } from "../../documents/document-list/list-item/utils/types.ts";
 import { useTooltipStore } from "../../../store/tooltip-store.ts";
 
 export function SelectedChatItemsLabel() {

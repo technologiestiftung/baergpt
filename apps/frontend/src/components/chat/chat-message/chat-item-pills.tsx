@@ -3,7 +3,7 @@ import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { isDocument } from "../../documents/document-list/list-item/utils/is-document.ts";
 import { getListItemName } from "../../documents/document-list/list-item/utils/get-list-item-name.ts";
-import { ListItem } from "../../documents/document-list/list-item/utils/types.ts";
+import type { ListItem } from "../../documents/document-list/list-item/utils/types.ts";
 import { getUniqueId } from "../../documents/document-list/list-item/utils/get-unique-id.ts";
 
 interface SelectedItemProps {
