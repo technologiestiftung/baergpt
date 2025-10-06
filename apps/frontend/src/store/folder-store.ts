@@ -50,21 +50,27 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 	},
 
 	deleteFolder: async (folderId: number) => {
-		await deleteFolder(folderId);
 		const documents = get().getDocumentsInFolder(folderId);
+
+		let hasDocumentDeleteError = false;
 
 		// Delete each document in the folder
 		if (documents.length > 0) {
 			for (const document of documents) {
-				await useDocumentStore
+				const error = await useDocumentStore
 					.getState()
-					.deleteDocument(
-						document.id,
-						document.source_url,
-						document.owned_by_user_id,
-					);
+					.deleteDocument(document.id);
+				if (error) {
+					hasDocumentDeleteError = true;
+				}
 			}
 		}
+
+		if (hasDocumentDeleteError) {
+			return;
+		}
+
+		await deleteFolder(folderId);
 
 		const { folders, selectedChatFolders, selectedFoldersForAction } = get();
 

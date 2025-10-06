@@ -42,7 +42,7 @@ export const DeleteItemDialog: React.FC<{ id: string }> = ({ id }) => {
 
 		for (const item of itemsToDelete) {
 			if (isDocument(item)) {
-				await deleteDocument(item.id, item.source_url, item.owned_by_user_id);
+				await deleteDocument(item.id);
 			} else {
 				await deleteFolder(item.id);
 			}
