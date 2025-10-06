@@ -2,13 +2,11 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { DatabaseService } from "../services/database-service";
 import type { LLMIdentifier } from "../types/common";
-import { DocumentNotFoundError } from "../types/common";
 import { EmbeddingService } from "../services/embedding-service";
 import { retryOperation, validateAndCleanBase64 } from "../utils";
 import { GenerationService } from "../services/generation-service";
 import { PDFDocument } from "pdf-lib";
 import { WordDocumentExtractionService } from "../services/document-extraction-service";
-import { getUserIdFromRequest } from "../middleware/admin-auth";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 
@@ -129,38 +127,6 @@ documents.post("/upload", async (c: Context) => {
 		return c.body(null, 204);
 	} catch (error) {
 		captureError(error);
-		return c.json({ error: "Internal Server Error" }, 500);
-	}
-});
-
-documents.delete("/:docId", async (c: Context) => {
-	try {
-		const documentId: number = Number(c.req.param("docId"));
-		if (!documentId) {
-			return c.json({ error: "Document ID is required" }, 400);
-		}
-
-		const userId = await getUserIdFromRequest(c);
-
-		if (!userId) {
-			captureError(
-				new Error(
-					`No user ID was found in a route handler after the auth middleware, which should not be possible.`,
-				),
-			);
-			return c.json({ error: "User ID is required" }, 400);
-		}
-
-		await dbService.deleteDocument(documentId, userId);
-
-		return c.body(null, 204);
-	} catch (error: unknown) {
-		captureError(error);
-
-		if (error instanceof DocumentNotFoundError) {
-			return c.json({ error: "Document not found" }, 400);
-		}
-
 		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });

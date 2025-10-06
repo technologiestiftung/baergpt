@@ -36,6 +36,7 @@ const errorMessages: { [key: string]: string } = {
 	no_healthy_llm_available:
 		"Temporär keine Modelle verfügbar. Bitte versuchen Sie es später erneut.",
 	"Token has expired or is invalid": "Code ist abgelaufen oder ungültig.",
+	document_not_found: "Dokument konnte nicht gelöscht werden.",
 };
 
 export const useErrorStore = create<ErrorStore>()(() => ({

@@ -9,11 +9,7 @@ interface DocumentStore {
 	isDeleteDocumentDialogOpen: boolean;
 	selectedDocument: Document | null;
 	getDocuments: (signal: AbortSignal) => Promise<void>;
-	deleteDocument: (
-		documentId: number,
-		filePath: string,
-		owned_by_user_id?: string,
-	) => Promise<void>;
+	deleteDocument: (documentId: number) => Promise<void>;
 	setSelectedDocument: (document: Document | null) => void;
 	setDeleteDocumentDialogOpen: (isOpen: boolean) => void;
 }
