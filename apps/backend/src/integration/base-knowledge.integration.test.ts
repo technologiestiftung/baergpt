@@ -20,6 +20,13 @@ const supabaseAnonClient = createClient<Database>(
 	config.supabaseAnonKey,
 );
 
+const EMBEDDING_LENGTH = 1024;
+const PUBLIC_BUCKET = "public_documents";
+const SMALL_FILE_SIZE = 500;
+
+const createDeterministicEmbedding = (length = EMBEDDING_LENGTH) =>
+	Array.from({ length }, (_, i) => (i % 10) / 10);
+
 describe("Base Knowledge Integration Tests", () => {
 	const testUserEmail = "base-knowledge-test-user@berlin.de";
 	const testUserPassword = "SecurePassword123!";
@@ -110,7 +117,7 @@ describe("Base Knowledge Integration Tests", () => {
 		expect(summaryError).toBeNull();
 
 		// Create a deterministic test embedding for the summary (stable across runs)
-		const testEmbedding = Array.from({ length: 1024 }, (_, i) => (i % 10) / 10);
+		const testEmbedding = createDeterministicEmbedding();
 
 		// Update summary with embedding
 		const { error: embeddingError } = await supabaseAdminClient
@@ -123,10 +130,7 @@ describe("Base Knowledge Integration Tests", () => {
 		expect(embeddingError).toBeNull();
 
 		// Create document chunks
-		const chunkEmbedding = Array.from(
-			{ length: 1024 },
-			(_, i) => (i % 10) / 10,
-		);
+		const chunkEmbedding = createDeterministicEmbedding();
 
 		const { error: chunkError } = await supabaseAdminClient
 			.from("document_chunks")
@@ -331,15 +335,15 @@ describe("Base Knowledge Integration Tests", () => {
 
 		expect(adminError).toBeNull();
 
-		try {
-			// Create a test file in the public_documents storage bucket
-			const testFileName = "test-deletion-doc.pdf";
-			const testFileContent = "This is a test PDF content for deletion test";
-			const fileBlob = new Blob([testFileContent], { type: "application/pdf" });
+		// Create a test file in the public_documents storage bucket
+		const testFileName = "test-deletion-doc.pdf";
+		const testFileContent = "This is a test PDF content for deletion test";
+		const fileBlob = new Blob([testFileContent], { type: "application/pdf" });
 
+		try {
 			const { data: uploadData, error: uploadError } =
 				await supabaseAdminClient.storage
-					.from("public_documents")
+					.from(PUBLIC_BUCKET)
 					.upload(testFileName, fileBlob);
 
 			expect(uploadError).toBeNull();
@@ -348,7 +352,7 @@ describe("Base Knowledge Integration Tests", () => {
 			// Verify the file exists in storage
 			const { data: fileExists, error: listError } =
 				await supabaseAdminClient.storage
-					.from("public_documents")
+					.from(PUBLIC_BUCKET)
 					.list("", { search: testFileName });
 
 			expect(listError).toBeNull();
@@ -363,7 +367,7 @@ describe("Base Knowledge Integration Tests", () => {
 					source_type: "public_document",
 					source_url: testFileName,
 					file_checksum: "deletion-test-checksum",
-					file_size: 500,
+					file_size: SMALL_FILE_SIZE,
 					num_pages: 1,
 					folder_id: null,
 					owned_by_user_id: null,
@@ -389,9 +393,12 @@ describe("Base Knowledge Integration Tests", () => {
 
 			expect(checkError).toBeNull();
 			expect(docExists).not.toBeNull();
-
-			// Test admin deletion through the database service
-			await dbService.deleteDocument(testDoc.id, testUserId);
+			// Test admin deletion through the database function
+			const { error: deleteError } = await supabaseAnonClient.rpc(
+				"delete_document_and_update_count",
+				{ document_id: testDoc.id },
+			);
+			expect(deleteError).toBeNull();
 
 			// Verify the document was deleted from database
 			const { data: deletedDoc, error: verifyError } = await supabaseAdminClient
@@ -406,7 +413,7 @@ describe("Base Knowledge Integration Tests", () => {
 			// verify the file was deleted from public_documents storage bucket
 			const { data: fileAfterDeletion, error: listAfterError } =
 				await supabaseAdminClient.storage
-					.from("public_documents")
+					.from(PUBLIC_BUCKET)
 					.list("", { search: testFileName });
 
 			expect(listAfterError).toBeNull();
@@ -425,21 +432,22 @@ describe("Base Knowledge Integration Tests", () => {
 
 			// Clean up: ensure test file is removed from storage if it still exists
 			await supabaseAdminClient.storage
-				.from("public_documents")
-				.remove(["test-deletion-doc.pdf"]);
+				.from(PUBLIC_BUCKET)
+				.remove([testFileName]);
 		}
 	});
 
 	it("should prevent non-admin user from deleting public base knowledge documents", async () => {
 		// Create a test public document
+		const forbiddenTestFileName = "test-forbidden-deletion-doc.pdf";
 		const { data: testDoc, error: docError } = await supabaseAdminClient
 			.from("documents")
 			.insert({
-				file_name: "test-forbidden-deletion-doc.pdf",
+				file_name: forbiddenTestFileName,
 				source_type: "public_document",
-				source_url: "test-forbidden-deletion-doc.pdf",
+				source_url: forbiddenTestFileName,
 				file_checksum: "forbidden-deletion-test-checksum",
-				file_size: 500,
+				file_size: SMALL_FILE_SIZE,
 				num_pages: 1,
 				folder_id: null,
 				owned_by_user_id: null,
@@ -469,9 +477,12 @@ describe("Base Knowledge Integration Tests", () => {
 			expect(adminCheck).toBeNull();
 
 			// Attempt to delete the public document as a non-admin user should fail
-			await expect(
-				dbService.deleteDocument(testDoc.id, testUserId),
-			).rejects.toThrow();
+			const { error: deleteError } = await supabaseAnonClient.rpc(
+				"delete_document_and_update_count",
+				{ document_id: testDoc.id },
+			);
+			expect(deleteError).not.toBeNull();
+			expect(deleteError?.message).toContain("unauthorized");
 
 			// Verify the document still exists
 			const { data: stillExists, error: verifyError } =

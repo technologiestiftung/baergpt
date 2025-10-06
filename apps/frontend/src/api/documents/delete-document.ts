@@ -1,23 +1,22 @@
-import { useAuthStore } from "../../store/auth-store";
+import { supabase } from "../../../supabase-client";
+import { useErrorStore } from "../../store/error-store";
 
-export async function deleteDocument(documentId: number): Promise<void> {
-	const { session } = useAuthStore.getState();
-
-	const headers = new Headers();
-	headers.set("Content-Type", "application/json");
-	headers.set("Authorization", `Bearer ${session?.access_token}`);
-
-	const response: Response = await fetch(
-		`${import.meta.env.VITE_API_URL}/documents/${documentId}`,
+export async function deleteDocument(
+	documentId: number,
+): Promise<Error | null> {
+	const { handleError } = useErrorStore.getState();
+	const { error: supabaseError } = await supabase.rpc(
+		"delete_document_and_update_count",
 		{
-			method: "DELETE",
-			headers,
+			document_id: documentId,
 		},
 	);
 
-	if (!response.ok) {
-		const error = await response.json();
-		console.error("Error deleting document:", error);
-		throw new Error(error.message);
+	if (supabaseError) {
+		const error = new Error(supabaseError.message);
+		handleError(error);
+		return error;
 	}
+
+	return null;
 }

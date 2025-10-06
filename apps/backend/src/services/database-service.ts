@@ -1,5 +1,4 @@
 import { supabase } from "../supabase";
-import { DocumentNotFoundError } from "../types/common";
 import { ExtractError } from "../types/common";
 import type {
 	Document,
@@ -473,47 +472,6 @@ export class DatabaseService {
 
 		if (error) {
 			throw error;
-		}
-	}
-
-	async deleteDocument(documentId: number, userId: string): Promise<void> {
-		const isAdmin = await this.getUserAdminStatus(userId);
-
-		let query = supabase
-			.from("documents")
-			.delete({ count: "exact" })
-			.eq("id", documentId);
-
-		if (isAdmin) {
-			// Admin can delete their own docs OR docs with null owned_by_user_id
-			query = query.or(
-				`owned_by_user_id.eq.${userId},owned_by_user_id.is.null`,
-			);
-		} else {
-			// Regular users can only delete their own documents
-			query = query.eq("owned_by_user_id", userId);
-		}
-
-		const { error: dbError, count: deletedDocumentsCount } = await query;
-
-		if (dbError) {
-			throw dbError;
-		}
-
-		if (!deletedDocumentsCount) {
-			throw new DocumentNotFoundError(documentId);
-		}
-
-		const documentCount = await this.getDocumentCountPerUser(userId);
-
-		// Update the user's document count
-		const { error: updateError } = await supabase
-			.from("profiles")
-			.update({ num_documents: documentCount })
-			.eq("id", userId);
-
-		if (updateError) {
-			throw updateError;
 		}
 	}
 
