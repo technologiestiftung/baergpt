@@ -1,31 +1,31 @@
 {
-	"name": "baergpt",
-	"version": "0.0.0",
-	"description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
-	"scripts": {
-		"prettier:write": "prettier --write .",
-		"prettier:check": "prettier --check .",
-		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"**/*\"",
-		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"**/*\" --fix"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/technologiestiftung/baergpt.git"
-	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"bugs": {
-		"url": "https://github.com/technologiestiftung/baergpt/issues"
-	},
-	"homepage": "https://github.com/technologiestiftung/baergpt#readme",
-	"workspaces": [
-		"apps/frontend",
-		"apps/admin-panel",
-		"apps/backend",
-		"libs/prettier",
-		"libs/eslint",
-		"libs/typescript-config",
-		"libs/db-schema"
-	]
+  "name": "baergpt",
+  "version": "0.0.0",
+  "description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "turbo run build",
+    "check-types": "turbo run check-types",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "dev": "turbo run dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/technologiestiftung/baergpt.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/technologiestiftung/baergpt/issues"
+  },
+  "homepage": "https://github.com/technologiestiftung/baergpt#readme",
+  "workspaces": [
+    "apps/*"
+  ],
+  "devDependencies": {
+    "turbo": "^2.5.8"
+  },
+  "packageManager": "npm@11.4.2"
 }

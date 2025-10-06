@@ -5,11 +5,11 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
-		"build": "tsc -b && vite build",
-		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
-		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
-		"prettier:check": "prettier  --check .",
-		"prettier:write": "prettier --write .",
+		"build": "vite build",
+    	"check-types": "tsc",
+		"lint": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
+		"prettier:write": "prettier --write src",
+		"prettier:check": "prettier --check src",
 		"preview": "vite preview",
 		"test:e2e": "playwright test"
 	},
