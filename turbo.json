@@ -15,7 +15,9 @@
     "dev": {
       "persistent": true,
       "cache": false
-    }
+    },
+    "lint": {},
+    "prettier": {}
   },
   "globalDependencies": [".env", "tsconfig.json"]
 }

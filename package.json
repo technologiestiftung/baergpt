@@ -7,7 +7,7 @@
     "build": "turbo run build",
     "check-types": "turbo run check-types",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "prettier": "turbo run prettier",
     "dev": "turbo run dev"
   },
   "repository": {
