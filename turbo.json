@@ -17,8 +17,10 @@
       "persistent": true,
       "cache": false
     },
-    "lint": {},
-    "prettier": {},
+    "lint:check": {},
+    "lint:write": {},
+    "prettier:check": {},
+    "prettier:write": {},
     "test": {},
     "test:watch": {
       "cache": false,
