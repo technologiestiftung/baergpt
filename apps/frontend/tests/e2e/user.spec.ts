@@ -10,11 +10,11 @@ testWithLoggedInUser.describe("User Profile", () => {
 				`should show ${expectedContent} greeting at ${hour}:00`,
 				async ({ page }) => {
 					// Set up the page to use our mocked date
-					await page.addInitScript((hour: number) => {
+					await page.addInitScript((givenHour: number) => {
 						const mockedDate = new Date();
-						mockedDate.setHours(hour, 0, 0, 0);
+						mockedDate.setHours(givenHour, 0, 0, 0);
 						Date.now = () => mockedDate.getTime();
-						Date.prototype.getHours = () => hour;
+						Date.prototype.getHours = () => givenHour;
 					}, hour);
 
 					await page.goto("/profile/");

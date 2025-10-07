@@ -11,19 +11,19 @@
 		"dev": "tsx --watch ./src/index.ts",
 		"test": "vitest run src/integration",
 		"test:watch": "vitest watch src/integration",
-		"lint": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
-		"lint:fix": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
+		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
+		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
 		"lint:db": "./supabase/lint-database.sh",
-		"prettier": "prettier --write src supabase",
-		"prettier:ci": "prettier --check src supabase",
-		"db:typegen": "supabase gen types --lang typescript --local > src/types/auto-generated-database-types.ts && npm run prettier && npm run lint:fix",
+		"prettier:check": "prettier --check src supabase",
+		"prettier:write": "prettier --write src supabase",
+		"db:typegen": "supabase gen types --lang typescript --local > src/types/auto-generated-database-types.ts && npm run prettier:write && npm run lint:fix",
 		"db:localseed": "tsx ./supabase/local-seed.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/openai": "2.0.23",
-		"@ai-sdk/openai-compatible": "1.0.13",
 		"@ai-sdk/azure": "2.0.23",
 		"@ai-sdk/mistral": "2.0.12",
+		"@ai-sdk/openai": "2.0.23",
+		"@ai-sdk/openai-compatible": "1.0.13",
 		"@dqbd/tiktoken": "1.0.17",
 		"@hono/node-server": "1.14.4",
 		"@mistralai/mistralai": "1.9.18",
@@ -45,30 +45,21 @@
 		"puppeteer": "24.11.2",
 		"word-extractor": "1.0.4",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
-		"zod": "4.1.5"
+		"zod": "4.1.11"
 	},
 	"devDependencies": {
-		"@eslint/js": "9.18.0",
-		"@technologiestiftung/eslint-config": "0.4.0",
-		"@technologiestiftung/prettier-config": "github:technologiestiftung/prettier-config",
 		"@types/node": "22.5.0",
 		"@types/pdf-parse": "1.1.4",
 		"@types/supertest": "6.0.3",
-		"@typescript-eslint/eslint-plugin": "8.15.0",
-		"@typescript-eslint/parser": "8.15.0",
 		"date-fns": "4.1.0",
-		"eslint": "9.18.0",
 		"globals": "15.15.0",
 		"nodemon": "3.1.4",
-		"prettier": "3.3.3",
-		"prettier-plugin-sql": "0.19.2",
 		"supertest": "7.1.0",
 		"tsx": "4.19.3",
-		"typescript": "5.5.4",
-		"typescript-eslint": "8.21.0",
+		"typescript": "5.8.3",
 		"vitest": "3.1.1"
 	},
 	"overrides": {
-		"zod": "4.1.5"
+		"zod": "4.1.11"
 	}
 }

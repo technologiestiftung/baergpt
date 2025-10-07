@@ -38,7 +38,7 @@ It allows for using the `gpt-4o-mini` LLM via OpenAI API, an Azure-hosted `gpt-4
   - `documents`
 - Prepare env variables by copying `.env.sample` to `.env` and setting the appropriate values
 - Run the API: `npm run dev`
-  - Alternatively run the API with Docker: 
+  - Alternatively run the API with Docker:
     - Initial build: `docker build -t baergpt-backend .`
     - Running the container the first time: `docker run -d --network host --name baergpt-backend --env-file ./.env baergpt-backend`
     - Subsequent runs: `docker start baergpt-backend`

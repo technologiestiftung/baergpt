@@ -15,5 +15,5 @@ We will merge the frontend, admin-panel, and backend repositories into a single 
 
 ## Consequences
 
-This will simplify dependency management, testing, and deployment processes. 
+This will simplify dependency management, testing, and deployment processes.
 However, it may introduce some complexity in managing the monorepo itself.
