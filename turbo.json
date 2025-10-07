@@ -7,6 +7,7 @@
     },
     "baergpt-backend#build": {
       "env": ["SENTRY_ORG", "SENTRY_PROJECT", "SENTRY_AUTH_TOKEN", "SENTRY_DSN"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"],
       "outputs": ["dist/**"]
     },
     "check-types": {
