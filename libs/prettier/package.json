@@ -1,0 +1,12 @@
+{
+	"name": "@repo/prettier",
+	"version": "0.0.0",
+	"type": "module",
+	"main": "index.js",
+	"license": "MIT",
+	"dependencies": {
+		"@technologiestiftung/prettier-config": "1.0.0",
+		"prettier": "3.6.2",
+		"prettier-plugin-sql": "0.19.2"
+	}
+}

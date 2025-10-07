@@ -6,10 +6,11 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-    	"check-types": "tsc",
-		"lint": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
-		"prettier": "prettier --write src",
-		"prettier:ci": "prettier --check src",
+    	"check-types": "tsc",		
+		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
+		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
+		"prettier:check": "prettier  --check .",
+		"prettier:write": "prettier --write .",
 		"preview": "vite preview",
 		"test:e2e": "npx playwright install --with-deps && playwright test"
 	},
@@ -38,27 +39,20 @@
 		"zustand": "4.5.5"
 	},
 	"devDependencies": {
-		"@axe-core/playwright": "4.10.0",
-		"@playwright/test": "1.47.2",
-		"@technologiestiftung/eslint-config": "0.3.1",
-		"@technologiestiftung/prettier-config": "1.0.0",
+		"@axe-core/playwright": "4.10.2",
+		"@playwright/test": "1.55.1",
 		"@types/dotenv": "6.1.1",
-		"@types/node": "22.7.4",
+		"@types/node": "22.14.0",
 		"@types/react": "18.3.10",
 		"@types/react-dom": "18.3.0",
-		"@vitejs/plugin-react": "4.3.2",
+		"@vitejs/plugin-react": "5.0.3",
 		"autoprefixer": "10.4.20",
 		"dotenv": "16.4.5",
-		"eslint": "9.11.1",
-		"eslint-plugin-react": "7.37.1",
-		"eslint-plugin-react-hooks": "5.1.0-rc.0",
-		"eslint-plugin-react-refresh": "0.4.12",
 		"globals": "15.10.0",
 		"postcss": "8.4.47",
-		"prettier": "3.3.3",
 		"tailwindcss": "3.4.13",
-		"typescript": "5.5.4",
-		"vite": "5.4.8",
-		"vitest": "2.1.1"
+		"typescript": "5.8.3",
+		"vite": "7.1.7",
+		"vitest": "3.2.4"
 	}
 }
