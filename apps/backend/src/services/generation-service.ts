@@ -360,9 +360,6 @@ export class GenerationService {
 			model: llmHandler.languageModel,
 			messages: messages,
 			temperature: LLM_PARAMETERS.temperature,
-			// @ts-expect-error after the migration to the monorepo and unifying ai-sdk package versions across the monorepo
-			//  the types were suddenly incompatible, even though the logic has not changed, and it is working as before.
-			//  I was not able to fix it in a reasonable time, maybe we can look into this later.
 			schema: citationAnswerSchema(maxAvailableSources),
 			onFinish: async ({ usage, error }) => {
 				// Handle token usage tracking after stream completes
