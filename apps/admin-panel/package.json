@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-    	"check-types": "tsc",		
+		"check-types": "tsc",
 		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
 		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
 		"prettier:check": "prettier  --check .",
