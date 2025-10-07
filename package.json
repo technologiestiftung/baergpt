@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
     "lint": "turbo run lint",
@@ -22,7 +23,8 @@
   },
   "homepage": "https://github.com/technologiestiftung/baergpt#readme",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "devDependencies": {
     "turbo": "^2.5.8"

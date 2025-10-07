@@ -17,7 +17,15 @@
       "cache": false
     },
     "lint": {},
-    "prettier": {}
+    "prettier": {},
+    "test": {},
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:e2e": {
+        "dependsOn": ["^build"]
+    }
   },
   "globalDependencies": [".env", "tsconfig.json"]
 }

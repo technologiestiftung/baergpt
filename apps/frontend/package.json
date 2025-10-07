@@ -11,9 +11,10 @@
 		"prettier:write": "prettier --write .",
 		"prettier:check": "prettier  --check .",
 		"preview": "vite preview",
-		"test:unit": "vitest src",
-		"test:a11y": "playwright test tests/a11y --config=playwright.config.ts",
-		"test:e2e": "playwright test tests/e2e --config=playwright.config.ts"
+		"test": "vitest run src",
+		"test:watch": "vitest watch src",
+		"test:a11y": "npx playwright install --with-deps && playwright test tests/a11y --config=playwright.config.ts",
+		"test:e2e": "npx playwright install --with-deps && playwright test tests/e2e --config=playwright.config.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/react": "2.0.26",
