@@ -11,7 +11,7 @@
 		"prettier": "prettier --write src",
 		"prettier:ci": "prettier --check src",
 		"preview": "vite preview",
-		"test:e2e": "playwright test"
+		"test:e2e": "npx playwright install --with-deps && playwright test"
 	},
 	"dependencies": {
 		"@radix-ui/react-accordion": "1.2.12",
