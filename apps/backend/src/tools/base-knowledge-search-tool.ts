@@ -31,17 +31,11 @@ export const baseKnowledgeSearchTool = (
 				2,
 			)}.
 			`,
-		// @ts-expect-error after the migration to the monorepo and unifying ai-sdk package versions across the monorepo
-		//  the types were suddenly incompatible, even though the logic has not changed, and it is working as before.
-		//  I was not able to fix it in a reasonable time, maybe we can look into this later.
 		inputSchema: z.object({
 			query: z
 				.string()
 				.describe("The question to answer using the base knowledge."),
 		}),
-		// @ts-expect-error after the migration to the monorepo and unifying ai-sdk package versions across the monorepo
-		//  the types were suddenly incompatible, even though the logic has not changed, and it is working as before.
-		//  I was not able to fix it in a reasonable time, maybe we can look into this later.
 		execute: async ({ query }) => {
 			const allowedDocumentIds = knowledgeBaseDocuments.map((doc) => doc.id);
 			const allowedFolderIds = Array.from(
