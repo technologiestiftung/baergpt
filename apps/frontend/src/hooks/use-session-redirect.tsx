@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useAuthStore } from "../store/auth-store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Session } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 import { useAuthErrorStore } from "../store/auth-error-store.ts";
 import { useIsActiveStore } from "../store/use-is-active-store.ts";
 import { useErrorStore } from "../store/error-store.ts";

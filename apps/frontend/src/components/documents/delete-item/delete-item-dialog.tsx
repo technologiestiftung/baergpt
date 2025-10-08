@@ -1,10 +1,10 @@
-import React, { FormEvent } from "react";
+import React, { type FormEvent } from "react";
 import { DefaultDialog } from "../../primitives/dialogs/default-dialog";
 import { useDocumentStore } from "../../../store/document-store";
 import { useFolderStore } from "../../../store/folder-store";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
 import { PrimaryButton } from "../../primitives/buttons/primary-button.tsx";
-import { Document, DocumentFolder } from "../../../common.ts";
+import type { Document, DocumentFolder } from "../../../common.ts";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 import { isDocument } from "../document-list/list-item/utils/is-document.ts";

@@ -1,4 +1,4 @@
-import React, { FormEvent, useState, useEffect, useMemo } from "react";
+import React, { type FormEvent, useState, useEffect, useMemo } from "react";
 
 interface DropdownProps {
 	id: string;

@@ -1,6 +1,6 @@
-import { MutableRefObject, useEffect } from "react";
+import { type MutableRefObject, useEffect } from "react";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import { StreamedObject } from "../../../schemas/streamed-object-schema.ts";
+import type { StreamedObject } from "../../../schemas/streamed-object-schema.ts";
 import type { DeepPartial } from "ai";
 
 export function useUpdateChatOnStreamData({

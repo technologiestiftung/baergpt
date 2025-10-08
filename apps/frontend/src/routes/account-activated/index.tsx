@@ -1,4 +1,4 @@
-import React, { useState, useRef, FormEvent } from "react";
+import React, { useState, useRef, type FormEvent } from "react";
 import { AuthLayout } from "../../layouts/auth-layout.tsx";
 import { ArrowWhiteRightIcon } from "../../components/primitives/icons/arrow-white-right-icon.tsx";
 import Content from "../../content.ts";

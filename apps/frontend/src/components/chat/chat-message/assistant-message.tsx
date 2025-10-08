@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { BaerIcon } from "../../primitives/icons/baer-icon.tsx";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { CopyToClipboardButton } from "./copy-to-clipboard-button.tsx";

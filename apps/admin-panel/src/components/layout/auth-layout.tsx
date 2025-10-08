@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { AuthHeader } from "../headers/auth/auth-header.tsx";
 import { useSessionRedirect } from "../../hooks/use-session-redirect.tsx";
 import { useAuthStore } from "../../store/use-auth-store.ts";

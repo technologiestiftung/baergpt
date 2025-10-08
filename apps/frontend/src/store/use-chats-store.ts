@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ChatWithMessages, NewChatMessage } from "../common";
+import type { ChatWithMessages, NewChatMessage } from "../common";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
 import { getChats as getChatsFromDb } from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";

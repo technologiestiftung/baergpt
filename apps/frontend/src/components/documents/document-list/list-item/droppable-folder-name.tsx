@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { FolderIcon } from "../../../primitives/icons/folder-icon.tsx";
 import { getListItemName } from "./utils/get-list-item-name.ts";
 import { getDragAndDropId } from "./utils/get-drag-and-drop-id.ts";
-import { DocumentFolder } from "../../../../common.ts";
+import type { DocumentFolder } from "../../../../common.ts";
 import { useFolderStore } from "../../../../store/folder-store.ts";
 import { useDragAndDropStore } from "../../../../store/drag-and-drop-store.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";

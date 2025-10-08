@@ -1,4 +1,9 @@
-import React, { FormEvent, KeyboardEvent, useRef, useState } from "react";
+import React, {
+	type FormEvent,
+	type KeyboardEvent,
+	useRef,
+	useState,
+} from "react";
 import { useChatScrollingStore } from "../../store/use-chat-scrolling-store.ts";
 import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "./selected-chat-items/selected-chat-items-collapsible.tsx";
@@ -6,7 +11,7 @@ import { ArrowWhiteRightIcon } from "../primitives/icons/arrow-white-right-icon.
 import { useFolderStore } from "../../store/folder-store.ts";
 import { useDocumentStore } from "../../store/document-store.ts";
 import Content from "../../content.ts";
-import { NewChatMessage } from "../../common.ts";
+import type { NewChatMessage } from "../../common.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
 import { useChatStreaming } from "./hooks/use-chat-streaming";

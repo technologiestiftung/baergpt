@@ -1,6 +1,6 @@
 import { supabase } from "../../../supabase-client";
 import { useErrorStore } from "../../store/error-store.ts";
-import { SourceType } from "../../common.ts";
+import type { SourceType } from "../../common.ts";
 
 export async function getDocumentObjectUrl({
 	sourceUrl,

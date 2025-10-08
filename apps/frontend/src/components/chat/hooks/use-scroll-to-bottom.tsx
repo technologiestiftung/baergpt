@@ -1,4 +1,4 @@
-import { MutableRefObject, useEffect } from "react";
+import { type MutableRefObject, useEffect } from "react";
 import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 
