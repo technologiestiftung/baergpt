@@ -20,10 +20,10 @@
 		"db:localseed": "tsx ./supabase/local-seed.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/openai": "2.0.23",
-		"@ai-sdk/openai-compatible": "1.0.13",
-		"@ai-sdk/azure": "2.0.23",
-		"@ai-sdk/mistral": "2.0.12",
+		"@ai-sdk/openai": "2.0.44",
+		"@ai-sdk/openai-compatible": "1.0.19",
+		"@ai-sdk/azure": "2.0.45",
+		"@ai-sdk/mistral": "2.0.17",
 		"@dqbd/tiktoken": "1.0.17",
 		"@hono/node-server": "1.14.4",
 		"@mistralai/mistralai": "1.9.18",
@@ -35,7 +35,7 @@
 		"@sentry/node": "10.5.0",
 		"@sentry/profiling-node": "10.5.0",
 		"@supabase/supabase-js": "2.45.6",
-		"ai": "5.0.10",
+		"ai": "5.0.60",
 		"dotenv": "16.4.7",
 		"hono": "4.8.10",
 		"jsonwebtoken": "9.0.2",
