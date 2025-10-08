@@ -31,11 +31,13 @@ export const baseKnowledgeSearchTool = (
 				2,
 			)}.
 			`,
+		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		inputSchema: z.object({
 			query: z
 				.string()
 				.describe("The question to answer using the base knowledge."),
 		}),
+		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		execute: async ({ query }) => {
 			const allowedDocumentIds = knowledgeBaseDocuments.map((doc) => doc.id);
 			const allowedFolderIds = Array.from(
