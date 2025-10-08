@@ -5,11 +5,11 @@ import { useErrorStore } from "../../store/error-store.ts";
 const { handleError } = useErrorStore.getState();
 
 export async function getChats(signal: AbortSignal) {
-    const { session } = useAuthStore.getState();
+	const { session } = useAuthStore.getState();
 
-    if (!session?.user.id) {
-        return [];
-    }
+	if (!session?.user.id) {
+		return [];
+	}
 
 	const { data, error } = await supabase
 		.from("chats")
