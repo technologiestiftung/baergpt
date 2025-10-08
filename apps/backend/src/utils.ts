@@ -13,10 +13,9 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export async function retryOperation<T>(
 	operation: () => Promise<T>,
 	retries: number = config.maxRetries || 3,
+	retryDelay: number = config.retryDelay || 1000,
+	maxRetries: number = retries,
 ): Promise<T> {
-	const maxRetries = config.maxRetries || 3;
-	const retryDelay = config.retryDelay || 1000;
-
 	try {
 		return await operation();
 	} catch (error) {
@@ -27,8 +26,13 @@ export async function retryOperation<T>(
 		// Exponential backoff with jitter
 		const backoffDelay =
 			retryDelay * Math.pow(2, maxRetries - retries) + Math.random() * 1000;
+
 		console.warn(
-			`Operation failed, retrying in ${backoffDelay}ms... (${retries} retries left)`,
+			`Operation failed: ${
+				error instanceof Error
+					? `${error.name}: ${error.message}`
+					: String(error)
+			}. Retrying in ${Math.round(backoffDelay)}ms... (${retries} retries left)`,
 		);
 
 		await wait(backoffDelay);
@@ -36,20 +40,49 @@ export async function retryOperation<T>(
 	}
 }
 
-export function validateAndCleanBase64(base64Document: string): string {
-	// Remove data URL prefix if present (e.g., "data:application/vnd...;base64,")
-	let cleanBase64 = base64Document;
-	if (cleanBase64.includes(",")) {
-		cleanBase64 = cleanBase64.split(",")[1];
-	}
+/**
+ * Runs a promise-returning operation and rejects if it does not settle within timeoutMs.
+ * Note: This does not cancel the underlying operation if it doesn't support abort.
+ */
+export async function withTimeout<T>(
+	op: () => Promise<T>,
+	timeoutMs: number,
+): Promise<T> {
+	return new Promise<T>((resolve, reject) => {
+		let finished = false;
+		const timer = setTimeout(() => {
+			if (finished) return;
+			reject(new Error(`Operation timed out after ${timeoutMs}ms`));
+		}, timeoutMs);
+		op()
+			.then((result) => {
+				finished = true;
+				clearTimeout(timer);
+				resolve(result);
+			})
+			.catch((err) => {
+				finished = true;
+				clearTimeout(timer);
+				reject(err);
+			});
+	});
+}
 
-	// Remove any whitespace or newlines
-	cleanBase64 = cleanBase64.replace(/\s/g, "");
+export async function resilientCall<T>(
+	operation: () => Promise<T>,
+	options: {
+		timeout?: number;
+		retries?: number;
+		retryDelay?: number;
+	} = {},
+): Promise<T> {
+	const {
+		timeout = 10000,
+		retries = config.maxRetries || 3,
+		retryDelay = config.retryDelay || 1000,
+	} = options;
 
-	// Validate base64 format
-	if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanBase64)) {
-		throw new Error("Invalid base64 format");
-	}
+	const wrappedOp = timeout ? () => withTimeout(operation, timeout) : operation;
 
-	return cleanBase64;
+	return retryOperation(wrappedOp, retries, retryDelay);
 }
