@@ -116,7 +116,7 @@ jobs:
 
       - name: Wait for Backend to be ready ⏳
         run: |
-          timeout=600
+          timeout=60
           counter=0
           until curl -s http://localhost:3000/ >/dev/null; do
             if [ $counter -gt $timeout ]; then
@@ -171,3 +171,10 @@ jobs:
           name: admin-panel-e2e-${{ matrix.browser }}-test-results
           path: apps/admin-panel/test-results
           retention-days: 30
+
+      - name: Start Tmate session 🔌
+        if: ${{ failure() && !cancelled() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+        with:
+          limit-access-to-actor: true
