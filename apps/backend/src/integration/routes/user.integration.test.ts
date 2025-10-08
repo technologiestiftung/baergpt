@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "../../types/auto-generated-database-types";
 import app from "../../index";
 import { config } from "../../config";
 import { sign } from "hono/jwt";
@@ -7,18 +9,70 @@ import { supabase } from "../../supabase";
 
 let validToken: string;
 
-const documentTestPayload = {
-	base64Document:
-		"data:application/pdf;base64,JVBERi0xLjcKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0NvdW50IDEvS2lkcyBbMyAwIFJdPj4KZW5kb2JqCjMgMCBvYmoKPDwvVHlwZS9QYWdlL01lZGlhQm94IFswIDAgNTk1IDg0Ml0vUmVzb3VyY2VzPDwvRm9udDw8L0YxIDQgMCBSPj4+Pi9Db250ZW50cyA1IDAgUi9QYXJlbnQgMiAwIFI+PgplbmRvYmoKNCAwIG9iago8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2E+PgplbmRvYmoKNSAwIG9iago8PC9MZW5ndGggNDQ+PnN0cmVhbQpCVAoxMCAxMCBURCAvRjEgMTIgVGYgKFRlc3QgRG9jdW1lbnQpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMTUgMDAwMDAgbgowMDAwMDAwMDY0IDAwMDAwIG4KMDAwMDAwMDEyMyAwMDAwMCBuCjAwMDAwMDAyMzggMDAwMDAgbgowMDAwMDAwMzA2IDAwMDAwIG4KdHJhaWxlcgo8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgozOTkKJSVFT0YK",
-	document: {
-		filename: "example.pdf",
-		id: 123,
-		owned_by_user_id: "11111111-1111-1111-1111-111111111111",
-		registered_at: new Date().toISOString(),
-		source_type: "personal_document",
-		source_url: "example/file.pdf",
-	},
+const supabaseAnonClient = createClient<Database>(
+	config.supabaseUrl,
+	config.supabaseAnonKey,
+);
+
+const OWNER_USER_ID = "11111111-1111-1111-1111-111111111111";
+const OTHER_USER_ID = "22222222-2222-2222-2222-222222222222";
+
+const RPC_DELETE_DOCUMENT = "delete_document_and_update_count";
+const UPLOAD_DELAY_MS = 1_000;
+const RATE_LIMIT_RETRY_DELAY_MS = 5_000;
+
+const createAuthedClient = (jwt: string) =>
+	createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
+		auth: { persistSession: false },
+		global: { headers: { Authorization: `Bearer ${jwt}` } },
+	});
+
+// Generate a PDF from text and return bytes
+const generatePdfBytesFromText = async (text: string): Promise<Uint8Array> => {
+	const doc = await PDFDocument.create();
+	doc.addPage().drawText(text);
+	return await doc.save();
 };
+
+// Upload bytes to storage via /documents/upload (multipart)
+const uploadToStorage = async (args: {
+	jwt: string;
+	bytes: Uint8Array;
+	sourceUrl: string;
+	fileName: string;
+}): Promise<void> => {
+	const { jwt, bytes, sourceUrl, fileName } = args;
+	const form = new FormData();
+	const ab = bytes.slice(0).buffer; // ensure ArrayBuffer (not SharedArrayBuffer)
+	const blob = new Blob([ab], { type: "application/pdf" });
+	form.append("file", blob, fileName);
+	form.append("sourceUrl", sourceUrl);
+	form.append("isPublicDocument", "false");
+
+	const res = await app.request("/documents/upload", {
+		method: "POST",
+		headers: new Headers({ authorization: `Bearer ${jwt}` }),
+		body: form,
+	});
+	if (res.status !== 204) {
+		throw new Error(`Upload failed: ${res.status} ${await res.text()}`);
+	}
+};
+
+async function getLatestDocumentIdBySourceUrl(
+	ownerId: string,
+	sourceUrl: string,
+): Promise<number | undefined> {
+	const { data } = await supabase
+		.from("documents")
+		.select("id")
+		.eq("source_url", sourceUrl)
+		.eq("owned_by_user_id", ownerId)
+		.order("created_at", { ascending: false })
+		.limit(1);
+
+	return data && data.length > 0 ? data[0].id : undefined;
+}
 
 /**
  * Comprehensive cleanup function to delete all potentially conflicting document records
@@ -26,8 +80,8 @@ const documentTestPayload = {
 const cleanupTestDocuments = async () => {
 	try {
 		// Get the test user ID
-		const testUserId = "11111111-1111-1111-1111-111111111111";
-		const testUserId2 = "22222222-2222-2222-2222-222222222222";
+		const testUserId = OWNER_USER_ID;
+		const testUserId2 = OTHER_USER_ID;
 
 		// Delete all documents for the test user
 		await supabase
@@ -37,20 +91,6 @@ const cleanupTestDocuments = async () => {
 	} catch (error) {
 		console.error("Error during test documents cleanup:", error);
 	}
-};
-
-/**
- * Generate a base64 encoded PDF directly in memory from text content
- * without saving to disk
- */
-const generateBase64FromText = async (text: string): Promise<string> => {
-	const doc = await PDFDocument.create();
-	doc.addPage().drawText(text);
-	const pdfBytes = await doc.save();
-
-	// Convert bytes directly to base64 string without saving to disk
-	const base64 = Buffer.from(pdfBytes).toString("base64");
-	return `data:application/pdf;base64,${base64}`;
 };
 
 /**
@@ -101,12 +141,10 @@ const createValidJwtToken = async (
  */
 const deleteTestUser = async () => {
 	try {
-		const testUserId = "11111111-1111-1111-1111-111111111111";
-		const testUserId2 = "22222222-2222-2222-2222-222222222222";
 		const { error: deleteError } =
-			await supabase.auth.admin.deleteUser(testUserId);
+			await supabase.auth.admin.deleteUser(OWNER_USER_ID);
 		const { error: deleteError2 } =
-			await supabase.auth.admin.deleteUser(testUserId2);
+			await supabase.auth.admin.deleteUser(OTHER_USER_ID);
 
 		if (deleteError && !deleteError.message.includes("not found")) {
 			console.error("Error deleting test user:", deleteError);
@@ -121,11 +159,10 @@ const deleteTestUser = async () => {
 
 describe("Integration Tests for Routes", () => {
 	beforeAll(async () => {
-		const userId = "11111111-1111-1111-1111-111111111111";
 		const email = "test@example.com";
-		await createTestUser(userId, email);
+		await createTestUser(OWNER_USER_ID, email);
 		// Generate JWT token
-		validToken = await createValidJwtToken(userId, email);
+		validToken = await createValidJwtToken(OWNER_USER_ID, email);
 
 		// Run a full cleanup before all tests
 		await cleanupTestDocuments();
@@ -137,9 +174,30 @@ describe("Integration Tests for Routes", () => {
 	});
 
 	it("POST /documents/process should process a document and return 204", async () => {
+		const sourceUrl = "example/file.pdf";
+		const fileName = "example.pdf";
+		const pdfBytes = await generatePdfBytesFromText("Test Document");
+
+		await uploadToStorage({
+			jwt: validToken,
+			bytes: pdfBytes,
+			sourceUrl,
+			fileName,
+		});
+
+		const payload = {
+			document: {
+				file_name: fileName,
+				owned_by_user_id: OWNER_USER_ID,
+				registered_at: new Date().toISOString(),
+				source_type: "personal_document",
+				source_url: sourceUrl,
+			},
+		};
+
 		const res = await app.request("/documents/process", {
 			method: "POST",
-			body: JSON.stringify(documentTestPayload),
+			body: JSON.stringify(payload),
 			headers: new Headers({
 				"Content-Type": "application/json",
 				authorization: `Bearer ${validToken}`,
@@ -159,24 +217,29 @@ describe("Integration Tests for Routes", () => {
 			"This is the first test document.",
 			"Here is the second document for testing.",
 		];
-		const documentIds = [1, 2];
+		const fileNames = ["example-1.pdf", "example-2.pdf"];
+		const sourceUrls = ["example/file-1.pdf", "example/file-2.pdf"];
 
-		const payloads = await Promise.all(
-			texts.map(async (text, index) => ({
-				base64Document: await generateBase64FromText(text),
+		for (let i = 0; i < texts.length; i++) {
+			const pdfBytes = await generatePdfBytesFromText(texts[i]);
+
+			await uploadToStorage({
+				jwt: validToken,
+				bytes: pdfBytes,
+				sourceUrl: sourceUrls[i],
+				fileName: fileNames[i],
+			});
+
+			const payload = {
 				document: {
-					filename: `example-${index}.pdf`,
-					id: documentIds[index],
-					owned_by_user_id: "11111111-1111-1111-1111-111111111111",
+					file_name: fileNames[i],
+					owned_by_user_id: OWNER_USER_ID,
 					registered_at: new Date().toISOString(),
 					source_type: "personal_document",
-					source_url: `example/file-${documentIds[index]}.pdf`,
+					source_url: sourceUrls[i],
 				},
-			})),
-		);
+			};
 
-		// Send requests sequentially with delay between them to avoid rate limits
-		for (const payload of payloads) {
 			const res = await app.request("/documents/process", {
 				method: "POST",
 				body: JSON.stringify(payload),
@@ -185,16 +248,12 @@ describe("Integration Tests for Routes", () => {
 					authorization: `Bearer ${validToken}`,
 				}),
 			});
-			await delay(1000); // 1 second delay between requests
+			await delay(UPLOAD_DELAY_MS);
 			if (res.status !== 204) {
 				const responseText = await res.text();
-				console.error(
-					`Document processing error for ID ${payload.document.id} (status ${res.status}):`,
-					responseText,
-				);
 				if (res.status === 429) {
 					console.warn("Rate limit hit, retrying after delay...");
-					await delay(5000);
+					await delay(RATE_LIMIT_RETRY_DELAY_MS);
 					const retryRes = await app.request("/documents/process", {
 						method: "POST",
 						body: JSON.stringify(payload),
@@ -207,8 +266,6 @@ describe("Integration Tests for Routes", () => {
 				} else {
 					throw new Error(`Unexpected status ${res.status}: ${responseText}`);
 				}
-			} else {
-				expect(res.status).toBe(204);
 			}
 		}
 	}, 600_000);
@@ -221,7 +278,7 @@ describe("Integration Tests for Routes", () => {
 					content: "Hello, can you help me?",
 				},
 			],
-			user_id: "11111111-1111-1111-1111-111111111111",
+			user_id: OWNER_USER_ID,
 			search_type: "all_private",
 			allowed_document_ids: [],
 			allowed_folder_ids: [],
@@ -238,15 +295,22 @@ describe("Integration Tests for Routes", () => {
 		expect(res.status).not.toBe(401);
 	}, 80_000);
 
-	it("DELETE /documents/:id should return 204 for valid document ID", async () => {
-		const userId = "11111111-1111-1111-1111-111111111111";
+	it("should return no errors when deleting a document with valid document ID", async () => {
 		const sourceUrl = "delete-me/file.pdf";
-		// Upload a new document first
-		const newDocPayload = {
-			base64Document: await generateBase64FromText("Document to be deleted"),
+		const fileName = "delete-me.pdf";
+		const pdfBytes = await generatePdfBytesFromText("Document to be deleted");
+
+		await uploadToStorage({
+			jwt: validToken,
+			bytes: pdfBytes,
+			sourceUrl,
+			fileName,
+		});
+
+		const payload = {
 			document: {
-				filename: "delete-me.pdf",
-				owned_by_user_id: userId,
+				file_name: fileName,
+				owned_by_user_id: OWNER_USER_ID,
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
@@ -254,7 +318,7 @@ describe("Integration Tests for Routes", () => {
 		};
 		const uploadRes = await app.request("/documents/process", {
 			method: "POST",
-			body: JSON.stringify(newDocPayload),
+			body: JSON.stringify(payload),
 			headers: new Headers({
 				"Content-Type": "application/json",
 				authorization: `Bearer ${validToken}`,
@@ -263,96 +327,207 @@ describe("Integration Tests for Routes", () => {
 		expect(uploadRes.status).toBe(204);
 
 		// Get the uploaded document ID
-		const { data: documents } = await supabase
+		const documentId = await getLatestDocumentIdBySourceUrl(
+			OWNER_USER_ID,
+			sourceUrl,
+		);
+		expect(documentId).toBeDefined();
+
+		// Delete the uploaded document as the authenticated owner
+		const authedUserClient = createAuthedClient(validToken);
+		const { error: deleteError } = await authedUserClient.rpc(
+			RPC_DELETE_DOCUMENT,
+			{ document_id: documentId as number },
+		);
+		expect(deleteError).toBeNull();
+
+		// document should be deleted
+		const { data: deletedDocuments } = await supabase
 			.from("documents")
 			.select("id")
 			.eq("source_url", sourceUrl)
-			.eq("owned_by_user_id", userId)
+			.eq("owned_by_user_id", OWNER_USER_ID)
 			.order("created_at", { ascending: false })
 			.limit(1);
-
-		expect(documents).toBeDefined();
-		expect(documents && documents.length).toBeGreaterThan(0);
-		const documentId =
-			documents && documents.length > 0 ? documents[0].id : undefined;
-		expect(documentId).toBeDefined();
-
-		// Delete the uploaded document
-		const res = await app.request(`/documents/${documentId}`, {
-			method: "DELETE",
-			headers: new Headers({ authorization: `Bearer ${validToken}` }),
-		});
-		expect(res.status).toBe(204);
+		expect(deletedDocuments).toBeDefined();
+		expect(deletedDocuments && deletedDocuments.length).toBe(0);
 	}, 80_000);
 
-	it("DELETE /documents/:id should return 400 for non-existent document ID", async () => {
-		const res = await app.request("/documents/999", {
-			method: "DELETE",
-			headers: new Headers({ authorization: `Bearer ${validToken}` }),
+	it("should cascade document deletion to also delete summaries and chunks", async () => {
+		const sourceUrl = "delete-cascade/file.pdf";
+		const fileName = "delete-cascade.pdf";
+		const pdfBytes = await generatePdfBytesFromText(
+			"Document to be deleted with cascade",
+		);
+
+		await uploadToStorage({
+			jwt: validToken,
+			bytes: pdfBytes,
+			sourceUrl,
+			fileName,
 		});
-		expect(res.status).toBe(400);
-	}, 80_000);
 
-	it("DELETE /documents/:id should return 404 if document ID is missing", async () => {
-		const res = await app.request("/documents/", {
-			method: "DELETE",
-			headers: new Headers({ authorization: `Bearer ${validToken}` }),
-		});
-		expect(404).toBe(res.status);
-	}, 20_000);
-
-	it("DELETE /documents/:id should return 400 if document ID is not a number", async () => {
-		const res = await app.request("/documents/abc", {
-			method: "DELETE",
-			headers: new Headers({ authorization: `Bearer ${validToken}` }),
-		});
-		expect(res.status).toBe(400);
-	}, 20_000);
-
-	it("DELETE /documents/:id should return 401 if user is not authenticated", async () => {
-		const res = await app.request("/documents/1", {
-			method: "DELETE",
-			// No Authorization header
-		});
-		expect(res.status).toBe(401);
-	}, 20_000);
-
-	it("DELETE /documents/:id should return 400 if user tries to delete another user's document", async () => {
-		// Create a document for a different user
-		const otherUserId = "22222222-2222-2222-2222-222222222222";
-		const otherUserEmail = "test2@example.com";
-		const docId = 555;
-		await createTestUser(otherUserId, otherUserEmail);
-
-		const validToken2 = await createValidJwtToken(otherUserId, otherUserEmail);
-
-		const newDocPayload2 = {
-			base64Document: await generateBase64FromText("Document to be deleted"),
+		const payload = {
 			document: {
-				filename: "delete-me-2.pdf",
-				owned_by_user_id: otherUserId,
+				file_name: fileName,
+				owned_by_user_id: OWNER_USER_ID,
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
-				source_url: "delete-me-2/file.pdf",
+				source_url: sourceUrl,
+			},
+		};
+		const uploadRes = await app.request("/documents/process", {
+			method: "POST",
+			body: JSON.stringify(payload),
+			headers: new Headers({
+				"Content-Type": "application/json",
+				authorization: `Bearer ${validToken}`,
+			}),
+		});
+		expect(uploadRes.status).toBe(204);
+
+		// Get the uploaded document ID
+		const documentId = await getLatestDocumentIdBySourceUrl(
+			OWNER_USER_ID,
+			sourceUrl,
+		);
+		expect(documentId).toBeDefined();
+
+		// Verify the summaries and chunks exist
+		const { data: preSummaries } = await supabase
+			.from("document_summaries")
+			.select("document_id")
+			.eq("document_id", documentId as number);
+		expect((preSummaries?.length ?? 0) > 0).toBe(true);
+
+		const { data: preChunks } = await supabase
+			.from("document_chunks")
+			.select("document_id")
+			.eq("document_id", documentId as number);
+		expect((preChunks?.length ?? 0) > 0).toBe(true);
+
+		// Delete the document via RPC
+		const authedUserClient = createAuthedClient(validToken);
+		const { error: deleteError } = await authedUserClient.rpc(
+			RPC_DELETE_DOCUMENT,
+			{ document_id: documentId as number },
+		);
+		expect(deleteError).toBeNull();
+
+		// Validate cascade: no summaries and chunks remain
+		const { data: postSummaries } = await supabase
+			.from("document_summaries")
+			.select("document_id")
+			.eq("document_id", documentId as number);
+		expect(postSummaries?.length ?? 0).toBe(0);
+
+		const { data: postChunks } = await supabase
+			.from("document_chunks")
+			.select("document_id")
+			.eq("document_id", documentId as number);
+		expect(postChunks?.length ?? 0).toBe(0);
+	}, 80_000);
+
+	it("should return error when deleting for non-existent document ID", async () => {
+		const authedUserClient = createAuthedClient(validToken);
+
+		const { error: deleteError } = await authedUserClient.rpc(
+			RPC_DELETE_DOCUMENT,
+			{ document_id: 999 },
+		);
+		expect(deleteError).not.toBeNull();
+		expect(deleteError?.message).toContain("not_found");
+	}, 80_000);
+
+	it("should return error when deleting documents if document ID is missing", async () => {
+		const authedUserClient = createAuthedClient(validToken);
+
+		const { error: deleteError } = await authedUserClient.rpc(
+			RPC_DELETE_DOCUMENT,
+			{ document_id: null as unknown as number },
+		);
+
+		expect(deleteError).not.toBeNull();
+		expect(deleteError?.message).toContain("not_found");
+	}, 20_000);
+
+	it("should return syntax error when deleting if document ID is not a number", async () => {
+		const { error: deleteError } = await supabaseAnonClient.rpc(
+			RPC_DELETE_DOCUMENT,
+			{ document_id: "abc" as unknown as number },
+		);
+		expect(deleteError).not.toBeNull();
+		expect(deleteError?.message).toContain(
+			`invalid input syntax for type bigint: "abc"`,
+		);
+	}, 20_000);
+
+	it("should return error when deleting if user is not authenticated", async () => {
+		const { error: deleteError } = await supabaseAnonClient.rpc(
+			RPC_DELETE_DOCUMENT,
+			{ document_id: 1 },
+		);
+		expect(deleteError).not.toBeNull();
+		expect(deleteError?.message).toContain("not_found");
+	}, 20_000);
+
+	it("should return error when deleting if user tries to delete another user's document", async () => {
+		// Create a document for a different user
+		const otherUserEmail = "test2@example.com";
+		await createTestUser(OTHER_USER_ID, otherUserEmail);
+
+		const validToken2 = await createValidJwtToken(
+			OTHER_USER_ID,
+			otherUserEmail,
+		);
+
+		const sourceUrl = "delete-me-2/file.pdf";
+		const fileName = "delete-me-2.pdf";
+		const pdfBytes = await generatePdfBytesFromText("Document to be deleted");
+
+		await uploadToStorage({
+			jwt: validToken2,
+			bytes: pdfBytes,
+			sourceUrl,
+			fileName,
+		});
+
+		const payload2 = {
+			document: {
+				file_name: fileName,
+				owned_by_user_id: OTHER_USER_ID,
+				registered_at: new Date().toISOString(),
+				source_type: "personal_document",
+				source_url: sourceUrl,
 			},
 		};
 
 		const uploadRes = await app.request("/documents/process", {
 			method: "POST",
-			body: JSON.stringify(newDocPayload2),
+			body: JSON.stringify(payload2),
 			headers: new Headers({
 				"Content-Type": "application/json",
 				authorization: `Bearer ${validToken2}`,
 			}),
 		});
-		expect(uploadRes.status).toBe(204);
 
-		const res = await app.request(`/documents/${docId}`, {
-			method: "DELETE",
-			headers: new Headers({ authorization: `Bearer ${validToken}` }),
-		});
-		expect(res.status).toBe(400); // Should not allow deletion
+		expect(uploadRes.status).toBe(204);
+		const docId = await getLatestDocumentIdBySourceUrl(
+			OTHER_USER_ID,
+			"delete-me-2/file.pdf",
+		);
+		expect(docId).toBeDefined();
+		const authedUserClient = createAuthedClient(validToken);
+		const { error: deleteError } = await authedUserClient.rpc(
+			RPC_DELETE_DOCUMENT,
+			{ document_id: docId as number },
+		);
+		expect(deleteError).not.toBeNull();
+		expect(deleteError?.message).toContain("not_found");
 		// Cleanup
-		await supabase.from("documents").delete().eq("id", docId);
+		await supabase
+			.from("documents")
+			.delete()
+			.eq("id", docId as number);
 	}, 60_000);
 });
