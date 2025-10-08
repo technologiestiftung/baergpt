@@ -39,9 +39,9 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.10.2",
-		"@playwright/test": "1.55.1",
+		"@playwright/test": "1.56.0",
 		"@repo/typescript-config": "file:../../libs/typescript-config",
-		"@sentry/vite-plugin": "4.1.1",
+		"@sentry/vite-plugin": "4.3.0",
 		"@types/node": "22.14.0",
 		"@types/react": "18.3.3",
 		"@types/react-dom": "18.3.0",
