@@ -12,5 +12,8 @@
 		"eslint-plugin-react": "7.37.5",
 		"globals": "16.4.0",
 		"typescript-eslint": "8.45.0"
+	},
+	"devDependencies": {
+		"eslint-config-turbo": "2.5.8"
 	}
 }
