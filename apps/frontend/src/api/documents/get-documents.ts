@@ -6,9 +6,9 @@ import { useErrorStore } from "../../store/error-store.ts";
 export async function getDocuments(signal: AbortSignal): Promise<Document[]> {
 	const { session } = useAuthStore.getState();
 
-    if (!session?.user.id) {
-        return [];
-    }
+	if (!session?.user.id) {
+		return [];
+	}
 
 	const { data, error } = await supabase
 		.from("documents")
