@@ -93,3 +93,10 @@ jobs:
         run: |
           cd apps/backend
           npm test
+
+      - name: Start Tmate session 🔌
+        if: ${{ failure() && !cancelled() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+        with:
+          limit-access-to-actor: true
