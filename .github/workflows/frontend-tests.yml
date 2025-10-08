@@ -193,10 +193,3 @@ jobs:
         with:
           name: frontend-a11y-${{ matrix.browser }}-test-results
           path: apps/frontend/test-results
-
-      - name: Start Tmate session 🔌
-        if: ${{ failure() && !cancelled() }}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
-        with:
-          limit-access-to-actor: true
