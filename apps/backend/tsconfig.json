@@ -16,6 +16,9 @@
 		"forceConsistentCasingInFileNames": true,
 		"strict": false,
 
+		"allowImportingTsExtensions": false,
+		"noEmit": false,
+
 		"sourceMap": true,
 		"inlineSources": true,
 
