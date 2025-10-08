@@ -103,7 +103,7 @@ jobs:
       - name: Run frontend unit tests 🧪
         run: |
           cd apps/frontend
-          npm run test:unit
+          npm run test
 
       - name: Cache frontend build 💾
         id: cache-frontend-build
