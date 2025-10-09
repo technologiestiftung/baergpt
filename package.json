@@ -7,8 +7,10 @@
     "test:e2e": "turbo run test:e2e",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
-    "lint": "turbo run lint",
-    "prettier": "turbo run prettier",
+    "lint:check": "turbo run lint:check",
+    "lint:write": "turbo run lint:write",
+    "prettier:check": "prettier --check \"**/*.{ts,tsx,md,sql}\"",
+    "prettier:write": "prettier --write \"**/*.{ts,tsx,md,sql}\"",
     "dev": "turbo run dev"
   },
   "repository": {
@@ -27,7 +29,7 @@
     "packages/*"
   ],
   "devDependencies": {
-    "turbo": "^2.5.8"
+    "turbo": "2.5.8"
   },
   "packageManager": "npm@11.4.2"
 }
