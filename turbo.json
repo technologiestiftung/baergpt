@@ -2,26 +2,27 @@
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
     "build": {
-      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"],
-      "outputs": ["dist/**"]
-    },
-    "baergpt-backend#build": {
-      "env": ["SENTRY_ORG", "SENTRY_PROJECT", "SENTRY_AUTH_TOKEN", "SENTRY_DSN"],
-      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"],
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
       "outputs": ["dist/**"]
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": ["^build", "^check-types"]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "persistent": true,
       "cache": false
     },
-    "lint:check": {},
-    "lint:write": {},
-    "prettier:check": {},
-    "prettier:write": {},
-    "test": {},
+    "lint:check": {
+      "dependsOn": ["^build", "^lint:check"]
+    },
+    "lint:write": {
+      "dependsOn": ["^build", "^lint:write"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
     "test:watch": {
       "cache": false,
       "persistent": true

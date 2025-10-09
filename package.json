@@ -9,8 +9,8 @@
     "check-types": "turbo run check-types",
     "lint:check": "turbo run lint:check",
     "lint:write": "turbo run lint:write",
-    "prettier:check": "turbo run prettier:check",
-    "prettier:write": "turbo run prettier:write",
+    "prettier:check": "prettier --check \"**/*.{ts,tsx,md,sql}\"",
+    "prettier:write": "prettier --write \"**/*.{ts,tsx,md,sql}\"",
     "dev": "turbo run dev"
   },
   "repository": {
@@ -29,7 +29,7 @@
     "libs/*"
   ],
   "devDependencies": {
-    "turbo": "^2.5.8"
+    "turbo": "2.5.8"
   },
   "packageManager": "npm@11.4.2"
 }
