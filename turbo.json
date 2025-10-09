@@ -20,6 +20,9 @@
     "lint:write": {
       "dependsOn": ["^build", "^lint:write"]
     },
+    "playwright:install": {
+      "dependsOn": []
+    },
     "test": {
       "dependsOn": ["^build"]
     },
@@ -29,7 +32,7 @@
     },
     "test:e2e": {
         "with": ["baergpt-backend#dev"],
-        "dependsOn": ["^build"]
+        "dependsOn": ["^build", "playwright:install"]
     }
   },
   "globalDependencies": [".env", "tsconfig.json"]

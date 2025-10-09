@@ -9,13 +9,14 @@
 		"check-types": "tsc --noEmit",
 		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
 		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
+		"playwright:install": "npx playwright install --with-deps",
 		"prettier:check": "prettier  --check .",
 		"prettier:write": "prettier --write .",
 		"preview": "vite preview",
 		"test": "vitest run src",
 		"test:watch": "vitest watch src",
-		"test:a11y": "npx playwright install --with-deps && playwright test tests/a11y --config=playwright.config.ts",
-		"test:e2e": "npx playwright install --with-deps && playwright test tests/e2e --config=playwright.config.ts"
+		"test:a11y": "npx playwright test tests/a11y --config=playwright.config.ts",
+		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/react": "2.0.26",
@@ -26,6 +27,7 @@
 		"@supabase/supabase-js": "2.49.4",
 		"ai": "5.0.60",
 		"date-fns": "3.6.0",
+		"dotenv": "16.4.7",
 		"js-tiktoken": "1.0.15",
 		"react": "18.3.1",
 		"react-dnd": "16.0.1",
