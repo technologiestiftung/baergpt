@@ -50,6 +50,7 @@
 		"globals": "15.8.0",
 		"postcss": "8.4.40",
 		"tailwindcss": "3.4.7",
+		"typescript": "5.8.3",
 		"vite": "7.1.7",
 		"vitest": "3.2.4"
 	},
