@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { CloseIcon } from "../icons/close-icon.tsx";
 
 interface BottomDrawerProps {

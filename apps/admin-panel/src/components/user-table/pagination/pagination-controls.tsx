@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Table } from "@tanstack/react-table";
-import { User } from "../../../common";
+import type { Table } from "@tanstack/react-table";
+import type { User } from "../../../common";
 import Content from "../../../content";
 
 export function PaginationControls({ table }: { table: Table<User> }) {

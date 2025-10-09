@@ -35,13 +35,18 @@ export const testWithRegisteredUser = baseTest.extend<TestWithRegisteredUser>({
 				});
 
 			baseTest.expect(createUserError).toBeNull();
+
+			if (createUserError) {
+				throw createUserError;
+			}
+
 			baseTest.expect(data).toBeDefined();
 
-			const id = data.user!.id;
+			const id = data.user.id;
 
 			const { error: activationError } = await supabaseAdminClient
 				.from("user_active_status")
-				.update({ registration_finished_at: new Date().toISOString() } as any)
+				.update({ registration_finished_at: new Date().toISOString() })
 				.eq("id", id);
 
 			baseTest.expect(activationError).toBeNull();

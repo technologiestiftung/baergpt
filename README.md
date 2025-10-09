@@ -8,7 +8,7 @@
 
 # BärGPT 🐻
 
-This is the monorepo for the BärGPT project. 
+This is the monorepo for the BärGPT project.
 You'll find here the [frontend](./apps/frontend), [backend](./apps/backend) and [admin-panel](./apps/admin-panel) code.
 
 ## Prerequisites
@@ -26,7 +26,7 @@ npm ci
 
 ## Development
 
-Run the following command to start what you need. You'll need some environment variables, 
+Run the following command to start what you need. You'll need some environment variables,
 please check the .env.sample files in each app folder.
 
 ```bash
@@ -40,7 +40,14 @@ cd apps/backed && npm run dev
 ```bash
 cd apps/admin-panel && npm run dev
 ```
+
 ## Tests
+
+You need to install playwright browsers and have supabase and the backend running for e2e tests to work.
+
+```bash
+npx playwright install --with-deps
+```
 
 Run the following command to execute the test suites:
 

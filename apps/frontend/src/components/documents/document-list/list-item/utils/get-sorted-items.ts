@@ -1,4 +1,4 @@
-import { ListItem } from "./types.ts";
+import type { ListItem } from "./types.ts";
 import { isDocument } from "./is-document.ts";
 
 /**

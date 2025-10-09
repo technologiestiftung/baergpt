@@ -12,7 +12,7 @@ import {
 	file_size,
 	folder_id,
 	num_pages,
-	page,
+	page as pageNumber,
 	processing_finished_at,
 	short_summary,
 	summary,
@@ -70,7 +70,7 @@ export async function mockDocumentUpload({
 	bucketName: "documents" | "public_documents";
 }) {
 	const source_url = `${userId}/${fileName}`;
-	const file = readFileSync(filePath);
+	const file = new Uint8Array(readFileSync(filePath));
 
 	const { error: uploadError } = await supabaseAdminClient.storage
 		.from(bucketName)
@@ -103,12 +103,16 @@ export async function mockDocumentUpload({
 
 	expect(documentsInsertError).toBeNull();
 
+	if (documentsInsertError !== null) {
+		throw documentsInsertError;
+	}
+
 	const { error: documentSummariesInsertError } = await supabaseAdminClient
 		.from("document_summaries")
 		.insert({
 			owned_by_user_id: accessGroupId ? null : userId,
 			access_group_id: accessGroupId,
-			document_id: documentData!.id,
+			document_id: documentData.id,
 			folder_id,
 			summary,
 			tags,
@@ -124,10 +128,10 @@ export async function mockDocumentUpload({
 			.insert({
 				owned_by_user_id: accessGroupId ? null : userId,
 				access_group_id: accessGroupId,
-				document_id: documentData!.id,
+				document_id: documentData.id,
 				folder_id,
 				content,
-				page,
+				page: pageNumber,
 				chunk_index,
 				chunk_jina_embedding,
 			})
@@ -136,7 +140,11 @@ export async function mockDocumentUpload({
 
 	expect(documentChunksInsertError).toBeNull();
 
-	return chunkData!.id;
+	if (documentChunksInsertError !== null) {
+		throw documentChunksInsertError;
+	}
+
+	return chunkData.id;
 }
 
 export async function uploadFileViaFileChooser({
@@ -178,9 +186,9 @@ export async function uploadFileViaFileChooser({
 		.toBeVisible();
 
 	const response = await page.waitForResponse(
-		(response) =>
-			response.url().includes("/documents/process") &&
-			response.request().method() === "POST",
+		(givenResponse) =>
+			givenResponse.url().includes("/documents/process") &&
+			givenResponse.request().method() === "POST",
 		{
 			timeout: 60_000,
 		},
@@ -216,13 +224,13 @@ export async function uploadFileViaDragAndDrop({
 
 	const dataTransfer = await page.evaluateHandle(
 		async ({ bufferData, localFileName, localFileType }) => {
-			const dataTransfer = new DataTransfer();
+			const givenDataTransfer = new DataTransfer();
 
 			const blob = await fetch(bufferData).then((res) => res.blob());
 
 			const file = new File([blob], localFileName, { type: localFileType });
-			dataTransfer.items.add(file);
-			return dataTransfer;
+			givenDataTransfer.items.add(file);
+			return givenDataTransfer;
 		},
 		{
 			bufferData: `data:application/octet-stream;base64,${buffer}`,
@@ -240,9 +248,9 @@ export async function uploadFileViaDragAndDrop({
 	await dropZone.dispatchEvent("drop", { dataTransfer });
 
 	const response = await page.waitForResponse(
-		(response) =>
-			response.url().includes("/documents/process") &&
-			response.request().method() === "POST",
+		(givenResponse) =>
+			givenResponse.url().includes("/documents/process") &&
+			givenResponse.request().method() === "POST",
 		{
 			timeout: 60_000,
 		},
@@ -321,7 +329,11 @@ async function cleanup(userId: string) {
 
 	expect(personalDocumentsError).toBeNull();
 
-	const personalDocumentsToRemove = personalDocumentsData!.map(
+	if (personalDocumentsError !== null) {
+		throw personalDocumentsError;
+	}
+
+	const personalDocumentsToRemove = personalDocumentsData.map(
 		(file) => `${userId}/${file.name}`,
 	);
 
@@ -340,7 +352,11 @@ async function cleanup(userId: string) {
 
 	expect(publicDocumentsError).toBeNull();
 
-	const publicDocumentsToRemove = publicDocumentsData!.map(
+	if (publicDocumentsError !== null) {
+		throw publicDocumentsError;
+	}
+
+	const publicDocumentsToRemove = publicDocumentsData.map(
 		(file) => `${userId}/${file.name}`,
 	);
 

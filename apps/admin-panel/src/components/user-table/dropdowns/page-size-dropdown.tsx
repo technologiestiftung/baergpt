@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 
 import type { Table } from "@tanstack/react-table";
-import { User } from "../../../common";
+import type { User } from "../../../common";
 import Content from "../../../content";
 
 export function PageSizeDropdown({ table }: { table: Table<User> }) {

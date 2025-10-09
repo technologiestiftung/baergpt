@@ -1,0 +1,15 @@
+{
+	"name": "@repo/eslint",
+	"version": "0.0.0",
+	"type": "module",
+	"main": "index.js",
+	"dependencies": {
+		"@eslint/compat": "1.4.0",
+		"@eslint/js": "9.36.0",
+		"@technologiestiftung/eslint-config": "0.4.1",
+		"eslint": "9.36.0",
+		"eslint-plugin-react": "7.37.5",
+		"globals": "16.4.0",
+		"typescript-eslint": "8.45.0"
+	}
+}

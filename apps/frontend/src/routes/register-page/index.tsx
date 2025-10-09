@@ -1,4 +1,4 @@
-import React, { FormEvent, useRef, useState } from "react";
+import React, { type FormEvent, useRef, useState } from "react";
 import Checkbox from "../../components/primitives/checkboxes/checkbox.tsx";
 import Content from "../../content.ts";
 import { TextInput } from "../../components/primitives/text-inputs/text-input.tsx";

@@ -1,4 +1,4 @@
-import { FormEvent, RefObject, useRef, useState } from "react";
+import { type FormEvent, type RefObject, useRef, useState } from "react";
 import { EyeIcon } from "../../primitives/icons/eye-icon.tsx";
 import Content from "../../../content.ts";
 

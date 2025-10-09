@@ -37,7 +37,9 @@ test.describe("Auth Admin", () => {
 	});
 
 	test.afterAll(async () => {
-		if (!testEmail) return;
+		if (!testEmail) {
+			return;
+		}
 		const { data, error } = await supabaseAdminClient.auth.admin.listUsers();
 		if (error) {
 			console.error("Error listing users:", error);

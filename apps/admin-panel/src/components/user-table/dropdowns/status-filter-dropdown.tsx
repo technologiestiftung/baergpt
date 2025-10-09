@@ -6,8 +6,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
-import { Table } from "@tanstack/react-table";
-import { User } from "../../../common";
+import type { Table } from "@tanstack/react-table";
+import type { User } from "../../../common";
 import Content from "../../../content";
 
 const STATUSES = [

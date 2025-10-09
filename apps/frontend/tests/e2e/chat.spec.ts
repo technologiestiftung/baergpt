@@ -224,7 +224,11 @@ test.describe("Chat", () => {
 
 			expect(accessGroupError).toBeNull();
 
-			const defaultAccessGroupId = accessGroupData!.id;
+			if (accessGroupError !== null) {
+				throw accessGroupError;
+			}
+
+			const defaultAccessGroupId = accessGroupData.id;
 
 			const publicDocumentChunkId = await mockDocumentUpload({
 				userId: account.id,

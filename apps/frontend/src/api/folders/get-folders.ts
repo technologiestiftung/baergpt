@@ -1,5 +1,5 @@
 import { supabase } from "../../../supabase-client";
-import { DocumentFolder } from "../../common";
+import type { DocumentFolder } from "../../common";
 import { useErrorStore } from "../../store/error-store.ts";
 
 export async function getFolders(

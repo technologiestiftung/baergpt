@@ -41,8 +41,6 @@ jobs:
           path: |
             **/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
 
       - name: Install dependencies 📦
         if: steps.cache-npm-deps.outputs.cache-hit != 'true'
@@ -74,8 +72,6 @@ jobs:
           path: |
             ./apps/backend/dist
           key: ${{ runner.os }}-node-backend-${{ hashFiles('./apps/backend/**/*', '!./apps/backend/node_modules/**/*', '**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-backend-
 
       - name: Build backend 🏗️
         if: steps.cache-backend-build.outputs.cache-hit != 'true'
@@ -115,8 +111,6 @@ jobs:
           path: |
             ./apps/frontend/dist
           key: ${{ runner.os }}-node-frontend-${{ hashFiles('./apps/frontend/**/*', '!./apps/frontend/node_modules/**/*', '**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-frontend-
 
       - name: Build frontend 🏗️
         if: steps.cache-frontend-build.outputs.cache-hit != 'true'
@@ -143,10 +137,10 @@ jobs:
         run: |
           timeout=600
           counter=0
-          
+
           # Sometimes the postgrest api and postgres are up, but individual postgrest endpoints are not ready yet.
           # Therefore we check if a table (e.g. `application_admins`) is available in the postgrest api.
-          
+
           until curl -sf http://localhost:54321/rest/v1/application_admins && pg_isready -U postgres -h localhost -p 54322; do
             if [ $counter -gt $timeout ]; then
               echo "Timed out waiting for Supabase"
@@ -193,4 +187,3 @@ jobs:
         with:
           name: frontend-a11y-${{ matrix.browser }}-test-results
           path: apps/frontend/test-results
-

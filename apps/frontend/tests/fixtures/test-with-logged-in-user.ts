@@ -41,10 +41,10 @@ export const testWithLoggedInUser =
 			/**
 			 * This happens before each test that uses this fixture.
 			 */
-			await page.addInitScript((session) => {
+			await page.addInitScript((givenSession) => {
 				window.localStorage.setItem(
 					"sb-127-auth-token", // -> browser localStorage key used by a local supabase instance
-					JSON.stringify(session),
+					JSON.stringify(givenSession),
 				);
 			}, session);
 

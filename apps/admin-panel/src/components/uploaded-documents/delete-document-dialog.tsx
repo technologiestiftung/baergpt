@@ -27,11 +27,7 @@ export const DeleteDocumentDialog: React.FC = () => {
 			return;
 		}
 
-		await deleteDocument(
-			selectedDocument.id,
-			selectedDocument.source_url,
-			selectedDocument.owned_by_user_id ?? undefined,
-		);
+		await deleteDocument(selectedDocument.id);
 
 		setDeleteDocumentDialogOpen(false);
 		setSelectedDocument(null);
