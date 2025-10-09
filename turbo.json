@@ -27,6 +27,7 @@
       "persistent": true
     },
     "test:e2e": {
+        "with": ["baergpt-backend#dev"],
         "dependsOn": ["^build"]
     }
   },
