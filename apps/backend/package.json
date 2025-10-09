@@ -31,6 +31,7 @@
 		"@opendocsg/pdf2md": "0.2.1",
 		"@opentelemetry/auto-instrumentations-node": "0.57.0",
 		"@opentelemetry/sdk-node": "0.57.2",
+		"@repo/db-schema": "file:../../libs/db-schema",
 		"@quail-ai/azure-ai-provider": "1.0.5",
 		"@sentry/cli": "2.52.0",
 		"@sentry/node": "10.5.0",
