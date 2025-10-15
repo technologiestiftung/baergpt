@@ -8,8 +8,8 @@
 		"build:sourcemaps": "sentry-cli sourcemaps inject --org $SENTRY_ORG --project $SENTRY_PROJECT ./dist && sentry-cli sourcemaps upload --org $SENTRY_ORG --project $SENTRY_PROJECT ./dist",
 		"start": "tsc && node --env-file-if-exists=.env dist/src/index.js",
 		"dev": "tsx --watch ./src/index.ts",
-		"test": "vitest run src/integration",
-		"test:watch": "vitest watch src/integration",
+		"test": "vitest run src",
+		"test:watch": "vitest watch src",
 		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
 		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
 		"lint:db": "./supabase/lint-database.sh",
@@ -44,6 +44,7 @@
 		"mammoth": "1.9.1",
 		"pdf-lib": "1.17.1",
 		"puppeteer": "24.11.2",
+		"throttled-queue": "3.0.0",
 		"word-extractor": "1.0.4",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
 		"zod": "4.1.11"

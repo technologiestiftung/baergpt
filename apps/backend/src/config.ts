@@ -10,10 +10,12 @@ export interface Config {
 	ollamaApiKey?: string;
 	mistralApiKey: string;
 	mistralApiEndpoint: string;
+	mistralMaxRPS: number;
 	qwenEndpoint?: string;
 	qwenApiKey?: string;
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
+	jinaMaxRPS: number;
 	supabaseUrl: string;
 	supabaseServiceRoleKey: string;
 	supabaseAnonKey: string;
@@ -27,8 +29,8 @@ export interface Config {
 	maxPagesLimit?: number;
 	maxPagesForLlmParseLimit?: number;
 	nodeEnv?: string;
-	maxRetries?: number;
-	retryDelay?: number;
+	maxRetries: number;
+	retryDelay: number;
 	modelTemperature: number;
 	defaultModelIdentifier: string;
 	sentryDsn: string;
@@ -66,11 +68,17 @@ export function verifyConfig(): void {
 	if (!process.env.MISTRAL_API_ENDPOINT) {
 		throw new Error("MISTRAL_API_ENDPOINT must be defined");
 	}
+	if (!process.env.MISTRAL_MAX_RPS) {
+		throw new Error("MISTRAL_MAX_RPS must be defined");
+	}
 	if (!process.env.JINA_API_KEY) {
 		throw new Error("JINA_API_KEY must be defined");
 	}
 	if (!process.env.JINA_EMBEDDING_MODEL) {
 		throw new Error("JINA_EMBEDDING_MODEL must be defined");
+	}
+	if (!process.env.JINA_MAX_RPS) {
+		throw new Error("JINA_MAX_RPS must be defined");
 	}
 	if (!process.env.UPLOAD_FILE_SIZE_LIMIT_MB && !process.env.CI) {
 		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be defined");
@@ -144,10 +152,12 @@ export const config: Config = {
 	ollamaApiKey: process.env.OLLAMA_API_KEY,
 	mistralApiKey: process.env.MISTRAL_API_KEY,
 	mistralApiEndpoint: process.env.MISTRAL_API_ENDPOINT,
+	mistralMaxRPS: Number(process.env.MISTRAL_MAX_RPS) || 30,
 	qwenEndpoint: process.env.QWEN_ENDPOINT,
 	qwenApiKey: process.env.QWEN_API_KEY,
 	jinaApiKey: process.env.JINA_API_KEY,
 	jinaEmbeddingModel: process.env.JINA_EMBEDDING_MODEL,
+	jinaMaxRPS: Number(process.env.JINA_MAX_RPS) || 30,
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,

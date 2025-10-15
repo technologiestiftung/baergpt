@@ -12,7 +12,7 @@ import type {
 	JinaEmbeddingResponse,
 } from "../types/common";
 import { JINA_MAX_TOKEN_LIMIT } from "../constants";
-import { countTokens, computeBatchTokenLimit } from "../services/token-utils";
+import { countTokens, computeBatchTokenLimit } from "./token-utils";
 import { DatabaseService } from "./database-service";
 import { resilientCall } from "../utils";
 
@@ -25,10 +25,11 @@ export class EmbeddingService {
 		text: string,
 		tokenLimit: number = 2000,
 	): Promise<JinaSegmenterResponse> {
-		console.time("chunkWithJinaSegmenter");
 		const chunkingResponse = await resilientCall(
-			() =>
-				fetch("https://api.jina.ai/v1/segment", {
+			async () => {
+				const randomUUID = crypto.randomUUID();
+				console.time(`chunk-${randomUUID}`);
+				const response = await fetch("https://api.jina.ai/v1/segment", {
 					method: "POST",
 					headers: {
 						Authorization: `Bearer ${config.jinaApiKey}`,
@@ -40,8 +41,12 @@ export class EmbeddingService {
 						max_chunk_length: tokenLimit,
 						tokenizer: "o200k_base",
 					}),
-				}),
-			{ timeout: 3000, retries: 2 },
+					signal: AbortSignal.timeout(30_000),
+				});
+				console.timeEnd(`chunk-${randomUUID}`);
+				return response;
+			},
+			{ queueType: "embeddings" },
 		);
 
 		if (chunkingResponse.status !== 200) {
@@ -50,7 +55,6 @@ export class EmbeddingService {
 
 		const responseData =
 			(await chunkingResponse.json()) as JinaSegmenterResponse;
-		console.timeEnd("chunkWithJinaSegmenter");
 		return responseData;
 	}
 
@@ -77,8 +81,9 @@ export class EmbeddingService {
 							late_chunking: false,
 							embedding_type: "float",
 						}),
+						signal: AbortSignal.timeout(60_000),
 					}),
-				{ timeout: 60000, retries: 2 },
+				{ queueType: "embeddings" },
 			);
 
 			if (embeddingResponse.status !== 200) {
@@ -118,57 +123,58 @@ export class EmbeddingService {
 		task: string,
 		userId?: string,
 	): Promise<EmbeddingsResponse> {
-		console.time("generateJinaBatchEmbeddings");
-		try {
-			const embeddingResponse = await resilientCall(
-				() =>
-					fetch("https://api.jina.ai/v1/embeddings", {
-						method: "POST",
-						headers: {
-							Authorization: `Bearer ${config.jinaApiKey}`,
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							model: config.jinaEmbeddingModel,
-							input: input,
-							task: task,
-							dimensions: 1024,
-							late_chunking: true,
-							embedding_type: "float",
-						}),
+		const embeddingResponse = await resilientCall(
+			async () => {
+				const randomUUID = crypto.randomUUID();
+				console.time(`embed-${randomUUID}`);
+				const response = await fetch("https://api.jina.ai/v1/embeddings", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${config.jinaApiKey}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: config.jinaEmbeddingModel,
+						input: input,
+						task: task,
+						dimensions: 1024,
+						late_chunking: true,
+						embedding_type: "float",
 					}),
-				{ timeout: 60000 },
-			);
+					signal: AbortSignal.timeout(60_000),
+				});
+				console.timeEnd(`embed-${randomUUID}`);
+				return response;
+			},
+			{ queueType: "embeddings" },
+		);
 
-			if (embeddingResponse.status !== 200) {
-				const errorBody = await embeddingResponse.text();
-				throw new Error(`Failed to create embedding: ${errorBody}`);
-			}
-
-			const responseData =
-				(await embeddingResponse.json()) as JinaEmbeddingResponse;
-
-			if (!responseData.data || responseData.data.length === 0) {
-				throw new Error("Failed to create embedding: empty response");
-			}
-
-			// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
-			if (userId) {
-				await dbService.updateUserColumnValue(
-					userId,
-					"num_embedding_tokens",
-					responseData.usage.total_tokens,
-				);
-			}
-
-			const sortedData = responseData.data.sort((a, b) => a.index - b.index);
-			return {
-				embeddings: sortedData.map((item) => item.embedding),
-				tokenUsage: responseData.usage.total_tokens,
-			};
-		} finally {
-			console.timeEnd("generateJinaBatchEmbeddings");
+		if (embeddingResponse.status !== 200) {
+			const errorBody = await embeddingResponse.text();
+			throw new Error(`Failed to create embedding: ${errorBody}`);
 		}
+
+		const responseData =
+			(await embeddingResponse.json()) as JinaEmbeddingResponse;
+
+		if (!responseData.data || responseData.data.length === 0) {
+			throw new Error("Failed to create embedding: empty response");
+		}
+
+		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
+		if (userId) {
+			await dbService.updateUserColumnValue(
+				userId,
+				"num_embedding_tokens",
+				responseData.usage.total_tokens,
+			);
+		}
+
+		const sortedData = responseData.data.sort((a, b) => a.index - b.index);
+		return {
+			embeddings: sortedData.map((item) => item.embedding),
+			tokenUsage: responseData.usage.total_tokens,
+		};
 	}
 
 	// Utility s for chunking and batch processing
@@ -257,7 +263,7 @@ export class EmbeddingService {
 		try {
 			const userId = document.owned_by_user_id || document.uploaded_by_user_id;
 			const allChunks: Chunk[] = [];
-			for (const page of parsedPages) {
+			const chunkPromises = parsedPages.map(async (page) => {
 				let currentChunks: string[] = [];
 				const exceedsSegmenterLimit =
 					page.content.length >
@@ -280,7 +286,9 @@ export class EmbeddingService {
 						tokenCount,
 					} as Chunk);
 				});
-			}
+			});
+
+			await Promise.all(chunkPromises);
 
 			const allEmbeddings: Embedding[] = [];
 
@@ -306,7 +314,8 @@ export class EmbeddingService {
 				});
 			} else {
 				const batches = this.combineChunksIntoBatches(allChunks);
-				for (const batch of batches) {
+
+				const batchPromises = batches.map(async (batch) => {
 					const response = await this.generateJinaBatchEmbeddings(
 						batch.map((c) => c.content),
 						"retrieval.passage",
@@ -321,7 +330,9 @@ export class EmbeddingService {
 							chunkIndex,
 						} as Embedding);
 					});
-				}
+				});
+
+				await Promise.all(batchPromises);
 			}
 
 			await dbService.logEmbeddings(allEmbeddings, document);

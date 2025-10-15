@@ -28,7 +28,7 @@ import {
 	countTokens,
 	computeSafePayload,
 	trimToTokenLimitByWords,
-} from "../services/token-utils";
+} from "./token-utils";
 
 const ESTIMATED_TOKENS_PER_WORD = config.estimatedTokensPerWord;
 const langfuse = new Langfuse();
@@ -128,13 +128,12 @@ export class GenerationService {
 		console.time("estimateSystemPromptTokens");
 		try {
 			try {
-				const client = await resilientCall(
-					() =>
-						langfuse.getPrompt(promptName, undefined, {
-							label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-							type: "chat",
-						}),
-					{ timeout: 20000, retries: 2 },
+				const client = await resilientCall(() =>
+					langfuse.getPrompt(promptName, undefined, {
+						label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+						type: "chat",
+						fetchTimeoutMs: 20_000,
+					}),
 				);
 
 				const compiled = client.compile({ docContent: "" }) as ModelMessage[];
@@ -195,13 +194,11 @@ export class GenerationService {
 			}
 
 			try {
-				const response: string = await resilientCall(
-					() =>
-						this.generateTextContent(llmHandler, compiledSummaryPrompt, {
-							userId,
-							langfusePrompt: summaryPromptClient,
-						}),
-					{ timeout: 60000, retries: 2 },
+				const response: string = await resilientCall(() =>
+					this.generateTextContent(llmHandler, compiledSummaryPrompt, {
+						userId,
+						langfusePrompt: summaryPromptClient,
+					}),
 				);
 				return response;
 			} catch (error) {
@@ -507,6 +504,7 @@ export class GenerationService {
 							: undefined,
 					},
 				},
+				abortSignal: AbortSignal.timeout(60_000),
 			});
 			if (userId) {
 				// Increase num_inferences for user by 1

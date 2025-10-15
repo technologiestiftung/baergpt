@@ -249,7 +249,9 @@ export class WordDocumentExtractionService {
 			},
 			body: form,
 		});
-		if (!res.ok) {throw new Error(`HTTP ${res.status} ${await res.text()}`);}
+		if (!res.ok) {
+			throw new Error(`HTTP ${res.status} ${await res.text()}`);
+		}
 		console.timeEnd("convertDocxToPdf");
 		return new Uint8Array(await res.arrayBuffer());
 	}
@@ -328,7 +330,9 @@ class ExcelExtractionService {
 
 	private static findLastNonEmptyIndex(arr: string[]): number {
 		for (let i = arr.length - 1; i >= 0; i--) {
-			if (arr[i] !== "") {return i;}
+			if (arr[i] !== "") {
+				return i;
+			}
 		}
 		return -1;
 	}
@@ -410,7 +414,9 @@ class ExcelExtractionService {
 			blankrows: false,
 			skipHidden: true,
 		});
-		if (rows.length === 0) {return "";}
+		if (rows.length === 0) {
+			return "";
+		}
 
 		/**
 		 * Trim trailing empty cells.
@@ -428,7 +434,9 @@ class ExcelExtractionService {
 		const columnCount = headerRow.length;
 
 		// If there is no actual header content and no data, return empty
-		if (columnCount === 0 && rows.length <= 1) {return "";}
+		if (columnCount === 0 && rows.length <= 1) {
+			return "";
+		}
 
 		const SEP = "---";
 		let markdown = "";
@@ -455,7 +463,9 @@ class ExcelExtractionService {
 		for (let i = 1; i < rows.length; i++) {
 			const normalized = rows[i].map(ExcelExtractionService.sanitizeCell);
 			const trimmed = toTrimmed(normalized);
-			if (trimmed.length === 0) {continue;} // empty row
+			if (trimmed.length === 0) {
+				continue;
+			} // empty row
 
 			const bounded =
 				columnCount > 0
@@ -487,12 +497,12 @@ class MistralOCRService {
 					},
 					purpose: "ocr",
 				}),
-			{ timeout: 30000, retries: 2 },
+			{ timeout: 30_000 },
 		);
 
 		const signedUrl = await resilientCall(
 			() => client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
-			{ timeout: 30000, retries: 2 },
+			{ timeout: 30_000 },
 		);
 
 		const ocrResponse = await resilientCall(
@@ -504,7 +514,7 @@ class MistralOCRService {
 						documentUrl: signedUrl.url,
 					},
 				}),
-			{ timeout: 60000, retries: 3 },
+			{ timeout: 60_000, retries: 3 },
 		);
 
 		if (!ocrResponse.pages) {
@@ -630,7 +640,6 @@ class LlamaParseOCRService {
 
 			let statusRes = await this.checkParsingStatus(uploadRes.id);
 			if (process.env.NODE_ENV === "development") {
-				 
 				console.log(`Initial status for ${fileName}: ${statusRes.status}`);
 			}
 			while (statusRes.status !== "SUCCESS") {
@@ -646,7 +655,6 @@ class LlamaParseOCRService {
 				// Log status approximately every second
 				if (currentTime - lastLogTime >= 1000) {
 					if (process.env.NODE_ENV === "development") {
-						 
 						console.log(
 							`[${Math.floor(elapsedSeconds)}s] ${fileName} status: ${statusRes.status}`,
 						);
@@ -669,7 +677,6 @@ class LlamaParseOCRService {
 				statusRes = await this.checkParsingStatus(uploadRes.id);
 			}
 			if (process.env.NODE_ENV === "development") {
-				 
 				console.log(
 					`Extraction completed successfully for ${fileName} after ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
 				);
