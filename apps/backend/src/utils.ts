@@ -12,32 +12,39 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function retryOperation<T>(
 	operation: () => Promise<T>,
-	retries: number = config.maxRetries || 3,
-	retryDelay: number = config.retryDelay || 1000,
-	maxRetries: number = retries,
+	options: { retries?: number; retryDelay?: number } = {},
 ): Promise<T> {
-	try {
-		return await operation();
-	} catch (error) {
-		if (retries <= 0) {
-			throw error;
+	const retries = options.retries ?? config.maxRetries ?? 3;
+	const retryDelay = options.retryDelay ?? config.retryDelay ?? 1000;
+	const maxRetries = retries;
+
+	const attempt = async (remainingRetries: number): Promise<T> => {
+		try {
+			return await operation();
+		} catch (error) {
+			if (remainingRetries <= 0) {
+				throw error;
+			}
+
+			// Exponential backoff with jitter
+			const backoffDelay =
+				retryDelay * Math.pow(2, maxRetries - remainingRetries) +
+				Math.random() * 1000;
+
+			console.warn(
+				`Operation failed: ${
+					error instanceof Error
+						? `${error.name}: ${error.message}`
+						: String(error)
+				}. Retrying in ${Math.round(backoffDelay)}ms... (${remainingRetries} retries left)`,
+			);
+
+			await wait(backoffDelay);
+			return attempt(remainingRetries - 1);
 		}
+	};
 
-		// Exponential backoff with jitter
-		const backoffDelay =
-			retryDelay * Math.pow(2, maxRetries - retries) + Math.random() * 1000;
-
-		console.warn(
-			`Operation failed: ${
-				error instanceof Error
-					? `${error.name}: ${error.message}`
-					: String(error)
-			}. Retrying in ${Math.round(backoffDelay)}ms... (${retries} retries left)`,
-		);
-
-		await wait(backoffDelay);
-		return retryOperation(operation, retries - 1);
-	}
+	return attempt(retries);
 }
 
 /**
@@ -51,7 +58,7 @@ export async function withTimeout<T>(
 	return new Promise<T>((resolve, reject) => {
 		let finished = false;
 		const timer = setTimeout(() => {
-			if (finished) return;
+			if (finished) {return;}
 			reject(new Error(`Operation timed out after ${timeoutMs}ms`));
 		}, timeoutMs);
 		op()
@@ -84,5 +91,5 @@ export async function resilientCall<T>(
 
 	const wrappedOp = timeout ? () => withTimeout(operation, timeout) : operation;
 
-	return retryOperation(wrappedOp, retries, retryDelay);
+	return retryOperation(wrappedOp, { retries, retryDelay });
 }
