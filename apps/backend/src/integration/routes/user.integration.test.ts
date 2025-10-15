@@ -74,7 +74,6 @@ async function getLatestDocumentIdBySourceUrl(
 	return data && data.length > 0 ? data[0].id : undefined;
 }
 
-
 /**
  * Comprehensive cleanup function to delete all potentially conflicting document records
  */
@@ -93,7 +92,6 @@ const cleanupTestDocuments = async () => {
 		console.error("Error during test documents cleanup:", error);
 	}
 };
-
 
 /**
  * Helper function to add delay between API calls
