@@ -74,7 +74,6 @@ async function getLatestDocumentIdBySourceUrl(
 	return data && data.length > 0 ? data[0].id : undefined;
 }
 
-// removed base64 payload in favor of byte-based upload + process
 
 /**
  * Comprehensive cleanup function to delete all potentially conflicting document records
@@ -95,7 +94,6 @@ const cleanupTestDocuments = async () => {
 	}
 };
 
-// removed base64 generator; using generatePdfBytesFromText instead
 
 /**
  * Helper function to add delay between API calls
