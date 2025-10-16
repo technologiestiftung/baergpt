@@ -26,7 +26,7 @@
   "homepage": "https://github.com/technologiestiftung/baergpt#readme",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "libs/*"
   ],
   "devDependencies": {
     "turbo": "2.5.8"
