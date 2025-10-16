@@ -1,11 +1,13 @@
 {
+	"extends": "../../libs/typescript-config/tsconfig.node.json",
+
 	"compilerOptions": {
 		"target": "esnext",
 		"lib": ["ESNext"],
 		"module": "NodeNext",
 		"rootDir": "./",
 		"moduleResolution": "NodeNext",
-		"typeRoots": ["./node_modules/@types"],
+		"typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
 		"types": ["node"],
 		"resolveJsonModule": true,
 		"outDir": "./dist",
@@ -13,7 +15,10 @@
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": false,
-		"skipLibCheck": true,
+
+		"allowImportingTsExtensions": false,
+		"noEmit": false,
+
 		"sourceMap": true,
 		"inlineSources": true,
 

@@ -23,6 +23,7 @@
 		"@radix-ui/react-slot": "1.2.3",
 		"@radix-ui/react-switch": "1.2.5",
 		"@radix-ui/react-tooltip": "1.2.7",
+		"@repo/db-schema": "file:../../libs/db-schema",
 		"@supabase/supabase-js": "2.50.4",
 		"@tanstack/react-table": "^8.21.3",
 		"class-variance-authority": "0.7.1",
@@ -40,6 +41,7 @@
 	"devDependencies": {
 		"@axe-core/playwright": "4.10.2",
 		"@playwright/test": "1.55.1",
+		"@repo/typescript-config": "file:../../libs/typescript-config",
 		"@types/dotenv": "6.1.1",
 		"@types/node": "22.14.0",
 		"@types/react": "18.3.10",

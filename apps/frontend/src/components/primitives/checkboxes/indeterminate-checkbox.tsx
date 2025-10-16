@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { CheckboxIcon, CheckboxState } from "../icons/checkbox-icon.tsx";
+import { CheckboxIcon, type CheckboxState } from "../icons/checkbox-icon.tsx";
 import { useMobileMenuStore } from "../../../store/use-mobile-menu.ts";
 import Content from "../../../content.ts";
 

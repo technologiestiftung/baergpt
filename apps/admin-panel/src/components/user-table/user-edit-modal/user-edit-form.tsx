@@ -1,4 +1,4 @@
-import React, { useState, useRef, FormEvent, useMemo } from "react";
+import React, { useState, useRef, type FormEvent, useMemo } from "react";
 import { Switch } from "@/components/ui/switch";
 import {
 	Card,

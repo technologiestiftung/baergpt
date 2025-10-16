@@ -6,9 +6,9 @@ import {
 	TableHeader,
 	TableRow,
 } from "../../components/ui/table";
-import { flexRender, Table as ReactTable } from "@tanstack/react-table";
+import { flexRender, type Table as ReactTable } from "@tanstack/react-table";
 import { columns } from "./columns";
-import { User } from "../../common";
+import type { User } from "../../common";
 import { ChevronLargeIcon } from "../../components/primitives/icons/chevron-large-icon";
 import Content from "../../content";
 

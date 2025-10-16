@@ -1,4 +1,4 @@
-import { ListItem } from "./types.ts";
+import type { ListItem } from "./types.ts";
 import { getUniqueId } from "./get-unique-id.ts";
 
 export const getDragAndDropId = (item: ListItem | null): string => {

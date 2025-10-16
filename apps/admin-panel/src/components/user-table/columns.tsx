@@ -1,5 +1,5 @@
-import { ColumnDef } from "@tanstack/react-table";
-import { User } from "../../common";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { User } from "../../common";
 import { Content } from "../../content";
 import { useUserStore } from "../../store/use-user-store";
 import { formatDate } from "./utils/format-date";

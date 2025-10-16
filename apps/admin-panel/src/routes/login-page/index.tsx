@@ -1,4 +1,4 @@
-import { FormEvent, useRef } from "react";
+import { type FormEvent, useRef } from "react";
 import { EmailInput } from "../../components/login/text-inputs/email-input.tsx";
 import { PasswordInput } from "../../components/login/text-inputs/password-input.tsx";
 import { ArrowWhiteRightIcon } from "../../components/primitives/icons/arrow-white-right-icon.tsx";

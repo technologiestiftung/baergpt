@@ -360,6 +360,7 @@ export class GenerationService {
 			model: llmHandler.languageModel,
 			messages: messages,
 			temperature: LLM_PARAMETERS.temperature,
+			// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 			schema: citationAnswerSchema(maxAvailableSources),
 			onFinish: async ({ usage, error }) => {
 				// Handle token usage tracking after stream completes

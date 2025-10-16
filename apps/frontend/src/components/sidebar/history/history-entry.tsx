@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCurrentChatIdStore } from "../../../store/current-chat-id-store.ts";
-import { Chat } from "../../../common.ts";
+import type { Chat } from "../../../common.ts";
 import { DeleteHistoryEntryButton } from "./delete-history-entry/delete-history-entry-button.tsx";
 import { useDrawerStore } from "../../../store/drawer-store.ts";
 

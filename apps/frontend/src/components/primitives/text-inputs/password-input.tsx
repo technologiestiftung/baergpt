@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { EyeIcon } from "../icons/eye-icon.tsx";
 import Content from "../../../content.ts";
 

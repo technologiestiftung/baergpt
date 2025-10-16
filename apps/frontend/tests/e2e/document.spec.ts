@@ -194,22 +194,147 @@ test.describe("Documents", () => {
 				}),
 			).toBeVisible();
 
-			// Delete the folder
-			await page
+			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
-				.filter({ hasText: "test-folder" })
-				.locator("label")
-				.click();
-			await page
-				.getByRole("button", { name: "Löschen Mülleimer-Icon" })
-				.click();
-			await page.getByRole("button", { name: "Löschen", exact: true }).click();
+				.filter({ hasText: givenFolderName })
+				.locator("label");
+			await folderCheckbox.click();
+
+			const deleteButton = page.getByRole("button", {
+				name: "Löschen Mülleimer-Icon",
+			});
+			await deleteButton.click();
+
+			const confirmButton = page.getByRole("button", {
+				name: "Löschen",
+				exact: true,
+			});
+			await confirmButton.click();
 
 			// Verify the folder is deleted
 			await expect(
 				page.getByRole("listitem").filter({ hasText: givenFolderName }),
 			).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Delete folder with a single document also deletes document",
+		async ({ page }) => {
+			const folder = "temp-folder-single";
+			await page.goto("/");
+
+			// Create folder
+			await page
+				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.click();
+			await page.getByRole("textbox", { name: "Ordner Name" }).fill(folder);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Move default document into folder
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await page.getByRole("button", { name: `Ordner-Icon ${folder}` }).hover();
+			await page.mouse.up();
+
+			const folderCheckbox = page
+				.locator("#desktop-documents-panel")
+				.getByRole("listitem")
+				.filter({ hasText: folder })
+				.locator("label");
+			await folderCheckbox.click();
+
+			const deleteButton = page.getByRole("button", {
+				name: "Löschen Mülleimer-Icon",
+			});
+			await deleteButton.click();
+
+			const confirmButton = page.getByRole("button", {
+				name: "Löschen",
+				exact: true,
+			});
+			await confirmButton.click();
+
+			// Assert folder gone
+			await expect(
+				page.getByRole("listitem").filter({ hasText: folder }),
+			).not.toBeVisible();
+			// Assert document gone as well (no longer visible anywhere)
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Delete folder with multiple documents deletes them all",
+		async ({ page }) => {
+			const folder = "temp-folder-multi";
+			await page.goto("/");
+
+			// Create folder
+			await page
+				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.click();
+			await page.getByRole("textbox", { name: "Ordner Name" }).fill(folder);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Ensure second doc exists (upload if necessary)
+			await uploadFileViaDragAndDrop({
+				page,
+				fileName: secondaryDocumentName,
+				filePath: secondaryDocumentPath,
+				fileType: secondaryDocumentType,
+			});
+
+			// Move both into the folder
+			for (const name of [defaultDocumentName, secondaryDocumentName]) {
+				await page
+					.getByRole("button", { name: `Dokumente-Icon ${name}` })
+					.hover();
+				await page.mouse.down();
+				await page
+					.getByRole("button", { name: `Ordner-Icon ${folder}` })
+					.hover();
+				await page.mouse.up();
+			}
+
+			const folderCheckbox = page
+				.locator("#desktop-documents-panel")
+				.getByRole("listitem")
+				.filter({ hasText: folder })
+				.locator("label");
+			await folderCheckbox.click();
+
+			const deleteButton = page.getByRole("button", {
+				name: "Löschen Mülleimer-Icon",
+			});
+			await deleteButton.click();
+
+			const confirmButton = page.getByRole("button", {
+				name: "Löschen",
+				exact: true,
+			});
+			await confirmButton.click();
+
+			// Assert folder gone and both docs gone
+			await expect(
+				page.getByRole("listitem").filter({ hasText: folder }),
+			).not.toBeVisible();
+			for (const name of [defaultDocumentName, secondaryDocumentName]) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).not.toBeVisible();
+			}
 		},
 	);
 

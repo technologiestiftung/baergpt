@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Document } from "../common";
+import type { Document } from "../common";
 import { getDocuments } from "../api/documents/get-documents";
 import { deleteDocument } from "../api/documents/delete-document";
 import { updateDocumentFolder } from "../api/documents/update-document-folder";
@@ -10,11 +10,7 @@ interface DocumentStore {
 	documents: Document[];
 	isDocumentFirstLoad: boolean;
 	getDocuments: (signal: AbortSignal) => Promise<void>;
-	deleteDocument: (
-		documentId: number,
-		filePath: string,
-		owned_by_user_id?: string,
-	) => Promise<void>;
+	deleteDocument: (documentId: number) => Promise<Error | null>;
 	removeItemFromFolder: (documentId: number) => Promise<void>;
 	moveItemToFolder: (documentId: number, folderId: number) => Promise<void>;
 
@@ -48,8 +44,10 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		}
 	},
 	deleteDocument: async (documentId: number) => {
-		await deleteDocument(documentId);
-
+		const error = await deleteDocument(documentId);
+		if (error) {
+			return error;
+		}
 		const { documents, selectedChatDocuments, selectedDocumentsForAction } =
 			get();
 
@@ -66,12 +64,14 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 			selectedChatDocuments: updatedSelectedChatDocuments,
 			selectedDocumentsForAction: updatedSelectedDocumentsForAction,
 		}));
+
+		return null;
 	},
 	removeItemFromFolder: async (documentId: number) => {
 		await updateDocumentFolder(documentId, null);
 		set((state) => ({
 			documents: state.documents.map((doc) =>
-				doc.id === documentId ? { ...doc, folder_id: undefined } : doc,
+				doc.id === documentId ? { ...doc, folder_id: null } : doc,
 			),
 		}));
 	},

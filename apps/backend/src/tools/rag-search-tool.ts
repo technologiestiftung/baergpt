@@ -14,11 +14,13 @@ export const ragSearchTool = (
 	tool({
 		description:
 			"Use this tool to answer questions based on the documents provided by the user. It performs a RAG search over the documents and returns structured, cite-ready matches.",
+		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		inputSchema: z.object({
 			query: z
 				.string()
 				.describe("The question to answer using the given documents."),
 		}),
+		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		execute: async ({ query }) => {
 			const embedding = await embeddingService.generateJinaEmbedding(
 				query,

@@ -1,6 +1,6 @@
 import React from "react";
 import { HistoryEntry } from "./history-entry";
-import { Chat } from "../../../common";
+import type { Chat } from "../../../common";
 
 interface HistoryGroupProps {
 	label: string;

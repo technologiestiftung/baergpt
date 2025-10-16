@@ -1,5 +1,5 @@
 import { supabase } from "../../../supabase-client";
-import { Document } from "../../common";
+import type { Document } from "../../common";
 
 export async function getDocuments(signal: AbortSignal): Promise<Document[]> {
 	const { data, error } = await supabase

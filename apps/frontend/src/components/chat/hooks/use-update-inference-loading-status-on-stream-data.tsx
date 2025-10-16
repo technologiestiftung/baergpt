@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { DeepPartial } from "ai";
-import { StreamedObject } from "../../../schemas/streamed-object-schema.ts";
+import type { StreamedObject } from "../../../schemas/streamed-object-schema.ts";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 
 export function useUpdateInferenceLoadingStatusOnStreamData(

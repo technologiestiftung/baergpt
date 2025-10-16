@@ -98,11 +98,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				(doc) => doc.source_url === filePath,
 			);
 			if (documentToDelete) {
-				await deleteDocument(
-					documentToDelete.id,
-					documentToDelete.source_url,
-					documentToDelete.owned_by_user_id,
-				);
+				await deleteDocument(documentToDelete.id);
 			}
 		}
 	},

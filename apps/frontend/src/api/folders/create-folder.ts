@@ -5,7 +5,7 @@ export async function createFolder(newFolderName: string): Promise<void> {
 	const { error } = await supabase.from("document_folders").insert({
 		name: newFolderName,
 		created_at: new Date().toISOString(),
-		user_id: useAuthStore.getState().session?.user.id,
+		user_id: useAuthStore.getState().session?.user.id || "",
 	});
 
 	if (error) {

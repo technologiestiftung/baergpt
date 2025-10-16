@@ -43,6 +43,12 @@ cd apps/admin-panel && npm run dev
 
 ## Tests
 
+You need to install playwright browsers and have supabase and the backend running for e2e tests to work.
+
+```bash
+npx playwright install --with-deps
+```
+
 Run the following command to execute the test suites:
 
 ```bash

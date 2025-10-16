@@ -17,8 +17,8 @@ export type Chat = {
 	user_id: string;
 };
 export type ChatMessage = {
-	allowed_document_ids?: number[];
-	allowed_folder_ids?: number[];
+	allowed_document_ids: number[] | null;
+	allowed_folder_ids: number[] | null;
 	chat_id: number;
 	content: string;
 	citations: number[] | null;
@@ -38,30 +38,29 @@ export type DocumentFolder = {
 export type SourceType = "public_document" | "personal_document";
 
 export type Document = {
-	created_at?: string;
-	file_checksum?: string;
-	file_name?: string;
-	file_size: number;
-	folder_id?: number;
+	created_at: string | null;
+	file_checksum: string | null;
+	file_name: string | null;
+	file_size: number | null;
+	folder_id: number | null;
 	id: number;
-	num_pages?: number;
-	owned_by_user_id?: string;
-	processing_finished_at?: string;
+	num_pages: number | null;
+	owned_by_user_id: string | null;
+	processing_finished_at: string | null;
 	source_type: SourceType;
 	source_url: string;
 };
 
 export type User = {
-	user_id: string;
-	first_name: string;
-	last_name: string;
-	email: string;
+	id: string;
+	first_name: string | null;
+	last_name: string | null;
 	registered_at?: string | null;
 	last_login_at?: string | null;
-	num_documents?: number;
-	num_inferences: number;
-	num_inference_tokens: number;
-	num_embedding_tokens: number;
+	num_documents: number | null;
+	num_inferences: number | null;
+	num_inference_tokens: number | null;
+	num_embedding_tokens: number | null;
 	academic_title?: string | null;
 	personal_title?: string | null;
 	is_addressed_formal?: boolean | null;

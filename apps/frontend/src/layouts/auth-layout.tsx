@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { AuthHeader } from "../components/headers/auth/auth-header.tsx";
 import { Footer } from "../components/footer/footer.tsx";
 import { useSessionRedirect } from "../hooks/use-session-redirect.tsx";
