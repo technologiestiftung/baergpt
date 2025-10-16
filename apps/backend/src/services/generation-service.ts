@@ -362,6 +362,7 @@ export class GenerationService {
 			temperature: LLM_PARAMETERS.temperature,
 			// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 			schema: citationAnswerSchema(maxAvailableSources),
+			presencePenalty: 1, // This penalizes repeated words/phrases, hopefully decreasing the likeliness of inifinite repetition loops
 			onFinish: async ({ usage, error }) => {
 				// Handle token usage tracking after stream completes
 				if (userId && usage?.totalTokens) {
