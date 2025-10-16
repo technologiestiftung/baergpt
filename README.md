@@ -24,6 +24,12 @@ Run the following commands to install the dependencies:
 npm ci
 ```
 
+To use Turborepo, install it once globally:
+
+```bash
+npm install turbo --global
+```
+
 ## Development
 
 Run the following command to start what you need. You'll need some environment variables,

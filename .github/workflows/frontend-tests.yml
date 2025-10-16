@@ -77,7 +77,8 @@ jobs:
         if: steps.cache-backend-build.outputs.cache-hit != 'true'
         run: |
           cd apps/backend
-          npm run build:tsc
+          npm run check-types
+          npm run build
 
       # You might wonder why we are running the backend with `&` at the end.
       # This will allow the backend to start in the background while other steps can
@@ -102,7 +103,7 @@ jobs:
       - name: Run frontend unit tests 🧪
         run: |
           cd apps/frontend
-          npm run test:unit
+          npm run test
 
       - name: Cache frontend build 💾
         id: cache-frontend-build
@@ -116,6 +117,7 @@ jobs:
         if: steps.cache-frontend-build.outputs.cache-hit != 'true'
         run: |
           cd apps/frontend
+          npm run check-types
           npm run build
 
       - name: Wait for Backend to be ready ⏳

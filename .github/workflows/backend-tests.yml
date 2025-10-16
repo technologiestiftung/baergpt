@@ -61,7 +61,7 @@ jobs:
         if: steps.cache-backend-build.outputs.cache-hit != 'true'
         run: |
           cd apps/backend
-          npm run build:tsc
+          npm run build
 
       - name: Wait for Supabase to be ready ⏳
         run: |
