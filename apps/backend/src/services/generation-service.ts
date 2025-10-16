@@ -383,7 +383,7 @@ export class GenerationService {
 				}
 			},
 			experimental_telemetry: {
-				isEnabled: !process.env.CI, // Disable telemetry in CI
+				isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 				metadata: {
 					userId: userId ? userId : "unknown",
 					sessionId: sessionId ? sessionId : "unknown",
