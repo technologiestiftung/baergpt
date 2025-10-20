@@ -55,20 +55,23 @@ export const Content = {
 		"Anonymisieren oder abstrahieren Sie Daten, wenn möglich.",
 	"landingPage.safety.accordion.answer1.li3":
 		"Löschen Sie Chats oder Dokumente, sobald Sie diese nicht mehr benötigen.",
-	"landingPage.safety.accordion.question2": "Wo und wie werden meine Daten gespeichert?",
-	"landingPage.safety.accordion.answer2.p1": "Persönliche Daten werden ausschließlich in deutschen Rechenzentren gemäß dem BSI C5-Standard gespeichert. Sie sind während Übertragung und Speicherung verschlüsselt und werden nach Zweckerfüllung ordnungsgemäß gelöscht.",
+	"landingPage.safety.accordion.question2":
+		"Wo und wie werden meine Daten gespeichert?",
+	"landingPage.safety.accordion.answer2.p1":
+		"Persönliche Daten werden ausschließlich in deutschen Rechenzentren gemäß dem BSI C5-Standard gespeichert. Sie sind während Übertragung und Speicherung verschlüsselt und werden nach Zweckerfüllung ordnungsgemäß gelöscht.",
 	"landingPage.safety.accordion.question3": "Wer hat Zugriff auf meine Daten?",
-	"landingPage.safety.accordion.answer3.p1": "Der Zugriff auf Daten in BärGPT ist streng reglementiert. Niemand hat Zugriff auf persönliche Chats und Dokumente. Sie sind ausschließlich für Sie persönlich sichtbar. Es gibt keine manuelle Einsicht durch Mitarbeitende, keine Weitergabe an Dritte und keine Nutzung zu anderen Zwecken.",
+	"landingPage.safety.accordion.answer3.p1":
+		"Der Zugriff auf Daten in BärGPT ist streng reglementiert. Niemand hat Zugriff auf persönliche Chats und Dokumente. Sie sind ausschließlich für Sie persönlich sichtbar. Es gibt keine manuelle Einsicht durch Mitarbeitende, keine Weitergabe an Dritte und keine Nutzung zu anderen Zwecken.",
 	"landingPage.safety.accordion.chevronUpAltText": "Antwort verstecken",
 	"landingPage.safety.accordion.chevronDownAltText": "Antwort anzeigen",
 
 	"landingPage.helpCenterBanner.h2": "Hilfe und Tipps zur Nutzung von BärGPT",
-	"landingPage.helpCenterBanner.p1": "Das BärGPT-Hilfecenter bietet leicht verständliche Tipps, Antworten und Schulungsvideos, ideal für den Einstieg in die Arbeit mit KI.",
+	"landingPage.helpCenterBanner.p1":
+		"Das BärGPT-Hilfecenter bietet leicht verständliche Tipps, Antworten und Schulungsvideos, ideal für den Einstieg in die Arbeit mit KI.",
 	"landingPage.helpCenterBanner.helpLink.label": "Mehr lernen im Hilfecenter",
 	"landingPage.helpCenterBanner.logo.altText": "BärGPT Help Center Logo",
 
 	"landingPage.firstSteps.h2": "Erste Schritte mit BärGPT",
-
 
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",
@@ -527,6 +530,16 @@ export const Content = {
 	"footer.technologiestiftungLogo.alt": "Technologiestiftung Berlin",
 	"footer.senatskanzleiLogo.alt":
 		"Der Regierende Bürgermeister von Berlin, Senatskanzlei",
+
+	"footer.support": "Support",
+	"footer.support.link": "mailto:support@baergpt.berlin",
+	"footer.github" : "GitHub",
+	"footer.github.link": "https://github.com/technologiestiftung/baergpt",
+	"footer.helpcenter": "Hilfecenter",
+	"footer.helpcenter.link": "https://hilfe.baergpt.berlin/",
+	"footer.feedback": "Feedback geben",
+	"footer.feedback.link": "https://citylabberlin.typeform.com/to/GhoCHw0J",
+
 
 	/* ---------------------- Admin ---------------------- */
 	"admin.button.link.label": "Adminbereich",
