@@ -35,7 +35,9 @@ export function trimToTokenLimitByWords(
 	text: string,
 	tokenLimit: number,
 ): string {
-	if (countTokens(text) <= tokenLimit) {return text;}
+	if (countTokens(text) <= tokenLimit) {
+		return text;
+	}
 	const words = text.split(/\s+/);
 	let lo = 0;
 	let hi = words.length;
