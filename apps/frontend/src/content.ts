@@ -44,7 +44,6 @@ export const Content = {
 
 	"landingPage.safety.h2":
 		"Sicherheit und Transparenz stehen immer an erster Stelle",
-	
 	"landingPage.safety.accordion.question1":
 		"Darf ich personenbezogene oder sensible Daten mit BärGPT verarbeiten?",
 	"landingPage.safety.accordion.answer1.p1":
@@ -60,9 +59,14 @@ export const Content = {
 	"landingPage.safety.accordion.answer2.p1": "Persönliche Daten werden ausschließlich in deutschen Rechenzentren gemäß dem BSI C5-Standard gespeichert. Sie sind während Übertragung und Speicherung verschlüsselt und werden nach Zweckerfüllung ordnungsgemäß gelöscht.",
 	"landingPage.safety.accordion.question3": "Wer hat Zugriff auf meine Daten?",
 	"landingPage.safety.accordion.answer3.p1": "Der Zugriff auf Daten in BärGPT ist streng reglementiert. Niemand hat Zugriff auf persönliche Chats und Dokumente. Sie sind ausschließlich für Sie persönlich sichtbar. Es gibt keine manuelle Einsicht durch Mitarbeitende, keine Weitergabe an Dritte und keine Nutzung zu anderen Zwecken.",
-
 	"landingPage.safety.accordion.chevronUpAltText": "Antwort verstecken",
 	"landingPage.safety.accordion.chevronDownAltText": "Antwort anzeigen",
+
+	"landingPage.helpCenterBanner.h2": "Hilfe und Tipps zur Nutzung von BärGPT",
+	"landingPage.helpCenterBanner.p1": "Das BärGPT-Hilfecenter bietet leicht verständliche Tipps, Antworten und Schulungsvideos, ideal für den Einstieg in die Arbeit mit KI.",
+	"landingPage.helpCenterBanner.helpLink.label": "Mehr lernen im Hilfecenter",
+	"landingPage.helpCenterBanner.logo.altText": "BärGPT Help Center Logo",
+
 
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",

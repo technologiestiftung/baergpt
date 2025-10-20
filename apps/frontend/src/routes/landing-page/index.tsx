@@ -2,6 +2,7 @@ import { LandingPageHero } from "../../components/landing-page/landing-page-hero
 import { LandingPageCards } from "../../components/landing-page/landing-page-cards.tsx";
 import { LandingPageLayout } from "../../layouts/landing-page-layout.tsx";
 import { LandingPageSafety } from "../../components/landing-page/landing-page-safety.tsx";
+import { LandingPageHelpCenterBanner } from "../../components/landing-page/landing-page-help-center-banner.tsx";
 
 export function LandingPage() {
 	return (
@@ -10,6 +11,7 @@ export function LandingPage() {
 			<div className="translate-y-[-80px] sm:translate-y-[-122px]">
 				<LandingPageCards />
 				<LandingPageSafety />
+				<LandingPageHelpCenterBanner />
 			</div>
 		</LandingPageLayout>
 	);
