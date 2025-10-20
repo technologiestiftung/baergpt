@@ -11,9 +11,9 @@ export const Content = {
 	"header.navigation.landingPage.login.ariaLabel": "Zur Login-Seite",
 	"header.navigation.landingPage.login.link": "/login/",
 	"header.navigation.landingPage.register.label": "Registrieren",
-	"header.navigation.landingPage.register.ariaLabel": "Zur Registrierungs-Seite",
+	"header.navigation.landingPage.register.ariaLabel":
+		"Zur Registrierungs-Seite",
 	"header.navigation.landingPage.register.link": "/register/",
-
 
 	/* -------------------- Landing Page -------------------- */
 	"landingPage.hero.h1": "BärGPT, der KI-Assistent für die Berliner Verwaltung",
@@ -42,35 +42,27 @@ export const Content = {
 		"Transparent und nachvollziehbar. Klickbare Belege mit Sprung zur Quelle. Stärkt Vertrauen und spart Zeit durch präzise Nachweise direkt an der Textstelle.",
 	"landingPage.cards.altText4": "Stern Icon",
 
-// {
-// 		title: "Freien Chat nutzen",
-// 		description:
-// 			"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschrei-bungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
-// 		imgLink: "/icons/speach-bubble-icon.svg",
-// 		altText: "Sprechblase Icon",
-// 	},
-// 	{
-// 		title: "Freien Chat nutzen",
-// 		description:
-// 			"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschrei-bungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
-// 		imgLink: "/icons/document-search-icon.svg",
-// 		altText: "Sprechblase Icon",
-// 	},
-// 	{
-// 		title: "Freien Chat nutzen",
-// 		description:
-// 			"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschrei-bungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
-// 		imgLink: "/icons/book-icon.svg",
-// 		altText: "Sprechblase Icon",
-// 	},
-// 	{
-// 		title: "Freien Chat nutzen",
-// 		description:
-// 			"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschrei-bungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
-// 		imgLink: "/icons/asterisk-icon.svg",
-// 		altText: "Sprechblase Icon",
-// 	},
+	"landingPage.safety.h2":
+		"Sicherheit und Transparenz stehen immer an erster Stelle",
+	
+	"landingPage.safety.accordion.question1":
+		"Darf ich personenbezogene oder sensible Daten mit BärGPT verarbeiten?",
+	"landingPage.safety.accordion.answer1.p1":
+		"Grundsätzlich sollten personenbezogene oder vertrauliche Daten (z. B. Namen, Adressen oder interne Dokumente) nur dann in BärGPT verarbeitet werden, wenn dies für Ihre dienstliche Aufgabe zwingend erforderlich ist. BärGPT ist so konzipiert, dass alle Eingaben innerhalb einer geschützten Umgebung verarbeitet werden und nicht zu Trainingszwecken oder durch Dritte eingesehen werden.",
+	"landingPage.safety.accordion.answer1.p2": "Dennoch gilt:",
+	"landingPage.safety.accordion.answer1.li1":
+		"Gehen Sie mit sensiblen Informationen umsichtig um.",
+	"landingPage.safety.accordion.answer1.li2":
+		"Anonymisieren oder abstrahieren Sie Daten, wenn möglich.",
+	"landingPage.safety.accordion.answer1.li3":
+		"Löschen Sie Chats oder Dokumente, sobald Sie diese nicht mehr benötigen.",
+	"landingPage.safety.accordion.question2": "Wo und wie werden meine Daten gespeichert?",
+	"landingPage.safety.accordion.answer2.p1": "Persönliche Daten werden ausschließlich in deutschen Rechenzentren gemäß dem BSI C5-Standard gespeichert. Sie sind während Übertragung und Speicherung verschlüsselt und werden nach Zweckerfüllung ordnungsgemäß gelöscht.",
+	"landingPage.safety.accordion.question3": "Wer hat Zugriff auf meine Daten?",
+	"landingPage.safety.accordion.answer3.p1": "Der Zugriff auf Daten in BärGPT ist streng reglementiert. Niemand hat Zugriff auf persönliche Chats und Dokumente. Sie sind ausschließlich für Sie persönlich sichtbar. Es gibt keine manuelle Einsicht durch Mitarbeitende, keine Weitergabe an Dritte und keine Nutzung zu anderen Zwecken.",
 
+	"landingPage.safety.accordion.chevronUpAltText": "Antwort verstecken",
+	"landingPage.safety.accordion.chevronDownAltText": "Antwort anzeigen",
 
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",
