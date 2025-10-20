@@ -392,6 +392,7 @@ export class GenerationService {
 					messages: messages,
 					temperature: LLM_PARAMETERS.temperature,
 					schema: citationSchemaWrapped,
+					presencePenalty: 1, // This penalizes repeated words/phrases, hopefully decreasing the likeliness of inifinite repetition loops
 					onFinish: async ({ usage, error }) => {
 						// Handle token usage tracking after stream completes
 						if (userId && usage?.totalTokens) {

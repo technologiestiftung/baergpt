@@ -1,0 +1,39 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "outputs": ["dist/**"]
+    },
+    "check-types": {
+      "dependsOn": ["^build", "^check-types"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "persistent": true,
+      "cache": false
+    },
+    "lint:check": {
+      "dependsOn": ["^build", "^lint:check"]
+    },
+    "lint:write": {
+      "dependsOn": ["^build", "^lint:write"]
+    },
+    "playwright:install": {
+      "dependsOn": []
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:e2e": {
+        "with": ["baergpt-backend#dev"],
+        "dependsOn": ["^build", "playwright:install"]
+    }
+  },
+  "globalDependencies": [".env", "tsconfig.json"]
+}
