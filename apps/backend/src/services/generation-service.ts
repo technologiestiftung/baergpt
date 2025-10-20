@@ -173,13 +173,10 @@ export class GenerationService {
 		}
 
 		try {
-			const response: string = await resilientCall(() =>
-				this.generateTextContent(llmHandler, compiledSummaryPrompt, {
-					userId,
-					langfusePrompt: summaryPromptClient,
-				}),
-			);
-			return response;
+			return this.generateTextContent(llmHandler, compiledSummaryPrompt, {
+				userId,
+				langfusePrompt: summaryPromptClient,
+			});
 		} catch (error) {
 			captureError(error);
 			return null;
