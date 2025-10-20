@@ -67,6 +67,8 @@ export const Content = {
 	"landingPage.helpCenterBanner.helpLink.label": "Mehr lernen im Hilfecenter",
 	"landingPage.helpCenterBanner.logo.altText": "BärGPT Help Center Logo",
 
+	"landingPage.firstSteps.h2": "Erste Schritte mit BärGPT",
+
 
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",

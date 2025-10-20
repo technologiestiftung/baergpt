@@ -3,6 +3,7 @@ import { LandingPageCards } from "../../components/landing-page/landing-page-car
 import { LandingPageLayout } from "../../layouts/landing-page-layout.tsx";
 import { LandingPageSafety } from "../../components/landing-page/landing-page-safety.tsx";
 import { LandingPageHelpCenterBanner } from "../../components/landing-page/landing-page-help-center-banner.tsx";
+import { LandingPageFirstSteps } from "../../components/landing-page/landing-page-first-steps.tsx";
 
 export function LandingPage() {
 	return (
@@ -12,6 +13,7 @@ export function LandingPage() {
 				<LandingPageCards />
 				<LandingPageSafety />
 				<LandingPageHelpCenterBanner />
+				<LandingPageFirstSteps />
 			</div>
 		</LandingPageLayout>
 	);
