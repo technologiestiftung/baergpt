@@ -22,6 +22,55 @@ export const Content = {
 	"landingPage.hero.register.ariaLabel": "Zur Registrierungs-Seite",
 	"landingPage.hero.register.link": "/register/",
 
+	"landingPage.cards.title1": "Freien Chat nutzen",
+	"landingPage.cards.description1":
+		"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschreibungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
+	"landingPage.cards.altText1": "Sprechblase Icon",
+
+	"landingPage.cards.title2": "Dokumente bearbeiten",
+	"landingPage.cards.description2":
+		"Dokumente hochladen und Inhalte abfragen, um Kernaussagen auf einen Blick zu erkennen. Schnell Orientierung bekommen bei fachlicher Recherche.",
+	"landingPage.cards.altText2": "Dokument mit Lupe Icon",
+
+	"landingPage.cards.title3": "Berliner Verwaltungswissen abrufen",
+	"landingPage.cards.description3":
+		"BärGPT greift auf die relevantesten Dokumente der Berliner Verwaltung zurück. Die wichtigsten Gesetze, Verordnungen, Leitfäden sind in der Wissensdatenbank hinterlegt.",
+	"landingPage.cards.altText3": "Buch Icon",
+
+	"landingPage.cards.title4": "Quellen nachverfolgen",
+	"landingPage.cards.description4":
+		"Transparent und nachvollziehbar. Klickbare Belege mit Sprung zur Quelle. Stärkt Vertrauen und spart Zeit durch präzise Nachweise direkt an der Textstelle.",
+	"landingPage.cards.altText4": "Stern Icon",
+
+// {
+// 		title: "Freien Chat nutzen",
+// 		description:
+// 			"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschrei-bungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
+// 		imgLink: "/icons/speach-bubble-icon.svg",
+// 		altText: "Sprechblase Icon",
+// 	},
+// 	{
+// 		title: "Freien Chat nutzen",
+// 		description:
+// 			"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschrei-bungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
+// 		imgLink: "/icons/document-search-icon.svg",
+// 		altText: "Sprechblase Icon",
+// 	},
+// 	{
+// 		title: "Freien Chat nutzen",
+// 		description:
+// 			"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschrei-bungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
+// 		imgLink: "/icons/book-icon.svg",
+// 		altText: "Sprechblase Icon",
+// 	},
+// 	{
+// 		title: "Freien Chat nutzen",
+// 		description:
+// 			"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschrei-bungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
+// 		imgLink: "/icons/asterisk-icon.svg",
+// 		altText: "Sprechblase Icon",
+// 	},
+
 
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",

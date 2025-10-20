@@ -1,5 +1,4 @@
 import React from "react";
-import { Main } from "../components/main";
 import { useSessionRedirect } from "../hooks/use-session-redirect.tsx";
 import { LandingPageHeader } from "../components/headers/landing-page/landing-page-header.tsx";
 
@@ -12,9 +11,9 @@ export const LandingPageLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
 	return (
 		<div className="flex font-arial text-dunkelblau-200 lining-nums proportional-nums">
-			<div className="flex h-svh w-full flex-col overflow-hidden ">
+			<div className="flex w-full flex-col">
 				<LandingPageHeader />
-				<Main>{children}</Main>
+				<main>{children}</main>
 			</div>
 		</div>
 	);

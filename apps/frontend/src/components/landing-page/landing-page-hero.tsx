@@ -2,13 +2,13 @@ import Content from "../../content.ts";
 
 export function LandingPageHero() {
 	return (
-		<section className="relative w-full bg-hellblau-100 text-dunkelblau-100 h-fit overflow-hidden">
+		<section className="flex relative w-full bg-hellblau-100 text-dunkelblau-100 overflow-hidden">
 			<img
-				className="absolute lg:top-[34px] sm:top-4 top-3 lg:right-16 sm:right-8 right-0 lg:w-[474px] sm:w-[380px] w-[220px]"
+				className="absolute lg:top-[34px] sm:top-4 top-3 lg:right-16 sm:right-8 right-4 lg:w-[474px] sm:w-[380px] w-[220px]"
 				src="/icons/baer-icon-large.svg"
 				alt="baer-icon-large"
 			/>
-			<div className="lg:max-w-[942px] sm:max-w-[520px] max-w-[420px] mx-auto px-5 lg:pt-[150px] sm:pt-[80px] sm:pb-[200px] pt-[60px] pb-[140px] text-center flex flex-col items-center">
+			<div className="lg:max-w-[934px] sm:max-w-[520px] max-w-[420px] mx-auto px-5 lg:pt-[150px] sm:pt-[80px] sm:pb-[200px] pt-[60px] pb-[140px] text-center flex flex-col items-center">
 				<h1 className="z-10 lg:text-5xl lg:leading-none sm:font-semibold sm:mb-4 mb-2 sm:text-3xl sm:leading-9 text-xl leading-7 font-bold">
 					{Content["landingPage.hero.h1"]}
 				</h1>
