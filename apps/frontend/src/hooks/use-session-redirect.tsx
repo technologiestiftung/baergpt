@@ -106,7 +106,12 @@ function handleUnauthorized(
 	pathname: string,
 	navigate: (path: string) => void,
 ) {
-	const unprotectedPages = ["/login/", "/register/", "/account-deleted/"];
+	const unprotectedPages = [
+		"/login/",
+		"/register/",
+		"/account-deleted/",
+		"/start/",
+	];
 
 	if (unprotectedPages.includes(pathname)) {
 		return;

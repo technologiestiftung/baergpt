@@ -7,6 +7,21 @@ export const Content = {
 	"header.navigation.help.ariaLabel": "Zum Hilfecenter",
 	"header.navigation.help.link": "https://hilfe.baergpt.berlin/",
 	"header.navigation.profile.ariaLabel": "Zur Profil-Seite",
+	"header.navigation.landingPage.login.label": "Anmelden",
+	"header.navigation.landingPage.login.ariaLabel": "Zur Login-Seite",
+	"header.navigation.landingPage.login.link": "/login/",
+	"header.navigation.landingPage.register.label": "Registrieren",
+	"header.navigation.landingPage.register.ariaLabel": "Zur Registrierungs-Seite",
+	"header.navigation.landingPage.register.link": "/register/",
+
+
+	/* -------------------- Landing Page -------------------- */
+	"landingPage.hero.h1": "BärGPT, der KI-Assistent für die Berliner Verwaltung",
+	"landingPage.hero.h3": "Sicher. Datenschutzkonform. Open Source.",
+	"landingPage.hero.register.label": "Jetzt registrieren",
+	"landingPage.hero.register.ariaLabel": "Zur Registrierungs-Seite",
+	"landingPage.hero.register.link": "/register/",
+
 
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",

@@ -1,8 +1,8 @@
 import React from "react";
 import Content from "../../../content";
-import { AuthNavLinks } from "./auth-nav-links.tsx";
+import { LandingPageNavLinks } from "./landing-page-nav-links.tsx";
 
-export const AuthHeader: React.FC = () => {
+export const LandingPageHeader: React.FC = () => {
 	return (
 		<header className="h-[80px] flex items-center justify-between z-40 bg-white p-5 lg:px-[50px] border-b border-black">
 			<a href={"/"}>
@@ -13,7 +13,7 @@ export const AuthHeader: React.FC = () => {
 				/>
 			</a>
 			<nav>
-				<AuthNavLinks />
+				<LandingPageNavLinks />
 			</nav>
 		</header>
 	);
