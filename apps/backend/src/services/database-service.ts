@@ -1,13 +1,13 @@
 import { supabase } from "../supabase";
 import { ExtractError } from "../types/common";
-import type {
-	Document,
-	DocumentBufferResponse,
-	Embedding,
-	ExtractionResult,
-	HybridSearchResult,
-	KnowledgeBaseDocument,
-  DocumentNotFoundError
+import {
+	type Document,
+	type DocumentBufferResponse,
+	type Embedding,
+	type ExtractionResult,
+	type HybridSearchResult,
+	type KnowledgeBaseDocument,
+	DocumentNotFoundError,
 } from "../types/common";
 import { ragSearchDefaults } from "../constants";
 import { DocumentExtractionService } from "./document-extraction-service";

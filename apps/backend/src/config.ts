@@ -182,12 +182,8 @@ export const config: Config = {
 		? parseInt(process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT, 10)
 		: undefined,
 	nodeEnv: process.env.NODE_ENV,
-	maxRetries: process.env.MAX_RETRIES
-		? parseInt(process.env.MAX_RETRIES, 10)
-		: undefined,
-	retryDelay: process.env.RETRY_DELAY
-		? parseInt(process.env.RETRY_DELAY, 10)
-		: undefined,
+	maxRetries: parseInt(process.env.MAX_RETRIES, 10),
+	retryDelay: parseInt(process.env.RETRY_DELAY, 10),
 	modelTemperature: process.env.MODEL_TEMPERATURE
 		? parseFloat(process.env.MODEL_TEMPERATURE)
 		: undefined,

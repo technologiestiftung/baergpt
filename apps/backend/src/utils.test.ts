@@ -4,42 +4,10 @@ vi.mock("@sentry/node", () => ({
 	captureException: vi.fn(),
 }));
 
-import { resilientCall, wait } from "./utils";
+import { resilientCall } from "./utils";
 import { config } from "./config";
 
 describe("resilientCall()", () => {
-	describe("with timeout", () => {
-		it("should timeout when operation takes longer than specified timeout", async () => {
-			const slowOperation = vi.fn(async () => {
-				await wait(200); // Takes longer than timeout
-				return "success";
-			});
-			const timeout = 100;
-
-			await expect(
-				resilientCall(slowOperation, { timeout, retries: 0 }),
-			).rejects.toThrow("Operation timed out after 100ms");
-
-			expect(slowOperation).toHaveBeenCalled();
-		});
-
-		it("should complete successfully when operation finishes before timeout", async () => {
-			const fastOperation = vi.fn(async () => {
-				await wait(50); // Faster than timeout
-				return "success";
-			});
-			const timeout = 100;
-
-			const result = await resilientCall(fastOperation, {
-				timeout,
-				retries: 0,
-			});
-
-			expect(result).toBe("success");
-			expect(fastOperation).toHaveBeenCalled();
-		});
-	});
-
 	describe("with retries", () => {
 		it("should retry the operation on failure up to the default number of retries", async () => {
 			const givenError = new Error("GivenError");

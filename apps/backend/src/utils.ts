@@ -58,62 +58,25 @@ async function withRetries<T>(
 	return attempt(retries);
 }
 
-/**
- * Runs a promise-returning operation and rejects if it does not settle within timeoutMs.
- * Note: This does not cancel the underlying operation if it doesn't support abort.
- */
-async function withTimeout<T>(
-	op: () => Promise<T>,
-	timeoutMs: number,
-): Promise<T> {
-	return new Promise<T>((resolve, reject) => {
-		let finished = false;
-
-		const timer = setTimeout(() => {
-			if (finished) {
-				return;
-			}
-
-			reject(new Error(`Operation timed out after ${timeoutMs}ms`));
-		}, timeoutMs);
-
-		op()
-			.then((result) => {
-				finished = true;
-				clearTimeout(timer);
-				resolve(result);
-			})
-			.catch((err) => {
-				finished = true;
-				clearTimeout(timer);
-				reject(err);
-			});
-	});
-}
-
 export async function resilientCall<T>(
 	operation: () => Promise<T>,
 	options: {
-		timeout?: number;
 		retries?: number;
 		retryDelay?: number;
 		queueType?: "embeddings" | "llm";
 	} = {},
 ): Promise<T> {
 	const {
-		timeout,
 		retries = config.maxRetries,
 		retryDelay = config.retryDelay,
 		queueType,
 	} = options;
 
-	const wrappedOp = timeout ? () => withTimeout(operation, timeout) : operation;
-
 	if (queueType === "embeddings") {
 		return new Promise<T>((resolve, reject) => {
 			addToEmbeddingsQueue(async () => {
 				try {
-					const result = await withRetries(wrappedOp, {
+					const result = await withRetries(operation, {
 						retries,
 						retryDelay,
 					});
@@ -129,7 +92,7 @@ export async function resilientCall<T>(
 		return new Promise<T>((resolve, reject) => {
 			addToLLMQueue(async () => {
 				try {
-					const result = await withRetries(wrappedOp, {
+					const result = await withRetries(operation, {
 						retries,
 						retryDelay,
 					});
@@ -141,5 +104,5 @@ export async function resilientCall<T>(
 		});
 	}
 
-	return withRetries(wrappedOp, { retries, retryDelay });
+	return withRetries(operation, { retries, retryDelay });
 }
