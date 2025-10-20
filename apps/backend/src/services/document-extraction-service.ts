@@ -24,74 +24,69 @@ export class DocumentExtractionService {
 		fileBytes: Uint8Array,
 		document: Document,
 	): Promise<ExtractionResult> {
-		console.time("extractDocument");
-		try {
-			if (
-				document.file_name?.toLowerCase().endsWith(".doc") ||
-				document.file_name?.toLowerCase().endsWith(".docx")
-			) {
-				const wordExtractor = new WordDocumentExtractionService();
-				const wordContent = await wordExtractor.extractWordDocument(
-					Buffer.from(fileBytes),
-					document.file_name,
-				);
-				const checksum = getHash(fileBytes);
-				const fileSize = fileBytes.length;
-
-				return {
-					document: document,
-					fileSize: fileSize,
-					numPages: 1,
-					checksum: checksum,
-					parsedPages: [
-						{
-							content: wordContent ?? "",
-							pageNumber: 1,
-						},
-					],
-				};
-			} else if (document.file_name?.toLowerCase().endsWith(".xlsx")) {
-				const excelExtractor = new ExcelExtractionService();
-				const parsedExcelPages =
-					await excelExtractor.extractExcelDocument(fileBytes);
-				const checksum = getHash(fileBytes);
-				const fileSize = Buffer.from(fileBytes).length;
-
-				return {
-					document: document,
-					fileSize: fileSize,
-					numPages: parsedExcelPages.length,
-					checksum: checksum,
-					parsedPages: parsedExcelPages,
-				};
-			}
-			const pdfDoc = await PDFDocument.load(fileBytes);
-			const numPages = pdfDoc.getPageCount();
-			if (numPages > config.maxPagesLimit) {
-				throw new ExtractError(
-					document,
-					`Could not extract ${document.source_url}, num pages ${numPages} > limit of ${config.maxPagesLimit} pages.`,
-				);
-			}
-			const documentBuffer = await pdfDoc.save();
-			const parsedPages = await this.extractPdfAsMarkdownPages(
-				fileBytes,
+		if (
+			document.file_name?.toLowerCase().endsWith(".doc") ||
+			document.file_name?.toLowerCase().endsWith(".docx")
+		) {
+			const wordExtractor = new WordDocumentExtractionService();
+			const wordContent = await wordExtractor.extractWordDocument(
+				Buffer.from(fileBytes),
 				document.file_name,
-				{ numPages: numPages, ocrProvider: "mistral" },
 			);
-			const checksum = getHash(documentBuffer);
+			const checksum = getHash(fileBytes);
 			const fileSize = fileBytes.length;
 
 			return {
 				document: document,
 				fileSize: fileSize,
-				numPages: numPages,
+				numPages: 1,
 				checksum: checksum,
-				parsedPages: parsedPages,
+				parsedPages: [
+					{
+						content: wordContent ?? "",
+						pageNumber: 1,
+					},
+				],
 			};
-		} finally {
-			console.timeEnd("extractDocument");
+		} else if (document.file_name?.toLowerCase().endsWith(".xlsx")) {
+			const excelExtractor = new ExcelExtractionService();
+			const parsedExcelPages =
+				await excelExtractor.extractExcelDocument(fileBytes);
+			const checksum = getHash(fileBytes);
+			const fileSize = Buffer.from(fileBytes).length;
+
+			return {
+				document: document,
+				fileSize: fileSize,
+				numPages: parsedExcelPages.length,
+				checksum: checksum,
+				parsedPages: parsedExcelPages,
+			};
 		}
+		const pdfDoc = await PDFDocument.load(fileBytes);
+		const numPages = pdfDoc.getPageCount();
+		if (numPages > config.maxPagesLimit) {
+			throw new ExtractError(
+				document,
+				`Could not extract ${document.source_url}, num pages ${numPages} > limit of ${config.maxPagesLimit} pages.`,
+			);
+		}
+		const documentBuffer = await pdfDoc.save();
+		const parsedPages = await this.extractPdfAsMarkdownPages(
+			fileBytes,
+			document.file_name,
+			{ numPages: numPages, ocrProvider: "mistral" },
+		);
+		const checksum = getHash(documentBuffer);
+		const fileSize = fileBytes.length;
+
+		return {
+			document: document,
+			fileSize: fileSize,
+			numPages: numPages,
+			checksum: checksum,
+			parsedPages: parsedPages,
+		};
 	}
 
 	/**
@@ -110,70 +105,65 @@ export class DocumentExtractionService {
 			ocrProvider: "mistral",
 		},
 	): Promise<ParsedPage[]> {
-		console.time("extractPdfAsMarkdownPages");
-		try {
-			let ocrService: MistralOCRService | LlamaParseOCRService;
-			if (extractionOptions.ocrProvider === "mistral") {
-				ocrService = new MistralOCRService();
-			} else if (extractionOptions.ocrProvider === "llamaparse") {
-				ocrService = new LlamaParseOCRService();
-			} else {
+		let ocrService: MistralOCRService | LlamaParseOCRService;
+		if (extractionOptions.ocrProvider === "mistral") {
+			ocrService = new MistralOCRService();
+		} else if (extractionOptions.ocrProvider === "llamaparse") {
+			ocrService = new LlamaParseOCRService();
+		} else {
+			throw new Error(
+				`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
+			);
+		}
+
+		const pdfDoc = await PDFDocument.load(pdfBytes);
+
+		if (extractionOptions.numPages <= config.maxPagesForLlmParseLimit) {
+			try {
+				if (ocrService instanceof MistralOCRService) {
+					return await ocrService.extractTextFromPdfWithMistral(pdfBytes);
+				} else if (extractionOptions.ocrProvider === "llamaparse") {
+					const markdownText = await ocrService.extractMarkdownViaLLamaParse(
+						pdfBytes,
+						fileName,
+					);
+					const markdownPages = markdownText.split(PAGE_SEPARATOR);
+
+					return markdownPages.map((content, index) => ({
+						content,
+						pageNumber: index,
+					})) as ParsedPage[];
+				}
 				throw new Error(
 					`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
 				);
+			} catch (error) {
+				captureError(error);
+				// Continue to fallback method
 			}
-
-			const pdfDoc = await PDFDocument.load(pdfBytes);
-
-			if (extractionOptions.numPages <= config.maxPagesForLlmParseLimit) {
-				try {
-					if (ocrService instanceof MistralOCRService) {
-						return await ocrService.extractTextFromPdfWithMistral(pdfBytes);
-					} else if (extractionOptions.ocrProvider === "llamaparse") {
-						const markdownText = await ocrService.extractMarkdownViaLLamaParse(
-							pdfBytes,
-							fileName,
-						);
-						const markdownPages = markdownText.split(PAGE_SEPARATOR);
-
-						return markdownPages.map((content, index) => ({
-							content,
-							pageNumber: index,
-						})) as ParsedPage[];
-					}
-					throw new Error(
-						`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
-					);
-				} catch (error) {
-					captureError(error);
-					// Continue to fallback method
-				}
-			}
-
-			// For larger PDFs or if LLamaParse fails, use pdf2md
-			const pdf2md = (await import("@opendocsg/pdf2md")).default;
-			const parsedPages: ParsedPage[] = [];
-			for (let i = 0; i < extractionOptions.numPages; i++) {
-				// Create a new document containing only this page
-				const singlePageDoc = await PDFDocument.create();
-				const [copiedPage] = await singlePageDoc.copyPages(pdfDoc, [i]);
-				singlePageDoc.addPage(copiedPage);
-
-				const pageBytes = await singlePageDoc.save();
-
-				// @ts-expect-error pdf2md has no types
-				const mdPage = await pdf2md(pageBytes, null);
-
-				parsedPages.push({
-					content: mdPage,
-					pageNumber: i,
-				} as ParsedPage);
-			}
-
-			return parsedPages;
-		} finally {
-			console.timeEnd("extractPdfAsMarkdownPages");
 		}
+
+		// For larger PDFs or if LLamaParse fails, use pdf2md
+		const pdf2md = (await import("@opendocsg/pdf2md")).default;
+		const parsedPages: ParsedPage[] = [];
+		for (let i = 0; i < extractionOptions.numPages; i++) {
+			// Create a new document containing only this page
+			const singlePageDoc = await PDFDocument.create();
+			const [copiedPage] = await singlePageDoc.copyPages(pdfDoc, [i]);
+			singlePageDoc.addPage(copiedPage);
+
+			const pageBytes = await singlePageDoc.save();
+
+			// @ts-expect-error pdf2md has no types
+			const mdPage = await pdf2md(pageBytes, null);
+
+			parsedPages.push({
+				content: mdPage,
+				pageNumber: i,
+			} as ParsedPage);
+		}
+
+		return parsedPages;
 	}
 }
 
@@ -182,46 +172,40 @@ export class WordDocumentExtractionService {
 		wordDoc: Buffer,
 		fileName: string,
 	): Promise<string> {
-		console.time("extractWordDocument");
-		try {
-			if (wordDoc.length === 0) {
-				captureError(new Error("Empty document buffer"));
-				return "";
-			}
-			if (fileName?.toLowerCase().endsWith(".docx")) {
-				try {
-					return await this.extractWithMammoth(wordDoc);
-				} catch (mammothError) {
-					captureError(mammothError);
-					try {
-						return await this.extractWithWordExtractor(wordDoc);
-					} catch (wordExtractorError) {
-						captureError(wordExtractorError);
-						return "";
-					}
-				}
-			} else if (fileName?.toLowerCase().endsWith(".doc")) {
+		if (wordDoc.length === 0) {
+			captureError(new Error("Empty document buffer"));
+			return "";
+		}
+		if (fileName?.toLowerCase().endsWith(".docx")) {
+			try {
+				return await this.extractWithMammoth(wordDoc);
+			} catch (mammothError) {
+				captureError(mammothError);
 				try {
 					return await this.extractWithWordExtractor(wordDoc);
 				} catch (wordExtractorError) {
 					captureError(wordExtractorError);
-					try {
-						return await this.extractWithMammoth(wordDoc);
-					} catch (mammothError) {
-						captureError(mammothError);
-						return "";
-					}
+					return "";
 				}
-			} else {
-				throw new Error("Unsupported file type for Word document extraction");
 			}
-		} finally {
-			console.timeEnd("extractWordDocument");
+		} else if (fileName?.toLowerCase().endsWith(".doc")) {
+			try {
+				return await this.extractWithWordExtractor(wordDoc);
+			} catch (wordExtractorError) {
+				captureError(wordExtractorError);
+				try {
+					return await this.extractWithMammoth(wordDoc);
+				} catch (mammothError) {
+					captureError(mammothError);
+					return "";
+				}
+			}
+		} else {
+			throw new Error("Unsupported file type for Word document extraction");
 		}
 	}
 
 	async convertDocxToPdf(wordDoc: Buffer): Promise<Uint8Array> {
-		console.time("convertDocxToPdf");
 		const form = new FormData();
 		const bytes = new Uint8Array(
 			wordDoc.buffer,
@@ -252,36 +236,29 @@ export class WordDocumentExtractionService {
 		if (!res.ok) {
 			throw new Error(`HTTP ${res.status} ${await res.text()}`);
 		}
-		console.timeEnd("convertDocxToPdf");
 		return new Uint8Array(await res.arrayBuffer());
 	}
 
 	private async extractWithMammoth(wordDoc: Buffer): Promise<string> {
-		console.time("extractWithMammoth");
 		const result = await mammoth.extractRawText({ buffer: wordDoc });
 
 		if (result.value && result.value.trim().length > 0) {
-			console.timeEnd("extractWithMammoth");
 			return result.value;
 		}
 		console.warn("Mammoth extraction returned empty content");
-		console.timeEnd("extractWithMammoth");
 		return "";
 	}
 
 	private async extractWithWordExtractor(wordDoc: Buffer): Promise<string> {
-		console.time("extractWithWordExtractor");
 		const extractor = new WordExtractor();
 		const extracted = await extractor.extract(wordDoc);
 
 		if (extracted && typeof extracted.getBody === "function") {
 			const body = extracted.getBody();
 			if (body && body.trim().length > 0) {
-				console.timeEnd("extractWithWordExtractor");
 				return body;
 			}
 			console.warn("Word-extractor returned empty content");
-			console.timeEnd("extractWithWordExtractor");
 			return "";
 		}
 
@@ -290,7 +267,6 @@ export class WordDocumentExtractionService {
 				"Failed to extract content from Word document - invalid extraction result",
 			),
 		);
-		console.timeEnd("extractWithWordExtractor");
 		return "";
 	}
 }
@@ -304,7 +280,6 @@ class ExcelExtractionService {
 	private static readonly CELL_MAX = 1024;
 
 	async extractExcelDocument(fileBytes: Uint8Array): Promise<ParsedPage[]> {
-		console.time("extractExcelDocument");
 		const results: ParsedPage[] = [];
 		const workbook = XLSX.read(fileBytes, {
 			type: "buffer",
@@ -324,7 +299,6 @@ class ExcelExtractionService {
 				pageNumber: index + 1,
 			});
 		});
-		console.timeEnd("extractExcelDocument");
 		return results;
 	}
 
@@ -360,7 +334,6 @@ class ExcelExtractionService {
 	}
 
 	private sheetToMarkdown(worksheet: XLSX.WorkSheet): string {
-		console.time("sheetToMarkdown");
 		/**
 		 * Converts a worksheet into a compact Markdown table with guards:
 		 * - Caps processed range using decoded !ref → at most MAX_ROWS × MAX_COLS from start
@@ -474,7 +447,6 @@ class ExcelExtractionService {
 
 			markdown += `| ${bounded.join(" | ")} |\n`;
 		}
-		console.timeEnd("sheetToMarkdown");
 		return markdown;
 	}
 }
@@ -483,7 +455,6 @@ class MistralOCRService {
 	async extractTextFromPdfWithMistral(
 		pdfBytes: Uint8Array,
 	): Promise<ParsedPage[]> {
-		console.time("extractTextFromPdfWithMistral");
 		const client = new Mistral({ apiKey: config.mistralApiKey });
 
 		const blob = new Blob([pdfBytes], { type: "application/pdf" });
@@ -497,12 +468,11 @@ class MistralOCRService {
 					},
 					purpose: "ocr",
 				}),
-			{ timeout: 30_000 },
+			{ queueType: "llm" },
 		);
 
-		const signedUrl = await resilientCall(
-			() => client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
-			{ timeout: 30_000 },
+		const signedUrl = await resilientCall(() =>
+			client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
 		);
 
 		const ocrResponse = await resilientCall(
@@ -514,13 +484,12 @@ class MistralOCRService {
 						documentUrl: signedUrl.url,
 					},
 				}),
-			{ timeout: 60_000, retries: 3 },
+			{ retries: 3, queueType: "llm" },
 		);
 
 		if (!ocrResponse.pages) {
 			throw new Error("No pages found in OCR response");
 		}
-		console.timeEnd("extractTextFromPdfWithMistral");
 		return ocrResponse.pages.map(
 			(page, index) =>
 				({
@@ -538,8 +507,6 @@ class LlamaParseOCRService {
 		pdfBytes: Uint8Array,
 		fileName: string,
 	): Promise<UploadResponse> {
-		console.time("uploadFileToLLamaParse");
-
 		const blob = new Blob([pdfBytes], { type: "application/pdf" });
 
 		const headers = new Headers();
@@ -567,14 +534,11 @@ class LlamaParseOCRService {
 				`LLamaParse API returned status ${res.status}: ${await res.text()}`,
 			);
 		}
-		console.timeEnd("uploadFileToLLamaParse");
 		const body = await res.json();
 		return body as UploadResponse;
 	}
 
 	async checkParsingStatus(jobId: string): Promise<StatusResponse> {
-		console.time("checkParsingStatus");
-
 		const headers = new Headers();
 		headers.append("Authorization", `Bearer ${config.llamaParseToken}`);
 
@@ -591,13 +555,11 @@ class LlamaParseOCRService {
 		);
 
 		const body = await res.json();
-		console.timeEnd("checkParsingStatus");
+
 		return body as StatusResponse;
 	}
 
 	async fetchMarkdown(jobId: string): Promise<string> {
-		console.time("fetchMarkdown");
-
 		const headers = new Headers();
 		headers.append("Authorization", `Bearer ${config.llamaParseToken}`);
 
@@ -614,7 +576,7 @@ class LlamaParseOCRService {
 		);
 
 		const body = (await res.json()) as MarkdownResponse;
-		console.timeEnd("fetchMarkdown");
+
 		return body.markdown;
 	}
 
@@ -622,69 +584,64 @@ class LlamaParseOCRService {
 		pdfBytes: Uint8Array,
 		fileName: string,
 	): Promise<string> {
-		console.time("extractMarkdownViaLLamaParse");
-		try {
-			const uploadRes = await this.uploadFileToLLamaParse(pdfBytes, fileName);
+		const uploadRes = await this.uploadFileToLLamaParse(pdfBytes, fileName);
 
-			// Initialize variables for exponential backoff
-			let delay = 1000;
-			const maxDelay = 20000; // Maximum delay of 20 seconds
-			const backoffFactor = 1.5; // Increase delay by this factor each time
-			const startTime = Date.now();
-			let lastLogTime = startTime;
+		// Initialize variables for exponential backoff
+		let delay = 1000;
+		const maxDelay = 20000; // Maximum delay of 20 seconds
+		const backoffFactor = 1.5; // Increase delay by this factor each time
+		const startTime = Date.now();
+		let lastLogTime = startTime;
 
-			// Helper function for waiting
-			function sleep(ms: number): Promise<void> {
-				return new Promise((resolve) => setTimeout(resolve, ms));
-			}
+		// Helper function for waiting
+		function sleep(ms: number): Promise<void> {
+			return new Promise((resolve) => setTimeout(resolve, ms));
+		}
 
-			let statusRes = await this.checkParsingStatus(uploadRes.id);
-			if (process.env.NODE_ENV === "development") {
-				console.log(`Initial status for ${fileName}: ${statusRes.status}`);
-			}
-			while (statusRes.status !== "SUCCESS") {
-				if (statusRes.status === "ERROR") {
-					throw new Error(
-						`File ${fileName} failed to complete markdown extraction via LLamaParse...`,
-					);
-				}
-
-				const elapsedSeconds = (Date.now() - startTime) / 1000;
-				const currentTime = Date.now();
-
-				// Log status approximately every second
-				if (currentTime - lastLogTime >= 1000) {
-					if (process.env.NODE_ENV === "development") {
-						console.log(
-							`[${Math.floor(elapsedSeconds)}s] ${fileName} status: ${statusRes.status}`,
-						);
-					}
-					lastLogTime = currentTime;
-				}
-
-				if (elapsedSeconds > this.TIMEOUT_SECONDS) {
-					throw new Error(
-						`File ${fileName} took too long to complete markdown extraction via LLamaParse...`,
-					);
-				}
-
-				// Wait with exponential backoff before trying again
-				await sleep(delay);
-
-				// Increase delay for next iteration, but cap it at maxDelay
-				delay = Math.min(delay * backoffFactor, maxDelay);
-
-				statusRes = await this.checkParsingStatus(uploadRes.id);
-			}
-			if (process.env.NODE_ENV === "development") {
-				console.log(
-					`Extraction completed successfully for ${fileName} after ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
+		let statusRes = await this.checkParsingStatus(uploadRes.id);
+		if (process.env.NODE_ENV === "development") {
+			console.log(`Initial status for ${fileName}: ${statusRes.status}`);
+		}
+		while (statusRes.status !== "SUCCESS") {
+			if (statusRes.status === "ERROR") {
+				throw new Error(
+					`File ${fileName} failed to complete markdown extraction via LLamaParse...`,
 				);
 			}
-			const markdown = await this.fetchMarkdown(uploadRes.id);
-			return markdown;
-		} finally {
-			console.timeEnd("extractMarkdownViaLLamaParse");
+
+			const elapsedSeconds = (Date.now() - startTime) / 1000;
+			const currentTime = Date.now();
+
+			// Log status approximately every second
+			if (currentTime - lastLogTime >= 1000) {
+				if (process.env.NODE_ENV === "development") {
+					console.log(
+						`[${Math.floor(elapsedSeconds)}s] ${fileName} status: ${statusRes.status}`,
+					);
+				}
+				lastLogTime = currentTime;
+			}
+
+			if (elapsedSeconds > this.TIMEOUT_SECONDS) {
+				throw new Error(
+					`File ${fileName} took too long to complete markdown extraction via LLamaParse...`,
+				);
+			}
+
+			// Wait with exponential backoff before trying again
+			await sleep(delay);
+
+			// Increase delay for next iteration, but cap it at maxDelay
+			delay = Math.min(delay * backoffFactor, maxDelay);
+
+			statusRes = await this.checkParsingStatus(uploadRes.id);
 		}
+		if (process.env.NODE_ENV === "development") {
+			console.log(
+				`Extraction completed successfully for ${fileName} after ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
+			);
+		}
+		const markdown = await this.fetchMarkdown(uploadRes.id);
+		return markdown;
 	}
 }

@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { DatabaseService } from "../services/database-service";
@@ -37,7 +35,6 @@ documents.post("/process", async (c: Context) => {
 		]);
 
 		await dbService.finishProcessing(extractedDocument);
-		console.timeEnd("upload and processing");
 		return c.body(null, 204);
 	} catch (error) {
 		captureError(error);
@@ -46,8 +43,6 @@ documents.post("/process", async (c: Context) => {
 });
 
 documents.post("/upload", async (c: Context) => {
-	console.time("upload");
-	console.time("upload and processing");
 	const body = await c.req.parseBody();
 	const uploadedFile = body["file"];
 	const sourceUrl = String(body["sourceUrl"] || "");
@@ -104,7 +99,6 @@ documents.post("/upload", async (c: Context) => {
 			captureError(err);
 		}
 	}
-	console.timeEnd("upload");
 	return c.body(null, 204);
 });
 
