@@ -35,7 +35,7 @@ export function LandingPageSafety() {
 	return (
 		<div className="flex flex-col py-[60px] sm:py-20 px-5 lg:px-0 text-dunkelblau-100 gap-6 sm:gap-5 lg:gap-12 max-w-[934px] mx-auto">
 			<h2 className="max-w-[624px] mx-auto text-2xl text-center leading-8 font-semibold sm:text-3xl sm:leading-9 lg:text-4xl lg:leading-10">
-				Sicherheit und Transparenz stehen immer an erster Stelle
+				{Content["landingPage.safety.h2"]}
 			</h2>
 			{faq.map((section, index) => (
 				<div key={index}>
