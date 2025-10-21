@@ -2,7 +2,7 @@ import Content from "../../content.ts";
 
 export function LandingPageHero() {
 	return (
-		<div className="flex relative w-full bg-hellblau-100 text-dunkelblau-100 overflow-hidden">
+		<div className="flex relative w-full bg-hellblau-100 text-dunkelblau-100 overflow-hidden z-10">
 			<img
 				className="absolute lg:top-[34px] sm:top-4 top-3 lg:right-16 sm:right-8 right-4 lg:w-[474px] sm:w-[380px] w-[220px]"
 				src="/icons/baer-icon-large.svg"
