@@ -4,7 +4,7 @@ export const Content = {
 	"header.navigation.help.label": "Hilfecenter",
 	"header.navigation.help.mobileLabel": "Hilfe",
 	"header.navigation.profile": "Profil",
-	"header.navigation.help.ariaLabel": "Zum Hilfecenter",
+	"header.navigation.help.ariaLabel": "Hilfecenter",
 	"header.navigation.help.link": "https://hilfe.baergpt.berlin/",
 	"header.navigation.profile.ariaLabel": "Zur Profil-Seite",
 
