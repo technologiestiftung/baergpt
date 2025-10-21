@@ -73,12 +73,12 @@ export const Content = {
 
 	"landingPage.firstSteps.h2": "Erste Schritte mit BärGPT",
 
-	"landingPage.registerCTA.h2": "Jetzt mit BärGPT den Arbeitsalltag erleichtern",
+	"landingPage.registerCTA.h2":
+		"Jetzt mit BärGPT den Arbeitsalltag erleichtern",
 	"landingPage.registerCTA.p": "Für alle Beschäftigte der Berliner Verwaltung",
 	"landingPage.registerCTA.label": "Jetzt registrieren",
 	"landingPage.registerCTA.ariaLabel": "Zur Registrierungs-Seite",
 	"landingPage.registerCTA.link": "/register/",
-
 
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",
@@ -533,7 +533,7 @@ export const Content = {
 	"footer.privacy": "Datenschutz",
 	"footer.privacy.link":
 		"https://www.technologiestiftung-berlin.de/datenschutz",
-		
+
 	"footer.citylabLogo.alt": "CityLAB Berlin",
 	"footer.citylabLogo.link": "https://citylab-berlin.org/",
 
@@ -541,7 +541,7 @@ export const Content = {
 	"footer.technologiestiftungLogo.alt": "Technologiestiftung Berlin",
 	"footer.technologiestiftungLogo.link":
 		"https://www.technologiestiftung-berlin.de/",
-		
+
 	"footer.senatskanzleiLogo.p": "Gefördert durch",
 	"footer.senatskanzleiLogo.alt":
 		"Der Regierende Bürgermeister von Berlin, Senatskanzlei",
@@ -550,13 +550,12 @@ export const Content = {
 	// Landing Page Footer Links
 	"footer.support": "Support",
 	"footer.support.link": "mailto:support@baergpt.berlin",
-	"footer.github" : "GitHub",
+	"footer.github": "GitHub",
 	"footer.github.link": "https://github.com/technologiestiftung/baergpt",
 	"footer.helpcenter": "Hilfecenter",
 	"footer.helpcenter.link": "https://hilfe.baergpt.berlin/",
 	"footer.feedback": "Feedback geben",
 	"footer.feedback.link": "https://citylabberlin.typeform.com/to/GhoCHw0J",
-
 
 	/* ---------------------- Admin ---------------------- */
 	"admin.button.link.label": "Adminbereich",
