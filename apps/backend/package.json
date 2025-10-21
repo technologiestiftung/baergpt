@@ -30,7 +30,7 @@
 		"@langfuse/client": "4.2.0",
 		"@langfuse/core": "4.2.0",
 		"@langfuse/otel": "4.2.0",
-		"@langfuse/tracing": "^4.2.0",
+		"@langfuse/tracing": "4.2.0",
 		"@mistralai/mistralai": "1.9.18",
 		"@opendocsg/pdf2md": "0.2.1",
 		"@opentelemetry/auto-instrumentations-node": "0.65.0",
