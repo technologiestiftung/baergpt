@@ -1,11 +1,16 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
-import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { LangfuseSpanProcessor, ShouldExportSpan } from "@langfuse/otel";
 import { config } from "../config";
-import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
+import {
+	SentryPropagator,
+	SentrySampler,
+	SentrySpanProcessor,
+} from "@sentry/opentelemetry";
 import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import { supabase } from "../supabase";
+import { configureGlobalLogger, LogLevel } from "@langfuse/core";
 
 export const sentryClient = Sentry.init({
 	dsn: config.sentryDsn || "",
@@ -20,8 +25,12 @@ export const sentryClient = Sentry.init({
 	skipOpenTelemetrySetup: true,
 });
 
+const shouldExportSpan: ShouldExportSpan = ({ otelSpan }) =>
+	["langfuse-sdk", "ai"].includes(otelSpan.instrumentationScope.name);
+
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({
 	environment: config.nodeEnv,
+	shouldExportSpan: shouldExportSpan,
 });
 
 const sdk = new NodeSDK({

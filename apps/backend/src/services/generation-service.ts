@@ -9,6 +9,7 @@ import {
 	ChatPromptClient,
 	TextPromptClient,
 } from "@langfuse/client";
+import { updateActiveTrace } from "@langfuse/tracing";
 import {
 	type Document,
 	type HybridSearchResult,
@@ -264,7 +265,6 @@ export class GenerationService {
 		if (!tags) {
 			throw new Error("Failed to generate document tags");
 		}
-
 		// Using the refactored function with structured parameters
 		await dbService.logSummarizedDocument(
 			{
@@ -321,6 +321,7 @@ export class GenerationService {
 			};
 			toolChoice = "auto";
 		}
+		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await generateText({
 			model: llmHandler.languageModel,
 			messages: messages,
@@ -328,7 +329,7 @@ export class GenerationService {
 			tools,
 			toolChoice,
 			experimental_telemetry: {
-				isEnabled: !process.env.CI, // Disable telemetry in CI
+				isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 				functionId: "text-toolCall-generation",
 				metadata: {
 					userId: userId ? userId : "unknown",
@@ -362,7 +363,13 @@ export class GenerationService {
 			temperature: LLM_PARAMETERS.temperature,
 			// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 			schema: citationAnswerSchema(maxAvailableSources),
-			onFinish: async ({ usage, error }) => {
+			onFinish: async ({ object, usage, error }) => {
+				updateActiveTrace({
+					name: "streamed-structuredOutput-generation",
+					output: object,
+					userId,
+					sessionId,
+				});
 				// Handle token usage tracking after stream completes
 				if (userId && usage?.totalTokens) {
 					try {
@@ -383,7 +390,6 @@ export class GenerationService {
 			},
 			experimental_telemetry: {
 				isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-				functionId: "streamed-structuredOutput-generation",
 				metadata: {
 					userId: userId ? userId : "unknown",
 					sessionId: sessionId ? sessionId : "unknown",
@@ -418,8 +424,7 @@ export class GenerationService {
 			messages: messages,
 			temperature: LLM_PARAMETERS.temperature,
 			experimental_telemetry: {
-				isEnabled: !(process.env.CI || !userId), // Disable telemetry in CI and when userId is not provided
-				functionId: "tag-or-summary-generation",
+				isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 				metadata: {
 					userId: userId ? userId : "unknown",
 					sessionId: sessionId ? sessionId : "unknown",
