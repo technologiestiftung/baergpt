@@ -51,38 +51,28 @@ export function FooterLandingPage() {
 				/>
 				<div className="flex flex-row gap-8">
 					<ul className="flex flex-col lg:flex-row gap-[5px] lg:gap-8">
-						{topLinks.section1.map(
-							(link, index) => (
-								console.log(link),
-								(
-									<li key={index}>
-										<a
-											href={link.href}
-											className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline"
-										>
-											{link.text}
-										</a>
-									</li>
-								)
-							),
-						)}
+						{topLinks.section1.map((link, index) => (
+							<li key={index}>
+								<a
+									href={link.href}
+									className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline"
+								>
+									{link.text}
+								</a>
+							</li>
+						))}
 					</ul>
 					<ul className="flex flex-col lg:flex-row gap-[5px] lg:gap-8">
-						{topLinks.section2.map(
-							(link, index) => (
-								console.log(link),
-								(
-									<li key={index}>
-										<a
-											href={link.href}
-											className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline"
-										>
-											{link.text}
-										</a>
-									</li>
-								)
-							),
-						)}
+						{topLinks.section2.map((link, index) => (
+							<li key={index}>
+								<a
+									href={link.href}
+									className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline"
+								>
+									{link.text}
+								</a>
+							</li>
+						))}
 					</ul>
 				</div>
 			</div>
