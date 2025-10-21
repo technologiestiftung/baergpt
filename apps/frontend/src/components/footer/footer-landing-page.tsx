@@ -1,5 +1,6 @@
 import { useAuthStore } from "../../store/auth-store.ts";
 import Content from "../../content.ts";
+import { FooterLogoBanner } from "./footer-logo-banner.tsx";
 
 const topLinks = {
 	section1: [
@@ -31,30 +32,6 @@ const topLinks = {
 		},
 	],
 };
-
-const bottomItems = [
-	{
-		spanText: " ",
-		src: "/logos/citylab-berlin-logo.svg",
-		alt: Content["footer.citylabLogo.alt"],
-		width: 174,
-		height: 35,
-	},
-	{
-		spanText: "Ein Projekt der",
-		src: "/logos/technologiestiftung-berlin-logo.svg",
-		alt: Content["footer.technologiestiftungLogo.alt"],
-		width: 176,
-		height: 53,
-	},
-	{
-		spanText: "Gefördert durch",
-		src: "/logos/senatskanzlei-logo.svg",
-		alt: Content["footer.senatskanzleiLogo.alt"],
-		width: 230,
-		height: 38,
-	},
-];
 
 export function FooterLandingPage() {
 	const { session } = useAuthStore();
@@ -109,21 +86,7 @@ export function FooterLandingPage() {
 					</ul>
 				</div>
 			</div>
-			<ul className="w-full flex flex-col justify-center items-center py-5 md:items-start md:flex-row md:py-6 gap-12 text-center md:text-start text-schwarz-80">
-				{bottomItems.map((item, index) => (
-					<li key={index} className="flex flex-col gap-y-5">
-						<span className="text-sm md:h-5 text-schwarz-40 tracking-[-0.15px]">
-							{item.spanText}
-						</span>
-						<img
-							src={item.src}
-							alt={item.alt}
-							width={item.width}
-							height={item.height}
-						/>
-					</li>
-				))}
-			</ul>
+			<FooterLogoBanner />
 		</footer>
 	);
 }
