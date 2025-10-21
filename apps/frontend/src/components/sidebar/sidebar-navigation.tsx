@@ -30,7 +30,7 @@ export const SidebarNavigation: React.FC = () => {
 
 	return (
 		<>
-			<div className="w-full relative flex md:flex-col items-center">
+			<div className="w-full relative flex md:flex-col items-center gap-2">
 				{navItems.map(({ href, iconSrc, label, ariaLabel }) => (
 					<SidebarLink
 						key={href}

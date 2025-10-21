@@ -75,7 +75,7 @@ export const History: React.FC = () => {
 	}, [chatsToday, chatsLastSevenDays, chatsByMonth]);
 
 	return (
-		<div className="flex flex-col gap-6 w-full min-h-0">
+		<div className="flex flex-col gap-[18px] w-full min-h-0">
 			<h2 className="text-base leading-6 font-semibold text-hellblau-50 md:px-2 px-5 whitespace-nowrap">
 				{Content["chatHistory.title"]}
 			</h2>
@@ -93,7 +93,10 @@ export const History: React.FC = () => {
 
 						{!isFirstLoad && (
 							<>
-								<div className={`w-full flex flex-col gap-6 mb-5 pt-4`}>
+								<div className={`w-full flex flex-col gap-6 mb-5 pr-3.5`}>
+									{chatGroups.map(({ label, chats: chatGroup }) => (
+										<HistoryGroup key={label} label={label} chats={chatGroup} />
+									))}
 									{chatGroups.map(({ label, chats: chatGroup }) => (
 										<HistoryGroup key={label} label={label} chats={chatGroup} />
 									))}

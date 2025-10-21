@@ -30,7 +30,7 @@ export const Content = {
 		"Datei zum Chat hinzufügen und KI-Assistent Anweisung geben",
 
 	/* -------------------- Chat History -------------------- */
-	"chatHistory.title": "Mein Chatverlauf",
+	"chatHistory.title": "Chats",
 	"chatHistory.today": "Heute",
 	"chatHistory.lastSevenDays": "Letzte 7 Tage",
 

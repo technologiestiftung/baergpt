@@ -30,9 +30,9 @@ export const NewChatButton: React.FC<NewChatButtonProps> = ({
 		<>
 			<button
 				aria-label={Content["newChatButton.ariaLabel"]}
-				className={`rounded-[3px] flex items-center gap-1 text-sm leading-5 font-semibold ${
+				className={`rounded-[3px] flex items-center gap-1.5 text-sm leading-5 font-semibold ${
 					isExpanded
-						? "border border-hellblau-50 w-fit p-1.5 pl-[3px] pr-3 text-hellblau-50 box-border hover:bg-dunkelblau-90 hover:border-dunkelblau-90 focus-visible:outline-default"
+						? "border border-hellblau-50 w-fit p-1.5 pl-1.5 pr-3 text-hellblau-50 box-border hover:bg-dunkelblau-90 hover:border-dunkelblau-90 focus-visible:outline-default"
 						: "relative self-center flex-row gap-1 p-1 bg-transparent hover:bg-dunkelblau-90 focus-visible:outline-default"
 				}`}
 				onClick={() => {
@@ -45,10 +45,10 @@ export const NewChatButton: React.FC<NewChatButtonProps> = ({
 				onBlur={hideTooltip}
 			>
 				<img
-					src="icons/plus-light-icon.svg"
+					src="icons/new-chat-icon.svg"
 					alt={Content["plusIcon.imgAlt"]}
-					width={22}
-					height={22}
+					width={24}
+					height={24}
 				/>
 				{isExpanded && (
 					<span className="whitespace-nowrap">
