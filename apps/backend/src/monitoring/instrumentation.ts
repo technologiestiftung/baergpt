@@ -1,6 +1,6 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
-import { LangfuseExporter } from "langfuse-vercel";
+import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { config } from "../config";
 import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
 import * as Sentry from "@sentry/node";
@@ -20,11 +20,12 @@ export const sentryClient = Sentry.init({
 	skipOpenTelemetrySetup: true,
 });
 
+export const langfuseSpanProcessor = new LangfuseSpanProcessor({
+	environment: config.nodeEnv,
+});
+
 const sdk = new NodeSDK({
-	traceExporter: new LangfuseExporter({
-		debug: false,
-		environment: config.nodeEnv,
-	}),
+	spanProcessors: [langfuseSpanProcessor],
 	sampler: sentryClient ? new SentrySampler(sentryClient) : undefined,
 	contextManager: new Sentry.SentryContextManager(),
 	textMapPropagator: new SentryPropagator(),

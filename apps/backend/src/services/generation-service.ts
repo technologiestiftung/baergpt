@@ -4,8 +4,11 @@ import type { ModelMessage, Tool, ToolChoice } from "ai";
 import { generateText, streamObject } from "ai";
 import { ModelService } from "./model-service";
 import { EmbeddingService } from "./embedding-service";
-import type { ChatPromptClient, TextPromptClient } from "langfuse";
-import { Langfuse } from "langfuse";
+import {
+	LangfuseClient,
+	ChatPromptClient,
+	TextPromptClient,
+} from "@langfuse/client";
 import {
 	type Document,
 	type HybridSearchResult,
@@ -22,7 +25,7 @@ import { z } from "zod";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 
 const ESTIMATED_TOKENS_PER_WORD = config.estimatedTokensPerWord;
-const langfuse = new Langfuse();
+const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
@@ -53,19 +56,15 @@ export class GenerationService {
 				: docInput.map((page) => page.content).join("\n");
 
 		if (oneSentenceSummary) {
-			summaryPromptClient = await langfuse.getPrompt(
-				"one-sentence-summary",
-				undefined,
-				{
-					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-					type: "chat",
-				},
-			);
+			summaryPromptClient = await langfuse.prompt.get("one-sentence-summary", {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+				type: "chat",
+			});
 			compiledSummaryPrompt = summaryPromptClient.compile({
 				docContent: docContent,
 			}) as ModelMessage[];
 		} else {
-			summaryPromptClient = await langfuse.getPrompt("summary", undefined, {
+			summaryPromptClient = await langfuse.prompt.get("summary", {
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 				type: "chat",
 			});
@@ -186,7 +185,7 @@ export class GenerationService {
 				? docInput
 				: docInput.map((page) => page.content).join("\n");
 
-		const taggingPromptClient = await langfuse.getPrompt("tagging", undefined, {
+		const taggingPromptClient = await langfuse.prompt.get("tagging", {
 			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 			type: "chat",
 		});
@@ -330,6 +329,7 @@ export class GenerationService {
 			toolChoice,
 			experimental_telemetry: {
 				isEnabled: !process.env.CI, // Disable telemetry in CI
+				functionId: "text-toolCall-generation",
 				metadata: {
 					userId: userId ? userId : "unknown",
 					sessionId: sessionId ? sessionId : "unknown",
@@ -362,7 +362,6 @@ export class GenerationService {
 			temperature: LLM_PARAMETERS.temperature,
 			// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 			schema: citationAnswerSchema(maxAvailableSources),
-			presencePenalty: 1, // This penalizes repeated words/phrases, hopefully decreasing the likeliness of inifinite repetition loops
 			onFinish: async ({ usage, error }) => {
 				// Handle token usage tracking after stream completes
 				if (userId && usage?.totalTokens) {
@@ -384,6 +383,7 @@ export class GenerationService {
 			},
 			experimental_telemetry: {
 				isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+				functionId: "streamed-structuredOutput-generation",
 				metadata: {
 					userId: userId ? userId : "unknown",
 					sessionId: sessionId ? sessionId : "unknown",
@@ -419,6 +419,7 @@ export class GenerationService {
 			temperature: LLM_PARAMETERS.temperature,
 			experimental_telemetry: {
 				isEnabled: !(process.env.CI || !userId), // Disable telemetry in CI and when userId is not provided
+				functionId: "tag-or-summary-generation",
 				metadata: {
 					userId: userId ? userId : "unknown",
 					sessionId: sessionId ? sessionId : "unknown",
@@ -574,9 +575,8 @@ export class GenerationService {
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
 
 		// Always use free-chat prompt
-		const freeChatPromptClient = await langfuse.getPrompt(
+		const freeChatPromptClient = await langfuse.prompt.get(
 			"free-chat",
-			undefined,
 			{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
 		);
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
