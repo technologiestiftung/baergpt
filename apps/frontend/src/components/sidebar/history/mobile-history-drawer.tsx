@@ -31,15 +31,15 @@ export function MobileHistoryDrawer() {
 							className={`flex flex-col gap-[3px] md:h-[50px] justify-end py-4 md:pb-0 md:pt-3.5 px-6`}
 						>
 							<p className="text-dunkelblau-50 text-[10px] truncate">
-								Entwickelt vom
+								{Content["sidebar.citylab.label"]}
 							</p>
 
 							<a
-								href="https://citylab-berlin.org/"
+								href={Content["sidebar.citylab.link"]}
 								target="_blank"
 								rel="noopener noreferrer"
 								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-[6.6px]`}
-								aria-label="CityLAB Berlin Website"
+								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
 								<img
 									src="/icons/citylab-shapes-icon.svg"

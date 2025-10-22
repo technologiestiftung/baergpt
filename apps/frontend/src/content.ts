@@ -22,6 +22,9 @@ export const Content = {
 	"sidebar.navigation.privacy.link":
 		"https://www.technologiestiftung-berlin.de/datenschutz",
 	"sidebar.navigation.privacy.ariaLabel": "Zur Datenschutz-Seite navigieren",
+	"sidebar.citylab.label": "Entwickelt vom",
+	"sidebar.citylab.link": "https://citylab-berlin.org/",
+	"sidebar.citylab.ariaLabel": "CityLAB Berlin Website",
 
 	/* -------------------- Tooltips -------------------- */
 	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
