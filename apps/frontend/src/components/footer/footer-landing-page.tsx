@@ -1,4 +1,3 @@
-import { useAuthStore } from "../../store/auth-store.ts";
 import Content from "../../content.ts";
 import { FooterLogoBanner } from "./footer-logo-banner.tsx";
 
@@ -34,12 +33,6 @@ const topLinks = {
 };
 
 export function FooterLandingPage() {
-	const { session } = useAuthStore();
-
-	if (session) {
-		return null;
-	}
-
 	return (
 		<footer className="flex flex-col">
 			<div className="flex flex-col lg:flex-row gap-6 justify-between lg:items-center w-full p-6 lg:py-4 lg:px-[50px] bg-dunkelblau-100 text-white">
