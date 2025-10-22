@@ -4,8 +4,7 @@
 	"scripts": {
 		"check-types": "tsc --noEmit",
 		"build": "tsc",
-		"build:prod": "npm run build && npm run build:puppeteer && npm run build:sourcemaps",
-		"build:puppeteer": "(npx puppeteer browsers list | grep -q 'chrome' || npx puppeteer browsers install chrome)",
+		"build:prod": "npm run build && npm run build:sourcemaps",
 		"build:sourcemaps": "sentry-cli sourcemaps inject --org $SENTRY_ORG --project $SENTRY_PROJECT ./dist && sentry-cli sourcemaps upload --org $SENTRY_ORG --project $SENTRY_PROJECT ./dist",
 		"start": "tsc && node --env-file-if-exists=.env dist/src/index.js",
 		"dev": "tsx --watch ./src/index.ts",
@@ -44,7 +43,6 @@
 		"langfuse-vercel": "3.37.0",
 		"mammoth": "1.9.1",
 		"pdf-lib": "1.17.1",
-		"puppeteer": "24.11.2",
 		"throttled-queue": "3.0.0",
 		"word-extractor": "1.0.4",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
