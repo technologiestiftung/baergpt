@@ -26,6 +26,10 @@ export const DocumentPreviewSection: React.FC = () => {
 		return null;
 	}
 
+	const hasSupportedPreview = canPreviewInBrowser(
+		selectedPreviewDocument.file_name ?? "",
+	);
+
 	return (
 		<section className="absolute h-full inset-0 z-30 flex flex-col bg-white">
 			<div className="flex flex-col gap-2.5 md:gap-3 px-5 md:px-[88px] md:py-6 py-3">
@@ -62,8 +66,14 @@ export const DocumentPreviewSection: React.FC = () => {
 				)}
 			</div>
 			<div className="h-full w-full px-5 md:px-24 pt-7 md:pt-8 bg-hellblau-30 flex items-center justify-center flex-col">
-				{selectedPreviewDocumentPreviewUrl &&
-				canPreviewInBrowser(selectedPreviewDocument.file_name ?? "") ? (
+				{!hasSupportedPreview && (
+					<div className="flex items-center justify-center h-full text-center max-w-xl">
+						<p className="text-lg text-dunkelblau-80">
+							{Content["documentsPreviewSection.noPreviewAvailable"]}
+						</p>
+					</div>
+				)}
+				{selectedPreviewDocumentPreviewUrl && hasSupportedPreview && (
 					<>
 						<p
 							className={`pb-5 text-sm leading-5 font-normal text-dunkelblau-80 
@@ -79,10 +89,11 @@ export const DocumentPreviewSection: React.FC = () => {
 							className="bg-white shadow-[0px_0px_12px_0px_rgba(3,8,18,0.25)]"
 						/>
 					</>
-				) : (
+				)}
+				{!selectedPreviewDocumentPreviewUrl && hasSupportedPreview && (
 					<div className="flex items-center justify-center h-full text-center max-w-xl">
 						<p className="text-lg text-dunkelblau-80">
-							{Content["documentsPreviewSection.noPreviewAvailable"]}
+							{Content["documentsPreviewSection.loadingPreview"]}
 						</p>
 					</div>
 				)}
