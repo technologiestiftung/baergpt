@@ -388,7 +388,7 @@ test.describe("Chat", () => {
 
 		// Check if the chat history is open
 		await expect(
-			page.getByRole("heading", { name: "Mein Chatverlauf" }),
+			page.getByRole("heading", { name: "Chats" }),
 		).toBeVisible();
 
 		// Close the chat history
@@ -396,7 +396,7 @@ test.describe("Chat", () => {
 
 		// Check if the chat history is closed
 		await expect(
-			page.getByRole("heading", { name: "Mein Chatverlauf" }),
+			page.getByRole("heading", { name: "Chats" }),
 		).not.toBeVisible();
 
 		// Open the chat history again
@@ -404,7 +404,7 @@ test.describe("Chat", () => {
 
 		// Check if the chat history is open again
 		await expect(
-			page.getByRole("heading", { name: "Mein Chatverlauf" }),
+			page.getByRole("heading", { name: "Chats" }),
 		).toBeVisible();
 	});
 });
