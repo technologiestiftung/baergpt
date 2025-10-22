@@ -381,7 +381,7 @@ export class GenerationService {
 		}
 
 		const citationAnswer = await resilientCall(
-			async () => 
+			async () =>
 				streamObject({
 					model: llmHandler.languageModel,
 					messages: messages,
@@ -404,7 +404,11 @@ export class GenerationService {
 									usage.totalTokens,
 								);
 								// Increase num_inferences for user by one
-								await dbService.updateUserColumnValue(userId, "num_inferences", 1);
+								await dbService.updateUserColumnValue(
+									userId,
+									"num_inferences",
+									1,
+								);
 							} catch (dbError) {
 								captureError(dbError);
 							}
@@ -418,7 +422,9 @@ export class GenerationService {
 						metadata: {
 							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt ? langfusePrompt.toJSON() : undefined,
+							langfusePrompt: langfusePrompt
+								? langfusePrompt.toJSON()
+								: undefined,
 						},
 					},
 					onError: (error) => {
