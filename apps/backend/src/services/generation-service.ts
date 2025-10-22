@@ -22,7 +22,7 @@ import type { LLMIdentifier, ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { captureError } from "../monitoring/capture-error";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
 import { JINA_MAX_TOKEN_LIMIT } from "../constants";
