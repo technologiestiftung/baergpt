@@ -9,6 +9,7 @@ export default {
 				"dunkelblau-100": "#0C2753",
 				"dunkelblau-80": "#3D5275",
 				"hellblau-30": "#F5F8FC",
+				
 			},
 			fontFamily: {
 				arial: ["Arial"],
