@@ -1,7 +1,7 @@
 import { enc, ragSearchDefaults } from "../constants";
 import { config } from "../config";
 import type { ModelMessage, Tool, ToolChoice } from "ai";
-import { generateText, streamObject, zodSchema } from "ai";
+import { generateText, streamObject } from "ai";
 import { ModelService } from "./model-service";
 import { EmbeddingService } from "./embedding-service";
 import {
@@ -118,7 +118,7 @@ export class GenerationService {
 	): Promise<number> {
 		try {
 			const client = await resilientCall(() =>
-				langfuse.getPrompt(promptName, undefined, {
+				langfuse.prompt.get(promptName, {
 					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 					type: "chat",
 				}),
@@ -349,7 +349,7 @@ export class GenerationService {
 					toolChoice,
 					experimental_telemetry: {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-				functionId: "text-toolCall-generation",
+						functionId: "text-toolCall-generation",
 						metadata: {
 							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
