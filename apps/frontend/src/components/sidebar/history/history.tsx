@@ -84,10 +84,10 @@ export const History: React.FC = () => {
 					<div className="w-full h-fit">
 						{isFirstLoad && (
 							<div className="flex flex-col gap-1 md:px-2">
-								<Skeleton className="mb-1 w-full px-2 h-7" />
-								<Skeleton className="mb-1 w-full px-2  h-7" />
-								<Skeleton className="mb-1 w-full px-2  h-7" />
-								<Skeleton className="mb-1 w-full px-2  h-7" />
+								<Skeleton className="w-full px-2 h-7" />
+								<Skeleton className="w-full px-2  h-7" />
+								<Skeleton className="w-full px-2  h-7" />
+								<Skeleton className="w-full px-2  h-7" />
 							</div>
 						)}
 
