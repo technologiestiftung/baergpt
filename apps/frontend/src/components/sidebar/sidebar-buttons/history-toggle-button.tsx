@@ -40,7 +40,7 @@ export const HistoryToggleButton: React.FC<HistoryToggleButtonProps> = ({
 						? Content["historyToggleButton.arialabel.close"]
 						: Content["historyToggleButton.arialabel.open"]
 				}
-				className={`flex flex-col items-center justify-center gap-1 size-8 p-1 md:w-auto rounded-[3px] text-hellblau-50 md:hover:bg-dunkelblau-90 focus-visible:outline-default
+				className={`flex flex-col items-center justify-center gap-1 size-[52px] md:size-8 p-1 md:w-auto rounded-[3px] text-hellblau-50 md:hover:bg-dunkelblau-90 focus-visible:outline-default
 					${isHistorySidebarOpen && "bg-hellblau-50 md:bg-transparent"}`}
 				onClick={handleToggle}
 				onMouseEnter={handleInteractionStart}

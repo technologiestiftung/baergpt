@@ -93,10 +93,7 @@ export const History: React.FC = () => {
 
 						{!isFirstLoad && (
 							<>
-								<div className={`w-full flex flex-col gap-6 mb-5 pr-3.5`}>
-									{chatGroups.map(({ label, chats: chatGroup }) => (
-										<HistoryGroup key={label} label={label} chats={chatGroup} />
-									))}
+								<div className={`w-full flex flex-col gap-6 mb-5`}>
 									{chatGroups.map(({ label, chats: chatGroup }) => (
 										<HistoryGroup key={label} label={label} chats={chatGroup} />
 									))}

@@ -12,7 +12,7 @@ export const HistoryGroup: React.FC<HistoryGroupProps> = ({ label, chats }) => {
 		<div className="flex flex-col">
 			<div
 				key={label}
-				className="flex items-center text-sm leading-5 font-bold text-hellblau-50 h-8 px-2"
+				className="flex items-center truncate text-sm leading-5 font-bold text-hellblau-50 h-8 md:px-2"
 			>
 				{label}
 			</div>
