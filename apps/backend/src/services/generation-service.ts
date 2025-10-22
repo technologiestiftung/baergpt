@@ -1,11 +1,15 @@
 import { enc, ragSearchDefaults } from "../constants";
 import { config } from "../config";
 import type { ModelMessage, Tool, ToolChoice } from "ai";
-import { generateText, streamObject, zodSchema } from "ai";
+import { generateText, streamObject } from "ai";
 import { ModelService } from "./model-service";
 import { EmbeddingService } from "./embedding-service";
-import type { ChatPromptClient, TextPromptClient } from "langfuse";
-import { Langfuse } from "langfuse";
+import {
+	LangfuseClient,
+	ChatPromptClient,
+	TextPromptClient,
+} from "@langfuse/client";
+import { updateActiveTrace } from "@langfuse/tracing";
 import {
 	type Document,
 	type HybridSearchResult,
@@ -29,7 +33,7 @@ import {
 } from "./token-utils";
 
 const ESTIMATED_TOKENS_PER_WORD = config.estimatedTokensPerWord;
-const langfuse = new Langfuse();
+const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
@@ -151,19 +155,15 @@ export class GenerationService {
 				: docInput.map((page) => page.content).join("\n");
 
 		if (oneSentenceSummary) {
-			summaryPromptClient = await langfuse.getPrompt(
-				"one-sentence-summary",
-				undefined,
-				{
-					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-					type: "chat",
-				},
-			);
+			summaryPromptClient = await langfuse.prompt.get("one-sentence-summary", {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+				type: "chat",
+			});
 			compiledSummaryPrompt = summaryPromptClient.compile({
 				docContent: docContent,
 			}) as ModelMessage[];
 		} else {
-			summaryPromptClient = await langfuse.getPrompt("summary", undefined, {
+			summaryPromptClient = await langfuse.prompt.get("summary", {
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 				type: "chat",
 			});
@@ -194,7 +194,7 @@ export class GenerationService {
 				? docInput
 				: docInput.map((page) => page.content).join("\n");
 
-		const taggingPromptClient = await langfuse.getPrompt("tagging", undefined, {
+		const taggingPromptClient = await langfuse.prompt.get("tagging", {
 			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 			type: "chat",
 		});
@@ -282,7 +282,6 @@ export class GenerationService {
 		if (!tags) {
 			throw new Error("Failed to generate document tags");
 		}
-
 		// Using the refactored function with structured parameters
 		await dbService.logSummarizedDocument(
 			{
@@ -339,6 +338,7 @@ export class GenerationService {
 			};
 			toolChoice = "auto";
 		}
+		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(
 			() =>
 				generateText({
@@ -348,7 +348,8 @@ export class GenerationService {
 					tools,
 					toolChoice,
 					experimental_telemetry: {
-						isEnabled: !process.env.CI, // Disable telemetry in CI
+						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+						functionId: "text-toolCall-generation",
 						metadata: {
 							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
@@ -379,20 +380,21 @@ export class GenerationService {
 			messages.push(...newMessages);
 		}
 
-		const citationSchemaWrapped = zodSchema(
-			citationAnswerSchema(maxAvailableSources) as unknown as Parameters<
-				typeof zodSchema
-			>[0],
-		);
-
 		const citationAnswer = await resilientCall(
 			async () =>
 				streamObject({
 					model: llmHandler.languageModel,
 					messages: messages,
 					temperature: LLM_PARAMETERS.temperature,
-					schema: citationSchemaWrapped,
-					onFinish: async ({ usage, error }) => {
+					// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+					schema: citationAnswerSchema(maxAvailableSources),
+					onFinish: async ({ object, usage, error }) => {
+						updateActiveTrace({
+							name: "streamed-structuredOutput-generation",
+							output: object,
+							userId,
+							sessionId,
+						});
 						// Handle token usage tracking after stream completes
 						if (userId && usage?.totalTokens) {
 							try {
@@ -416,7 +418,7 @@ export class GenerationService {
 						}
 					},
 					experimental_telemetry: {
-						isEnabled: !process.env.CI, // Disable telemetry in CI
+						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						metadata: {
 							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
@@ -457,7 +459,7 @@ export class GenerationService {
 					messages: messages,
 					temperature: LLM_PARAMETERS.temperature,
 					experimental_telemetry: {
-						isEnabled: !(process.env.CI || !userId), // Disable telemetry in CI and when userId is not provided
+						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						metadata: {
 							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
@@ -617,9 +619,8 @@ export class GenerationService {
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
 
 		// Always use free-chat prompt
-		const freeChatPromptClient = await langfuse.getPrompt(
+		const freeChatPromptClient = await langfuse.prompt.get(
 			"free-chat",
-			undefined,
 			{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
 		);
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
