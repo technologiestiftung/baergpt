@@ -19,7 +19,7 @@ export function LandingPageHero() {
 					href={Content["landingPage.hero.register.link"]}
 					aria-label={Content["landingPage.hero.register.ariaLabel"]}
 					className={`
-                                flex items-center h-9 text-white px-3 py-2
+                                flex items-center h-11 text-white px-3 py-2
                                 text-lg leading-7 font-normal z-10 
                                 rounded-3px bg-dunkelblau-100 border border-dunkelblau-100
                                 hover:bg-dunkelblau-90 focus-visible:outline-default 

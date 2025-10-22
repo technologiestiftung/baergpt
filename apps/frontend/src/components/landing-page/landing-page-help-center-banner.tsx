@@ -21,9 +21,9 @@ export function LandingPageHelpCenterBanner() {
 				<a
 					href="https://hilfe.baergpt.berlin"
 					className={`
-                            flex gap-x-2 text-dunkelblau-100 pl-3 pr-1.5 py-2
+                            flex items-center gap-x-2 text-dunkelblau-100 pl-3 pr-1.5 py-2
                             rounded-3px border border-dunkelblau-100
-                            hover:bg-hellblau-60 
+                            hover:bg-hellblau-60 h-11
                             focus-visible:outline-default 
                             `}
 				>
