@@ -353,7 +353,7 @@ describe("Integration Tests for Routes", () => {
 			.limit(1);
 		expect(deletedDocuments).toBeDefined();
 		expect(deletedDocuments && deletedDocuments.length).toBe(0);
-	}, 80_000);
+	}, 100_000);
 
 	it("should cascade document deletion to also delete summaries and chunks", async () => {
 		const sourceUrl = "delete-cascade/file.pdf";

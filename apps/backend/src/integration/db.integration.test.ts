@@ -362,19 +362,69 @@ describe("Integration tests for DB", async () => {
 		});
 
 		describe("delete_user function", () => {
-			it("should delete the authenticated user", async () => {
-				// Sign in as the non-admin user
+			let givenChatId: number;
+
+			beforeEach(async () => {
+				const { data: chatData, error: chatError } = await supabaseAdminClient
+					.from("chats")
+					.insert({
+						user_id: givenAdminId,
+						name: "Test Chat",
+					})
+					.select("id")
+					.single();
+				givenChatId = chatData.id;
+
+				expect(chatError).toBeNull();
+
+				const { error: chatMessageError } = await supabaseAdminClient
+					.from("chat_messages")
+					.insert({
+						chat_id: givenChatId,
+						role: "user",
+						content: "Hello, this is a test message.",
+						citations: null,
+						allowed_document_ids: [],
+						allowed_folder_ids: [],
+						type: "text",
+					});
+
+				expect(chatMessageError).toBeNull();
+
+				const { error: documentFoldersError } = await supabaseAdminClient
+					.from("document_folders")
+					.insert({
+						user_id: givenAdminId,
+						name: "Test Folder",
+					});
+
+				expect(documentFoldersError).toBeNull();
+
+				await mockDocumentUpload({
+					userId: givenAdminId,
+					accessGroupId: null,
+					fileName: defaultDocumentName,
+					filePath: defaultDocumentPath,
+					sourceType: "personal_document",
+					bucketName: "documents",
+				});
+			});
+
+			afterEach(async () => {
+				await cleanupDocuments(givenAdminId);
+			});
+
+			it("should delete the admin user", async () => {
+				// Sign in as the admin user
 				const { data: signinData, error: signinError } =
 					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
+						email: givenAdminEmail,
+						password: givenAdminPassword,
 					});
 				expect(signinError).toBeNull();
 				expect(signinData.session).not.toBeNull();
 				expect(signinData.user).not.toBeNull();
 				expect(signinData.user.id).toBeDefined();
-
-				const userId = signinData.user.id;
 
 				// Call the delete_user function
 				const { error: deleteError } =
@@ -383,19 +433,116 @@ describe("Integration tests for DB", async () => {
 
 				// Verify the user no longer exists
 				const { error: getUserError } =
-					await supabaseAdminClient.auth.admin.getUserById(userId);
+					await supabaseAdminClient.auth.admin.getUserById(givenAdminId);
 
 				// After successful deletion, we should get a "user not found" error
 				expect(getUserError?.message).toBe("User not found");
+
+				const { data: accessGroupMembersData, error: accessGroupMembersError } =
+					await supabaseAdminClient
+						.from("access_group_members")
+						.select("*")
+						.eq("user_id", givenAdminId);
+
+				expect(accessGroupMembersError).toBeNull();
+				expect(accessGroupMembersData?.length).toBe(0);
+
+				const { data: applicationAdminsData, error: applicationAdminsError } =
+					await supabaseAdminClient
+						.from("application_admins")
+						.select("*")
+						.eq("user_id", givenAdminId);
+
+				expect(applicationAdminsError).toBeNull();
+				expect(applicationAdminsData?.length).toBe(0);
+
+				const { data: chatMessages, error: chatMessagesError } =
+					await supabaseAdminClient
+						.from("chat_messages")
+						.select("*")
+						.eq("chat_id", givenChatId);
+
+				expect(chatMessagesError).toBeNull();
+				expect(chatMessages?.length).toBe(0);
+
+				const { data: chatsData, error: chatsError } = await supabaseAdminClient
+					.from("chats")
+					.select("*")
+					.eq("user_id", givenAdminId);
+
+				expect(chatsError).toBeNull();
+				expect(chatsData?.length).toBe(0);
+
+				const { data: documentChunksData, error: documentChunksError } =
+					await supabaseAdminClient
+						.from("document_chunks")
+						.select("*")
+						.eq("owned_by_user_id", givenAdminId);
+
+				expect(documentChunksError).toBeNull();
+				expect(documentChunksData?.length).toBe(0);
+
+				const { data: documentFoldersData, error: documentFoldersError } =
+					await supabaseAdminClient
+						.from("document_folders")
+						.select("*")
+						.eq("user_id", givenAdminId);
+
+				expect(documentFoldersError).toBeNull();
+				expect(documentFoldersData?.length).toBe(0);
+
+				const { data: documentSummariesData, error: documentSummariesError } =
+					await supabaseAdminClient
+						.from("document_summaries")
+						.select("*")
+						.eq("owned_by_user_id", givenAdminId);
+
+				expect(documentSummariesError).toBeNull();
+				expect(documentSummariesData?.length).toBe(0);
+
+				const { data: documentsData, error: documentsError } =
+					await supabaseAdminClient
+						.from("documents")
+						.select("*")
+						.eq("owned_by_user_id", givenAdminId);
+
+				expect(documentsError).toBeNull();
+				expect(documentsData?.length).toBe(0);
+
+				const { data: profileData, error: profileError } =
+					await supabaseAdminClient
+						.from("profiles")
+						.select("*")
+						.eq("id", givenAdminId);
+
+				expect(profileError).toBeNull();
+				expect(profileData?.length).toBe(0);
+
+				const { data: userActiveStatusData, error: userActiveStatusError } =
+					await supabaseAdminClient
+						.from("user_active_status")
+						.select("*")
+						.eq("id", givenAdminId);
+
+				expect(userActiveStatusError).toBeNull();
+				expect(userActiveStatusData?.length).toBe(0);
+
+				const { data: storageData, error: storageError } =
+					await supabaseAdminClient.storage
+						.from("documents")
+						.list(givenAdminId);
+
+				expect(storageError).toBeNull();
+				expect(storageData?.length).toBe(0);
 
 				/**
 				 * Re-create the user to avoid side effects on other tests
 				 */
 				const { error: signupError } =
 					await supabaseAdminClient.auth.admin.createUser({
-						id: givenUserId,
-						email: givenUserEmail,
-						password: givenUserPassword,
+						id: givenAdminId,
+						email: givenAdminEmail,
+						password: givenAdminPassword,
 						email_confirm: true,
 					});
 
