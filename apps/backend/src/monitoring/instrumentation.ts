@@ -2,15 +2,10 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { LangfuseSpanProcessor, ShouldExportSpan } from "@langfuse/otel";
 import { config } from "../config";
-import {
-	SentryPropagator,
-	SentrySampler,
-	SentrySpanProcessor,
-} from "@sentry/opentelemetry";
+import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
 import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import { supabase } from "../supabase";
-import { configureGlobalLogger, LogLevel } from "@langfuse/core";
 
 export const sentryClient = Sentry.init({
 	dsn: config.sentryDsn || "",
