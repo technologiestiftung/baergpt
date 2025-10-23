@@ -13,6 +13,7 @@ import { ProfilePage } from "./routes/profile";
 import { EmailChanged } from "./routes/email-changed";
 import { AccountDeleted } from "./routes/account-deleted";
 import { LandingPage } from "./routes/landing-page";
+import { PrivacyPolicyPage } from "./routes/privacy-policy";
 
 const router = createBrowserRouter([
 	{
@@ -52,6 +53,7 @@ const router = createBrowserRouter([
 		element: <AccountDeleted />,
 	},
 	{ path: "/start/", element: <LandingPage /> },
+	{ path: "/privacy-policy/", element: <PrivacyPolicyPage /> },
 ]);
 
 function render() {
