@@ -222,30 +222,43 @@ test.describe("Documents", () => {
 	testDesktopOnly(
 		"Delete folder with a single document also deletes document",
 		async ({ page }) => {
-			const folder = "temp-folder-single";
+			const givenFolderName = "temp-folder-single";
 			await page.goto("/");
 
-			// Create folder
-			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
-				.click();
-			await page.getByRole("textbox", { name: "Ordner Name" }).fill(folder);
-			await page
-				.getByRole("button", { name: "Erstellen", exact: true })
-				.click();
+			const createNewFolderButton = page.getByRole("button", {
+				name: "Neuer Ordner Plus-Icon",
+			});
+			await createNewFolderButton.click();
 
-			// Move default document into folder
-			await page
-				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
-				.hover();
+			const folderNameInput = page.getByRole("textbox", {
+				name: "Ordner Name",
+			});
+			await folderNameInput.fill(givenFolderName);
+
+			const createFolderButton = page.getByRole("button", {
+				name: "Erstellen",
+				exact: true,
+			});
+			await createFolderButton.click();
+
+			const folderElement = page.getByRole("button", {
+				name: `Ordner-Icon ${givenFolderName}`,
+			});
+			await expect(folderElement).toBeVisible();
+
+			const documentElement = page.getByRole("button", {
+				name: `Dokumente-Icon ${defaultDocumentName}`,
+			});
+			await documentElement.hover();
 			await page.mouse.down();
-			await page.getByRole("button", { name: `Ordner-Icon ${folder}` }).hover();
+
+			await folderElement.hover();
 			await page.mouse.up();
 
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
-				.filter({ hasText: folder })
+				.filter({ hasText: givenFolderName })
 				.locator("label");
 			await folderCheckbox.click();
 
@@ -262,7 +275,7 @@ test.describe("Documents", () => {
 
 			// Assert folder gone
 			await expect(
-				page.getByRole("listitem").filter({ hasText: folder }),
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
 			).not.toBeVisible();
 			// Assert document gone as well (no longer visible anywhere)
 			await expect(
