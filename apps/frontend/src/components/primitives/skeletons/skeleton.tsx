@@ -8,7 +8,7 @@ export function Skeleton({ className }: { className: string }) {
 				overflow-hidden
 				before:bg-[length:200%_100%] before:animate-gradient-move
 				before:absolute before:inset-0 before:rounded-inherit
-				before:bg-[linear-gradient(90deg,_theme('colors.hellblau-60')_0%,_rgba(46,64,102,0.8)_40%,_transparent_49%,_transparent_51%,_rgba(46,64,102,0.8)_60%,_theme('colors.hellblau-60')_100%)]
+				before:bg-[linear-gradient(90deg,_theme('colors.dunkelblau-90')_0%,_rgba(12,39,83,0.1)_63%,_theme('colors.dunkelblau-90')_100%)]
 				w-full h-full`}
 		>
 			<div className={`bg-transparent ${className}`} />

@@ -22,6 +22,9 @@ export const Content = {
 	"sidebar.navigation.privacy.link":
 		"https://www.technologiestiftung-berlin.de/datenschutz",
 	"sidebar.navigation.privacy.ariaLabel": "Zur Datenschutz-Seite navigieren",
+	"sidebar.citylab.label": "Entwickelt vom",
+	"sidebar.citylab.link": "https://citylab-berlin.org/",
+	"sidebar.citylab.ariaLabel": "CityLAB Berlin Website",
 
 	/* -------------------- Tooltips -------------------- */
 	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
@@ -30,7 +33,7 @@ export const Content = {
 		"Datei zum Chat hinzufügen und KI-Assistent Anweisung geben",
 
 	/* -------------------- Chat History -------------------- */
-	"chatHistory.title": "Mein Chatverlauf",
+	"chatHistory.title": "Chats",
 	"chatHistory.today": "Heute",
 	"chatHistory.lastSevenDays": "Letzte 7 Tage",
 
