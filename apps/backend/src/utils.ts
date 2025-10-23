@@ -1,5 +1,17 @@
 import crypto from "crypto";
 import { config } from "./config";
+import { seconds, throttledQueue } from "throttled-queue";
+import { captureError } from "./monitoring/capture-error";
+
+const addToEmbeddingsQueue = throttledQueue({
+	interval: seconds(1),
+	maxPerInterval: config.jinaMaxRPS,
+});
+
+const addToLLMQueue = throttledQueue({
+	interval: seconds(1),
+	maxPerInterval: config.mistralMaxRPS,
+});
 
 export function getHash(documentBuffer: Uint8Array): string {
 	const hashSum = crypto.createHash("md5");
@@ -8,48 +20,89 @@ export function getHash(documentBuffer: Uint8Array): string {
 	return hex;
 }
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+export const wait = (ms: number) =>
+	new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function retryOperation<T>(
+async function withRetries<T>(
 	operation: () => Promise<T>,
-	retries: number = config.maxRetries || 3,
+	{ retries, retryDelay }: { retries: number; retryDelay: number },
 ): Promise<T> {
-	const maxRetries = config.maxRetries || 3;
-	const retryDelay = config.retryDelay || 1000;
+	const attempt = async (remainingRetries: number): Promise<T> => {
+		try {
+			return await operation();
+		} catch (error) {
+			if (remainingRetries <= 0) {
+				throw error;
+			}
 
-	try {
-		return await operation();
-	} catch (error) {
-		if (retries <= 0) {
-			throw error;
+			// Exponential backoff with jitter
+			const backoffDelay =
+				retryDelay * Math.pow(2, retries - remainingRetries) +
+				Math.random() * 1000;
+
+			captureError(error);
+
+			console.warn(
+				`Operation failed: ${
+					error instanceof Error
+						? `${error.name}: ${error.message}`
+						: String(error)
+				}. Retrying in ${Math.round(backoffDelay)}ms... (${remainingRetries} retries left)`,
+			);
+
+			await wait(backoffDelay);
+			return attempt(remainingRetries - 1);
 		}
+	};
 
-		// Exponential backoff with jitter
-		const backoffDelay =
-			retryDelay * Math.pow(2, maxRetries - retries) + Math.random() * 1000;
-		console.warn(
-			`Operation failed, retrying in ${backoffDelay}ms... (${retries} retries left)`,
-		);
-
-		await wait(backoffDelay);
-		return retryOperation(operation, retries - 1);
-	}
+	return attempt(retries);
 }
 
-export function validateAndCleanBase64(base64Document: string): string {
-	// Remove data URL prefix if present (e.g., "data:application/vnd...;base64,")
-	let cleanBase64 = base64Document;
-	if (cleanBase64.includes(",")) {
-		cleanBase64 = cleanBase64.split(",")[1];
+export async function resilientCall<T>(
+	operation: () => Promise<T>,
+	options: {
+		retries?: number;
+		retryDelay?: number;
+		queueType?: "embeddings" | "llm";
+	} = {},
+): Promise<T> {
+	const {
+		retries = config.maxRetries,
+		retryDelay = config.retryDelay,
+		queueType,
+	} = options;
+
+	if (queueType === "embeddings") {
+		return new Promise<T>((resolve, reject) => {
+			addToEmbeddingsQueue(async () => {
+				try {
+					const result = await withRetries(operation, {
+						retries,
+						retryDelay,
+					});
+					resolve(result);
+				} catch (error) {
+					reject(error);
+				}
+			});
+		});
 	}
 
-	// Remove any whitespace or newlines
-	cleanBase64 = cleanBase64.replace(/\s/g, "");
-
-	// Validate base64 format
-	if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanBase64)) {
-		throw new Error("Invalid base64 format");
+	if (queueType === "llm") {
+		return new Promise<T>((resolve, reject) => {
+			addToLLMQueue(async () => {
+				try {
+					const result = await withRetries(operation, {
+						retries,
+						retryDelay,
+					});
+					resolve(result);
+				} catch (error) {
+					reject(error);
+				}
+			});
+		});
 	}
 
-	return cleanBase64;
+	return withRetries(operation, { retries, retryDelay });
 }

@@ -10,10 +10,12 @@ export interface Config {
 	ollamaApiKey?: string;
 	mistralApiKey: string;
 	mistralApiEndpoint: string;
+	mistralMaxRPS: number;
 	qwenEndpoint?: string;
 	qwenApiKey?: string;
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
+	jinaMaxRPS: number;
 	supabaseUrl: string;
 	supabaseServiceRoleKey: string;
 	supabaseAnonKey: string;
@@ -27,11 +29,14 @@ export interface Config {
 	maxPagesLimit?: number;
 	maxPagesForLlmParseLimit?: number;
 	nodeEnv?: string;
-	maxRetries?: number;
-	retryDelay?: number;
+	maxRetries: number;
+	retryDelay: number;
 	modelTemperature: number;
 	defaultModelIdentifier: string;
 	sentryDsn: string;
+	gotenbergUrl: string;
+	gotenbergApiBasicAuthUsername: string;
+	gotenbergApiBasicAuthPassword: string;
 }
 
 /* eslint-disable-next-line complexity */
@@ -63,11 +68,17 @@ export function verifyConfig(): void {
 	if (!process.env.MISTRAL_API_ENDPOINT) {
 		throw new Error("MISTRAL_API_ENDPOINT must be defined");
 	}
+	if (!process.env.MISTRAL_MAX_RPS) {
+		throw new Error("MISTRAL_MAX_RPS must be defined");
+	}
 	if (!process.env.JINA_API_KEY) {
 		throw new Error("JINA_API_KEY must be defined");
 	}
 	if (!process.env.JINA_EMBEDDING_MODEL) {
 		throw new Error("JINA_EMBEDDING_MODEL must be defined");
+	}
+	if (!process.env.JINA_MAX_RPS) {
+		throw new Error("JINA_MAX_RPS must be defined");
 	}
 	if (!process.env.UPLOAD_FILE_SIZE_LIMIT_MB && !process.env.CI) {
 		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be defined");
@@ -120,6 +131,15 @@ export function verifyConfig(): void {
 	if (!process.env.SENTRY_DSN) {
 		throw new Error("SENTRY_DSN must be defined");
 	}
+	if (!process.env.GOTENBERG_URL && !process.env.CI) {
+		throw new Error("GOTENBERG_URL must be defined");
+	}
+	if (!process.env.GOTENBERG_API_BASIC_AUTH_USERNAME && !process.env.CI) {
+		throw new Error("GOTENBERG_API_BASIC_AUTH_USERNAME must be defined");
+	}
+	if (!process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD && !process.env.CI) {
+		throw new Error("GOTENBERG_API_BASIC_AUTH_PASSWORD must be defined");
+	}
 }
 
 export const config: Config = {
@@ -132,10 +152,12 @@ export const config: Config = {
 	ollamaApiKey: process.env.OLLAMA_API_KEY,
 	mistralApiKey: process.env.MISTRAL_API_KEY,
 	mistralApiEndpoint: process.env.MISTRAL_API_ENDPOINT,
+	mistralMaxRPS: Number(process.env.MISTRAL_MAX_RPS) || 30,
 	qwenEndpoint: process.env.QWEN_ENDPOINT,
 	qwenApiKey: process.env.QWEN_API_KEY,
 	jinaApiKey: process.env.JINA_API_KEY,
 	jinaEmbeddingModel: process.env.JINA_EMBEDDING_MODEL,
+	jinaMaxRPS: Number(process.env.JINA_MAX_RPS) || 30,
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
@@ -160,15 +182,14 @@ export const config: Config = {
 		? parseInt(process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT, 10)
 		: undefined,
 	nodeEnv: process.env.NODE_ENV,
-	maxRetries: process.env.MAX_RETRIES
-		? parseInt(process.env.MAX_RETRIES, 10)
-		: undefined,
-	retryDelay: process.env.RETRY_DELAY
-		? parseInt(process.env.RETRY_DELAY, 10)
-		: undefined,
+	maxRetries: parseInt(process.env.MAX_RETRIES, 10),
+	retryDelay: parseInt(process.env.RETRY_DELAY, 10),
 	modelTemperature: process.env.MODEL_TEMPERATURE
 		? parseFloat(process.env.MODEL_TEMPERATURE)
 		: undefined,
 	defaultModelIdentifier: process.env.DEFAULT_MODEL_IDENTIFIER,
 	sentryDsn: process.env.SENTRY_DSN,
+	gotenbergUrl: process.env.GOTENBERG_URL,
+	gotenbergApiBasicAuthUsername: process.env.GOTENBERG_API_BASIC_AUTH_USERNAME,
+	gotenbergApiBasicAuthPassword: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
 };

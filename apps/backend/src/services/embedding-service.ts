@@ -9,30 +9,39 @@ import type {
 	JinaSegmenterResponse,
 	JinaEmbeddingResponse,
 } from "../types/common";
-import { enc } from "../constants";
 import { JINA_MAX_TOKEN_LIMIT } from "../constants";
+import { countTokens, computeBatchTokenLimit } from "./token-utils";
 import { DatabaseService } from "./database-service";
+import { resilientCall } from "../utils";
 
 const dbService = new DatabaseService();
 
 export class EmbeddingService {
+	private static readonly SEGMENTER_INPUT_MAX = 64000; // Jina handles max 64k
+	private static readonly SEGMENTER_SAFETY_MARGIN = 2048;
 	async chunkWithJinaSegmenter(
 		text: string,
 		tokenLimit: number = 2000,
 	): Promise<JinaSegmenterResponse> {
-		const chunkingResponse = await fetch("https://api.jina.ai/v1/segment", {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${config.jinaApiKey}`,
-				"Content-Type": "application/json",
+		const chunkingResponse = await resilientCall(
+			async () => {
+				const response = await fetch("https://api.jina.ai/v1/segment", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${config.jinaApiKey}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						content: text,
+						return_chunks: true,
+						max_chunk_length: tokenLimit,
+						tokenizer: "o200k_base",
+					}),
+				});
+				return response;
 			},
-			body: JSON.stringify({
-				content: text,
-				return_chunks: true,
-				max_chunk_length: tokenLimit,
-				tokenizer: "o200k_base",
-			}),
-		});
+			{ queueType: "embeddings" },
+		);
 
 		if (chunkingResponse.status !== 200) {
 			throw new Error("Failed to create chunks");
@@ -48,21 +57,25 @@ export class EmbeddingService {
 		task: string,
 		userId?: string,
 	): Promise<EmbeddingResponse> {
-		const embeddingResponse = await fetch("https://api.jina.ai/v1/embeddings", {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${config.jinaApiKey}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				model: config.jinaEmbeddingModel,
-				input: input,
-				task: task,
-				dimensions: 1024,
-				late_chunking: false,
-				embedding_type: "float",
-			}),
-		});
+		const embeddingResponse = await resilientCall(
+			() =>
+				fetch("https://api.jina.ai/v1/embeddings", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${config.jinaApiKey}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: config.jinaEmbeddingModel,
+						input: input,
+						task: task,
+						dimensions: 1024,
+						late_chunking: false,
+						embedding_type: "float",
+					}),
+				}),
+			{ queueType: "embeddings" },
+		);
 
 		if (embeddingResponse.status !== 200) {
 			const errorBody = await embeddingResponse.text();
@@ -98,21 +111,27 @@ export class EmbeddingService {
 		task: string,
 		userId?: string,
 	): Promise<EmbeddingsResponse> {
-		const embeddingResponse = await fetch("https://api.jina.ai/v1/embeddings", {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${config.jinaApiKey}`,
-				"Content-Type": "application/json",
+		const embeddingResponse = await resilientCall(
+			async () => {
+				const response = await fetch("https://api.jina.ai/v1/embeddings", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${config.jinaApiKey}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: config.jinaEmbeddingModel,
+						input: input,
+						task: task,
+						dimensions: 1024,
+						late_chunking: true,
+						embedding_type: "float",
+					}),
+				});
+				return response;
 			},
-			body: JSON.stringify({
-				model: config.jinaEmbeddingModel,
-				input: input,
-				task: task,
-				dimensions: 1024,
-				late_chunking: true,
-				embedding_type: "float",
-			}),
-		});
+			{ queueType: "embeddings" },
+		);
 
 		if (embeddingResponse.status !== 200) {
 			const errorBody = await embeddingResponse.text();
@@ -167,7 +186,7 @@ export class EmbeddingService {
 		let buffer = "";
 
 		for (const chunk of chunks) {
-			const chunkTokenCount = enc.encode(chunk).length;
+			const chunkTokenCount = countTokens(chunk);
 
 			if (chunkTokenCount >= minTokens) {
 				if (buffer) {
@@ -177,7 +196,7 @@ export class EmbeddingService {
 				merged.push(chunk);
 			} else {
 				buffer = buffer ? `${buffer} ${chunk}` : chunk;
-				if (enc.encode(buffer).length >= minTokens) {
+				if (countTokens(buffer) >= minTokens) {
 					merged.push(buffer);
 					buffer = "";
 				}
@@ -194,7 +213,7 @@ export class EmbeddingService {
 		let currentBatch: Chunk[] = [];
 		let currentBatchTokenCount = 0;
 
-		const safeTokenLimit = JINA_MAX_TOKEN_LIMIT - 1000; // Leave 1000 tokens as safety margin
+		const safeTokenLimit = computeBatchTokenLimit(JINA_MAX_TOKEN_LIMIT, 1000); // Leave 1000 tokens as safety margin
 
 		for (const chunk of chunks) {
 			if (
@@ -226,19 +245,22 @@ export class EmbeddingService {
 	): Promise<void> {
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
 		const allChunks: Chunk[] = [];
-		for (const page of parsedPages) {
+		const chunkPromises = parsedPages.map(async (page) => {
 			let currentChunks: string[] = [];
+			const exceedsSegmenterLimit =
+				page.content.length >
+				EmbeddingService.SEGMENTER_INPUT_MAX -
+					EmbeddingService.SEGMENTER_SAFETY_MARGIN;
 			if (options.chunkingTechnique === "fixed") {
 				currentChunks = this.fixedSizeChunking(page.content);
+			} else if (exceedsSegmenterLimit) {
+				currentChunks = this.fixedSizeChunking(page.content, 150);
 			} else {
-				const segmenterResponse = await this.chunkWithJinaSegmenter(
-					page.content,
-				);
-				const mergedChunks = this.mergeSmallChunks(segmenterResponse.chunks);
-				currentChunks = mergedChunks;
+				const { chunks } = await this.chunkWithJinaSegmenter(page.content);
+				currentChunks = this.mergeSmallChunks(chunks);
 			}
 			currentChunks.forEach((chunk, index) => {
-				const tokenCount = enc.encode(chunk).length;
+				const tokenCount = countTokens(chunk);
 				allChunks.push({
 					content: chunk,
 					page: page.pageNumber,
@@ -246,7 +268,9 @@ export class EmbeddingService {
 					tokenCount,
 				} as Chunk);
 			});
-		}
+		});
+
+		await Promise.all(chunkPromises);
 
 		const allEmbeddings: Embedding[] = [];
 
@@ -272,7 +296,8 @@ export class EmbeddingService {
 			});
 		} else {
 			const batches = this.combineChunksIntoBatches(allChunks);
-			for (const batch of batches) {
+
+			const batchPromises = batches.map(async (batch) => {
 				const response = await this.generateJinaBatchEmbeddings(
 					batch.map((c) => c.content),
 					"retrieval.passage",
@@ -287,7 +312,9 @@ export class EmbeddingService {
 						chunkIndex,
 					} as Embedding);
 				});
-			}
+			});
+
+			await Promise.all(batchPromises);
 		}
 
 		await dbService.logEmbeddings(allEmbeddings, document);

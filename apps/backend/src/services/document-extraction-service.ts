@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 import { PDFDocument } from "pdf-lib";
 import type {
 	Document,
@@ -11,16 +13,15 @@ import { ExtractError } from "../types/common";
 import { config } from "../config";
 import { PAGE_SEPARATOR } from "../constants";
 import { Mistral } from "@mistralai/mistralai";
-import { getHash } from "../utils";
+import { getHash, resilientCall } from "../utils";
 import WordExtractor from "word-extractor";
 import mammoth from "mammoth";
-import puppeteer from "puppeteer";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
 
 export class DocumentExtractionService {
 	async extractDocument(
-		base64Document: string,
+		fileBytes: Uint8Array,
 		document: Document,
 	): Promise<ExtractionResult> {
 		if (
@@ -29,13 +30,11 @@ export class DocumentExtractionService {
 		) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
-				base64Document,
+				Buffer.from(fileBytes),
 				document.file_name,
 			);
-			const checksum = getHash(
-				Buffer.from(base64Document, "base64") as Uint8Array,
-			);
-			const fileSize = Buffer.from(base64Document, "base64").length;
+			const checksum = getHash(fileBytes);
+			const fileSize = fileBytes.length;
 
 			return {
 				document: document,
@@ -52,11 +51,9 @@ export class DocumentExtractionService {
 		} else if (document.file_name?.toLowerCase().endsWith(".xlsx")) {
 			const excelExtractor = new ExcelExtractionService();
 			const parsedExcelPages =
-				await excelExtractor.extractExcelDocument(base64Document);
-			const checksum = getHash(
-				Buffer.from(base64Document, "base64") as Uint8Array,
-			);
-			const fileSize = Buffer.from(base64Document, "base64").length;
+				await excelExtractor.extractExcelDocument(fileBytes);
+			const checksum = getHash(fileBytes);
+			const fileSize = Buffer.from(fileBytes).length;
 
 			return {
 				document: document,
@@ -66,7 +63,7 @@ export class DocumentExtractionService {
 				parsedPages: parsedExcelPages,
 			};
 		}
-		const pdfDoc = await PDFDocument.load(base64Document);
+		const pdfDoc = await PDFDocument.load(fileBytes);
 		const numPages = pdfDoc.getPageCount();
 		if (numPages > config.maxPagesLimit) {
 			throw new ExtractError(
@@ -74,16 +71,14 @@ export class DocumentExtractionService {
 				`Could not extract ${document.source_url}, num pages ${numPages} > limit of ${config.maxPagesLimit} pages.`,
 			);
 		}
-
 		const documentBuffer = await pdfDoc.save();
-
 		const parsedPages = await this.extractPdfAsMarkdownPages(
-			base64Document,
+			fileBytes,
 			document.file_name,
 			{ numPages: numPages, ocrProvider: "mistral" },
 		);
 		const checksum = getHash(documentBuffer);
-		const fileSize = Buffer.byteLength(base64Document);
+		const fileSize = fileBytes.length;
 
 		return {
 			document: document,
@@ -100,7 +95,7 @@ export class DocumentExtractionService {
 	 * @returns An array of parsed PDF pages, each containing its markdown content and page number
 	 */
 	async extractPdfAsMarkdownPages(
-		base64Document: string,
+		pdfBytes: Uint8Array,
 		fileName: string,
 		extractionOptions: {
 			numPages: number;
@@ -121,15 +116,15 @@ export class DocumentExtractionService {
 			);
 		}
 
-		const pdfDoc = await PDFDocument.load(base64Document);
+		const pdfDoc = await PDFDocument.load(pdfBytes);
 
 		if (extractionOptions.numPages <= config.maxPagesForLlmParseLimit) {
 			try {
 				if (ocrService instanceof MistralOCRService) {
-					return await ocrService.extractTextFromPdfWithMistral(base64Document);
+					return await ocrService.extractTextFromPdfWithMistral(pdfBytes);
 				} else if (extractionOptions.ocrProvider === "llamaparse") {
 					const markdownText = await ocrService.extractMarkdownViaLLamaParse(
-						base64Document,
+						pdfBytes,
 						fileName,
 					);
 					const markdownPages = markdownText.split(PAGE_SEPARATOR);
@@ -151,17 +146,16 @@ export class DocumentExtractionService {
 		// For larger PDFs or if LLamaParse fails, use pdf2md
 		const pdf2md = (await import("@opendocsg/pdf2md")).default;
 		const parsedPages: ParsedPage[] = [];
-
 		for (let i = 0; i < extractionOptions.numPages; i++) {
 			// Create a new document containing only this page
 			const singlePageDoc = await PDFDocument.create();
 			const [copiedPage] = await singlePageDoc.copyPages(pdfDoc, [i]);
 			singlePageDoc.addPage(copiedPage);
 
-			const pdfBytes = await singlePageDoc.save();
+			const pageBytes = await singlePageDoc.save();
 
 			// @ts-expect-error pdf2md has no types
-			const mdPage = await pdf2md(pdfBytes, null);
+			const mdPage = await pdf2md(pageBytes, null);
 
 			parsedPages.push({
 				content: mdPage,
@@ -175,19 +169,11 @@ export class DocumentExtractionService {
 
 export class WordDocumentExtractionService {
 	async extractWordDocument(
-		base64Document: string,
+		wordDoc: Buffer,
 		fileName: string,
 	): Promise<string> {
-		let wordDoc: Buffer;
-		try {
-			wordDoc = Buffer.from(base64Document, "base64");
-		} catch (decodeError) {
-			captureError(decodeError);
-			return "";
-		}
-
 		if (wordDoc.length === 0) {
-			captureError(new Error("Empty document buffer after base64 decode"));
+			captureError(new Error("Empty document buffer"));
 			return "";
 		}
 		if (fileName?.toLowerCase().endsWith(".docx")) {
@@ -220,59 +206,37 @@ export class WordDocumentExtractionService {
 	}
 
 	async convertDocxToPdf(wordDoc: Buffer): Promise<Uint8Array> {
-		// 1. Convert DOCX to HTML with images preserved
-		const { value: html } = await mammoth.convertToHtml(
-			{ buffer: wordDoc },
-			{
-				includeEmbeddedStyleMap: true,
-				styleMap: [
-					"p[style-name='Heading 1'] => h1:fresh",
-					"r[style-name='Strong'] => strong",
-					"table => table.wp-table:fresh",
-					"p[style-name='Table Heading'] => th:fresh",
-					"p[style-name='Table Cell'] => td:fresh",
-				],
-			},
+		const form = new FormData();
+		const bytes = new Uint8Array(
+			wordDoc.buffer,
+			wordDoc.byteOffset,
+			wordDoc.byteLength,
 		);
-		const styledHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-table.wp-table {
-border-collapse: collapse;
-width: 100%;
-margin: 1rem 0;
-}
-table.wp-table th, table.wp-table td {
-border: 1px solid #dddddd;
-padding: 8px;
-text-align: left;
-}
-table.wp-table th {
-background-color: #f2f2f2;
-}
-</style>
-</head>
-<body>${html}</body>
-</html>
-`.trim();
-
-		// 2. Use headless Chrome to render HTML+CSS to PDF
-		const browser = await puppeteer.launch();
-		const page = await browser.newPage();
-
-		await page.setContent(styledHtml, { waitUntil: "networkidle0" });
-
-		// Generate PDF with print emulation
-		const pdfBuffer = await page.pdf({
-			format: "A4",
-			printBackground: true, // Preserves background colors/images
-			preferCSSPageSize: true, // Uses CSS @page rules
+		const blob = new Blob([bytes], {
+			type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 		});
+		form.append("files", blob, "document.docx");
 
-		await browser.close();
-		return pdfBuffer;
+		const endpoint = new URL(
+			"/forms/libreoffice/convert",
+			config.gotenbergUrl,
+		).toString();
+		const authHeader = `Basic ${Buffer.from(
+			`${config.gotenbergApiBasicAuthUsername}:${config.gotenbergApiBasicAuthPassword}`,
+		).toString("base64")}`;
+
+		const res = await fetch(endpoint, {
+			method: "POST",
+			headers: {
+				Authorization: authHeader,
+				Accept: "application/pdf",
+			},
+			body: form,
+		});
+		if (!res.ok) {
+			throw new Error(`HTTP ${res.status} ${await res.text()}`);
+		}
+		return new Uint8Array(await res.arrayBuffer());
 	}
 
 	private async extractWithMammoth(wordDoc: Buffer): Promise<string> {
@@ -308,11 +272,18 @@ background-color: #f2f2f2;
 }
 
 class ExcelExtractionService {
-	async extractExcelDocument(base64Document: string): Promise<ParsedPage[]> {
-		const results: ParsedPage[] = [];
+	// Hard caps for work done per sheet to avoid pathological sizes
+	// MAX_ROWS / MAX_COLS cap the decoded !ref (0-based, inclusive) relative to the start
+	// CELL_MAX limits per-cell text (after trim) before we escape and render to Markdown
+	private static readonly MAX_ROWS = 2000;
+	private static readonly MAX_COLS = 64;
+	private static readonly CELL_MAX = 1024;
 
-		const workbook = XLSX.read(base64Document, {
-			type: "base64",
+	async extractExcelDocument(fileBytes: Uint8Array): Promise<ParsedPage[]> {
+		const results: ParsedPage[] = [];
+		const workbook = XLSX.read(fileBytes, {
+			type: "buffer",
+			dense: true,
 		});
 
 		workbook.SheetNames.forEach((sheetName, index) => {
@@ -331,66 +302,194 @@ class ExcelExtractionService {
 		return results;
 	}
 
+	private static findLastNonEmptyIndex(arr: string[]): number {
+		for (let i = arr.length - 1; i >= 0; i--) {
+			if (arr[i] !== "") {
+				return i;
+			}
+		}
+		return -1;
+	}
+	private static sanitizeCell(value: unknown): string {
+		const raw = String(value ?? "").trim();
+		const truncated =
+			raw.length > ExcelExtractionService.CELL_MAX
+				? `${raw.slice(0, ExcelExtractionService.CELL_MAX)}…`
+				: raw;
+		// escape pipes and newlines for Markdown tables
+		return truncated.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+	}
+
+	private static ensureColumnWidth(cells: string[], width: number): string[] {
+		// Keep at most `width` cells (truncate extras on the right)
+		const withinWidth = cells.slice(0, width);
+
+		// If the row is shorter than `width`, compute how many empties to add
+		const padCount = Math.max(0, width - withinWidth.length);
+
+		// Pad with empty strings to reach exact `width`, otherwise return as-is
+		return padCount > 0
+			? withinWidth.concat(Array(padCount).fill(""))
+			: withinWidth;
+	}
+
 	private sheetToMarkdown(worksheet: XLSX.WorkSheet): string {
-		const jsonData: string[][] = XLSX.utils.sheet_to_json(worksheet, {
+		/**
+		 * Converts a worksheet into a compact Markdown table with guards:
+		 * - Caps processed range using decoded !ref → at most MAX_ROWS × MAX_COLS from start
+		 * - Skips hidden rows/columns and blank rows (sheet_to_json opts)
+		 * - Trims trailing empty cells in header and data rows
+		 * - Enforces consistent column count from the trimmed header
+		 * - Escapes Markdown metacharacters and truncates overly long cell contents
+		 *
+		 * Example input (rows as arrays):
+		 *   Header: ["Name", "Age", "", ""]
+		 *   Row 1:  ["Alice", "30", "", ""]
+		 *   Row 2:  ["Bob", "", "", ""]
+		 *   Row 3:  ["", "", "", ""]  // all-empty -> skipped
+		 *   Row 4:  ["Carol", "27", "", ""]
+		 *
+		 * Resulting Markdown:
+		 *   | Name | Age |
+		 *   |---|---|
+		 *   | Alice | 30 |
+		 *   | Bob |  |
+		 *   | Carol | 27 |
+		 */
+
+		// 0) Determine a capped range from !ref
+		// !ref is the A1-style sheet bounds. We decode to 0-based row/col (inclusive),
+		// then cap the end row/col to at most (start + MAX_* - 1). Finally we re-encode.
+		// Example: if !ref="A1:ZZ100000", MAX_ROWS=2000, MAX_COLS=64 and start is A1,
+		// cappedRef becomes "A1:BL2000".
+		const ref = worksheet["!ref"] || "A1";
+		const range = XLSX.utils.decode_range(ref);
+		const {
+			s: { r: startRowIndex, c: startColIndex },
+			e: { r: endRowIndex, c: endColIndex },
+		} = range;
+		const cappedEndRowIndex = Math.min(
+			endRowIndex,
+			startRowIndex + ExcelExtractionService.MAX_ROWS - 1,
+		);
+		const cappedEndColIndex = Math.min(
+			endColIndex,
+			startColIndex + ExcelExtractionService.MAX_COLS - 1,
+		);
+		range.e.r = cappedEndRowIndex;
+		range.e.c = cappedEndColIndex;
+		const cappedRef = XLSX.utils.encode_range(range);
+
+		// 1) Materialize rows using array-of-arrays, skipping hidden/blank
+		const rows: unknown[][] = XLSX.utils.sheet_to_json(worksheet, {
 			header: 1,
+			range: cappedRef,
+			blankrows: false,
+			skipHidden: true,
 		});
-		if (jsonData.length === 0) {
+		if (rows.length === 0) {
 			return "";
 		}
 
+		/**
+		 * Trim trailing empty cells.
+		 * Example: ["A", "B", "", ""] -> ["A", "B"]
+		 *          ["", "", ""]        -> []
+		 */
+		const toTrimmed = (cells: string[]): string[] => {
+			const last = ExcelExtractionService.findLastNonEmptyIndex(cells);
+			return last >= 0 ? cells.slice(0, last + 1) : [];
+		};
+
+		// 1) Build a trimmed header to define the table width
+		const rawHeader = rows[0].map(ExcelExtractionService.sanitizeCell);
+		const headerRow = toTrimmed(rawHeader);
+		const columnCount = headerRow.length;
+
+		// If there is no actual header content and no data, return empty
+		if (columnCount === 0 && rows.length <= 1) {
+			return "";
+		}
+
+		const SEP = "---";
 		let markdown = "";
 
-		// Process header row if exists
-		if (jsonData.length > 0) {
-			markdown += `| ${jsonData[0].join(" | ")} |\n`;
-			markdown += `|${jsonData[0].map(() => "---").join("|")}|\n`;
+		// 2) Render header and separator using the trimmed header
+		if (columnCount > 0) {
+			markdown += `| ${headerRow.join(" | ")} |\n`;
+			markdown += `|${headerRow.map(() => SEP).join("|")}|\n`;
 		}
 
-		// Process data rows
-		for (let i = 1; i < jsonData.length; i++) {
-			markdown += `| ${jsonData[i].join(" | ")} |\n`;
-		}
+		/**
+		 * 3) Render data rows:
+		 *    - Trim trailing empty cells
+		 *    - Skip all-empty rows
+		 *    - Align to header width:
+		 *        - Truncate excess cells
+		 *        - Pad with "" when too short
+		 *
+		 * Example:
+		 *   Header width = 2
+		 *   Row ["A", "", "", ""] -> ["A"] -> pad -> ["A", ""]
+		 *   Row ["X", "Y", "Z"]   -> truncate -> ["X", "Y"]
+		 */
+		for (let i = 1; i < rows.length; i++) {
+			const normalized = rows[i].map(ExcelExtractionService.sanitizeCell);
+			const trimmed = toTrimmed(normalized);
+			if (trimmed.length === 0) {
+				continue;
+			} // empty row
 
+			const bounded =
+				columnCount > 0
+					? ExcelExtractionService.ensureColumnWidth(trimmed, columnCount)
+					: trimmed;
+
+			markdown += `| ${bounded.join(" | ")} |\n`;
+		}
 		return markdown;
 	}
 }
 
 class MistralOCRService {
 	async extractTextFromPdfWithMistral(
-		base64Document: string,
+		pdfBytes: Uint8Array,
 	): Promise<ParsedPage[]> {
 		const client = new Mistral({ apiKey: config.mistralApiKey });
 
-		const pdfDoc = await PDFDocument.load(base64Document);
-		const pdfBuffer = await pdfDoc.save();
+		const blob = new Blob([pdfBytes], { type: "application/pdf" });
 
-		const blob = new Blob([pdfBuffer], { type: "application/pdf" });
+		const uploaded_pdf = await resilientCall(
+			() =>
+				client.files.upload({
+					file: {
+						fileName: "uploaded_file.pdf",
+						content: blob,
+					},
+					purpose: "ocr",
+				}),
+			{ queueType: "llm" },
+		);
 
-		const uploaded_pdf = await client.files.upload({
-			file: {
-				fileName: "uploaded_file.pdf",
-				content: blob,
-			},
-			purpose: "ocr",
-		});
+		const signedUrl = await resilientCall(() =>
+			client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
+		);
 
-		const signedUrl = await client.files.getSignedUrl({
-			fileId: uploaded_pdf.id,
-		});
-
-		const ocrResponse = await client.ocr.process({
-			model: "mistral-ocr-latest",
-			document: {
-				type: "document_url",
-				documentUrl: signedUrl.url,
-			},
-		});
+		const ocrResponse = await resilientCall(
+			() =>
+				client.ocr.process({
+					model: "mistral-ocr-latest",
+					document: {
+						type: "document_url",
+						documentUrl: signedUrl.url,
+					},
+				}),
+			{ retries: 3, queueType: "llm" },
+		);
 
 		if (!ocrResponse.pages) {
 			throw new Error("No pages found in OCR response");
 		}
-
 		return ocrResponse.pages.map(
 			(page, index) =>
 				({
@@ -405,13 +504,10 @@ class LlamaParseOCRService {
 	TIMEOUT_SECONDS = 300;
 
 	async uploadFileToLLamaParse(
-		base64Document: string,
+		pdfBytes: Uint8Array,
 		fileName: string,
 	): Promise<UploadResponse> {
-		const pdfDoc = await PDFDocument.load(base64Document);
-		const pdfBuffer = await pdfDoc.save();
-
-		const blob = new Blob([pdfBuffer], { type: "application/pdf" });
+		const blob = new Blob([pdfBytes], { type: "application/pdf" });
 
 		const headers = new Headers();
 		headers.append("Authorization", `Bearer ${config.llamaParseToken}`);
@@ -438,7 +534,6 @@ class LlamaParseOCRService {
 				`LLamaParse API returned status ${res.status}: ${await res.text()}`,
 			);
 		}
-
 		const body = await res.json();
 		return body as UploadResponse;
 	}
@@ -452,12 +547,15 @@ class LlamaParseOCRService {
 			headers: headers,
 		};
 
-		const res = await fetch(
-			`https://api.cloud.llamaindex.ai/api/parsing/job/${jobId}`,
-			requestOptions,
+		const res = await resilientCall(() =>
+			fetch(
+				`https://api.cloud.llamaindex.ai/api/parsing/job/${jobId}`,
+				requestOptions,
+			),
 		);
 
 		const body = await res.json();
+
 		return body as StatusResponse;
 	}
 
@@ -470,23 +568,23 @@ class LlamaParseOCRService {
 			headers: headers,
 		};
 
-		const res = await fetch(
-			`https://api.cloud.llamaindex.ai/api/parsing/job/${jobId}/result/markdown`,
-			requestOptions,
+		const res = await resilientCall(() =>
+			fetch(
+				`https://api.cloud.llamaindex.ai/api/parsing/job/${jobId}/result/markdown`,
+				requestOptions,
+			),
 		);
 
 		const body = (await res.json()) as MarkdownResponse;
+
 		return body.markdown;
 	}
 
 	async extractMarkdownViaLLamaParse(
-		base64Document: string,
+		pdfBytes: Uint8Array,
 		fileName: string,
 	): Promise<string> {
-		const uploadRes = await this.uploadFileToLLamaParse(
-			base64Document,
-			fileName,
-		);
+		const uploadRes = await this.uploadFileToLLamaParse(pdfBytes, fileName);
 
 		// Initialize variables for exponential backoff
 		let delay = 1000;
@@ -502,7 +600,6 @@ class LlamaParseOCRService {
 
 		let statusRes = await this.checkParsingStatus(uploadRes.id);
 		if (process.env.NODE_ENV === "development") {
-			// eslint-disable-next-line no-console
 			console.log(`Initial status for ${fileName}: ${statusRes.status}`);
 		}
 		while (statusRes.status !== "SUCCESS") {
@@ -518,7 +615,6 @@ class LlamaParseOCRService {
 			// Log status approximately every second
 			if (currentTime - lastLogTime >= 1000) {
 				if (process.env.NODE_ENV === "development") {
-					// eslint-disable-next-line no-console
 					console.log(
 						`[${Math.floor(elapsedSeconds)}s] ${fileName} status: ${statusRes.status}`,
 					);
@@ -541,7 +637,6 @@ class LlamaParseOCRService {
 			statusRes = await this.checkParsingStatus(uploadRes.id);
 		}
 		if (process.env.NODE_ENV === "development") {
-			// eslint-disable-next-line no-console
 			console.log(
 				`Extraction completed successfully for ${fileName} after ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
 			);

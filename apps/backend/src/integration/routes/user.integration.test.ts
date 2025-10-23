@@ -27,6 +27,38 @@ const createAuthedClient = (jwt: string) =>
 		global: { headers: { Authorization: `Bearer ${jwt}` } },
 	});
 
+// Generate a PDF from text and return bytes
+const generatePdfBytesFromText = async (text: string): Promise<Uint8Array> => {
+	const doc = await PDFDocument.create();
+	doc.addPage().drawText(text);
+	return await doc.save();
+};
+
+// Upload bytes to storage via /documents/upload (multipart)
+const uploadToStorage = async (args: {
+	jwt: string;
+	bytes: Uint8Array;
+	sourceUrl: string;
+	fileName: string;
+}): Promise<void> => {
+	const { jwt, bytes, sourceUrl, fileName } = args;
+	const form = new FormData();
+	const ab = bytes.slice(0).buffer; // ensure ArrayBuffer (not SharedArrayBuffer)
+	const blob = new Blob([ab], { type: "application/pdf" });
+	form.append("file", blob, fileName);
+	form.append("sourceUrl", sourceUrl);
+	form.append("isPublicDocument", "false");
+
+	const res = await app.request("/documents/upload", {
+		method: "POST",
+		headers: new Headers({ authorization: `Bearer ${jwt}` }),
+		body: form,
+	});
+	if (res.status !== 204) {
+		throw new Error(`Upload failed: ${res.status} ${await res.text()}`);
+	}
+};
+
 async function getLatestDocumentIdBySourceUrl(
 	ownerId: string,
 	sourceUrl: string,
@@ -41,19 +73,6 @@ async function getLatestDocumentIdBySourceUrl(
 
 	return data && data.length > 0 ? data[0].id : undefined;
 }
-
-const documentTestPayload = {
-	base64Document:
-		"data:application/pdf;base64,JVBERi0xLjcKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0NvdW50IDEvS2lkcyBbMyAwIFJdPj4KZW5kb2JqCjMgMCBvYmoKPDwvVHlwZS9QYWdlL01lZGlhQm94IFswIDAgNTk1IDg0Ml0vUmVzb3VyY2VzPDwvRm9udDw8L0YxIDQgMCBSPj4+Pi9Db250ZW50cyA1IDAgUi9QYXJlbnQgMiAwIFI+PgplbmRvYmoKNCAwIG9iago8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2E+PgplbmRvYmoKNSAwIG9iago8PC9MZW5ndGggNDQ+PnN0cmVhbQpCVAoxMCAxMCBURCAvRjEgMTIgVGYgKFRlc3QgRG9jdW1lbnQpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMTUgMDAwMDAgbgowMDAwMDAwMDY0IDAwMDAwIG4KMDAwMDAwMDEyMyAwMDAwMCBuCjAwMDAwMDAyMzggMDAwMDAgbgowMDAwMDAwMzA2IDAwMDAwIG4KdHJhaWxlcgo8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgozOTkKJSVFT0YK",
-	document: {
-		filename: "example.pdf",
-		id: 123,
-		owned_by_user_id: OWNER_USER_ID,
-		registered_at: new Date().toISOString(),
-		source_type: "personal_document",
-		source_url: "example/file.pdf",
-	},
-};
 
 /**
  * Comprehensive cleanup function to delete all potentially conflicting document records
@@ -72,20 +91,6 @@ const cleanupTestDocuments = async () => {
 	} catch (error) {
 		console.error("Error during test documents cleanup:", error);
 	}
-};
-
-/**
- * Generate a base64 encoded PDF directly in memory from text content
- * without saving to disk
- */
-const generateBase64FromText = async (text: string): Promise<string> => {
-	const doc = await PDFDocument.create();
-	doc.addPage().drawText(text);
-	const pdfBytes = await doc.save();
-
-	// Convert bytes directly to base64 string without saving to disk
-	const base64 = Buffer.from(pdfBytes).toString("base64");
-	return `data:application/pdf;base64,${base64}`;
 };
 
 /**
@@ -169,9 +174,30 @@ describe("Integration Tests for Routes", () => {
 	});
 
 	it("POST /documents/process should process a document and return 204", async () => {
+		const sourceUrl = "example/file.pdf";
+		const fileName = "example.pdf";
+		const pdfBytes = await generatePdfBytesFromText("Test Document");
+
+		await uploadToStorage({
+			jwt: validToken,
+			bytes: pdfBytes,
+			sourceUrl,
+			fileName,
+		});
+
+		const payload = {
+			document: {
+				file_name: fileName,
+				owned_by_user_id: OWNER_USER_ID,
+				registered_at: new Date().toISOString(),
+				source_type: "personal_document",
+				source_url: sourceUrl,
+			},
+		};
+
 		const res = await app.request("/documents/process", {
 			method: "POST",
-			body: JSON.stringify(documentTestPayload),
+			body: JSON.stringify(payload),
 			headers: new Headers({
 				"Content-Type": "application/json",
 				authorization: `Bearer ${validToken}`,
@@ -191,24 +217,29 @@ describe("Integration Tests for Routes", () => {
 			"This is the first test document.",
 			"Here is the second document for testing.",
 		];
-		const documentIds = [1, 2];
+		const fileNames = ["example-1.pdf", "example-2.pdf"];
+		const sourceUrls = ["example/file-1.pdf", "example/file-2.pdf"];
 
-		const payloads = await Promise.all(
-			texts.map(async (text, index) => ({
-				base64Document: await generateBase64FromText(text),
+		for (let i = 0; i < texts.length; i++) {
+			const pdfBytes = await generatePdfBytesFromText(texts[i]);
+
+			await uploadToStorage({
+				jwt: validToken,
+				bytes: pdfBytes,
+				sourceUrl: sourceUrls[i],
+				fileName: fileNames[i],
+			});
+
+			const payload = {
 				document: {
-					filename: `example-${index}.pdf`,
-					id: documentIds[index],
+					file_name: fileNames[i],
 					owned_by_user_id: OWNER_USER_ID,
 					registered_at: new Date().toISOString(),
 					source_type: "personal_document",
-					source_url: `example/file-${documentIds[index]}.pdf`,
+					source_url: sourceUrls[i],
 				},
-			})),
-		);
+			};
 
-		// Send requests sequentially with delay between them to avoid rate limits
-		for (const payload of payloads) {
 			const res = await app.request("/documents/process", {
 				method: "POST",
 				body: JSON.stringify(payload),
@@ -217,13 +248,9 @@ describe("Integration Tests for Routes", () => {
 					authorization: `Bearer ${validToken}`,
 				}),
 			});
-			await delay(UPLOAD_DELAY_MS); // delay between requests
+			await delay(UPLOAD_DELAY_MS);
 			if (res.status !== 204) {
 				const responseText = await res.text();
-				console.error(
-					`Document processing error for ID ${payload.document.id} (status ${res.status}):`,
-					responseText,
-				);
 				if (res.status === 429) {
 					console.warn("Rate limit hit, retrying after delay...");
 					await delay(RATE_LIMIT_RETRY_DELAY_MS);
@@ -272,11 +299,19 @@ describe("Integration Tests for Routes", () => {
 
 	it("should return no errors when deleting a document with valid document ID", async () => {
 		const sourceUrl = "delete-me/file.pdf";
-		// Upload a new document first
+		const fileName = "delete-me.pdf";
+		const pdfBytes = await generatePdfBytesFromText("Document to be deleted");
+
+		await uploadToStorage({
+			jwt: validToken,
+			bytes: pdfBytes,
+			sourceUrl,
+			fileName,
+		});
+
 		const newDocPayload = {
-			base64Document: await generateBase64FromText("Document to be deleted"),
 			document: {
-				filename: "delete-me.pdf",
+				file_name: fileName,
 				owned_by_user_id: OWNER_USER_ID,
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
@@ -318,17 +353,25 @@ describe("Integration Tests for Routes", () => {
 			.limit(1);
 		expect(deletedDocuments).toBeDefined();
 		expect(deletedDocuments && deletedDocuments.length).toBe(0);
-	}, 80_000);
+	}, 100_000);
 
 	it("should cascade document deletion to also delete summaries and chunks", async () => {
 		const sourceUrl = "delete-cascade/file.pdf";
-		// Upload a new document
+		const fileName = "delete-cascade.pdf";
+		const pdfBytes = await generatePdfBytesFromText(
+			"Document to be deleted with cascade",
+		);
+
+		await uploadToStorage({
+			jwt: validToken,
+			bytes: pdfBytes,
+			sourceUrl,
+			fileName,
+		});
+
 		const newDocPayload = {
-			base64Document: await generateBase64FromText(
-				"Document to be deleted with cascade",
-			),
 			document: {
-				filename: "delete-cascade.pdf",
+				file_name: fileName,
 				owned_by_user_id: OWNER_USER_ID,
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
@@ -440,20 +483,30 @@ describe("Integration Tests for Routes", () => {
 			otherUserEmail,
 		);
 
-		const newDocPayload2 = {
-			base64Document: await generateBase64FromText("Document to be deleted"),
+		const sourceUrl = "delete-me-2/file.pdf";
+		const fileName = "delete-me-2.pdf";
+		const pdfBytes = await generatePdfBytesFromText("Document to be deleted");
+
+		await uploadToStorage({
+			jwt: validToken2,
+			bytes: pdfBytes,
+			sourceUrl,
+			fileName,
+		});
+
+		const payload2 = {
 			document: {
-				filename: "delete-me-2.pdf",
+				file_name: fileName,
 				owned_by_user_id: OTHER_USER_ID,
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
-				source_url: "delete-me-2/file.pdf",
+				source_url: sourceUrl,
 			},
 		};
 
 		const uploadRes = await app.request("/documents/process", {
 			method: "POST",
-			body: JSON.stringify(newDocPayload2),
+			body: JSON.stringify(payload2),
 			headers: new Headers({
 				"Content-Type": "application/json",
 				authorization: `Bearer ${validToken2}`,

@@ -80,15 +80,24 @@ export default defineConfig({
 	],
 
 	/* Run your local dev server before starting the tests */
-	webServer: {
-		/**
-		 * You might wonder why we don't run a build step here when
-		 * we're in the CI before starting the preview server.
-		 * We're running the build step beforehand in the workflow
-		 * as an own step so we can cache it between jobs.
-		 */
-		command: `${process.env.CI ? "npm run preview" : "npm run dev"} -- --port ${port}`,
-		url: `http://localhost:${port}`,
-		reuseExistingServer: !process.env.CI,
-	},
+	webServer: [
+		{
+			/**
+			 * You might wonder why we don't run a build step here when
+			 * we're in the CI before starting the preview server.
+			 * We're running the build step beforehand in the workflow
+			 * as an own step so we can cache it between jobs.
+			 */
+			command: `${process.env.CI ? "npm run preview" : "npm run dev"} -- --port ${port}`,
+			url: `http://localhost:${port}`,
+			reuseExistingServer: !process.env.CI,
+		},
+		{
+			// Wait for backend to be ready (started by Turborepo via "with" field)
+			command: "echo 'Waiting for backend...'",
+			url: "http://localhost:3000",
+			timeout: 30_000,
+			reuseExistingServer: true,
+		},
+	],
 });
