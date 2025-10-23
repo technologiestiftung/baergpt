@@ -224,11 +224,10 @@ export class DatabaseService {
 		}
 
 		let bucket = "public_documents";
-		let filenameInBucket = document.source_url.split("/").slice(-1)[0];
+		const filenameInBucket = document.source_url;
 
 		if (document.owned_by_user_id) {
 			bucket = "documents";
-			filenameInBucket = document.source_url;
 		}
 
 		const { data, error } = await supabase.storage
