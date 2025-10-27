@@ -41,7 +41,7 @@ jobs:
       - name: Install Playwright Browser 🧭
         run: |
           cd apps/maintenance-mode
-          BROWSER="${{ matrix.browser }}"
+          npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Cache maintenance mode build 💾
         id: cache-maintenance-mode-build
