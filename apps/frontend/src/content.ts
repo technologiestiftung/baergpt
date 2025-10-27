@@ -80,6 +80,151 @@ export const Content = {
 	"landingPage.registerCTA.ariaLabel": "Zur Registrierungs-Seite",
 	"landingPage.registerCTA.link": "/register/",
 
+	/* -------------------- Privacy Policy Page -------------------- */
+	"privacyPolicyPage.h1": "Datenschutzerklärung",
+	"privacyPolicyPage.date": "Stand Oktober 2025",
+	"privacyPolicyPage.tableOfContents.title": "Inhaltsverzeichnis",
+	//Section 1
+	"privacyPolicyPage.section1.title": "Einleitung und Anwendungsbereich",
+	"privacyPolicyPage.section1.p1":
+		"Dieses Dokument beschreibt die Verarbeitung personenbezogener Daten im Rahmen der Nutzung von BärGPT.",
+	"privacyPolicyPage.section1.p2":
+		"Bei BärGPT handelt es sich um einen KI-Assistenten für die Berliner Verwaltung, der Verwaltungsmitarbeitende bei der täglichen Routinearbeit entlasten soll, z. B. beim Korrigieren, Zusammenfassen und Übersetzen von Texten oder beim Schreiben von Vermerken. Auch Recherche und Ideengenerierung sind zentrale Einsatzbereiche. Hierfür gibt es bei BärGPT eine speziell auf die Berliner Verwaltung zugeschnittene Dokumentenverwaltung mit verschiedenen Fuktionen sowie einen freien Chat.",
+	"privacyPolicyPage.section1.p3":
+		"Die nachfolgenden Hinweise dienen der Transparenz über Verantwortlichkeiten, Verarbeitungszwecke, Datenarten, Speicher- und Löschfristen sowie Betroffenenrechte nach der Datenschutz-Grundverordnung (DSGVO) und dem Berliner Datenschutzgesetz (BlnDSG) sowie weiteren einschlägigen Vorschriften des Landes Berlin.",
+	//Section 2
+	"privacyPolicyPage.section2.title": "Verantwortlichkeiten",
+	"privacyPolicyPage.section2.phone.label": "Tel.: ",
+	"privacyPolicyPage.section2.email.label": "E-Mail: ",
+	"privacyPolicyPage.section2.website.label": "Website: ",
+	//a)
+	"privacyPolicyPage.section2.a.title": "a) Testbetrieb durch CityLAB",
+	"privacyPolicyPage.section2.a.li1.heading":
+		"Verantwortlich im Sinne der DSGVO:",
+	"privacyPolicyPage.section2.a.li2.heading": "Datenschutzbeauftragter:",
+	"privacyPolicyPage.section2.a.li2.role": "Datenschutzbeauftragter",
+	"privacyPolicyPage.section2.a.li2.email": "datenschutz@ts.berlin",
+	//b)
+	"privacyPolicyPage.section2.b.title":
+		"b) Probeechtbetrieb durch Senatskanzlei Berlin",
+	"privacyPolicyPage.section2.b.li1.heading":
+		"Verantwortlich im Sinne der DSGVO:",
+	"privacyPolicyPage.section2.b.li1.organisation":
+		"Der Regierende Bürgermeister von Berlin - Senatskanzlei",
+	"privacyPolicyPage.section2.b.li1.role": "Chef der Senatskanzlei",
+	"privacyPolicyPage.section2.b.li1.name": "Florian Graf",
+	"privacyPolicyPage.section2.b.li1.address.street": "Jüdenstr. 1",
+	"privacyPolicyPage.section2.b.li1.address.city": "10178 Berlin",
+	"privacyPolicyPage.section2.b.li1.email":
+		"datenschutz@senatskanzlei.berlin.de",
+	"privacyPolicyPage.section2.b.li2.heading": "Datenschutzbeauftragter:",
+	"privacyPolicyPage.section2.b.li2.organisation":
+		"Der Regierende Bürgermeister von Berlin - Senatskanzlei",
+	"privacyPolicyPage.section2.b.li2.role":
+		"Der behördliche Datenschutzbeauftragte",
+	"privacyPolicyPage.section2.b.li2.address.street": "Jüdenstr. 1",
+	"privacyPolicyPage.section2.b.li2.address.city": "10178 Berlin",
+	"privacyPolicyPage.section2.b.li2.email": "behDSB@senatskanzlei.berlin.de",
+	"privacyPolicyPage.section2.b.li3.heading":
+		"Technische Verantwortung / Systemadministration (Auftragsverarbeiter):",
+	//TSB Info
+	"privacyPolicyPage.section2.tsb.name": "Technologiestiftung Berlin",
+	"privacyPolicyPage.section2.tsb.address.street": "Grunewaldstraße 61-62",
+	"privacyPolicyPage.section2.tsb.address.city": "10825 Berlin",
+	"privacyPolicyPage.section2.tsb.phone": "030 20 96 99 90",
+	"privacyPolicyPage.section2.tsb.email": "info@ts.berlin",
+	"privacyPolicyPage.section2.tsb.website":
+		"https://www.technologiestiftung-berlin.de",
+	//Section 3
+	"privacyPolicyPage.section3.title": "Verarbeitete Datenkategorien",
+	"privacyPolicyPage.section3.li1.title": "Account-Daten: ",
+	"privacyPolicyPage.section3.li1.description":
+		"Vorname, Nachname, E-Mail-Adresse, Anrede/Titel (optional)",
+	"privacyPolicyPage.section3.li2.title": "Authentifizierungsdaten: ",
+	"privacyPolicyPage.section3.li2.description": "Passwort",
+	"privacyPolicyPage.section3.li3.title": "Chat-Daten: ",
+	"privacyPolicyPage.section3.li3.description":
+		"Eingaben und Ergebnisse von Chats (Chat-Historie mit dem LLM)",
+	"privacyPolicyPage.section3.li4.title": "Support- und Diagnosedaten: ",
+	"privacyPolicyPage.section3.li4.description":
+		"Logfiles, Monitoring-Daten, Fehleranalysen ",
+	"privacyPolicyPage.section3.li5.title": "Backups: ",
+	"privacyPolicyPage.section3.li5.description":
+		"Sicherungskopien der Systemumgebung und der Datenbank",
+	//Section 4
+	"privacyPolicyPage.section4.title": "Zwecke der Verarbeitung",
+	"privacyPolicyPage.section4.li1.title":
+		"Account- und Authentifizierungsdaten sowie Chat-Daten: ",
+	"privacyPolicyPage.section4.li1.description":
+		"Unterstützung der Verwaltungsbeschäftigten bei deren Aufgabenerfüllung durch Erstellen, Korrigieren, Zusammenfassen und Übersetzen von Texten sowie Bereitstellung der Dienste von BärGPT (Chat, Dokumentenbearbeitung, Nutzerverwaltung)",
+	"privacyPolicyPage.section4.li2.title":
+		"Support- und Diagnosedaten sowie Backups: ",
+	"privacyPolicyPage.section4.li2.description":
+		"Sicherstellung der Betriebsfähigkeit, Fehleranalyse und Support, System- und Datensicherheit (inkl. Backup-Verwaltung) sowie Weiterentwicklung und Pflege der Software",
+	//Section 5
+	"privacyPolicyPage.section5.title": "Rechtsgrundlagen",
+	"privacyPolicyPage.section5.li1":
+		"Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO (für die Verarbeitung der eigenen personenbezogenen Daten)",
+	"privacyPolicyPage.section5.li2":
+		"Wahrung berechtigter Interessen gemäß Art. 6 Abs. 1 lit. f DSGVO (für die Verarbeitung von Support- und Diagnosedaten sowie Backups, soweit für die System- und Datensicherheit notwendig)",
+	"privacyPolicyPage.section5.li3":
+		"Art. 6 Abs. 1 b) DSGVO iVm Arbeitsvertrag bzw. Dienstvertrag (für alle übrigen Verarbeitungen)",
+	"privacyPolicyPage.section5.li4":
+		"Einbindung externer Videoinhalte (Vimeo) auf Basis Ihrer Einwilligung gem. Art. 6 Abs. 1 lit. a DSGVO (Zwei-Klick-Lösung)",
+	//Section 6
+	"privacyPolicyPage.section6.title": "Speicherdauer und Löschung",
+	"privacyPolicyPage.section6.li1.title": "Account-Daten: ",
+	"privacyPolicyPage.section6.li1.description":
+		"Löschung durch Nutzer oder Support (z. B. nach Aufforderung durch Nutzer) jederzeit möglich; Löschung erfolgt sofort und endgültig.",
+	"privacyPolicyPage.section6.li2.title": "Chat-Daten: ",
+	"privacyPolicyPage.section6.li2.description":
+		"Löschung durch Nutzer jederzeit möglich; Löschung erfolgt sofort und endgültig.",
+	"privacyPolicyPage.section6.li3.title": "Deaktivierte Accounts: ",
+	"privacyPolicyPage.section6.li3.description":
+		"Löschung unmittelbar nach Deaktivierung",
+	"privacyPolicyPage.section6.li4.title": "Support- und Diagnosedaten: ",
+	"privacyPolicyPage.section6.li4.description":
+		"Löschung nach Abschluss der Auswertung",
+	"privacyPolicyPage.section6.li5.title": "Backups: ",
+	"privacyPolicyPage.section6.li5.description":
+		"Löschung nach festem Rotationsplan (derzeit sieben Tage)",
+	//Section 7
+	"privacyPolicyPage.section7.title": "Empfänger und Weitergabe von Daten",
+	"privacyPolicyPage.section7.p1":
+		"Eine Weitergabe an Dritte erfolgt ausschließlich, wenn dies für den Betrieb (z. B. Hosting-Anbieter) erforderlich ist oder gesetzliche Verpflichtungen dies verlangen. Derzeit wird der deutsche Anbieter STACKIT für die Cloud-Services genutzt.",
+	//Section 8
+	"privacyPolicyPage.section8.title": "Betroffenenrechte",
+	"privacyPolicyPage.section8.p1":
+		"Gemäß DSGVO bestehen grundsätzlich Rechte auf:",
+	"privacyPolicyPage.section8.li1":
+		"Auskunft über verarbeitete personenbezogene Daten (Art. 15 DSGVO)",
+	"privacyPolicyPage.section8.li2":
+		"Berichtigung unrichtiger Daten (Art. 16 DSGVO)",
+	"privacyPolicyPage.section8.li3":
+		"Löschung („Recht auf Vergessenwerden“, Art. 17 DSGVO)",
+	"privacyPolicyPage.section8.li4":
+		"Einschränkung der Verarbeitung (Art. 18 DSGVO)",
+	"privacyPolicyPage.section8.li5": "Datenübertragbarkeit (Art. 20 DSGVO)",
+	"privacyPolicyPage.section8.li6":
+		"Widerruf einer Einwilligung (Art. 7 Abs. 3 DSGVO)",
+	"privacyPolicyPage.section8.li7":
+		"Widerspruch in Bezug auf die Verarbeitung zur Wahrung berechtigter Interessen (Art. 21 DSGVO)",
+	"privacyPolicyPage.section8.li8":
+		"Beschwerde bei einer Aufsichtsbehörde (Art. 77 DSGVO)",
+	"privacyPolicyPage.section8.li9":
+		"Externer Dienstleister: Vimeo, Inc. (Videohosting/Streaming; USA). Rechtsinstrumente: EU-Standardvertragsklauseln; Zertifizierung unter dem EU-US Data Privacy Framework (DPF). Zweck: Einbettung und Auslieferung von Videoinhalten",
+	//Section 9
+	"privacyPolicyPage.section9.title":
+		"Automatisierte Entscheidungsfindung und Pflicht zur Datenbereitstellung",
+	"privacyPolicyPage.section9.p1":
+		"Die Verarbeitung durch das KI-System dient ausschließlich der Textgenerierung und Bearbeitung. Eine automatisierte Entscheidungsfindung im Sinne von Art. 22 DSGVO findet nicht statt. Profiling im rechtlichen Sinne wird nicht durchgeführt.",
+	"privacyPolicyPage.section9.p2":
+		"Die Bereitstellung der unter Punkt 3 genannten Account- und Authentifizierungsdaten ist für die Nutzung des KI-Assistenten BärGPT erforderlich.",
+	//Section 10
+	"privacyPolicyPage.section10.title": "Änderungen der Datenschutzerklärung",
+	"privacyPolicyPage.section10.p1":
+		"Diese Datenschutzhinweise werden bei Änderungen der Datenverarbeitung oder gesetzlichen Anforderungen angepasst. Es gilt stets die aktuelle Fassung.",
+
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",
 	"sidebar.navigation.imprint": "Impressum",
@@ -91,8 +236,7 @@ export const Content = {
 		"https://citylabberlin.typeform.com/to/GhoCHw0J",
 	"sidebar.navigation.feedback.ariaLabel": "Feedback geben",
 	"sidebar.navigation.privacy": "Datenschutz",
-	"sidebar.navigation.privacy.link":
-		"https://www.technologiestiftung-berlin.de/datenschutz",
+	"sidebar.navigation.privacy.link": "/privacy-policy/",
 	"sidebar.navigation.privacy.ariaLabel": "Zur Datenschutz-Seite navigieren",
 
 	/* -------------------- Tooltips -------------------- */
@@ -531,8 +675,7 @@ export const Content = {
 	"footer.imprint": "Impressum",
 	"footer.imprint.link": "https://www.technologiestiftung-berlin.de/impressum",
 	"footer.privacy": "Datenschutz",
-	"footer.privacy.link":
-		"https://www.technologiestiftung-berlin.de/datenschutz",
+	"footer.privacy.link": "/privacy-policy/",
 
 	"footer.citylabLogo.alt": "CityLAB Berlin",
 	"footer.citylabLogo.link": "https://citylab-berlin.org/",
