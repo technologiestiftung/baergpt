@@ -27,12 +27,8 @@ export function AccountActivated() {
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
 
-	if (!session) {
-		return null;
-	}
-
-	const { first_name, last_name } = session.user.user_metadata;
-	const { email } = session.user;
+	const { first_name, last_name } = session?.user?.user_metadata || {};
+	const { email } = session?.user || {};
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
