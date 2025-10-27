@@ -4,8 +4,10 @@ interface CookieBannerState {
 	isOpen: boolean;
 	isExpanded: boolean;
 	hasConsent: boolean | null;
+	thirdPartyCookiesEnabled: boolean;
 	openBanner: (expanded?: boolean) => void;
 	setExpanded: (expanded: boolean) => void;
+	setThirdPartyCookiesEnabled: (enabled: boolean) => void;
 	checkConsent: () => void;
 	acceptConsent: () => void;
 	declineConsent: () => void;
@@ -15,14 +17,20 @@ export const useCookieBannerStore = create<CookieBannerState>((set, get) => ({
 	isOpen: false,
 	isExpanded: false,
 	hasConsent: null,
+	thirdPartyCookiesEnabled: false,
 
 	openBanner: (expanded = false) => set({ isOpen: true, isExpanded: expanded }),
 	setExpanded: (expanded) => set({ isExpanded: expanded }),
+	setThirdPartyCookiesEnabled: (enabled) =>
+		set({ thirdPartyCookiesEnabled: enabled }),
 
 	checkConsent: () => {
 		const consent = localStorage.getItem("vimeo-cookies-consent");
 		const hasConsent = consent === "accepted";
-		set({ hasConsent });
+		set({
+			hasConsent,
+			thirdPartyCookiesEnabled: hasConsent,
+		});
 
 		// Auto-open banner if no consent has been given
 		if (!consent && !get().isOpen) {
@@ -32,13 +40,18 @@ export const useCookieBannerStore = create<CookieBannerState>((set, get) => ({
 
 	acceptConsent: () => {
 		localStorage.setItem("vimeo-cookies-consent", "accepted");
-		set({ hasConsent: true });
+		set({ hasConsent: true, thirdPartyCookiesEnabled: true });
 		window.dispatchEvent(new CustomEvent("cookies-accepted"));
 		set({ isOpen: false, isExpanded: false });
 	},
 
 	declineConsent: () => {
 		localStorage.setItem("vimeo-cookies-consent", "declined");
-		set({ hasConsent: false, isOpen: false, isExpanded: false });
+		set({
+			hasConsent: false,
+			thirdPartyCookiesEnabled: false,
+			isOpen: false,
+			isExpanded: false,
+		});
 	},
 }));
