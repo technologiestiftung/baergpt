@@ -7,7 +7,7 @@ export function LandingPageRegisterCTA() {
 		>
 			<div className={`flex items-center gap-8 flex-col z-10`}>
 				<div
-					className={`flex flex-col justify-center gap-3 text-dunkelblau-200 items-center text-center`}
+					className={`flex flex-col justify-center gap-3 text-dunkelblau-100 items-center text-center`}
 				>
 					<h2 className="text-center text-2xl leading-8 font-semibold lg:text-4xl lg:leading-10">
 						{Content["landingPage.registerCTA.h2"]}
