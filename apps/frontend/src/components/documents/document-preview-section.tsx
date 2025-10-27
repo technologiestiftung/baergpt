@@ -11,23 +11,16 @@ export const DocumentPreviewSection: React.FC = () => {
 		unselectPreviewDocument,
 	} = useDocumentStore();
 
-	const isDocxFormat = (fileName: string) => {
-		return fileName.toLowerCase().split(".").pop() === "docx";
-	};
-
-	// Check if the file type can be previewed in browser
-	const canPreviewInBrowser = (fileName: string) => {
-		const extension = fileName.toLowerCase().split(".").pop();
-		// PDFs and DOCX documents can be previewed in iframes
-		return extension === "pdf" || extension === "docx";
-	};
-
 	if (!selectedPreviewDocument) {
 		return null;
 	}
 
-	const hasSupportedPreview = canPreviewInBrowser(
-		selectedPreviewDocument.file_name ?? "",
+	const isDocxFormat = (fileName: string) => {
+		return fileName.toLowerCase().split(".").pop() === "docx";
+	};
+
+	const hasSupportedPreview = [".pdf", ".docx"].some((suffix) =>
+		selectedPreviewDocument.file_name?.endsWith(suffix),
 	);
 
 	return (
