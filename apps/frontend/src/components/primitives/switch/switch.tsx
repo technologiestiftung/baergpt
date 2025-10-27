@@ -47,10 +47,10 @@ export const Switch: React.FC<SwitchProps> = ({
 						id={id}
 						name={name}
 						aria-label={ariaLabel}
-						className="sr-only"
+						className="peer sr-only"
 					/>
 					<div
-						className={`block h-8 w-14 rounded-full ${getBackgroundColor()}`}
+						className={`block h-8 w-14 rounded-full ${getBackgroundColor()} peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-default`}
 					/>
 					<div
 						className={`dot absolute top-1 h-6 w-6 rounded-full bg-white transition-all duration-200 ${checked ? "left-7" : "left-1"}`}
