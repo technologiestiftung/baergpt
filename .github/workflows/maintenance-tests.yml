@@ -1,0 +1,105 @@
+name: Maintenance Tests
+permissions:
+  contents: write
+  packages: write
+on:
+  pull_request:
+    branches: [main, staging]
+jobs:
+  maintenance-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        browser: [chromium, firefox, webkit, "Mobile Chrome", "Mobile Safari"]
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@v5
+
+      - name: install tools via asdf ⚙️
+        uses: asdf-vm/actions/install@v4
+
+      - name: Setup Node.js using .nvmrc ⚙️
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Cache npm dependencies 💾
+        id: cache-npm-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies 📦
+        if: steps.cache-npm-deps.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Install Playwright Browser 🧭
+        run: |
+          cd apps/maintenance-mode
+          BROWSER="${{ matrix.browser }}"
+          case "$BROWSER" in
+            "Mobile Chrome") npx playwright install --with-deps chromium;;
+            "Mobile Safari") npx playwright install --with-deps webkit;;
+            *) npx playwright install --with-deps "$BROWSER";;
+          esac
+
+      - name: Run maintenance mode unit tests 🧪
+        run: |
+          cd apps/maintenance-mode
+          npm run test
+
+      - name: Cache maintenance mode build 💾
+        id: cache-maintenance-mode-build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./apps/maintenance-mode/dist
+          key: ${{ runner.os }}-node-maintenance-mode-${{ hashFiles('./apps/maintenance-mode/**/*', '!./apps/maintenance-mode/node_modules/**/*', '**/package-lock.json') }}
+
+      - name: Build maintenance mode page 🏗️
+        if: steps.cache-maintenance-mode-build.outputs.cache-hit != 'true'
+        run: |
+          cd apps/maintenance-mode
+          npm run check-types
+          npm run build
+
+      - name: Run maintenance mode E2E test 🎭
+        run: |
+          cd apps/maintenance-mode
+          npm run test:e2e -- --project="${{ matrix.browser }}"
+
+      - name: Capture backend logs after maintenance mode E2E test after failure 📋
+        if: failure()
+        run: |
+          if [ -f apps/backend/backend.log ]; then
+            echo "=== Backend server logs ==="
+            cat apps/backend/backend.log
+            echo "=== End backend logs ==="
+          else
+            echo "Backend log file not found"
+          fi
+
+      - name: Upload maintenance mode E2E test results ⬆️
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() && !cancelled() }}
+        with:
+          name: maintenance-mode-e2e-${{ matrix.browser }}-test-results
+          path: apps/maintenance-mode/test-results
+          retention-days: 30
+
+      - name: Run maintenance mode A11y tests ♿️
+        run: |
+          cd apps/maintenance-mode
+          npm run test:a11y -- --project="${{ matrix.browser }}"
+
+      - name: Upload A11y test results ⬆️
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() && !cancelled() }}
+        with:
+          name: maintenance-mode-a11y-${{ matrix.browser }}-test-results
+          path: apps/maintenance-mode/test-results

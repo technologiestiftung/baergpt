@@ -11,9 +11,8 @@
 		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
 		"prettier:check": "prettier  --check .",
 		"prettier:write": "prettier --write .",
-		"test:unit": "vitest run --config ./tests/unit/vitest.config.ts",
-		"test:e2e": "playwright test --config=tests/e2e/playwright.config.ts",
-		"test:a11y": "playwright test --config=tests/a11y/playwright.config.ts",
+		"test:a11y": "npx playwright test tests/a11y --config=playwright.config.ts",
+		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts",
 		"preview": "vite preview"
 	},
 	"dependencies": {
@@ -33,7 +32,6 @@
 		"postcss": "8.4.40",
 		"tailwindcss": "3.4.7",
 		"typescript": "5.8.3",
-		"vite": "7.1.7",
-		"vitest": "3.2.4"
+		"vite": "7.1.7"
 	}
 }
