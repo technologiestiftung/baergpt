@@ -13,7 +13,7 @@ export const LandingPageLayout: React.FC<AppLayoutProps> = ({ children }) => {
 	return (
 		<div className="flex w-full flex-col font-arial text-dunkelblau-200 lining-nums proportional-nums">
 			<LandingPageHeader />
-			<main>{children}</main>
+			<main className="mt-20">{children}</main>
 
 			<FooterLandingPage />
 		</div>
