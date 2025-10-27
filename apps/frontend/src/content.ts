@@ -225,6 +225,29 @@ export const Content = {
 	"privacyPolicyPage.section10.p1":
 		"Diese Datenschutzhinweise werden bei Änderungen der Datenverarbeitung oder gesetzlichen Anforderungen angepasst. Es gilt stets die aktuelle Fassung.",
 
+	/* -------------------- Video player -------------------- */
+	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
+	"videoPlayer.cookies.buttonAriaLabel":
+		"Cookies akzeptieren, um Video anzusehen",
+	"videoPlayer.blocked.message": "Video-Inhalt blockiert",
+	"videoPlayer.loading.message": "wird geladen...",
+	"videoPlayer.vimeo.cookies.message":
+		"Dieses Video wird von Vimeo bereitgestellt. Um das Video anzusehen, müssen Sie der Verwendung von Cookies zustimmen.",
+	/* -------------------- Cookies Banner -------------------- */
+	"cookiesBanner.title": "Cookies-Einstellungen",
+	"cookiesBanner.message.short": "Wir verwenden technisch notwendige Cookies. ",
+	"cookiesBanner.expandButton": "Mehr erfahren",
+	"cookiesBanner.expandButton.ariaLabel":
+		"Mehr Informationen zu Cookies anzeigen",
+	"cookiesBanner.message.long":
+		"Wir verwenden technisch notwendige Cookies, um die Funktionalität von BärGPT zu gewährleisten. Weitere Informationen finden Sie in unseren ",
+	"cookiesBanner.message.linkText": "Datenschutzhinweisen.",
+	"cookiesBanner.button.accept": "Akzeptieren",
+	"cookiesBanner.button.deny": "Ablehnen",
+	"cookiesBanner.button.acceptAll": "Alle akzeptieren",
+	"cookiesBanner.button.necessary": "Nur notwendige",
+	"cookiesBanner.button.acceptSelection": "Auswahl bestätigen",
+	"cookiesBanner.thirdPartyCookies.label": "Externe Medien",
 	/* -------------------- Sidebar -------------------- */
 	"sidebar.ariaLabel": "Sidebar",
 	"sidebar.navigation.imprint": "Impressum",
