@@ -38,7 +38,7 @@ export const Accordion: React.FC<AccordionProps> = ({
 				</span>
 			</button>
 			{isExpanded && (
-				<div className="max-w-[679px] px-2.5 pb-2.5 sm:px-4 md:pr-0 sm:pb-4 mt-1 lg:mt-8 text-base leading-6 font-normal text-start">
+				<div className="max-w-[679px] px-2.5 pb-2.5 sm:px-4 md:pr-0 sm:pb-4 mt-1 lg:mt-5 text-base leading-6 font-normal text-start">
 					{answer}
 				</div>
 			)}

@@ -29,7 +29,7 @@ const cards = [
 
 export function LandingPageCards() {
 	return (
-		<div className="relative mt-[-80px] sm:mt-[-122px] z-20 max-w-[934px] mx-auto px-5 lg:px-0 gap-[18px] text-center flex flex-col items-center text-dunkelblau-100">
+		<div className="relative mt-[-80px] sm:mt-[-122px] z-20 lg:max-w-[934px] mx-auto px-5 lg:px-0 gap-[18px] text-center flex flex-col items-center text-dunkelblau-100">
 			{cards.map((card, index) => (
 				<div
 					key={index}
