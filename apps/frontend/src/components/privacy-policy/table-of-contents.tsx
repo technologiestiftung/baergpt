@@ -1,14 +1,7 @@
 import React from "react";
 import Content from "../../content.ts";
 
-export const TableOfContents = ({
-	onSectionClick,
-}: {
-	onSectionClick: (
-		event: React.MouseEvent<HTMLAnchorElement>,
-		sectionId: string,
-	) => void;
-}) => {
+export const TableOfContents: React.FC = () => {
 	const items = [
 		Content["privacyPolicyPage.section1.title"],
 		Content["privacyPolicyPage.section2.title"],
@@ -28,7 +21,6 @@ export const TableOfContents = ({
 					<li key={index}>
 						<a
 							href={`#section-${index + 1}`}
-							onClick={(e) => onSectionClick(e, `section-${index + 1}`)}
 							className="flex gap-2 text-lg leading-7 font-semibold lg:text-xl group focus:none focus-visible:outline-none"
 						>
 							<span className="w-6 flex-shrink-0">{index + 1}.</span>
