@@ -40,7 +40,10 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({ title, srcUrl }) => {
 				</p>
 				<AccentButton
 					onClick={() => {
-						acceptConsent();
+						acceptConsent({
+							type: "third-party-only",
+							thirdPartyCookies: true,
+						});
 						window.location.reload();
 					}}
 					ariaLabel={Content["videoPlayer.cookies.buttonLabel"]}
