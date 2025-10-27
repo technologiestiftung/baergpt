@@ -111,7 +111,6 @@ function handleUnauthorized(
 		"/register/",
 		"/account-deleted/",
 		"/start/",
-		"/privacy-policy/",
 	];
 
 	if (unprotectedPages.includes(pathname)) {
