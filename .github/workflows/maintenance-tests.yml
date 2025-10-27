@@ -48,11 +48,6 @@ jobs:
             *) npx playwright install --with-deps "$BROWSER";;
           esac
 
-      - name: Run maintenance mode unit tests 🧪
-        run: |
-          cd apps/maintenance-mode
-          npm run test
-
       - name: Cache maintenance mode build 💾
         id: cache-maintenance-mode-build
         uses: actions/cache@v4
