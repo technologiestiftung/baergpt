@@ -12,7 +12,6 @@ import { NewPasswordPage } from "./routes/new-password";
 import { ProfilePage } from "./routes/profile";
 import { EmailChanged } from "./routes/email-changed";
 import { AccountDeleted } from "./routes/account-deleted";
-import { LandingPage } from "./routes/landing-page";
 
 const router = createBrowserRouter([
 	{
@@ -51,7 +50,6 @@ const router = createBrowserRouter([
 		path: "/account-deleted/",
 		element: <AccountDeleted />,
 	},
-	{ path: "/start/", element: <LandingPage /> },
 ]);
 
 function render() {

@@ -32,8 +32,8 @@ test.describe("Login", () => {
 		// Click on the log-out button
 		await page.getByRole("button", { name: "Ausloggen" }).click();
 
-		// Check if we are back on the login page
-		await expect(page.getByText("Willkommen zurückBitte melden")).toBeVisible();
+		// Check if we are back on the landing page
+		await expect(page.getByText("BärGPT, der KI-Assistent für die Berliner Verwaltung")).toBeVisible();
 	});
 
 	test("Invalid Login Attempt", async ({ page }) => {
