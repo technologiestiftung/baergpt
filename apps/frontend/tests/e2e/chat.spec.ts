@@ -387,24 +387,20 @@ test.describe("Chat", () => {
 		await page.goto("/");
 
 		// Check if the chat history is open
-		await expect(
-			page.getByRole("heading", { name: "Mein Chatverlauf" }),
-		).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Chats" })).toBeVisible();
 
 		// Close the chat history
 		await page.getByRole("button", { name: "Chat-Verlauf schließen" }).click();
 
 		// Check if the chat history is closed
 		await expect(
-			page.getByRole("heading", { name: "Mein Chatverlauf" }),
+			page.getByRole("heading", { name: "Chats" }),
 		).not.toBeVisible();
 
 		// Open the chat history again
 		await page.getByRole("button", { name: "Chat-Verlauf öffnen" }).click();
 
 		// Check if the chat history is open again
-		await expect(
-			page.getByRole("heading", { name: "Mein Chatverlauf" }),
-		).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Chats" })).toBeVisible();
 	});
 });
