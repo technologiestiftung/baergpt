@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        browser: [chromium, firefox, webkit, "Mobile Chrome", "Mobile Safari"]
+        browser: [chromium, firefox, webkit]
 
     steps:
       - name: Checkout code ⬇️
@@ -42,11 +42,6 @@ jobs:
         run: |
           cd apps/maintenance-mode
           BROWSER="${{ matrix.browser }}"
-          case "$BROWSER" in
-            "Mobile Chrome") npx playwright install --with-deps chromium;;
-            "Mobile Safari") npx playwright install --with-deps webkit;;
-            *) npx playwright install --with-deps "$BROWSER";;
-          esac
 
       - name: Cache maintenance mode build 💾
         id: cache-maintenance-mode-build
