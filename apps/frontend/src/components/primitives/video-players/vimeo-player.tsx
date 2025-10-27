@@ -1,5 +1,5 @@
-import React from "react";
-import { useCookieConsent } from "../../../hooks/use-cookie-consent.ts";
+import React, { useEffect } from "react";
+import { useCookieBannerStore } from "../../../store/use-cookie-banner-store.ts";
 import { Content } from "../../../content.ts";
 import { AccentButton } from "../buttons/accent-button.tsx";
 
@@ -9,7 +9,11 @@ interface VimeoPlayerProps {
 }
 
 export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({ title, srcUrl }) => {
-	const hasConsent = useCookieConsent();
+	const { hasConsent, checkConsent, acceptConsent } = useCookieBannerStore();
+
+	useEffect(() => {
+		checkConsent();
+	}, [checkConsent]);
 
 	if (hasConsent === null) {
 		return (
@@ -36,7 +40,7 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({ title, srcUrl }) => {
 				</p>
 				<AccentButton
 					onClick={() => {
-						localStorage.setItem("vimeo-cookies-consent", "accepted");
+						acceptConsent();
 						window.location.reload();
 					}}
 					ariaLabel={Content["videoPlayer.cookies.buttonLabel"]}

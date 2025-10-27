@@ -2,44 +2,42 @@ import React, { useState, useEffect } from "react";
 import { AccentButton } from "../primitives/buttons/accent-button";
 import { Content } from "../../content.ts";
 import { Switch } from "../primitives/switch/switch.tsx";
+import { useCookieBannerStore } from "../../store/use-cookie-banner-store.ts";
 
 export const CookieBanner: React.FC = () => {
-	const [showBanner, setShowBanner] = useState(false);
-	const [isExpanded, setIsExpanded] = useState(false);
+	const {
+		isOpen,
+		isExpanded,
+		checkConsent,
+		setExpanded,
+		acceptConsent,
+		declineConsent,
+	} = useCookieBannerStore();
+
 	const [thirdPartyCookiesEnabled, setThirdPartyCookiesEnabled] =
 		useState(false);
 
 	useEffect(() => {
-		const hasConsent = localStorage.getItem("vimeo-cookies-consent");
-		if (!hasConsent) {
-			setShowBanner(true);
-		}
-	}, []);
+		checkConsent();
+	}, [checkConsent]);
 
 	const handleAcceptSelection = () => {
 		if (thirdPartyCookiesEnabled) {
-			localStorage.setItem("vimeo-cookies-consent", "accepted");
-			// Enable Vimeo embeds
-			window.dispatchEvent(new CustomEvent("cookies-accepted"));
+			acceptConsent();
 		} else {
-			localStorage.setItem("vimeo-cookies-consent", "declined");
+			declineConsent();
 		}
-		setShowBanner(false);
 	};
 
 	const handleAcceptAll = () => {
-		localStorage.setItem("vimeo-cookies-consent", "accepted");
-		setShowBanner(false);
-		// Enable Vimeo embeds
-		window.dispatchEvent(new CustomEvent("cookies-accepted"));
+		acceptConsent();
 	};
 
 	const handleDecline = () => {
-		localStorage.setItem("vimeo-cookies-consent", "declined");
-		setShowBanner(false);
+		declineConsent();
 	};
 
-	if (!showBanner) {
+	if (!isOpen) {
 		return null;
 	}
 
@@ -51,7 +49,7 @@ export const CookieBanner: React.FC = () => {
 						<p className="max-w-3xl text-base leading-6 text-dunkelblau-100 self-start">
 							{Content["cookiesBanner.message.short"]}
 							<button
-								onClick={() => setIsExpanded(true)}
+								onClick={() => setExpanded(true)}
 								aria-label={Content["cookiesBanner.expandButton.ariaLabel"]}
 								className="underline text-dunkelblau-100"
 							>

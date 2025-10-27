@@ -722,6 +722,8 @@ export const Content = {
 	"footer.helpcenter.link": "https://hilfe.baergpt.berlin/",
 	"footer.feedback": "Feedback geben",
 	"footer.feedback.link": "https://citylabberlin.typeform.com/to/GhoCHw0J",
+	"footer.cookieSettings": "Cookie-Einstellungen",
+	"footer.cookieSettings.ariaLabel": "Cookie-Einstellungen öffnen",
 
 	/* ---------------------- Admin ---------------------- */
 	"admin.button.link.label": "Adminbereich",
