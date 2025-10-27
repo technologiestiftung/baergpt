@@ -179,7 +179,7 @@ export const Content = {
 	"privacyPolicyPage.section6.li2.title": "Chat-Daten: ",
 	"privacyPolicyPage.section6.li2.description":
 		"Löschung durch Nutzer jederzeit möglich; Löschung erfolgt sofort und endgültig.",
-	"privacyPolicyPage.section6.li3.title": "deaktivierte Accounts: ",
+	"privacyPolicyPage.section6.li3.title": "Deaktivierte Accounts: ",
 	"privacyPolicyPage.section6.li3.description":
 		"Löschung unmittelbar nach Deaktivierung",
 	"privacyPolicyPage.section6.li4.title": "Support- und Diagnosedaten: ",
