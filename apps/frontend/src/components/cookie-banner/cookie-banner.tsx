@@ -21,14 +21,14 @@ export const CookieBanner: React.FC = () => {
 
 	const handleAcceptSelection = () => {
 		if (thirdPartyCookiesEnabled) {
-			acceptConsent();
+			acceptConsent({ type: "third-party-only", thirdPartyCookies: true });
 		} else {
-			declineConsent();
+			acceptConsent({ type: "necessary-only", thirdPartyCookies: false });
 		}
 	};
 
 	const handleAcceptAll = () => {
-		acceptConsent();
+		acceptConsent({ type: "all" });
 	};
 
 	const handleDecline = () => {
