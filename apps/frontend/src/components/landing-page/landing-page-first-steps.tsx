@@ -1,4 +1,5 @@
 import Content from "../../content.ts";
+import { VimeoPlayer } from "../primitives/video-players/vimeo-player.tsx";
 
 export function LandingPageFirstSteps() {
 	return (
@@ -6,12 +7,9 @@ export function LandingPageFirstSteps() {
 			<h2 className="max-w-[624px] mx-auto text-center text-2xl leading-8 font-semibold sm:text-4xl sm:leading-10">
 				{Content["landingPage.firstSteps.h2"]}
 			</h2>
-			<iframe
-				className="w-full aspect-video rounded-[3px]"
+			<VimeoPlayer
+				srcUrl="https://player.vimeo.com/video/1082110109?&color=1E3791&title=0&byline=0&portrait=0&texttrack=de"
 				title={`Video: ${Content["landingPage.firstSteps.h2"]}`}
-				src="https://player.vimeo.com/video/1130927070?&color=1E3791&title=0&byline=0&portrait=0&texttrack=de"
-				allowFullScreen={true}
-				referrerPolicy="strict-origin-when-cross-origin"
 			/>
 		</div>
 	);
