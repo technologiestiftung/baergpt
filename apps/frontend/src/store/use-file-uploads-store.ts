@@ -75,11 +75,11 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			}
 
 			updateFileUploadStatus(file, "uploading");
-			const fileBase64 = await uploadFileToDb(file, filePath);
+			await uploadFileToDb(file, filePath);
 			updateFileUploadStatus(file, "uploaded");
 
 			updateFileUploadStatus(file, "processing");
-			await processDocument(file, filePath, fileBase64);
+			await processDocument(file, filePath);
 			updateFileUploadStatus(file, "successful");
 
 			getDocuments(new AbortController().signal).catch(

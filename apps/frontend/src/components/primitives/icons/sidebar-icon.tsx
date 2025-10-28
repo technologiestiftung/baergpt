@@ -6,16 +6,16 @@ export function SidebarIcon({ isOpen }: { isOpen: boolean }) {
 			<img
 				src="icons/sidebar-close-icon.svg"
 				alt={Content["barsIcon.imgAlt"]}
-				width={22}
-				height={22}
+				width={24}
+				height={24}
 				className={isOpen ? "block" : "hidden"}
 			/>
 
 			<img
 				src="icons/sidebar-open-icon.svg"
 				alt={Content["barsIcon.imgAlt"]}
-				width={22}
-				height={22}
+				width={24}
+				height={24}
 				className={isOpen ? "hidden" : "block"}
 			/>
 		</>
