@@ -9,7 +9,7 @@ export function LandingPageFirstSteps() {
 			<iframe
 				className="w-full aspect-video rounded-[3px]"
 				title={`Video: ${Content["landingPage.firstSteps.h2"]}`}
-				src="https://player.vimeo.com/video/1082110109?&color=1E3791&title=0&byline=0&portrait=0&texttrack=de"
+				src="https://player.vimeo.com/video/1130927070?&color=1E3791&title=0&byline=0&portrait=0&texttrack=de"
 				allowFullScreen={true}
 				referrerPolicy="strict-origin-when-cross-origin"
 			/>
