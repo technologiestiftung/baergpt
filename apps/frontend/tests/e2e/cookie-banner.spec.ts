@@ -169,12 +169,12 @@ test.describe("Cookie Banner", () => {
 		await page.evaluate(() => window.localStorage.clear());
 
 		// Test on start page (if publicly accessible)
-		await page.goto("/start/");
+		await page.goto("/");
 		await expect(page.getByRole("region", { name: /Cookie/ })).toBeVisible();
 	});
 
 	test("should block videos when cookies are declined", async ({ page }) => {
-		await page.goto("/start/");
+		await page.goto("/");
 
 		// Wait for cookie banner to be visible
 		await expect(page.getByRole("region", { name: /Cookie/ })).toBeVisible();
@@ -203,7 +203,7 @@ test.describe("Cookie Banner", () => {
 	});
 
 	test("should load videos when cookies are accepted", async ({ page }) => {
-		await page.goto("/start/");
+		await page.goto("/");
 
 		// Wait for cookie banner to be visible
 		await expect(page.getByRole("region", { name: /Cookie/ })).toBeVisible();
