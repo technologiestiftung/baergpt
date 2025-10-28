@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useCookieBannerStore } from "../../store/use-cookie-banner-store.ts";
 import { CompactBannerContent } from "./compact-banner-content.tsx";
 import { ExpandedBannerContent } from "./expanded-banner-content.tsx";
+import { Content } from "../../content.ts";
 
 export const CookieBanner: React.FC = () => {
 	const {
@@ -40,7 +41,10 @@ export const CookieBanner: React.FC = () => {
 	}
 
 	return (
-		<div className="fixed bottom-0 left-0 right-0 bg-hellblau-30 border-t border-hellblau-50 z-50">
+		<section
+			className="fixed bottom-0 left-0 right-0 bg-hellblau-30 border-t border-hellblau-50 z-50"
+			aria-label={Content["cookiesBanner.title"]}
+		>
 			<div className="w-full max-w-screen-xl mx-auto gap-4 px-6 py-3 md:py-4 flex flex-col lg:flex-row items-center justify-between">
 				{!isExpanded ? (
 					<CompactBannerContent
@@ -58,6 +62,6 @@ export const CookieBanner: React.FC = () => {
 					/>
 				)}
 			</div>
-		</div>
+		</section>
 	);
 };
