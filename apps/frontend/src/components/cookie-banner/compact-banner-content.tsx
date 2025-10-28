@@ -3,13 +3,13 @@ import { AccentButton } from "../primitives/buttons/accent-button";
 import { Content } from "../../content.ts";
 
 type CompactBannerContentProps = {
-	setExpanded: (expanded: boolean) => void;
+	setIsExpanded: (expanded: boolean) => void;
 	handleAcceptAll: () => void;
 	handleDecline: () => void;
 };
 
 export const CompactBannerContent: React.FC<CompactBannerContentProps> = ({
-	setExpanded,
+	setIsExpanded,
 	handleAcceptAll,
 	handleDecline,
 }) => {
@@ -23,7 +23,7 @@ export const CompactBannerContent: React.FC<CompactBannerContentProps> = ({
 					<p className="max-w-3xl text-base leading-6 text-dunkelblau-100 self-start">
 						{Content["cookiesBanner.message.short"]}
 						<button
-							onClick={() => setExpanded(true)}
+							onClick={() => setIsExpanded(true)}
 							aria-label={Content["cookiesBanner.expandButton.ariaLabel"]}
 							className="underline text-dunkelblau-100 outline-offset-1 focus-visible:outline-default rounded-3px"
 						>

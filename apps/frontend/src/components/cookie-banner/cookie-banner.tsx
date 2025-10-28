@@ -10,7 +10,7 @@ export const CookieBanner: React.FC = () => {
 		isExpanded,
 		thirdPartyCookiesEnabled,
 		checkConsent,
-		setExpanded,
+		setIsExpanded,
 		setThirdPartyCookiesEnabled,
 		acceptConsent,
 		declineConsent,
@@ -48,7 +48,7 @@ export const CookieBanner: React.FC = () => {
 			<div className="w-full max-w-screen-xl mx-auto gap-4 px-6 py-3 md:py-4 flex flex-col lg:flex-row items-center justify-between">
 				{!isExpanded ? (
 					<CompactBannerContent
-						setExpanded={setExpanded}
+						setIsExpanded={setIsExpanded}
 						handleAcceptAll={handleAcceptAll}
 						handleDecline={handleDecline}
 					/>

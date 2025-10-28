@@ -14,7 +14,7 @@ interface CookieBannerState {
 	consentType: ConsentType | null;
 	thirdPartyCookiesEnabled: boolean;
 	openBanner: (expanded?: boolean) => void;
-	setExpanded: (expanded: boolean) => void;
+	setIsExpanded: (expanded: boolean) => void;
 	setThirdPartyCookiesEnabled: (enabled: boolean) => void;
 	checkConsent: () => void;
 	acceptConsent: (options?: ConsentOptions) => void;
@@ -29,7 +29,7 @@ export const useCookieBannerStore = create<CookieBannerState>((set, get) => ({
 	thirdPartyCookiesEnabled: false,
 
 	openBanner: (expanded = false) => set({ isOpen: true, isExpanded: expanded }),
-	setExpanded: (expanded) => set({ isExpanded: expanded }),
+	setIsExpanded: (expanded) => set({ isExpanded: expanded }),
 	setThirdPartyCookiesEnabled: (enabled) =>
 		set({ thirdPartyCookiesEnabled: enabled }),
 
