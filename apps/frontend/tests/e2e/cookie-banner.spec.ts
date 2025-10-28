@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Cookie Banner", () => {
 	test.beforeEach(async ({ page }, testInfo) => {
-		// clear localStorage for tests that need a fresh start
+		// Clear localStorage for tests that need a fresh start
 		// Skip clearing for tests that need to test persistence
 		if (!testInfo.title.includes("subsequent visits after consent")) {
 			await page.addInitScript(() => {
@@ -115,12 +115,44 @@ test.describe("Cookie Banner", () => {
 		// Check that we're in expanded mode
 		await expect(page.getByText(/Externe Medien/)).toBeVisible();
 
-		// For now, let's just test that we can interact with the banner
-		// Note: The actual checkbox interaction needs more investigation
-		await expect(page.getByText(/Cookies-Einstellungen/)).toBeVisible();
+		// Find the third-party cookies switch (it should be unchecked by default)
+		const thirdPartyCookiesSwitch = page.locator('input[type="checkbox"]');
+		await expect(thirdPartyCookiesSwitch).not.toBeChecked();
+
+		// Click on the switch label to enable third-party cookies
+		// The Switch component uses a label that wraps the hidden checkbox
+		await page
+			.locator("label")
+			.filter({ has: page.locator('input[type="checkbox"]') })
+			.click();
+		await expect(thirdPartyCookiesSwitch).toBeChecked();
+
+		// Click "Auswahl bestätigen" button (handles Unicode normalization for umlaut)
+		// Use a flexible regex pattern that handles Unicode variations
+		const confirmButton = page
+			.locator("button")
+			.filter({ hasText: /Auswahl.*best.*tigen/ });
+		await expect(confirmButton).toBeVisible({ timeout: 10000 });
+		await confirmButton.click();
+
+		// Cookie banner should disappear
+		await expect(
+			page.getByRole("region", { name: /Cookie/ }),
+		).not.toBeVisible();
+
+		// Check that consent was stored with third-party cookies enabled
+		const consent = await page.evaluate(() =>
+			localStorage.getItem("vimeo-cookies-consent"),
+		);
+		const consentType = await page.evaluate(() =>
+			localStorage.getItem("vimeo-cookies-consent-type"),
+		);
+
+		expect(consent).toBe("accepted");
+		expect(consentType).toBe("third-party-only");
 	});
 
-	test("should accept only necessary cookies when third-party cookies are disabled", async ({
+	test("should not accept third-party cookies if only necessary cookies are accepted", async ({
 		page,
 	}) => {
 		await page.goto("/privacy-policy/");
@@ -132,8 +164,28 @@ test.describe("Cookie Banner", () => {
 		// Check that we're in expanded mode
 		await expect(page.getByText(/Externe Medien/)).toBeVisible();
 
-		// For now, let's just test the basic functionality
-		await expect(page.getByText(/Cookies-Einstellungen/)).toBeVisible();
+		// Find the third-party cookies switch (it should be unchecked by default)
+		const thirdPartyCookiesSwitch = page.locator('input[type="checkbox"]');
+		await expect(thirdPartyCookiesSwitch).not.toBeChecked();
+
+		// Keep the switch disabled (unchecked) and click "Nur notwendige" to accept only necessary cookies
+		await page.getByRole("button", { name: /Nur notwendige/ }).click();
+
+		// Cookie banner should disappear
+		await expect(
+			page.getByRole("region", { name: /Cookie/ }),
+		).not.toBeVisible();
+
+		// Check that consent was stored with only necessary cookies
+		const consent = await page.evaluate(() =>
+			localStorage.getItem("vimeo-cookies-consent"),
+		);
+		const consentType = await page.evaluate(() =>
+			localStorage.getItem("vimeo-cookies-consent-type"),
+		);
+
+		expect(consent).toBe("declined");
+		expect(consentType).toBe("necessary-only");
 	});
 
 	test("should not display cookie banner on subsequent visits after consent", async ({
@@ -152,11 +204,11 @@ test.describe("Cookie Banner", () => {
 		// Reload page - cookie banner should not appear
 		await page.reload();
 		await page.waitForLoadState("networkidle");
-
 		await expect(
 			page.getByRole("region", { name: /Cookie/ }),
 		).not.toBeVisible();
 	});
+
 	test("should display cookie banner on pages that load without authentication", async ({
 		page,
 	}) => {
@@ -168,7 +220,7 @@ test.describe("Cookie Banner", () => {
 		await page.getByRole("button", { name: /Akzeptieren/ }).click();
 		await page.evaluate(() => window.localStorage.clear());
 
-		// Test on start page (if publicly accessible)
+		// Test on landing page
 		await page.goto("/");
 		await expect(page.getByRole("region", { name: /Cookie/ })).toBeVisible();
 	});
@@ -235,7 +287,6 @@ test.describe("Cookie Banner", () => {
 			thirdPartyCookies: boolean;
 		}
 
-		let eventDetails: CookieEventDetail | null = null;
 		await page.addInitScript(() => {
 			window.addEventListener("cookies-accepted", (event) => {
 				const customEvent = event as CustomEvent<CookieEventDetail>;
@@ -252,7 +303,7 @@ test.describe("Cookie Banner", () => {
 		await page.getByRole("button", { name: /Akzeptieren/ }).click();
 
 		// Check that the custom event was dispatched with correct details
-		eventDetails = await page.evaluate(
+		const eventDetails = await page.evaluate(
 			() =>
 				(window as typeof window & { cookieEventDetails: CookieEventDetail })
 					.cookieEventDetails,
