@@ -121,7 +121,6 @@ function handleAuthorized(pathname: string, navigate: (path: string) => void) {
 		"/account-activated/",
 		"/profile/",
 		"/email-changed/",
-		"/privacy-policy/",
 	];
 
 	// Allow access to protected pages
