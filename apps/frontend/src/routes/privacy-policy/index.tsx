@@ -182,7 +182,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 							<li
 								key={section.id}
 								id={section.id}
-								className="flex flex-col gap-5 lg:gap-6"
+								className="flex flex-col gap-5 lg:gap-6 scroll-mt-[100px]"
 							>
 								<h2 className="flex gap-2 text-3xl leading-9 lg:text-4xl lg:leading-10 font-semibold">
 									<span>{section.number}.</span>
