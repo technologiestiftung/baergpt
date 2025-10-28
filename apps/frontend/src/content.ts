@@ -4,7 +4,7 @@ export const Content = {
 	"header.navigation.help.label": "Hilfecenter",
 	"header.navigation.help.mobileLabel": "Hilfe",
 	"header.navigation.profile": "Profil",
-	"header.navigation.help.ariaLabel": "Zum Hilfecenter",
+	"header.navigation.help.ariaLabel": "Hilfecenter",
 	"header.navigation.help.link": "https://hilfe.baergpt.berlin/",
 	"header.navigation.profile.ariaLabel": "Zur Profil-Seite",
 	"header.navigation.landingPage.login.label": "Anmelden",
@@ -238,6 +238,9 @@ export const Content = {
 	"sidebar.navigation.privacy": "Datenschutz",
 	"sidebar.navigation.privacy.link": "/privacy-policy/",
 	"sidebar.navigation.privacy.ariaLabel": "Zur Datenschutz-Seite navigieren",
+	"sidebar.citylab.label": "Entwickelt vom",
+	"sidebar.citylab.link": "https://citylab-berlin.org/",
+	"sidebar.citylab.ariaLabel": "CityLAB Berlin Website",
 
 	/* -------------------- Tooltips -------------------- */
 	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
@@ -246,7 +249,7 @@ export const Content = {
 		"Datei zum Chat hinzufügen und KI-Assistent Anweisung geben",
 
 	/* -------------------- Chat History -------------------- */
-	"chatHistory.title": "Mein Chatverlauf",
+	"chatHistory.title": "Chats",
 	"chatHistory.today": "Heute",
 	"chatHistory.lastSevenDays": "Letzte 7 Tage",
 

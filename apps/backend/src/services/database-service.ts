@@ -1,16 +1,16 @@
 import { supabase } from "../supabase";
 import { ExtractError } from "../types/common";
-import type {
-	Document,
-	DocumentBufferResponse,
-	Embedding,
-	ExtractionResult,
-	HybridSearchResult,
-	KnowledgeBaseDocument,
+import {
+	type Document,
+	type DocumentBufferResponse,
+	type Embedding,
+	type ExtractionResult,
+	type HybridSearchResult,
+	type KnowledgeBaseDocument,
+	DocumentNotFoundError,
 } from "../types/common";
 import { ragSearchDefaults } from "../constants";
 import { DocumentExtractionService } from "./document-extraction-service";
-import { retryOperation } from "../utils";
 
 const documentExtraction = new DocumentExtractionService();
 
@@ -193,15 +193,15 @@ export class DatabaseService {
 
 	async logAndExtractDocument(
 		document: Document,
-		base64Document: string,
 	): Promise<ExtractionResult & { document: Document }> {
 		const documentId = await this.logDocument(document);
 		const documentWithId = { ...document, id: documentId };
-
-		const extractionResult = await retryOperation(async () =>
-			documentExtraction.extractDocument(base64Document, documentWithId),
+		const { buffer: fileBytes } =
+			await this.getDocumentBufferFromSupabase(documentWithId);
+		const extractionResult = await documentExtraction.extractDocument(
+			fileBytes,
+			documentWithId,
 		);
-
 		const updatedDocument = await this.updateMetadataOfLoggedDocument(
 			extractionResult,
 			documentId,
@@ -224,11 +224,10 @@ export class DatabaseService {
 		}
 
 		let bucket = "public_documents";
-		let filenameInBucket = document.source_url.split("/").slice(-1)[0];
+		const filenameInBucket = document.source_url;
 
 		if (document.owned_by_user_id) {
 			bucket = "documents";
-			filenameInBucket = document.source_url;
 		}
 
 		const { data, error } = await supabase.storage
@@ -472,6 +471,47 @@ export class DatabaseService {
 
 		if (error) {
 			throw error;
+		}
+	}
+
+	async deleteDocument(documentId: number, userId: string): Promise<void> {
+		const isAdmin = await this.getUserAdminStatus(userId);
+
+		let query = supabase
+			.from("documents")
+			.delete({ count: "exact" })
+			.eq("id", documentId);
+
+		if (isAdmin) {
+			// Admin can delete their own docs OR docs with null owned_by_user_id
+			query = query.or(
+				`owned_by_user_id.eq.${userId},owned_by_user_id.is.null`,
+			);
+		} else {
+			// Regular users can only delete their own documents
+			query = query.eq("owned_by_user_id", userId);
+		}
+
+		const { error: dbError, count: deletedDocumentsCount } = await query;
+
+		if (dbError) {
+			throw dbError;
+		}
+
+		if (!deletedDocumentsCount) {
+			throw new DocumentNotFoundError(documentId);
+		}
+
+		const documentCount = await this.getDocumentCountPerUser(userId);
+
+		// Update the user's document count
+		const { error: updateError } = await supabase
+			.from("profiles")
+			.update({ num_documents: documentCount })
+			.eq("id", userId);
+
+		if (updateError) {
+			throw updateError;
 		}
 	}
 
