@@ -8,17 +8,29 @@ export const SUPABASE_ANON_KEY =
 // Local test user credentials
 // todo: Change them if needed (make sure the user exists in your test database)
 export const email = "admin@berlin.de";
-export const password = "123456";
+export const password = "zWUiMa8HGjpDfcx";
 
-const documents = [
+const wordDocumentsSmall = [
 	"BaerGPT-Produktinfos.docx",
 	"Das-Projektmanagementhandbuch-des-Landes-Berlin.docx",
-	"Dummy-Dokument-Excel.xlsx",
+];
+const wordDocumentsBig = ["160725_E_BaerGPT_Auswertung_em_v2 (1).docx"];
+const PDFDocumentsSmall = [
 	"ikt-rollenkonzept.pdf",
 	"Projektmanagementhandbuch_berlin.pdf",
 	"test-datei.pdf",
 	"Verordnung-ueber-die-Vergabe-oeffentlicher-Auftraege.pdf",
 ];
+const PDFDocumentsBig = [
+	"Gesetz-und_Verordnungsblatt_des_Wirtschaftsrates_des_vereinigten_Wirtschaftgebietes1947-1948.pdf",
+];
+const excelDocumentsSmall = [
+	"Dummy-Dokument-Excel.xlsx",
+	"Vergabevermerk_Website.xlsx",
+];
+const excelDocumentsBig = ["sozialraumdaten_refactored.xlsx"];
+
+const documents = [...wordDocumentsBig];
 
 // todo: to make the prompts work, you need to create an account and upload the documents from the `files` folder
 //  then, you need to fill in the `allowed_document_ids` with the real document ids from your test database

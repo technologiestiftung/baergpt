@@ -18,7 +18,7 @@ export function processDocument({
 	expect(session).toBeDefined();
 
 	const headers = {
-		"Content-Type": "multipart/form-data",
+		"Content-Type": "application/json",
 		Authorization: `Bearer ${session.access_token}`,
 	};
 
@@ -40,5 +40,6 @@ export function processDocument({
 
 	return http.post(`${API_URL}/documents/process`, metadata, {
 		headers,
+		tags: { op: "process" },
 	});
 }

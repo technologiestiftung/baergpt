@@ -19,16 +19,18 @@ export function uploadDocument({
 }) {
 	expect(session).toBeDefined();
 
-	const form = new FormData();
-	form.append("file", file, file.filename);
-	form.append("sourceUrl", filePath);
+	const data = {
+		file,
+		sourceUrl: filePath,
+		isPublicDocument: "false",
+	};
 
 	const headers = {
-		"Content-Type": form.contentType,
 		Authorization: `Bearer ${session.access_token}`,
 	};
 
-	return http.post(`${API_URL}/documents/upload`, form.body(), {
+	return http.post(`${API_URL}/documents/upload`, data, {
 		headers,
+		tags: { op: "upload" },
 	});
 }

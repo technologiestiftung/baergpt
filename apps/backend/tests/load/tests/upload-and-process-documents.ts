@@ -12,6 +12,7 @@ import { uploadDocument } from "../fixtures/upload-document.ts";
 import { processDocument } from "../fixtures/process-document.ts";
 // @ts-expect-error k6 needs the .ts extension
 import { email, getFileName, password } from "../fixtures/constants.ts";
+import { Counter } from "k6/metrics";
 
 export const options = {
 	// todo: enable / disable the tests types by commenting / uncommenting
@@ -19,25 +20,25 @@ export const options = {
 	/**
 	 * Smoke Test
 	 */
-	vus: 1,
-	duration: "10s",
+	// vus: 1,
+	// duration: "10s",
 
 	/**
 	 * Spike Test
 	 */
-	// stages: [
-	// 	{ duration: "2m", target: 10 }, // fast ramp-up to a high point
+	 stages: [
+	 	{ duration: "2m", target: 100 }, // fast ramp-up to a high point
 	// 	// No plateau
-	// 	{ duration: "1m", target: 0 }, // quick ramp-down to 0 users
-	// ],
+	 	{ duration: "1m", target: 0 }, // quick ramp-down to 0 users
+	 ],
 
 	/**
 	 * Stress Test
 	 *  todo: the target here is definitely too high
 	 */
 	// stages: [
-	// 	{ duration: "10m", target: 200 }, // traffic ramp-up from 1 to a higher 200 users over 10 minutes.
-	// 	{ duration: "30m", target: 200 }, // stay at higher 200 users for 30 minutes
+	// 	{ duration: "5m", target: 30 }, // traffic ramp-up from 1 to a higher 200 users over 10 minutes.
+	// 	{ duration: "5m", target: 70 }, // stay at higher 200 users for 30 minutes
 	// 	{ duration: "5m", target: 0 }, // ramp-down to 0 users
 	// ],
 };
@@ -55,11 +56,16 @@ const file = http.file(arrayBuffer, fileName, "application/pdf");
 export function setup() {
 	return logIn(email, password);
 }
+export const process_attempts = new Counter("process_attempts");
+export const upload_status = new Counter("upload_status");
+export const process_status = new Counter("process_status");
 
 export default function (setupResult: LogInResponse) {
-	const filePath = slugify(`${file.filename}-${__ITER}`, {
-		lower: true,
-	});
+	const original = file.filename;
+	const dot = original.lastIndexOf(".");
+	const base = dot === -1 ? original : original.slice(0, dot);
+	const ext = dot === -1 ? "" : original.slice(dot).toLowerCase();
+	const filePath = `${slugify(base, { lower: true })}-vu-${__VU}-iter_-${__ITER}${ext}`;
 
 	/**
 	 * TODO: the backend can't process the document upload as it is done by k6.
@@ -76,15 +82,21 @@ export default function (setupResult: LogInResponse) {
 		"upload response should return status is 204": (r) => r.status === 204,
 	});
 
+	upload_status.add(1, { status: String(uploadResponse.status) });
+
 	sleep(1);
 
-	const processResponse = processDocument({
-		file,
-		filePath,
-		...setupResult,
-	});
+	let processResponse;
+    for (let attempt = 1, wait = 0.5; attempt <= 5; attempt++, wait *= 2) {
+    	processResponse = processDocument({ file, filePath, ...setupResult });
+		process_attempts.add(1, { attempt: String(attempt), status: String(processResponse.status) });
+		if (processResponse.status === 204) break;
+    	sleep(wait); // seconds
+    }
 
 	check(processResponse, {
 		"process response should return status is 204": (r) => r.status === 204,
 	});
+
+	process_status.add(1, { status: String(processResponse.status) });
 }
