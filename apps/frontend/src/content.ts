@@ -136,6 +136,7 @@ export const Content = {
 		"Die Vorschau von Word-Dateien ist noch experimentell. Die Formatierung entspricht nicht dem Originaldokument. Dies hat kein Auswirkung auf die Antwortqualität.",
 	"documentsPreviewSection.noPreviewAvailable":
 		"Die Vorschau von Excel-Dateien wird aktuell noch nicht unterstützt. Wir arbeiten daran, dieses Feature zu einem späteren Zeitpunkt anzubieten. Vielen Dank für Ihr Verständnis.",
+	"documentsPreviewSection.loadingPreview": "Die Vorschau wird geladen...",
 
 	/* -------------------- Dialogs -------------------- */
 	//DeleteItemDialog

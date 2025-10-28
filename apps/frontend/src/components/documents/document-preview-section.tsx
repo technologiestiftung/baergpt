@@ -11,20 +11,17 @@ export const DocumentPreviewSection: React.FC = () => {
 		unselectPreviewDocument,
 	} = useDocumentStore();
 
+	if (!selectedPreviewDocument) {
+		return null;
+	}
+
 	const isDocxFormat = (fileName: string) => {
 		return fileName.toLowerCase().split(".").pop() === "docx";
 	};
 
-	// Check if the file type can be previewed in browser
-	const canPreviewInBrowser = (fileName: string) => {
-		const extension = fileName.toLowerCase().split(".").pop();
-		// PDFs and DOCX documents can be previewed in iframes
-		return extension === "pdf" || extension === "docx";
-	};
-
-	if (!selectedPreviewDocument) {
-		return null;
-	}
+	const hasSupportedPreview = [".pdf", ".docx"].some((suffix) =>
+		selectedPreviewDocument.file_name?.endsWith(suffix),
+	);
 
 	return (
 		<section className="absolute h-full inset-0 z-30 flex flex-col bg-white">
@@ -62,8 +59,14 @@ export const DocumentPreviewSection: React.FC = () => {
 				)}
 			</div>
 			<div className="h-full w-full px-5 md:px-24 pt-7 md:pt-8 bg-hellblau-30 flex items-center justify-center flex-col">
-				{selectedPreviewDocumentPreviewUrl &&
-				canPreviewInBrowser(selectedPreviewDocument.file_name ?? "") ? (
+				{!hasSupportedPreview && (
+					<div className="flex items-center justify-center h-full text-center max-w-xl">
+						<p className="text-lg text-dunkelblau-80">
+							{Content["documentsPreviewSection.noPreviewAvailable"]}
+						</p>
+					</div>
+				)}
+				{selectedPreviewDocumentPreviewUrl && hasSupportedPreview && (
 					<>
 						<p
 							className={`pb-5 text-sm leading-5 font-normal text-dunkelblau-80 
@@ -79,10 +82,11 @@ export const DocumentPreviewSection: React.FC = () => {
 							className="bg-white shadow-[0px_0px_12px_0px_rgba(3,8,18,0.25)]"
 						/>
 					</>
-				) : (
+				)}
+				{!selectedPreviewDocumentPreviewUrl && hasSupportedPreview && (
 					<div className="flex items-center justify-center h-full text-center max-w-xl">
 						<p className="text-lg text-dunkelblau-80">
-							{Content["documentsPreviewSection.noPreviewAvailable"]}
+							{Content["documentsPreviewSection.loadingPreview"]}
 						</p>
 					</div>
 				)}
