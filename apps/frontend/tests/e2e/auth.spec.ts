@@ -32,8 +32,10 @@ test.describe("Login", () => {
 		// Click on the log-out button
 		await page.getByRole("button", { name: "Ausloggen" }).click();
 
-		// Check if we are back on the login page
-		await expect(page.getByText("Willkommen zurückBitte melden")).toBeVisible();
+		// Check if we are back on the landing page
+		await expect(
+			page.getByText("BärGPT, der KI-Assistent für die Berliner Verwaltung"),
+		).toBeVisible();
 	});
 
 	test("Invalid Login Attempt", async ({ page }) => {
@@ -215,6 +217,16 @@ test.describe("Password Reset", () => {
 		await page1.getByRole("button", { name: "Ausloggen" }).click();
 
 		// Now reset the password back to the original one
+
+		// Check if we are on the landing page
+		await expect(
+			page1.getByRole("heading", {
+				name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
+			}),
+		).toBeVisible();
+
+		// Go to the login page
+		await page1.getByRole("link", { name: "Zur Login-Seite" }).click();
 
 		// Check if we are on the login page
 		await expect(
@@ -558,8 +570,8 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 	testWithRegisteredUser(
 		"Logged-In User should be logged out when their account is deactivated",
 		async ({ page, account, baseURL }) => {
-			// Go to the main page
-			await page.goto("/");
+			// Go to the login page
+			await page.goto("/login/");
 
 			// Try to log-in
 			await page
@@ -590,7 +602,10 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 			await expect(
 				page.getByText("Der Benutzeraccount wurde deaktiviert."),
 			).not.toBeVisible();
-			await expect(page).toHaveURL(`${baseURL}/login/`);
+			await expect(page).toHaveURL(`${baseURL}/`);
+
+			// Go to the login page again
+			await page.getByRole("link", { name: "Zur Login-Seite" }).click();
 
 			// Log in again with the same credentials
 			await page
@@ -619,12 +634,33 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 			// Refresh the page
 			await page.goto("/");
 
-			// Check if we are redirected to the login page with the error message
+			// Check if we are redirected to the landing page
+			await expect(
+				page.getByRole("heading", {
+					name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
+				}),
+			).toBeVisible();
+
+			// Go to the login page again
+			await page.getByRole("link", { name: "Zur Login-Seite" }).click();
+
+			// Check if we are on the login page
+			await expect(page).toHaveURL(`${baseURL}/login/`);
+
+			// Try to log-in again
+			await page
+				.getByRole("textbox", { name: "E-Mail-Adresse" })
+				.fill(account.email);
+			await page
+				.getByRole("textbox", { name: "Passwort" })
+				.fill(account.password);
+			await page.getByRole("button", { name: "Anmelden" }).click();
+
+			// Check if we are still on the login page with the error message
 			// Note: order matters here, we need to wait for the Text to be visible before checking the URL.
 			await expect(
 				page.getByText("Der Benutzeraccount wurde deaktiviert."),
 			).toBeVisible();
-			await expect(page).toHaveURL(`${baseURL}/login/`);
 		},
 	);
 });

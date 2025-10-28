@@ -58,15 +58,18 @@ testWithRegisteredUser.describe("Password Change Feature", () => {
 			await page.getByRole("button", { name: "Profil öffnen" }).click();
 			await page.getByRole("button", { name: "Ausloggen" }).click();
 
+			// Go to the login page
+			await page.getByRole("link", { name: "Zur Login-Seite" }).click();
+
 			// Try to login with new password
 			await page
 				.getByRole("textbox", { name: "E-Mail-Adresse" })
 				.fill(account.email);
 			await page.getByRole("textbox", { name: "Passwort" }).fill(newPassword);
 			await page.getByRole("button", { name: "Anmelden" }).click();
-			await expect(page).toHaveURL("/");
 
 			// Verify we can login with new password
+			await expect(page).toHaveURL("/");
 			await expect(
 				page.getByRole("heading", {
 					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
