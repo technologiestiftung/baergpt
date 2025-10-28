@@ -12,7 +12,7 @@ export const AccentButton: React.FC<ButtonProps> = ({
 }) => {
 	return (
 		<button
-			className={`px-2.5 py-2 gap-2 rounded-3px
+			className={`px-3 py-2 text-lg leading-7 font-normal h-11 gap-2 rounded-3px
 			 text-white bg-dunkelblau-100 border border-dunkelblau-100
 			 hover:bg-dunkelblau-90 focus-visible:outline-default ${className}`}
 			disabled={disabled}

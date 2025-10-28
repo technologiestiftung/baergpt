@@ -8,7 +8,7 @@ export function LandingPageFirstSteps() {
 				{Content["landingPage.firstSteps.h2"]}
 			</h2>
 			<VimeoPlayer
-				srcUrl="https://player.vimeo.com/video/1082110109?&color=1E3791&title=0&byline=0&portrait=0&texttrack=de"
+				srcUrl="https://player.vimeo.com/video/1130927070?&color=1E3791&title=0&byline=0&portrait=0&texttrack=de"
 				title={`Video: ${Content["landingPage.firstSteps.h2"]}`}
 			/>
 		</div>

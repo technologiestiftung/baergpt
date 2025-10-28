@@ -35,7 +35,7 @@ export const CompactBannerContent: React.FC<CompactBannerContentProps> = ({
 				<div className="flex flex-shrink-0 flex-col w-full md:w-fit md:flex-row gap-2">
 					<button
 						onClick={handleDecline}
-						className="px-4 py-1.5 text-dunkelblau-100 hover:underline outline-offset-1 focus-visible:outline-default rounded-3px"
+						className="px-3 py-2 text-lg leading-7 font-normal h-11 text-dunkelblau-100 hover:underline outline-offset-1 focus-visible:outline-default rounded-3px"
 						aria-label={Content["cookiesBanner.button.deny"]}
 					>
 						{Content["cookiesBanner.button.deny"]}
