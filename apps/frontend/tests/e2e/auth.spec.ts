@@ -446,9 +446,8 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			.getByRole("textbox", { name: "Passwort wiederholen Password" })
 			.fill(givenUserPassword);
 		await page
-			.locator("label")
-			.filter({ hasText: "Datenschutzbestimmungenzustimmen" })
-			.click();
+			.locator('[data-testid="label-has-accepted-privacy-checkbox"]')
+			.check();
 		await page
 			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
 			.click();
