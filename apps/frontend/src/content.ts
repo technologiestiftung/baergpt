@@ -446,6 +446,14 @@ export const Content = {
 	"chat.getStarted.h3.4.link.ariaLabel": "Zum Hilfecenter von BärGPT",
 
 	"chat.loadingText": "BärGPT überlegt...",
+	//Chat error text
+	"chat.errorText.title": "Ihre Anfrage konnte gerade nicht bearbeitet werden.",
+	"chat.errorText.p1": "Bitte versuchen Sie es später erneut. ",
+	"chat.errorText.p2": "Mögliche Fehlerursachen finden Sie im ",
+	"chat.errorText.helpPage.link": "https://hilfe.baergpt.berlin/",
+	"chat.errorText.helpPage.linkText": "Hilfecenter.",
+	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
+
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
 	"chat.selectedChatItems.noItems": "Keine Dateien in diesem Chat",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",

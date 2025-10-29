@@ -5,6 +5,7 @@ import type { NewChatMessage } from "../../../common";
 import { useChatsStore } from "../../../store/use-chats-store";
 import { useAuthStore } from "../../../store/auth-store";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
+import { useErrorStore } from "../../../store/error-store.ts";
 import { captureError } from "../../../monitoring/capture-error.ts";
 import { useUpdateChatOnStreamData } from "./use-update-chat-on-stream-data.tsx";
 import { useStopStreamingOnChatChange } from "./use-stop-streaming-on-chat-change.tsx";
@@ -26,7 +27,9 @@ type StartStreamingArgs = {
 };
 
 export function useChatStreaming() {
-	const { setStatus } = useInferenceLoadingStatusStore.getState();
+	const { setStatus, setError, clearError } =
+		useInferenceLoadingStatusStore.getState();
+	const { getErrorMessage } = useErrorStore.getState();
 	const { getCurrentOrCreateChat, addMessageToChat, updateMessage } =
 		useChatsStore.getState();
 
@@ -49,6 +52,17 @@ export function useChatStreaming() {
 		},
 		onError: (error) => {
 			captureError(error);
+
+			// Get the user-readable error message
+			const errorMessage = getErrorMessage(error);
+
+			if (errorMessage) {
+				// Show custom error in chat for known errors
+				setError(errorMessage);
+			} else {
+				// For unknown errors, just reset to idle
+				setStatus("idle");
+			}
 		},
 		onFinish: async ({ object: result }) => {
 			setStatus("idle");
@@ -96,6 +110,9 @@ export function useChatStreaming() {
 		if (isLoading) {
 			stop();
 		}
+
+		// Clear any previous errors
+		clearError();
 
 		const chat = await getCurrentOrCreateChat(userMessage);
 

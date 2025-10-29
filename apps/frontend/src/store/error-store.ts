@@ -5,6 +5,7 @@ import { captureError } from "../monitoring/capture-error";
 interface ErrorStore {
 	error?: string;
 	handleError: (error: unknown) => void;
+	getErrorMessage: (error: unknown) => string | null;
 }
 
 const errorMessages: { [key: string]: string } = {
@@ -56,6 +57,15 @@ export const useErrorStore = create<ErrorStore>()(() => ({
 
 		// Only use toast store
 		useToastStore.getState().addError(userReadableErrorMessage);
+	},
+
+	getErrorMessage: (error) => {
+		if (!isError(error)) {
+			console.error("Given error object is not an instance of Error:", error);
+			return null;
+		}
+
+		return errorMessages[error.message] || null;
 	},
 }));
 
