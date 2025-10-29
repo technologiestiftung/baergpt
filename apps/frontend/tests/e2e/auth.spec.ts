@@ -425,7 +425,66 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		expect(deleteUserError).toBeNull();
 	});
 
-	test("User with invite link cannot access main page without completing account activation", async ({
+	test("Default Registration Flow", async ({ page }) => {
+		// Go to the registration page
+		await page.goto("/register/");
+
+		// Fill in the registration form
+		await page
+			.getByRole("textbox", { name: "Vorname" })
+			.fill(givenUserFirstName);
+		await page
+			.getByRole("textbox", { name: "Nachname" })
+			.fill(givenUserLastName);
+		await page
+			.getByRole("textbox", { name: "E-Mail-Adresse Nur" })
+			.fill(givenUserEmail);
+		await page
+			.getByRole("textbox", { name: "Passwort Ein Fragezeichen-" })
+			.fill(givenUserPassword);
+		await page
+			.getByRole("textbox", { name: "Passwort wiederholen Password" })
+			.fill(givenUserPassword);
+		await page
+			.locator('[data-testid="label-has-accepted-privacy-checkbox"]')
+			.check();
+		await page
+			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
+			.click();
+
+		// Info message about confirmation mail should be visible
+		await expect(
+			page.getByRole("heading", { name: "Registrierung fast abgeschlossen" }),
+		).toBeVisible();
+
+		// Open the email confirmation link in mail inbucket
+		await page.goto("http://localhost:54324/"); // Inbucket URL
+		await page
+			.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
+			.first()
+			.click();
+
+		// Clicking on the link should open a new tab
+		const popupEvent = page.waitForEvent("popup");
+		await page
+			.locator("#preview-html")
+			.contentFrame()
+			.getByRole("link", { name: "E-Mail-Adresse bestätigen" })
+			.click();
+		const page1 = await popupEvent;
+
+		// check that we are on the account activation page
+		await page1.waitForLoadState("networkidle");
+
+		// After clicking on the link, we should be redirected to the main page
+		await expect(
+			page1.getByRole("heading", {
+				name: `Willkommen bei BärGPT, ${givenUserFirstName} ${givenUserLastName}`,
+			}),
+		).toBeVisible();
+	});
+
+	test("User with invite link is forwarded to account activation", async ({
 		page,
 	}) => {
 		// invite user via mail
@@ -460,15 +519,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await expect(page1).toHaveURL(/\/account-activated/);
 
 		// User E-Mail should be mentioned at the top
-		await expect(
-			page1.getByRole("heading", { name: givenUserEmail }),
-		).toBeVisible();
-
-		// Try to access the main page by navigating directly to "/"
-		await page1.goto("/");
-
-		// Should be redirected back to account-activated page
-		await expect(page1).toHaveURL(/\/account-activated/);
 		await expect(
 			page1.getByRole("heading", { name: givenUserEmail }),
 		).toBeVisible();

@@ -77,17 +77,9 @@ async function redirectBasedOnSession({
 
 	/**
 	 * If the registrationFinishedAt is undefined, we don't know yet if the user has completed the registration or not.
+	 * The user might have also registered themselves, so no registrationFinishedAt timestamp is set and no redirection to /account-activated/ is needed.
 	 */
 	if (registrationFinishedAt === undefined) {
-		return;
-	}
-
-	/**
-	 * If the user has not completed account activation, redirect to activation page
-	 * (unless they're already on the account activation page)
-	 */
-	if (registrationFinishedAt === null && pathname !== "/account-activated/") {
-		navigate("/account-activated/");
 		return;
 	}
 
