@@ -77,7 +77,7 @@ async function redirectBasedOnSession({
 
 	/**
 	 * If the registrationFinishedAt is undefined, we don't know yet if the user has completed the registration or not.
-	 * The user might have also registered so no registrationFinishedAt timestamp is set and no redirection to /account-activated/ is needed.
+	 * The user might have also registered themselves, so no registrationFinishedAt timestamp is set and no redirection to /account-activated/ is needed.
 	 */
 	if (registrationFinishedAt === undefined) {
 		return;
