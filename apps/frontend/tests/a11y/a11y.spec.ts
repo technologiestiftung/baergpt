@@ -117,3 +117,17 @@ test.describe("Accessibility - Auth Flow", () => {
 		},
 	);
 });
+
+test.describe("Accessibility - Public Pages", () => {
+	// test accessibility for privacy policy page
+	test("Privacy policy page should be accessible", async ({ page }) => {
+		await page.goto("/privacy-policy/");
+
+		// Wait for page to be fully loaded
+		await page.waitForLoadState("networkidle");
+
+		// Run accessibility scan on the privacy policy page
+		const a11yResults = await new AxeBuilder({ page }).analyze();
+		expect(a11yResults.violations).toEqual([]);
+	});
+});

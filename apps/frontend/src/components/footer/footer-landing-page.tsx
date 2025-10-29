@@ -1,5 +1,6 @@
 import Content from "../../content.ts";
 import { FooterLogoBanner } from "./footer-logo-banner.tsx";
+import { useCookieBannerStore } from "../../store/use-cookie-banner-store.ts";
 
 const topLinks = {
 	section1: [
@@ -33,6 +34,8 @@ const topLinks = {
 };
 
 export function FooterLandingPage() {
+	const { openBanner } = useCookieBannerStore();
+
 	return (
 		<footer className="flex flex-col">
 			<div className="flex flex-col lg:flex-row gap-6 justify-between lg:items-center w-full p-6 lg:py-4 lg:px-[50px] bg-dunkelblau-100 text-white">
@@ -66,6 +69,15 @@ export function FooterLandingPage() {
 								</a>
 							</li>
 						))}
+						<li>
+							<button
+								onClick={() => openBanner(true)}
+								aria-label={Content["footer.cookieSettings.ariaLabel"]}
+								className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline"
+							>
+								{Content["footer.cookieSettings"]}
+							</button>
+						</li>
 					</ul>
 				</div>
 			</div>
