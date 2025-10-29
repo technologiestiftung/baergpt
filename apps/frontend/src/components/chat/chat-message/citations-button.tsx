@@ -7,6 +7,8 @@ import {
 } from "./chat-citations/citations-dialog.tsx";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
+import { useCitationsStore } from "../../../store/use-citations-store.ts";
+import type { CitationWithDetails } from "../../../common.ts";
 
 interface CitationsButtonProps {
 	messageId: number;
@@ -23,7 +25,11 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	const isLoadingCitations = status === "loading-citations";
 	const isLoadingLastCitations = isLastMessage && isLoadingCitations;
 
-	const hasCitations = citations && citations.length > 0;
+	const { getCitation } = useCitationsStore();
+	const hasCitations =
+		citations &&
+		citations.length > 0 &&
+		checkCitationsExists(citations, getCitation);
 
 	const isCitationsButtonVisible = hasCitations || isLoadingLastCitations;
 
@@ -67,3 +73,15 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 		</>
 	);
 };
+
+function checkCitationsExists(
+	citations: number[] | null,
+	getCitation: (id: number) => CitationWithDetails | undefined,
+): boolean {
+	if (!citations) {
+		return false;
+	}
+
+	// Check if any of the citation IDs exist in the citation store.
+	return citations.some((id) => getCitation(id));
+}
