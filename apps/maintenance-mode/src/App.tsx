@@ -3,10 +3,11 @@ function App() {
 		<main className="w-full h-svh bg-dunkelblau-100 text-hellblau-30 text-center flex items-center justify-center p-5">
 			<div className="flex flex-col justify-center items-center sm:max-w-[546px] mx-auto">
 				<img
-					src="/logos/logo_baergpt.svg"
+					src="logo_baergpt.svg"
 					alt="BärGPT Logo"
 					width={100}
 					height={32}
+					className="bg-white"
 				/>
 				<h1 className="mt-6 mb-3 text-2xl leading-8 font-normal w-fit mx-auto">
 					BärGPT ist vorübergehend nicht erreichbar.
