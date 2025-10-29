@@ -43,6 +43,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
 			<label
 				className={`flex items-center gap-x-2 md:gap-x-1 ${error ? "w-fit border border-berlin-rot rounded-sm pr-1.5" : ""}`}
 				htmlFor={`${id}-checkbox`}
+				data-testid={`${id}-checkbox`}
 			>
 				<span className="flex h-fit cursor-pointer rounded-1.5px group/checkbox has-[:focus-visible]:outline-default">
 					<CheckboxIcon state={state} />
