@@ -14,7 +14,6 @@ import { countTokens, computeBatchTokenLimit } from "./token-utils";
 import { DatabaseService } from "./database-service";
 import { resilientCall } from "../utils";
 import { recordDuration } from "../monitoring/metrics";
-import { record } from "zod";
 
 const dbService = new DatabaseService();
 
