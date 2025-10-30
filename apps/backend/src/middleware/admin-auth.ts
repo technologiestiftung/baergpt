@@ -2,6 +2,7 @@ import { createMiddleware } from "hono/factory";
 import type { Context, Next } from "hono";
 import { DatabaseService } from "../services/database-service";
 import { captureError } from "../monitoring/capture-error";
+import { recordDuration } from "../monitoring/metrics";
 
 const dbService = new DatabaseService();
 
@@ -14,7 +15,9 @@ export const adminAuth = createMiddleware(async (c: Context, next: Next) => {
 
 	let isAdmin = false;
 	try {
-		isAdmin = await dbService.getUserAdminStatus(userId);
+		isAdmin = await recordDuration("supabase-call", async () => {
+			return await dbService.getUserAdminStatus(userId);
+		});
 	} catch (error) {
 		captureError(error);
 	}

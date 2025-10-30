@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { DatabaseService } from "../services/database-service";
 import { EmbeddingService } from "../services/embedding-service";
 import { z } from "zod";
+import { recordDuration } from "../monitoring/metrics";
 
 const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
@@ -49,14 +50,13 @@ export const baseKnowledgeSearchTool = (
 				userId,
 			);
 			// do rag search over the base knowledge documents only
-			const chunkMatches = await dbService.performHybridChunkSearch(
-				embedding.embedding,
-				{
+			const chunkMatches = await recordDuration("rag-search", async () => {
+				return await dbService.performHybridChunkSearch(embedding.embedding, {
 					queryText: query,
 					allowed_document_ids: allowedDocumentIds,
 					allowed_folder_ids: allowedFolderIds,
-				},
-			);
+				});
+			});
 			if (chunkMatches.length === 0) {
 				console.warn(`RAG search found no matches for query: ${query}`);
 				return {};

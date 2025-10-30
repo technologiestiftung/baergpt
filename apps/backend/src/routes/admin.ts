@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { DatabaseService } from "../services/database-service";
 import { adminAuth } from "../middleware/admin-auth";
 import { captureError } from "../monitoring/capture-error";
+import { recordDuration } from "../monitoring/metrics";
 
 const admin = new Hono();
 const dbService = new DatabaseService();
@@ -38,13 +39,15 @@ admin.put("/users/:userId/profile", async (c) => {
 		}
 
 		// Update profile fields
-		await dbService.updateUserProfile({
-			userId,
-			firstName,
-			lastName,
-			academic_title,
-			email,
-			personal_title,
+		await recordDuration("supabase-call", async () => {
+			await dbService.updateUserProfile({
+				userId,
+				firstName,
+				lastName,
+				academic_title,
+				email,
+				personal_title,
+			});
 		});
 
 		return c.json({ message: "Profile updated successfully" });
@@ -71,7 +74,9 @@ admin.put("/users/:userId/admin", async (c) => {
 			return c.json({ error: "isAdmin must be a boolean value" }, 400);
 		}
 
-		await dbService.updateUserAdminStatus(userId, isAdmin);
+		await recordDuration("supabase-call", async () => {
+			await dbService.updateUserAdminStatus(userId, isAdmin);
+		});
 		return c.json({ message: "User admin status updated successfully" });
 	} catch (error) {
 		captureError(error);
@@ -96,11 +101,15 @@ admin.delete("/users/:userId", async (c) => {
 		const hardDelete = c.req.query("hard") === "true";
 
 		if (hardDelete) {
-			await dbService.hardDeleteUser(userId);
+			await recordDuration("supabase-call", async () => {
+				await dbService.hardDeleteUser(userId);
+			});
 			return c.json({ message: "User permanently deleted successfully" });
 		}
 
-		await dbService.softDeleteUser(userId);
+		await recordDuration("supabase-call", async () => {
+			await dbService.softDeleteUser(userId);
+		});
 		return c.json({ message: "User soft deleted successfully" });
 	} catch (error) {
 		captureError(error);
@@ -116,7 +125,9 @@ admin.put("/users/:userId/restore", async (c) => {
 			return c.json({ error: "User ID is required" }, 400);
 		}
 
-		await dbService.restoreUser(userId);
+		await recordDuration("supabase-call", async () => {
+			await dbService.restoreUser(userId);
+		});
 		return c.json({ message: "User restored successfully" });
 	} catch (error) {
 		captureError(error);
@@ -132,7 +143,9 @@ admin.post("/users/invite", async (c) => {
 			return c.json({ error: "Email is required" }, 400);
 		}
 
-		await dbService.sendInviteLink(email, firstName, lastName);
+		await recordDuration("supabase-call", async () => {
+			await dbService.sendInviteLink(email, firstName, lastName);
+		});
 		return c.json({ message: "Invite link sent successfully" });
 	} catch (error) {
 		captureError(error);

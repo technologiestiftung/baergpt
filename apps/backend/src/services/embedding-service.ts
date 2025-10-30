@@ -13,6 +13,8 @@ import { JINA_MAX_TOKEN_LIMIT } from "../constants";
 import { countTokens, computeBatchTokenLimit } from "./token-utils";
 import { DatabaseService } from "./database-service";
 import { resilientCall } from "../utils";
+import { recordDuration } from "../monitoring/metrics";
+import { record } from "zod";
 
 const dbService = new DatabaseService();
 
@@ -58,21 +60,24 @@ export class EmbeddingService {
 		userId?: string,
 	): Promise<EmbeddingResponse> {
 		const embeddingResponse = await resilientCall(
-			() =>
-				fetch("https://api.jina.ai/v1/embeddings", {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${config.jinaApiKey}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						model: config.jinaEmbeddingModel,
-						input: input,
-						task: task,
-						dimensions: 1024,
-						late_chunking: false,
-						embedding_type: "float",
-					}),
+			async () =>
+				await recordDuration("jina-embedding-call", async () => {
+					const response = await fetch("https://api.jina.ai/v1/embeddings", {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${config.jinaApiKey}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							model: config.jinaEmbeddingModel,
+							input: input,
+							task: task,
+							dimensions: 1024,
+							late_chunking: false,
+							embedding_type: "float",
+						}),
+					});
+					return response;
 				}),
 			{ queueType: "embeddings" },
 		);
@@ -93,11 +98,13 @@ export class EmbeddingService {
 
 		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
 		if (userId) {
-			await dbService.updateUserColumnValue(
-				userId,
-				"num_embedding_tokens",
-				responseData.usage.total_tokens,
-			);
+			await recordDuration("supabase-call", async () => {
+				await dbService.updateUserColumnValue(
+					userId,
+					"num_embedding_tokens",
+					responseData.usage.total_tokens,
+				);
+			});
 		}
 
 		return {
@@ -112,24 +119,25 @@ export class EmbeddingService {
 		userId?: string,
 	): Promise<EmbeddingsResponse> {
 		const embeddingResponse = await resilientCall(
-			async () => {
-				const response = await fetch("https://api.jina.ai/v1/embeddings", {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${config.jinaApiKey}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						model: config.jinaEmbeddingModel,
-						input: input,
-						task: task,
-						dimensions: 1024,
-						late_chunking: true,
-						embedding_type: "float",
-					}),
-				});
-				return response;
-			},
+			async () =>
+				await recordDuration("jina-embedding-call", async () => {
+					const response = await fetch("https://api.jina.ai/v1/embeddings", {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${config.jinaApiKey}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							model: config.jinaEmbeddingModel,
+							input: input,
+							task: task,
+							dimensions: 1024,
+							late_chunking: true,
+							embedding_type: "float",
+						}),
+					});
+					return response;
+				}),
 			{ queueType: "embeddings" },
 		);
 
@@ -147,11 +155,13 @@ export class EmbeddingService {
 
 		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
 		if (userId) {
-			await dbService.updateUserColumnValue(
-				userId,
-				"num_embedding_tokens",
-				responseData.usage.total_tokens,
-			);
+			await recordDuration("supabase-call", async () => {
+				await dbService.updateUserColumnValue(
+					userId,
+					"num_embedding_tokens",
+					responseData.usage.total_tokens,
+				);
+			});
 		}
 
 		const sortedData = responseData.data.sort((a, b) => a.index - b.index);
@@ -317,7 +327,10 @@ export class EmbeddingService {
 			await Promise.all(batchPromises);
 		}
 
-		await dbService.logEmbeddings(allEmbeddings, document);
+		await recordDuration(
+			"supabase-call",
+			async () => await dbService.logEmbeddings(allEmbeddings, document),
+		);
 		return;
 	}
 }

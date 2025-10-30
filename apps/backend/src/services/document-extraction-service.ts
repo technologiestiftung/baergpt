@@ -18,6 +18,7 @@ import WordExtractor from "word-extractor";
 import mammoth from "mammoth";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
+import { recordDuration } from "../monitoring/metrics";
 
 export class DocumentExtractionService {
 	async extractDocument(
@@ -461,12 +462,14 @@ class MistralOCRService {
 
 		const uploaded_pdf = await resilientCall(
 			() =>
-				client.files.upload({
-					file: {
-						fileName: "uploaded_file.pdf",
-						content: blob,
-					},
-					purpose: "ocr",
+				recordDuration("ocr-upload", async () => {
+					return await client.files.upload({
+						file: {
+							fileName: "uploaded_file.pdf",
+							content: blob,
+						},
+						purpose: "ocr",
+					});
 				}),
 			{ queueType: "llm" },
 		);
@@ -477,12 +480,14 @@ class MistralOCRService {
 
 		const ocrResponse = await resilientCall(
 			() =>
-				client.ocr.process({
-					model: "mistral-ocr-latest",
-					document: {
-						type: "document_url",
-						documentUrl: signedUrl.url,
-					},
+				recordDuration("ocr-processing", async () => {
+					return await client.ocr.process({
+						model: "mistral-ocr-latest",
+						document: {
+							type: "document_url",
+							documentUrl: signedUrl.url,
+						},
+					});
 				}),
 			{ retries: 3, queueType: "llm" },
 		);

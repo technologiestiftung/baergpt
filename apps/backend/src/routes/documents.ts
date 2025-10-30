@@ -7,6 +7,7 @@ import { GenerationService } from "../services/generation-service";
 import { WordDocumentExtractionService } from "../services/document-extraction-service";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
+import { recordDuration } from "../monitoring/metrics";
 
 const documents = new Hono();
 const dbService = new DatabaseService();
@@ -19,7 +20,10 @@ documents.post("/process", async (c: Context) => {
 		const body = await c.req.json();
 		const { document } = body;
 		const llmIdentifier = config.defaultModelIdentifier as LLMIdentifier;
-		const extractionResult = await dbService.logAndExtractDocument(document);
+		const extractionResult = await recordDuration(
+			"supabase-call",
+			async () => await dbService.logAndExtractDocument(document),
+		);
 		const extractedDocument = extractionResult.document;
 
 		const parsedPages = extractionResult.parsedPages;
@@ -34,7 +38,10 @@ documents.post("/process", async (c: Context) => {
 			}),
 		]);
 
-		await dbService.finishProcessing(extractedDocument);
+		await recordDuration(
+			"supabase-call",
+			async () => await dbService.finishProcessing(extractedDocument),
+		);
 		return c.body(null, 204);
 	} catch (error) {
 		captureError(error);
@@ -76,11 +83,13 @@ documents.post("/upload", async (c: Context) => {
 		throw new Error("Unsupported file type");
 	}
 
-	await dbService.uploadFileToStorage(
-		sourceUrl,
-		uploadedFile,
-		isPublicDocument,
-	);
+	await recordDuration("supabase-call", async () => {
+		await dbService.uploadFileToStorage(
+			sourceUrl,
+			uploadedFile,
+			isPublicDocument,
+		);
+	});
 
 	if (/\.(docx)$/i.test(fileName)) {
 		try {
@@ -88,13 +97,15 @@ documents.post("/upload", async (c: Context) => {
 			const pdfBytes = await wordExService.convertDocxToPdf(
 				Buffer.from(wordBuffer),
 			);
-			await dbService.uploadFileToStorage(
-				sourceUrl.replace(/\.docx?$/i, ".pdf"),
-				new File([pdfBytes], fileName.replace(/\.docx?$/i, ".pdf"), {
-					type: "application/pdf",
-				}),
-				isPublicDocument,
-			);
+			await recordDuration("supabase-call", async () => {
+				await dbService.uploadFileToStorage(
+					sourceUrl.replace(/\.docx?$/i, ".pdf"),
+					new File([pdfBytes], fileName.replace(/\.docx?$/i, ".pdf"), {
+						type: "application/pdf",
+					}),
+					isPublicDocument,
+				);
+			});
 		} catch (err) {
 			captureError(err);
 		}

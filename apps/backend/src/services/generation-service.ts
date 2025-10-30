@@ -31,6 +31,7 @@ import {
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
+import { recordDuration } from "../monitoring/metrics";
 
 const ESTIMATED_TOKENS_PER_WORD = config.estimatedTokensPerWord;
 const langfuse = new LangfuseClient();
@@ -173,7 +174,7 @@ export class GenerationService {
 		}
 
 		try {
-			return this.generateTextContent(llmHandler, compiledSummaryPrompt, {
+			return await this.generateTextContent(llmHandler, compiledSummaryPrompt, {
 				userId,
 				langfusePrompt: summaryPromptClient,
 			});
@@ -203,7 +204,7 @@ export class GenerationService {
 		}) as ModelMessage[];
 
 		try {
-			const response: string = await this.generateTextContent(
+			const response = await this.generateTextContent(
 				llmHandler,
 				compiledTaggingPrompt,
 				{ userId, langfusePrompt: taggingPromptClient },
@@ -243,7 +244,6 @@ export class GenerationService {
 			);
 			summaryInput = selectedPages;
 		}
-
 		summary = await this.generateSummary(llmIdentifier, summaryInput, {
 			userId,
 		});
@@ -251,7 +251,6 @@ export class GenerationService {
 		if (!summary) {
 			throw new Error("Failed to generate document summary");
 		}
-
 		const shortSummary = await this.generateSummary(llmIdentifier, summary, {
 			oneSentenceSummary: true,
 			userId,
@@ -266,32 +265,34 @@ export class GenerationService {
 			{ tokenLimit: JINA_MAX_TOKEN_LIMIT, maxRounds: 3 },
 		);
 
-		const summaryEmbeddingResponse =
-			await embeddingService.generateJinaEmbedding(
-				summaryForEmbedding,
-				"retrieval.passage",
-				userId,
-			);
+		const summaryEmbeddingResponse = await recordDuration(
+			"generate-embedding",
+			async () => {
+				return await embeddingService.generateJinaEmbedding(
+					summaryForEmbedding,
+					"retrieval.passage",
+					userId,
+				);
+			},
+		);
 		if (!summaryEmbeddingResponse || !summaryEmbeddingResponse.embedding) {
 			throw new Error("Failed to generate document embedding");
 		}
-
-		const tags = await this.generateTags(llmIdentifier, summary, {
-			userId,
-		});
+		const tags = await this.generateTags(llmIdentifier, summary, { userId });
 		if (!tags) {
 			throw new Error("Failed to generate document tags");
 		}
-		// Using the refactored function with structured parameters
-		await dbService.logSummarizedDocument(
-			{
-				summary,
-				shortSummary,
-				tags,
-				summaryEmbedding: summaryEmbeddingResponse.embedding,
-			},
-			document,
-		);
+		await recordDuration("supabase-call", async () => {
+			await dbService.logSummarizedDocument(
+				{
+					summary,
+					shortSummary,
+					tags,
+					summaryEmbedding: summaryEmbeddingResponse.embedding,
+				},
+				document,
+			);
+		});
 	}
 
 	async generateTextStreamResponse(
@@ -328,8 +329,12 @@ export class GenerationService {
 			};
 			toolChoice = { type: "tool", toolName: "ragSearchTool" };
 		} else {
-			knowledgeBaseDocuments =
-				await dbService.getBaseKnowledgeDocuments(userId);
+			knowledgeBaseDocuments = await recordDuration(
+				"supabase-call",
+				async () => {
+					return await dbService.getBaseKnowledgeDocuments(userId);
+				},
+			);
 			tools = {
 				baseKnowledgeSearchTool: baseKnowledgeSearchTool(
 					userId,
@@ -341,34 +346,40 @@ export class GenerationService {
 		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(
 			() =>
-				generateText({
-					model: llmHandler.languageModel,
-					messages: messages,
-					temperature: LLM_PARAMETERS.temperature,
-					tools,
-					toolChoice,
-					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-						functionId: "text-toolCall-generation",
-						metadata: {
-							userId: userId ? userId : "unknown",
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
+				recordDuration("inference-tool-call", async () => {
+					return await generateText({
+						model: llmHandler.languageModel,
+						messages: messages,
+						temperature: LLM_PARAMETERS.temperature,
+						tools,
+						toolChoice,
+						experimental_telemetry: {
+							isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+							functionId: "text-toolCall-generation",
+							metadata: {
+								userId: userId ? userId : "unknown",
+								sessionId: sessionId ? sessionId : "unknown",
+								langfusePrompt: langfusePrompt
+									? langfusePrompt.toJSON()
+									: undefined,
+							},
 						},
-					},
+					});
 				}),
 			{ queueType: "llm" },
 		);
 		if (userId && generationResult.usage?.totalTokens) {
 			try {
-				await dbService.updateUserColumnValue(
-					userId,
-					"num_inference_tokens",
-					generationResult.usage.totalTokens,
-				);
-				await dbService.updateUserColumnValue(userId, "num_inferences", 1);
+				await recordDuration("updateUserTokensAfterToolCall", async () => {
+					await dbService.updateUserColumnValue(
+						userId,
+						"num_inference_tokens",
+						generationResult.usage.totalTokens,
+					);
+				});
+				await recordDuration("updateUserInferencesAfterToolCall", async () => {
+					await dbService.updateUserColumnValue(userId, "num_inferences", 1);
+				});
 			} catch (error) {
 				captureError(error);
 			}
@@ -379,57 +390,62 @@ export class GenerationService {
 		if (toolResult) {
 			messages.push(...newMessages);
 		}
-
 		const citationAnswer = await resilientCall(
 			async () =>
-				streamObject({
-					model: llmHandler.languageModel,
-					messages: messages,
-					temperature: LLM_PARAMETERS.temperature,
-					// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
-					schema: citationAnswerSchema(maxAvailableSources),
-					onFinish: async ({ object, usage, error }) => {
-						updateActiveTrace({
-							name: "streamed-structuredOutput-generation",
-							output: object,
-							userId,
-							sessionId,
-						});
-						// Handle token usage tracking after stream completes
-						if (userId && usage?.totalTokens) {
-							try {
-								await dbService.updateUserColumnValue(
-									userId,
-									"num_inference_tokens",
-									usage.totalTokens,
-								);
-								// Increase num_inferences for user by one
-								await dbService.updateUserColumnValue(
-									userId,
-									"num_inferences",
-									1,
-								);
-							} catch (dbError) {
-								captureError(dbError);
+				await recordDuration("stream-structured-output", async () => {
+					return streamObject({
+						model: llmHandler.languageModel,
+						messages: messages,
+						temperature: LLM_PARAMETERS.temperature,
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						schema: citationAnswerSchema(maxAvailableSources),
+						onFinish: async ({ object, usage, error }) => {
+							updateActiveTrace({
+								name: "streamed-structuredOutput-generation",
+								output: object,
+								userId,
+								sessionId,
+							});
+							// Handle token usage tracking after stream completes
+							if (userId && usage?.totalTokens) {
+								try {
+									await recordDuration("supabase-call", async () => {
+										await dbService.updateUserColumnValue(
+											userId,
+											"num_inference_tokens",
+											usage.totalTokens,
+										);
+									});
+									// Increase num_inferences for user by one
+									await recordDuration("supabase-call", async () => {
+										await dbService.updateUserColumnValue(
+											userId,
+											"num_inferences",
+											1,
+										);
+									});
+								} catch (dbError) {
+									captureError(dbError);
+								}
+								if (error) {
+									captureError(error);
+								}
 							}
-							if (error) {
-								captureError(error);
-							}
-						}
-					},
-					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-						metadata: {
-							userId: userId ? userId : "unknown",
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
 						},
-					},
-					onError: (error) => {
-						captureError(error);
-					},
+						experimental_telemetry: {
+							isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+							metadata: {
+								userId: userId ? userId : "unknown",
+								sessionId: sessionId ? sessionId : "unknown",
+								langfusePrompt: langfusePrompt
+									? langfusePrompt.toJSON()
+									: undefined,
+							},
+						},
+						onError: (error) => {
+							captureError(error);
+						},
+					});
 				}),
 			{ queueType: "llm" },
 		);
@@ -454,32 +470,40 @@ export class GenerationService {
 	): Promise<string> {
 		const { text, usage } = await resilientCall(
 			() =>
-				generateText({
-					model: llmHandler.languageModel,
-					messages: messages,
-					temperature: LLM_PARAMETERS.temperature,
-					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-						metadata: {
-							userId: userId ? userId : "unknown",
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
+				recordDuration("inference-call", async () => {
+					return await generateText({
+						model: llmHandler.languageModel,
+						messages: messages,
+						temperature: LLM_PARAMETERS.temperature,
+						experimental_telemetry: {
+							isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+							metadata: {
+								userId: userId ? userId : "unknown",
+								sessionId: sessionId ? sessionId : "unknown",
+								langfusePrompt: langfusePrompt
+									? langfusePrompt.toJSON()
+									: undefined,
+							},
 						},
-					},
+					});
 				}),
 			{ queueType: "llm" },
 		);
 		if (userId) {
 			// Increase num_inferences for user by 1
-			await dbService.updateUserColumnValue(userId, "num_inferences", 1);
-			// Increase num_tokens by token count of this generation
-			await dbService.updateUserColumnValue(
-				userId,
-				"num_inference_tokens",
-				usage?.totalTokens ?? 0,
+			await recordDuration(
+				"supabase-call",
+				async () =>
+					await dbService.updateUserColumnValue(userId, "num_inferences", 1),
 			);
+			// Increase num_tokens by token count of this generation
+			await recordDuration("supabase-call", async () => {
+				await dbService.updateUserColumnValue(
+					userId,
+					"num_inference_tokens",
+					usage?.totalTokens ?? 0,
+				);
+			});
 		}
 		return text;
 	}
