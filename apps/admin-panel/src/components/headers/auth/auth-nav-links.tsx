@@ -10,7 +10,7 @@ export function AuthNavLinks() {
 				hidden md:flex gap-x-2 h-9 text-dunkelblau-100 px-3 py-2
 				rounded-3px border border-dunkelblau-100
 				hover:bg-hellblau-60 items-center
-				focus-visible:outline-default text-base leading-6 font-normal
+				focus-visible:outline-default text-lg leading-7 font-normal
 				`}
 			>
 				{Content["header.navigation.help.ariaLabel"]}
