@@ -5,9 +5,7 @@ function App() {
 				<img
 					src="logo_baergpt.svg"
 					alt="BärGPT Logo"
-					width={100}
-					height={32}
-					className="bg-white"
+					className="bg-white w-auto h-8"
 				/>
 				<h1 className="mt-6 mb-3 text-2xl leading-8 font-normal w-fit mx-auto">
 					BärGPT ist vorübergehend nicht erreichbar.
