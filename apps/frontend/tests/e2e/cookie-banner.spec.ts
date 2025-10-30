@@ -20,7 +20,7 @@ test.describe("Cookie Banner", () => {
 		await page.waitForLoadState("networkidle");
 
 		// Check if cookie banner appears at all
-		await expect(page.getByText("Cookie-Einstellungen")).toBeVisible();
+		await expect(page.getByRole("region", { name: /Cookie/ })).toBeVisible();
 
 		// Check that compact banner content is displayed initially
 		await expect(
