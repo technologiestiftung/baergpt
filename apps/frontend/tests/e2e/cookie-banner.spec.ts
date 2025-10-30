@@ -20,7 +20,7 @@ test.describe("Cookie Banner", () => {
 		await page.waitForLoadState("networkidle");
 
 		// Check if cookie banner appears at all
-		await expect(page.getByText("Cookies-Einstellungen")).toBeVisible();
+		await expect(page.getByRole("region", { name: /Cookie/ })).toBeVisible();
 
 		// Check that compact banner content is displayed initially
 		await expect(
@@ -240,7 +240,7 @@ test.describe("Cookie Banner", () => {
 		).not.toBeVisible();
 
 		// Video should be blocked - check for blocked message
-		await expect(page.getByText("Video-Inhalt blockiert")).toBeVisible();
+		await expect(page.getByText("Videoinhalt blockiert")).toBeVisible();
 		await expect(
 			page.getByText(/Dieses Video wird von Vimeo bereitgestellt/),
 		).toBeVisible();
@@ -272,7 +272,7 @@ test.describe("Cookie Banner", () => {
 		await expect(page.locator("iframe")).toBeVisible();
 
 		// Should NOT see blocked message
-		await expect(page.getByText("Video-Inhalt blockiert")).not.toBeVisible();
+		await expect(page.getByText("Videoinhalt blockiert")).not.toBeVisible();
 		await expect(
 			page.getByRole("button", { name: /Cookies akzeptieren/ }),
 		).not.toBeVisible();
