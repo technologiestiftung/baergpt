@@ -229,12 +229,12 @@ export const Content = {
 	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
 	"videoPlayer.cookies.buttonAriaLabel":
 		"Cookies akzeptieren, um Video anzusehen",
-	"videoPlayer.blocked.message": "Video-Inhalt blockiert",
+	"videoPlayer.blocked.message": "Videoinhalt blockiert",
 	"videoPlayer.loading.message": "wird geladen...",
 	"videoPlayer.vimeo.cookies.message":
 		"Dieses Video wird von Vimeo bereitgestellt. Um das Video anzusehen, müssen Sie der Verwendung von Cookies zustimmen.",
 	/* -------------------- Cookies Banner -------------------- */
-	"cookiesBanner.title": "Cookies-Einstellungen",
+	"cookiesBanner.title": "Cookie-Einstellungen",
 	"cookiesBanner.message.short": "Wir verwenden technisch notwendige Cookies. ",
 	"cookiesBanner.expandButton": "Mehr erfahren",
 	"cookiesBanner.expandButton.ariaLabel":
