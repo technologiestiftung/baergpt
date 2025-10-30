@@ -6,6 +6,7 @@ import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
 import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import { supabase } from "../supabase";
+import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 
 export const sentryClient = Sentry.init({
 	dsn: config.sentryDsn || "",
@@ -34,6 +35,10 @@ const sdk = new NodeSDK({
 	contextManager: new Sentry.SentryContextManager(),
 	textMapPropagator: new SentryPropagator(),
 	instrumentations: [getNodeAutoInstrumentations()],
+	metricReader: new PrometheusExporter({
+		port: 9464,
+		endpoint: "/metrics",
+	}),
 });
 
 sdk.start();
