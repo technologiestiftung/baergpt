@@ -18,6 +18,7 @@ export async function downloadDocument({
 
 	if (downloadError) {
 		useErrorStore.getState().handleError(downloadError);
+		useErrorStore.getState().setError("document_download_failed");
 		return undefined;
 	}
 

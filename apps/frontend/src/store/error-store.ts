@@ -1,10 +1,13 @@
 import { create } from "zustand";
 import { useToastStore } from "./use-toast-store";
 import { captureError } from "../monitoring/capture-error";
+import Content from "../content";
 
 interface ErrorStore {
 	error?: string;
 	handleError: (error: unknown) => void;
+	setError: (errorKey: string) => void;
+	clearError: () => void;
 	getErrorMessage: (error: unknown) => string | null;
 }
 
@@ -25,7 +28,7 @@ const errorMessages: { [key: string]: string } = {
 		"API-Rate-Limit überschritten, bitte in einer Minute nochmal versuchen.",
 	context_length_exceeded:
 		"Kontextlänge überschritten, bitte starten Sie einen neuen Chat.",
-	wrong_password: "Falsches Passwort.",
+	wrong_password: Content["form.validation.password.wrong.error"],
 	"Failed to fetch":
 		"Etwas ist schief gelaufen, bitte starten Sie einen neuen Chat.",
 	selected_llm_not_healthy:
@@ -38,9 +41,12 @@ const errorMessages: { [key: string]: string } = {
 		"Temporär keine Modelle verfügbar. Bitte versuchen Sie es später erneut.",
 	"Token has expired or is invalid": "Code ist abgelaufen oder ungültig.",
 	document_not_found: "Dokument konnte nicht gelöscht werden.",
+	document_download_failed:
+		Content["documentsPreviewSection.download.failed.error"],
 };
 
-export const useErrorStore = create<ErrorStore>()(() => ({
+export const useErrorStore = create<ErrorStore>()((set) => ({
+	error: undefined,
 	handleError: (error) => {
 		if (!isError(error)) {
 			console.error("Given error object is not an instance of Error:", error);
@@ -57,6 +63,19 @@ export const useErrorStore = create<ErrorStore>()(() => ({
 
 		// Only use toast store
 		useToastStore.getState().addError(userReadableErrorMessage);
+	},
+
+	setError: (errorKey: string) => {
+		set({ error: errorKey });
+
+		// Auto-clear error after 3 seconds
+		setTimeout(() => {
+			set({ error: undefined });
+		}, 3000);
+	},
+
+	clearError: () => {
+		set({ error: undefined });
 	},
 
 	getErrorMessage: (error) => {

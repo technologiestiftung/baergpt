@@ -371,6 +371,8 @@ export const Content = {
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
 	"documentsPreviewSection.downloadLink.ariaLabel": "herunterladen",
+	"documentsPreviewSection.download.failed.error":
+		"Herunterladen fehlgeschlagen",
 	"documentsPreviewSection.disclaimer.docx":
 		"Die Vorschau von Word-Dateien ist noch experimentell. Die Formatierung entspricht nicht dem Originaldokument. Dies hat kein Auswirkung auf die Antwortqualität.",
 	"documentsPreviewSection.noPreviewAvailable":

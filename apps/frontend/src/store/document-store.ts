@@ -5,6 +5,7 @@ import { deleteDocument } from "../api/documents/delete-document";
 import { updateDocumentFolder } from "../api/documents/update-document-folder";
 import { getDocumentObjectUrl } from "../api/documents/get-document-object-url.ts";
 import { downloadDocument } from "../api/documents/download-document.ts";
+import { useErrorStore } from "./error-store";
 
 interface DocumentStore {
 	documents: Document[];
@@ -116,6 +117,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		set({ selectedPreviewDocumentDownloadUrl: downloadUrl });
 	},
 	unselectPreviewDocument: () => {
+		useErrorStore.getState().clearError();
 		set({
 			selectedPreviewDocument: null,
 			selectedPreviewDocumentPreviewUrl: null,
