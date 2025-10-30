@@ -7,10 +7,10 @@ export const AuthHeader: React.FC = () => {
 	const { session } = useAuthStore();
 
 	return (
-		<header className="h-[50px] md:h-[80px] flex items-center justify-between z-40 bg-white p-5 border-b border-black">
+		<header className="h-[50px] md:h-11 flex items-center justify-between z-40 bg-white p-5 border-b border-black">
 			<a href={"/"}>
 				<img
-					className="h-7 md:h-11"
+					className="h-7"
 					src="/logos/baergpt-logo.svg"
 					alt={Content["header.logo.alt"]}
 				/>
