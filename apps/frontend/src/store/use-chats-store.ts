@@ -12,6 +12,7 @@ let debounceTimeout: ReturnType<typeof setTimeout>;
 
 interface ChatStore {
 	isFirstLoad: boolean;
+	isLoading: boolean;
 	chats: ChatWithMessages[];
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
@@ -35,6 +36,7 @@ interface ChatStore {
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
+	isLoading: false,
 	chats: [],
 
 	/**
@@ -42,6 +44,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	 * and their messages and sets them in the store
 	 */
 	async getChatsFromDb(signal) {
+		set({ isLoading: true });
+
 		const chats = await getChatsFromDb(signal);
 
 		const promises = chats.map(async (chat) => {
@@ -56,6 +60,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		if (get().isFirstLoad) {
 			set({ isFirstLoad: false });
 		}
+
+		set({ isLoading: false });
 	},
 
 	getCurrentChat: () => {

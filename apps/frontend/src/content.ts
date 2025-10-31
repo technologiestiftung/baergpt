@@ -275,6 +275,10 @@ export const Content = {
 	"chatHistory.title": "Chats",
 	"chatHistory.today": "Heute",
 	"chatHistory.lastSevenDays": "Letzte 7 Tage",
+	"chatHistory.fetch.error": "Chatverlauf konnte nicht geladen werden",
+	"chatHistory.fetchRetry.button.label": "Erneut versuchen",
+	"chatHistory.fetchRetry.button.ariaLabel":
+		"Erneut versuchen Chatverlauf zu laden",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton

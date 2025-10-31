@@ -51,6 +51,7 @@ const errorMessages: { [key: string]: string } = {
 		Content["documentsPreviewSection.download.failed.error"],
 	chat_export_failed: Content["chat.exportChatTextButton.error"],
 	documents_fetch_failed: Content["documentsSection.fetch.error"],
+	chats_fetch_failed: Content["chatHistory.fetch.error"],
 };
 
 export const useErrorStore = create<ErrorStore>()((set, get) => ({
