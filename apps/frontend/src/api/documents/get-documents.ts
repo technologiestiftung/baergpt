@@ -23,6 +23,7 @@ export async function getDocuments(signal: AbortSignal): Promise<Document[]> {
 
 	if (error) {
 		useErrorStore.getState().handleError(error);
+		useErrorStore.getState().setError("documents_fetch_failed");
 		return [];
 	}
 

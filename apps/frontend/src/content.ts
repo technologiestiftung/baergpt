@@ -341,6 +341,10 @@ export const Content = {
 	"documentsSection.selectFiles": "Dateien auswählen",
 	"documentsSection.showFiles.ariaLabel": "Anzeigen der Dateien",
 	"documentsSection.hideFiles.ariaLabel": "Ausblenden der Dateien",
+	"documentsSection.fetch.error": "Dateien konnten nicht geladen werden",
+	"documentsSection.fetchRetry.button.label": "Erneut versuchen",
+	"documentsSection.fetchRetry.button.ariaLabel":
+		"Erneut versuchen Dokumente zu laden",
 	//documentsList
 	"documentsList.document.checkbox.ariaLabel":
 		"Dokument auswählen für eine Aktion (Löschen, Öffnen)",

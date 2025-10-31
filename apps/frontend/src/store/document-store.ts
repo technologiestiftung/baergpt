@@ -10,6 +10,7 @@ import { useErrorStore } from "./error-store";
 interface DocumentStore {
 	documents: Document[];
 	isDocumentFirstLoad: boolean;
+	isLoading: boolean;
 	getDocuments: (signal: AbortSignal) => Promise<void>;
 	deleteDocument: (documentId: number) => Promise<Error | null>;
 	removeItemFromFolder: (documentId: number) => Promise<void>;
@@ -34,11 +35,14 @@ interface DocumentStore {
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	documents: [],
 	isDocumentFirstLoad: true,
+	isLoading: false,
 	getDocuments: async (signal: AbortSignal) => {
+		set({ isLoading: true });
 		try {
 			const documents = await getDocuments(signal);
 			set({ documents });
 		} finally {
+			set({ isLoading: false });
 			if (get().isDocumentFirstLoad) {
 				set({ isDocumentFirstLoad: false });
 			}

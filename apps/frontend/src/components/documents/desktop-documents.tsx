@@ -10,6 +10,8 @@ import { Content } from "../../content.ts";
 import { Resizer } from "./resizer.tsx";
 import { useTooltipStore } from "../../store/tooltip-store.ts";
 import { DropZoneWrapperDocuments } from "./document-list/drop-zone-wrapper-documents.tsx";
+import { useErrorStore } from "../../store/error-store.ts";
+import { useDocumentStore } from "../../store/document-store.ts";
 
 const MIN_WIDTH = 350;
 const MAX_WIDTH = 700;
@@ -22,6 +24,8 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 	const [isResizing, setIsResizing] = useState(false);
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const documentButtonRef = useRef<HTMLButtonElement>(null);
+	const { error, getErrorMessage } = useErrorStore();
+	const { getDocuments, isLoading } = useDocumentStore();
 
 	const handleResize = (newWidth: number) => {
 		setIsResizing(true);
@@ -41,6 +45,11 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 		}
 
 		showTooltip({ event, content: tooltipLabel });
+	};
+
+	const handleRetry = () => {
+		const abortController = new AbortController();
+		getDocuments(abortController.signal);
 	};
 
 	return (
@@ -147,6 +156,26 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 								<span className="block mt-8 w-[calc(100%+48px)] ml-[-24px] h-[2px] dunkelblau-40" />
 							</>
 						)}
+						{!hasItems && error && !isLoading && (
+							<div className="flex flex-col gap-3 text-sm leading-5 font-normal text-dunkelblau-100 text-center items-center justify-center h-full w-40 mx-auto">
+								<p>{getErrorMessage(new Error(error))}</p>
+								<button
+									className="flex gap-0.5 underline underline-offset-2 cursor-pointer"
+									aria-label={
+										Content["documentsSection.fetchRetry.button.ariaLabel"]
+									}
+									onClick={handleRetry}
+								>
+									<img
+										src="/icons/refresh-blue-icon.svg"
+										alt=""
+										className="size-6"
+									/>
+									{Content["documentsSection.fetchRetry.button.label"]}
+								</button>
+							</div>
+						)}
+
 						<div className={`hidden md:flex w-full  ${!hasItems && "h-full"}`}>
 							<FileUpload hasItems={hasItems} />
 						</div>

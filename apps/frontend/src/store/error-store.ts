@@ -44,6 +44,7 @@ const errorMessages: { [key: string]: string } = {
 	document_download_failed:
 		Content["documentsPreviewSection.download.failed.error"],
 	chat_export_failed: Content["chat.exportChatTextButton.error"],
+	documents_fetch_failed: Content["documentsSection.fetch.error"],
 };
 
 export const useErrorStore = create<ErrorStore>()((set) => ({
@@ -70,9 +71,9 @@ export const useErrorStore = create<ErrorStore>()((set) => ({
 		set({ error: errorKey });
 
 		// Auto-clear error after 3 seconds
-		setTimeout(() => {
-			set({ error: undefined });
-		}, 3000);
+		// setTimeout(() => {
+		// 	set({ error: undefined });
+		// }, 3000);
 	},
 
 	clearError: () => {
