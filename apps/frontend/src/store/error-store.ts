@@ -43,6 +43,7 @@ const errorMessages: { [key: string]: string } = {
 	document_not_found: "Dokument konnte nicht gelöscht werden.",
 	document_download_failed:
 		Content["documentsPreviewSection.download.failed.error"],
+	chat_export_failed: Content["chat.exportChatTextButton.error"],
 };
 
 export const useErrorStore = create<ErrorStore>()((set) => ({

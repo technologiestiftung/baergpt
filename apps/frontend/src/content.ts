@@ -488,6 +488,7 @@ export const Content = {
 	"chat.exportChatTextButton.exporting.label": "Exportiert...",
 	"chat.exportChatTextButton.pdf.label": "PDF exportieren",
 	"chat.exportChatTextButton.pdf.ariaLabel": "Chat als PDF exportieren",
+	"chat.exportChatTextButton.error": "Export fehlgeschlagen",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
