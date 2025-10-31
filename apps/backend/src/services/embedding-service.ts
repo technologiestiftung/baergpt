@@ -208,34 +208,6 @@ export class EmbeddingService {
 		return merged;
 	}
 
-	combineChunksIntoBatches(chunks: Chunk[]): Chunk[][] {
-		const batches: Chunk[][] = [];
-		let currentBatch: Chunk[] = [];
-		let currentBatchTokenCount = 0;
-
-		const safeTokenLimit = computeBatchTokenLimit(JINA_MAX_TOKEN_LIMIT, 1000); // Leave 1000 tokens as safety margin
-
-		for (const chunk of chunks) {
-			if (
-				currentBatchTokenCount + chunk.tokenCount > safeTokenLimit &&
-				currentBatch.length > 0
-			) {
-				batches.push(currentBatch);
-				currentBatch = [chunk];
-				currentBatchTokenCount = chunk.tokenCount;
-			} else {
-				currentBatch.push(chunk);
-				currentBatchTokenCount += chunk.tokenCount;
-			}
-		}
-
-		if (currentBatch.length > 0) {
-			batches.push(currentBatch);
-		}
-
-		return batches;
-	}
-
 	async batchEmbed(
 		parsedPages: ParsedPage[],
 		document: Document,
@@ -244,80 +216,77 @@ export class EmbeddingService {
 		} = { chunkingTechnique: "segmenter" },
 	): Promise<void> {
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
-		const allChunks: Chunk[] = [];
-		const chunkPromises = parsedPages.map(async (page) => {
-			let currentChunks: string[] = [];
+		const safeTokenLimit = computeBatchTokenLimit(JINA_MAX_TOKEN_LIMIT, 1000);
+		let pendingChunks: Chunk[] = [];
+		let pendingTokenCount = 0;
+
+		const flushBatch = async (): Promise<void> => {
+			if (pendingChunks.length === 0) {
+				return;
+			}
+			const response = await this.generateJinaBatchEmbeddings(
+				pendingChunks.map((c) => c.content),
+				"retrieval.passage",
+				userId,
+			);
+			const embeddings: Embedding[] = response.embeddings.map(
+				(embedding, idx) =>
+					({
+						content: pendingChunks[idx].content,
+						embedding,
+						page: pendingChunks[idx].page,
+						chunkIndex: pendingChunks[idx].chunkIndex,
+					}) as Embedding,
+			);
+			await dbService.logEmbeddings(embeddings, document);
+			pendingChunks = [];
+			pendingTokenCount = 0;
+		};
+
+		const enqueueChunk = async (chunk: Chunk): Promise<void> => {
+			if (
+				pendingTokenCount + chunk.tokenCount > safeTokenLimit &&
+				pendingChunks.length > 0
+			) {
+				await flushBatch();
+			}
+
+			pendingChunks.push(chunk);
+			pendingTokenCount += chunk.tokenCount;
+
+			if (chunk.tokenCount > safeTokenLimit) {
+				await flushBatch();
+			}
+		};
+
+		for (const page of parsedPages) {
+			let chunkContents: string[] = [];
 			const exceedsSegmenterLimit =
 				page.content.length >
 				EmbeddingService.SEGMENTER_INPUT_MAX -
 					EmbeddingService.SEGMENTER_SAFETY_MARGIN;
+
 			if (options.chunkingTechnique === "fixed") {
-				currentChunks = this.fixedSizeChunking(page.content);
+				chunkContents = this.fixedSizeChunking(page.content);
 			} else if (exceedsSegmenterLimit) {
-				currentChunks = this.fixedSizeChunking(page.content, 150);
+				chunkContents = this.fixedSizeChunking(page.content, 150);
 			} else {
 				const { chunks } = await this.chunkWithJinaSegmenter(page.content);
-				currentChunks = this.mergeSmallChunks(chunks);
+				chunkContents = this.mergeSmallChunks(chunks);
 			}
-			currentChunks.forEach((chunk, index) => {
-				const tokenCount = countTokens(chunk);
-				allChunks.push({
-					content: chunk,
+
+			for (let index = 0; index < chunkContents.length; index++) {
+				const chunkContent = chunkContents[index];
+				const tokenCount = countTokens(chunkContent);
+				await enqueueChunk({
+					content: chunkContent,
 					page: page.pageNumber,
 					chunkIndex: index,
 					tokenCount,
-				} as Chunk);
-			});
-		});
-
-		await Promise.all(chunkPromises);
-
-		const allEmbeddings: Embedding[] = [];
-
-		const totalTokens = allChunks.reduce(
-			(sum, chunk) => sum + chunk.tokenCount,
-			0,
-		);
-
-		if (totalTokens <= JINA_MAX_TOKEN_LIMIT) {
-			const response = await this.generateJinaBatchEmbeddings(
-				allChunks.map((c) => c.content),
-				"retrieval.passage",
-				userId,
-			);
-			response.embeddings.forEach((embedding, idx) => {
-				const { content, page, chunkIndex } = allChunks[idx];
-				allEmbeddings.push({
-					content,
-					embedding,
-					page,
-					chunkIndex,
-				} as Embedding);
-			});
-		} else {
-			const batches = this.combineChunksIntoBatches(allChunks);
-
-			const batchPromises = batches.map(async (batch) => {
-				const response = await this.generateJinaBatchEmbeddings(
-					batch.map((c) => c.content),
-					"retrieval.passage",
-					userId,
-				);
-				response.embeddings.forEach((embedding, idx) => {
-					const { content, page, chunkIndex } = batch[idx];
-					allEmbeddings.push({
-						content,
-						embedding,
-						page,
-						chunkIndex,
-					} as Embedding);
 				});
-			});
-
-			await Promise.all(batchPromises);
+			}
 		}
 
-		await dbService.logEmbeddings(allEmbeddings, document);
-		return;
+		await flushBatch();
 	}
 }
