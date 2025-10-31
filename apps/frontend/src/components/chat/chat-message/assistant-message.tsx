@@ -19,7 +19,9 @@ export function AssistantMessage({
 	const { status } = useInferenceLoadingStatusStore();
 	const { getCurrentChat } = useChatsStore();
 	const { content, citations } = message;
-	const { error, getErrorMessage } = useErrorStore();
+	const { getUIError } = useErrorStore();
+
+	const exportErrorMessage = getUIError("chat-export");
 
 	const isLastMessage = message.id === getCurrentChat()?.messages.at(-1)?.id;
 	const isIdleOrLoadingCitations = ["idle", "loading-citations"].includes(
@@ -52,7 +54,7 @@ export function AssistantMessage({
 							isLastMessage={isLastMessage}
 						/>
 					</div>
-					{error && (
+					{exportErrorMessage && (
 						<p className="flex rounded-3px items-center gap-1 px-0.5 p-[5px] bg-red-100">
 							<img
 								src="/icons/error-icon.svg"
@@ -61,8 +63,7 @@ export function AssistantMessage({
 								alt={Content["downloadIcon.imgAlt"]}
 							/>
 							<span className="text-sm leading-5 font-normal text-warning-100">
-								Export fehlgeschlagen
-								{getErrorMessage(new Error(error))}
+								{exportErrorMessage}
 							</span>
 						</p>
 					)}

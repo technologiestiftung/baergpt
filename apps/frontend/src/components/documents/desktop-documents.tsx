@@ -24,8 +24,10 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 	const [isResizing, setIsResizing] = useState(false);
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const documentButtonRef = useRef<HTMLButtonElement>(null);
-	const { error, getErrorMessage } = useErrorStore();
+	const { getUIError } = useErrorStore();
 	const { getDocuments, isLoading } = useDocumentStore();
+
+	const errorMessage = getUIError("documents-fetch");
 
 	const handleResize = (newWidth: number) => {
 		setIsResizing(true);
@@ -156,9 +158,9 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 								<span className="block mt-8 w-[calc(100%+48px)] ml-[-24px] h-[2px] dunkelblau-40" />
 							</>
 						)}
-						{!hasItems && error && !isLoading && (
+						{!hasItems && errorMessage && !isLoading && (
 							<div className="flex flex-col gap-3 text-sm leading-5 font-normal text-dunkelblau-100 text-center items-center justify-center h-full w-40 mx-auto">
-								<p>{getErrorMessage(new Error(error))}</p>
+								<p>{errorMessage}</p>
 								<button
 									className="flex gap-0.5 underline underline-offset-2 cursor-pointer"
 									aria-label={

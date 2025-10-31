@@ -5,10 +5,16 @@ import Content from "../content";
 
 interface ErrorStore {
 	error?: string;
+	uiErrors: Record<string, string>;
 	handleError: (error: unknown) => void;
-	setError: (errorKey: string) => void;
-	clearError: () => void;
-	getErrorMessage: (error: unknown) => string | null;
+	getMessageForKey: (errorKey: string) => string | null;
+	setUIError: (
+		context: string,
+		errorKey: string,
+		options?: { autoClean?: boolean; timeout?: number },
+	) => void;
+	clearUIError: (context: string) => void;
+	getUIError: (context: string) => string | null;
 }
 
 const errorMessages: { [key: string]: string } = {
@@ -47,8 +53,10 @@ const errorMessages: { [key: string]: string } = {
 	documents_fetch_failed: Content["documentsSection.fetch.error"],
 };
 
-export const useErrorStore = create<ErrorStore>()((set) => ({
+export const useErrorStore = create<ErrorStore>()((set, get) => ({
+	uiErrors: {},
 	error: undefined,
+
 	handleError: (error) => {
 		if (!isError(error)) {
 			console.error("Given error object is not an instance of Error:", error);
@@ -63,30 +71,56 @@ export const useErrorStore = create<ErrorStore>()((set) => ({
 			return;
 		}
 
-		// Only use toast store
+		// Only use toast store for global errors
 		useToastStore.getState().addError(userReadableErrorMessage);
 	},
 
-	setError: (errorKey: string) => {
-		set({ error: errorKey });
-
-		// Auto-clear error after 3 seconds
-		// setTimeout(() => {
-		// 	set({ error: undefined });
-		// }, 3000);
+	getMessageForKey: (errorKey: string) => {
+		return errorMessages[errorKey] || null;
 	},
 
+	setUIError: (
+		context: string,
+		errorKey: string,
+		options?: { autoClean?: boolean; timeout?: number },
+	) => {
+		set((state) => ({
+			uiErrors: {
+				...state.uiErrors,
+				[context]: errorKey,
+			},
+		}));
+
+		// Auto-clear UI error after specified timeout (default: 3 seconds)
+		const shouldAutoClean = options?.autoClean !== false; // Default to true
+		const timeoutMs = options?.timeout ?? 3000; // Default to 3 seconds
+
+		if (shouldAutoClean) {
+			setTimeout(() => {
+				get().clearUIError(context);
+			}, timeoutMs);
+		}
+	},
 	clearError: () => {
 		set({ error: undefined });
 	},
 
-	getErrorMessage: (error) => {
-		if (!isError(error)) {
-			console.error("Given error object is not an instance of Error:", error);
+	clearUIError: (context: string) => {
+		set((state) => {
+			const newErrors = { ...state.uiErrors };
+			// eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+			delete newErrors[context];
+			return { uiErrors: newErrors };
+		});
+	},
+
+	getUIError: (context: string) => {
+		const { uiErrors } = get();
+		const errorKey = uiErrors[context];
+		if (!errorKey) {
 			return null;
 		}
-
-		return errorMessages[error.message] || null;
+		return errorMessages[errorKey] || null;
 	},
 }));
 

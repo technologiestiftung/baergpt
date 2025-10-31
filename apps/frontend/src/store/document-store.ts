@@ -121,7 +121,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		set({ selectedPreviewDocumentDownloadUrl: downloadUrl });
 	},
 	unselectPreviewDocument: () => {
-		useErrorStore.getState().clearError();
+		useErrorStore.getState().clearUIError("document-download");
 		set({
 			selectedPreviewDocument: null,
 			selectedPreviewDocumentPreviewUrl: null,

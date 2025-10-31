@@ -17,6 +17,6 @@ export const exportToDocx = async (markdown: string, fileName: string) => {
 		downloadDocx(blob, `${fileName}.docx`);
 	} catch (error) {
 		captureError(error);
-		useErrorStore.getState().setError("chat_export_failed");
+		useErrorStore.getState().setUIError("chat-export", "chat_export_failed");
 	}
 };

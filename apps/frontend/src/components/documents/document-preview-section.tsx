@@ -12,7 +12,8 @@ export const DocumentPreviewSection: React.FC = () => {
 		unselectPreviewDocument,
 	} = useDocumentStore();
 
-	const { error, getErrorMessage } = useErrorStore();
+	const { getUIError } = useErrorStore();
+	const errorMessage = getUIError("document-download");
 
 	if (!selectedPreviewDocument) {
 		return null;
@@ -61,7 +62,7 @@ export const DocumentPreviewSection: React.FC = () => {
 							/>
 						</a>
 					)}
-					{error && (
+					{errorMessage && (
 						<p className="flex rounded-3px w-fit items-center px-0.5 py-1.5 gap-0.5">
 							<img
 								src="/icons/error-icon.svg"
@@ -70,7 +71,7 @@ export const DocumentPreviewSection: React.FC = () => {
 								alt={Content["downloadIcon.imgAlt"]}
 							/>
 							<span className="text-sm leading-5 font-normal text-warning-100">
-								{getErrorMessage(new Error(error))}
+								{errorMessage}
 							</span>
 						</p>
 					)}

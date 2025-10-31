@@ -29,7 +29,7 @@ type StartStreamingArgs = {
 export function useChatStreaming() {
 	const { setStatus, setError, clearError } =
 		useInferenceLoadingStatusStore.getState();
-	const { getErrorMessage } = useErrorStore.getState();
+	const { getMessageForKey } = useErrorStore.getState();
 	const { getCurrentOrCreateChat, addMessageToChat, updateMessage } =
 		useChatsStore.getState();
 
@@ -54,7 +54,8 @@ export function useChatStreaming() {
 			captureError(error);
 
 			// Get the user-readable error message
-			const errorMessage = getErrorMessage(error);
+			const errorMessage =
+				error instanceof Error ? getMessageForKey(error.message) : null;
 
 			if (errorMessage) {
 				// Show custom error in chat for known errors

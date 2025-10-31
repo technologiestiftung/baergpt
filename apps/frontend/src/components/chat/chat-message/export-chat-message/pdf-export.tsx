@@ -189,6 +189,6 @@ export async function exportMarkdownToPdf(markdown: string, fileName: string) {
 		);
 		const { useErrorStore } = await import("../../../../store/error-store.ts");
 		captureError(error);
-		useErrorStore.getState().setError("chat_export_failed");
+		useErrorStore.getState().setUIError("chat-export", "chat_export_failed");
 	}
 }
