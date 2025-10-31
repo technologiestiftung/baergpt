@@ -5,6 +5,7 @@ export function ArrowTopRight() {
 		<img
 			src="/icons/arrow-top-right.svg"
 			alt={Content["arrowWhiteTopRightIcon.imgAlt"]}
+			className="size-6"
 			width={24}
 			height={24}
 		/>
