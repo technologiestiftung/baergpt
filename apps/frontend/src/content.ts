@@ -569,7 +569,10 @@ export const Content = {
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 	"emailChanged.buttonLink": "Zu BärGPT",
-
+	/* ---------------------- Registration Error ---------------------- */
+	"registrationError.description":
+		"Ihr Einladungslink wurde bereits genutzt. Setzen Sie ihr Passwort zurück, um sich bei BärGPT einzuloggen.",
+	"registrationError.button.label": "Passwort zurücksetzen",
 	/* ---------------------- Account Deleted ---------------------- */
 	"accountDeleted.title": "Ihr Account wurde gelöscht.",
 	"accountDeleted.description":
