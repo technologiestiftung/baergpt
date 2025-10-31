@@ -30,7 +30,7 @@ documents.post("/process", async (c: Context) => {
 				extractedDocument,
 			),
 			embeddingService.batchEmbed(parsedPages, extractedDocument, {
-				chunkingTechnique: "segmenter",
+				chunkingTechnique: "markdown",
 			}),
 		]);
 

@@ -71,17 +71,17 @@ export class DocumentExtractionService {
 			};
 		}
 		let pdfBytesCopy: Uint8Array | null = new Uint8Array(fileBytes);
-		
+
 		const parser = new PDFParse({
 			data: pdfBytesCopy,
 		});
 		const parseResult = await parser.getInfo({ parsePageInfo: true });
 		await parser.destroy();
 		const numPages = parseResult.total;
-		
+
 		// Explicitly dereference the copy to allow garbage collection
 		pdfBytesCopy = null;
-		
+
 		if (numPages > config.maxPagesLimit) {
 			throw new ExtractError(
 				document,
@@ -93,6 +93,7 @@ export class DocumentExtractionService {
 			document.file_name,
 			{ numPages: numPages, ocrProvider: "mistral" },
 		);
+
 		const checksum = getHash(fileBytes);
 		const fileSize = fileBytes.byteLength;
 

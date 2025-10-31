@@ -227,6 +227,7 @@ export class GenerationService {
 			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
 			0,
 		);
+
 		let summary: string | null = null;
 		const MAX_TOKEN_COUNT_FOR_SUMMARY =
 			modelService.availableModels[llmIdentifier].contextSize;
@@ -255,6 +256,7 @@ export class GenerationService {
 			oneSentenceSummary: true,
 			userId,
 		});
+
 		if (!shortSummary) {
 			throw new Error("Failed to generate short document summary");
 		}
@@ -271,6 +273,7 @@ export class GenerationService {
 				"retrieval.passage",
 				userId,
 			);
+
 		if (!summaryEmbeddingResponse || !summaryEmbeddingResponse.embedding) {
 			throw new Error("Failed to generate document embedding");
 		}
@@ -278,10 +281,10 @@ export class GenerationService {
 		const tags = await this.generateTags(llmIdentifier, summary, {
 			userId,
 		});
+
 		if (!tags) {
 			throw new Error("Failed to generate document tags");
 		}
-		// Using the refactored function with structured parameters
 		await dbService.logSummarizedDocument(
 			{
 				summary,
