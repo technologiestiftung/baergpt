@@ -27,7 +27,7 @@ export const Content = {
 		"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschreibungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
 	"landingPage.cards.altText1": "Sprechblase Icon",
 
-	"landingPage.cards.title2": "Dokumente bearbeiten",
+	"landingPage.cards.title2": "Mit Dokumenten arbeiten",
 	"landingPage.cards.description2":
 		"Dokumente hochladen und Inhalte abfragen, um Kernaussagen auf einen Blick zu erkennen. Schnell Orientierung bekommen bei fachlicher Recherche.",
 	"landingPage.cards.altText2": "Dokument mit Lupe Icon",
