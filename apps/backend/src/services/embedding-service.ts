@@ -16,9 +16,6 @@ import { resilientCall } from "../utils";
 const dbService = new DatabaseService();
 
 export class EmbeddingService {
-	private static readonly SEGMENTER_INPUT_MAX = 64000; // Jina handles max 64k
-	private static readonly SEGMENTER_SAFETY_MARGIN = 2048;
-
 	async chunkWithJinaSegmenter(
 		text: string,
 		tokenLimit: number = 2000,
@@ -177,12 +174,11 @@ export class EmbeddingService {
 
 	/**
 	 * Recursively chunks text by trying different separators in priority order.
-	 * Falls back to character-based splitting if no separators work.
 	 * @param text Text to chunk
-	 * @param maxTokens Maximum tokens per chunk
 	 * @returns Array of text chunks
 	 */
-	recursiveChunking(text: string, maxTokens: number = 8000): string[] {
+	recursiveChunking(text: string): string[] {
+		const maxTokens = config.jinaMaxContextTokens;
 		// Base case: if text is small enough, return as single chunk
 		const textTokens = countTokens(text);
 		if (textTokens <= maxTokens) {
@@ -191,7 +187,6 @@ export class EmbeddingService {
 
 		// Try separators in priority order
 		const separators = [
-			{ pattern: "\n\n", name: "double-newline" }, // Paragraphs
 			{ pattern: "\n", name: "newline" }, // Lines
 			{ pattern: ". ", name: "sentence" }, // Sentences
 			{ pattern: " ", name: "word" }, // Words
@@ -214,7 +209,6 @@ export class EmbeddingService {
 				if (testTokens <= maxTokens) {
 					currentChunk = testChunk;
 				} else {
-					// Save current chunk and start new one
 					if (currentChunk) {
 						chunks.push(currentChunk.trim());
 					}
@@ -231,7 +225,7 @@ export class EmbeddingService {
 			for (const chunk of chunks) {
 				const chunkTokens = countTokens(chunk);
 				if (chunkTokens > maxTokens) {
-					finalChunks.push(...this.recursiveChunking(chunk, maxTokens));
+					finalChunks.push(...this.recursiveChunking(chunk));
 				} else if (chunk.trim()) {
 					finalChunks.push(chunk.trim());
 				}
@@ -280,7 +274,7 @@ export class EmbeddingService {
 						currentTokens = 0;
 					}
 
-					const subChunks = this.recursiveChunking(trimmed, maxTokens);
+					const subChunks = this.recursiveChunking(trimmed);
 					chunks.push(...subChunks);
 					continue;
 				}
@@ -362,17 +356,15 @@ export class EmbeddingService {
 
 		for (const page of parsedPages) {
 			let chunkContents: string[] = [];
-			const exceedsSegmenterLimit =
-				page.content.length >
-				EmbeddingService.SEGMENTER_INPUT_MAX -
-					EmbeddingService.SEGMENTER_SAFETY_MARGIN;
-
 			if (options.chunkingTechnique === "fixed") {
 				chunkContents = this.fixedSizeChunking(page.content);
 			} else if (options.chunkingTechnique === "markdown") {
 				chunkContents = this.markdownStructuralChunking(page.content);
 			} else if (options.chunkingTechnique === "segmenter") {
-				// Use Jina segmenter API
+				const SEGMENTER_INPUT_MAX = 64000;
+				const SEGMENTER_SAFETY_MARGIN = 2048;
+				const exceedsSegmenterLimit =
+					page.content.length > SEGMENTER_INPUT_MAX - SEGMENTER_SAFETY_MARGIN;
 				if (exceedsSegmenterLimit) {
 					chunkContents = this.fixedSizeChunking(page.content, 150);
 				} else {
@@ -420,8 +412,7 @@ export class EmbeddingService {
 		}
 
 		// Third pass: process batches in parallel (with concurrency limit)
-		// Jina supports 2,000 RPM and 512 documents per batch
-		const CONCURRENT_BATCHES = 20; // Process 20 batches at a time (well under 2,000 RPM limit)
+		const CONCURRENT_BATCHES = config.jinaConcurrentBatches;
 
 		const processBatch = async (batch: Chunk[]): Promise<void> => {
 			const response = await this.generateJinaBatchEmbeddings(
