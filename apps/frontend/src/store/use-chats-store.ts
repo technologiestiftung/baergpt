@@ -7,6 +7,7 @@ import { deleteChat as deleteChatFromDb } from "../api/chat/delete-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
 import { updateMessage as updateMessageInDb } from "../api/message/update-message.ts";
+import { useErrorStore } from "./error-store.ts";
 
 let debounceTimeout: ReturnType<typeof setTimeout>;
 
@@ -45,6 +46,9 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	 */
 	async getChatsFromDb(signal) {
 		set({ isLoading: true });
+
+		// Clear any existing fetch error when starting a new fetch attempt
+		useErrorStore.getState().clearUIError("chats-fetch");
 
 		const chats = await getChatsFromDb(signal);
 
