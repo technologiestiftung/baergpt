@@ -55,7 +55,7 @@ export function AssistantMessage({
 						/>
 					</div>
 					{exportErrorMessage && (
-						<p className="flex rounded-3px items-center gap-1 px-0.5 p-[5px] bg-red-100">
+						<p className="flex rounded-3px items-center gap-1 p-[5px] bg-red-100">
 							<img
 								src="/icons/error-icon.svg"
 								width={16}
