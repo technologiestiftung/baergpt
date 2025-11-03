@@ -249,9 +249,7 @@ export class EmbeddingService {
 	 * while respecting token limits. This preserves semantic meaning better than
 	 * fixed-size chunking.
 	 */
-	markdownStructuralChunking(
-		content: string,
-	): string[] {
+	markdownStructuralChunking(content: string): string[] {
 		const chunks: string[] = [];
 		const maxTokens = config.jinaMaxContextTokens;
 
@@ -311,10 +309,7 @@ export class EmbeddingService {
 	 * @param minTokens Minimum number of tokens per chunk (default: 256).
 	 * @returns Array of merged chunk strings.
 	 */
-	mergeSmallChunks(
-		chunks: string[],
-		minTokens: number = 256,
-	): string[] {
+	mergeSmallChunks(chunks: string[], minTokens: number = 256): string[] {
 		const maxTokens = config.jinaMaxContextTokens;
 		const merged: string[] = [];
 		let buffer = "";

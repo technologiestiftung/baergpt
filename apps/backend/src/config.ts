@@ -167,7 +167,10 @@ export const config: Config = {
 	jinaEmbeddingModel: process.env.JINA_EMBEDDING_MODEL,
 	jinaMaxRPS: parseInt(process.env.JINA_MAX_RPS, 10),
 	jinaMaxContextTokens: parseInt(process.env.JINA_MAX_CONTEXT_TOKENS, 10),
-	jinaMaxDocumentsPerRequest: parseInt(process.env.JINA_MAX_DOCUMENTS_PER_REQUEST, 10),
+	jinaMaxDocumentsPerRequest: parseInt(
+		process.env.JINA_MAX_DOCUMENTS_PER_REQUEST,
+		10,
+	),
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
