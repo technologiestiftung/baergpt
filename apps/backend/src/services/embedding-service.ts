@@ -198,7 +198,9 @@ export class EmbeddingService {
 		];
 
 		for (const { pattern } of separators) {
-			if (!text.includes(pattern)) {continue;}
+			if (!text.includes(pattern)) {
+				continue;
+			}
 
 			const parts = text.split(pattern);
 			const chunks: string[] = [];
@@ -265,7 +267,9 @@ export class EmbeddingService {
 
 			for (const paragraph of paragraphs) {
 				const trimmed = paragraph.trim();
-				if (!trimmed) {continue;}
+				if (!trimmed) {
+					continue;
+				}
 
 				const paragraphTokens = countTokens(trimmed);
 
