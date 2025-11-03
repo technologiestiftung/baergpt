@@ -25,20 +25,24 @@ export function RegisterPage() {
 		const lastName = event.currentTarget.lastName.value;
 		const email = event.currentTarget.email.value;
 		const password = event.currentTarget.password.value;
+
+		register({ firstName, lastName, email, password });
+	};
+
+	const handleChange = (event: React.ChangeEvent<HTMLFormElement>) => {
+		const password = event.currentTarget.password.value;
 		const repeatPassword = event.currentTarget.repeatPassword.value;
 
-		if (password !== repeatPassword) {
+		const isDifferent = password !== repeatPassword;
+
+		if (isDifferent) {
 			event.currentTarget.repeatPassword.setCustomValidity(
 				Content["form.validation.password.repeatPasswordShouldMatch.error"],
 			);
-			event.currentTarget.reportValidity();
 			return;
 		}
 
-		// Clear previous validation errors
 		event.currentTarget.repeatPassword.setCustomValidity("");
-
-		register({ firstName, lastName, email, password });
 	};
 
 	const handleShowPasswordTooltip = (
@@ -63,6 +67,7 @@ export function RegisterPage() {
 						className="flex flex-col mt-12"
 						ref={formRef}
 						onSubmit={handleSubmit}
+						onChange={handleChange}
 					>
 						<div className="flex gap-5">
 							<label
