@@ -314,8 +314,8 @@ export class EmbeddingService {
 	mergeSmallChunks(
 		chunks: string[],
 		minTokens: number = 256,
-		maxTokens: number = 8192,
 	): string[] {
+		const maxTokens = config.jinaMaxContextTokens;
 		const merged: string[] = [];
 		let buffer = "";
 
@@ -359,8 +359,8 @@ export class EmbeddingService {
 		} = { chunkingTechnique: "markdown" },
 	): Promise<void> {
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
-		const MAX_CHUNKS_PER_REQUEST = 512;
-		const MAX_TOKENS_PER_CHUNK = 8192;
+		const maxChunksPerRequest = config.jinaMaxDocumentsPerRequest;
+		const maxTokensPerChunk = config.jinaMaxContextTokens;
 
 		// First pass: chunk all pages and collect all chunks
 		const allChunks: Chunk[] = [];
@@ -405,16 +405,14 @@ export class EmbeddingService {
 		let currentBatch: Chunk[] = [];
 
 		for (const chunk of allChunks) {
-			// Validate: Each chunk must be under 8192 tokens
-			if (chunk.tokenCount > MAX_TOKENS_PER_CHUNK) {
+			if (chunk.tokenCount > maxTokensPerChunk) {
 				console.warn(
-					`[WARNING] Chunk exceeds ${MAX_TOKENS_PER_CHUNK} tokens (${chunk.tokenCount}), skipping chunk from page ${chunk.page}`,
+					`[WARNING] Chunk exceeds ${maxTokensPerChunk} tokens (${chunk.tokenCount}), skipping chunk from page ${chunk.page}`,
 				);
 				continue;
 			}
 
-			// Ensure we don't exceed 512 chunks per batch
-			if (currentBatch.length >= MAX_CHUNKS_PER_REQUEST) {
+			if (currentBatch.length >= maxChunksPerRequest) {
 				batches.push(currentBatch);
 				currentBatch = [];
 			}

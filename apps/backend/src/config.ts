@@ -16,6 +16,8 @@ export interface Config {
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
 	jinaMaxRPS: number;
+	jinaMaxContextTokens: number;
+	jinaMaxDocumentsPerRequest: number;
 	supabaseUrl: string;
 	supabaseServiceRoleKey: string;
 	supabaseAnonKey: string;
@@ -79,6 +81,12 @@ export function verifyConfig(): void {
 	}
 	if (!process.env.JINA_MAX_RPS) {
 		throw new Error("JINA_MAX_RPS must be defined");
+	}
+	if (!process.env.JINA_MAX_CONTEXT_TOKENS) {
+		throw new Error("JINA_MAX_CONTEXT_TOKENS must be defined");
+	}
+	if (!process.env.JINA_MAX_DOCUMENTS_PER_REQUEST) {
+		throw new Error("JINA_MAX_DOCUMENTS_PER_REQUEST must be defined");
 	}
 	if (!process.env.UPLOAD_FILE_SIZE_LIMIT_MB && !process.env.CI) {
 		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be defined");
@@ -152,17 +160,19 @@ export const config: Config = {
 	ollamaApiKey: process.env.OLLAMA_API_KEY,
 	mistralApiKey: process.env.MISTRAL_API_KEY,
 	mistralApiEndpoint: process.env.MISTRAL_API_ENDPOINT,
-	mistralMaxRPS: Number(process.env.MISTRAL_MAX_RPS) || 30,
+	mistralMaxRPS: parseInt(process.env.MISTRAL_MAX_RPS, 10),
 	qwenEndpoint: process.env.QWEN_ENDPOINT,
 	qwenApiKey: process.env.QWEN_API_KEY,
 	jinaApiKey: process.env.JINA_API_KEY,
 	jinaEmbeddingModel: process.env.JINA_EMBEDDING_MODEL,
-	jinaMaxRPS: Number(process.env.JINA_MAX_RPS) || 30,
+	jinaMaxRPS: parseInt(process.env.JINA_MAX_RPS, 10),
+	jinaMaxContextTokens: parseInt(process.env.JINA_MAX_CONTEXT_TOKENS, 10),
+	jinaMaxDocumentsPerRequest: parseInt(process.env.JINA_MAX_DOCUMENTS_PER_REQUEST, 10),
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
 	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
-	port: Number(process.env.PORT) || 3000,
+	port: parseInt(process.env.PORT, 10) || 3000,
 	fileUploadLimitMb: process.env.UPLOAD_FILE_SIZE_LIMIT_MB
 		? parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10)
 		: undefined,
