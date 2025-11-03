@@ -25,6 +25,18 @@ export function RegisterPage() {
 		const lastName = event.currentTarget.lastName.value;
 		const email = event.currentTarget.email.value;
 		const password = event.currentTarget.password.value;
+		const repeatPassword = event.currentTarget.repeatPassword.value;
+
+		if (password !== repeatPassword) {
+			event.currentTarget.repeatPassword.setCustomValidity(
+				Content["form.validation.password.repeatPasswordShouldMatch.error"],
+			);
+			event.currentTarget.reportValidity();
+			return;
+		}
+
+		// Clear previous validation errors
+		event.currentTarget.repeatPassword.setCustomValidity("");
 
 		register({ firstName, lastName, email, password });
 	};
