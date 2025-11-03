@@ -251,9 +251,9 @@ export class EmbeddingService {
 	 */
 	markdownStructuralChunking(
 		content: string,
-		maxTokens: number = 8000,
 	): string[] {
 		const chunks: string[] = [];
+		const maxTokens = config.jinaMaxContextTokens;
 
 		// Split by markdown headers and major structural elements
 		const sections = content.split(/(?=^#{1,6}\s)/gm);
@@ -375,7 +375,7 @@ export class EmbeddingService {
 			if (options.chunkingTechnique === "fixed") {
 				chunkContents = this.fixedSizeChunking(page.content);
 			} else if (options.chunkingTechnique === "markdown") {
-				chunkContents = this.markdownStructuralChunking(page.content, 8000);
+				chunkContents = this.markdownStructuralChunking(page.content);
 			} else if (options.chunkingTechnique === "segmenter") {
 				// Use Jina segmenter API
 				if (exceedsSegmenterLimit) {
@@ -385,7 +385,7 @@ export class EmbeddingService {
 					chunkContents = this.mergeSmallChunks(chunks);
 				}
 			} else {
-				chunkContents = this.markdownStructuralChunking(page.content, 8000);
+				chunkContents = this.markdownStructuralChunking(page.content);
 			}
 
 			for (let index = 0; index < chunkContents.length; index++) {
