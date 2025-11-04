@@ -18,7 +18,9 @@ BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language plpgsql;
+$$ language plpgsql security definer
+SET
+	search_path = '';
 
 -- Create trigger to automatically update updated_at on record changes
 CREATE TRIGGER trigger_update_maintenance_mode_updated_at before
@@ -28,20 +30,18 @@ EXECUTE function update_maintenance_mode_updated_at ();
 -- Enable RLS for the table
 ALTER TABLE maintenance_mode enable ROW level security;
 
--- Create policy to allow authenticated users to read maintenance mode status
-CREATE POLICY "Allow all authenticated users to read maintenance mode" ON maintenance_mode FOR
-SELECT
-	TO authenticated USING (TRUE);
-
--- Create policy to allow only admin users to modify maintenance mode
-CREATE POLICY "Allow admin users to modify maintenance mode" ON maintenance_mode FOR ALL TO authenticated USING (
+-- Create policy to allow only admin users to read and modify maintenance mode
+CREATE POLICY "Allow admin users full access to maintenance mode" ON maintenance_mode FOR ALL TO authenticated USING (
 	EXISTS (
 		SELECT
 			1
 		FROM
 			public.application_admins a
 		WHERE
-			a.user_id = auth.uid ()
+			a.user_id = (
+				SELECT
+					auth.uid ()
+			)
 	)
 )
 WITH
@@ -52,7 +52,10 @@ WITH
 			FROM
 				public.application_admins a
 			WHERE
-				a.user_id = auth.uid ()
+				a.user_id = (
+					SELECT
+						auth.uid ()
+				)
 		)
 	);
 

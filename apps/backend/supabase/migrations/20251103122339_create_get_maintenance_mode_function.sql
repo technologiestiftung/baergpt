@@ -2,7 +2,7 @@
 CREATE OR REPLACE FUNCTION public.get_maintenance_mode_status () returns BOOLEAN language sql security definer
 SET
 	search_path = '' AS $$
-    SELECT is_enabled 
+    SELECT COALESCE(is_enabled, FALSE)
     FROM public.maintenance_mode 
     WHERE id = 1;
 $$;
