@@ -15,7 +15,7 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 
 	return (
 		<div className="flex flex-col">
-			{role === "assistant" && (
+			{role === "assistant" && content !== "" && (
 				<div className="mb-8">
 					<AssistantMessage message={message}>
 						<ReactMarkdown

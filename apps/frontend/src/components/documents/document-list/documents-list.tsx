@@ -12,7 +12,7 @@ import Content from "../../../content.ts";
 
 export const DocumentsList: React.FC = () => {
 	const { isFolderFirstLoad, getItemsInCurrentFolder } = useFolderStore();
-	const { isDocumentFirstLoad } = useDocumentStore();
+	const { isDocumentFirstLoad, isLoading } = useDocumentStore();
 	const { isMobileCheckboxVisible } = useMobileMenuStore();
 
 	const isFirstLoad = isDocumentFirstLoad || isFolderFirstLoad;
@@ -39,9 +39,10 @@ export const DocumentsList: React.FC = () => {
 					className="grow h-0 overflow-y-auto mt-2 md:mt-0 pl-2 md:pl-0"
 					style={{ scrollbarGutter: "stable" }}
 				>
-					{isFirstLoad && <DocumentListSkeleton count={8} />}
+					{(isFirstLoad || isLoading) && <DocumentListSkeleton count={8} />}
 
 					{!isFirstLoad &&
+						!isLoading &&
 						sortedItems.map((item) => (
 							<ListItem key={getUniqueId(item)} item={item} />
 						))}

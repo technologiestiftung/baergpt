@@ -5,10 +5,12 @@ import { deleteDocument } from "../api/documents/delete-document";
 import { updateDocumentFolder } from "../api/documents/update-document-folder";
 import { getDocumentObjectUrl } from "../api/documents/get-document-object-url.ts";
 import { downloadDocument } from "../api/documents/download-document.ts";
+import { useErrorStore } from "./error-store";
 
 interface DocumentStore {
 	documents: Document[];
 	isDocumentFirstLoad: boolean;
+	isLoading: boolean;
 	getDocuments: (signal: AbortSignal) => Promise<void>;
 	deleteDocument: (documentId: number) => Promise<Error | null>;
 	removeItemFromFolder: (documentId: number) => Promise<void>;
@@ -33,11 +35,14 @@ interface DocumentStore {
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	documents: [],
 	isDocumentFirstLoad: true,
+	isLoading: false,
 	getDocuments: async (signal: AbortSignal) => {
+		set({ isLoading: true });
 		try {
 			const documents = await getDocuments(signal);
 			set({ documents });
 		} finally {
+			set({ isLoading: false });
 			if (get().isDocumentFirstLoad) {
 				set({ isDocumentFirstLoad: false });
 			}
@@ -116,6 +121,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		set({ selectedPreviewDocumentDownloadUrl: downloadUrl });
 	},
 	unselectPreviewDocument: () => {
+		useErrorStore.getState().clearUIError("document-download");
 		set({
 			selectedPreviewDocument: null,
 			selectedPreviewDocumentPreviewUrl: null,

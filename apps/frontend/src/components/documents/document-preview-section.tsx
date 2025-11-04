@@ -1,5 +1,6 @@
 import React from "react";
 import { useDocumentStore } from "../../store/document-store";
+import { useErrorStore } from "../../store/error-store";
 import { CloseIcon } from "../primitives/icons/close-icon";
 import Content from "../../content";
 
@@ -10,6 +11,9 @@ export const DocumentPreviewSection: React.FC = () => {
 		selectedPreviewDocumentDownloadUrl,
 		unselectPreviewDocument,
 	} = useDocumentStore();
+
+	const { getUIError } = useErrorStore();
+	const errorMessage = getUIError("document-download");
 
 	if (!selectedPreviewDocument) {
 		return null;
@@ -38,25 +42,40 @@ export const DocumentPreviewSection: React.FC = () => {
 						<CloseIcon />
 					</button>
 				</div>
-				{selectedPreviewDocumentDownloadUrl && (
-					<a
-						href={selectedPreviewDocumentDownloadUrl}
-						target="_blank"
-						aria-label={`${selectedPreviewDocument?.file_name} ${Content["documentsPreviewSection.downloadLink.ariaLabel"]}`}
-						download={selectedPreviewDocument?.file_name}
-						className="flex rounded-3px h-9 w-fit items-center px-2 gap-1 hover:bg-hellblau-100 focus-visible:outline-default"
-					>
-						<span className="text-sm leading-5 font-normal">
-							{Content["documentsPreviewSection.downloadLink.label"]}
-						</span>
-						<img
-							src="/icons/download-icon.svg"
-							width={20}
-							height={20}
-							alt={Content["downloadIcon.imgAlt"]}
-						/>
-					</a>
-				)}
+				<div className="flex">
+					{selectedPreviewDocumentDownloadUrl && (
+						<a
+							href={selectedPreviewDocumentDownloadUrl}
+							target="_blank"
+							aria-label={`${selectedPreviewDocument?.file_name} ${Content["documentsPreviewSection.downloadLink.ariaLabel"]}`}
+							download={selectedPreviewDocument?.file_name}
+							className="flex rounded-3px h-9 w-fit items-center px-2 gap-1 hover:bg-hellblau-100 focus-visible:outline-default"
+						>
+							<span className="text-sm leading-5 font-normal">
+								{Content["documentsPreviewSection.downloadLink.label"]}
+							</span>
+							<img
+								src="/icons/download-icon.svg"
+								width={20}
+								height={20}
+								alt={Content["downloadIcon.imgAlt"]}
+							/>
+						</a>
+					)}
+					{errorMessage && (
+						<p className="flex rounded-3px w-fit items-center px-0.5 py-1.5 gap-0.5">
+							<img
+								src="/icons/error-icon.svg"
+								width={16}
+								height={16}
+								alt={Content["downloadIcon.imgAlt"]}
+							/>
+							<span className="text-sm leading-5 font-normal text-warning-100">
+								{errorMessage}
+							</span>
+						</p>
+					)}
+				</div>
 			</div>
 			<div className="h-full w-full px-5 md:px-24 pt-7 md:pt-8 bg-hellblau-30 flex items-center justify-center flex-col">
 				{!hasSupportedPreview && (
