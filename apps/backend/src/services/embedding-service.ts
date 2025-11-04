@@ -174,8 +174,10 @@ export class EmbeddingService {
 
 	/**
 	 * Recursively chunks text by trying different separators in priority order.
+	 * If no separators work (edge case like very long URLs, base64, etc.),
+	 * returns empty array to skip the chunk, as such content is typically not useful for semantic search.
 	 * @param text Text to chunk
-	 * @returns Array of text chunks
+	 * @returns Array of text chunks, or empty array if content cannot be properly chunked
 	 */
 	recursiveChunking(text: string): string[] {
 		const maxTokens = config.jinaMaxContextTokens;
@@ -234,8 +236,10 @@ export class EmbeddingService {
 			return finalChunks;
 		}
 
-		// If no separators work, return the text as a single chunk
-		return text.trim() ? [text.trim()] : [];
+		console.warn(
+			`[WARNING] Skipping unchunkable content with ${textTokens} tokens (no word boundaries found). Preview: ${text.slice(0, 100)}...`,
+		);
+		return [];
 	}
 
 	/**
