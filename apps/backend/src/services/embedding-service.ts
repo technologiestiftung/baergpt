@@ -9,7 +9,7 @@ import type {
 	JinaSegmenterResponse,
 	JinaEmbeddingResponse,
 } from "../types/common";
-import { countTokens } from "./token-utils";
+import { countTokens, trimToTokenLimitByWords } from "./token-utils";
 import { DatabaseService } from "./database-service";
 import { resilientCall } from "../utils";
 
@@ -187,6 +187,14 @@ export class EmbeddingService {
 			return text.trim() ? [text.trim()] : [];
 		}
 
+		// Early exit: if text has no word boundaries at all, it's unchunkable
+		if (!text.includes(" ") && !text.includes("\n") && !text.includes(". ")) {
+			console.warn(
+				`[WARNING] Skipping unchunkable content with ${textTokens} tokens (no word boundaries found). Preview: ${text.slice(0, 100)}...`,
+			);
+			return [];
+		}
+
 		// Try separators in priority order
 		const separators = [
 			{ pattern: "\n", name: "newline" }, // Lines
@@ -194,7 +202,7 @@ export class EmbeddingService {
 			{ pattern: " ", name: "word" }, // Words
 		];
 
-		for (const { pattern } of separators) {
+		for (const { pattern, name } of separators) {
 			if (!text.includes(pattern)) {
 				continue;
 			}
@@ -203,23 +211,34 @@ export class EmbeddingService {
 			const chunks: string[] = [];
 			let currentChunk = "";
 
-			for (const part of parts) {
-				// Reconstruct with separator
-				const testChunk = currentChunk ? currentChunk + pattern + part : part;
-				const testTokens = countTokens(testChunk);
+			// For word splitting, use binary search optimization to avoid O(n²) complexity
+			if (name === "word") {
+				let remaining = text;
+				while (remaining.trim()) {
+					const trimmed = trimToTokenLimitByWords(remaining, maxTokens);
+					if (!trimmed) break;
 
-				if (testTokens <= maxTokens) {
-					currentChunk = testChunk;
-				} else {
-					if (currentChunk) {
-						chunks.push(currentChunk.trim());
-					}
-					currentChunk = part;
+					chunks.push(trimmed.trim());
+					remaining = remaining.slice(trimmed.length).trim();
 				}
-			}
+			} else {
+				for (const part of parts) {
+					// Reconstruct with separator
+					const testChunk = currentChunk ? currentChunk + pattern + part : part;
+					const testTokens = countTokens(testChunk);
+					if (testTokens <= maxTokens) {
+						currentChunk = testChunk;
+					} else {
+						if (currentChunk) {
+							chunks.push(currentChunk.trim());
+						}
+						currentChunk = part;
+					}
+				}
 
-			if (currentChunk) {
-				chunks.push(currentChunk.trim());
+				if (currentChunk) {
+					chunks.push(currentChunk.trim());
+				}
 			}
 
 			// Recursively process any chunks that are still too large
