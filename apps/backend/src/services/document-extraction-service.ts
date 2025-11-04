@@ -14,7 +14,7 @@ import { ExtractError } from "../types/common";
 import { config } from "../config";
 import { PAGE_SEPARATOR } from "../constants";
 import { Mistral } from "@mistralai/mistralai";
-import { getHash, resilientCall } from "../utils";
+import { createBufferView, getHash, resilientCall } from "../utils";
 import { countTokens } from "./token-utils";
 import WordExtractor from "word-extractor";
 import mammoth from "mammoth";
@@ -32,11 +32,7 @@ export class DocumentExtractionService {
 		) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
-				Buffer.from(
-					fileBytes.buffer,
-					fileBytes.byteOffset,
-					fileBytes.byteLength,
-				), // this is a trick so the pdf is not stored twice in memory
+				createBufferView(fileBytes),
 				document.file_name,
 			);
 			const checksum = getHash(fileBytes);
@@ -482,11 +478,7 @@ class MistralOCRService {
 	): Promise<ParsedPage[]> {
 		const client = new Mistral({ apiKey: config.mistralApiKey });
 
-		const buffer = Buffer.from(
-			pdfBytes.buffer,
-			pdfBytes.byteOffset,
-			pdfBytes.byteLength,
-		); // this is a trick so the pdf is not stored twice in memory
+		const buffer = createBufferView(pdfBytes);
 
 		const uploaded_pdf = await resilientCall(
 			() =>
