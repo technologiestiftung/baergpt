@@ -1,10 +1,20 @@
 import { create } from "zustand";
 import { useToastStore } from "./use-toast-store";
 import { captureError } from "../monitoring/capture-error";
+import Content from "../content";
 
 interface ErrorStore {
 	error?: string;
+	uiErrors: Record<string, string>;
 	handleError: (error: unknown) => void;
+	getMessageForKey: (errorKey: string) => string | null;
+	setUIError: (
+		context: string,
+		errorKey: string,
+		options?: { autoClean?: boolean; timeout?: number },
+	) => void;
+	clearUIError: (context: string) => void;
+	getUIError: (context: string) => string | null;
 }
 
 const errorMessages: { [key: string]: string } = {
@@ -24,7 +34,7 @@ const errorMessages: { [key: string]: string } = {
 		"API-Rate-Limit überschritten, bitte in einer Minute nochmal versuchen.",
 	context_length_exceeded:
 		"Kontextlänge überschritten, bitte starten Sie einen neuen Chat.",
-	wrong_password: "Falsches Passwort.",
+	wrong_password: Content["form.validation.password.wrong.error"],
 	"Failed to fetch":
 		"Etwas ist schief gelaufen, bitte starten Sie einen neuen Chat.",
 	selected_llm_not_healthy:
@@ -37,9 +47,17 @@ const errorMessages: { [key: string]: string } = {
 		"Temporär keine Modelle verfügbar. Bitte versuchen Sie es später erneut.",
 	"Token has expired or is invalid": "Code ist abgelaufen oder ungültig.",
 	document_not_found: "Dokument konnte nicht gelöscht werden.",
+	document_download_failed:
+		Content["documentsPreviewSection.download.failed.error"],
+	chat_export_failed: Content["chat.exportChatTextButton.error"],
+	documents_fetch_failed: Content["documentsSection.fetch.error"],
+	chats_fetch_failed: Content["chatHistory.fetch.error"],
 };
 
-export const useErrorStore = create<ErrorStore>()(() => ({
+export const useErrorStore = create<ErrorStore>()((set, get) => ({
+	uiErrors: {},
+	error: undefined,
+
 	handleError: (error) => {
 		if (!isError(error)) {
 			console.error("Given error object is not an instance of Error:", error);
@@ -54,8 +72,56 @@ export const useErrorStore = create<ErrorStore>()(() => ({
 			return;
 		}
 
-		// Only use toast store
+		// Only use toast store for global errors
 		useToastStore.getState().addError(userReadableErrorMessage);
+	},
+
+	getMessageForKey: (errorKey: string) => {
+		return errorMessages[errorKey] || null;
+	},
+
+	setUIError: (
+		context: string,
+		errorKey: string,
+		options?: { autoClean?: boolean; timeout?: number },
+	) => {
+		set((state) => ({
+			uiErrors: {
+				...state.uiErrors,
+				[context]: errorKey,
+			},
+		}));
+
+		// Auto-clear UI error after specified timeout (default: 3 seconds)
+		const shouldAutoClean = options?.autoClean !== false; // Default to true
+		const timeoutMs = options?.timeout ?? 3000; // Default to 3 seconds
+
+		if (shouldAutoClean) {
+			setTimeout(() => {
+				get().clearUIError(context);
+			}, timeoutMs);
+		}
+	},
+	clearError: () => {
+		set({ error: undefined });
+	},
+
+	clearUIError: (context: string) => {
+		set((state) => {
+			const newErrors = { ...state.uiErrors };
+			// eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+			delete newErrors[context];
+			return { uiErrors: newErrors };
+		});
+	},
+
+	getUIError: (context: string) => {
+		const { uiErrors } = get();
+		const errorKey = uiErrors[context];
+		if (!errorKey) {
+			return null;
+		}
+		return errorMessages[errorKey] || null;
 	},
 }));
 

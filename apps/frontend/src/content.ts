@@ -275,6 +275,10 @@ export const Content = {
 	"chatHistory.title": "Chats",
 	"chatHistory.today": "Heute",
 	"chatHistory.lastSevenDays": "Letzte 7 Tage",
+	"chatHistory.fetch.error": "Chatverlauf konnte nicht geladen werden",
+	"chatHistory.fetchRetry.button.label": "Erneut versuchen",
+	"chatHistory.fetchRetry.button.ariaLabel":
+		"Erneut versuchen Chatverlauf zu laden",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton
@@ -341,6 +345,10 @@ export const Content = {
 	"documentsSection.selectFiles": "Dateien auswählen",
 	"documentsSection.showFiles.ariaLabel": "Anzeigen der Dateien",
 	"documentsSection.hideFiles.ariaLabel": "Ausblenden der Dateien",
+	"documentsSection.fetch.error": "Dateien konnten nicht geladen werden",
+	"documentsSection.fetchRetry.button.label": "Erneut versuchen",
+	"documentsSection.fetchRetry.button.ariaLabel":
+		"Erneut versuchen Dokumente zu laden",
 	//documentsList
 	"documentsList.document.checkbox.ariaLabel":
 		"Dokument auswählen für eine Aktion (Löschen, Öffnen)",
@@ -371,6 +379,8 @@ export const Content = {
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
 	"documentsPreviewSection.downloadLink.ariaLabel": "herunterladen",
+	"documentsPreviewSection.download.failed.error":
+		"Herunterladen fehlgeschlagen",
 	"documentsPreviewSection.disclaimer.docx":
 		"Die Vorschau von Word-Dateien ist noch experimentell. Die Formatierung entspricht nicht dem Originaldokument. Dies hat kein Auswirkung auf die Antwortqualität.",
 	"documentsPreviewSection.noPreviewAvailable":
@@ -446,6 +456,14 @@ export const Content = {
 	"chat.getStarted.h3.4.link.ariaLabel": "Zum Hilfecenter von BärGPT",
 
 	"chat.loadingText": "BärGPT überlegt...",
+	//Chat error text
+	"chat.errorText.title": "Ihre Anfrage konnte gerade nicht bearbeitet werden.",
+	"chat.errorText.p1": "Bitte versuchen Sie es später erneut. ",
+	"chat.errorText.p2": "Mögliche Fehlerursachen finden Sie im ",
+	"chat.errorText.helpPage.link": "https://hilfe.baergpt.berlin/",
+	"chat.errorText.helpPage.linkText": "Hilfecenter.",
+	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
+
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
 	"chat.selectedChatItems.noItems": "Keine Dateien in diesem Chat",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
@@ -478,6 +496,7 @@ export const Content = {
 	"chat.exportChatTextButton.exporting.label": "Exportiert...",
 	"chat.exportChatTextButton.pdf.label": "PDF exportieren",
 	"chat.exportChatTextButton.pdf.ariaLabel": "Chat als PDF exportieren",
+	"chat.exportChatTextButton.error": "Export fehlgeschlagen",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
@@ -550,7 +569,10 @@ export const Content = {
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 	"emailChanged.buttonLink": "Zu BärGPT",
-
+	/* ---------------------- Registration Error ---------------------- */
+	"registrationError.description":
+		"Ihr Einladungslink wurde bereits genutzt. Setzen Sie ihr Passwort zurück, um sich bei BärGPT einzuloggen.",
+	"registrationError.button.label": "Passwort zurücksetzen",
 	/* ---------------------- Account Deleted ---------------------- */
 	"accountDeleted.title": "Ihr Account wurde gelöscht.",
 	"accountDeleted.description":
