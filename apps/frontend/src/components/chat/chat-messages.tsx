@@ -9,7 +9,7 @@ import { useChatScrollingStore } from "../../store/use-chat-scrolling-store.ts";
 import Content from "../../content.ts";
 
 export const ChatMessages: React.FC = () => {
-	const { status, error } = useInferenceLoadingStatusStore();
+	const { status } = useInferenceLoadingStatusStore();
 	const { currentChatId } = useCurrentChatIdStore();
 	const { chats } = useChatsStore();
 	const { handleScroll } = useChatScrollingStore();
