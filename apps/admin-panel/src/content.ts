@@ -62,8 +62,8 @@ export const Content = {
 	/* -------------------- Buttons -------------------- */
 	//profileButton
 	"profile.button.ariaLabel": "Profil öffnen",
-	"profile.button.logout.ariaLabel": "Abmelden",
-	"profile.button.logout.label": "Abmelden",
+	"profile.button.logout.ariaLabel": "Ausloggen",
+	"profile.button.logout.label": "Ausloggen",
 
 	/* ---------------------- Admin ---------------------- */
 	"admin.sidebar.navigation.users": "Benutzerverwaltung",
