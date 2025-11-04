@@ -27,7 +27,7 @@ export const Content = {
 		"BärGPT unterstützt etwa beim Verfassen von Vermerken, Prüfen von Leistungsbeschreibungen, Übersetzen von E-Mails sowie Zusammenfassen von langen Texten.",
 	"landingPage.cards.altText1": "Sprechblase Icon",
 
-	"landingPage.cards.title2": "Dokumente bearbeiten",
+	"landingPage.cards.title2": "Mit Dokumenten arbeiten",
 	"landingPage.cards.description2":
 		"Dokumente hochladen und Inhalte abfragen, um Kernaussagen auf einen Blick zu erkennen. Schnell Orientierung bekommen bei fachlicher Recherche.",
 	"landingPage.cards.altText2": "Dokument mit Lupe Icon",
@@ -229,12 +229,12 @@ export const Content = {
 	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
 	"videoPlayer.cookies.buttonAriaLabel":
 		"Cookies akzeptieren, um Video anzusehen",
-	"videoPlayer.blocked.message": "Video-Inhalt blockiert",
+	"videoPlayer.blocked.message": "Videoinhalt blockiert",
 	"videoPlayer.loading.message": "wird geladen...",
 	"videoPlayer.vimeo.cookies.message":
 		"Dieses Video wird von Vimeo bereitgestellt. Um das Video anzusehen, müssen Sie der Verwendung von Cookies zustimmen.",
 	/* -------------------- Cookies Banner -------------------- */
-	"cookiesBanner.title": "Cookies-Einstellungen",
+	"cookiesBanner.title": "Cookie-Einstellungen",
 	"cookiesBanner.message.short": "Wir verwenden technisch notwendige Cookies. ",
 	"cookiesBanner.expandButton": "Mehr erfahren",
 	"cookiesBanner.expandButton.ariaLabel":
