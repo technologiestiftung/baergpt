@@ -45,7 +45,7 @@ export const ChatMessages: React.FC = () => {
 						<span>{Content["chat.loadingText"]}</span>
 					</div>
 				)}
-				{hasError && error && (
+				{hasError && (
 					<div className="flex flex-col gap-2 w-full px-3 py-[18px] text-warning-100 rounded-[3px] bg-warning-10">
 						<p>
 							<span className="flex gap-1">
@@ -68,6 +68,8 @@ export const ChatMessages: React.FC = () => {
 							<a
 								href={Content["chat.errorText.helpPage.link"]}
 								className="text-sm leading-5 font-normal underline cursor-pointer text-dunkelblau-100"
+								target="_blank"
+								rel="noopener noreferrer"
 							>
 								{Content["chat.errorText.helpPage.linkText"]}
 							</a>

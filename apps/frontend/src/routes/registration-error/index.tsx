@@ -13,7 +13,7 @@ export function RegistrationError() {
 					<a
 						href={"/reset-password/"}
 						className={`
-                            flex gap-x-2 text-lg mt-8 items-center self-end
+                            flex gap-x-2 text-lg mt-8 items-center md:self-end
                             w-fit py-2 px-3 text-white rounded-3px 
                             bg-dunkelblau-100 disabled:bg-schwarz-40
                             hover:bg-dunkelblau-80 focus-visible:outline-default

@@ -90,7 +90,7 @@ export const ChatForm: React.FC = () => {
 		"loading-citations",
 	].includes(status);
 
-	const isInError = status === "error";
+	const hasError = status === "error";
 
 	return (
 		<form
@@ -127,7 +127,7 @@ export const ChatForm: React.FC = () => {
 					<button
 						type="submit"
 						disabled={
-							(isInferenceLoading && !isInError) || !textareaContent.trim()
+							(isInferenceLoading && !hasError) || !textareaContent.trim()
 						}
 						className={`rounded-3px bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px mr-4`}
 					>
