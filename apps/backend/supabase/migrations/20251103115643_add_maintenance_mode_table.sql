@@ -1,6 +1,6 @@
 -- Create maintenance_mode table to control application maintenance state
 CREATE TABLE maintenance_mode (
-	id serial PRIMARY KEY,
+	id INT generated always AS (1) stored UNIQUE,
 	is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
