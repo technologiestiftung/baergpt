@@ -1,5 +1,6 @@
 import React from "react";
 import { useDocumentStore } from "../../store/document-store";
+import { useErrorStore } from "../../store/error-store";
 import { CloseIcon } from "../primitives/icons/close-icon";
 import Content from "../../content";
 
@@ -11,20 +12,23 @@ export const DocumentPreviewSection: React.FC = () => {
 		unselectPreviewDocument,
 	} = useDocumentStore();
 
-	const isDocxFormat = (fileName: string) => {
-		return fileName.toLowerCase().split(".").pop() === "docx";
-	};
-
-	// Check if the file type can be previewed in browser
-	const canPreviewInBrowser = (fileName: string) => {
-		const extension = fileName.toLowerCase().split(".").pop();
-		// PDFs and DOCX documents can be previewed in iframes
-		return extension === "pdf" || extension === "docx";
-	};
+	const { getUIError } = useErrorStore();
+	const errorMessage = getUIError("document-download");
 
 	if (!selectedPreviewDocument) {
 		return null;
 	}
+	if (!selectedPreviewDocument) {
+		return null;
+	}
+
+	const isDocxFormat = (fileName: string) => {
+		return fileName.toLowerCase().split(".").pop() === "docx";
+	};
+
+	const hasSupportedPreview = [".pdf", ".docx"].some((suffix) =>
+		selectedPreviewDocument.file_name?.endsWith(suffix),
+	);
 
 	return (
 		<section className="absolute h-full inset-0 z-30 flex flex-col bg-white">
@@ -41,29 +45,50 @@ export const DocumentPreviewSection: React.FC = () => {
 						<CloseIcon />
 					</button>
 				</div>
-				{selectedPreviewDocumentDownloadUrl && (
-					<a
-						href={selectedPreviewDocumentDownloadUrl}
-						target="_blank"
-						aria-label={`${selectedPreviewDocument?.file_name} ${Content["documentsPreviewSection.downloadLink.ariaLabel"]}`}
-						download={selectedPreviewDocument?.file_name}
-						className="flex rounded-3px h-9 w-fit items-center px-2 gap-1 hover:bg-hellblau-100 focus-visible:outline-default"
-					>
-						<span className="text-sm leading-5 font-normal">
-							{Content["documentsPreviewSection.downloadLink.label"]}
-						</span>
-						<img
-							src="/icons/download-icon.svg"
-							width={20}
-							height={20}
-							alt={Content["downloadIcon.imgAlt"]}
-						/>
-					</a>
-				)}
+				<div className="flex">
+					{selectedPreviewDocumentDownloadUrl && (
+						<a
+							href={selectedPreviewDocumentDownloadUrl}
+							target="_blank"
+							aria-label={`${selectedPreviewDocument?.file_name} ${Content["documentsPreviewSection.downloadLink.ariaLabel"]}`}
+							download={selectedPreviewDocument?.file_name}
+							className="flex rounded-3px h-9 w-fit items-center px-2 gap-1 hover:bg-hellblau-100 focus-visible:outline-default"
+						>
+							<span className="text-sm leading-5 font-normal">
+								{Content["documentsPreviewSection.downloadLink.label"]}
+							</span>
+							<img
+								src="/icons/download-icon.svg"
+								width={20}
+								height={20}
+								alt={Content["downloadIcon.imgAlt"]}
+							/>
+						</a>
+					)}
+					{errorMessage && (
+						<p className="flex rounded-3px w-fit items-center px-0.5 py-1.5 gap-0.5">
+							<img
+								src="/icons/error-icon.svg"
+								width={16}
+								height={16}
+								alt={Content["downloadIcon.imgAlt"]}
+							/>
+							<span className="text-sm leading-5 font-normal text-warning-100">
+								{errorMessage}
+							</span>
+						</p>
+					)}
+				</div>
 			</div>
 			<div className="h-full w-full px-5 md:px-24 pt-7 md:pt-8 bg-hellblau-30 flex items-center justify-center flex-col">
-				{selectedPreviewDocumentPreviewUrl &&
-				canPreviewInBrowser(selectedPreviewDocument.file_name ?? "") ? (
+				{!hasSupportedPreview && (
+					<div className="flex items-center justify-center h-full text-center max-w-xl">
+						<p className="text-lg text-dunkelblau-80">
+							{Content["documentsPreviewSection.noPreviewAvailable"]}
+						</p>
+					</div>
+				)}
+				{selectedPreviewDocumentPreviewUrl && hasSupportedPreview && (
 					<>
 						<p
 							className={`pb-5 text-sm leading-5 font-normal text-dunkelblau-80 
@@ -79,10 +104,11 @@ export const DocumentPreviewSection: React.FC = () => {
 							className="bg-white shadow-[0px_0px_12px_0px_rgba(3,8,18,0.25)]"
 						/>
 					</>
-				) : (
+				)}
+				{!selectedPreviewDocumentPreviewUrl && hasSupportedPreview && (
 					<div className="flex items-center justify-center h-full text-center max-w-xl">
 						<p className="text-lg text-dunkelblau-80">
-							{Content["documentsPreviewSection.noPreviewAvailable"]}
+							{Content["documentsPreviewSection.loadingPreview"]}
 						</p>
 					</div>
 				)}

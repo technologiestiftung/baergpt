@@ -49,7 +49,7 @@ export function LoginPage() {
 							/>
 						</label>
 						<a
-							href={Content["loginPage.resetPassword.link"]}
+							href={import.meta.env.VITE_RECOVERY_AUTH_RESET_PASSWORD_URL}
 							className="mt-2 text-sm leading-5 font-normal underline hover:no-underline"
 						>
 							{Content["loginPage.resetPassword.label"]}

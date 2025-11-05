@@ -28,7 +28,15 @@ export function EyeIcon({
 				alt={Content["eyeStruckThroughIcon.imgAlt"]}
 				width={24}
 				height={24}
-				className={`${variant === "struck-through" ? "block" : "hidden"}`}
+				className={`${variant === "struck-through" ? "block group-hover/eyeIcon:hidden" : "hidden"}`}
+			/>
+
+			<img
+				src="/icons/eye-struck-through-hover-icon.svg"
+				alt={Content["eyeStruckThroughIcon.imgAlt"]}
+				width={24}
+				height={24}
+				className={`${variant === "struck-through" ? "hidden group-hover/eyeIcon:block" : "hidden"}`}
 			/>
 		</div>
 	);

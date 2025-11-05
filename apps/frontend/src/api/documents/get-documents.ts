@@ -23,6 +23,11 @@ export async function getDocuments(signal: AbortSignal): Promise<Document[]> {
 
 	if (error) {
 		useErrorStore.getState().handleError(error);
+		useErrorStore
+			.getState()
+			.setUIError("documents-fetch", "documents_fetch_failed", {
+				autoClean: false,
+			});
 		return [];
 	}
 

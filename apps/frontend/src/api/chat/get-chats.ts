@@ -24,6 +24,9 @@ export async function getChats(signal: AbortSignal) {
 
 	if (error) {
 		handleError(error);
+		useErrorStore.getState().setUIError("chats-fetch", "chats_fetch_failed", {
+			autoClean: false,
+		});
 		return [];
 	}
 

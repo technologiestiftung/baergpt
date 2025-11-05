@@ -1,4 +1,5 @@
 import { captureError } from "../../../../monitoring/capture-error.ts";
+import { useErrorStore } from "../../../../store/error-store.ts";
 
 export const removeCitationNumbers = (text: string): string => {
 	return text.replace(/\[\d+\]/g, "");
@@ -16,5 +17,6 @@ export const exportToDocx = async (markdown: string, fileName: string) => {
 		downloadDocx(blob, `${fileName}.docx`);
 	} catch (error) {
 		captureError(error);
+		useErrorStore.getState().setUIError("chat-export", "chat_export_failed");
 	}
 };
