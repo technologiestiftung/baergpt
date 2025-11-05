@@ -50,4 +50,4 @@
     user: "root"
     minute: "0"
     hour: "0,12"
-    job: 'sleep $((RANDOM%3601)) && /usr/bin/certbot renew -q'
+    job: "sleep $((RANDOM%3601)) && /usr/bin/certbot renew -q"
