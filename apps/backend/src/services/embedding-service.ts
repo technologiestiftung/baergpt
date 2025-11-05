@@ -223,9 +223,8 @@ export class EmbeddingService {
 					chunks.push(trimmed.trim());
 					remaining = remaining.slice(trimmed.length).trim();
 				}
-				continue;
+				return chunks.filter((c) => c.trim().length > 0);
 			}
-
 			for (const part of parts) {
 				// Reconstruct with separator
 				const testChunk = currentChunk ? currentChunk + pattern + part : part;
