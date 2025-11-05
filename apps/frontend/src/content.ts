@@ -225,6 +225,147 @@ export const Content = {
 	"privacyPolicyPage.section10.p1":
 		"Diese Datenschutzhinweise werden bei Änderungen der Datenverarbeitung oder gesetzlichen Anforderungen angepasst. Es gilt stets die aktuelle Fassung.",
 
+	/* -------------------- Terms of use Page -------------------- */
+	"termsOfUsePage.h1": "Nutzungsbedingungen für BärGPT",
+	"termsOfUsePage.date": "Stand November 2025",
+	"termsOfUsePage.tableOfContents.title": "Inhaltsverzeichnis",
+	//Section 1
+	"termsOfUsePage.section1.title": "Begriffsbestimmungen",
+	"termsOfUsePage.section1.p1":
+		"Im Sinne dieser Nutzungsbedingungen haben die folgenden Begriffe die genannte Bedeutung:",
+	"termsOfUsePage.section1.li1.title": "„Anwendung“ / „BärGPT“",
+	"termsOfUsePage.section1.li1.description":
+		"— der bereitgestellte KI-Assistent einschließlich aller zugehörigen Weboberflächen, Schnittstellen, Dokumentenablagen und darauf bezogener Services.",
+	"termsOfUsePage.section1.li2.title": "„Nutzende“",
+	"termsOfUsePage.section1.li2.description":
+		"— natürliche Personen, die im Rahmen ihres dienstlichen Auftrags Zugang zu BärGPT erhalten (Mitarbeitende der Berliner Landesverwaltung).",
+	"termsOfUsePage.section1.li3.title": "„Betreiber“",
+	"termsOfUsePage.section1.li3.description":
+		"— Technologiestiftung Berlin bzw. die in § 2.2 benannte Projektverantwortung.",
+	"termsOfUsePage.section1.li4.title": "„Inhalte / generierte Inhalte“",
+	"termsOfUsePage.section1.li4.description":
+		"— alle Texte, Dokumente, Antworten, Metadaten und sonstigen Ausgaben, die BärGPT im Rahmen der Nutzung erzeugt.",
+	"termsOfUsePage.section1.li5.title": "„Hochgeladene Dokumente“",
+	"termsOfUsePage.section1.li5.description":
+		"— von Nutzenden in BärGPT eingestellte Dateien (z. B. PDF, Word, Excel), die zur Verarbeitung oder Speicherung bereitgestellt werden.",
+	"termsOfUsePage.section1.li6.title": "„Subprozessor“",
+	"termsOfUsePage.section1.li6.description":
+		"— ein Dritter, der im Auftrag des Betreibers personenbezogene Daten verarbeitet oder Infrastruktur-/Plattformdienste bereitstellt (z. B. Hosting, Modelle, Speicher).",
+	"termsOfUsePage.section1.li7.title": "„RAG-Suche“",
+	"termsOfUsePage.section1.li7.description":
+		"— Retrieval-Augmented-Generation: die Kombination aus Information Retrieval (z. B. Indexierung von Dokumenten) und generativem Modell zur Beantwortung von Anfragen.",
+	"termsOfUsePage.section1.li8.title":
+		"„Arbeitszeiten / normale Arbeitszeiten“",
+	"termsOfUsePage.section1.li8.description":
+		"— soweit nicht anders definiert: Montag bis Freitag, 09:00-17:00 Uhr (Mitteleuropäische Zeit / CET/CEST).",
+	"termsOfUsePage.section1.li9.title":
+		"„Personenbezogene Daten“ / „Daten mit hohem Schutzbedarf“",
+	"termsOfUsePage.section1.li9.description":
+		" — die in den Datenschutzhinweisen näher beschriebenen Kategorien; derzeit ist die Verarbeitung personenbezogener Daten in BärGPT nicht gestattet.",
+	//Section 2
+	"termsOfUsePage.section2.title": "Geltungsbereich und Vertragsgegenstand",
+	//2.1
+	"termsOfUsePage.section2.sub1.number": "2.1",
+	"termsOfUsePage.section2.sub1.title": "Anwendungsbereich",
+	"termsOfUsePage.section2.sub1.p1.1":
+		"Diese Nutzungsbedingungen regeln die Nutzung des KI-Assistenten BärGPT (nachfolgend „BärGPT“ oder „Anwendung“), der über die Webseite ",
+	"termsOfUsePage.section2.sub1.p1.1.link": "https://www.baergpt.berlin",
+	"termsOfUsePage.section2.sub1.p1.2": " bereitgestellt wird.",
+	//2.2
+	"termsOfUsePage.section2.sub2.number": "2.2",
+	"termsOfUsePage.section2.sub2.title": "Anbieter und Verantwortlichkeiten",
+	"termsOfUsePage.section2.sub2.email.label": "E-Mail:",
+	"termsOfUsePage.section2.sub2.a.title": "Verantwortlich im Sinne der DSGVO:",
+	"termsOfUsePage.section2.sub2.a.organisation":
+		"Der Regierende Bürgermeister von Berlin - Senatskanzlei",
+	"termsOfUsePage.section2.sub2.a.role": "Chef der Senatskanzlei",
+	"termsOfUsePage.section2.sub2.a.name": "Florian Graf",
+	"termsOfUsePage.section2.sub2.a.address.street": "Jüdenstr. 1",
+	"termsOfUsePage.section2.sub2.a.address.city": "10178 Berlin",
+	"termsOfUsePage.section2.sub2.a.email": "datenschutz@senatskanzlei.berlin.de",
+	"termsOfUsePage.section2.sub2.b.title":
+		"Technische Verantwortung / Betrieb (Auftragsverarbeiter):",
+	"termsOfUsePage.section2.sub2.b.organisation":
+		"Technologiestiftung Berlin / CityLAB Berlin",
+	"termsOfUsePage.section2.sub2.b.address.street": "Platz der Luftbrücke 4",
+	"termsOfUsePage.section2.sub2.b.address.city": "12101 Berlin",
+	"termsOfUsePage.section2.sub2.b.email": "support@baergpt.berlin",
+	//2.3
+	"termsOfUsePage.section2.sub3.number": "2.3",
+	"termsOfUsePage.section2.sub3.title": "Vertragsgegenstand",
+	"termsOfUsePage.section2.sub3.p1":
+		"BärGPT ist ein KI-gestützter Assistent, der speziell für die Berliner Landesverwaltung entwickelt wurde. Die Anwendung basiert auf einem generativen Sprachmodell und unterstützt Beschäftigte der Berliner Verwaltung bei der Informationsrecherche, Textgenerierung sowie bei wiederkehrenden Verwaltungsaufgaben.",
+	//Section 3
+	"termsOfUsePage.section3.title": "Nutzungsvoraussetzungen und Registrierung",
+	//3.1
+	"termsOfUsePage.section3.sub1.number": "3.1",
+	"termsOfUsePage.section3.sub1.title": "Nutzungsberechtigung",
+	"termsOfUsePage.section3.sub1.p1":
+		"BärGPT darf ausschließlich von Mitarbeitenden der Berliner Landesverwaltung genutzt werden. Die Nutzung ist kostenlos.",
+	//3.2
+	"termsOfUsePage.section3.sub2.number": "3.2",
+	"termsOfUsePage.section3.sub2.title": "Registrierung",
+	"termsOfUsePage.section3.sub2.p1":
+		"Zur Nutzung von BärGPT ist eine Registrierung erforderlich. Dabei sind folgende Angaben notwendig:",
+	"termsOfUsePage.section3.sub2.li1": "Vorname und Nachname",
+	"termsOfUsePage.section3.sub2.li2":
+		"Gültige dienstliche E-Mail-Adresse der Berliner Verwaltung (in der Regel im Format vorname.name@subdomain.berlin.de)",
+	"termsOfUsePage.section3.sub2.li3":
+		"Selbstgewähltes sicheres Passwort (mindestens 6 Zeichen)",
+	"termsOfUsePage.section3.sub2.li4": "Optional: Anrede und akademischer Titel",
+	"termsOfUsePage.section3.sub2.p2":
+		"Ausnahmen von der E-Mail-Adress-Regel können nach Rücksprache mit dem Betreiber geprüft werden.",
+	//3.3
+	"termsOfUsePage.section3.sub3.number": "3.3",
+	"termsOfUsePage.section3.sub3.title": "Wahrheitsgemäße Angaben",
+	"termsOfUsePage.section3.sub3.p1":
+		"Die Nutzenden verpflichten sich, bei der Registrierung ausschließlich wahrheitsgemäße und vollständige Angaben zu machen. Bei Änderungen der angegebenen Daten sind diese unverzüglich im persönlichen Nutzerprofil zu aktualisieren.",
+	//3.4
+	"termsOfUsePage.section3.sub4.number": "3.4",
+	"termsOfUsePage.section3.sub4.title": "Zugangsdaten",
+	"termsOfUsePage.section3.sub4.p1":
+		"Die Nutzenden sind verpflichtet, ihre Zugangsdaten (E-Mail-Adresse und Passwort) vertraulich zu behandeln und vor unbefugtem Zugriff zu schützen. Eine Weitergabe des Accounts an Dritte ist nicht gestattet.",
+	"termsOfUsePage.section3.sub4.p2":
+		"Bei Verdacht auf Missbrauch der Zugangsdaten sind die Nutzenden verpflichtet, dies unverzüglich dem Betreiber zu melden und das Passwort zu ändern.",
+	//Section 4
+	"termsOfUsePage.section4.title": "Nutzungsumfang und -bedingungen",
+	//4.1
+	"termsOfUsePage.section4.sub1.number": "4.1",
+	"termsOfUsePage.section4.sub1.title": "Erlaubte Nutzung",
+	"termsOfUsePage.section4.sub1.p1":
+		"Die Nutzung von BärGPT ist ausschließlich im Rahmen der beruflichen Tätigkeit bei der Berliner Verwaltung gestattet. Private oder kommerzielle Nutzung ist nicht erlaubt.",
+	//4.2
+	"termsOfUsePage.section4.sub2.number": "4.2",
+	"termsOfUsePage.section4.sub2.title": "Funktionsumfang",
+	"termsOfUsePage.section4.sub2.p1":
+		"BärGPT ist ein KI-gestützter Assistent mit folgenden Kernfunktionen:",
+	"termsOfUsePage.section4.sub2.li1.heading": "Textverarbeitung:",
+	"termsOfUsePage.section4.sub2.li1.description":
+		"Generierung, Bearbeitung, Korrektur, Übersetzung und Zusammenfassung von Texten",
+	"termsOfUsePage.section4.sub2.li2.heading": "Dokumentenverwaltung:",
+	"termsOfUsePage.section4.sub2.li2.description":
+		"Hochladen, Speichern und semantische Suche in Dokumenten (RAG-Technologie)",
+	"termsOfUsePage.section4.sub2.li3.heading": "Wissensdatenbank:",
+	"termsOfUsePage.section4.sub2.li3.description":
+		"Zugriff auf kuratierte Verwaltungsinformationen und -dokumente",
+	"termsOfUsePage.section4.sub2.li4.heading": "Interaktionshistorie:",
+	"termsOfUsePage.section4.sub2.li4.description":
+		"Speicherung und Verwaltung früherer Konversationen",
+	"termsOfUsePage.section4.sub2.p2.start":
+		"Der konkrete Funktionsumfang kann sich im Rahmen der Weiterentwicklung ändern (siehe § 7.2). Eine aktuelle und detaillierte Übersicht aller verfügbaren Funktionen finden Sie im Hilfecenter unter ",
+	"termsOfUsePage.section4.sub2.p2.link": "https://hilfe.baergpt.berlin/",
+	"termsOfUsePage.section4.sub2.p2.end": " oder direkt in der Anwendung.",
+	//4.3
+	"termsOfUsePage.section4.sub3.number": "4.3",
+	"termsOfUsePage.section4.sub3.title": "Human-in-the-lead-Prinzip",
+	"termsOfUsePage.section4.sub3.p1":
+		"Eine automatisierte Entscheidungsfindung durch die KI ist nicht vorgesehen. Die Verantwortung für die Richtigkeit und Verwendung der generierten Inhalte liegt stets bei den Nutzenden. BärGPT dient ausschließlich als Hilfswerkzeug und kann die fachliche Expertise und Verantwortung der Nutzenden nicht ersetzen.",
+	//4.4
+	"termsOfUsePage.section4.sub4.number": "4.4",
+	"termsOfUsePage.section4.sub4.title": "Prüfpflicht der Nutzenden",
+	"termsOfUsePage.section4.sub4.p1":
+		"Die Nutzenden sind verpflichtet, alle von BärGPT generierten Inhalte kritisch zu prüfen und auf ihre Richtigkeit, Vollständigkeit und Angemessenheit zu überprüfen. KI-Systeme können sogenannte „Halluzinationen“ erzeugen, d.h. Inhalte, die plausibel erscheinen, aber faktisch falsch sein können.",
+
 	/* -------------------- Video player -------------------- */
 	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
 	"videoPlayer.cookies.buttonAriaLabel":
