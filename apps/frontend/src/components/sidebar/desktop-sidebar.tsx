@@ -38,7 +38,7 @@ export const DesktopSidebar: React.FC = () => {
 
 					{/* History Content */}
 					{isHistorySidebarOpen && (
-						<div className="flex flex-col gap-10 min-h-0 h-full overflow-y-auto">
+						<div className="flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden">
 							<History />
 						</div>
 					)}
