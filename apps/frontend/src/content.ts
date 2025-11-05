@@ -353,7 +353,7 @@ export const Content = {
 		"Speicherung und Verwaltung früherer Konversationen",
 	"termsOfUsePage.section4.sub2.p2.start":
 		"Der konkrete Funktionsumfang kann sich im Rahmen der Weiterentwicklung ändern (siehe § 7.2). Eine aktuelle und detaillierte Übersicht aller verfügbaren Funktionen finden Sie im Hilfecenter unter ",
-	"termsOfUsePage.section4.sub2.p2.link": "https://hilfe.baergpt.berlin/",
+	"termsOfUsePage.section4.sub2.p2.link": "https://hilfe.baergpt.berlin",
 	"termsOfUsePage.section4.sub2.p2.end": " oder direkt in der Anwendung.",
 	//4.3
 	"termsOfUsePage.section4.sub3.number": "4.3",

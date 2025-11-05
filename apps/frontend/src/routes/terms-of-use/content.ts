@@ -1,4 +1,38 @@
 import Content from "../../content.ts";
+
+export const tableOfContentsItems = [
+	{ title: Content["termsOfUsePage.section1.title"] },
+	{
+		title: Content["termsOfUsePage.section2.title"],
+		id: "section-2",
+		subsections: [
+			{ title: Content["termsOfUsePage.section2.sub1.title"] },
+			{ title: Content["termsOfUsePage.section2.sub2.title"] },
+			{ title: Content["termsOfUsePage.section2.sub3.title"] },
+		],
+	},
+	{
+		title: Content["termsOfUsePage.section3.title"],
+		id: "section-3",
+		subsections: [
+			{ title: Content["termsOfUsePage.section3.sub1.title"] },
+			{ title: Content["termsOfUsePage.section3.sub2.title"] },
+			{ title: Content["termsOfUsePage.section3.sub3.title"] },
+			{ title: Content["termsOfUsePage.section3.sub4.title"] },
+		],
+	},
+	{
+		title: Content["termsOfUsePage.section4.title"],
+		id: "section-4",
+		subsections: [
+			{ title: Content["termsOfUsePage.section4.sub1.title"] },
+			{ title: Content["termsOfUsePage.section4.sub2.title"] },
+			{ title: Content["termsOfUsePage.section4.sub3.title"] },
+			{ title: Content["termsOfUsePage.section4.sub4.title"] },
+		],
+	},
+];
+
 export const section1ListItems = [
 	{
 		title: Content["termsOfUsePage.section1.li1.title"],
@@ -56,5 +90,24 @@ export const section3Sub2ListItems = [
 	},
 	{
 		item: Content["termsOfUsePage.section3.sub2.li4"],
+	},
+];
+
+export const section4Sub2ListItems = [
+	{
+		heading: Content["termsOfUsePage.section4.sub2.li1.heading"],
+		description: Content["termsOfUsePage.section4.sub2.li1.description"],
+	},
+	{
+		heading: Content["termsOfUsePage.section4.sub2.li2.heading"],
+		description: Content["termsOfUsePage.section4.sub2.li2.description"],
+	},
+	{
+		heading: Content["termsOfUsePage.section4.sub2.li3.heading"],
+		description: Content["termsOfUsePage.section4.sub2.li3.description"],
+	},
+	{
+		heading: Content["termsOfUsePage.section4.sub2.li4.heading"],
+		description: Content["termsOfUsePage.section4.sub2.li4.description"],
 	},
 ];

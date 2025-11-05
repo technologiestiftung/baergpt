@@ -4,24 +4,149 @@ import Content from "../../content.ts";
 import { TableOfContents } from "../../components/privacy-policy/table-of-contents.tsx";
 import { ListItem } from "../../components/privacy-policy/list-item.tsx";
 import {
+	tableOfContentsItems,
 	section1ListItems,
 	section2Sub2ItemA,
 	section2Sub2ItemB,
 	section3Sub2ListItems,
+	section4Sub2ListItems,
 } from "./content.ts";
 import { ContactInfo } from "../../components/privacy-policy/contact-info.tsx";
 
 export const TermsOfUsePage: React.FC = () => {
-	const tableOfContentsItems = [
-		{ title: Content["termsOfUsePage.section1.title"] },
+	const section2SubSections = [
 		{
-			title: Content["termsOfUsePage.section2.title"],
-			id: "section-2",
-			subsections: [
-				{ title: Content["termsOfUsePage.section2.sub1.title"] },
-				{ title: Content["termsOfUsePage.section2.sub2.title"] },
-				{ title: Content["termsOfUsePage.section2.sub3.title"] },
-			],
+			id: "section-2-1",
+			number: 2.1,
+			title: Content["termsOfUsePage.section2.sub1.title"],
+			content: (
+				<p>
+					<span>{Content["termsOfUsePage.section2.sub1.p1.1"]}</span>
+					<a
+						href={Content["termsOfUsePage.section2.sub1.p1.1.link"]}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="underline underline-offset-2"
+					>
+						{Content["termsOfUsePage.section2.sub1.p1.1.link"]}
+					</a>
+					<span>{Content["termsOfUsePage.section2.sub1.p1.2"]}</span>
+				</p>
+			),
+		},
+		{
+			id: "section-2-2",
+			number: 2.2,
+			title: Content["termsOfUsePage.section2.sub2.title"],
+			content: (
+				<ul className="list-disc pl-5">
+					<li>
+						<ContactInfo data={section2Sub2ItemA} />
+					</li>
+					<li>
+						<ContactInfo data={section2Sub2ItemB} />
+					</li>
+				</ul>
+			),
+		},
+		{
+			id: "section-2-3",
+			number: 2.3,
+			title: Content["termsOfUsePage.section2.sub3.title"],
+			content: <p>{Content["termsOfUsePage.section2.sub3.p1"]}</p>,
+		},
+	];
+
+	const section3SubSections = [
+		{
+			id: "section-3-1",
+			number: 3.1,
+			title: Content["termsOfUsePage.section3.sub1.title"],
+			content: <p>{Content["termsOfUsePage.section3.sub1.p1"]}</p>,
+		},
+		{
+			id: "section-3-2",
+			number: 3.2,
+			title: Content["termsOfUsePage.section3.sub2.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section3.sub2.p1"]}</p>
+					<ul className="list-disc pl-5">
+						{section3Sub2ListItems.map((item, index) => (
+							<li key={index}>{item.item}</li>
+						))}
+					</ul>
+					<p>{Content["termsOfUsePage.section3.sub2.p2"]}</p>
+				</div>
+			),
+		},
+		{
+			id: "section-3-3",
+			number: 3.3,
+			title: Content["termsOfUsePage.section3.sub3.title"],
+			content: <p>{Content["termsOfUsePage.section3.sub3.p1"]}</p>,
+		},
+		{
+			id: "section-3-4",
+			number: 3.4,
+			title: Content["termsOfUsePage.section3.sub4.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section3.sub4.p1"]}</p>
+					<p>{Content["termsOfUsePage.section3.sub4.p2"]}</p>
+				</div>
+			),
+		},
+	];
+	const section4SubSections = [
+		{
+			id: "section-4-1",
+			number: 4.1,
+			title: Content["termsOfUsePage.section4.sub1.title"],
+			content: <p>{Content["termsOfUsePage.section4.sub1.p1"]}</p>,
+		},
+		{
+			id: "section-4-2",
+			number: 4.2,
+			title: Content["termsOfUsePage.section4.sub2.title"],
+			content: (
+				<>
+					<p>{Content["termsOfUsePage.section4.sub2.p1"]}</p>
+					<ul className="list-disc pl-5">
+						{section4Sub2ListItems.map((item) => (
+							<ListItem
+								key={item.heading}
+								title={item.heading}
+								description={item.description}
+							/>
+						))}
+					</ul>
+					<p>
+						<span>{Content["termsOfUsePage.section4.sub2.p2.start"]}</span>
+						<a
+							href={Content["termsOfUsePage.section4.sub2.p2.link"]}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="underline underline-offset-2"
+						>
+							{Content["termsOfUsePage.section4.sub2.p2.link"]}
+						</a>
+						<span>{Content["termsOfUsePage.section4.sub2.p2.end"]}</span>
+					</p>
+				</>
+			),
+		},
+		{
+			id: "section-4-3",
+			number: 4.3,
+			title: Content["termsOfUsePage.section4.sub3.title"],
+			content: <p>{Content["termsOfUsePage.section4.sub3.p1"]}</p>,
+		},
+		{
+			id: "section-4-4",
+			number: 4.4,
+			title: Content["termsOfUsePage.section4.sub4.title"],
+			content: <p>{Content["termsOfUsePage.section4.sub4.p1"]}</p>,
 		},
 	];
 
@@ -49,46 +174,17 @@ export const TermsOfUsePage: React.FC = () => {
 			title: Content["termsOfUsePage.section2.title"],
 			content: (
 				<div className="flex flex-col gap-6">
-					<div id="section-2-1" className="flex flex-col gap-4">
-						<h3 className="text-xl leading-7 font-semibold">
-							{Content["termsOfUsePage.section2.sub1.number"]}{" "}
-							{Content["termsOfUsePage.section2.sub1.title"]}
-						</h3>
-						<p>
-							<span>{Content["termsOfUsePage.section2.sub1.p1.1"]}</span>
-							<a
-								href={Content["termsOfUsePage.section2.sub1.p1.1.link"]}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="underline underline-offset-2"
-							>
-								{" "}
-								{Content["termsOfUsePage.section2.sub1.p1.1.link"]}
-							</a>
-							<span>{Content["termsOfUsePage.section2.sub1.p1.2"]}</span>
-						</p>
-					</div>
-					<div id="section-2-2" className="flex flex-col gap-4">
-						<h3 className="text-xl leading-7 font-semibold">
-							{Content["termsOfUsePage.section2.sub2.number"]}{" "}
-							{Content["termsOfUsePage.section2.sub2.title"]}
-						</h3>
-						<ul className="list-disc pl-5">
-							<li>
-								<ContactInfo data={section2Sub2ItemA} />
-							</li>
-							<li>
-								<ContactInfo data={section2Sub2ItemB} />
-							</li>
-						</ul>
-					</div>
-					<div id="section-2-3" className="flex flex-col gap-4">
-						<h3 className="text-xl leading-7 font-semibold">
-							{Content["termsOfUsePage.section2.sub3.number"]}{" "}
-							{Content["termsOfUsePage.section2.sub3.title"]}
-						</h3>
-						<p>{Content["termsOfUsePage.section2.sub3.p1"]}</p>
-					</div>
+					{section2SubSections.map((subsection) => (
+						<div
+							id={subsection.id}
+							className="flex flex-col gap-4 scroll-mt-[100px]"
+						>
+							<h3 className="text-xl leading-7 font-semibold">
+								{subsection.number} {subsection.title}
+							</h3>
+							{subsection.content}
+						</div>
+					))}
 				</div>
 			),
 		},
@@ -98,51 +194,42 @@ export const TermsOfUsePage: React.FC = () => {
 			title: Content["termsOfUsePage.section3.title"],
 			content: (
 				<div className="flex flex-col gap-6">
-					<div id="section-3-1" className="flex flex-col gap-4">
-						<h3 className="text-xl leading-7 font-semibold">
-							{Content["termsOfUsePage.section3.sub1.number"]}{" "}
-							{Content["termsOfUsePage.section3.sub1.title"]}
-						</h3>
-
-						<p>{Content["termsOfUsePage.section3.sub1.p1"]}</p>
-					</div>
-					<div id="section-3-2" className="flex flex-col gap-4">
-						<h3 className="text-xl leading-7 font-semibold">
-							{Content["termsOfUsePage.section3.sub2.number"]}{" "}
-							{Content["termsOfUsePage.section3.sub2.title"]}
-						</h3>
-						<div className="flex flex-col gap-1">
-							<p>{Content["termsOfUsePage.section3.sub2.p1"]}</p>
-							<ul className="list-disc pl-5">
-								{section3Sub2ListItems.map((item, index) => (
-									<li key={index}>{item.item}</li>
-								))}
-							</ul>
-							<p>{Content["termsOfUsePage.section3.sub2.p2"]}</p>
+					{section3SubSections.map((subsection) => (
+						<div
+							id={subsection.id}
+							className="flex flex-col gap-4 scroll-mt-[100px]"
+						>
+							<h3 className="text-xl leading-7 font-semibold">
+								{subsection.number} {subsection.title}
+							</h3>
+							{subsection.content}
 						</div>
-					</div>
-					<div id="section-3-3" className="flex flex-col gap-4">
-						<h3 className="text-xl leading-7 font-semibold">
-							{Content["termsOfUsePage.section3.sub3.number"]}{" "}
-							{Content["termsOfUsePage.section3.sub3.title"]}
-						</h3>
-
-						<p>{Content["termsOfUsePage.section3.sub3.p1"]}</p>
-					</div>
-					<div id="section-3-4" className="flex flex-col gap-4">
-						<h3 className="text-xl leading-7 font-semibold">
-							{Content["termsOfUsePage.section3.sub4.number"]}{" "}
-							{Content["termsOfUsePage.section3.sub4.title"]}
-						</h3>
-						<div className="flex flex-col gap-1">
-							<p>{Content["termsOfUsePage.section3.sub4.p1"]}</p>
-							<p>{Content["termsOfUsePage.section3.sub4.p2"]}</p>
+					))}
+				</div>
+			),
+		},
+		{
+			id: "section-4",
+			number: 4,
+			title: Content["termsOfUsePage.section4.title"],
+			content: (
+				<div className="flex flex-col gap-6">
+					{section4SubSections.map((subsection) => (
+						<div
+							id={subsection.id}
+							className="flex flex-col gap-4 scroll-mt-[100px]"
+						>
+							<h3 className="text-xl leading-7 font-semibold">
+								{subsection.number} {subsection.title}
+							</h3>
+							{subsection.content}
 						</div>
-					</div>
+					))}
 				</div>
 			),
 		},
 	];
+
 	return (
 		<LandingPageLayout>
 			<div className="pb-[60px] px-5 max-w-[934px] mx-auto text-dunkelblau-100">
