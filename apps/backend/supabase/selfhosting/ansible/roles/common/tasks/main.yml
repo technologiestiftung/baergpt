@@ -1,0 +1,19 @@
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name:
+      - molly-guard
+      - ca-certificates
+      - curl
+      - gnupg
+      - python3
+      - python3-venv
+      - python3-pip
+      - libaugeas0
+      - git
+      - nginx
+    state: present
