@@ -216,31 +216,33 @@ export class EmbeddingService {
 				let remaining = text;
 				while (remaining.trim()) {
 					const trimmed = trimToTokenLimitByWords(remaining, maxTokens);
-					if (!trimmed) break;
+					if (!trimmed) {
+						break;
+					}
 
 					chunks.push(trimmed.trim());
 					remaining = remaining.slice(trimmed.length).trim();
 				}
-			} else {
-				for (const part of parts) {
-					// Reconstruct with separator
-					const testChunk = currentChunk ? currentChunk + pattern + part : part;
-					const testTokens = countTokens(testChunk);
-					if (testTokens <= maxTokens) {
-						currentChunk = testChunk;
-					} else {
-						if (currentChunk) {
-							chunks.push(currentChunk.trim());
-						}
-						currentChunk = part;
-					}
-				}
+				continue;
+			}
 
+			for (const part of parts) {
+				// Reconstruct with separator
+				const testChunk = currentChunk ? currentChunk + pattern + part : part;
+				const testTokens = countTokens(testChunk);
+				if (testTokens <= maxTokens) {
+					currentChunk = testChunk;
+					continue;
+				}
 				if (currentChunk) {
 					chunks.push(currentChunk.trim());
 				}
+				currentChunk = part;
 			}
-
+			// push any remaining chunk
+			if (currentChunk) {
+				chunks.push(currentChunk.trim());
+			}
 			// Recursively process any chunks that are still too large
 			const finalChunks: string[] = [];
 			for (const chunk of chunks) {
