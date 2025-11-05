@@ -12,6 +12,8 @@ import { NewPasswordPage } from "./routes/new-password";
 import { ProfilePage } from "./routes/profile";
 import { EmailChanged } from "./routes/email-changed";
 import { AccountDeleted } from "./routes/account-deleted";
+import { PrivacyPolicyPage } from "./routes/privacy-policy";
+import { RegistrationError } from "./routes/registration-error";
 
 const router = createBrowserRouter([
 	{
@@ -29,6 +31,10 @@ const router = createBrowserRouter([
 	{
 		path: "/account-activated/",
 		element: <AccountActivated />,
+	},
+	{
+		path: "/registration-error/",
+		element: <RegistrationError />,
 	},
 	{
 		path: "/reset-password/",
@@ -50,6 +56,7 @@ const router = createBrowserRouter([
 		path: "/account-deleted/",
 		element: <AccountDeleted />,
 	},
+	{ path: "/privacy-policy/", element: <PrivacyPolicyPage /> },
 ]);
 
 function render() {

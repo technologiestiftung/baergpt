@@ -8,7 +8,7 @@ export const AppNavItems: React.FC = () => {
 	return (
 		<>
 			{/* Desktop View */}
-			<ul className="hidden md:flex gap-3">
+			<ul className="hidden md:flex gap-3 items-center">
 				<li>
 					<a
 						href={Content["header.navigation.help.link"]}
@@ -17,6 +17,7 @@ export const AppNavItems: React.FC = () => {
 									rounded-3px border border-dunkelblau-100
 									hover:bg-hellblau-60
 									focus-visible:outline-default 
+									text-base leading-6 font-normal
 									`}
 					>
 						{Content["header.navigation.help.label"]}

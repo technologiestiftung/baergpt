@@ -20,8 +20,8 @@ export const DesktopSidebar: React.FC = () => {
 				}`}
 			>
 				<aside
-					className={`flex flex-col justify-between h-full pt-5 pb-3.5 transition-opacity duration-300 ease-in-out ${
-						isHistorySidebarOpen ? "pl-3 pr-[18px] gap-10" : "px-2.5 items-left"
+					className={`flex flex-col justify-between h-full px-2.5 pt-5 pb-3.5 ${
+						isHistorySidebarOpen ? "pr-[18px] gap-10" : "items-left"
 					}`}
 					aria-label={Content["sidebar.ariaLabel"]}
 				>
@@ -38,7 +38,7 @@ export const DesktopSidebar: React.FC = () => {
 
 					{/* History Content */}
 					{isHistorySidebarOpen && (
-						<div className="flex flex-col gap-10 min-h-0 h-full overflow-y-auto">
+						<div className="flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden">
 							<History />
 						</div>
 					)}
@@ -50,7 +50,7 @@ export const DesktopSidebar: React.FC = () => {
 							)}
 
 							{/* Navigation */}
-							<div className={`w-full py-2 ${isHistorySidebarOpen && "px-1"}`}>
+							<div className="w-full py-2">
 								<SidebarNavigation />
 							</div>
 
@@ -63,7 +63,7 @@ export const DesktopSidebar: React.FC = () => {
 						{/* CityLAB Logo */}
 						<div
 							className={`flex flex-col gap-[3px] h-[50px] justify-end pt-3.5 
-								${isHistorySidebarOpen ? "px-3" : ""}`}
+                                ${isHistorySidebarOpen ? "pl-2 pr-3" : ""}`}
 						>
 							{isHistorySidebarOpen && (
 								<p className="text-dunkelblau-50 text-[10px] truncate">
@@ -76,7 +76,7 @@ export const DesktopSidebar: React.FC = () => {
 								target="_blank"
 								rel="noopener noreferrer"
 								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-[6.6px]
-									${isHistorySidebarOpen ? "pr-1" : "px-2"}`}
+                                    ${isHistorySidebarOpen ? "pr-1" : "px-2"}`}
 								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
 								<img

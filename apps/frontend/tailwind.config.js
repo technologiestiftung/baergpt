@@ -12,6 +12,7 @@ export default {
 				"berlin-rot": "#E40521",
 				"warning-100": "#DF4343",
 				"warning-85": "#E45F5F",
+				"warning-10": "#FEF4F5",
 				"schwarz-40": "#737373",
 				"schwarz-100": "#000000",
 				"dunkelblau-200": "#030812",

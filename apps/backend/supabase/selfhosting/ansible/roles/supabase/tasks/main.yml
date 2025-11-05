@@ -1,0 +1,54 @@
+- name: Clone Supabase repo (shallow)
+  ansible.builtin.git:
+    repo: "{{ supabase_repo }}"
+    dest: "{{ supabase_src }}"
+    version: "{{ supabase_ref }}"
+    depth: 1
+    force: true
+
+- name: Ensure Supabase target dir exists
+  ansible.builtin.file:
+    path: "{{ supabase_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy docker folder to target
+  ansible.builtin.command:
+    cmd: "cp -r {{ supabase_src }}/docker/. {{ supabase_dir }}/"
+  args:
+    creates: "{{ supabase_dir }}/docker-compose.yml"
+
+- name: Overwrite docker-compose.yml with project version
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../docker-compose.yml"
+    dest: "{{ supabase_dir }}/docker-compose.yml"
+    mode: "0644"
+    force: true
+
+- name: Render .env from 1Password (local)
+  ansible.builtin.copy:
+    content: "{{ lookup('env','ENV_FILE_REF') }}"
+    dest: "{{ playbook_dir }}/../staging/.env"
+    mode: "0640"
+  delegate_to: localhost
+  run_once: true
+  become: false
+  no_log: true
+
+- name: Upload resolved .env
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../staging/.env"
+    dest: "{{ supabase_dir }}/.env"
+    mode: "0640"
+
+- name: Pull images
+  ansible.builtin.command:
+    cmd: "docker compose pull"
+  args:
+    chdir: "{{ supabase_dir }}"
+
+- name: Start Supabase stack
+  ansible.builtin.command:
+    cmd: "docker compose up -d"
+  args:
+    chdir: "{{ supabase_dir }}"

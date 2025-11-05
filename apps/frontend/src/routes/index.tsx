@@ -9,8 +9,14 @@ import { MobileProfileDrawer } from "../components/profile/mobile-profile-drawer
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
+import { LandingPage } from "../components/landing-page/landing-page.tsx";
+
 export const IndexPage: React.FC = () => {
 	const { session } = useAuthStore();
+
+	if (!session) {
+		return <LandingPage />;
+	}
 
 	return (
 		<AppLayout>

@@ -156,30 +156,39 @@ function renderNode(node: MarkdownNode, idx: number): React.ReactNode {
 }
 
 export async function exportMarkdownToPdf(markdown: string, fileName: string) {
-	const cleanMarkdown = removeCitationNumbers(markdown);
+	try {
+		const cleanMarkdown = removeCitationNumbers(markdown);
 
-	const ast = unified()
-		.use(remarkParse)
-		.use(remarkGfm)
-		.parse(cleanMarkdown) as {
-		children?: unknown[];
-	};
+		const ast = unified()
+			.use(remarkParse)
+			.use(remarkGfm)
+			.parse(cleanMarkdown) as {
+			children?: unknown[];
+		};
 
-	const doc = (
-		<Document>
-			<Page size="A4" style={styles.page}>
-				{ast.children?.map((node, idx) =>
-					renderNode(node as MarkdownNode, idx),
-				)}
-			</Page>
-		</Document>
-	);
+		const doc = (
+			<Document>
+				<Page size="A4" style={styles.page}>
+					{ast.children?.map((node, idx) =>
+						renderNode(node as MarkdownNode, idx),
+					)}
+				</Page>
+			</Document>
+		);
 
-	const blob = await pdf(doc).toBlob();
+		const blob = await pdf(doc).toBlob();
 
-	// Download
-	const link = document.createElement("a");
-	link.href = URL.createObjectURL(blob);
-	link.download = `${fileName}.pdf`;
-	link.click();
+		// Download
+		const link = document.createElement("a");
+		link.href = URL.createObjectURL(blob);
+		link.download = `${fileName}.pdf`;
+		link.click();
+	} catch (error) {
+		const { captureError } = await import(
+			"../../../../monitoring/capture-error.ts"
+		);
+		const { useErrorStore } = await import("../../../../store/error-store.ts");
+		captureError(error);
+		useErrorStore.getState().setUIError("chat-export", "chat_export_failed");
+	}
 }

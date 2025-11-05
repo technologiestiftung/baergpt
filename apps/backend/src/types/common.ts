@@ -205,6 +205,7 @@ export interface HybridSearchResult {
 export interface ParsedPage {
 	content: string;
 	pageNumber: number;
+	tokenCount?: number;
 }
 
 export class ExtractError extends Error {

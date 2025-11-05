@@ -18,7 +18,7 @@ import { useChatStreaming } from "./hooks/use-chat-streaming";
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const ChatForm: React.FC = () => {
-	const { status } = useInferenceLoadingStatusStore();
+	const { status, clearError } = useInferenceLoadingStatusStore();
 	const { selectedChatFolders } = useFolderStore();
 	const { selectedChatDocuments } = useDocumentStore();
 	const { startStreaming } = useChatStreaming();
@@ -59,6 +59,9 @@ export const ChatForm: React.FC = () => {
 			return;
 		}
 
+		// Clear any previous errors
+		clearError();
+
 		// Clear textarea on submit
 		if (textarea) {
 			textarea.value = "";
@@ -86,6 +89,8 @@ export const ChatForm: React.FC = () => {
 		"loading-text",
 		"loading-citations",
 	].includes(status);
+
+	const hasError = status === "error";
 
 	return (
 		<form
@@ -121,7 +126,9 @@ export const ChatForm: React.FC = () => {
 
 					<button
 						type="submit"
-						disabled={isInferenceLoading || !textareaContent.trim()}
+						disabled={
+							(isInferenceLoading && !hasError) || !textareaContent.trim()
+						}
 						className={`rounded-3px bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px mr-4`}
 					>
 						<ArrowWhiteRightIcon />

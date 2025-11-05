@@ -24,7 +24,6 @@ export const Content = {
 	"loginPage.submitButton": "Anmelden",
 	"loginPage.waitingListPrompt": "BärGPT befindet sich in der Testphase.",
 	"loginPage.waitingListLink": "In die Warteliste eintragen.",
-	"loginPage.resetPassword.link": "/reset-password/",
 	"loginPage.resetPassword.label": "Passwort vergessen?",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
@@ -62,8 +61,8 @@ export const Content = {
 	/* -------------------- Buttons -------------------- */
 	//profileButton
 	"profile.button.ariaLabel": "Profil öffnen",
-	"profile.button.logout.ariaLabel": "Abmelden",
-	"profile.button.logout.label": "Abmelden",
+	"profile.button.logout.ariaLabel": "Ausloggen",
+	"profile.button.logout.label": "Ausloggen",
 
 	/* ---------------------- Admin ---------------------- */
 	"admin.sidebar.navigation.users": "Benutzerverwaltung",
