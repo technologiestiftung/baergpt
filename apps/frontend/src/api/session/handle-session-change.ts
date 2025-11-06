@@ -6,6 +6,7 @@ import { useAuthStore } from "../../store/auth-store.ts";
 import type { Session } from "@supabase/supabase-js";
 import { useIsActiveStore } from "../../store/use-is-active-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
+import { useMaintenanceModeStore } from "../../store/use-maintenance-mode-store.ts";
 
 let abortController: null | AbortController = null;
 
@@ -30,6 +31,7 @@ export async function handleSessionChange(session: Session | null) {
 			useChatsStore.getState().getChatsFromDb(signal),
 			useUserStore.getState().getUser(signal),
 			useAuthStore.getState().checkIsUserAdmin(signal),
+			useMaintenanceModeStore.getState().checkMaintenanceMode(signal),
 		];
 
 		await Promise.all(promises);
