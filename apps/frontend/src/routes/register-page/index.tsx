@@ -29,6 +29,22 @@ export function RegisterPage() {
 		register({ firstName, lastName, email, password });
 	};
 
+	const handleChange = (event: React.ChangeEvent<HTMLFormElement>) => {
+		const password = event.currentTarget.password.value;
+		const repeatPassword = event.currentTarget.repeatPassword.value;
+
+		const isDifferent = password !== repeatPassword;
+
+		if (isDifferent) {
+			event.currentTarget.repeatPassword.setCustomValidity(
+				Content["form.validation.password.repeatPasswordShouldMatch.error"],
+			);
+			return;
+		}
+
+		event.currentTarget.repeatPassword.setCustomValidity("");
+	};
+
 	const handleShowPasswordTooltip = (
 		event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
 	) => {
@@ -51,6 +67,7 @@ export function RegisterPage() {
 						className="flex flex-col mt-12"
 						ref={formRef}
 						onSubmit={handleSubmit}
+						onChange={handleChange}
 					>
 						<div className="flex gap-5">
 							<label

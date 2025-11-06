@@ -1,0 +1,11 @@
+domain: "{{ lookup('ansible.builtin.env','DOMAIN') }}"
+letsencrypt_email: "{{ lookup('ansible.builtin.env','LETSENCRYPT_EMAIL') }}"
+
+# Resolved at runtime via 1Password CLI (op run) env injection
+stackit_project_id: "{{ lookup('env','STACKIT_PROJECT_ID') }}"
+stackit_service_account_json: "{{ lookup('env','STACKIT_SERVICE_ACCOUNT_JSON') }}"
+
+supabase_repo: "https://github.com/supabase/supabase.git"
+supabase_ref: "1.25.04"
+supabase_src: "/opt/supabase-src"
+supabase_dir: "/opt/supabase-baergpt"

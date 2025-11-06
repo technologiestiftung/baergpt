@@ -9,16 +9,13 @@ import type {
 	JinaSegmenterResponse,
 	JinaEmbeddingResponse,
 } from "../types/common";
-import { JINA_MAX_TOKEN_LIMIT } from "../constants";
-import { countTokens, computeBatchTokenLimit } from "./token-utils";
+import { countTokens, trimToTokenLimitByWords } from "./token-utils";
 import { DatabaseService } from "./database-service";
 import { resilientCall } from "../utils";
 
 const dbService = new DatabaseService();
 
 export class EmbeddingService {
-	private static readonly SEGMENTER_INPUT_MAX = 64000; // Jina handles max 64k
-	private static readonly SEGMENTER_SAFETY_MARGIN = 2048;
 	async chunkWithJinaSegmenter(
 		text: string,
 		tokenLimit: number = 2000,
@@ -124,7 +121,7 @@ export class EmbeddingService {
 						input: input,
 						task: task,
 						dimensions: 1024,
-						late_chunking: true,
+						late_chunking: false,
 						embedding_type: "float",
 					}),
 				});
@@ -176,12 +173,162 @@ export class EmbeddingService {
 	}
 
 	/**
+	 * Recursively chunks text by trying different separators in priority order.
+	 * If no separators work (edge case like very long URLs, base64, etc.),
+	 * returns empty array to skip the chunk, as such content is typically not useful for semantic search.
+	 * @param text Text to chunk
+	 * @returns Array of text chunks, or empty array if content cannot be properly chunked
+	 */
+	recursiveChunking(text: string): string[] {
+		const maxTokens = config.jinaMaxContextTokens;
+		// Base case: if text is small enough, return as single chunk
+		const textTokens = countTokens(text);
+		if (textTokens <= maxTokens) {
+			return text.trim() ? [text.trim()] : [];
+		}
+
+		// Early exit: if text has no word boundaries at all, it's unchunkable
+		if (!text.includes(" ") && !text.includes("\n") && !text.includes(". ")) {
+			console.warn(
+				`[WARNING] Skipping unchunkable content with ${textTokens} tokens (no word boundaries found). Preview: ${text.slice(0, 100)}...`,
+			);
+			return [];
+		}
+
+		// Try separators in priority order
+		const separators = [
+			{ pattern: "\n", name: "newline" }, // Lines
+			{ pattern: ". ", name: "sentence" }, // Sentences
+			{ pattern: " ", name: "word" }, // Words
+		];
+
+		for (const { pattern, name } of separators) {
+			if (!text.includes(pattern)) {
+				continue;
+			}
+
+			const parts = text.split(pattern);
+			const chunks: string[] = [];
+			let currentChunk = "";
+
+			// For word splitting, use binary search optimization to avoid O(n²) complexity
+			if (name === "word") {
+				let remaining = text;
+				while (remaining.trim()) {
+					const trimmed = trimToTokenLimitByWords(remaining, maxTokens);
+					if (!trimmed) {
+						break;
+					}
+
+					chunks.push(trimmed.trim());
+					remaining = remaining.slice(trimmed.length).trim();
+				}
+				return chunks.filter((c) => c.trim().length > 0);
+			}
+			for (const part of parts) {
+				// Reconstruct with separator
+				const testChunk = currentChunk ? currentChunk + pattern + part : part;
+				const testTokens = countTokens(testChunk);
+				if (testTokens <= maxTokens) {
+					currentChunk = testChunk;
+					continue;
+				}
+				if (currentChunk) {
+					chunks.push(currentChunk.trim());
+				}
+				currentChunk = part;
+			}
+			// push any remaining chunk
+			if (currentChunk) {
+				chunks.push(currentChunk.trim());
+			}
+			// Recursively process any chunks that are still too large
+			const finalChunks: string[] = [];
+			for (const chunk of chunks) {
+				const chunkTokens = countTokens(chunk);
+				if (chunkTokens > maxTokens) {
+					finalChunks.push(...this.recursiveChunking(chunk));
+				} else if (chunk.trim()) {
+					finalChunks.push(chunk.trim());
+				}
+			}
+
+			return finalChunks;
+		}
+
+		console.warn(
+			`[WARNING] Skipping unchunkable content with ${textTokens} tokens (no word boundaries found). Preview: ${text.slice(0, 100)}...`,
+		);
+		return [];
+	}
+
+	/**
+	 * Chunks markdown content by structural elements (headers, paragraphs, tables)
+	 * while respecting token limits. This preserves semantic meaning better than
+	 * fixed-size chunking.
+	 */
+	markdownStructuralChunking(content: string): string[] {
+		const chunks: string[] = [];
+		const maxTokens = config.jinaMaxContextTokens;
+
+		// Split by markdown headers and major structural elements
+		const sections = content.split(/(?=^#{1,6}\s)/gm);
+
+		let currentChunk = "";
+		let currentTokens = 0;
+
+		for (const section of sections) {
+			// Further split section by paragraphs (double newline)
+			const paragraphs = section.split(/\n\s*\n/);
+
+			for (const paragraph of paragraphs) {
+				const trimmed = paragraph.trim();
+				if (!trimmed) {
+					continue;
+				}
+
+				const paragraphTokens = countTokens(trimmed);
+
+				// If single paragraph exceeds max, use recursive chunking
+				if (paragraphTokens > maxTokens) {
+					// Flush current chunk first
+					if (currentChunk) {
+						chunks.push(currentChunk.trim());
+						currentChunk = "";
+						currentTokens = 0;
+					}
+
+					const subChunks = this.recursiveChunking(trimmed);
+					chunks.push(...subChunks);
+					continue;
+				}
+
+				if (currentTokens + paragraphTokens > maxTokens && currentChunk) {
+					chunks.push(currentChunk.trim());
+					currentChunk = trimmed;
+					currentTokens = paragraphTokens;
+				} else {
+					currentChunk += (currentChunk ? "\n\n" : "") + trimmed;
+					currentTokens += paragraphTokens;
+				}
+			}
+		}
+
+		if (currentChunk) {
+			chunks.push(currentChunk.trim());
+		}
+
+		return chunks.filter((c) => c.length > 0);
+	}
+
+	/**
 	 * Merges small chunks from the segmenter response into larger ones based on a minimum token threshold.
 	 * @param chunks Array of chunk strings from the segmenter.
 	 * @param minTokens Minimum number of tokens per chunk (default: 256).
 	 * @returns Array of merged chunk strings.
 	 */
 	mergeSmallChunks(chunks: string[], minTokens: number = 256): string[] {
+		const maxTokens = config.jinaMaxContextTokens;
 		const merged: string[] = [];
 		let buffer = "";
 
@@ -195,10 +342,19 @@ export class EmbeddingService {
 				}
 				merged.push(chunk);
 			} else {
-				buffer = buffer ? `${buffer} ${chunk}` : chunk;
-				if (countTokens(buffer) >= minTokens) {
+				const testBuffer = buffer ? `${buffer} ${chunk}` : chunk;
+				const testBufferTokens = countTokens(testBuffer);
+
+				// If adding this chunk would exceed maxTokens, flush buffer first
+				if (testBufferTokens > maxTokens && buffer) {
 					merged.push(buffer);
-					buffer = "";
+					buffer = chunk;
+				} else {
+					buffer = testBuffer;
+					if (testBufferTokens >= minTokens) {
+						merged.push(buffer);
+						buffer = "";
+					}
 				}
 			}
 		}
@@ -208,116 +364,103 @@ export class EmbeddingService {
 		return merged;
 	}
 
-	combineChunksIntoBatches(chunks: Chunk[]): Chunk[][] {
+	async batchEmbed(
+		parsedPages: ParsedPage[],
+		document: Document,
+		options: {
+			chunkingTechnique?: "fixed" | "segmenter" | "markdown";
+		} = { chunkingTechnique: "markdown" },
+	): Promise<void> {
+		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
+		const maxChunksPerRequest = config.jinaMaxDocumentsPerRequest;
+		const maxTokensPerChunk = config.jinaMaxContextTokens;
+
+		// First pass: chunk all pages and collect all chunks
+		const allChunks: Chunk[] = [];
+
+		for (const page of parsedPages) {
+			let chunkContents: string[] = [];
+			if (options.chunkingTechnique === "fixed") {
+				chunkContents = this.fixedSizeChunking(page.content);
+			} else if (options.chunkingTechnique === "markdown") {
+				chunkContents = this.markdownStructuralChunking(page.content);
+			} else if (options.chunkingTechnique === "segmenter") {
+				const SEGMENTER_INPUT_MAX = 64000;
+				const SEGMENTER_SAFETY_MARGIN = 2048;
+				const exceedsSegmenterLimit =
+					page.content.length > SEGMENTER_INPUT_MAX - SEGMENTER_SAFETY_MARGIN;
+				if (exceedsSegmenterLimit) {
+					chunkContents = this.fixedSizeChunking(page.content, 150);
+				} else {
+					const { chunks } = await this.chunkWithJinaSegmenter(page.content);
+					chunkContents = this.mergeSmallChunks(chunks);
+				}
+			} else {
+				chunkContents = this.markdownStructuralChunking(page.content);
+			}
+
+			for (let index = 0; index < chunkContents.length; index++) {
+				const chunkContent = chunkContents[index];
+				const tokenCount = countTokens(chunkContent);
+				allChunks.push({
+					content: chunkContent,
+					page: page.pageNumber,
+					chunkIndex: index,
+					tokenCount,
+				});
+			}
+		}
+
+		// Second pass: group chunks into batches
 		const batches: Chunk[][] = [];
 		let currentBatch: Chunk[] = [];
-		let currentBatchTokenCount = 0;
 
-		const safeTokenLimit = computeBatchTokenLimit(JINA_MAX_TOKEN_LIMIT, 1000); // Leave 1000 tokens as safety margin
-
-		for (const chunk of chunks) {
-			if (
-				currentBatchTokenCount + chunk.tokenCount > safeTokenLimit &&
-				currentBatch.length > 0
-			) {
-				batches.push(currentBatch);
-				currentBatch = [chunk];
-				currentBatchTokenCount = chunk.tokenCount;
-			} else {
-				currentBatch.push(chunk);
-				currentBatchTokenCount += chunk.tokenCount;
+		for (const chunk of allChunks) {
+			if (chunk.tokenCount > maxTokensPerChunk) {
+				console.warn(
+					`[WARNING] Chunk exceeds ${maxTokensPerChunk} tokens (${chunk.tokenCount}), skipping chunk from page ${chunk.page}`,
+				);
+				continue;
 			}
+
+			if (currentBatch.length >= maxChunksPerRequest) {
+				batches.push(currentBatch);
+				currentBatch = [];
+			}
+
+			currentBatch.push(chunk);
 		}
 
 		if (currentBatch.length > 0) {
 			batches.push(currentBatch);
 		}
 
-		return batches;
-	}
+		// Third pass: process batches in parallel (with concurrency limit)
+		const CONCURRENT_BATCHES = config.jinaConcurrentBatches;
 
-	async batchEmbed(
-		parsedPages: ParsedPage[],
-		document: Document,
-		options: {
-			chunkingTechnique?: "fixed" | "segmenter";
-		} = { chunkingTechnique: "segmenter" },
-	): Promise<void> {
-		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
-		const allChunks: Chunk[] = [];
-		const chunkPromises = parsedPages.map(async (page) => {
-			let currentChunks: string[] = [];
-			const exceedsSegmenterLimit =
-				page.content.length >
-				EmbeddingService.SEGMENTER_INPUT_MAX -
-					EmbeddingService.SEGMENTER_SAFETY_MARGIN;
-			if (options.chunkingTechnique === "fixed") {
-				currentChunks = this.fixedSizeChunking(page.content);
-			} else if (exceedsSegmenterLimit) {
-				currentChunks = this.fixedSizeChunking(page.content, 150);
-			} else {
-				const { chunks } = await this.chunkWithJinaSegmenter(page.content);
-				currentChunks = this.mergeSmallChunks(chunks);
-			}
-			currentChunks.forEach((chunk, index) => {
-				const tokenCount = countTokens(chunk);
-				allChunks.push({
-					content: chunk,
-					page: page.pageNumber,
-					chunkIndex: index,
-					tokenCount,
-				} as Chunk);
-			});
-		});
-
-		await Promise.all(chunkPromises);
-
-		const allEmbeddings: Embedding[] = [];
-
-		const totalTokens = allChunks.reduce(
-			(sum, chunk) => sum + chunk.tokenCount,
-			0,
-		);
-
-		if (totalTokens <= JINA_MAX_TOKEN_LIMIT) {
+		const processBatch = async (batch: Chunk[]): Promise<void> => {
 			const response = await this.generateJinaBatchEmbeddings(
-				allChunks.map((c) => c.content),
+				batch.map((c) => c.content),
 				"retrieval.passage",
 				userId,
 			);
-			response.embeddings.forEach((embedding, idx) => {
-				const { content, page, chunkIndex } = allChunks[idx];
-				allEmbeddings.push({
-					content,
-					embedding,
-					page,
-					chunkIndex,
-				} as Embedding);
-			});
-		} else {
-			const batches = this.combineChunksIntoBatches(allChunks);
 
-			const batchPromises = batches.map(async (batch) => {
-				const response = await this.generateJinaBatchEmbeddings(
-					batch.map((c) => c.content),
-					"retrieval.passage",
-					userId,
-				);
-				response.embeddings.forEach((embedding, idx) => {
-					const { content, page, chunkIndex } = batch[idx];
-					allEmbeddings.push({
-						content,
+			const embeddings: Embedding[] = response.embeddings.map(
+				(embedding, idx) =>
+					({
+						content: batch[idx].content,
 						embedding,
-						page,
-						chunkIndex,
-					} as Embedding);
-				});
-			});
+						page: batch[idx].page,
+						chunkIndex: batch[idx].chunkIndex,
+					}) as Embedding,
+			);
+			await dbService.logEmbeddings(embeddings, document);
+		};
 
-			await Promise.all(batchPromises);
+		// Process batches with controlled concurrency
+		for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
+			const batchSlice = batches.slice(i, i + CONCURRENT_BATCHES);
+			await Promise.all(batchSlice.map((batch) => processBatch(batch)));
 		}
-
-		await dbService.logEmbeddings(allEmbeddings, document);
-		return;
 	}
 }

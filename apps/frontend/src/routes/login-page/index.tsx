@@ -24,7 +24,7 @@ export function LoginPage() {
 
 	return (
 		<AuthLayout>
-			<div className="flex flex-col min-h-[90svh] h-full w-full justify-center items-center bg-hellblau-30 px-5 py-12 md:py-[100px]">
+			<div className="flex flex-col min-h-[100svh] h-full w-full justify-center items-center bg-hellblau-30 px-5 py-12 md:py-[100px]">
 				<div className="flex flex-col border max-w-[580px] w-full border-black py-8 px-5 md:p-10 rounded-3px bg-white">
 					<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
 						{Content["loginPage.h1"]}

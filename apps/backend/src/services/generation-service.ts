@@ -63,17 +63,14 @@ export class GenerationService {
 		);
 
 		const selected: ParsedPage[] = [];
-		let accumulated = "";
+		let accumulatedTokens = 0;
 
 		for (const page of parsedPages) {
-			const candidate = accumulated
-				? `${accumulated}\n${page.content}`
-				: page.content;
-			const tokens = countTokens(candidate);
-			if (tokens > safeTokenLimit) {
+			const pageTokens = page.tokenCount ?? countTokens(page.content);
+			if (accumulatedTokens + pageTokens > safeTokenLimit) {
 				break;
 			}
-			accumulated = candidate;
+			accumulatedTokens += pageTokens;
 			selected.push(page);
 		}
 
@@ -226,8 +223,11 @@ export class GenerationService {
 		llmIdentifier: LLMIdentifier,
 		document: Document,
 	): Promise<void> {
-		const content = parsedPages.map((page) => page.content).join("\n");
-		const numTokens = content.split(/\s+/).length * ESTIMATED_TOKENS_PER_WORD;
+		const numTokens = parsedPages.reduce(
+			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
+			0,
+		);
+
 		let summary: string | null = null;
 		const MAX_TOKEN_COUNT_FOR_SUMMARY =
 			modelService.availableModels[llmIdentifier].contextSize;
@@ -273,6 +273,7 @@ export class GenerationService {
 			oneSentenceSummary: true,
 			userId,
 		});
+
 		if (!shortSummary) {
 			throw new Error("Failed to generate short document summary");
 		}
@@ -289,6 +290,7 @@ export class GenerationService {
 				"retrieval.passage",
 				userId,
 			);
+
 		if (!summaryEmbeddingResponse || !summaryEmbeddingResponse.embedding) {
 			throw new Error("Failed to generate document embedding");
 		}
@@ -296,10 +298,10 @@ export class GenerationService {
 		const tags = await this.generateTags(llmIdentifier, summary, {
 			userId,
 		});
+
 		if (!tags) {
 			throw new Error("Failed to generate document tags");
 		}
-		// Using the refactored function with structured parameters
 		await dbService.logSummarizedDocument(
 			{
 				summary,

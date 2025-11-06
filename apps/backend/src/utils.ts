@@ -106,3 +106,12 @@ export async function resilientCall<T>(
 
 	return withRetries(operation, { retries, retryDelay });
 }
+
+export function createBufferView(uint8Array: Uint8Array): Buffer {
+	// this is a trick so the document is not stored twice in memory
+	return Buffer.from(
+		uint8Array.buffer,
+		uint8Array.byteOffset,
+		uint8Array.byteLength,
+	);
+}

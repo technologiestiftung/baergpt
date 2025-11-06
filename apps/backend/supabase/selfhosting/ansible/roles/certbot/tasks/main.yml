@@ -1,0 +1,53 @@
+- name: Create certbot venv
+  ansible.builtin.command:
+    cmd: "python3 -m venv /opt/certbot"
+  args:
+    creates: /opt/certbot/bin/activate
+
+- name: Upgrade pip in venv
+  ansible.builtin.command:
+    cmd: "/opt/certbot/bin/pip install --upgrade pip"
+  changed_when: false
+
+- name: Install certbot and stackit DNS plugin
+  ansible.builtin.command:
+    cmd: "/opt/certbot/bin/pip install certbot certbot-dns-stackit"
+  changed_when: false
+
+- name: Symlink certbot into /usr/bin
+  ansible.builtin.file:
+    src: /opt/certbot/bin/certbot
+    dest: /usr/bin/certbot
+    state: link
+    force: true
+
+- name: Write StackIT service account key
+  ansible.builtin.copy:
+    dest: "/home/{{ ansible_user }}/service-account-key.json"
+    content: "{{ stackit_service_account_json }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+
+- name: Obtain certificate via DNS-STACKIT (non-interactive)
+  ansible.builtin.command: >
+    certbot certonly
+    --non-interactive
+    --agree-tos
+    -m "{{ letsencrypt_email }}"
+    --authenticator dns-stackit
+    --dns-stackit-service-account "/home/{{ ansible_user }}/service-account-key.json"
+    --dns-stackit-project-id "{{ stackit_project_id }}"
+    --dns-stackit-propagation-seconds 60
+    --key-type rsa
+    -d "{{ domain }}"
+  args:
+    creates: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+
+- name: Add cron for renewals (randomized sleep)
+  ansible.builtin.cron:
+    name: "Certbot renew"
+    user: "root"
+    minute: "0"
+    hour: "0,12"
+    job: "sleep $((RANDOM%3601)) && /usr/bin/certbot renew -q"

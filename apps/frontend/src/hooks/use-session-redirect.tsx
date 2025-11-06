@@ -17,6 +17,19 @@ export function useSessionRedirect() {
 	const navigate = useNavigate();
 
 	useEffect(() => {
+		// Check for Supabase authentication error in URL hash
+		const hash = window.location.hash;
+		if (
+			hash.includes("error=access_denied") &&
+			hash.includes("error_code=otp_expired")
+		) {
+			// Clear the hash from the URL
+			window.history.replaceState(null, "", window.location.pathname);
+			// Navigate to the registration error page
+			navigate("/registration-error/");
+			return;
+		}
+
 		redirectBasedOnSession({
 			session,
 			pathname: location.pathname,
@@ -24,7 +37,7 @@ export function useSessionRedirect() {
 			isActive,
 			registrationFinishedAt,
 		}).catch(useErrorStore.getState().handleError);
-	}, [session, isActive, registrationFinishedAt, location]);
+	}, [session, isActive, registrationFinishedAt, location, navigate]);
 }
 
 async function redirectBasedOnSession({
@@ -98,7 +111,13 @@ function handleUnauthorized(
 	pathname: string,
 	navigate: (path: string) => void,
 ) {
-	const unprotectedPages = ["/login/", "/register/", "/account-deleted/", "/"];
+	const unprotectedPages = [
+		"/login/",
+		"/register/",
+		"/account-deleted/",
+		"/",
+		"/registration-error/",
+	];
 
 	if (unprotectedPages.includes(pathname)) {
 		return;

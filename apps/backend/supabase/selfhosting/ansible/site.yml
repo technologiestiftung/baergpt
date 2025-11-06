@@ -1,0 +1,10 @@
+- name: Provision Supabase self-hosted stack
+  hosts: supabase
+  become: true
+  gather_facts: true
+  roles:
+    - common
+    - docker
+    - supabase
+    - certbot
+    - nginx

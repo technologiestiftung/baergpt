@@ -34,10 +34,12 @@ export const ExportChatMessageButton: React.FC<
 		});
 	};
 
-	const handleDocxExport = () => {
+	const handleDocxExport = async () => {
 		setIsExporting(true);
 		setIsDropdownOpen(false);
-		exportToDocx(generatedAnswer, fileName);
+
+		await exportToDocx(generatedAnswer, fileName);
+
 		// Reset isExporting after 1s (animation duration)
 		setTimeout(() => {
 			setIsExporting(false);

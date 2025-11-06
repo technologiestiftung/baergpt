@@ -25,6 +25,7 @@ export const ChatMessages: React.FC = () => {
 		navigator.userAgent.indexOf("Chrome") === -1;
 
 	const isWaitingForResponse = status === "waiting-for-response";
+	const hasError = status === "error";
 
 	return (
 		<div
@@ -42,6 +43,37 @@ export const ChatMessages: React.FC = () => {
 					<div className="text-dunkelblau-80 flex gap-2 w-full items-center">
 						<BlueSquareIcon />
 						<span>{Content["chat.loadingText"]}</span>
+					</div>
+				)}
+				{hasError && (
+					<div className="flex flex-col gap-2 w-full px-3 py-[18px] text-warning-100 rounded-[3px] bg-warning-10">
+						<p>
+							<span className="flex gap-1">
+								<img
+									src="/icons/error-icon.svg"
+									alt={Content["chat.errorIcon.imgAlt"]}
+									className="w-4 h-4"
+								/>
+								<span className="text-sm leading-5 font-semibold">
+									{Content["chat.errorText.title"]}
+								</span>
+							</span>
+							<span className="text-sm leading-5 font-normal pl-5">
+								{" "}
+								{Content["chat.errorText.p1"]}
+							</span>
+						</p>
+						<span className="text-sm leading-5 font-normal pl-5">
+							{Content["chat.errorText.p2"]}
+							<a
+								href={Content["chat.errorText.helpPage.link"]}
+								className="text-sm leading-5 font-normal underline cursor-pointer text-dunkelblau-100"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								{Content["chat.errorText.helpPage.linkText"]}
+							</a>
+						</span>
 					</div>
 				)}
 			</div>
