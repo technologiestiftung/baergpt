@@ -19,6 +19,7 @@ export interface Config {
 	jinaMaxContextTokens: number;
 	jinaMaxDocumentsPerRequest: number;
 	jinaConcurrentBatches: number;
+	jinaEmbeddingDimensions: number;
 	supabaseUrl: string;
 	supabaseServiceRoleKey: string;
 	supabaseAnonKey: string;
@@ -91,6 +92,9 @@ export function verifyConfig(): void {
 	}
 	if (!process.env.JINA_CONCURRENT_BATCHES) {
 		throw new Error("JINA_CONCURRENT_BATCHES must be defined");
+	}
+	if (!process.env.JINA_EMBEDDING_DIMENSIONS) {
+		throw new Error("JINA_EMBEDDING_DIMENSIONS must be defined");
 	}
 	if (!process.env.UPLOAD_FILE_SIZE_LIMIT_MB && !process.env.CI) {
 		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be defined");
@@ -176,6 +180,7 @@ export const config: Config = {
 		10,
 	),
 	jinaConcurrentBatches: parseInt(process.env.JINA_CONCURRENT_BATCHES, 10),
+	jinaEmbeddingDimensions: parseInt(process.env.JINA_EMBEDDING_DIMENSIONS, 10),
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
