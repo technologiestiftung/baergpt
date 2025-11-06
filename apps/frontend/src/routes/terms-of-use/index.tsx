@@ -662,9 +662,16 @@ export const TermsOfUsePage: React.FC = () => {
 							<div className="flex flex-col gap-4 scroll-mt-[100px]">
 								<div className="flex flex-col gap-1">
 									<p>{Content["termsOfUsePage.consent.p1"]}</p>
-									<ul className="list-disc pl-5 mb-6">
+									<ul className="list-none mb-6 pl-0.5">
 										{consentListItems.map((item, index) => (
-											<li key={index}>{item.item}</li>
+											<li key={index} className="flex items-start gap-1">
+												<img
+													src="/icons/check-dark-blue-icon.svg"
+													alt=""
+													className="w-4 h-4 mt-1 flex-shrink-0"
+												/>
+												<span>{item.item}</span>
+											</li>
 										))}
 									</ul>
 									<p>
