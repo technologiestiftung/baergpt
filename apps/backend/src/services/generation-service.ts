@@ -244,6 +244,23 @@ export class GenerationService {
 			summaryInput = selectedPages;
 		}
 
+		// Safety mechanism in case the first page is larger than MAX_TOKEN_COUNT_FOR_SUMMARY
+		const systemTokens = await this.estimateSystemPromptTokens("summary");
+		const safeLimit = computeSafePayload(
+			MAX_TOKEN_COUNT_FOR_SUMMARY,
+			systemTokens,
+		);
+
+		let joined;
+		if (typeof summaryInput === "string") {
+			joined = summaryInput;
+		} else {
+			joined = summaryInput.map((page) => page.content).join("\n");
+		}
+		if (countTokens(joined) > safeLimit) {
+			summaryInput = trimToTokenLimitByWords(joined, safeLimit);
+		}
+
 		summary = await this.generateSummary(llmIdentifier, summaryInput, {
 			userId,
 		});
