@@ -38,6 +38,16 @@ export const tableOfContentsItems = [
 			{ title: Content["termsOfUsePage.section5.sub1.title"] },
 			{ title: Content["termsOfUsePage.section5.sub2.title"] },
 			{ title: Content["termsOfUsePage.section5.sub3.title"] },
+			{ title: Content["termsOfUsePage.section5.sub4.title"] },
+		],
+	},
+	{
+		title: Content["termsOfUsePage.section6.title"],
+		id: "section-6",
+		subsections: [
+			{ title: Content["termsOfUsePage.section6.sub1.title"] },
+			{ title: Content["termsOfUsePage.section6.sub2.title"] },
+			{ title: Content["termsOfUsePage.section6.sub3.title"] },
 		],
 	},
 ];
@@ -118,5 +128,38 @@ export const section4Sub2ListItems = [
 	{
 		heading: Content["termsOfUsePage.section4.sub2.li4.heading"],
 		description: Content["termsOfUsePage.section4.sub2.li4.description"],
+	},
+];
+
+export const section6Sub1ListItems = [
+	{
+		item: Content["termsOfUsePage.section6.sub1.li1"],
+	},
+	{
+		item: Content["termsOfUsePage.section6.sub1.li2"],
+	},
+	{
+		item: Content["termsOfUsePage.section6.sub1.li3"],
+	},
+	{
+		item: Content["termsOfUsePage.section6.sub1.li4"],
+	},
+	{
+		item: Content["termsOfUsePage.section6.sub1.li5"],
+	},
+];
+
+export const section6Sub2ListItems = [
+	{
+		item: Content["termsOfUsePage.section6.sub2.li1"],
+	},
+	{
+		item: Content["termsOfUsePage.section6.sub2.li2"],
+	},
+	{
+		item: Content["termsOfUsePage.section6.sub2.li3"],
+	},
+	{
+		item: Content["termsOfUsePage.section6.sub2.li4"],
 	},
 ];

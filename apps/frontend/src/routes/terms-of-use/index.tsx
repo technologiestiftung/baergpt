@@ -10,6 +10,8 @@ import {
 	section2Sub2ItemB,
 	section3Sub2ListItems,
 	section4Sub2ListItems,
+	section6Sub1ListItems,
+	section6Sub2ListItems,
 } from "./content.ts";
 import { ContactInfo } from "../../components/privacy-policy/contact-info.tsx";
 
@@ -220,6 +222,57 @@ export const TermsOfUsePage: React.FC = () => {
 			),
 		},
 	];
+	const section6SubSections = [
+		{
+			id: "section-6-1",
+			number: 6.1,
+			title: Content["termsOfUsePage.section6.sub1.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section6.sub1.p1"]}</p>
+					<ul className="list-disc pl-5">
+						{section6Sub1ListItems.map((item, index) => (
+							<li key={index}>{item.item}</li>
+						))}
+					</ul>
+				</div>
+			),
+		},
+		{
+			id: "section-6-2",
+			number: 6.2,
+			title: Content["termsOfUsePage.section6.sub2.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section6.sub2.p1"]}</p>
+					<ul className="list-disc pl-5">
+						{section6Sub2ListItems.map((item, index) => (
+							<li key={index}>{item.item}</li>
+						))}
+					</ul>
+				</div>
+			),
+		},
+		{
+			id: "section-6-3",
+			number: 6.3,
+			title: Content["termsOfUsePage.section6.sub3.title"],
+			content: (
+				<p>
+					<span>{Content["termsOfUsePage.section6.sub3.p1.start"]}</span>
+					<a
+						href={Content["termsOfUsePage.section6.sub3.p1.link"]}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="underline underline-offset-2"
+					>
+						{Content["termsOfUsePage.section6.sub3.p1.link"]}
+					</a>
+					<span>{Content["termsOfUsePage.section6.sub3.p1.end"]}</span>
+				</p>
+			),
+		},
+	];
 
 	// Section Content
 	const sections = [
@@ -262,6 +315,12 @@ export const TermsOfUsePage: React.FC = () => {
 			number: 5,
 			title: Content["termsOfUsePage.section5.title"],
 			subsections: section5SubSections,
+		},
+		{
+			id: "section-6",
+			number: 6,
+			title: Content["termsOfUsePage.section6.title"],
+			subsections: section6SubSections,
 		},
 	];
 
