@@ -68,6 +68,43 @@ export const tableOfContentsItems = [
 			{ title: Content["termsOfUsePage.section8.sub3.title"] },
 		],
 	},
+	{
+		title: Content["termsOfUsePage.section9.title"],
+		id: "section-9",
+		subsections: [
+			{ title: Content["termsOfUsePage.section9.sub1.title"] },
+			{ title: Content["termsOfUsePage.section9.sub2.title"] },
+			{ title: Content["termsOfUsePage.section9.sub3.title"] },
+		],
+	},
+	{
+		title: Content["termsOfUsePage.section10.title"],
+		id: "section-10",
+		subsections: [
+			{ title: Content["termsOfUsePage.section10.sub1.title"] },
+			{ title: Content["termsOfUsePage.section10.sub2.title"] },
+			{ title: Content["termsOfUsePage.section10.sub3.title"] },
+		],
+	},
+	{
+		title: Content["termsOfUsePage.section11.title"],
+		id: "section-11",
+		subsections: [
+			{ title: Content["termsOfUsePage.section11.sub1.title"] },
+			{ title: Content["termsOfUsePage.section11.sub2.title"] },
+			{ title: Content["termsOfUsePage.section11.sub3.title"] },
+		],
+	},
+	{
+		title: Content["termsOfUsePage.section12.title"],
+		id: "section-12",
+		subsections: [
+			{ title: Content["termsOfUsePage.section12.sub1.title"] },
+			{ title: Content["termsOfUsePage.section12.sub2.title"] },
+			{ title: Content["termsOfUsePage.section12.sub3.title"] },
+			{ title: Content["termsOfUsePage.section12.sub4.title"] },
+		],
+	},
 ];
 
 export const section1ListItems = [
@@ -224,5 +261,44 @@ export const section8Sub1ListItems = [
 	},
 	{
 		item: Content["termsOfUsePage.section8.sub1.li4"],
+	},
+];
+
+export const section11Sub2ListItems = [
+	{
+		item: Content["termsOfUsePage.section11.sub2.li1"],
+	},
+	{
+		item: Content["termsOfUsePage.section11.sub2.li2"],
+	},
+	{
+		item: Content["termsOfUsePage.section11.sub2.li3"],
+	},
+	{
+		item: Content["termsOfUsePage.section11.sub2.li4"],
+	},
+];
+
+export const consentListItems = [
+	{
+		item: Content["termsOfUsePage.consent.li1"],
+	},
+	{
+		item: Content["termsOfUsePage.consent.li2"],
+	},
+	{
+		item: Content["termsOfUsePage.consent.li3"],
+	},
+	{
+		item: Content["termsOfUsePage.consent.li4"],
+	},
+	{
+		item: Content["termsOfUsePage.consent.li5"],
+	},
+	{
+		item: Content["termsOfUsePage.consent.li6"],
+	},
+	{
+		item: Content["termsOfUsePage.consent.li7"],
 	},
 ];

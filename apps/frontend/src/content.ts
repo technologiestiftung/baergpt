@@ -227,7 +227,10 @@ export const Content = {
 
 	/* -------------------- Terms of use Page -------------------- */
 	"termsOfUsePage.h1": "Nutzungsbedingungen für BärGPT",
-	"termsOfUsePage.date": "Stand November 2025",
+	"termsOfUsePage.date.label": "Stand ",
+	"termsOfUsePage.date": "November 2025",
+	"termsOfUsePage.version.label": "Version ",
+	"termsOfUsePage.version": "1.0",
 	"termsOfUsePage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"termsOfUsePage.section1.title": "Begriffsbestimmungen",
@@ -507,6 +510,127 @@ export const Content = {
 	"termsOfUsePage.section8.sub3.title": "Datenverlust",
 	"termsOfUsePage.section8.sub3.p1":
 		"Der Betreiber führt regelmäßige Backups durch. Dennoch kann ein vollständiger Schutz vor Datenverlust nicht garantiert werden. Die Nutzenden werden gebeten, wichtige Daten zusätzlich lokal zu sichern.",
+	//Section 9
+	"termsOfUsePage.section9.title": "Open Source und Nutzungsrechte",
+	//9.1
+	"termsOfUsePage.section9.sub1.number": "9.1",
+	"termsOfUsePage.section9.sub1.title": "Open Source",
+	"termsOfUsePage.section9.sub1.p1.start":
+		"BärGPT wurde nach dem Prinzip „Public Money, Public Code“ entwickelt. Der Quellcode ist Open Source und öffentlich auf ",
+	"termsOfUsePage.section9.sub1.p1.link":
+		"https://github.com/technologiestiftung/baergpt)",
+	"termsOfUsePage.section9.sub1.p1.link.label": "GitHub",
+	"termsOfUsePage.section9.sub1.p1.end": " verfügbar.",
+	//9.2
+	"termsOfUsePage.section9.sub2.number": "9.2",
+	"termsOfUsePage.section9.sub2.title":
+		"Nutzungsrechte an generierten Inhalten",
+	"termsOfUsePage.section9.sub2.p1":
+		"Die mit BärGPT generierten Inhalte stehen den Nutzenden zur freien Verwendung im Rahmen ihrer dienstlichen Aufgaben zur Verfügung. Der Betreiber erhebt keine Ansprüche an diesen Inhalten.",
+	//9.3
+	"termsOfUsePage.section9.sub3.number": "9.3",
+	"termsOfUsePage.section9.sub3.title":
+		"Nutzungsrechte an hochgeladenen Dokumenten",
+	"termsOfUsePage.section9.sub3.p1":
+		"Die Nutzenden versichern, dass sie über die erforderlichen Rechte an den hochgeladenen Dokumenten verfügen. Der Betreiber erwirbt keine Rechte an den hochgeladenen Dokumenten.",
+	//Section 10
+	"termsOfUsePage.section10.title": "Änderungen der Nutzungsbedingungen",
+	//10.1
+	"termsOfUsePage.section10.sub1.number": "10.1",
+	"termsOfUsePage.section10.sub1.title": "Änderungsvorbehalt",
+	"termsOfUsePage.section10.sub1.p1":
+		"Der Betreiber behält sich vor, diese Nutzungsbedingungen zu ändern, sofern dies aus rechtlichen oder technischen Gründen erforderlich ist oder zur Verbesserung des Angebots dient.",
+	//10.2
+	"termsOfUsePage.section10.sub2.number": "10.2",
+	"termsOfUsePage.section10.sub2.title": "Information über Änderungen",
+	"termsOfUsePage.section10.sub2.p1":
+		"Wesentliche Änderungen werden den Nutzenden rechtzeitig (mindestens zwei Wochen vor Inkrafttreten) per E-Mail oder über die Anwendung mitgeteilt.",
+	//10.3
+	"termsOfUsePage.section10.sub3.number": "10.3",
+	"termsOfUsePage.section10.sub3.title": "Widerspruchsrecht",
+	"termsOfUsePage.section10.sub3.p1":
+		"Die Nutzenden haben das Recht, Änderungen zu widersprechen. Der Widerspruch ist schriftlich oder per E-Mail an support@baergpt.berlin zu richten. Im Falle eines Widerspruchs endet das Nutzungsverhältnis mit Inkrafttreten der neuen Nutzungsbedingungen.",
+	"termsOfUsePage.section10.sub3.p2":
+		"Die weitere Nutzung von BärGPT nach Inkrafttreten der geänderten Nutzungsbedingungen gilt als Zustimmung zu den Änderungen.",
+	//Section 11
+	"termsOfUsePage.section11.title": "Beendigung der Nutzung",
+	//11.1
+	"termsOfUsePage.section11.sub1.number": "11.1",
+	"termsOfUsePage.section11.sub1.title": "Kündigung durch Nutzende",
+	"termsOfUsePage.section11.sub1.p1":
+		"Die Nutzenden können die Nutzung von BärGPT jederzeit ohne Einhaltung einer Frist beenden, indem sie ihren Account über die Profilseite löschen.",
+	//11.2
+	"termsOfUsePage.section11.sub2.number": "11.2",
+	"termsOfUsePage.section11.sub2.title": "Folgen der Accountlöschung",
+	"termsOfUsePage.section11.sub2.p1":
+		"Bei Löschung des Accounts werden unwiderruflich und unmittelbar gelöscht:",
+	"termsOfUsePage.section11.sub2.li1":
+		"Das Nutzerprofil (Vorname, Nachname, E-Mail-Adresse, Anrede, Titel)",
+	"termsOfUsePage.section11.sub2.li2": "Die gesamte Chat-Historie",
+	"termsOfUsePage.section11.sub2.li3":
+		"Alle hochgeladenen Dokumente und Ordner",
+	"termsOfUsePage.section11.sub2.li4": "Alle zugehörigen Metadaten",
+	"termsOfUsePage.section11.sub2.p2":
+		"Die Löschung kann nicht rückgängig gemacht werden.",
+	//11.3
+	"termsOfUsePage.section11.sub3.number": "11.3",
+	"termsOfUsePage.section11.sub3.title": "Kündigung durch den Betreiber",
+	"termsOfUsePage.section11.sub3.p1":
+		"Der Betreiber kann das Nutzungsverhältnis mit einer Frist von zwei Wochen ohne Angabe von Gründen beenden.",
+	"termsOfUsePage.section11.sub3.p2":
+		"Bei Vorliegen eines wichtigen Grundes (z.B. Verstoß gegen diese Nutzungsbedingungen, Verlust der Nutzungsberechtigung) kann eine fristlose Kündigung erfolgen.",
+	//Section 12
+	"termsOfUsePage.section12.title": "Schlussbestimmungen",
+	//12.1
+	"termsOfUsePage.section12.sub1.number": "12.1",
+	"termsOfUsePage.section12.sub1.title": "Gerichtsstand",
+	"termsOfUsePage.section12.sub1.p1":
+		"Soweit gesetzlich zulässig, ist Gerichtsstand für alle Streitigkeiten aus oder im Zusammenhang mit diesem Vertragsverhältnis Berlin.",
+	//12.2
+	"termsOfUsePage.section12.sub2.number": "12.2",
+	"termsOfUsePage.section12.sub2.title": "Salvatorische Klausel",
+	"termsOfUsePage.section12.sub2.p1":
+		"Sollten einzelne Bestimmungen dieser Nutzungsbedingungen unwirksam oder undurchführbar sein oder werden, berührt dies die Wirksamkeit der übrigen Bestimmungen nicht. An die Stelle der unwirksamen oder undurchführbaren Bestimmung tritt eine wirksame Regelung, die dem wirtschaftlichen Zweck der unwirksamen Bestimmung am nächsten kommt.",
+	//12.3
+	"termsOfUsePage.section12.sub3.number": "12.3",
+	"termsOfUsePage.section12.sub3.title": "Sprache",
+	"termsOfUsePage.section12.sub3.p1":
+		"Diese Nutzungsbedingungen sind in deutscher Sprache verfasst. Bei Übersetzungen in andere Sprachen ist im Zweifel die deutsche Fassung maßgeblich.",
+	//12.4
+	"termsOfUsePage.section12.sub4.number": "12.4",
+	"termsOfUsePage.section12.sub4.title": "Support und Kontakt",
+	"termsOfUsePage.section12.sub4.p1":
+		"Bei Fragen zu diesen Nutzungsbedingungen oder zu BärGPT wenden Sie sich bitte an:",
+	"termsOfUsePage.section12.sub4.p1.contact.email.label": "E-Mail: ",
+	"termsOfUsePage.section12.sub4.p1.contact.email": "support@baergpt.berlin",
+	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.label": "Hilfecenter: ",
+	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.link":
+		"https://hilfe.baergpt.berlin",
+	//consent
+	"termsOfUsePage.consent.title": "Einwilligung und Bestätigung",
+	"termsOfUsePage.consent.p1":
+		"Mit der Registrierung und Nutzung von BärGPT bestätigen Sie:",
+	"termsOfUsePage.consent.li1":
+		"Dass Sie die vorliegenden Nutzungsbedingungen vollständig gelesen und verstanden haben",
+	"termsOfUsePage.consent.li2":
+		"Dass Sie die Nutzungsbedingungen in vollem Umfang akzeptieren",
+	"termsOfUsePage.consent.li3":
+		"Dass Sie zur Nutzung von BärGPT berechtigt sind (Beschäftigte/r der Berliner Verwaltung)",
+	"termsOfUsePage.consent.li4":
+		"Dass Sie sich verpflichten, keine personenbezogenen Daten oder Daten mit hohem Schutzbedarf zu verarbeiten (bis zur Inkraftsetzung der entsprechenden Rechtsgrundlage)",
+	"termsOfUsePage.consent.li5":
+		"Dass Sie die Datenschutzhinweise zur Kenntnis genommen haben",
+	"termsOfUsePage.consent.li6":
+		"Dass Sie Ihre Zugangsdaten nicht an Dritte weitergeben werden",
+	"termsOfUsePage.consent.li7":
+		"Dass Sie die Anwendung ausschließlich im Rahmen Ihrer beruflichen Tätigkeit nutzen werden",
+	"termsOfUsePage.contact.organisation": "Technologiestiftung Berlin",
+	"termsOfUsePage.contact.organisation.1": "CityLAB Berlin",
+	"termsOfUsePage.contact.address.street": "Platz der Luftbrücke 4",
+	"termsOfUsePage.contact.address.city": "12101 Berlin",
+	"termsOfUsePage.contact.website": "https://www.baergpt.berlin",
+	"termsOfUsePage.contact.helpcenter.website": "https://hilfe.baergpt.berlin",
+
 	/* -------------------- Video player -------------------- */
 	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
 	"videoPlayer.cookies.buttonAriaLabel":

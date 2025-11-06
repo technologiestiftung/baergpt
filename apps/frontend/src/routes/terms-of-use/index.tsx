@@ -15,6 +15,8 @@ import {
 	section7Sub2ListItems,
 	section7Sub3ListItems,
 	section8Sub1ListItems,
+	section11Sub2ListItems,
+	consentListItems,
 } from "./content.ts";
 import { ContactInfo } from "../../components/privacy-policy/contact-info.tsx";
 
@@ -359,6 +361,166 @@ export const TermsOfUsePage: React.FC = () => {
 		},
 	];
 
+	const section9SubSections = [
+		{
+			id: "section-9-1",
+			number: 9.1,
+			title: Content["termsOfUsePage.section9.sub1.title"],
+			content: (
+				<p>
+					<span>{Content["termsOfUsePage.section9.sub1.p1.start"]}</span>
+					<a
+						href={Content["termsOfUsePage.section9.sub1.p1.link"]}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="underline underline-offset-2"
+					>
+						{Content["termsOfUsePage.section9.sub1.p1.link.label"]}
+					</a>
+					<span>{Content["termsOfUsePage.section9.sub1.p1.end"]}</span>
+				</p>
+			),
+		},
+		{
+			id: "section-9-2",
+			number: 9.2,
+			title: Content["termsOfUsePage.section9.sub2.title"],
+			content: <p>{Content["termsOfUsePage.section9.sub2.p1"]}</p>,
+		},
+		{
+			id: "section-9-3",
+			number: 9.3,
+			title: Content["termsOfUsePage.section9.sub3.title"],
+			content: <p>{Content["termsOfUsePage.section9.sub3.p1"]}</p>,
+		},
+	];
+
+	const section10SubSections = [
+		{
+			id: "section-10-1",
+			number: 10.1,
+			title: Content["termsOfUsePage.section10.sub1.title"],
+			content: <p>{Content["termsOfUsePage.section10.sub1.p1"]}</p>,
+		},
+		{
+			id: "section-10-2",
+			number: 10.2,
+			title: Content["termsOfUsePage.section10.sub2.title"],
+			content: <p>{Content["termsOfUsePage.section10.sub2.p1"]}</p>,
+		},
+		{
+			id: "section-10-3",
+			number: 10.3,
+			title: Content["termsOfUsePage.section10.sub3.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section10.sub3.p1"]}</p>
+					<p>{Content["termsOfUsePage.section10.sub3.p2"]}</p>
+				</div>
+			),
+		},
+	];
+	const section11SubSections = [
+		{
+			id: "section-11-1",
+			number: 11.1,
+			title: Content["termsOfUsePage.section11.sub1.title"],
+			content: <p>{Content["termsOfUsePage.section11.sub1.p1"]}</p>,
+		},
+		{
+			id: "section-11-2",
+			number: 11.2,
+			title: Content["termsOfUsePage.section11.sub2.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section11.sub2.p1"]}</p>
+					<ul className="list-disc pl-5">
+						{section11Sub2ListItems.map((item, index) => (
+							<li key={index}>{item.item}</li>
+						))}
+					</ul>
+					<p>{Content["termsOfUsePage.section11.sub2.p2"]}</p>
+				</div>
+			),
+		},
+		{
+			id: "section-11-3",
+			number: 11.3,
+			title: Content["termsOfUsePage.section11.sub3.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section11.sub3.p1"]}</p>
+					<p>{Content["termsOfUsePage.section11.sub3.p2"]}</p>
+				</div>
+			),
+		},
+	];
+	const section12SubSections = [
+		{
+			id: "section-12-1",
+			number: 12.1,
+			title: Content["termsOfUsePage.section12.sub1.title"],
+			content: <p>{Content["termsOfUsePage.section12.sub1.p1"]}</p>,
+		},
+		{
+			id: "section-12-2",
+			number: 12.2,
+			title: Content["termsOfUsePage.section12.sub2.title"],
+			content: <p>{Content["termsOfUsePage.section12.sub2.p1"]}</p>,
+		},
+		{
+			id: "section-12-3",
+			number: 12.3,
+			title: Content["termsOfUsePage.section12.sub3.title"],
+			content: <p>{Content["termsOfUsePage.section12.sub3.p1"]}</p>,
+		},
+		{
+			id: "section-12-4",
+			number: 12.4,
+			title: Content["termsOfUsePage.section12.sub4.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section12.sub4.p1"]}</p>
+					<p>
+						<span className="font-semibold">
+							{Content["termsOfUsePage.section12.sub4.p1.contact.email.label"]}
+						</span>
+						<a
+							href={`mailto:${Content["termsOfUsePage.section12.sub4.p1.contact.email"]}`}
+							className="underline underline-offset-2"
+						>
+							{Content["termsOfUsePage.section12.sub4.p1.contact.email"]}
+						</a>
+					</p>
+					<p>
+						<span className="font-semibold">
+							{
+								Content[
+									"termsOfUsePage.section12.sub4.p1.contact.helpcenter.label"
+								]
+							}
+						</span>
+						<a
+							href={
+								Content[
+									"termsOfUsePage.section12.sub4.p1.contact.helpcenter.link"
+								]
+							}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="underline underline-offset-2"
+						>
+							{
+								Content[
+									"termsOfUsePage.section12.sub4.p1.contact.helpcenter.link"
+								]
+							}
+						</a>
+					</p>
+				</div>
+			),
+		},
+	];
 	// Section Content
 	const sections = [
 		{
@@ -419,6 +581,30 @@ export const TermsOfUsePage: React.FC = () => {
 			title: Content["termsOfUsePage.section8.title"],
 			subsections: section8SubSections,
 		},
+		{
+			id: "section-9",
+			number: 9,
+			title: Content["termsOfUsePage.section9.title"],
+			subsections: section9SubSections,
+		},
+		{
+			id: "section-10",
+			number: 10,
+			title: Content["termsOfUsePage.section10.title"],
+			subsections: section10SubSections,
+		},
+		{
+			id: "section-11",
+			number: 11,
+			title: Content["termsOfUsePage.section11.title"],
+			subsections: section11SubSections,
+		},
+		{
+			id: "section-12",
+			number: 12,
+			title: Content["termsOfUsePage.section12.title"],
+			subsections: section12SubSections,
+		},
 	];
 
 	return (
@@ -428,7 +614,8 @@ export const TermsOfUsePage: React.FC = () => {
 					{Content["termsOfUsePage.h1"]}
 				</h1>
 				<p className="text-base leading-6 lg:text-lg lg:leading-7 mb-4 lg:mb-5">
-					{Content["termsOfUsePage.date"]}
+					<span>{Content["termsOfUsePage.date.label"]}</span>
+					<span>{Content["termsOfUsePage.date"]}</span>
 				</p>
 				<h2 className="text-2xl leading-8 lg:text-3xl lg:leading-9 font-semibold mb-4 lg:mb-5">
 					{Content["termsOfUsePage.tableOfContents.title"]}
@@ -467,6 +654,65 @@ export const TermsOfUsePage: React.FC = () => {
 							</li>
 						))}
 					</ol>
+					<div className="flex flex-col gap-5 lg:gap-6 scroll-mt-[100px]">
+						<h2 className="flex gap-2 text-3xl leading-9 lg:text-4xl lg:leading-10 font-semibold">
+							{Content["termsOfUsePage.consent.title"]}
+						</h2>
+						<div className="flex flex-col gap-6">
+							<div className="flex flex-col gap-4 scroll-mt-[100px]">
+								<div className="flex flex-col gap-1">
+									<p>{Content["termsOfUsePage.consent.p1"]}</p>
+									<ul className="list-disc pl-5 mb-6">
+										{consentListItems.map((item, index) => (
+											<li key={index}>{item.item}</li>
+										))}
+									</ul>
+									<p>
+										<span className="font-semibold">
+											{Content["termsOfUsePage.date.label"]}
+										</span>
+										<span>{Content["termsOfUsePage.date"]}</span>
+									</p>
+									<p className="mb-6">
+										<span className="font-semibold">
+											{Content["termsOfUsePage.version.label"]}
+										</span>
+										<span>{Content["termsOfUsePage.version"]}</span>
+									</p>
+
+									<ContactInfo
+										data={{
+											heading: Content["termsOfUsePage.contact.organisation"],
+											organisation:
+												Content["termsOfUsePage.contact.organisation.1"],
+
+											address: {
+												street:
+													Content["termsOfUsePage.contact.address.street"],
+												city: Content["termsOfUsePage.contact.address.city"],
+											},
+										}}
+									/>
+									<a
+										href={Content["termsOfUsePage.contact.website"]}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="underline underline-offset-2"
+									>
+										{Content["termsOfUsePage.contact.website"]}
+									</a>
+									<a
+										href={Content["termsOfUsePage.contact.helpcenter.website"]}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="underline underline-offset-2"
+									>
+										{Content["termsOfUsePage.contact.helpcenter.website"]}
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</LandingPageLayout>
