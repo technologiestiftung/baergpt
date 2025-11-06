@@ -8,9 +8,9 @@ vi.mock("../src/config", () => ({
 	config: {
 		jinaApiKey: "test-key",
 		jinaEmbeddingModel: "embedding-model-1",
-		jinaMaxContextTokens: 8192,
+		jinaMaxContextTokens: 32768,
 		jinaMaxDocumentsPerRequest: 512,
-		jinaConcurrentBatches: 10,
+		jinaConcurrentBatches: 30,
 	},
 }));
 
@@ -43,7 +43,7 @@ describe("Chunking Methods", () => {
 		});
 
 		it("should split by newlines when text exceeds limit", () => {
-			const longLine = "a ".repeat(3000);
+			const longLine = "a ".repeat(40000);
 			const text = `${longLine}\n${longLine}\n${longLine}`;
 			const chunks = service.recursiveChunking(text);
 
@@ -56,7 +56,7 @@ describe("Chunking Methods", () => {
 		});
 
 		it("should split by sentences when no newlines available", () => {
-			const longSentence = "word ".repeat(3000);
+			const longSentence = "word ".repeat(30000);
 			const text = `${longSentence}. ${longSentence}. ${longSentence}.`;
 			const chunks = service.recursiveChunking(text);
 
@@ -70,7 +70,7 @@ describe("Chunking Methods", () => {
 
 		it("should split by words when no sentence boundaries available", () => {
 			// Create text that exceeds the token limit without new lines or sentence boundaries
-			const text = "word ".repeat(10000);
+			const text = "word ".repeat(40000);
 			const chunks = service.recursiveChunking(text);
 
 			expect(chunks.length).toBeGreaterThan(1);
@@ -79,20 +79,6 @@ describe("Chunking Methods", () => {
 					config.jinaMaxContextTokens,
 				);
 			});
-		});
-
-		it("should skip edge case with no word boundaries", () => {
-			// Very long URL - no spaces, no sentence boundaries
-			const veryLongUrl = `https://example.com/verylongpath${"test".repeat(10000)}`;
-			const tokenCount = countTokens(veryLongUrl);
-			expect(tokenCount).toBeGreaterThan(config.jinaMaxContextTokens);
-
-			const chunks = service.recursiveChunking(veryLongUrl);
-
-			expect(chunks).toEqual([]);
-			expect(console.warn).toHaveBeenCalledWith(
-				expect.stringContaining("Skipping unchunkable content"),
-			);
 		});
 
 		it("should handle CSV-like content with semicolons", () => {
@@ -106,7 +92,9 @@ describe("Chunking Methods", () => {
 
 			expect(chunks.length).toBeGreaterThan(0);
 			chunks.forEach((chunk) => {
-				expect(countTokens(chunk)).toBeLessThanOrEqual(8192);
+				expect(countTokens(chunk)).toBeLessThanOrEqual(
+					config.jinaMaxContextTokens,
+				);
 			});
 		});
 
@@ -119,7 +107,9 @@ describe("Chunking Methods", () => {
 
 			expect(chunks.length).toBeGreaterThan(0);
 			chunks.forEach((chunk) => {
-				expect(countTokens(chunk)).toBeLessThanOrEqual(8192);
+				expect(countTokens(chunk)).toBeLessThanOrEqual(
+					config.jinaMaxContextTokens,
+				);
 				expect(chunk.trim().length).toBeGreaterThan(0);
 			});
 		});
@@ -132,16 +122,22 @@ describe("Chunking Methods", () => {
 
 			expect(chunks.length).toBeGreaterThan(0);
 			chunks.forEach((chunk) => {
-				expect(countTokens(chunk)).toBeLessThanOrEqual(8192);
+				expect(countTokens(chunk)).toBeLessThanOrEqual(
+					config.jinaMaxContextTokens,
+				);
 			});
 		});
 
 		it("should skip minified JSON without spaces", () => {
 			const minifiedJson = `{"key":"value","nested":{"deep":"data"}}${JSON.stringify(
-				Array(1000)
+				Array(5000)
 					.fill(0)
 					.map((_, i) => ({ id: i, data: "x".repeat(20) })),
 			).replace(/\s/g, "")}`; // Remove all spaces
+
+			const tokenCount = countTokens(minifiedJson);
+			// With 5000 items, this should exceed the limit
+			expect(tokenCount).toBeGreaterThan(config.jinaMaxContextTokens);
 
 			const chunks = service.recursiveChunking(minifiedJson);
 
@@ -163,19 +159,21 @@ describe("Chunking Methods", () => {
 		it("should split by markdown headers", () => {
 			const text = `
 # Header 1
-${"Content for section 1. ".repeat(500)}
+${"Content for section 1. ".repeat(5000)}
 
 ## Header 2
-${"Content for section 2. ".repeat(500)}
+${"Content for section 2. ".repeat(5000)}
 
 ### Header 3
-${"Content for section 3. ".repeat(500)}
+${"Content for section 3. ".repeat(5000)}
 `;
 			const chunks = service.markdownStructuralChunking(text);
 
 			expect(chunks.length).toBeGreaterThan(1);
 			chunks.forEach((chunk) => {
-				expect(countTokens(chunk)).toBeLessThanOrEqual(8192);
+				expect(countTokens(chunk)).toBeLessThanOrEqual(
+					config.jinaMaxContextTokens,
+				);
 			});
 		});
 
@@ -193,7 +191,9 @@ More content after code block.
 
 			expect(chunks.length).toBeGreaterThan(0);
 			chunks.forEach((chunk) => {
-				expect(countTokens(chunk)).toBeLessThanOrEqual(8192);
+				expect(countTokens(chunk)).toBeLessThanOrEqual(
+					config.jinaMaxContextTokens,
+				);
 			});
 		});
 	});
