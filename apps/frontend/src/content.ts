@@ -854,7 +854,9 @@ export const Content = {
 		"Die Passwörter stimmen nicht überein.",
 	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.privacy.required.error":
-		"Bitte stimmen Sie den Datenschutzbestimmungen zu.",
+		"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
+	"form.validation.personalData.required.error":
+		"Bitte stimmen Sie zu, keine personenbezogenen Daten zu bearbeiten.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
 	"form.validation.userAlreadyRegistered.error":

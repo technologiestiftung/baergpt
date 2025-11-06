@@ -58,8 +58,8 @@ export function RegisterPage() {
 
 	return (
 		<AuthLayout>
-			<div className="flex flex-col min-h-[90svh] w-full justify-center items-center md:bg-hellblau-30 py-12 md:py-[100px] px-5">
-				<div className="flex flex-col border border-black py-8 px-5 md:p-10 rounded-3px bg-white ">
+			<div className="flex flex-col min-h-[90svh] w-full justify-center items-center bg-hellblau-30 py-12 md:py-[100px] px-5">
+				<div className="flex flex-col border border-black py-8 px-5 md:p-10 rounded-3px bg-white">
 					<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
 						{Content["registerPage.h1"]}
 					</h1>
@@ -144,7 +144,7 @@ export function RegisterPage() {
 								onChange={setHasAcceptedPrivacy}
 								required={true}
 							>
-								<span className="flex flex-row gap-x-1 text-sm md:text-base">
+								<span className="flex flex-row flex-wrap gap-x-1 text-sm md:text-base">
 									<a
 										href={Content["footer.privacy.link"]}
 										className="underline hover:no-underline rounded-3px focus-visible:outline-default cursor-pointer"
@@ -152,9 +152,7 @@ export function RegisterPage() {
 									>
 										{Content["registerPage.privacyLink.label"]}
 									</a>
-									<span data-testid={`label-has-accepted-privacy-checkbox`}>
-										{Content["registerPage.privacyText.p1"]}
-									</span>
+									<span>{Content["registerPage.privacyText.p1"]}</span>
 									<a
 										href={Content["footer.termsOfUse.link"]}
 										className="underline hover:no-underline rounded-3px focus-visible:outline-default cursor-pointer"
@@ -176,12 +174,12 @@ export function RegisterPage() {
 								onChange={setHasAcceptedPersonalData}
 								required={true}
 							>
-								<p
+								<span
 									className="text-sm md:text-base"
 									data-testid={`label-has-accepted-personal-data-checkbox`}
 								>
 									{Content["registerPage.personalData.label"]}
-								</p>
+								</span>
 							</Checkbox>
 						</div>
 
