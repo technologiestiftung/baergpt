@@ -12,6 +12,9 @@ import {
 	section4Sub2ListItems,
 	section6Sub1ListItems,
 	section6Sub2ListItems,
+	section7Sub2ListItems,
+	section7Sub3ListItems,
+	section8Sub1ListItems,
 } from "./content.ts";
 import { ContactInfo } from "../../components/privacy-policy/contact-info.tsx";
 
@@ -273,6 +276,88 @@ export const TermsOfUsePage: React.FC = () => {
 			),
 		},
 	];
+	const section7SubSections = [
+		{
+			id: "section-7-1",
+			number: 7.1,
+			title: Content["termsOfUsePage.section7.sub1.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section7.sub1.p1"]}</p>
+					<p>{Content["termsOfUsePage.section7.sub1.p2"]}</p>
+				</div>
+			),
+		},
+		{
+			id: "section-7-2",
+			number: 7.2,
+			title: Content["termsOfUsePage.section7.sub2.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section7.sub2.p1"]}</p>
+					<ul className="list-disc pl-5">
+						{section7Sub2ListItems.map((item, index) => (
+							<li key={index}>{item.item}</li>
+						))}
+					</ul>
+					<p>{Content["termsOfUsePage.section7.sub2.p2"]}</p>
+				</div>
+			),
+		},
+		{
+			id: "section-7-3",
+			number: 7.3,
+			title: Content["termsOfUsePage.section7.sub3.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section7.sub3.p1"]}</p>
+					<ul className="list-disc pl-5">
+						{section7Sub3ListItems.map((item, index) => (
+							<li key={index}>{item.item}</li>
+						))}
+					</ul>
+					<p>{Content["termsOfUsePage.section7.sub3.p2"]}</p>
+				</div>
+			),
+		},
+	];
+
+	const section8SubSections = [
+		{
+			id: "section-8-1",
+			number: 8.1,
+			title: Content["termsOfUsePage.section8.sub1.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section8.sub1.p1"]}</p>
+					<p>{Content["termsOfUsePage.section8.sub1.p2"]}</p>
+					<ul className="list-disc pl-5">
+						{section8Sub1ListItems.map((item, index) => (
+							<li key={index}>{item.item}</li>
+						))}
+					</ul>
+				</div>
+			),
+		},
+		{
+			id: "section-8-2",
+			number: 8.2,
+			title: Content["termsOfUsePage.section8.sub2.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section8.sub2.p1"]}</p>
+					<p>{Content["termsOfUsePage.section8.sub2.p2"]}</p>
+					<p>{Content["termsOfUsePage.section8.sub2.p3"]}</p>
+				</div>
+			),
+		},
+		{
+			id: "section-8-3",
+			number: 8.3,
+			title: Content["termsOfUsePage.section8.sub3.title"],
+			content: <p>{Content["termsOfUsePage.section8.sub3.p1"]}</p>,
+		},
+	];
 
 	// Section Content
 	const sections = [
@@ -321,6 +406,18 @@ export const TermsOfUsePage: React.FC = () => {
 			number: 6,
 			title: Content["termsOfUsePage.section6.title"],
 			subsections: section6SubSections,
+		},
+		{
+			id: "section-7",
+			number: 7,
+			title: Content["termsOfUsePage.section7.title"],
+			subsections: section7SubSections,
+		},
+		{
+			id: "section-8",
+			number: 8,
+			title: Content["termsOfUsePage.section8.title"],
+			subsections: section8SubSections,
 		},
 	];
 

@@ -443,6 +443,70 @@ export const Content = {
 	"termsOfUsePage.section6.sub3.p1.end": " gemeldet werden.",
 	//Section 7
 	"termsOfUsePage.section7.title": "Rechte und Pflichten des Betreibers",
+	//7.1
+	"termsOfUsePage.section7.sub1.number": "7.1",
+	"termsOfUsePage.section7.sub1.title": "Verfügbarkeit",
+	"termsOfUsePage.section7.sub1.p1":
+		"Der Betreiber bemüht sich um eine möglichst hohe Verfügbarkeit von BärGPT. Ein Rechtsanspruch auf jederzeitige Verfügbarkeit besteht jedoch nicht. Der Betreiber bearbeitet Störmeldungen und Supportanfragen während der normalen Arbeitszeiten (Montag-Freitag, 09:00-17:00 Uhr CET/CEST). Störungen werden entsprechend ihrer Auswirkung priorisiert (z. B. hohe Priorität bei vollständigem Ausfall der Anwendung). Konkrete Maßnahmen zur Behebung richten sich nach der technischen Einschätzung und den zur Verfügung stehenden Ressourcen; die Behebung kann daher variieren und ist nicht garantiert.",
+	"termsOfUsePage.section7.sub1.p2":
+		"Wartungsarbeiten, Systemaktualisierungen oder andere technische Notwendigkeiten können vorübergehende Einschränkungen oder Ausfälle zur Folge haben. Der Betreiber wird versuchen, solche Unterbrechungen auf ein Minimum zu beschränken und nach Möglichkeit rechtzeitig anzukündigen.",
+	//7.2
+	"termsOfUsePage.section7.sub2.number": "7.2",
+	"termsOfUsePage.section7.sub2.title": "Änderungen und Weiterentwicklung",
+	"termsOfUsePage.section7.sub2.p1":
+		"Der Betreiber behält sich das Recht vor, BärGPT jederzeit zu ändern, zu erweitern oder weiterzuentwickeln. Dies umfasst:",
+	"termsOfUsePage.section7.sub2.li1": "Anpassung des Funktionsumfangs",
+	"termsOfUsePage.section7.sub2.li2": "Änderung der Benutzeroberfläche",
+	"termsOfUsePage.section7.sub2.li3": "Integration neuer Funktionen",
+	"termsOfUsePage.section7.sub2.li4":
+		"Austausch oder Aktualisierung von Systemkomponenten (z.B. Sprachmodelle)",
+	"termsOfUsePage.section7.sub2.p2":
+		"Die Nutzenden werden über wesentliche Änderungen informiert.",
+	//7.3
+	"termsOfUsePage.section7.sub3.number": "7.3",
+	"termsOfUsePage.section7.sub3.title": "Sperrung und Löschung von Accounts",
+	"termsOfUsePage.section7.sub3.p1":
+		"Der Betreiber ist berechtigt, Nutzeraccounts zu sperren oder zu löschen, wenn:",
+	"termsOfUsePage.section7.sub3.li1":
+		"Ein Verstoß gegen diese Nutzungsbedingungen vorliegt",
+	"termsOfUsePage.section7.sub3.li2":
+		"Berechtigte Zweifel an der Nutzungsberechtigung bestehen",
+	"termsOfUsePage.section7.sub3.li3":
+		"Die Nutzung gegen geltendes Recht verstößt",
+	"termsOfUsePage.section7.sub3.li4":
+		"Die Sicherheit der Anwendung oder anderer Nutzender gefährdet ist",
+	"termsOfUsePage.section7.sub3.p2":
+		"Vor einer Sperrung oder Löschung wird der Betreiber die betroffenen Nutzenden nach Möglichkeit informieren und ihnen Gelegenheit zur Stellungnahme geben, sofern dies rechtlich zulässig und technisch möglich ist.",
+	//Section 8
+	"termsOfUsePage.section8.title": "Haftung und Gewährleistung",
+	//8.1
+	"termsOfUsePage.section8.sub1.number": "8.1",
+	"termsOfUsePage.section8.sub1.title": "Haftungsausschluss für Inhalte",
+	"termsOfUsePage.section8.sub1.p1":
+		"Der Betreiber übernimmt keine Gewähr für die Richtigkeit, Vollständigkeit oder Aktualität der von BärGPT generierten Inhalte. Die Nutzenden sind selbst für die Prüfung und Verwendung der Ergebnisse verantwortlich.",
+	"termsOfUsePage.section8.sub1.p2":
+		"Insbesondere wird keine Haftung übernommen für: ",
+	"termsOfUsePage.section8.sub1.li1":
+		"Fehlerhafte oder unvollständige Informationen",
+	"termsOfUsePage.section8.sub1.li2": "„Halluzinationen“ des Sprachmodells",
+	"termsOfUsePage.section8.sub1.li3":
+		"Veraltete oder nicht mehr aktuelle Informationen aus dem Verwaltungswissen",
+	"termsOfUsePage.section8.sub1.li4":
+		"Fehlinterpretationen hochgeladener Dokumente",
+	//8.2
+	"termsOfUsePage.section8.sub2.number": "8.2",
+	"termsOfUsePage.section8.sub2.title": "Haftungsbeschränkung",
+	"termsOfUsePage.section8.sub2.p1":
+		"Der Betreiber haftet nur für Schäden, die auf Vorsatz oder grober Fahrlässigkeit beruhen. Die Haftung für leichte Fahrlässigkeit ist ausgeschlossen, soweit nicht Leben, Körper, Gesundheit oder wesentliche Vertragspflichten (Kardinalpflichten) betroffen sind.",
+	"termsOfUsePage.section8.sub2.p2":
+		"Bei Verletzung wesentlicher Vertragspflichten ist die Haftung auf den vorhersehbaren, vertragstypischen Schaden begrenzt.",
+	"termsOfUsePage.section8.sub2.p3":
+		"Die Haftung nach dem Produkthaftungsgesetz bleibt unberührt.",
+	//8.3
+	"termsOfUsePage.section8.sub3.number": "8.3",
+	"termsOfUsePage.section8.sub3.title": "Datenverlust",
+	"termsOfUsePage.section8.sub3.p1":
+		"Der Betreiber führt regelmäßige Backups durch. Dennoch kann ein vollständiger Schutz vor Datenverlust nicht garantiert werden. Die Nutzenden werden gebeten, wichtige Daten zusätzlich lokal zu sichern.",
 	/* -------------------- Video player -------------------- */
 	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
 	"videoPlayer.cookies.buttonAriaLabel":
