@@ -172,61 +172,19 @@ export const TermsOfUsePage: React.FC = () => {
 			id: "section-2",
 			number: 2,
 			title: Content["termsOfUsePage.section2.title"],
-			content: (
-				<div className="flex flex-col gap-6">
-					{section2SubSections.map((subsection) => (
-						<div
-							id={subsection.id}
-							className="flex flex-col gap-4 scroll-mt-[100px]"
-						>
-							<h3 className="text-xl leading-7 font-semibold">
-								{subsection.number} {subsection.title}
-							</h3>
-							{subsection.content}
-						</div>
-					))}
-				</div>
-			),
+			subsections: section2SubSections,
 		},
 		{
 			id: "section-3",
 			number: 3,
 			title: Content["termsOfUsePage.section3.title"],
-			content: (
-				<div className="flex flex-col gap-6">
-					{section3SubSections.map((subsection) => (
-						<div
-							id={subsection.id}
-							className="flex flex-col gap-4 scroll-mt-[100px]"
-						>
-							<h3 className="text-xl leading-7 font-semibold">
-								{subsection.number} {subsection.title}
-							</h3>
-							{subsection.content}
-						</div>
-					))}
-				</div>
-			),
+			subsections: section3SubSections,
 		},
 		{
 			id: "section-4",
 			number: 4,
 			title: Content["termsOfUsePage.section4.title"],
-			content: (
-				<div className="flex flex-col gap-6">
-					{section4SubSections.map((subsection) => (
-						<div
-							id={subsection.id}
-							className="flex flex-col gap-4 scroll-mt-[100px]"
-						>
-							<h3 className="text-xl leading-7 font-semibold">
-								{subsection.number} {subsection.title}
-							</h3>
-							{subsection.content}
-						</div>
-					))}
-				</div>
-			),
+			subsections: section4SubSections,
 		},
 	];
 
@@ -257,6 +215,22 @@ export const TermsOfUsePage: React.FC = () => {
 									<span>{section.title}</span>
 								</h2>
 								{section.content}
+								{section.subsections && (
+									<div className="flex flex-col gap-6">
+										{section.subsections.map((subsection) => (
+											<div
+												key={subsection.id}
+												id={subsection.id}
+												className="flex flex-col gap-4 scroll-mt-[100px]"
+											>
+												<h3 className="text-xl leading-7 font-semibold">
+													{subsection.number} {subsection.title}
+												</h3>
+												{subsection.content}
+											</div>
+										))}
+									</div>
+								)}
 							</li>
 						))}
 					</ol>
