@@ -150,6 +150,77 @@ export const TermsOfUsePage: React.FC = () => {
 		},
 	];
 
+	const section5SubSections = [
+		{
+			id: "section-5-1",
+			number: 5.1,
+			title: Content["termsOfUsePage.section5.sub1.title"],
+			content: (
+				<p>
+					<span>{Content["termsOfUsePage.section5.sub1.p1.start"]}</span>
+					<a
+						href={Content["termsOfUsePage.section5.sub1.p1.link"]}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="underline underline-offset-2"
+					>
+						{Content["termsOfUsePage.section5.sub1.p1.link"]}
+					</a>
+					<span>{Content["termsOfUsePage.section5.sub1.p1.end"]}</span>
+				</p>
+			),
+		},
+		{
+			id: "section-5-2",
+			number: 5.2,
+			title: Content["termsOfUsePage.section5.sub2.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>
+						<span className="font-semibold">
+							{Content["termsOfUsePage.section5.sub2.p1.title"]}
+						</span>
+						<span>{Content["termsOfUsePage.section5.sub2.p1"]}</span>
+					</p>
+					<p>{Content["termsOfUsePage.section5.sub2.p2"]}</p>
+					<ul className="list-disc pl-5">
+						<li>
+							<span className="font-semibold">
+								{Content["termsOfUsePage.section5.sub2.li1.start"]}
+							</span>
+							<span>{Content["termsOfUsePage.section5.sub2.li1.end"]}</span>
+						</li>
+						<li>
+							<span className="font-semibold">
+								{Content["termsOfUsePage.section5.sub2.li2.start"]}
+							</span>
+							<span>{Content["termsOfUsePage.section5.sub2.li2.end"]}</span>
+						</li>
+						<li>{Content["termsOfUsePage.section5.sub2.li3"]}</li>
+					</ul>
+					<p>{Content["termsOfUsePage.section5.sub2.p3"]}</p>
+				</div>
+			),
+		},
+		{
+			id: "section-5-3",
+			number: 5.3,
+			title: Content["termsOfUsePage.section5.sub3.title"],
+			content: <p>{Content["termsOfUsePage.section5.sub3.p1"]}</p>,
+		},
+		{
+			id: "section-5-4",
+			number: 5.4,
+			title: Content["termsOfUsePage.section5.sub4.title"],
+			content: (
+				<div className="flex flex-col gap-1">
+					<p>{Content["termsOfUsePage.section5.sub4.p1"]}</p>
+					<p>{Content["termsOfUsePage.section5.sub4.p2"]}</p>
+				</div>
+			),
+		},
+	];
+
 	// Section Content
 	const sections = [
 		{
@@ -185,6 +256,12 @@ export const TermsOfUsePage: React.FC = () => {
 			number: 4,
 			title: Content["termsOfUsePage.section4.title"],
 			subsections: section4SubSections,
+		},
+		{
+			id: "section-5",
+			number: 5,
+			title: Content["termsOfUsePage.section5.title"],
+			subsections: section5SubSections,
 		},
 	];
 

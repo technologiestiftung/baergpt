@@ -31,6 +31,15 @@ export const tableOfContentsItems = [
 			{ title: Content["termsOfUsePage.section4.sub4.title"] },
 		],
 	},
+	{
+		title: Content["termsOfUsePage.section5.title"],
+		id: "section-5",
+		subsections: [
+			{ title: Content["termsOfUsePage.section5.sub1.title"] },
+			{ title: Content["termsOfUsePage.section5.sub2.title"] },
+			{ title: Content["termsOfUsePage.section5.sub3.title"] },
+		],
+	},
 ];
 
 export const section1ListItems = [

@@ -365,7 +365,84 @@ export const Content = {
 	"termsOfUsePage.section4.sub4.title": "Prüfpflicht der Nutzenden",
 	"termsOfUsePage.section4.sub4.p1":
 		"Die Nutzenden sind verpflichtet, alle von BärGPT generierten Inhalte kritisch zu prüfen und auf ihre Richtigkeit, Vollständigkeit und Angemessenheit zu überprüfen. KI-Systeme können sogenannte „Halluzinationen“ erzeugen, d.h. Inhalte, die plausibel erscheinen, aber faktisch falsch sein können.",
-
+	//Section 5
+	"termsOfUsePage.section5.title": "Datenschutz und Datensicherheit",
+	//5.1
+	"termsOfUsePage.section5.sub1.number": "5.1",
+	"termsOfUsePage.section5.sub1.title": "Datenverarbeitung",
+	"termsOfUsePage.section5.sub1.p1.start":
+		"Für die Verarbeitung personenbezogener Daten gelten die separaten Datenschutzhinweise von BärGPT, die unter ",
+	"termsOfUsePage.section5.sub1.p1.link": "https://www.baergpt.berlin",
+	"termsOfUsePage.section5.sub1.p1.end":
+		" abrufbar sind. Diese sind Bestandteil dieser Nutzungsbedingungen.",
+	//5.2
+	"termsOfUsePage.section5.sub2.number": "5.2",
+	"termsOfUsePage.section5.sub2.title": "Verbot personenbezogener Daten",
+	"termsOfUsePage.section5.sub2.p1.title": "Wichtiger Hinweis: ",
+	"termsOfUsePage.section5.sub2.p1":
+		"Zum aktuellen Zeitpunkt (Stand: November 2025) ist die Verarbeitung von personenbezogenen Daten mit BärGPT noch nicht gestattet, da die Rechtsgrundlage hierfür noch nicht vorliegt.",
+	"termsOfUsePage.section5.sub2.p2": "Die Nutzenden verpflichten sich: ",
+	"termsOfUsePage.section5.sub2.li1.start": "Keine personenbezogenen Daten ",
+	"termsOfUsePage.section5.sub2.li1.end":
+		"in BärGPT einzugeben oder hochzuladen.",
+	"termsOfUsePage.section5.sub2.li2.start":
+		"Keine Daten mit hohem Schutzbedarf ",
+	"termsOfUsePage.section5.sub2.li2.end": "zu verarbeiten",
+	"termsOfUsePage.section5.sub2.li3":
+		"Bei Unklarheit über die Klassifizierung von Daten vorab Rücksprache mit der zuständigen Datenschutzstelle zu halten",
+	"termsOfUsePage.section5.sub2.p3":
+		"Eine Aktualisierung des eGov-Gesetzes für Berlin, die die Verarbeitung personenbezogener Daten erlauben wird, ist derzeit in rechtlicher Prüfung und soll voraussichtlich Anfang 2026 in Kraft treten.",
+	//5.3
+	"termsOfUsePage.section5.sub3.number": "5.3",
+	"termsOfUsePage.section5.sub3.title": "Löschpflichten",
+	"termsOfUsePage.section5.sub3.p1":
+		"Nach Ende der Zweckerfüllung sind hochgeladene Dokumente unverzüglich wieder zu löschen. Die Nutzenden sind verpflichtet, nicht mehr benötigte Chats, Dokumente und Ordner eigenständig zu entfernen.",
+	//5.4
+	"termsOfUsePage.section5.sub4.number": "5.4",
+	"termsOfUsePage.section5.sub4.title": "Serverstandort und Datensicherheit",
+	"termsOfUsePage.section5.sub4.p1":
+		"BärGPT wird auf Servern innerhalb der Europäischen Union betrieben und erfüllt die Anforderungen der Datenschutz-Grundverordnung (DSGVO). Es werden keine Daten zu Trainingszwecken an das Sprachmodell weitergegeben.",
+	"termsOfUsePage.section5.sub4.p2":
+		"Detaillierte Informationen zur technischen Infrastruktur und zu den eingesetzten Subprozessoren können den begleitenden Projektdokumenten entnommen werden.",
+	//Section 6
+	"termsOfUsePage.section6.title": "Pflichten der Nutzenden",
+	//6.1
+	"termsOfUsePage.section6.sub1.number": "6.1",
+	"termsOfUsePage.section6.sub1.title": "Verbot missbräuchlicher Nutzung",
+	"termsOfUsePage.section6.sub1.p1":
+		"Die Nutzenden verpflichten sich, BärGPT nicht für rechtswidrige Zwecke zu verwenden. Insbesondere ist untersagt:",
+	"termsOfUsePage.section6.sub1.li1":
+		"Die Verbreitung von gesetzeswidrigen, verleumderischen, diffamierenden oder anderweitig rechtswidrigen Inhalten",
+	"termsOfUsePage.section6.sub1.li2":
+		"Die Beeinträchtigung der Funktionsfähigkeit der Anwendung oder der zugrundeliegenden Infrastruktur",
+	"termsOfUsePage.section6.sub1.li3":
+		"Das Umgehen oder Manipulieren von Sicherheitsmechanismen",
+	"termsOfUsePage.section6.sub1.li4":
+		"Das automatisierte Auslesen von Daten (Scraping)",
+	"termsOfUsePage.section6.sub1.li5":
+		"Die Nutzung für kommerzielle oder private Zwecke außerhalb der dienstlichen Aufgaben",
+	//6.2
+	"termsOfUsePage.section6.sub2.number": "6.2",
+	"termsOfUsePage.section6.sub2.title": "Sorgfaltspflicht",
+	"termsOfUsePage.section6.sub2.p1":
+		"Die Nutzenden sind verpflichtet, die Anwendung sorgfältig und verantwortungsbewusst zu nutzen. Dazu gehört insbesondere:",
+	"termsOfUsePage.section6.sub2.li1":
+		"Die kritische Prüfung aller generierten Inhalte",
+	"termsOfUsePage.section6.sub2.li2":
+		"Die Einhaltung der Datenschutzbestimmungen",
+	"termsOfUsePage.section6.sub2.li3":
+		"Die regelmäßige Löschung nicht mehr benötigter Daten",
+	"termsOfUsePage.section6.sub2.li4":
+		"Die ordnungsgemäße Verwaltung der Zugangsdaten",
+	//6.3
+	"termsOfUsePage.section6.sub3.number": "6.3",
+	"termsOfUsePage.section6.sub3.title": "Meldepflicht",
+	"termsOfUsePage.section6.sub3.p1.start":
+		"Technische Störungen, Sicherheitsvorfälle oder vermutete Datenschutzverletzungen können an ",
+	"termsOfUsePage.section6.sub3.p1.link": "support@baergpt.berlin",
+	"termsOfUsePage.section6.sub3.p1.end": " gemeldet werden.",
+	//Section 7
+	"termsOfUsePage.section7.title": "Rechte und Pflichten des Betreibers",
 	/* -------------------- Video player -------------------- */
 	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
 	"videoPlayer.cookies.buttonAriaLabel":
