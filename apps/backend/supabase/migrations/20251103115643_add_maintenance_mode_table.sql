@@ -1,6 +1,6 @@
 -- Create maintenance_mode table to control application maintenance state
 CREATE TABLE maintenance_mode (
-	id INT generated always AS (1) stored UNIQUE,
+	onerow_id BOOL PRIMARY KEY DEFAULT TRUE CONSTRAINT onerow_uni CHECK (onerow_id),
 	is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -10,7 +10,9 @@ CREATE OR REPLACE FUNCTION prevent_maintenance_mode_delete () returns trigger AS
 BEGIN
     RAISE EXCEPTION 'Deleting from maintenance_mode table is not allowed';
 END;
-$$ language plpgsql;
+$$ language plpgsql security definer
+SET
+	search_path = '';
 
 CREATE TRIGGER trigger_prevent_maintenance_mode_delete before delete ON maintenance_mode FOR each ROW
 EXECUTE function prevent_maintenance_mode_delete ();
@@ -20,7 +22,9 @@ CREATE OR REPLACE FUNCTION prevent_maintenance_mode_truncate () returns trigger 
 BEGIN
     RAISE EXCEPTION 'Truncating maintenance_mode table is not allowed';
 END;
-$$ language plpgsql;
+$$ language plpgsql security definer
+SET
+	search_path = '';
 
 CREATE TRIGGER trigger_prevent_maintenance_mode_truncate before
 TRUNCATE ON maintenance_mode

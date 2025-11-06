@@ -4,7 +4,7 @@ SET
 	search_path = '' AS $$
     SELECT COALESCE(is_enabled, FALSE)
     FROM public.maintenance_mode 
-    WHERE id = 1;
+    WHERE onerow_id = true;
 $$;
 
 -- Grant execute permission to all users (including anon)
