@@ -778,8 +778,12 @@ export const Content = {
 	<li>1 Zahl</li>
 	<li>1 Sonderzeichen</li>
 </ul>`,
-	"registerPage.privacyLink": "Datenschutzbestimmungen",
-	"registerPage.privacyText": "zustimmen",
+	"registerPage.privacyLink.label": "Datenschutzbestimmungen",
+	"registerPage.privacyText.p1": "und",
+	"registerPage.termsOfUse.label": "Nutzungsbedingungen",
+	"registerPage.privacyText.p2": "zustimmen",
+	"registerPage.personalData.label":
+		"Ich versichere, keine personenbezogenen Daten zu bearbeiten.",
 	"registerPage.submitButton": "Registrieren",
 	"registerPage.loginPrompt": "Sie haben bereits einen Account?",
 	"registerPage.loginLink": "Jetzt einloggen",
@@ -866,7 +870,7 @@ export const Content = {
 	"footer.imprint.link": "https://www.technologiestiftung-berlin.de/impressum",
 	"footer.privacy": "Datenschutz",
 	"footer.privacy.link": "/privacy-policy/",
-
+	"footer.termsOfUse.link": "/terms-of-use/",
 	"footer.citylabLogo.alt": "CityLAB Berlin",
 	"footer.citylabLogo.link": "https://citylab-berlin.org/",
 
