@@ -17,6 +17,7 @@ export const UPLOAD_STATUS_MAP = {
 	"failed.duplicate": "Datei existiert bereits",
 	"failed.format": "Ungültiges Dateiformat (nur PDF, Word oder Excel)",
 	"failed.size": `Datei zu groß (max. ${import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB} MB)`,
+	"failed.tooMany": `Max. ${import.meta.env.VITE_MAX_FILE_UPLOADS} Dateien pro Upload`,
 } as const;
 
 export type UploadStatusKeys = keyof typeof UPLOAD_STATUS_MAP;
@@ -31,6 +32,7 @@ type UseFileUploadsStore = {
 	uploadFile: (fileUpload: FileUpload) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
+	isLessThanMaxUploadsAmountActive: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
 	clearFileUploads: () => void;
 };
@@ -106,12 +108,25 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	uploadFiles: async (files: File[]) => {
 		const { fileUploads, uploadFile } = get();
 
-		const newFileUploads = files.map((file) => ({
+		const maxFileUploads = Number(import.meta.env.VITE_MAX_FILE_UPLOADS);
+		const filesToUpload = files.slice(0, maxFileUploads);
+		const filesToCancel = files.slice(maxFileUploads);
+
+		const newFileUploads = filesToUpload.map((file) => ({
 			file,
 			status: "uploading" as UploadStatusKeys,
 		}));
 
-		const updatedFileUploads = [...fileUploads, ...newFileUploads];
+		const canceledFileUploads = filesToCancel.map((file) => ({
+			file,
+			status: "failed.tooMany" as UploadStatusKeys,
+		}));
+
+		const updatedFileUploads = [
+			...fileUploads,
+			...newFileUploads,
+			...canceledFileUploads,
+		];
 
 		set({ fileUploads: updatedFileUploads });
 
@@ -127,6 +142,18 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				fileUpload.status !== "processing" &&
 				fileUpload.status !== "uploaded",
 		);
+	},
+
+	isLessThanMaxUploadsAmountActive: () => {
+		const { fileUploads } = get();
+		const maxFileUploads = Number(import.meta.env.VITE_MAX_FILE_UPLOADS);
+		const activeUploads = fileUploads.filter(
+			(fileUpload) =>
+				fileUpload.status === "uploading" ||
+				fileUpload.status === "processing" ||
+				fileUpload.status === "uploaded",
+		);
+		return activeUploads.length < maxFileUploads;
 	},
 
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {
