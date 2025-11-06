@@ -25,7 +25,6 @@ import { captureError } from "../monitoring/capture-error";
 import { z } from "zod";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
-import { JINA_MAX_TOKEN_LIMIT } from "../constants";
 import {
 	countTokens,
 	computeSafePayload,
@@ -281,7 +280,7 @@ export class GenerationService {
 		const summaryForEmbedding = await this.compressToTokenLimit(
 			llmIdentifier,
 			summary,
-			{ tokenLimit: JINA_MAX_TOKEN_LIMIT, maxRounds: 3 },
+			{ tokenLimit: config.jinaMaxContextTokens, maxRounds: 3 },
 		);
 
 		const summaryEmbeddingResponse =
