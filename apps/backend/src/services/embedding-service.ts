@@ -66,7 +66,7 @@ export class EmbeddingService {
 						model: config.jinaEmbeddingModel,
 						input: input,
 						task: task,
-						dimensions: 1024,
+						dimensions: config.jinaEmbeddingDimensions,
 						late_chunking: false,
 						embedding_type: "float",
 					}),
@@ -104,13 +104,13 @@ export class EmbeddingService {
 	}
 
 	async generateJinaBatchEmbeddings(
-		input: string[],
+		inputs: { [key: string]: string }[],
 		task: string,
 		userId?: string,
 	): Promise<EmbeddingsResponse> {
 		const embeddingResponse = await resilientCall(
-			async () => {
-				const response = await fetch("https://api.jina.ai/v1/embeddings", {
+			async () =>
+				fetch("https://api.jina.ai/v1/embeddings", {
 					method: "POST",
 					headers: {
 						Authorization: `Bearer ${config.jinaApiKey}`,
@@ -118,21 +118,21 @@ export class EmbeddingService {
 					},
 					body: JSON.stringify({
 						model: config.jinaEmbeddingModel,
-						input: input,
+						input: inputs,
 						task: task,
-						dimensions: 1024,
+						dimensions: config.jinaEmbeddingDimensions,
 						late_chunking: false,
 						embedding_type: "float",
 					}),
-				});
-				return response;
-			},
+				}),
 			{ queueType: "embeddings" },
 		);
 
 		if (embeddingResponse.status !== 200) {
 			const errorBody = await embeddingResponse.text();
-			throw new Error(`Failed to create embedding: ${errorBody}`);
+			throw new Error(
+				`Failed to create embedding: Status ${embeddingResponse.status}, Body: ${errorBody}`,
+			);
 		}
 
 		const responseData =
@@ -440,7 +440,7 @@ export class EmbeddingService {
 
 		const processBatch = async (batch: Chunk[]): Promise<void> => {
 			const response = await this.generateJinaBatchEmbeddings(
-				batch.map((c) => c.content),
+				batch.map((c) => ({ text: c.content })),
 				"retrieval.passage",
 				userId,
 			);

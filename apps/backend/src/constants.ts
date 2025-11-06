@@ -17,5 +17,4 @@ export const ragSearchDefaults = {
 };
 
 export const PAGE_SEPARATOR = "[PAGE_BREAK]";
-export const JINA_MAX_TOKEN_LIMIT = 8194;
 export const enc = get_encoding("o200k_base");

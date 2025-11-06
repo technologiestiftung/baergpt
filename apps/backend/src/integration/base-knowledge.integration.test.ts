@@ -20,7 +20,7 @@ const supabaseAnonClient = createClient<Database>(
 	config.supabaseAnonKey,
 );
 
-const EMBEDDING_LENGTH = 1024;
+const EMBEDDING_LENGTH = config.jinaEmbeddingDimensions;
 const PUBLIC_BUCKET = "public_documents";
 const SMALL_FILE_SIZE = 500;
 
@@ -215,7 +215,10 @@ describe("Base Knowledge Integration Tests", () => {
 		// Mock embedding generation to avoid external API dependency in tests
 		// override for test
 		embeddingService.generateJinaEmbedding = async () => ({
-			embedding: Array.from({ length: 1024 }, (_, i) => (i % 10) / 10),
+			embedding: Array.from(
+				{ length: EMBEDDING_LENGTH },
+				(_, i) => (i % 10) / 10,
+			),
 			tokenUsage: 10,
 		});
 		// Get base knowledge documents
