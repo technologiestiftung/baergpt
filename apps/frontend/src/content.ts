@@ -1043,8 +1043,12 @@ export const Content = {
 	<li>1 Zahl</li>
 	<li>1 Sonderzeichen</li>
 </ul>`,
-	"registerPage.privacyLink": "Datenschutzbestimmungen",
-	"registerPage.privacyText": "zustimmen",
+	"registerPage.privacyLink.label": "Datenschutzbestimmungen",
+	"registerPage.privacyText.p1": "und",
+	"registerPage.termsOfUse.label": "Nutzungsbedingungen",
+	"registerPage.privacyText.p2": "zustimmen",
+	"registerPage.personalData.label":
+		"Ich versichere, keine personenbezogenen Daten zu bearbeiten.",
 	"registerPage.submitButton": "Registrieren",
 	"registerPage.loginPrompt": "Sie haben bereits einen Account?",
 	"registerPage.loginLink": "Jetzt einloggen",
@@ -1115,7 +1119,9 @@ export const Content = {
 		"Die Passwörter stimmen nicht überein.",
 	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.privacy.required.error":
-		"Bitte stimmen Sie den Datenschutzbestimmungen zu.",
+		"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
+	"form.validation.personalData.required.error":
+		"Bitte stimmen Sie zu, keine personenbezogenen Daten zu bearbeiten.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
 	"form.validation.userAlreadyRegistered.error":
@@ -1134,6 +1140,7 @@ export const Content = {
 	"footer.terms": "Nutzungsbedingungen",
 	"footer.terms.link": "/terms-of-use/",
 
+	"footer.termsOfUse.link": "/terms-of-use/",
 	"footer.citylabLogo.alt": "CityLAB Berlin",
 	"footer.citylabLogo.link": "https://citylab-berlin.org/",
 

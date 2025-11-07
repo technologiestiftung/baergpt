@@ -65,6 +65,9 @@ test.describe("Accessibility - Auth Flow", () => {
 			.fill(defaultUserPassword);
 		await page1.getByTestId("label-has-accepted-privacy-checkbox").click();
 		await page1
+			.getByTestId("label-has-accepted-personal-data-checkbox")
+			.click();
+		await page1
 			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
 			.click();
 
