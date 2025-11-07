@@ -30,6 +30,10 @@ const topLinks = {
 			href: Content["footer.privacy.link"],
 			text: Content["footer.privacy"],
 		},
+		{
+			href: Content["footer.terms.link"],
+			text: Content["footer.terms"],
+		},
 	],
 };
 
@@ -38,15 +42,16 @@ export function FooterLandingPage() {
 
 	return (
 		<footer className="flex flex-col">
-			<div className="flex flex-col lg:flex-row gap-6 justify-between lg:items-center w-full p-6 lg:py-4 lg:px-[50px] bg-dunkelblau-100 text-white">
+			<div className="flex flex-col lg:flex-row gap-8 justify-between lg:items-center w-full p-6 md:py-8 lg:px-[50px] bg-dunkelblau-100 text-white">
 				<img
-					src="/logos/berlin-baer-logo.svg"
+					src="/logos/baergpt-logo-white.svg"
 					alt={Content["footer.baerLogo.alt"]}
-					width={44}
+					width={186}
 					height={44}
+					className="self-start"
 				/>
-				<div className="flex flex-row gap-8">
-					<ul className="flex flex-col lg:flex-row gap-[5px] lg:gap-8">
+				<div className="flex justify-between md:justify-normal md:gap-[60px] lg:gap-14">
+					<ul className="flex flex-col gap-3 w-fit">
 						{topLinks.section1.map((link, index) => (
 							<li key={index}>
 								<a
@@ -58,7 +63,7 @@ export function FooterLandingPage() {
 							</li>
 						))}
 					</ul>
-					<ul className="flex flex-col lg:flex-row gap-[5px] lg:gap-8">
+					<ul className="flex flex-col gap-3 w-fit">
 						{topLinks.section2.map((link, index) => (
 							<li key={index}>
 								<a
