@@ -1137,9 +1137,7 @@ export const Content = {
 	"footer.imprint.link": "https://www.technologiestiftung-berlin.de/impressum",
 	"footer.privacy": "Datenschutz",
 	"footer.privacy.link": "/privacy-policy/",
-	"footer.terms": "Nutzungsbedingungen",
-	"footer.terms.link": "/terms-of-use/",
-
+	"footer.termsOfUse": "Nutzungsbedingungen",
 	"footer.termsOfUse.link": "/terms-of-use/",
 	"footer.citylabLogo.alt": "CityLAB Berlin",
 	"footer.citylabLogo.link": "https://citylab-berlin.org/",

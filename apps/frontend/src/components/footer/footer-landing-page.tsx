@@ -31,8 +31,8 @@ const topLinks = {
 			text: Content["footer.privacy"],
 		},
 		{
-			href: Content["footer.terms.link"],
-			text: Content["footer.terms"],
+			href: Content["footer.termsOfUse.link"],
+			text: Content["footer.termsOfUse"],
 		},
 	],
 };
