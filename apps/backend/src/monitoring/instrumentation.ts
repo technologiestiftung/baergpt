@@ -11,7 +11,6 @@ export const sentryClient = Sentry.init({
 	environment: config.nodeEnv || "development",
 	integrations: [Sentry.supabaseIntegration({ supabaseClient: supabase })],
 	tracesSampleRate: 1.0,
-	profileSessionSampleRate: 1.0,
 	enabled: ["production", "staging", "test"].includes(config.nodeEnv),
 	skipOpenTelemetrySetup: true,
 });
