@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 
 import { PDFDocument } from "pdf-lib";
-import { PDFParse } from "pdf-parse";
 import type {
 	Document,
 	ExtractionResult,
@@ -66,17 +65,9 @@ export class DocumentExtractionService {
 				parsedPages: parsedExcelPages,
 			};
 		}
-		let pdfBytesCopy: Uint8Array | null = new Uint8Array(fileBytes);
 
-		const parser = new PDFParse({
-			data: pdfBytesCopy,
-		});
-		const parseResult = await parser.getInfo({ parsePageInfo: true });
-		await parser.destroy();
-		const numPages = parseResult.total;
-
-		// Explicitly dereference the copy to allow garbage collection
-		pdfBytesCopy = null;
+		// Use lightweight regex-based page counting (Lambda-compatible, minimal memory)
+		const numPages = this.getPdfPageCount(fileBytes);
 
 		if (numPages > config.maxPagesLimit) {
 			throw new ExtractError(
@@ -183,6 +174,32 @@ export class DocumentExtractionService {
 		}
 
 		return parsedPages;
+	}
+
+	/**
+	 * Lightweight PDF page counter using minimal memory.
+	 * Searches for /Type/Page(/Count) entries in the PDF structure.
+	 */
+	private getPdfPageCount(pdfBytes: Uint8Array): number {
+		// Convert to string for pattern matching
+		const pdfText = new TextDecoder("latin1").decode(pdfBytes);
+
+		const countPattern = /\/Type\s*\/Pages.*?\/Count\s+(\d+)/s;
+		const countMatch = pdfText.match(countPattern);
+
+		if (countMatch && countMatch[1]) {
+			return parseInt(countMatch[1], 10);
+		}
+
+		// Fallback method
+		const pagePattern = /\/Type\s*\/Page[^s]/g;
+		const matches = pdfText.match(pagePattern);
+
+		if (matches && matches.length > 0) {
+			return matches.length;
+		}
+
+		throw new Error("Unable to determine PDF page count");
 	}
 }
 
