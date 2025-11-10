@@ -19,7 +19,7 @@ app.use(
 	"*",
 	cors({
 		origin: "*",
-		allowMethods: ["GET", "POST", "PUT", "DELETE"],
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 		allowHeaders: [
 			"Content-Type",
 			"Authorization",
@@ -29,6 +29,15 @@ app.use(
 		],
 	}),
 );
+
+// Skip auth for OPTIONS requests
+app.use("*", async (c, next) => {
+	if (c.req.method === "OPTIONS") {
+		return c.body(null, 204);
+	}
+	return next();
+});
+
 app.use("*", basicAuth);
 app.use("*", sentryTracing);
 
