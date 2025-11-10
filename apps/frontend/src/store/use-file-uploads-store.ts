@@ -17,7 +17,7 @@ export const UPLOAD_STATUS_MAP = {
 	"failed.duplicate": "Datei existiert bereits",
 	"failed.format": "Ungültiges Dateiformat (nur PDF, Word oder Excel)",
 	"failed.size": `Datei zu groß (max. ${import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB} MB)`,
-	"failed.tooMany": `Max. ${import.meta.env.VITE_MAX_FILE_UPLOADS} Dateien pro Upload`,
+	"failed.tooMany": `hochladen fehlgeschlagen`,
 } as const;
 
 export type UploadStatusKeys = keyof typeof UPLOAD_STATUS_MAP;

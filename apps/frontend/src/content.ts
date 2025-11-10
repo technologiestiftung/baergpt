@@ -330,6 +330,7 @@ export const Content = {
 	"loadingSpinnerIcon.imgAlt": "Ein sich drehendes Spinner-Icon",
 	"previewIcon.imgAlt": "Preview-Icon",
 	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
+	"redErrorXIcon.imgAlt": "Ein Error Icon mit weißem X in rotem Kreis",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
@@ -373,8 +374,12 @@ export const Content = {
 	//fileupload help link
 	"fileUpload.helpLink.label": "Hilfe",
 	"fileUpload.helpLink.link":
-		"https://hilfe.baergpt.berlin/faq#:~:text=Warum%20kann%20ich%20mein%20Dokument%20nicht%20hochladen%3F",
+		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
+	"fileUpload.maxFilesWarning.p1": "Max. 5 Dateien pro Upload.",
+	"fileUpload.maxFilesWarning.file": "Datei wurde",
+	"fileUpload.maxFilesWarning.files": "Dateien wurden",
+	"fileUpload.maxFilesWarning.p2": "nicht hochgeladen.",
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
