@@ -128,6 +128,22 @@ export const section1ListItems = [
 		title: Content["termsOfUsePage.section1.li5.title"],
 		description: Content["termsOfUsePage.section1.li5.description"],
 	},
+	{
+		title: Content["termsOfUsePage.section1.li6.title"],
+		description: Content["termsOfUsePage.section1.li6.description"],
+	},
+	{
+		title: Content["termsOfUsePage.section1.li7.title"],
+		description: Content["termsOfUsePage.section1.li7.description"],
+	},
+	{
+		title: Content["termsOfUsePage.section1.li8.title"],
+		description: Content["termsOfUsePage.section1.li8.description"],
+	},
+	{
+		title: Content["termsOfUsePage.section1.li9.title"],
+		description: Content["termsOfUsePage.section1.li9.description"],
+	},
 ];
 
 export const section2Sub2ItemA = {
@@ -146,10 +162,10 @@ export const section2Sub2ItemB = {
 	heading: Content["termsOfUsePage.section2.sub2.b.title"],
 	organisation: Content["termsOfUsePage.section2.sub2.b.organisation"],
 	address: {
-		street: Content["termsOfUsePage.section2.sub2.a.address.street"],
-		city: Content["termsOfUsePage.section2.sub2.a.address.city"],
+		street: Content["termsOfUsePage.section2.sub2.b.address.street"],
+		city: Content["termsOfUsePage.section2.sub2.b.address.city"],
 	},
-	email: Content["termsOfUsePage.section2.sub2.a.email"],
+	email: Content["termsOfUsePage.section2.sub2.b.email"],
 };
 
 export const section3Sub2ListItems = [
