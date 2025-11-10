@@ -372,6 +372,27 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			maintenance_mode: {
+				Row: {
+					created_at: string;
+					id: number;
+					is_enabled: boolean;
+					updated_at: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: number;
+					is_enabled?: boolean;
+					updated_at?: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: number;
+					is_enabled?: boolean;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			profiles: {
 				Row: {
 					academic_title: string | null;
@@ -456,17 +477,17 @@ export type Database = {
 			find_unprocessed_documents: {
 				Args: Record<PropertyKey, never>;
 				Returns: {
-					created_at: string;
-					file_checksum: string;
-					file_name: string;
-					file_size: number;
-					folder_id: number;
 					id: number;
-					num_pages: number;
 					owned_by_user_id: string;
-					processing_finished_at: string;
-					source_type: string;
 					source_url: string;
+					source_type: string;
+					file_name: string;
+					file_checksum: string;
+					file_size: number;
+					num_pages: number;
+					folder_id: number;
+					processing_finished_at: string;
+					created_at: string;
 				}[];
 			};
 			get_account_activation_timestamp: {
@@ -476,10 +497,10 @@ export type Database = {
 			get_base_knowledge_documents: {
 				Args: { input_user_id: string };
 				Returns: {
+					id: number;
+					folder_id: number;
 					created_at: string;
 					file_name: string;
-					folder_id: number;
-					id: number;
 					short_summary: string;
 					tags: string[];
 				}[];
@@ -488,33 +509,37 @@ export type Database = {
 				Args: { chunk_ids: number[] };
 				Returns: {
 					chunk_id: number;
-					created_at: string;
 					file_name: string;
-					page: number;
-					snippet: string;
-					source_type: string;
 					source_url: string;
+					page: number;
+					created_at: string;
+					source_type: string;
+					snippet: string;
 				}[];
+			};
+			get_maintenance_mode_status: {
+				Args: Record<PropertyKey, never>;
+				Returns: boolean;
 			};
 			get_users: {
 				Args: Record<PropertyKey, never>;
 				Returns: {
-					academic_title: string;
-					deleted_at: string;
-					email: string;
-					first_name: string;
-					invited_at: string;
-					is_active: boolean;
-					is_admin: boolean;
-					last_login_at: string;
-					last_name: string;
-					num_documents: number;
-					num_embedding_tokens: number;
-					num_inference_tokens: number;
-					num_inferences: number;
-					personal_title: string;
-					registered_at: string;
 					user_id: string;
+					email: string;
+					registered_at: string;
+					last_login_at: string;
+					invited_at: string;
+					first_name: string;
+					last_name: string;
+					personal_title: string;
+					num_documents: number;
+					num_inferences: number;
+					num_inference_tokens: number;
+					num_embedding_tokens: number;
+					academic_title: string;
+					is_admin: boolean;
+					is_active: boolean;
+					deleted_at: string;
 				}[];
 			};
 			hybrid_chunk_search: {
@@ -529,17 +554,17 @@ export type Database = {
 					semantic_weight?: number;
 				};
 				Returns: {
-					chunk_content: string;
 					chunk_id: number;
-					created_at: string;
 					document_id: number;
-					file_name: string;
-					fts_score: number;
-					hybrid_score: number;
+					chunk_content: string;
 					page: number;
-					sem_score: number;
-					source_type: string;
 					source_url: string;
+					file_name: string;
+					created_at: string;
+					source_type: string;
+					fts_score: number;
+					sem_score: number;
+					hybrid_score: number;
 				}[];
 			};
 			is_application_admin: {
@@ -566,9 +591,9 @@ export type Database = {
 					user_id: string;
 				};
 				Returns: {
-					content: string;
-					document_id: number;
 					id: number;
+					document_id: number;
+					content: string;
 					similarity: number;
 				}[];
 			};
@@ -584,10 +609,10 @@ export type Database = {
 					user_id: string;
 				};
 				Returns: {
-					document_id: number;
 					id: number;
-					similarity: number;
+					document_id: number;
 					summary: string;
+					similarity: number;
 				}[];
 			};
 			match_jina_summaries_and_chunks: {
@@ -604,13 +629,13 @@ export type Database = {
 					user_id: string;
 				};
 				Returns: {
-					avg_chunk_similarity: number;
+					document_id: number;
 					chunk_ids: number[];
 					chunk_similarities: number[];
-					document_id: number;
-					similarity: number;
+					avg_chunk_similarity: number;
 					summary_ids: number[];
 					summary_similarity: number;
+					similarity: number;
 				}[];
 			};
 			regenerate_embedding_indices_for_chunks: {

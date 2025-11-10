@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 
 import { PDFDocument } from "pdf-lib";
+import { PDFParse } from "pdf-parse";
 import type {
 	Document,
 	ExtractionResult,
@@ -13,7 +14,8 @@ import { ExtractError } from "../types/common";
 import { config } from "../config";
 import { PAGE_SEPARATOR } from "../constants";
 import { Mistral } from "@mistralai/mistralai";
-import { getHash, resilientCall } from "../utils";
+import { createBufferView, getHash, resilientCall } from "../utils";
+import { countTokens } from "./token-utils";
 import WordExtractor from "word-extractor";
 import mammoth from "mammoth";
 import XLSX from "xlsx";
@@ -30,11 +32,11 @@ export class DocumentExtractionService {
 		) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
-				Buffer.from(fileBytes),
+				createBufferView(fileBytes),
 				document.file_name,
 			);
 			const checksum = getHash(fileBytes);
-			const fileSize = fileBytes.length;
+			const fileSize = fileBytes.byteLength;
 
 			return {
 				document: document,
@@ -45,6 +47,7 @@ export class DocumentExtractionService {
 					{
 						content: wordContent ?? "",
 						pageNumber: 1,
+						tokenCount: countTokens(wordContent ?? ""),
 					},
 				],
 			};
@@ -53,7 +56,7 @@ export class DocumentExtractionService {
 			const parsedExcelPages =
 				await excelExtractor.extractExcelDocument(fileBytes);
 			const checksum = getHash(fileBytes);
-			const fileSize = Buffer.from(fileBytes).length;
+			const fileSize = fileBytes.byteLength;
 
 			return {
 				document: document,
@@ -63,22 +66,32 @@ export class DocumentExtractionService {
 				parsedPages: parsedExcelPages,
 			};
 		}
-		const pdfDoc = await PDFDocument.load(fileBytes);
-		const numPages = pdfDoc.getPageCount();
+		let pdfBytesCopy: Uint8Array | null = new Uint8Array(fileBytes);
+
+		const parser = new PDFParse({
+			data: pdfBytesCopy,
+		});
+		const parseResult = await parser.getInfo({ parsePageInfo: true });
+		await parser.destroy();
+		const numPages = parseResult.total;
+
+		// Explicitly dereference the copy to allow garbage collection
+		pdfBytesCopy = null;
+
 		if (numPages > config.maxPagesLimit) {
 			throw new ExtractError(
 				document,
 				`Could not extract ${document.source_url}, num pages ${numPages} > limit of ${config.maxPagesLimit} pages.`,
 			);
 		}
-		const documentBuffer = await pdfDoc.save();
 		const parsedPages = await this.extractPdfAsMarkdownPages(
 			fileBytes,
 			document.file_name,
 			{ numPages: numPages, ocrProvider: "mistral" },
 		);
-		const checksum = getHash(documentBuffer);
-		const fileSize = fileBytes.length;
+
+		const checksum = getHash(fileBytes);
+		const fileSize = fileBytes.byteLength;
 
 		return {
 			document: document,
@@ -105,6 +118,11 @@ export class DocumentExtractionService {
 			ocrProvider: "mistral",
 		},
 	): Promise<ParsedPage[]> {
+		const toParsedPage = (content: string, pageNumber: number): ParsedPage => ({
+			content,
+			pageNumber,
+			tokenCount: countTokens(content),
+		});
 		let ocrService: MistralOCRService | LlamaParseOCRService;
 		if (extractionOptions.ocrProvider === "mistral") {
 			ocrService = new MistralOCRService();
@@ -116,12 +134,16 @@ export class DocumentExtractionService {
 			);
 		}
 
-		const pdfDoc = await PDFDocument.load(pdfBytes);
-
 		if (extractionOptions.numPages <= config.maxPagesForLlmParseLimit) {
 			try {
 				if (ocrService instanceof MistralOCRService) {
-					return await ocrService.extractTextFromPdfWithMistral(pdfBytes);
+					const pages =
+						await ocrService.extractTextFromPdfWithMistral(pdfBytes);
+					return pages.map((page) =>
+						page.tokenCount !== undefined
+							? page
+							: toParsedPage(page.content, page.pageNumber),
+					);
 				} else if (extractionOptions.ocrProvider === "llamaparse") {
 					const markdownText = await ocrService.extractMarkdownViaLLamaParse(
 						pdfBytes,
@@ -129,10 +151,9 @@ export class DocumentExtractionService {
 					);
 					const markdownPages = markdownText.split(PAGE_SEPARATOR);
 
-					return markdownPages.map((content, index) => ({
-						content,
-						pageNumber: index,
-					})) as ParsedPage[];
+					return markdownPages.map((content, index) =>
+						toParsedPage(content, index),
+					);
 				}
 				throw new Error(
 					`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
@@ -146,6 +167,7 @@ export class DocumentExtractionService {
 		// For larger PDFs or if LLamaParse fails, use pdf2md
 		const pdf2md = (await import("@opendocsg/pdf2md")).default;
 		const parsedPages: ParsedPage[] = [];
+		const pdfDoc = await PDFDocument.load(pdfBytes);
 		for (let i = 0; i < extractionOptions.numPages; i++) {
 			// Create a new document containing only this page
 			const singlePageDoc = await PDFDocument.create();
@@ -157,10 +179,7 @@ export class DocumentExtractionService {
 			// @ts-expect-error pdf2md has no types
 			const mdPage = await pdf2md(pageBytes, null);
 
-			parsedPages.push({
-				content: mdPage,
-				pageNumber: i,
-			} as ParsedPage);
+			parsedPages.push(toParsedPage(mdPage, i));
 		}
 
 		return parsedPages;
@@ -293,10 +312,12 @@ class ExcelExtractionService {
 				return;
 			}
 			const markdownContent = this.sheetToMarkdown(worksheet);
+			const pageContent = `## ${sheetName}\n\n${markdownContent}`;
 
 			results.push({
-				content: `## ${sheetName}\n\n${markdownContent}`,
+				content: pageContent,
 				pageNumber: index + 1,
+				tokenCount: countTokens(pageContent),
 			});
 		});
 		return results;
@@ -457,14 +478,14 @@ class MistralOCRService {
 	): Promise<ParsedPage[]> {
 		const client = new Mistral({ apiKey: config.mistralApiKey });
 
-		const blob = new Blob([pdfBytes], { type: "application/pdf" });
+		const buffer = createBufferView(pdfBytes);
 
 		const uploaded_pdf = await resilientCall(
 			() =>
 				client.files.upload({
 					file: {
 						fileName: "uploaded_file.pdf",
-						content: blob,
+						content: buffer,
 					},
 					purpose: "ocr",
 				}),
@@ -490,11 +511,13 @@ class MistralOCRService {
 		if (!ocrResponse.pages) {
 			throw new Error("No pages found in OCR response");
 		}
+		await client.files.delete({ fileId: uploaded_pdf.id }); // delete file from Mistral's cloud storage
 		return ocrResponse.pages.map(
 			(page, index) =>
 				({
 					content: page.markdown,
 					pageNumber: index + 1,
+					tokenCount: countTokens(page.markdown),
 				}) as ParsedPage,
 		);
 	}

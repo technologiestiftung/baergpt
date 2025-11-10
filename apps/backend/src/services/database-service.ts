@@ -316,6 +316,16 @@ export class DatabaseService {
 		return data;
 	}
 
+	async getMaintenanceModeStatus(): Promise<{ is_enabled: boolean }> {
+		const { data, error } = await supabase.rpc("get_maintenance_mode_status");
+
+		if (error) {
+			throw error;
+		}
+
+		return { is_enabled: data };
+	}
+
 	//update user first_name, last_name, academic_title, and email
 	async updateUserProfile({
 		userId,

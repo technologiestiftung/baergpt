@@ -18,9 +18,6 @@ export const DocumentPreviewSection: React.FC = () => {
 	if (!selectedPreviewDocument) {
 		return null;
 	}
-	if (!selectedPreviewDocument) {
-		return null;
-	}
 
 	const isDocxFormat = (fileName: string) => {
 		return fileName.toLowerCase().split(".").pop() === "docx";
