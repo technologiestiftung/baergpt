@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Content } from "../../../content";
 import { DocumentIcon } from "../../primitives/icons/document-icon";
 import { useDocumentStore } from "../../../store/document-store";
@@ -6,10 +6,20 @@ import ProfilePageSkeleton from "../../primitives/skeletons/profile-page-skeleto
 import { ChevronIcon } from "../../primitives/icons/chevron-icon";
 
 export const BaseKnowledgeSection: React.FC = () => {
-	const { publicDocuments, isPublicDocumentsLoading } = useDocumentStore();
+	const { getPublicDocuments, publicDocuments, isPublicDocumentsLoading } =
+		useDocumentStore();
 	const [showAllDocuments, setShowAllDocuments] = useState(false);
 
-	// Sort public documents alphabetically
+	useEffect(() => {
+		const abortController = new AbortController();
+		const signal = abortController.signal;
+
+		getPublicDocuments(signal);
+
+		return () => {
+			abortController.abort();
+		};
+	}, []);
 	const sortedBaseKnowledgeDocuments = [...publicDocuments].sort((a, b) =>
 		(a.file_name || "").localeCompare(b.file_name || ""),
 	);
@@ -85,12 +95,12 @@ export const BaseKnowledgeSection: React.FC = () => {
 								<ChevronIcon
 									color="dunkelblau-200"
 									direction="down"
-									classnames="block group-hover:hidden"
+									classname="block group-hover:hidden"
 								/>
 								<ChevronIcon
 									color="dunkelblau-80"
 									direction="down"
-									classnames="hidden group-hover:block"
+									classname="hidden group-hover:block"
 								/>
 							</button>
 						)}
@@ -108,13 +118,13 @@ export const BaseKnowledgeSection: React.FC = () => {
 								<ChevronIcon
 									color="dunkelblau-200"
 									direction="up"
-									classnames="block group-hover:hidden"
+									classname="block group-hover:hidden"
 								/>
 
 								<ChevronIcon
 									color="dunkelblau-80"
 									direction="up"
-									classnames="hidden group-hover:block"
+									classname="hidden group-hover:block"
 								/>
 							</button>
 						)}
