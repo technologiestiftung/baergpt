@@ -46,6 +46,7 @@
 		"jsonwebtoken": "9.0.2",
 		"mammoth": "1.9.1",
 		"pdf-lib": "1.17.1",
+		"pdf-parse": "2.4.5",
 		"throttled-queue": "3.0.0",
 		"word-extractor": "1.0.4",
 		"xlsx": "npm:@e965/xlsx@0.20.3",

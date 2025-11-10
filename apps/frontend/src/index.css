@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+	html {
+		scroll-behavior: smooth;
+	}
+
 	.markdown-container p {
 		@apply my-3 hyphens-auto;
 		word-break: break-word;

@@ -13,10 +13,11 @@ type FileUploadProps = {
 
 export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 	const { fileUploads, uploadFiles } = useFileUploadsStore();
-	const { isDocumentFirstLoad } = useDocumentStore();
+	const { isDocumentFirstLoad, isLoading } = useDocumentStore();
 	const { isFolderFirstLoad } = useFolderStore();
-	const isLoading = isDocumentFirstLoad || isFolderFirstLoad;
+	const isFirstLoading = isDocumentFirstLoad || isFolderFirstLoad;
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const { error } = useErrorStore.getState();
 
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const files = event.target.files;
@@ -39,7 +40,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 
 	return (
 		<div className={`flex flex-col w-full ${!hasItems && "h-full "}`}>
-			{!hasItems && (
+			{!hasItems && !error && (
 				<div
 					className={`flex w-full h-full ${hasFileUploads ? "py-8" : "pt-8"}`}
 				>
@@ -54,7 +55,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 						style={{ display: "none" }}
 						multiple
 					/>
-					{!isLoading && <NoFilesUploadZone onUploadClick={triggerFileInput} />}
+					{!isFirstLoading && !isLoading && !error && (
+						<NoFilesUploadZone onUploadClick={triggerFileInput} />
+					)}
 				</div>
 			)}
 

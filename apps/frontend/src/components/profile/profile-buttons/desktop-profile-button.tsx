@@ -63,7 +63,7 @@ export const DesktopProfileButton = () => {
 				aria-label={Content["profile.button.ariaLabel"]}
 			>
 				<div
-					className={`flex items-center rounded-full size-9 p-2 group-hover:bg-hellblau-100 ${isDropdownOpen ? "bg-hellblau-100 group-hover:bg-hellblau-60" : "bg-hellblau-60"}`}
+					className={`flex items-center rounded-full size-[33px] p-1 group-hover:bg-hellblau-100 ${isDropdownOpen ? "bg-hellblau-100 group-hover:bg-hellblau-60" : "bg-hellblau-60"}`}
 				>
 					<span className="text-center size-6 text-dunkelblau-200 text-sm font-bold leading-6 uppercase">
 						{first_name?.[0]?.toUpperCase() ?? ""}

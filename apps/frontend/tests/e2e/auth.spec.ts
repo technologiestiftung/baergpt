@@ -32,8 +32,10 @@ test.describe("Login", () => {
 		// Click on the log-out button
 		await page.getByRole("button", { name: "Ausloggen" }).click();
 
-		// Check if we are back on the login page
-		await expect(page.getByText("Willkommen zurückBitte melden")).toBeVisible();
+		// Check if we are back on the landing page
+		await expect(
+			page.getByText("BärGPT, der KI-Assistent für die Berliner Verwaltung"),
+		).toBeVisible();
 	});
 
 	test("Invalid Login Attempt", async ({ page }) => {
@@ -215,6 +217,16 @@ test.describe("Password Reset", () => {
 		await page1.getByRole("button", { name: "Ausloggen" }).click();
 
 		// Now reset the password back to the original one
+
+		// Check if we are on the landing page
+		await expect(
+			page1.getByRole("heading", {
+				name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
+			}),
+		).toBeVisible();
+
+		// Go to the login page
+		await page1.getByRole("link", { name: "Zur Login-Seite" }).click();
 
 		// Check if we are on the login page
 		await expect(
@@ -413,7 +425,66 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		expect(deleteUserError).toBeNull();
 	});
 
-	test("User with invite link cannot access main page without completing account activation", async ({
+	test("Default Registration Flow", async ({ page }) => {
+		// Go to the registration page
+		await page.goto("/register/");
+
+		// Fill in the registration form
+		await page
+			.getByRole("textbox", { name: "Vorname" })
+			.fill(givenUserFirstName);
+		await page
+			.getByRole("textbox", { name: "Nachname" })
+			.fill(givenUserLastName);
+		await page
+			.getByRole("textbox", { name: "E-Mail-Adresse Nur" })
+			.fill(givenUserEmail);
+		await page
+			.getByRole("textbox", { name: "Passwort Ein Fragezeichen-" })
+			.fill(givenUserPassword);
+		await page
+			.getByRole("textbox", { name: "Passwort wiederholen Password" })
+			.fill(givenUserPassword);
+		await page
+			.locator('[data-testid="label-has-accepted-privacy-checkbox"]')
+			.check();
+		await page
+			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
+			.click();
+
+		// Info message about confirmation mail should be visible
+		await expect(
+			page.getByRole("heading", { name: "Registrierung fast abgeschlossen" }),
+		).toBeVisible();
+
+		// Open the email confirmation link in mail inbucket
+		await page.goto("http://localhost:54324/"); // Inbucket URL
+		await page
+			.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
+			.first()
+			.click();
+
+		// Clicking on the link should open a new tab
+		const popupEvent = page.waitForEvent("popup");
+		await page
+			.locator("#preview-html")
+			.contentFrame()
+			.getByRole("link", { name: "E-Mail-Adresse bestätigen" })
+			.click();
+		const page1 = await popupEvent;
+
+		// check that we are on the account activation page
+		await page1.waitForLoadState("networkidle");
+
+		// After clicking on the link, we should be redirected to the main page
+		await expect(
+			page1.getByRole("heading", {
+				name: `Willkommen bei BärGPT, ${givenUserFirstName} ${givenUserLastName}`,
+			}),
+		).toBeVisible();
+	});
+
+	test("User with invite link is forwarded to account activation", async ({
 		page,
 	}) => {
 		// invite user via mail
@@ -448,15 +519,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await expect(page1).toHaveURL(/\/account-activated/);
 
 		// User E-Mail should be mentioned at the top
-		await expect(
-			page1.getByRole("heading", { name: givenUserEmail }),
-		).toBeVisible();
-
-		// Try to access the main page by navigating directly to "/"
-		await page1.goto("/");
-
-		// Should be redirected back to account-activated page
-		await expect(page1).toHaveURL(/\/account-activated/);
 		await expect(
 			page1.getByRole("heading", { name: givenUserEmail }),
 		).toBeVisible();
@@ -558,8 +620,8 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 	testWithRegisteredUser(
 		"Logged-In User should be logged out when their account is deactivated",
 		async ({ page, account, baseURL }) => {
-			// Go to the main page
-			await page.goto("/");
+			// Go to the login page
+			await page.goto("/login/");
 
 			// Try to log-in
 			await page
@@ -590,7 +652,10 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 			await expect(
 				page.getByText("Der Benutzeraccount wurde deaktiviert."),
 			).not.toBeVisible();
-			await expect(page).toHaveURL(`${baseURL}/login/`);
+			await expect(page).toHaveURL(`${baseURL}/`);
+
+			// Go to the login page again
+			await page.getByRole("link", { name: "Zur Login-Seite" }).click();
 
 			// Log in again with the same credentials
 			await page
@@ -619,12 +684,33 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 			// Refresh the page
 			await page.goto("/");
 
-			// Check if we are redirected to the login page with the error message
+			// Check if we are redirected to the landing page
+			await expect(
+				page.getByRole("heading", {
+					name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
+				}),
+			).toBeVisible();
+
+			// Go to the login page again
+			await page.getByRole("link", { name: "Zur Login-Seite" }).click();
+
+			// Check if we are on the login page
+			await expect(page).toHaveURL(`${baseURL}/login/`);
+
+			// Try to log-in again
+			await page
+				.getByRole("textbox", { name: "E-Mail-Adresse" })
+				.fill(account.email);
+			await page
+				.getByRole("textbox", { name: "Passwort" })
+				.fill(account.password);
+			await page.getByRole("button", { name: "Anmelden" }).click();
+
+			// Check if we are still on the login page with the error message
 			// Note: order matters here, we need to wait for the Text to be visible before checking the URL.
 			await expect(
 				page.getByText("Der Benutzeraccount wurde deaktiviert."),
 			).toBeVisible();
-			await expect(page).toHaveURL(`${baseURL}/login/`);
 		},
 	);
 });

@@ -22,7 +22,7 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 
 	return (
 		<div
-			className={`relative flex flex-row items-center justify-between w-full h-8 text-sm leading-5 font-normal px-2 rounded-[3px] md:hover:bg-dunkelblau-90 ${
+			className={`relative flex flex-row items-center justify-between w-full h-11 md:h-8 text-sm leading-5 font-normal md:px-2 rounded-[3px] md:hover:bg-dunkelblau-90 ${
 				isSelected && "bg-dunkelblau-90"
 			}`}
 			tabIndex={-1}
