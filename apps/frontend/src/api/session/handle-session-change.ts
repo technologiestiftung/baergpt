@@ -28,6 +28,7 @@ export async function handleSessionChange(session: Session | null) {
 			useIsActiveStore.getState().getAccountActivationTimestamp(),
 			useFolderStore.getState().getFolders(signal),
 			useDocumentStore.getState().getDocuments(signal),
+			useDocumentStore.getState().getPublicDocuments(signal),
 			useChatsStore.getState().getChatsFromDb(signal),
 			useUserStore.getState().getUser(signal),
 			useAuthStore.getState().checkIsUserAdmin(signal),
