@@ -14,6 +14,7 @@ import { EmailChanged } from "./routes/email-changed";
 import { AccountDeleted } from "./routes/account-deleted";
 import { PrivacyPolicyPage } from "./routes/privacy-policy";
 import { RegistrationError } from "./routes/registration-error";
+import { TermsOfUsePage } from "./routes/terms-of-use";
 
 const router = createBrowserRouter([
 	{
@@ -57,6 +58,7 @@ const router = createBrowserRouter([
 		element: <AccountDeleted />,
 	},
 	{ path: "/privacy-policy/", element: <PrivacyPolicyPage /> },
+	{ path: "/terms-of-use/", element: <TermsOfUsePage /> },
 ]);
 
 function render() {
