@@ -575,7 +575,7 @@ export const Content = {
 	"profile.baseKnowledge.link.ariaLabel":
 		"Mehr erfahren über das Verwaltungswissen von BärGPT",
 	"profile.baseKnowledge.link.url":
-		"https://hilfe.baergpt.berlin/faq#:~:text=Wie%20funktioniert-,Verwaltungswissen,-%3F",
+		"https://hilfe.baergpt.berlin//faq#wie-funktioniert-verwaltungswissen",
 	"profile.baseKnowledge.viewAll.label.start": "alle ",
 	"profile.baseKnowledge.viewAll.label.end": " Dokumente ansehen",
 	"profile.baseKnowledge.viewAll.ariaLabel":
