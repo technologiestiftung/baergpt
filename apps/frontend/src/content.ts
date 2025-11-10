@@ -972,6 +972,22 @@ export const Content = {
 	"profile.chatSettings.formal": "Siezen",
 	"profile.chatSettings.informal": "Duzen",
 
+	//Base knowledge documents
+	"profile.baseKnowledge.title": "Verwaltungswissen",
+	"profile.baseKnowledge.description":
+		"BärGPT greift für seine Antworten auf diese Dokumente zu.",
+	"profile.baseKnowledge.usage": "So nutzt BärGPT die Quellen. ",
+	"profile.baseKnowledge.link.label": "Mehr erfahren",
+	"profile.baseKnowledge.link.ariaLabel":
+		"Mehr erfahren über das Verwaltungswissen von BärGPT",
+	"profile.baseKnowledge.link.url":
+		"https://hilfe.baergpt.berlin//faq#wie-funktioniert-verwaltungswissen",
+	"profile.baseKnowledge.viewAll.label.start": "alle ",
+	"profile.baseKnowledge.viewAll.label.end": " Dokumente ansehen",
+	"profile.baseKnowledge.viewAll.ariaLabel":
+		"Alle Verwaltungswissen-Dokumente ansehen",
+	"profile.baseKnowledge.collapseList.label": "Liste einklappen",
+	"profile.baseKnowledge.collapseList.ariaLabel": "Liste einklappen",
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 	"emailChanged.buttonLink": "Zu BärGPT",
