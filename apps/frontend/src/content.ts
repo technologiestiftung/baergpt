@@ -75,7 +75,7 @@ export const Content = {
 
 	"landingPage.registerCTA.h2":
 		"Jetzt mit BärGPT den Arbeitsalltag erleichtern",
-	"landingPage.registerCTA.p": "Für alle Beschäftigte der Berliner Verwaltung",
+	"landingPage.registerCTA.p": "Für alle Beschäftigten der Berliner Verwaltung",
 	"landingPage.registerCTA.label": "Jetzt registrieren",
 	"landingPage.registerCTA.ariaLabel": "Zur Registrierungs-Seite",
 	"landingPage.registerCTA.link": "/register/",
