@@ -27,6 +27,8 @@ export const BaseKnowledgeSection: React.FC = () => {
 					<a
 						href={Content["profile.baseKnowledge.link.url"]}
 						className="underline underline-offset-2 hover:underline"
+						target="_blank"
+						rel="noopener noreferrer"
 					>
 						{Content["profile.baseKnowledge.link.label"]}
 					</a>
