@@ -16,7 +16,8 @@ export function LandingPageRegisterCTA() {
 						{Content["landingPage.registerCTA.p"]}
 					</p>
 				</div>
-				<a
+				{/* commented out until release */}
+				{/* <a
 					href={Content["landingPage.registerCTA.link"]}
 					aria-label={Content["landingPage.registerCTA.ariaLabel"]}
 					className={`
@@ -27,7 +28,7 @@ export function LandingPageRegisterCTA() {
                                                 `}
 				>
 					{Content["landingPage.registerCTA.label"]}
-				</a>
+				</a> */}
 			</div>
 		</div>
 	);
