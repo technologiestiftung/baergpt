@@ -5,16 +5,16 @@ import { useCookieBannerStore } from "../../store/use-cookie-banner-store.ts";
 const topLinks = {
 	section1: [
 		{
+			href: Content["footer.helpcenter.link"],
+			text: Content["footer.helpcenter"],
+		},
+		{
 			href: Content["footer.support.link"],
 			text: Content["footer.support"],
 		},
 		{
 			href: Content["footer.github.link"],
 			text: Content["footer.github"],
-		},
-		{
-			href: Content["footer.helpcenter.link"],
-			text: Content["footer.helpcenter"],
 		},
 		{
 			href: Content["footer.feedback.link"],
@@ -56,9 +56,20 @@ export function FooterLandingPage() {
 							<li key={index}>
 								<a
 									href={link.href}
-									className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex items-center gap-0.5 text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline hover:underline-offset-4"
 								>
 									{link.text}
+									{index === 0 && (
+										<img
+											src="/icons/arrow-top-right-light-icon.svg"
+											alt={Content["arrowWhiteTopRightIcon.imgAlt"]}
+											className="size-6"
+											width={24}
+											height={24}
+										/>
+									)}
 								</a>
 							</li>
 						))}
@@ -68,7 +79,9 @@ export function FooterLandingPage() {
 							<li key={index}>
 								<a
 									href={link.href}
-									className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline"
+									target={index === 0 ? "_blank" : undefined}
+									rel={index === 0 ? "noopener noreferrer" : undefined}
+									className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline hover:underline-offset-4"
 								>
 									{link.text}
 								</a>
@@ -78,7 +91,7 @@ export function FooterLandingPage() {
 							<button
 								onClick={() => openBanner(true)}
 								aria-label={Content["footer.cookieSettings.ariaLabel"]}
-								className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline"
+								className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline hover:underline-offset-4"
 							>
 								{Content["footer.cookieSettings"]}
 							</button>
