@@ -31,11 +31,8 @@ app.use(
 );
 
 // Skip auth for OPTIONS requests
-app.use("*", async (c, next) => {
-	if (c.req.method === "OPTIONS") {
-		return c.body(null, 204);
-	}
-	return next();
+app.options("*", (c) => {
+    return c.body(null, 204);
 });
 
 app.use("*", basicAuth);
