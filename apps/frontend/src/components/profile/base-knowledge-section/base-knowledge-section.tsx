@@ -31,7 +31,8 @@ export const BaseKnowledgeSection: React.FC = () => {
 						{Content["profile.baseKnowledge.link.label"]}
 					</a>
 				</p>
-
+			</div>
+			<div>
 				{isPublicDocumentsLoading ? (
 					<ul className="mb-5">
 						<li className="flex gap-1 items-center py-2 px-3 text-dunkelblau-60">
@@ -51,7 +52,7 @@ export const BaseKnowledgeSection: React.FC = () => {
 											href={doc.previewUrl}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex gap-1 items-center py-2 px-3 border-b-[0.5px] border-dunkelblau-60 hover:bg-hellblau-30 group"
+											className="flex gap-1 items-center py-2 px-3 border-b-[0.5px] border-hellblau-60 hover:bg-hellblau-30 group"
 										>
 											<div className="flex gap-1 items-center">
 												<DocumentIcon
