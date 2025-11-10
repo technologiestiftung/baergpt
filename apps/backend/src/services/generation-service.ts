@@ -36,12 +36,6 @@ const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
-
-interface BuildContextFromDocumentsParams {
-	chunkMatches: HybridSearchResult[];
-	summaries: string[];
-}
-
 const maxAvailableSources = ragSearchDefaults.chunk_limit;
 
 export class GenerationService {
@@ -578,41 +572,6 @@ export class GenerationService {
 		}
 
 		return overlapStart;
-	}
-
-	/**
-	 * Processes document chunks to build context for the prompt
-	 */
-
-	buildContextFromDocuments({
-		chunkMatches,
-		summaries,
-	}: BuildContextFromDocumentsParams): string {
-		const LIMIT = config.chatCompletionContextTokenLimit;
-		let context = "";
-
-		for (const summary of summaries) {
-			if (
-				(context + summary).split(/\s+/).length * ESTIMATED_TOKENS_PER_WORD <
-				LIMIT
-			) {
-				context += summary;
-			}
-		}
-
-		context += "\n\nZitate aus verfügbaren Dokumenten:\n\n";
-
-		for (const chunkMatch of chunkMatches) {
-			const chunk = chunkMatch.chunk_content;
-			if (
-				`${context + chunk}\n`.split(/\s+/).length * ESTIMATED_TOKENS_PER_WORD <
-				LIMIT
-			) {
-				context += `${chunk}\n`;
-			}
-		}
-
-		return context;
 	}
 
 	/**

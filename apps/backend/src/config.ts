@@ -26,9 +26,6 @@ export interface Config {
 	supabaseJwtKey: string;
 	port?: number;
 	fileUploadLimitMb?: number;
-	chatCompletionContextTokenLimit?: number;
-	estimatedTokensPerWord?: number;
-	allowDeletion?: boolean;
 	llamaParseToken?: string;
 	maxPagesLimit?: number;
 	maxPagesForLlmParseLimit?: number;
@@ -99,12 +96,6 @@ export function verifyConfig(): void {
 	if (!process.env.UPLOAD_FILE_SIZE_LIMIT_MB && !process.env.CI) {
 		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be defined");
 	}
-	if (!process.env.CHAT_COMPLETION_CONTEXT_TOKEN_LIMIT && !process.env.CI) {
-		throw new Error("CHAT_COMPLETION_CONTEXT_TOKEN_LIMIT must be defined");
-	}
-	if (!process.env.ESTIMATED_TOKENS_PER_WORD && !process.env.CI) {
-		throw new Error("ESTIMATED_TOKENS_PER_WORD must be defined");
-	}
 	if (!process.env.SUPABASE_URL) {
 		throw new Error("SUPABASE_URL must be defined");
 	}
@@ -116,9 +107,6 @@ export function verifyConfig(): void {
 	}
 	if (!process.env.SUPABASE_JWT_KEY) {
 		throw new Error("SUPABASE_JWT_KEY must be defined");
-	}
-	if (!process.env.ALLOW_DELETION && !process.env.CI) {
-		throw new Error("ALLOW_DELETION must be defined");
 	}
 	if (!process.env.LLAMA_PARSE_TOKEN && !process.env.CI) {
 		throw new Error("LLAMA_PARSE_TOKEN must be defined");
@@ -186,30 +174,14 @@ export const config: Config = {
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
 	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
 	port: parseInt(process.env.PORT, 10) || 3000,
-	fileUploadLimitMb: process.env.UPLOAD_FILE_SIZE_LIMIT_MB
-		? parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10)
-		: undefined,
-	chatCompletionContextTokenLimit: process.env
-		.CHAT_COMPLETION_CONTEXT_TOKEN_LIMIT
-		? parseInt(process.env.CHAT_COMPLETION_CONTEXT_TOKEN_LIMIT, 10)
-		: undefined,
-	estimatedTokensPerWord: process.env.ESTIMATED_TOKENS_PER_WORD
-		? parseFloat(process.env.ESTIMATED_TOKENS_PER_WORD)
-		: undefined,
-	allowDeletion: process.env.ALLOW_DELETION === "true",
+	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
 	llamaParseToken: process.env.LLAMA_PARSE_TOKEN,
-	maxPagesLimit: process.env.MAX_PAGES_LIMIT
-		? parseInt(process.env.MAX_PAGES_LIMIT, 10)
-		: undefined,
-	maxPagesForLlmParseLimit: process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT
-		? parseInt(process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT, 10)
-		: undefined,
+	maxPagesLimit: parseInt(process.env.MAX_PAGES_LIMIT, 10),
+	maxPagesForLlmParseLimit: parseInt(process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT, 10),
 	nodeEnv: process.env.NODE_ENV,
 	maxRetries: parseInt(process.env.MAX_RETRIES, 10),
 	retryDelay: parseInt(process.env.RETRY_DELAY, 10),
-	modelTemperature: process.env.MODEL_TEMPERATURE
-		? parseFloat(process.env.MODEL_TEMPERATURE)
-		: undefined,
+	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
 	defaultModelIdentifier: process.env.DEFAULT_MODEL_IDENTIFIER,
 	sentryDsn: process.env.SENTRY_DSN,
 	gotenbergUrl: process.env.GOTENBERG_URL,

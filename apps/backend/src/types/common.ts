@@ -165,7 +165,6 @@ export type Settings = {
 	mistralModel: string;
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
-	allowDeletion: boolean;
 	maxPagesLimit: number;
 	maxPagesForLlmParseLimit: number;
 	openAiModel: string;
