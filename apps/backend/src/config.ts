@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 export interface Config {
+	redisUrl: string;
 	azureLlmApiKey?: string;
 	azureLlmEndpointGpt4oMini?: string;
 	azureLlmEndpointGeneric?: string;
@@ -45,6 +46,9 @@ export interface Config {
 
 /* eslint-disable-next-line complexity */
 export function verifyConfig(): void {
+	if (!process.env.REDIS_URL) {
+		throw new Error("REDIS_URL must be defined");
+	}
 	if (!process.env.OPENAI_API_KEY && !process.env.CI) {
 		throw new Error("OPENAI_API_KEY must be defined");
 	}
@@ -159,6 +163,7 @@ export function verifyConfig(): void {
 }
 
 export const config: Config = {
+	redisUrl: process.env.REDIS_URL as string,
 	azureLlmApiKey: process.env.AZURE_LLM_API_KEY,
 	azureLlmEndpointGpt4oMini: process.env.AZURE_LLM_ENDPOINT_GPT_4O_MINI,
 	azureLlmEndpointGeneric: process.env.AZURE_LLM_ENDPOINT_GENERIC,
