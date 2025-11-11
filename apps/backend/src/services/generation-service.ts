@@ -369,7 +369,6 @@ export class GenerationService {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						functionId: "text-toolCall-generation",
 						metadata: {
-							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
 							langfusePrompt: langfusePrompt
 								? langfusePrompt.toJSON()
@@ -438,7 +437,6 @@ export class GenerationService {
 					experimental_telemetry: {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						metadata: {
-							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
 							langfusePrompt: langfusePrompt
 								? langfusePrompt.toJSON()
@@ -479,7 +477,6 @@ export class GenerationService {
 					experimental_telemetry: {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						metadata: {
-							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
 							langfusePrompt: langfusePrompt
 								? langfusePrompt.toJSON()
