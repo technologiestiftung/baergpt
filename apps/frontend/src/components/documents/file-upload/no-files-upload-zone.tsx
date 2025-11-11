@@ -8,7 +8,10 @@ type NoFilesUploadZoneProps = {
 };
 
 export function NoFilesUploadZone({ onUploadClick }: NoFilesUploadZoneProps) {
-	const { isLessThanMaxUploadsAmountActive } = useFileUploadsStore();
+	const isLessThanMaxUploadsAmountActive = useFileUploadsStore((state) =>
+		state.isLessThanMaxUploadsAmountActive(),
+	);
+
 	return (
 		<div className="border-dashed p-3 border border-dunkelblau-60 flex flex-col w-full h-full items-center justify-center">
 			<div className="flex flex-col h-full justify-center items-center">
@@ -23,11 +26,11 @@ export function NoFilesUploadZone({ onUploadClick }: NoFilesUploadZoneProps) {
 				<SecondaryButton
 					className="mt-2"
 					onClick={onUploadClick}
-					disabled={!isLessThanMaxUploadsAmountActive()}
+					disabled={!isLessThanMaxUploadsAmountActive}
 				>
 					{Content["fileUpload.searchComputerbutton.label"]}{" "}
 					<UploadIcon
-						className={`size-6  ${isLessThanMaxUploadsAmountActive() ? "text-dunkelblau-100" : "text-dunkelblau-40"}`}
+						className={`size-6  ${isLessThanMaxUploadsAmountActive ? "text-dunkelblau-100" : "text-dunkelblau-40"}`}
 					/>
 				</SecondaryButton>
 			</div>
