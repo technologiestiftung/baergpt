@@ -11,9 +11,6 @@ import Content from "../../../content.ts";
 export function FileUploadList() {
 	const { fileUploads } = useFileUploadsStore();
 
-	const amountExceeded =
-		fileUploads.length - import.meta.env.VITE_MAX_FILE_UPLOADS;
-	const isMoreThanOneExceeded = amountExceeded > 1;
 	const hasErrorAmountExceeded = fileUploads.some(
 		(fileUpload) => fileUpload.status === "failed.tooMany",
 	);
@@ -23,16 +20,6 @@ export function FileUploadList() {
 			{hasErrorAmountExceeded && (
 				<div className="w-full px-3 py-2 bg-warning-10 text-sm leading-5 font-normal text-warning-100 z-10 sticky top-0">
 					{Content["fileUpload.maxFilesWarning.p1"]}{" "}
-					<span className="font-semibold">{amountExceeded}</span>{" "}
-					<span
-						className=""
-						dangerouslySetInnerHTML={{
-							__html: isMoreThanOneExceeded
-								? Content["fileUpload.maxFilesWarning.files"]
-								: Content["fileUpload.maxFilesWarning.file"],
-						}}
-					/>{" "}
-					{Content["fileUpload.maxFilesWarning.p2"]}
 				</div>
 			)}
 			<div className="flex flex-col gap-y-3.5 pt-3.5 pb-4 bg-white rounded-b-3px">
