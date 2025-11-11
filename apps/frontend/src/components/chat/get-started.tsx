@@ -41,13 +41,13 @@ export const GetStarted: React.FC = () => {
 					<ul className="flex flex-col list-disc ml-4">
 						<li>
 							{isAddressedFormal
-								? Content["chat.getStarted.li1"]
-								: Content["chat.getStarted.li1"]}
+								? Content["chat.getStarted.li1.formal"]
+								: Content["chat.getStarted.li1.informal"]}
 						</li>
 						<li>
 							{isAddressedFormal
-								? Content["chat.getStarted.li2"]
-								: Content["chat.getStarted.li2"]}
+								? Content["chat.getStarted.li2.formal"]
+								: Content["chat.getStarted.li2.informal"]}
 						</li>
 						<li>
 							<div className="flex items-center">

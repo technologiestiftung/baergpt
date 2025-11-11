@@ -825,12 +825,15 @@ export const Content = {
 	"chat.getStarted.informal.p1":
 		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
 
-	"chat.getStarted.li1": "Stelle mir eine Frage im Textfeld",
-	"chat.getStarted.li2":
+	"chat.getStarted.li1.formal": "Stellen Sie mir eine Frage im Textfeld.",
+	"chat.getStarted.li1.informal": "Stelle mir eine Frage im Textfeld.",
+	"chat.getStarted.li2.formal":
+		"Laden Sie ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
+	"chat.getStarted.li2.informal":
 		"Lade ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
 	"chat.getStarted.li3.p1": "Mit",
 	"chat.getStarted.li3.p2":
-		"-Button Dokument zum Chat hinzufügen und dann Fragen stellen",
+		"-Button Dokument zum Chat hinzufügen und dann Fragen stellen.",
 
 	"chat.getStarted.h2": "Wichtig:",
 	"chat.getStarted.li4.formal":
