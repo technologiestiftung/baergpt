@@ -1,11 +1,5 @@
- 
-
 import { PDFParse } from "pdf-parse";
-import type {
-	Document,
-	ExtractionResult,
-	ParsedPage,
-} from "../types/common";
+import type { Document, ExtractionResult, ParsedPage } from "../types/common";
 import { ExtractError } from "../types/common";
 import { config } from "../config";
 import { Mistral } from "@mistralai/mistralai";
@@ -117,6 +111,26 @@ export class DocumentExtractionService {
 			pageNumber,
 			tokenCount: countTokens(content),
 		});
+
+		const fileSizeMb = pdfBytes.byteLength / (1024 * 1024);
+		if (fileSizeMb > config.fileUploadLimitMb) {
+			captureError(
+				new Error(
+					`PDF file size ${fileSizeMb.toFixed(2)} MB exceeds upload limit of ${config.fileUploadLimitMb} MB.`,
+				),
+			);
+			return [];
+		}
+
+		if (extractionOptions.numPages > config.maxPagesForLlmParseLimit) {
+			captureError(
+				new Error(
+					`PDF with ${extractionOptions.numPages} pages exceeds max pages for LLM parse limit of ${config.maxPagesForLlmParseLimit} pages.`,
+				),
+			);
+			return [];
+		}
+
 		let ocrService: MistralOCRService;
 		if (extractionOptions.ocrProvider === "mistral") {
 			ocrService = new MistralOCRService();
@@ -125,29 +139,22 @@ export class DocumentExtractionService {
 				`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
 			);
 		}
-		
-		if (extractionOptions.numPages <= config.maxPagesForLlmParseLimit) {
-			try {
-				if (ocrService instanceof MistralOCRService) {
-					const pages =
-						await ocrService.extractTextFromPdfWithMistral(pdfBytes);
-					return pages.map((page) =>
-						page.tokenCount !== undefined
-							? page
-							: toParsedPage(page.content, page.pageNumber),
-					);
-				}
+
+		try {
+			if (ocrService instanceof MistralOCRService) {
+				const pages = await ocrService.extractTextFromPdfWithMistral(pdfBytes);
+				return pages.map((page) =>
+					page.tokenCount !== undefined
+						? page
+						: toParsedPage(page.content, page.pageNumber),
+				);
+			} 
 				throw new Error(
 					`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
 				);
-			} catch (error) {
-				captureError(error);
-				return [];
-			}
-		} else {	
-			captureError(new Error(
-				`PDF with ${extractionOptions.numPages} pages exceeds max pages for LLM parse limit of ${config.maxPagesForLlmParseLimit} pages.`,
-			));
+			
+		} catch (error) {
+			captureError(error);
 			return [];
 		}
 	}
