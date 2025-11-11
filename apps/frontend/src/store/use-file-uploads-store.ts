@@ -8,16 +8,16 @@ import {
 } from "../api/documents/upload-file.ts";
 import { useErrorStore } from "./error-store.ts";
 export const UPLOAD_STATUS_MAP = {
-	uploading: "wird hochgeladen",
-	uploaded: "erfolgreich hochgeladen",
-	processing: "wird verarbeitet",
-	successful: "erfolgreich verarbeitet",
-	canceled: "hochladen abgebrochen",
-	"failed.generic": "hochladen fehlgeschlagen",
+	uploading: "Wird hochgeladen",
+	uploaded: "Erfolgreich hochgeladen",
+	processing: "Wird verarbeitet",
+	successful: "Erfolgreich verarbeitet",
+	canceled: "Hochladen abgebrochen",
+	"failed.generic": "Hochladen fehlgeschlagen",
 	"failed.duplicate": "Datei existiert bereits",
 	"failed.format": "Ungültiges Dateiformat (nur PDF, Word oder Excel)",
 	"failed.size": `Datei zu groß (max. ${import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB} MB)`,
-	"failed.tooMany": `hochladen fehlgeschlagen`,
+	"failed.tooMany": `Hochladen fehlgeschlagen`,
 } as const;
 
 export type UploadStatusKeys = keyof typeof UPLOAD_STATUS_MAP;

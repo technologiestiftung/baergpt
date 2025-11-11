@@ -13,21 +13,25 @@ export function FileUploadList() {
 
 	const amountExceeded =
 		fileUploads.length - import.meta.env.VITE_MAX_FILE_UPLOADS;
+	const isMoreThanOneExceeded = amountExceeded > 1;
 	const hasErrorAmountExceeded = fileUploads.some(
 		(fileUpload) => fileUpload.status === "failed.tooMany",
 	);
 
 	return (
-		<ul className="overflow-scroll max-h-[228px] relative">
+		<ul className="overflow-scroll max-h-[228px] relative rounded-b-3px">
 			{hasErrorAmountExceeded && (
 				<div className="w-full px-3 py-2 bg-warning-10 text-sm leading-5 font-normal text-warning-100 z-20 sticky top-0">
 					{Content["fileUpload.maxFilesWarning.p1"]}{" "}
-					<span className="font-semibold">
-						{amountExceeded}{" "}
-						{amountExceeded === 1
-							? Content["fileUpload.maxFilesWarning.file"]
-							: Content["fileUpload.maxFilesWarning.files"]}
-					</span>{" "}
+					<span className="font-semibold">{amountExceeded}</span>{" "}
+					<span
+						className=""
+						dangerouslySetInnerHTML={{
+							__html: isMoreThanOneExceeded
+								? Content["fileUpload.maxFilesWarning.files"]
+								: Content["fileUpload.maxFilesWarning.file"],
+						}}
+					/>{" "}
 					{Content["fileUpload.maxFilesWarning.p2"]}
 				</div>
 			)}

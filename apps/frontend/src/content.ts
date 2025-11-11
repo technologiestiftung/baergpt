@@ -377,8 +377,8 @@ export const Content = {
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
 	"fileUpload.maxFilesWarning.p1": "Max. 5 Dateien pro Upload.",
-	"fileUpload.maxFilesWarning.file": "Datei wurde",
-	"fileUpload.maxFilesWarning.files": "Dateien wurden",
+	"fileUpload.maxFilesWarning.file": "<strong>Datei</strong> wurde",
+	"fileUpload.maxFilesWarning.files": "<strong>Dateien</strong> wurden",
 	"fileUpload.maxFilesWarning.p2": "nicht hochgeladen.",
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
