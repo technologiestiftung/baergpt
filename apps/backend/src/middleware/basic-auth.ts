@@ -50,10 +50,6 @@ async function hasValidSupabaseSession(c: Context): Promise<boolean> {
 }
 
 const basicAuth = createMiddleware(async (c: Context, next: Next) => {
-	// Allow OPTIONS requests through for CORS preflight
-    if (c.req.method === "OPTIONS") {
-        return next();
-    }
 	try {
 		if (await hasValidSupabaseSession(c)) {
 			return next();
