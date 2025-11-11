@@ -1,8 +1,6 @@
 import "dotenv/config";
 
 export interface Config {
-	openAiEndpoint?: string;
-	openAiApiKey?: string;
 	ollamaApiEndpoint?: string;
 	ollamaApiKey?: string;
 	mistralApiKey: string;
@@ -38,12 +36,6 @@ export interface Config {
 
 /* eslint-disable-next-line complexity */
 export function verifyConfig(): void {
-	if (!process.env.OPENAI_API_KEY && !process.env.CI) {
-		throw new Error("OPENAI_API_KEY must be defined");
-	}
-	if (!process.env.OPENAI_ENDPOINT && !process.env.CI) {
-		throw new Error("OPENAI_ENDPOINT must be defined");
-	}
 	if (!process.env.OLLAMA_API_ENDPOINT && !process.env.CI) {
 		throw new Error("OLLAMA_API_ENDPOINT must be defined");
 	}
@@ -134,8 +126,6 @@ export function verifyConfig(): void {
 }
 
 export const config: Config = {
-	openAiEndpoint: process.env.OPENAI_ENDPOINT,
-	openAiApiKey: process.env.OPENAI_API_KEY,
 	ollamaApiEndpoint: process.env.OLLAMA_API_ENDPOINT,
 	ollamaApiKey: process.env.OLLAMA_API_KEY,
 	mistralApiKey: process.env.MISTRAL_API_KEY,

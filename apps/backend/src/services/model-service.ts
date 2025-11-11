@@ -1,7 +1,6 @@
 import type { LLMIdentifier } from "../types/common";
 import { LLMHandler } from "../types/common";
 import { config } from "../config";
-import { openai } from "@ai-sdk/openai";
 import { mistral } from "@ai-sdk/mistral";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
@@ -50,16 +49,6 @@ class Model {
 
 export class ModelService {
 	availableModels: Record<string, Model> = {
-		"openai-gpt-4o-mini": new Model({
-			identifier: "openai-gpt-4o-mini",
-			baseModelName: "gpt-4o-mini",
-			provider: "OpenAI",
-			isGdprCompliant: false,
-			contextSize: 128000,
-			isOpenSource: false,
-			serverLocation: "USA",
-			description: "Aktuelles Modell von OpenAI, gehostet von OpenAI.",
-		}),
 		"citylab-macstudio-llama-3.1": new Model({
 			identifier: "citylab-macstudio-llama-3.1",
 			baseModelName: "llama3.1",
@@ -109,11 +98,6 @@ export class ModelService {
 	});
 
 	handlers: { [key in LLMIdentifier]: LLMHandler } = {
-		"openai-gpt-4o-mini": new LLMHandler(
-			"gpt-4o-mini",
-			openai("gpt-4o-mini"),
-			config.openAiEndpoint,
-		),
 		"citylab-macstudio-llama-3.1": new LLMHandler(
 			"llama3.1",
 			this.ollama("llama3.1"),

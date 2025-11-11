@@ -160,15 +160,12 @@ export type DocumentImporter = {
 export type Settings = {
 	supabaseUrl: string;
 	supabaseServiceRoleKey: string;
-	openAiApiKey: string;
 	mistralApiKey: string;
 	mistralModel: string;
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
 	maxPagesLimit: number;
 	maxPagesForLlmParseLimit: number;
-	openAiModel: string;
-	openAiEmbeddingModel: string;
 	processingBatchSize: number;
 };
 
@@ -263,7 +260,6 @@ export interface JinaSegmenterResponse {
 }
 
 export type LLMIdentifier =
-	| "openai-gpt-4o-mini"
 	| "citylab-macstudio-llama-3.1"
 	| "mistral-small-latest"
 	| "qwen3-30b-a3b-fp8";

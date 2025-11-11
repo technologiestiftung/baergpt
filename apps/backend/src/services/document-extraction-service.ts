@@ -148,11 +148,10 @@ export class DocumentExtractionService {
 						? page
 						: toParsedPage(page.content, page.pageNumber),
 				);
-			} 
-				throw new Error(
-					`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
-				);
-			
+			}
+			throw new Error(
+				`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
+			);
 		} catch (error) {
 			captureError(error);
 			return [];

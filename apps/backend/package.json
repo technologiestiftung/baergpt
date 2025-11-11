@@ -21,7 +21,6 @@
 	},
 	"dependencies": {
 		"@ai-sdk/mistral": "2.0.17",
-		"@ai-sdk/openai": "2.0.44",
 		"@ai-sdk/openai-compatible": "1.0.19",
 		"@dqbd/tiktoken": "1.0.17",
 		"@hono/node-server": "1.14.4",
