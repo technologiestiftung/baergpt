@@ -19,6 +19,7 @@ import WordExtractor from "word-extractor";
 import mammoth from "mammoth";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
+import { getDocumentProxy } from "unpdf";
 
 export class DocumentExtractionService {
 	async extractDocument(
@@ -66,8 +67,8 @@ export class DocumentExtractionService {
 			};
 		}
 
-		// Use lightweight regex-based page counting (Lambda-compatible, minimal memory)
-		const numPages = this.getPdfPageCount(fileBytes);
+		// Use lightweight parsing to determine page count without leaving memory footprint
+		const numPages = await this.getPdfPageCount(fileBytes);
 
 		if (numPages > config.maxPagesLimit) {
 			throw new ExtractError(
@@ -177,29 +178,19 @@ export class DocumentExtractionService {
 	}
 
 	/**
-	 * Lightweight PDF page counter using minimal memory.
-	 * Searches for /Type/Page(/Count) entries in the PDF structure.
+	 * Lightweight PDF page counter using unpdf.
 	 */
-	private getPdfPageCount(pdfBytes: Uint8Array): number {
-		// Convert to string for pattern matching
-		const pdfText = new TextDecoder("latin1").decode(pdfBytes);
-
-		const countPattern = /\/Type\s*\/Pages.*?\/Count\s+(\d+)/s;
-		const countMatch = pdfText.match(countPattern);
-
-		if (countMatch && countMatch[1]) {
-			return parseInt(countMatch[1], 10);
+	private async getPdfPageCount(pdfBytes: Uint8Array): Promise<number> {
+		try {
+			// Create a copy to avoid detaching the original ArrayBuffer
+			const pdfBytesCopy = new Uint8Array(pdfBytes);
+			const pdf = await getDocumentProxy(pdfBytesCopy);
+			const numPages = pdf.numPages;
+			return numPages;
+		} catch (error) {
+			console.debug("unpdf failed to determine PDF page count", error);
+			throw new Error("Unable to determine PDF page count");
 		}
-
-		// Fallback method
-		const pagePattern = /\/Type\s*\/Page[^s]/g;
-		const matches = pdfText.match(pagePattern);
-
-		if (matches && matches.length > 0) {
-			return matches.length;
-		}
-
-		throw new Error("Unable to determine PDF page count");
 	}
 }
 
