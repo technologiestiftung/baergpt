@@ -65,10 +65,10 @@ export class DocumentExtractionService {
 				`Could not extract ${document.source_url}, num pages ${numPages} > limit of ${config.maxPagesLimit} pages.`,
 			);
 		}
-		const parsedPages = await this.extractPdfAsMarkdownPages(
-			fileBytes,
-			{ numPages: numPages, ocrProvider: "mistral" },
-		);
+		const parsedPages = await this.extractPdfAsMarkdownPages(fileBytes, {
+			numPages: numPages,
+			ocrProvider: "mistral",
+		});
 
 		const checksum = getHash(fileBytes);
 		const fileSize = fileBytes.byteLength;
@@ -160,8 +160,10 @@ export class DocumentExtractionService {
 			const numPages = pdf.numPages;
 			return numPages;
 		} catch (error) {
-			console.debug("unpdf failed to determine PDF page count", error);
-			throw new Error("Unable to determine PDF page count");
+			captureError(
+				new Error("Unable to determine PDF page count", { cause: error }),
+			);
+			return 0;
 		}
 	}
 }

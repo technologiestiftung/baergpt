@@ -1,6 +1,5 @@
 import type { LLMIdentifier } from "../types/common";
 import { LLMHandler } from "../types/common";
-import { config } from "../config";
 import { mistral } from "@ai-sdk/mistral";
 
 type ModelProvider = "Mistral";
@@ -64,7 +63,7 @@ export class ModelService {
 		"mistral-small-latest": new LLMHandler(
 			"mistral-small",
 			mistral("mistral-small-latest"),
-			config.mistralApiEndpoint,
+			"https://api.mistral.ai/v1",
 		),
 	};
 

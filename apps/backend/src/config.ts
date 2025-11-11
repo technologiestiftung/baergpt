@@ -2,7 +2,6 @@ import "dotenv/config";
 
 export interface Config {
 	mistralApiKey: string;
-	mistralApiEndpoint: string;
 	mistralMaxRPS: number;
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
@@ -20,8 +19,6 @@ export interface Config {
 	maxPagesLimit?: number;
 	maxPagesForLlmParseLimit?: number;
 	nodeEnv?: string;
-	maxRetries: number;
-	retryDelay: number;
 	modelTemperature: number;
 	defaultModelIdentifier: string;
 	sentryDsn: string;
@@ -34,9 +31,6 @@ export interface Config {
 export function verifyConfig(): void {
 	if (!process.env.MISTRAL_API_KEY) {
 		throw new Error("MISTRAL_API_KEY must be defined");
-	}
-	if (!process.env.MISTRAL_API_ENDPOINT) {
-		throw new Error("MISTRAL_API_ENDPOINT must be defined");
 	}
 	if (!process.env.MISTRAL_MAX_RPS) {
 		throw new Error("MISTRAL_MAX_RPS must be defined");
@@ -80,12 +74,6 @@ export function verifyConfig(): void {
 	if (!process.env.NODE_ENV && !process.env.CI) {
 		throw new Error("NODE_ENV must be defined");
 	}
-	if (!process.env.MAX_RETRIES && !process.env.CI) {
-		throw new Error("MAX_RETRIES must be defined");
-	}
-	if (!process.env.RETRY_DELAY && !process.env.CI) {
-		throw new Error("RETRY_DELAY must be defined");
-	}
 	if (!process.env.MODEL_TEMPERATURE && !process.env.CI) {
 		throw new Error("MODEL_TEMPERATURE must be defined");
 	}
@@ -108,7 +96,6 @@ export function verifyConfig(): void {
 
 export const config: Config = {
 	mistralApiKey: process.env.MISTRAL_API_KEY,
-	mistralApiEndpoint: process.env.MISTRAL_API_ENDPOINT,
 	mistralMaxRPS: parseInt(process.env.MISTRAL_MAX_RPS, 10),
 	jinaApiKey: process.env.JINA_API_KEY,
 	jinaEmbeddingModel: process.env.JINA_EMBEDDING_MODEL,
@@ -132,8 +119,6 @@ export const config: Config = {
 		10,
 	),
 	nodeEnv: process.env.NODE_ENV,
-	maxRetries: parseInt(process.env.MAX_RETRIES, 10),
-	retryDelay: parseInt(process.env.RETRY_DELAY, 10),
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
 	defaultModelIdentifier: process.env.DEFAULT_MODEL_IDENTIFIER,
 	sentryDsn: process.env.SENTRY_DSN,
