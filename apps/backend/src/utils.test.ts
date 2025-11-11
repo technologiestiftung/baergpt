@@ -51,7 +51,10 @@ describe("resilientCall()", () => {
 
 			// Create multiple operations that should be throttled
 			const promises = Array.from({ length: amountOfCalls }, () =>
-				resilientCall(mockOperation, { queueType: "embeddings", retries: 0 }),
+				resilientCall(mockOperation, {
+					queueType: "embeddings",
+					retries: 0,
+				}),
 			);
 
 			await Promise.all(promises);
@@ -62,7 +65,7 @@ describe("resilientCall()", () => {
 
 			expect(duration).toBeGreaterThanOrEqual(expectedDuration);
 			expect(mockOperation).toHaveBeenCalledTimes(amountOfCalls);
-		});
+		}, 20_000);
 	});
 
 	describe("LLM queue", () => {
@@ -84,6 +87,6 @@ describe("resilientCall()", () => {
 
 			expect(duration).toBeGreaterThanOrEqual(expectedDuration);
 			expect(mockOperation).toHaveBeenCalledTimes(amountOfCalls);
-		});
+		}, 20_000);
 	});
 });

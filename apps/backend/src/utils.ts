@@ -1,17 +1,7 @@
 import crypto from "crypto";
 import { config } from "./config";
-import { seconds, throttledQueue } from "throttled-queue";
 import { captureError } from "./monitoring/capture-error";
-
-const addToEmbeddingsQueue = throttledQueue({
-	interval: seconds(1),
-	maxPerInterval: config.jinaMaxRPS,
-});
-
-const addToLLMQueue = throttledQueue({
-	interval: seconds(1),
-	maxPerInterval: config.mistralMaxRPS,
-});
+import { scheduleDistributed } from "./services/distributed-limiter";
 
 export function getHash(documentBuffer: Uint8Array): string {
 	const hashSum = crypto.createHash("md5");
@@ -73,35 +63,15 @@ export async function resilientCall<T>(
 	} = options;
 
 	if (queueType === "embeddings") {
-		return new Promise<T>((resolve, reject) => {
-			addToEmbeddingsQueue(async () => {
-				try {
-					const result = await withRetries(operation, {
-						retries,
-						retryDelay,
-					});
-					resolve(result);
-				} catch (error) {
-					reject(error);
-				}
-			});
-		});
+		return scheduleDistributed("embeddings", () =>
+			withRetries(operation, { retries, retryDelay }),
+		);
 	}
 
 	if (queueType === "llm") {
-		return new Promise<T>((resolve, reject) => {
-			addToLLMQueue(async () => {
-				try {
-					const result = await withRetries(operation, {
-						retries,
-						retryDelay,
-					});
-					resolve(result);
-				} catch (error) {
-					reject(error);
-				}
-			});
-		});
+		return scheduleDistributed("llm", () =>
+			withRetries(operation, { retries, retryDelay }),
+		);
 	}
 
 	return withRetries(operation, { retries, retryDelay });
