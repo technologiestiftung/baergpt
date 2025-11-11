@@ -259,11 +259,7 @@ export interface JinaSegmenterResponse {
 	chunks: string[];
 }
 
-export type LLMIdentifier =
-	| "citylab-macstudio-llama-3.1"
-	| "mistral-small-latest"
-	| "qwen3-30b-a3b-fp8";
-
+export type LLMIdentifier = "mistral-small-latest";
 export class LLMHandler {
 	model: string;
 	languageModel: LanguageModel;

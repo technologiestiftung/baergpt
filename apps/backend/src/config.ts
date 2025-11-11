@@ -1,13 +1,9 @@
 import "dotenv/config";
 
 export interface Config {
-	ollamaApiEndpoint?: string;
-	ollamaApiKey?: string;
 	mistralApiKey: string;
 	mistralApiEndpoint: string;
 	mistralMaxRPS: number;
-	qwenEndpoint?: string;
-	qwenApiKey?: string;
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
 	jinaMaxRPS: number;
@@ -36,12 +32,6 @@ export interface Config {
 
 /* eslint-disable-next-line complexity */
 export function verifyConfig(): void {
-	if (!process.env.OLLAMA_API_ENDPOINT && !process.env.CI) {
-		throw new Error("OLLAMA_API_ENDPOINT must be defined");
-	}
-	if (!process.env.OLLAMA_API_KEY && !process.env.CI) {
-		throw new Error("OLLAMA_API_KEY must be defined");
-	}
 	if (!process.env.MISTRAL_API_KEY) {
 		throw new Error("MISTRAL_API_KEY must be defined");
 	}
@@ -87,15 +77,6 @@ export function verifyConfig(): void {
 	if (!process.env.SUPABASE_JWT_KEY) {
 		throw new Error("SUPABASE_JWT_KEY must be defined");
 	}
-	if (!process.env.LLAMA_PARSE_TOKEN && !process.env.CI) {
-		throw new Error("LLAMA_PARSE_TOKEN must be defined");
-	}
-	if (!process.env.MAX_PAGES_LIMIT && !process.env.CI) {
-		throw new Error("MAX_PAGES_LIMIT must be defined");
-	}
-	if (!process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT && !process.env.CI) {
-		throw new Error("MAX_PAGES_FOR_LLM_PARSE_LIMIT must be defined");
-	}
 	if (!process.env.NODE_ENV && !process.env.CI) {
 		throw new Error("NODE_ENV must be defined");
 	}
@@ -126,13 +107,9 @@ export function verifyConfig(): void {
 }
 
 export const config: Config = {
-	ollamaApiEndpoint: process.env.OLLAMA_API_ENDPOINT,
-	ollamaApiKey: process.env.OLLAMA_API_KEY,
 	mistralApiKey: process.env.MISTRAL_API_KEY,
 	mistralApiEndpoint: process.env.MISTRAL_API_ENDPOINT,
 	mistralMaxRPS: parseInt(process.env.MISTRAL_MAX_RPS, 10),
-	qwenEndpoint: process.env.QWEN_ENDPOINT,
-	qwenApiKey: process.env.QWEN_API_KEY,
 	jinaApiKey: process.env.JINA_API_KEY,
 	jinaEmbeddingModel: process.env.JINA_EMBEDDING_MODEL,
 	jinaMaxRPS: parseInt(process.env.JINA_MAX_RPS, 10),

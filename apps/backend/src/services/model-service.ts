@@ -2,9 +2,8 @@ import type { LLMIdentifier } from "../types/common";
 import { LLMHandler } from "../types/common";
 import { config } from "../config";
 import { mistral } from "@ai-sdk/mistral";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-type ModelProvider = "OpenAI" | "Ollama" | "Mistral";
+type ModelProvider = "Mistral";
 
 interface ModelStatus {
 	status: number;
@@ -49,17 +48,6 @@ class Model {
 
 export class ModelService {
 	availableModels: Record<string, Model> = {
-		"citylab-macstudio-llama-3.1": new Model({
-			identifier: "citylab-macstudio-llama-3.1",
-			baseModelName: "llama3.1",
-			provider: "Ollama",
-			isGdprCompliant: true,
-			contextSize: 128000,
-			isOpenSource: true,
-			serverLocation: "Berlin",
-			description:
-				"Open Source - Modell von Meta, datenschutzkonform gehostet im CityLAB Berlin.",
-		}),
 		"mistral-small-latest": new Model({
 			identifier: "mistral-small-latest",
 			baseModelName: "mistral-small",
@@ -70,48 +58,13 @@ export class ModelService {
 			serverLocation: "Frankreich",
 			description: "Aktuelles Modell von Mistral, gehostet von Mistral.",
 		}),
-		"qwen3-30b-a3b-fp8": new Model({
-			identifier: "qwen3-30b-a3b-fp8",
-			baseModelName: "Qwen/Qwen3-30B-A3B-FP8",
-			provider: "OpenAI",
-			isGdprCompliant: true,
-			contextSize: 131072,
-			isOpenSource: true,
-			serverLocation: "Berlin",
-			description: "Open Source MoE Modell von Alibaba, gehostet in Berlin.",
-		}),
 	};
 
-	ollama = createOpenAICompatible({
-		name: "ollama",
-		baseURL: config.ollamaApiEndpoint,
-		apiKey: config.ollamaApiKey,
-		headers: {
-			"x-api-key": config.ollamaApiKey,
-		},
-	});
-
-	qwen = createOpenAICompatible({
-		name: "qwen",
-		baseURL: config.qwenEndpoint,
-		apiKey: config.qwenApiKey,
-	});
-
 	handlers: { [key in LLMIdentifier]: LLMHandler } = {
-		"citylab-macstudio-llama-3.1": new LLMHandler(
-			"llama3.1",
-			this.ollama("llama3.1"),
-			config.ollamaApiEndpoint,
-		),
 		"mistral-small-latest": new LLMHandler(
 			"mistral-small",
 			mistral("mistral-small-latest"),
 			config.mistralApiEndpoint,
-		),
-		"qwen3-30b-a3b-fp8": new LLMHandler(
-			"qwen3-30B",
-			this.qwen("Qwen/Qwen3-30B-A3B-FP8"),
-			config.qwenEndpoint,
 		),
 	};
 
