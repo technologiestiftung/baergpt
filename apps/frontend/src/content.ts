@@ -821,42 +821,34 @@ export const Content = {
 	//GetStarted
 	"chat.getStarted.h1": "Willkommen bei BärGPT, ",
 	"chat.getStarted.formal.p1":
-		"BärGPT ist ein KI-Assistent entwickelt speziell für die Berliner Verwaltung. Er hilft Ihnen, Informationen schneller zu finden, Dokumente auszuwerten und Texte zu verfassen.",
+		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Ihnen dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
 	"chat.getStarted.informal.p1":
-		"BärGPT ist ein KI-Assistent, entwickelt speziell für die Berliner Verwaltung. Er hilft Dir, Informationen schneller zu finden, Dokumente auszuwerten und Texte zu verfassen.",
-	"chat.getStarted.formal.h2": "So nutzen Sie BärGPT",
-	"chat.getStarted.informal.h2": "So nutzt Du BärGPT",
-	"chat.getStarted.h3.1": "Frage stellen",
-	"chat.getStarted.formal.h3.1.p":
-		"Geben Sie Ihre Frage unten ein. Je präziser Ihre Frage, desto besser die Antwort.",
-	"chat.getStarted.informal.h3.1.p":
-		"Gib deine Frage unten ein. Je präziser deine Frage, desto besser die Antwort.",
+		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
 
-	"chat.getStarted.h3.2": "Dokument befragen",
-	"chat.getStarted.formal.h3.2.li1":
-		"Laden Sie ein PDF über den Button „Datei hochladen“ oder per Drag & Drop hoch.",
-	"chat.getStarted.informal.h3.2.li1":
-		"Füge ein PDF über den Button „Datei hochladen“ oder per Drag & Drop hinzu.",
-	"chat.getStarted.h3.2.li2.1": "Mit ",
-	"chat.getStarted.h3.2.li2.2": "-Button dem Chat hinzufügen.",
-	"chat.getStarted.formal.h3.2.li3": "Geben Sie Ihre Frage zum Dokument ein.",
-	"chat.getStarted.informal.h3.2.li3": "Gib deine Frage zum Dokument ein.",
-	"chat.getStarted.h3.3": "Bitte beachten",
-	"chat.getStarted.formal.h3.3.li1":
-		"BärGPT ist ein KI-Modell und kann Fehler machen, bitte überprüfen Sie Informationen.",
-	"chat.getStarted.informal.h3.3.li1":
-		"BärGPT ist ein KI-Modell und kann Fehler machen, bitte überprüfe alle Informationen.",
-	"chat.getStarted.h3.3.li2":
-		"BärGPT hat keinen Zugriff auf das Internet oder aktuelle Webinhalte.",
-	"chat.getStarted.formal.h3.3.li3":
-		"BärGPT ersetzt die Websuche nicht: Befragen Sie am besten Ihre eigenen Dokumente.",
-	"chat.getStarted.informal.h3.3.li3":
-		"BärGPT ersetzt die Websuche nicht: Befrage am besten deine eigenen Dokumente.",
-	"chat.getStarted.h3.4": "Mehr erfahren?",
-	"chat.getStarted.formal.h3.4.p":
-		"Viele weitere Tipps und Videos finden Sie im ",
-	"chat.getStarted.informal.h3.4.p":
-		"Viele weitere Tipps und Videos findest Du im ",
+	"chat.getStarted.li1.formal": "Stellen Sie mir eine Frage im Textfeld.",
+	"chat.getStarted.li1.informal": "Stelle mir eine Frage im Textfeld.",
+	"chat.getStarted.li2.formal":
+		"Laden Sie ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
+	"chat.getStarted.li2.informal":
+		"Lade ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
+	"chat.getStarted.li3.p1": "Mit",
+	"chat.getStarted.li3.p2":
+		"-Button Dokument zum Chat hinzufügen und dann Fragen stellen.",
+
+	"chat.getStarted.h2": "Wichtig:",
+	"chat.getStarted.li4.formal":
+		"Hoher Andrang: Aktuell kann es zu Wartezeiten, Verzögerungen oder kurzfristigen Störungen kommen. Bitte versuchen Sie es ggf. später erneut.",
+	"chat.getStarted.li4.informal":
+		"Hoher Andrang: Aktuell kann es zu Wartezeiten, Verzögerungen oder kurzfristigen Störungen kommen. Bitte versuche es ggf. später erneut.",
+	"chat.getStarted.li5":
+		"Grenzen: Ich habe keinen Internetzugriff und kann keine aktuellen Webinhalte abrufen.",
+	"chat.getStarted.li6.formal":
+		"Qualität: Als KI kann ich Fehler machen. Bitte überprüfen Sie die Informationen.",
+	"chat.getStarted.li6.informal":
+		"Qualität: Als KI kann ich Fehler machen. Bitte überprüfe die Informationen.",
+	"chat.getStarted.li7.formal": "Tipps & Videos finden Sie im",
+	"chat.getStarted.li7.informal": "Tipps & Videos findest Du im",
+
 	"chat.getStarted.h3.4.link": "https://hilfe.baergpt.berlin/",
 	"chat.getStarted.h3.4.linkText": "Hilfecenter.",
 	"chat.getStarted.h3.4.link.ariaLabel": "Zum Hilfecenter von BärGPT",
