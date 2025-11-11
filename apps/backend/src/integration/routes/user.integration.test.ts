@@ -30,8 +30,9 @@ const createAuthedClient = (jwt: string) =>
 // Generate a PDF from text and return bytes
 const generatePdfBytesFromText = async (text: string): Promise<Uint8Array> => {
 	const doc = await PDFDocument.create();
-	doc.addPage().drawText(text);
-	return await doc.save();
+	const page = doc.addPage();
+	page.drawText(text, { x: 50, y: page.getHeight() - 50 });
+	return await doc.save({ useObjectStreams: false });
 };
 
 // Upload bytes to storage via /documents/upload (multipart)

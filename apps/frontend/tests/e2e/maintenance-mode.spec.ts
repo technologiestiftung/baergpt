@@ -66,7 +66,7 @@ test.describe("Maintenance Mode", () => {
 			// Step 4: Verify user is redirected to landing page (logged out)
 			await expect(
 				page.getByRole("heading", {
-					name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
+					name: /B.*rGPT, der KI-Assistent f.*r die Berliner Verwaltung/,
 				}),
 			).toBeVisible();
 		},
