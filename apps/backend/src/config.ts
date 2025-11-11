@@ -1,9 +1,6 @@
 import "dotenv/config";
 
 export interface Config {
-	azureLlmApiKey?: string;
-	azureLlmEndpointGpt4oMini?: string;
-	azureLlmEndpointGeneric?: string;
 	openAiEndpoint?: string;
 	openAiApiKey?: string;
 	ollamaApiEndpoint?: string;
@@ -43,15 +40,6 @@ export interface Config {
 export function verifyConfig(): void {
 	if (!process.env.OPENAI_API_KEY && !process.env.CI) {
 		throw new Error("OPENAI_API_KEY must be defined");
-	}
-	if (!process.env.AZURE_LLM_API_KEY && !process.env.CI) {
-		throw new Error("AZURE_LLM_API_KEY must be defined");
-	}
-	if (!process.env.AZURE_LLM_ENDPOINT_GPT_4O_MINI && !process.env.CI) {
-		throw new Error("AZURE_LLM_ENDPOINT_GPT_4O_MINI must be defined");
-	}
-	if (!process.env.AZURE_LLM_ENDPOINT_GENERIC && !process.env.CI) {
-		throw new Error("AZURE_LLM_ENDPOINT_GENERIC must be defined");
 	}
 	if (!process.env.OPENAI_ENDPOINT && !process.env.CI) {
 		throw new Error("OPENAI_ENDPOINT must be defined");
@@ -146,9 +134,6 @@ export function verifyConfig(): void {
 }
 
 export const config: Config = {
-	azureLlmApiKey: process.env.AZURE_LLM_API_KEY,
-	azureLlmEndpointGpt4oMini: process.env.AZURE_LLM_ENDPOINT_GPT_4O_MINI,
-	azureLlmEndpointGeneric: process.env.AZURE_LLM_ENDPOINT_GENERIC,
 	openAiEndpoint: process.env.OPENAI_ENDPOINT,
 	openAiApiKey: process.env.OPENAI_API_KEY,
 	ollamaApiEndpoint: process.env.OLLAMA_API_ENDPOINT,

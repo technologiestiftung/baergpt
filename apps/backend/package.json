@@ -20,7 +20,6 @@
 		"db:localseed": "tsx ./supabase/local-seed.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/azure": "2.0.45",
 		"@ai-sdk/mistral": "2.0.17",
 		"@ai-sdk/openai": "2.0.44",
 		"@ai-sdk/openai-compatible": "1.0.19",
@@ -35,7 +34,6 @@
 		"@opentelemetry/auto-instrumentations-node": "0.65.0",
 		"@opentelemetry/sdk-node": "0.206.0",
 		"@opentelemetry/sdk-trace-node": "2.1.0",
-		"@quail-ai/azure-ai-provider": "1.0.5",
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/node": "10.20.0",
 		"@sentry/profiling-node": "10.20.0",

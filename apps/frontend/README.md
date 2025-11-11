@@ -18,15 +18,9 @@ In the spring of 2024, the Berlin Senate Chancellery convened an "AI Taskforce" 
 
 ### Large Language Models (LLMs)
 
-BärGPT offers users a selection of different large language models, which vary in terms of data protection.
+BärGPT offers user the latest version in Mistral's "Small" model series. They are served by Mistral's own API which is served from a [data center in France](https://mistral.ai/products/mistral-compute) which falls under GDPR regulations. Input data is neither stored nor used for training purposes by Mistral. 
 
-- The model `azure-gpt-4o-mini` is operated by Microsoft in a data center in Sweden, and thus falls under GDPR regulations. Input data is neither stored nor used for training purposes. This model offers a higher level of data protection compared to similar offerings from the U.S.
-- The model `openai-gpt-4o-mini` provides the same functionality but is operated by OpenAI in the United States. This model should only be used for comparison purposes, as it offers no advantages over the Microsoft model.
-- The model `citylab-macstudio-llama-3.1` is hosted by CityLAB Berlin in compliance with data protection regulations. It is an open-source model, which in many cases can match the quality of commercial models.
-
-It is important to note that none of the available AI models are operated within the Berlin state network. Therefore, personal or otherwise sensitive data, as well as data intended exclusively for use within the Berlin state network, must not be entered.
-
-Offering LLMs from within the Berlin state network is
+It is important to note that the used AI model is not operated within the Berlin state network. Therefore, personal or otherwise sensitive data, as well as data intended exclusively for use within the Berlin state network, must not be entered.
 
 ### Data Processing
 
@@ -39,8 +33,6 @@ BärGPT offers to upload PDF files, which are pre-processed to be able to offer 
 This processing relies on an external service called [Mistral OCR](https://mistral.ai/news/mistral-ocr). This service offers excellent processing (extraction of structured text from PDF files) and it is located in the EU and therefore follows existing GDPR laws of the EU.
 
 It is important to note that the processing is not done within the Berlin state network. Therefore, personal or otherwise sensitive data, as well as data intended exclusively for use within the Berlin state network, must not be entered.
-
-BärGPT can be configured to use local processing which does not rely on this external service. Read more on this option in the [baer-gpt-v2-data-processing](https://github.com/technologiestiftung/baer-gpt-v2-data-processing) repository.
 
 ### Data storage
 

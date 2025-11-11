@@ -264,7 +264,6 @@ export interface JinaSegmenterResponse {
 
 export type LLMIdentifier =
 	| "openai-gpt-4o-mini"
-	| "azure-gpt-4o-mini"
 	| "citylab-macstudio-llama-3.1"
 	| "mistral-small-latest"
 	| "qwen3-30b-a3b-fp8";

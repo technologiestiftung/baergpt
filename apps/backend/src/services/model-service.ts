@@ -2,11 +2,10 @@ import type { LLMIdentifier } from "../types/common";
 import { LLMHandler } from "../types/common";
 import { config } from "../config";
 import { openai } from "@ai-sdk/openai";
-import { createAzure } from "@ai-sdk/azure";
 import { mistral } from "@ai-sdk/mistral";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-type ModelProvider = "OpenAI" | "Azure" | "Ollama" | "Mistral";
+type ModelProvider = "OpenAI" | "Ollama" | "Mistral";
 
 interface ModelStatus {
 	status: number;
@@ -61,17 +60,6 @@ export class ModelService {
 			serverLocation: "USA",
 			description: "Aktuelles Modell von OpenAI, gehostet von OpenAI.",
 		}),
-		"azure-gpt-4o-mini": new Model({
-			identifier: "azure-gpt-4o-mini",
-			baseModelName: "gpt-4o-mini",
-			provider: "Azure",
-			isGdprCompliant: true,
-			contextSize: 128000,
-			isOpenSource: false,
-			serverLocation: "Schweden",
-			description:
-				"Aktuelles Modell von OpenAI, datenschutzkonform gehostet von Microsoft Azure.",
-		}),
 		"citylab-macstudio-llama-3.1": new Model({
 			identifier: "citylab-macstudio-llama-3.1",
 			baseModelName: "llama3.1",
@@ -105,15 +93,6 @@ export class ModelService {
 		}),
 	};
 
-	azure = createAzure({
-		resourceName: config.azureLlmEndpointGpt4oMini
-			? config.azureLlmEndpointGpt4oMini
-					.replace(/^https:\/\//, "")
-					.split(".")[0]
-			: undefined,
-		apiKey: config.azureLlmApiKey,
-	});
-
 	ollama = createOpenAICompatible({
 		name: "ollama",
 		baseURL: config.ollamaApiEndpoint,
@@ -134,11 +113,6 @@ export class ModelService {
 			"gpt-4o-mini",
 			openai("gpt-4o-mini"),
 			config.openAiEndpoint,
-		),
-		"azure-gpt-4o-mini": new LLMHandler(
-			"gpt-4o-mini",
-			this.azure("gpt-4o-mini"),
-			config.azureLlmEndpointGpt4oMini,
 		),
 		"citylab-macstudio-llama-3.1": new LLMHandler(
 			"llama3.1",
