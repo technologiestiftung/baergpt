@@ -19,7 +19,7 @@ export function FileUploadList() {
 	);
 
 	return (
-		<ul className="overflow-scroll max-h-[228px] relative rounded-b-3px">
+		<ul className="overflow-y-scroll max-h-[228px] relative rounded-b-3px">
 			{hasErrorAmountExceeded && (
 				<div className="w-full px-3 py-2 bg-warning-10 text-sm leading-5 font-normal text-warning-100 z-20 sticky top-0">
 					{Content["fileUpload.maxFilesWarning.p1"]}{" "}
