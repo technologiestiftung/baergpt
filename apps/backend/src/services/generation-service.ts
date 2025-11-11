@@ -12,7 +12,6 @@ import {
 import { updateActiveTrace } from "@langfuse/tracing";
 import {
 	type Document,
-	type HybridSearchResult,
 	type KnowledgeBaseDocument,
 	type LLMHandler,
 } from "../types/common";
@@ -31,7 +30,6 @@ import {
 	trimToTokenLimitByWords,
 } from "./token-utils";
 
-const ESTIMATED_TOKENS_PER_WORD = config.estimatedTokensPerWord;
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 const dbService = new DatabaseService();

@@ -1,18 +1,13 @@
-/* eslint-disable no-console */
+ 
 
-import { PDFDocument } from "pdf-lib";
 import { PDFParse } from "pdf-parse";
 import type {
 	Document,
 	ExtractionResult,
-	MarkdownResponse,
 	ParsedPage,
-	StatusResponse,
-	UploadResponse,
 } from "../types/common";
 import { ExtractError } from "../types/common";
 import { config } from "../config";
-import { PAGE_SEPARATOR } from "../constants";
 import { Mistral } from "@mistralai/mistralai";
 import { createBufferView, getHash, resilientCall } from "../utils";
 import { countTokens } from "./token-utils";
@@ -109,7 +104,6 @@ export class DocumentExtractionService {
 	 */
 	async extractPdfAsMarkdownPages(
 		pdfBytes: Uint8Array,
-		fileName: string,
 		extractionOptions: {
 			numPages: number;
 			ocrProvider: string;
@@ -123,17 +117,15 @@ export class DocumentExtractionService {
 			pageNumber,
 			tokenCount: countTokens(content),
 		});
-		let ocrService: MistralOCRService | LlamaParseOCRService;
+		let ocrService: MistralOCRService;
 		if (extractionOptions.ocrProvider === "mistral") {
 			ocrService = new MistralOCRService();
-		} else if (extractionOptions.ocrProvider === "llamaparse") {
-			ocrService = new LlamaParseOCRService();
 		} else {
 			throw new Error(
 				`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
 			);
 		}
-
+		
 		if (extractionOptions.numPages <= config.maxPagesForLlmParseLimit) {
 			try {
 				if (ocrService instanceof MistralOCRService) {
@@ -144,45 +136,20 @@ export class DocumentExtractionService {
 							? page
 							: toParsedPage(page.content, page.pageNumber),
 					);
-				} else if (extractionOptions.ocrProvider === "llamaparse") {
-					const markdownText = await ocrService.extractMarkdownViaLLamaParse(
-						pdfBytes,
-						fileName,
-					);
-					const markdownPages = markdownText.split(PAGE_SEPARATOR);
-
-					return markdownPages.map((content, index) =>
-						toParsedPage(content, index),
-					);
 				}
 				throw new Error(
 					`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
 				);
 			} catch (error) {
 				captureError(error);
-				// Continue to fallback method
+				return [];
 			}
+		} else {	
+			captureError(new Error(
+				`PDF with ${extractionOptions.numPages} pages exceeds max pages for LLM parse limit of ${config.maxPagesForLlmParseLimit} pages.`,
+			));
+			return [];
 		}
-
-		// For larger PDFs or if LLamaParse fails, use pdf2md
-		const pdf2md = (await import("@opendocsg/pdf2md")).default;
-		const parsedPages: ParsedPage[] = [];
-		const pdfDoc = await PDFDocument.load(pdfBytes);
-		for (let i = 0; i < extractionOptions.numPages; i++) {
-			// Create a new document containing only this page
-			const singlePageDoc = await PDFDocument.create();
-			const [copiedPage] = await singlePageDoc.copyPages(pdfDoc, [i]);
-			singlePageDoc.addPage(copiedPage);
-
-			const pageBytes = await singlePageDoc.save();
-
-			// @ts-expect-error pdf2md has no types
-			const mdPage = await pdf2md(pageBytes, null);
-
-			parsedPages.push(toParsedPage(mdPage, i));
-		}
-
-		return parsedPages;
 	}
 }
 
@@ -520,151 +487,5 @@ class MistralOCRService {
 					tokenCount: countTokens(page.markdown),
 				}) as ParsedPage,
 		);
-	}
-}
-
-class LlamaParseOCRService {
-	TIMEOUT_SECONDS = 300;
-
-	async uploadFileToLLamaParse(
-		pdfBytes: Uint8Array,
-		fileName: string,
-	): Promise<UploadResponse> {
-		const blob = new Blob([pdfBytes], { type: "application/pdf" });
-
-		const headers = new Headers();
-		headers.append("Authorization", `Bearer ${config.llamaParseToken}`);
-
-		const formdata = new FormData();
-		formdata.append("file", blob, fileName);
-		formdata.append("page_separator", PAGE_SEPARATOR);
-		formdata.append("language", "de");
-		formdata.append("accurate_mode", "true"); // Pricing info: https://docs.cloud.llamaindex.ai/llamaparse/usage_data
-
-		const requestOptions = {
-			method: "POST",
-			headers: headers,
-			body: formdata,
-		};
-
-		const res = await fetch(
-			"https://api.cloud.llamaindex.ai/api/parsing/upload",
-			requestOptions,
-		);
-
-		if (!res.ok) {
-			throw new Error(
-				`LLamaParse API returned status ${res.status}: ${await res.text()}`,
-			);
-		}
-		const body = await res.json();
-		return body as UploadResponse;
-	}
-
-	async checkParsingStatus(jobId: string): Promise<StatusResponse> {
-		const headers = new Headers();
-		headers.append("Authorization", `Bearer ${config.llamaParseToken}`);
-
-		const requestOptions = {
-			method: "GET",
-			headers: headers,
-		};
-
-		const res = await resilientCall(() =>
-			fetch(
-				`https://api.cloud.llamaindex.ai/api/parsing/job/${jobId}`,
-				requestOptions,
-			),
-		);
-
-		const body = await res.json();
-
-		return body as StatusResponse;
-	}
-
-	async fetchMarkdown(jobId: string): Promise<string> {
-		const headers = new Headers();
-		headers.append("Authorization", `Bearer ${config.llamaParseToken}`);
-
-		const requestOptions = {
-			method: "GET",
-			headers: headers,
-		};
-
-		const res = await resilientCall(() =>
-			fetch(
-				`https://api.cloud.llamaindex.ai/api/parsing/job/${jobId}/result/markdown`,
-				requestOptions,
-			),
-		);
-
-		const body = (await res.json()) as MarkdownResponse;
-
-		return body.markdown;
-	}
-
-	async extractMarkdownViaLLamaParse(
-		pdfBytes: Uint8Array,
-		fileName: string,
-	): Promise<string> {
-		const uploadRes = await this.uploadFileToLLamaParse(pdfBytes, fileName);
-
-		// Initialize variables for exponential backoff
-		let delay = 1000;
-		const maxDelay = 20000; // Maximum delay of 20 seconds
-		const backoffFactor = 1.5; // Increase delay by this factor each time
-		const startTime = Date.now();
-		let lastLogTime = startTime;
-
-		// Helper function for waiting
-		function sleep(ms: number): Promise<void> {
-			return new Promise((resolve) => setTimeout(resolve, ms));
-		}
-
-		let statusRes = await this.checkParsingStatus(uploadRes.id);
-		if (process.env.NODE_ENV === "development") {
-			console.log(`Initial status for ${fileName}: ${statusRes.status}`);
-		}
-		while (statusRes.status !== "SUCCESS") {
-			if (statusRes.status === "ERROR") {
-				throw new Error(
-					`File ${fileName} failed to complete markdown extraction via LLamaParse...`,
-				);
-			}
-
-			const elapsedSeconds = (Date.now() - startTime) / 1000;
-			const currentTime = Date.now();
-
-			// Log status approximately every second
-			if (currentTime - lastLogTime >= 1000) {
-				if (process.env.NODE_ENV === "development") {
-					console.log(
-						`[${Math.floor(elapsedSeconds)}s] ${fileName} status: ${statusRes.status}`,
-					);
-				}
-				lastLogTime = currentTime;
-			}
-
-			if (elapsedSeconds > this.TIMEOUT_SECONDS) {
-				throw new Error(
-					`File ${fileName} took too long to complete markdown extraction via LLamaParse...`,
-				);
-			}
-
-			// Wait with exponential backoff before trying again
-			await sleep(delay);
-
-			// Increase delay for next iteration, but cap it at maxDelay
-			delay = Math.min(delay * backoffFactor, maxDelay);
-
-			statusRes = await this.checkParsingStatus(uploadRes.id);
-		}
-		if (process.env.NODE_ENV === "development") {
-			console.log(
-				`Extraction completed successfully for ${fileName} after ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
-			);
-		}
-		const markdown = await this.fetchMarkdown(uploadRes.id);
-		return markdown;
 	}
 }

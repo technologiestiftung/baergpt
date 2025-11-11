@@ -36,7 +36,7 @@ BärGPT offers to upload PDF files, which are pre-processed to be able to offer 
 - Generate tags for the document
 - Search in the documents
 
-This processing relies on an external service called [LlamaParse](https://docs.llamaindex.ai/en/stable/llama_cloud/llama_parse/). While this service offers excellent processing (extraction of structured text from PDF files), it is located in the US and therefore it is not guaranteed that it follows existing GDPR laws of the EU.
+This processing relies on an external service called [Mistral OCR](https://mistral.ai/news/mistral-ocr). This service offers excellent processing (extraction of structured text from PDF files) and it is located in the EU and therefore follows existing GDPR laws of the EU.
 
 It is important to note that the processing is not done within the Berlin state network. Therefore, personal or otherwise sensitive data, as well as data intended exclusively for use within the Berlin state network, must not be entered.
 

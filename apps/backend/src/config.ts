@@ -26,7 +26,6 @@ export interface Config {
 	supabaseJwtKey: string;
 	port?: number;
 	fileUploadLimitMb?: number;
-	llamaParseToken?: string;
 	maxPagesLimit?: number;
 	maxPagesForLlmParseLimit?: number;
 	nodeEnv?: string;
@@ -175,9 +174,11 @@ export const config: Config = {
 	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
 	port: parseInt(process.env.PORT, 10) || 3000,
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
-	llamaParseToken: process.env.LLAMA_PARSE_TOKEN,
 	maxPagesLimit: parseInt(process.env.MAX_PAGES_LIMIT, 10),
-	maxPagesForLlmParseLimit: parseInt(process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT, 10),
+	maxPagesForLlmParseLimit: parseInt(
+		process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT,
+		10,
+	),
 	nodeEnv: process.env.NODE_ENV,
 	maxRetries: parseInt(process.env.MAX_RETRIES, 10),
 	retryDelay: parseInt(process.env.RETRY_DELAY, 10),

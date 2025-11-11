@@ -169,7 +169,6 @@ export type Settings = {
 	maxPagesForLlmParseLimit: number;
 	openAiModel: string;
 	openAiEmbeddingModel: string;
-	llamaParseToken: string;
 	processingBatchSize: number;
 };
 
