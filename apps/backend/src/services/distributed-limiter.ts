@@ -4,64 +4,142 @@ import { config } from "../config";
 
 type QueueType = "embeddings" | "llm";
 
+interface QueueMetrics {
+	queued: number;
+	running: number;
+	done: number;
+	failed: number;
+	dropped: number;
+}
+
+interface QueueStats {
+	embeddings: QueueMetrics;
+	llm: QueueMetrics;
+}
+
 let embeddingsLimiter: Bottleneck | undefined;
 let llmLimiter: Bottleneck | undefined;
 let readyPromise: Promise<void> | undefined;
 
+// Metrics tracking
+const metrics: QueueStats = {
+	embeddings: {
+		queued: 0,
+		running: 0,
+		done: 0,
+		failed: 0,
+		dropped: 0,
+	},
+	llm: {
+		queued: 0,
+		running: 0,
+		done: 0,
+		failed: 0,
+		dropped: 0,
+	},
+};
+
 function toClientOptions(url: string) {
 	const u = new URL(url);
-	const options = {
+	return {
 		host: u.hostname,
 		port: u.port ? parseInt(u.port, 10) : 6379,
 		password: u.password || undefined,
 		username: u.username || undefined,
 		tls: u.protocol === "rediss:" ? {} : undefined,
 	};
-	
-	// Diagnostic logging
-	const maskedUrl = url.replace(/:[^:@]+@/, ":****@"); // Mask password
-	console.log("[queue:diagnostic] Parsed Redis URL:", {
-		protocol: u.protocol,
-		hostname: u.hostname,
-		port: options.port,
-		hasPassword: !!u.password,
-		hasUsername: !!u.username,
-		username: u.username || "(none)",
-		usesTLS: u.protocol === "rediss:",
-		maskedUrl,
+}
+
+function setupEventListeners(
+	limiter: Bottleneck,
+	queueType: QueueType,
+): void {
+	limiter.on("queued", () => {
+		metrics[queueType].queued++;
+		console.log(`[queue:${queueType}] Task queued`);
 	});
-	
-	return options;
+
+	limiter.on("executing", () => {
+		metrics[queueType].queued = Math.max(0, metrics[queueType].queued - 1);
+		metrics[queueType].running++;
+		console.log(`[queue:${queueType}] Task started executing`);
+	});
+
+	limiter.on("done", () => {
+		metrics[queueType].running = Math.max(0, metrics[queueType].running - 1);
+		metrics[queueType].done++;
+		console.log(`[queue:${queueType}] Task completed`);
+	});
+
+	limiter.on("failed", () => {
+		metrics[queueType].running = Math.max(0, metrics[queueType].running - 1);
+		metrics[queueType].failed++;
+		console.log(`[queue:${queueType}] Task failed`);
+	});
+
+	limiter.on("dropped", () => {
+		metrics[queueType].queued = Math.max(0, metrics[queueType].queued - 1);
+		metrics[queueType].dropped++;
+		console.log(`[queue:${queueType}] Task dropped`);
+	});
+}
+
+async function logPeriodicMetrics(): Promise<void> {
+	if (!embeddingsLimiter || !llmLimiter) {
+		return;
+	}
+
+	try {
+		const [embeddingsCounts, llmCounts] = await Promise.all([
+			embeddingsLimiter.counts(),
+			llmLimiter.counts(),
+		]);
+
+		const [embeddingsReservoir, llmReservoir] = await Promise.all([
+			embeddingsLimiter.currentReservoir(),
+			llmLimiter.currentReservoir(),
+		]);
+
+		console.log("[queue:metrics] Queue Statistics:", {
+			embeddings: {
+				queued: embeddingsCounts.QUEUED,
+				running: embeddingsCounts.RUNNING,
+				done: metrics.embeddings.done,
+				failed: metrics.embeddings.failed,
+				dropped: metrics.embeddings.dropped,
+				reservoir: {
+					current: embeddingsReservoir,
+					max: config.jinaMaxRPS,
+				},
+			},
+			llm: {
+				queued: llmCounts.QUEUED,
+				running: llmCounts.RUNNING,
+				done: metrics.llm.done,
+				failed: metrics.llm.failed,
+				dropped: metrics.llm.dropped,
+				reservoir: {
+					current: llmReservoir,
+					max: config.mistralMaxRPS,
+				},
+			},
+		});
+	} catch (error) {
+		console.error("[queue:metrics] Failed to fetch queue metrics:", error);
+	}
 }
 
 function ensureInitialized(): void {
 	if (embeddingsLimiter && llmLimiter) {
-		console.log("[queue:diagnostic] Limiters already initialized, skipping");
 		return;
 	}
-	
-	console.log("[queue:diagnostic] Starting queue initialization...");
-	
+
 	if (!config.redisUrl) {
-		console.error("[queue:diagnostic] ERROR: REDIS_URL is not defined");
-		throw new Error(
-			"REDIS_URL must be defined in environment.",
-		);
+		throw new Error("REDIS_URL must be defined in environment.");
 	}
 
 	const clientOptions = toClientOptions(config.redisUrl);
 
-	// Log reservoir configuration values
-	console.log("[queue:diagnostic] Reservoir configuration:", {
-		jinaMaxRPS: config.jinaMaxRPS,
-		mistralMaxRPS: config.mistralMaxRPS,
-		jinaMaxRPSType: typeof config.jinaMaxRPS,
-		mistralMaxRPSType: typeof config.mistralMaxRPS,
-		jinaMaxRPSIsZero: config.jinaMaxRPS === 0,
-		mistralMaxRPSIsZero: config.mistralMaxRPS === 0,
-	});
-
-	console.log("[queue:diagnostic] Creating embeddings limiter...");
 	embeddingsLimiter = new Bottleneck({
 		id: "baergpt:embeddings",
 		datastore: "ioredis",
@@ -73,7 +151,6 @@ function ensureInitialized(): void {
 		maxConcurrent: 1,
 	});
 
-	console.log("[queue:diagnostic] Creating LLM limiter...");
 	llmLimiter = new Bottleneck({
 		id: "baergpt:llm",
 		datastore: "ioredis",
@@ -85,34 +162,23 @@ function ensureInitialized(): void {
 		maxConcurrent: 1,
 	});
 
+	// Set up event listeners for metrics tracking
+	setupEventListeners(embeddingsLimiter, "embeddings");
+	setupEventListeners(llmLimiter, "llm");
+
+	// Start periodic metrics logging (every 30 seconds)
+	setInterval(() => {
+		void logPeriodicMetrics();
+	}, 30000);
+
 	// Ensure scripts are loaded and clients are ready before any schedule() calls.
-	console.log("[queue:diagnostic] Waiting for limiters to be ready...");
-	const startTime = Date.now();
-	
 	readyPromise = Promise.all([
-		embeddingsLimiter.ready().then(() => {
-			const elapsed = Date.now() - startTime;
-			console.log(`[queue:diagnostic] ✓ Embeddings limiter ready after ${elapsed}ms`);
-		}).catch((error) => {
-			const elapsed = Date.now() - startTime;
-			console.error(`[queue:diagnostic] ✗ Embeddings limiter ready() failed after ${elapsed}ms:`, error);
-			throw error;
-		}),
-		llmLimiter.ready().then(() => {
-			const elapsed = Date.now() - startTime;
-			console.log(`[queue:diagnostic] ✓ LLM limiter ready after ${elapsed}ms`);
-		}).catch((error) => {
-			const elapsed = Date.now() - startTime;
-			console.error(`[queue:diagnostic] ✗ LLM limiter ready() failed after ${elapsed}ms:`, error);
-			throw error;
-		}),
+		embeddingsLimiter.ready(),
+		llmLimiter.ready(),
 	]).then(() => {
-		const totalElapsed = Date.now() - startTime;
-		console.log(`[queue:diagnostic] ✓ All limiters ready after ${totalElapsed}ms`);
-	}).catch((error) => {
-		const totalElapsed = Date.now() - startTime;
-		console.error(`[queue:diagnostic] ✗ Limiter initialization failed after ${totalElapsed}ms:`, error);
-		throw error;
+		console.log("[queue] Queue system initialized and ready");
+		// Log initial metrics after initialization
+		void logPeriodicMetrics();
 	});
 }
 
@@ -120,48 +186,20 @@ export function scheduleDistributed<T>(
 	queueType: QueueType,
 	task: () => Promise<T>,
 ): Promise<T> {
-	const scheduleStartTime = Date.now();
-	console.log(`[queue:diagnostic] scheduleDistributed called for queueType: "${queueType}"`);
-	
 	ensureInitialized();
-	
+
 	if (readyPromise) {
-		console.log(`[queue:diagnostic] Waiting for readyPromise to resolve before scheduling "${queueType}" task...`);
 		return readyPromise.then(() => {
-			const waitElapsed = Date.now() - scheduleStartTime;
-			console.log(`[queue:diagnostic] readyPromise resolved after ${waitElapsed}ms, scheduling "${queueType}" task`);
-			
 			if (queueType === "embeddings" && embeddingsLimiter) {
-				return embeddingsLimiter.schedule(task).then((result) => {
-					const totalElapsed = Date.now() - scheduleStartTime;
-					console.log(`[queue:diagnostic] ✓ "${queueType}" task completed after ${totalElapsed}ms`);
-					return result;
-				}).catch((error) => {
-					const totalElapsed = Date.now() - scheduleStartTime;
-					console.error(`[queue:diagnostic] ✗ "${queueType}" task failed after ${totalElapsed}ms:`, error);
-					throw error;
-				});
+				return embeddingsLimiter.schedule(task);
 			}
 			if (queueType === "llm" && llmLimiter) {
-				return llmLimiter.schedule(task).then((result) => {
-					const totalElapsed = Date.now() - scheduleStartTime;
-					console.log(`[queue:diagnostic] ✓ "${queueType}" task completed after ${totalElapsed}ms`);
-					return result;
-				}).catch((error) => {
-					const totalElapsed = Date.now() - scheduleStartTime;
-					console.error(`[queue:diagnostic] ✗ "${queueType}" task failed after ${totalElapsed}ms:`, error);
-					throw error;
-				});
+				return llmLimiter.schedule(task);
 			}
 			throw new Error(`Distributed limiter for "${queueType}" not initialized.`);
-		}).catch((error) => {
-			const totalElapsed = Date.now() - scheduleStartTime;
-			console.error(`[queue:diagnostic] ✗ readyPromise rejected after ${totalElapsed}ms, task not scheduled:`, error);
-			throw error;
 		});
 	}
 
-	console.log(`[queue:diagnostic] No readyPromise, scheduling "${queueType}" task directly`);
 	if (queueType === "embeddings" && embeddingsLimiter) {
 		return embeddingsLimiter.schedule(task);
 	}
