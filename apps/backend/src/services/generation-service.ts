@@ -25,7 +25,6 @@ import { captureError } from "../monitoring/capture-error";
 import { z } from "zod";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
-import { JINA_MAX_TOKEN_LIMIT } from "../constants";
 import {
 	countTokens,
 	computeSafePayload,
@@ -281,7 +280,7 @@ export class GenerationService {
 		const summaryForEmbedding = await this.compressToTokenLimit(
 			llmIdentifier,
 			summary,
-			{ tokenLimit: JINA_MAX_TOKEN_LIMIT, maxRounds: 3 },
+			{ tokenLimit: config.jinaMaxContextTokens, maxRounds: 3 },
 		);
 
 		const summaryEmbeddingResponse =
@@ -370,7 +369,6 @@ export class GenerationService {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						functionId: "text-toolCall-generation",
 						metadata: {
-							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
 							langfusePrompt: langfusePrompt
 								? langfusePrompt.toJSON()
@@ -439,7 +437,6 @@ export class GenerationService {
 					experimental_telemetry: {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						metadata: {
-							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
 							langfusePrompt: langfusePrompt
 								? langfusePrompt.toJSON()
@@ -480,7 +477,6 @@ export class GenerationService {
 					experimental_telemetry: {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						metadata: {
-							userId: userId ? userId : "unknown",
 							sessionId: sessionId ? sessionId : "unknown",
 							langfusePrompt: langfusePrompt
 								? langfusePrompt.toJSON()
