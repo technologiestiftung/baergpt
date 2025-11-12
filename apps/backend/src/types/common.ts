@@ -164,7 +164,6 @@ export type Settings = {
 	mistralModel: string;
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
-	maxPagesLimit: number;
 	processingBatchSize: number;
 };
 

@@ -58,13 +58,6 @@ export class DocumentExtractionService {
 
 		// Use lightweight parsing to determine page count without leaving memory footprint
 		const numPages = await this.getPdfPageCount(fileBytes);
-
-		if (numPages > config.maxPagesLimit) {
-			throw new ExtractError(
-				document,
-				`Could not extract ${document.source_url}, num pages ${numPages} > limit of ${config.maxPagesLimit} pages.`,
-			);
-		}
 		const parsedPages = await this.extractPdfAsMarkdownPages(fileBytes, {
 			numPages: numPages,
 			ocrProvider: "mistral",

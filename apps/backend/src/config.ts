@@ -16,7 +16,6 @@ export interface Config {
 	supabaseJwtKey: string;
 	port?: number;
 	fileUploadLimitMb?: number;
-	maxPagesLimit?: number;
 	nodeEnv?: string;
 	modelTemperature: number;
 	defaultModelIdentifier: string;
@@ -112,7 +111,6 @@ export const config: Config = {
 	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
 	port: parseInt(process.env.PORT, 10) || 3000,
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
-	maxPagesLimit: parseInt(process.env.MAX_PAGES_LIMIT, 10),
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
 	defaultModelIdentifier: process.env.DEFAULT_MODEL_IDENTIFIER,
