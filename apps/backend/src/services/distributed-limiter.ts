@@ -148,7 +148,7 @@ function ensureInitialized(): void {
 		reservoir: config.jinaMaxRPS,
 		reservoirRefreshAmount: config.jinaMaxRPS,
 		reservoirRefreshInterval: 1000,
-		maxConcurrent: 1,
+		maxConcurrent: config.jinaMaxRPS,
 	});
 
 	llmLimiter = new Bottleneck({
@@ -159,7 +159,7 @@ function ensureInitialized(): void {
 		reservoir: config.mistralMaxRPS,
 		reservoirRefreshAmount: config.mistralMaxRPS,
 		reservoirRefreshInterval: 1000,
-		maxConcurrent: 1,
+		maxConcurrent: config.mistralMaxRPS,
 	});
 
 	// Set up event listeners for metrics tracking
