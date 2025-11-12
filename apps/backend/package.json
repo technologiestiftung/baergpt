@@ -34,7 +34,7 @@
 		"@opentelemetry/sdk-trace-node": "2.1.0",
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/node": "10.20.0",
-		"@supabase/supabase-js": "2.45.6",
+		"@supabase/supabase-js": "2.81.1",
 		"ai": "5.0.60",
 		"dotenv": "16.4.7",
 		"hono": "4.8.10",
