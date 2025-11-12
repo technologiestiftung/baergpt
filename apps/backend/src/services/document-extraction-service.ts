@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 
 import { PDFDocument } from "pdf-lib";
-import { PDFParse } from "pdf-parse";
 import type {
 	Document,
 	ExtractionResult,
@@ -20,6 +19,7 @@ import WordExtractor from "word-extractor";
 import mammoth from "mammoth";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
+import { getDocumentProxy } from "unpdf";
 
 export class DocumentExtractionService {
 	async extractDocument(
@@ -66,17 +66,9 @@ export class DocumentExtractionService {
 				parsedPages: parsedExcelPages,
 			};
 		}
-		let pdfBytesCopy: Uint8Array | null = new Uint8Array(fileBytes);
 
-		const parser = new PDFParse({
-			data: pdfBytesCopy,
-		});
-		const parseResult = await parser.getInfo({ parsePageInfo: true });
-		await parser.destroy();
-		const numPages = parseResult.total;
-
-		// Explicitly dereference the copy to allow garbage collection
-		pdfBytesCopy = null;
+		// Use lightweight parsing to determine page count without leaving memory footprint
+		const numPages = await this.getPdfPageCount(fileBytes);
 
 		if (numPages > config.maxPagesLimit) {
 			throw new ExtractError(
@@ -183,6 +175,22 @@ export class DocumentExtractionService {
 		}
 
 		return parsedPages;
+	}
+
+	/**
+	 * Lightweight PDF page counter using unpdf.
+	 */
+	private async getPdfPageCount(pdfBytes: Uint8Array): Promise<number> {
+		try {
+			// Create a copy to avoid detaching the original ArrayBuffer
+			const pdfBytesCopy = new Uint8Array(pdfBytes);
+			const pdf = await getDocumentProxy(pdfBytesCopy);
+			const numPages = pdf.numPages;
+			return numPages;
+		} catch (error) {
+			console.debug("unpdf failed to determine PDF page count", error);
+			throw new Error("Unable to determine PDF page count");
+		}
 	}
 }
 
