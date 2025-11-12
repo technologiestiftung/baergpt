@@ -1,7 +1,7 @@
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
 import { GreenCheckIcon } from "../../primitives/icons/green-check-icon.tsx";
 import { GreyXIcon } from "../../primitives/icons/grey-x-icon.tsx";
-import { YellowExclamationMarkIcon } from "../../primitives/icons/yellow-exclamation-mark-icon.tsx";
+import { RedErrorXIcon } from "../../primitives/icons/red-error-x-icon.tsx";
 import {
 	UPLOAD_STATUS_MAP,
 	useFileUploadsStore,
@@ -11,9 +11,18 @@ import Content from "../../../content.ts";
 export function FileUploadList() {
 	const { fileUploads } = useFileUploadsStore();
 
+	const hasErrorAmountExceeded = fileUploads.some(
+		(fileUpload) => fileUpload.status === "failed.tooMany",
+	);
+
 	return (
-		<ul className="overflow-scroll max-h-[120px]">
-			<div className="flex flex-col gap-y-3.5 pt-6 pb-4 bg-white rounded-b-3px">
+		<ul className="overflow-y-scroll max-h-[228px] relative rounded-b-3px">
+			{hasErrorAmountExceeded && (
+				<div className="w-full px-3 py-2 bg-warning-10 text-sm leading-5 font-normal text-warning-100 z-10 sticky top-0">
+					{Content["fileUpload.maxFilesWarning.p1"]}{" "}
+				</div>
+			)}
+			<div className="flex flex-col gap-y-3.5 pt-3.5 pb-4 bg-white rounded-b-3px">
 				{fileUploads.map(({ file, status }) => (
 					<li
 						key={file.name}
@@ -25,7 +34,7 @@ export function FileUploadList() {
 								status === "uploaded") && <LoadingSpinnerIcon />}
 							{status === "successful" && <GreenCheckIcon />}
 							{status === "canceled" && <GreyXIcon />}
-							{status.includes("failed") && <YellowExclamationMarkIcon />}
+							{status.includes("failed") && <RedErrorXIcon />}
 
 							<span className="flex flex-col truncate">
 								<span className="truncate">{file.name}</span>
