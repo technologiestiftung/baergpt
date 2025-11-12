@@ -17,7 +17,6 @@ export interface Config {
 	port?: number;
 	fileUploadLimitMb?: number;
 	maxPagesLimit?: number;
-	maxPagesForLlmParseLimit?: number;
 	nodeEnv?: string;
 	modelTemperature: number;
 	defaultModelIdentifier: string;
@@ -114,10 +113,6 @@ export const config: Config = {
 	port: parseInt(process.env.PORT, 10) || 3000,
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
 	maxPagesLimit: parseInt(process.env.MAX_PAGES_LIMIT, 10),
-	maxPagesForLlmParseLimit: parseInt(
-		process.env.MAX_PAGES_FOR_LLM_PARSE_LIMIT,
-		10,
-	),
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
 	defaultModelIdentifier: process.env.DEFAULT_MODEL_IDENTIFIER,

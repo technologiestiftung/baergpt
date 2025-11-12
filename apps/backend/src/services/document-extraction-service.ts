@@ -113,15 +113,6 @@ export class DocumentExtractionService {
 			return [];
 		}
 
-		if (extractionOptions.numPages > config.maxPagesForLlmParseLimit) {
-			captureError(
-				new Error(
-					`PDF with ${extractionOptions.numPages} pages exceeds max pages for LLM parse limit of ${config.maxPagesForLlmParseLimit} pages.`,
-				),
-			);
-			return [];
-		}
-
 		let ocrService: MistralOCRService;
 		if (extractionOptions.ocrProvider === "mistral") {
 			ocrService = new MistralOCRService();

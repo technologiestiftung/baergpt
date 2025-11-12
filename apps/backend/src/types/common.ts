@@ -165,7 +165,6 @@ export type Settings = {
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
 	maxPagesLimit: number;
-	maxPagesForLlmParseLimit: number;
 	processingBatchSize: number;
 };
 
