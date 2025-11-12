@@ -134,55 +134,32 @@ export class DocumentExtractionService {
 			);
 		}
 
-		if (extractionOptions.numPages <= config.maxPagesForLlmParseLimit) {
-			try {
-				if (ocrService instanceof MistralOCRService) {
-					const pages =
-						await ocrService.extractTextFromPdfWithMistral(pdfBytes);
-					return pages.map((page) =>
-						page.tokenCount !== undefined
-							? page
-							: toParsedPage(page.content, page.pageNumber),
-					);
-				} else if (extractionOptions.ocrProvider === "llamaparse") {
-					const markdownText = await ocrService.extractMarkdownViaLLamaParse(
-						pdfBytes,
-						fileName,
-					);
-					const markdownPages = markdownText.split(PAGE_SEPARATOR);
-
-					return markdownPages.map((content, index) =>
-						toParsedPage(content, index),
-					);
-				}
-				throw new Error(
-					`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
+		try {
+			if (ocrService instanceof MistralOCRService) {
+				const pages = await ocrService.extractTextFromPdfWithMistral(pdfBytes);
+				return pages.map((page) =>
+					page.tokenCount !== undefined
+						? page
+						: toParsedPage(page.content, page.pageNumber),
 				);
-			} catch (error) {
-				captureError(error);
-				// Continue to fallback method
+			} else if (extractionOptions.ocrProvider === "llamaparse") {
+				const markdownText = await ocrService.extractMarkdownViaLLamaParse(
+					pdfBytes,
+					fileName,
+				);
+				const markdownPages = markdownText.split(PAGE_SEPARATOR);
+
+				return markdownPages.map((content, index) =>
+					toParsedPage(content, index),
+				);
 			}
+			throw new Error(
+				`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
+			);
+		} catch (error) {
+			captureError(error);
+			// Continue to fallback method
 		}
-
-		// For larger PDFs or if LLamaParse fails, use pdf2md
-		const pdf2md = (await import("@opendocsg/pdf2md")).default;
-		const parsedPages: ParsedPage[] = [];
-		const pdfDoc = await PDFDocument.load(pdfBytes);
-		for (let i = 0; i < extractionOptions.numPages; i++) {
-			// Create a new document containing only this page
-			const singlePageDoc = await PDFDocument.create();
-			const [copiedPage] = await singlePageDoc.copyPages(pdfDoc, [i]);
-			singlePageDoc.addPage(copiedPage);
-
-			const pageBytes = await singlePageDoc.save();
-
-			// @ts-expect-error pdf2md has no types
-			const mdPage = await pdf2md(pageBytes, null);
-
-			parsedPages.push(toParsedPage(mdPage, i));
-		}
-
-		return parsedPages;
 	}
 }
 
