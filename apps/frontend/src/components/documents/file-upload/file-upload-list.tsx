@@ -18,7 +18,7 @@ export function FileUploadList() {
 	);
 
 	const numberOfUploads = documents?.length || 0;
-	// Once the user has less than 5 (MAX_FILE_UPLOADS) upload slots left, we stop showing the warning about max files per upload
+	// Once the user has less than 5 (VITE_MAX_PARALLEL_FILE_UPLOADS) upload slots left, we stop showing the warning about max files per upload
 	const isReachingTotalUploadLimit =
 		numberOfUploads >=
 		Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) -
