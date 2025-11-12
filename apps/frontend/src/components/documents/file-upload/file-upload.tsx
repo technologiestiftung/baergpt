@@ -13,11 +13,15 @@ type FileUploadProps = {
 
 export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 	const { fileUploads, uploadFiles } = useFileUploadsStore();
-	const { isDocumentFirstLoad, isLoading } = useDocumentStore();
+	const { isDocumentFirstLoad, isLoading, documents } = useDocumentStore();
 	const { isFolderFirstLoad } = useFolderStore();
 	const isFirstLoading = isDocumentFirstLoad || isFolderFirstLoad;
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { error } = useErrorStore.getState();
+
+	const numberOfUploads = documents?.length || 0;
+	const hasReachedUploadLimit =
+		numberOfUploads >= Number(import.meta.env.VITE_MAX_FILES_UPLOADED);
 
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const files = event.target.files;
@@ -66,7 +70,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 					{hasItems && (
 						<button
 							onClick={triggerFileInput}
-							className="bg-hellblau-60 hover:bg-hellblau-100 p-2 rounded-3px focus-visible:outline-default flex gap-2 justify-center w-full"
+							className="bg-hellblau-60 hover:bg-hellblau-100 disabled:text-dunkelblau-40 disabled:hover:bg-hellblau-60 p-2 rounded-3px focus-visible:outline-default flex gap-2 justify-center w-full"
+							disabled={hasReachedUploadLimit}
 						>
 							<input
 								type="file"
@@ -90,6 +95,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 					)}
 
 					{hasFileUploads && <FileUploadStatusCollapsible />}
+					<div className="text-sm leading-5 font-normal  text-center">
+						{hasReachedUploadLimit ? (
+							<div className="text-warning-100">
+								<p>{Content["fileUpload.infoMessage.limitReached.p1"]}</p>
+								<p>{Content["fileUpload.infoMessage.limitReached.p2"]}</p>
+							</div>
+						) : (
+							<div className="text-dunkelblau-80">
+								<p>{Content["fileUpload.infoMessage.maxUpload"]}</p>
+								<p>
+									{`${numberOfUploads} ${Content["fileUpload.infoMessage.counter"]}`}
+								</p>
+							</div>
+						)}
+					</div>
 				</div>
 			)}
 		</div>

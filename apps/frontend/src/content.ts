@@ -781,6 +781,11 @@ export const Content = {
 	"fileUpload.helpLink.link":
 		"https://hilfe.baergpt.berlin/faq#:~:text=Warum%20kann%20ich%20mein%20Dokument%20nicht%20hochladen%3F",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
+	// file upload counter message
+	"fileUpload.infoMessage.maxUpload": `Pro Upload-Vorgang sind max. ${import.meta.env.VITE_MAX_FILE_UPLOADS} Dateien möglich.`,
+	"fileUpload.infoMessage.counter": `von möglichen  Dateien hochgeladen.`,
+	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von ${import.meta.env.VITE_MAX_FILES_UPLOADED} Dateien erreicht.`,
+	"fileUpload.infoMessage.limitReached.p2": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
