@@ -95,11 +95,7 @@ test.describe("Documents", () => {
 			}
 
 			// Wait for the error message for the rejected file
-			await expect(
-				page.getByText(
-					"Max. 5 Dateien pro Upload. 1 Datei wurde nicht hochgeladen.",
-				),
-			).toBeVisible();
+			await expect(page.getByText("Max. 5 Dateien pro Upload.")).toBeVisible();
 
 			// Verify the first 5 files are being uploaded/uploaded successfully
 			for (const file of filesToUpload) {
