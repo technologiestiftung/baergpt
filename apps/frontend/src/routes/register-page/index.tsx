@@ -114,6 +114,7 @@ export function RegisterPage() {
 							<EmailInput
 								id="email"
 								placeholder={Content["registerPage.emailPlaceholder"]}
+								useRegexValidation={true}
 							/>
 						</label>
 

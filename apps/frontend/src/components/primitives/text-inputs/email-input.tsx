@@ -8,11 +8,13 @@ export function EmailInput({
 	placeholder,
 	className = "",
 	defaultValue = "",
+	useRegexValidation = false,
 }: {
 	id: string;
 	placeholder?: string;
 	className?: string;
 	defaultValue?: string;
+	useRegexValidation?: boolean;
 }) {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [value, setValue] = useState<string>(defaultValue || "");
@@ -22,16 +24,21 @@ export function EmailInput({
 	const handleInput = (event: FormEvent<HTMLInputElement>) => {
 		setValue(event.currentTarget.value);
 
-		const emailValidation = validateEmail(
-			event.currentTarget.value,
-			allowedEmailDomains,
-		);
-
-		if (!emailValidation.isValid) {
-			event.currentTarget.setCustomValidity(
-				emailValidation.error || Content["form.validation.email.customError"],
+		if (useRegexValidation) {
+			const emailValidation = validateEmail(
+				event.currentTarget.value,
+				allowedEmailDomains,
 			);
+
+			if (!emailValidation.isValid) {
+				event.currentTarget.setCustomValidity(
+					emailValidation.error || Content["form.validation.email.customError"],
+				);
+			} else {
+				event.currentTarget.setCustomValidity("");
+			}
 		} else {
+			// Only use browser's built-in email validation
 			event.currentTarget.setCustomValidity("");
 		}
 
