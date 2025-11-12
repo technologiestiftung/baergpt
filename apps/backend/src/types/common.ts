@@ -310,3 +310,8 @@ export type KnowledgeBaseDocument = {
 	short_summary: string;
 	tags: string[];
 };
+
+export type AllowedEmailDomain = {
+	id: number;
+	domain: string;
+};

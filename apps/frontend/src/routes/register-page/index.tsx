@@ -1,4 +1,4 @@
-import React, { type FormEvent, useRef, useState } from "react";
+import React, { type FormEvent, useRef, useState, useEffect } from "react";
 import Checkbox from "../../components/primitives/checkboxes/checkbox.tsx";
 import Content from "../../content.ts";
 import { TextInput } from "../../components/primitives/text-inputs/text-input.tsx";
@@ -12,12 +12,21 @@ import { QuestionMarkIcon } from "../../components/primitives/icons/question-mar
 import { useTooltipStore } from "../../store/tooltip-store.ts";
 
 export function RegisterPage() {
-	const { register } = useAuthStore();
+	const { register, getAllowedEmailDomains } = useAuthStore();
 	const { error } = useAuthErrorStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
 	const [hasAcceptedPersonalData, setHasAcceptedPersonalData] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
+
+	useEffect(() => {
+		const controller = new AbortController();
+		getAllowedEmailDomains(controller.signal);
+
+		return () => {
+			controller.abort();
+		};
+	}, []);
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -105,7 +114,6 @@ export function RegisterPage() {
 							<EmailInput
 								id="email"
 								placeholder={Content["registerPage.emailPlaceholder"]}
-								useRegexValidation={true}
 							/>
 						</label>
 

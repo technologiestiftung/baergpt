@@ -95,6 +95,21 @@ export type Database = {
 					},
 				];
 			};
+			allowed_email_domains: {
+				Row: {
+					domain: string;
+					id: number;
+				};
+				Insert: {
+					domain: string;
+					id?: number;
+				};
+				Update: {
+					domain?: string;
+					id?: number;
+				};
+				Relationships: [];
+			};
 			application_admins: {
 				Row: {
 					id: number;
@@ -374,21 +389,18 @@ export type Database = {
 			};
 			maintenance_mode: {
 				Row: {
-					created_at: string;
-					id: number;
 					is_enabled: boolean;
+					onerow_id: boolean;
 					updated_at: string;
 				};
 				Insert: {
-					created_at?: string;
-					id?: number;
 					is_enabled?: boolean;
+					onerow_id?: boolean;
 					updated_at?: string;
 				};
 				Update: {
-					created_at?: string;
-					id?: number;
 					is_enabled?: boolean;
+					onerow_id?: boolean;
 					updated_at?: string;
 				};
 				Relationships: [];
@@ -493,6 +505,13 @@ export type Database = {
 			get_account_activation_timestamp: {
 				Args: Record<PropertyKey, never>;
 				Returns: string;
+			};
+			get_allowed_email_domains: {
+				Args: Record<PropertyKey, never>;
+				Returns: {
+					id: number;
+					domain: string;
+				}[];
 			};
 			get_base_knowledge_documents: {
 				Args: { input_user_id: string };
