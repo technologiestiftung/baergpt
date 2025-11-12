@@ -7,19 +7,28 @@ import {
 	useFileUploadsStore,
 } from "../../../store/use-file-uploads-store.ts";
 import Content from "../../../content.ts";
+import { useDocumentStore } from "../../../store/document-store.ts";
 
 export function FileUploadList() {
 	const { fileUploads } = useFileUploadsStore();
+	const { documents } = useDocumentStore();
 
-	const hasErrorAmountExceeded = fileUploads.some(
+	const hasExceededParallelUploadLimit = fileUploads.some(
 		(fileUpload) => fileUpload.status === "failed.tooMany",
 	);
 
+	const numberOfUploads = documents?.length || 0;
+	// Once the user has less than 5 (MAX_FILE_UPLOADS) upload slots left, we stop showing the warning about max files per upload
+	const isReachingTotalUploadLimit =
+		numberOfUploads >=
+		Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) -
+			Number(import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS);
+
 	return (
 		<ul className="overflow-y-scroll max-h-[228px] relative rounded-b-3px">
-			{hasErrorAmountExceeded && (
+			{!isReachingTotalUploadLimit && hasExceededParallelUploadLimit && (
 				<div className="w-full px-3 py-2 bg-warning-10 text-sm leading-5 font-normal text-warning-100 z-10 sticky top-0">
-					{Content["fileUpload.maxFilesWarning.p1"]}{" "}
+					{Content["fileUpload.maxFilesWarning"]}
 				</div>
 			)}
 			<div className="flex flex-col gap-y-3.5 pt-3.5 pb-4 bg-white rounded-b-3px">

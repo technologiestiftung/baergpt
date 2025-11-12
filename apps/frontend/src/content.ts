@@ -768,6 +768,7 @@ export const Content = {
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
+	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Dateien werden verarbeitet",
 	"fileUploadButtonStatus.singleFileUploading": "Datei wird verarbeitet",
@@ -783,11 +784,11 @@ export const Content = {
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
 	// file upload counter message
-	"fileUpload.infoMessage.maxUpload": `Pro Upload-Vorgang sind max. ${import.meta.env.VITE_MAX_FILE_UPLOADS} Dateien möglich.`,
-	"fileUpload.infoMessage.counter": `von möglichen  Dateien hochgeladen.`,
-	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von ${import.meta.env.VITE_MAX_FILES_UPLOADED} Dateien erreicht.`,
+	"fileUpload.infoMessage.maxUpload": `Pro Upload-Vorgang sind max. ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} Dateien möglich.`,
+	"fileUpload.infoMessage.counter": `von möglichen ${import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED} Dateien hochgeladen.`,
+	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von ${import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED} Dateien erreicht.`,
 	"fileUpload.infoMessage.limitReached.p2": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
-	"fileUpload.maxFilesWarning.p1": "Max. 5 Dateien pro Upload.",
+	"fileUpload.maxFilesWarning": `Max. ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} Dateien pro Upload.`,
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",

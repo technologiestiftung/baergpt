@@ -13,7 +13,7 @@ type FileUploadProps = {
 };
 
 export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
-	const { fileUploads, uploadFiles, isLessThanMaxUploadsAmountActive } =
+	const { fileUploads, uploadFiles, hasAvailableUploadSlots } =
 		useFileUploadsStore();
 	const { isDocumentFirstLoad, isLoading, documents } = useDocumentStore();
 	const { isFolderFirstLoad } = useFolderStore();
@@ -22,8 +22,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 	const { error } = useErrorStore.getState();
 
 	const numberOfUploads = documents?.length || 0;
-	const hasReachedUploadLimit =
-		numberOfUploads >= Number(import.meta.env.VITE_MAX_FILES_UPLOADED);
+	const hasReachedTotalUploadLimit =
+		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
 
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const files = event.target.files;
@@ -75,7 +75,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 							onClick={triggerFileInput}
 							className="bg-hellblau-60 hover:bg-hellblau-100 disabled:text-dunkelblau-40 disabled:hover:bg-hellblau-60 p-2 rounded-3px focus-visible:outline-default flex gap-2 justify-center w-full"
 							disabled={
-								!isLessThanMaxUploadsAmountActive() || hasReachedUploadLimit
+								!hasAvailableUploadSlots() || hasReachedTotalUploadLimit
 							}
 						>
 							<input
@@ -91,14 +91,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 							/>
 							{Content["fileUpload.uploadButton"]}
 							<UploadIcon
-								className={`size-5  ${isLessThanMaxUploadsAmountActive() ? "text-dunkelblau-100" : "text-dunkelblau-40"}`}
+								className={`size-5  ${!hasAvailableUploadSlots() || hasReachedTotalUploadLimit ? "text-dunkelblau-40" : "text-dunkelblau-100"}`}
 							/>
 						</button>
 					)}
 
 					{hasFileUploads && <FileUploadStatusCollapsible />}
 					<div className="text-sm leading-5 font-normal  text-center">
-						{hasReachedUploadLimit ? (
+						{hasReachedTotalUploadLimit ? (
 							<div className="text-warning-100">
 								<p>{Content["fileUpload.infoMessage.limitReached.p1"]}</p>
 								<p>{Content["fileUpload.infoMessage.limitReached.p2"]}</p>
