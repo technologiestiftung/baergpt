@@ -46,7 +46,7 @@ export const Content = {
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
 	"form.validation.password.worng.error": "Das Passwort ist falsch.",
 	"form.validation.password.tooShort":
-		"Das Passwort muss mindestens 6 Zeichen lang sein.",
+		"Das Passwort muss mindestens 10 Zeichen lang sein.",
 	"form.validation.password.customError":
 		"Die Passwörter stimmen nicht überein.",
 	"form.validation.privacy.required.error":
