@@ -1047,7 +1047,7 @@ export const Content = {
 	"registerPage.emailLabel": "E-Mail-Adresse",
 	"registerPage.emailHint":
 		"Nur dienstliche E-Mail-Adressen der Berliner Verwaltung sind erlaubt.",
-	"registerPage.emailPlaceholder": "vorname.nachname@berlin.de",
+	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
 	"registerPage.passwordLabel": "Passwort",
 	"registerPage.passwordPlaceholder": "Passwort",
 	"registerPage.repeatPasswordLabel": "Passwort wiederholen",

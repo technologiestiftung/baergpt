@@ -35,7 +35,10 @@ export function ResetPasswordPage() {
 					>
 						<label htmlFor="email" className="flex flex-col gap-y-1">
 							{Content["resetPassword.emailLabel"]}
-							<EmailInput id="email" placeholder="vorname.nachname@berlin.de" />
+							<EmailInput
+								id="email"
+								placeholder="vorname.name@subdomain.berlin.de"
+							/>
 						</label>
 
 						{error && (
