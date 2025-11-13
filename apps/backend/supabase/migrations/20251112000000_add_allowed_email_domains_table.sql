@@ -21,7 +21,8 @@ VALUES
 	('charlottenburg-wilmersdorf.de'),
 	('parlament-berlin.de'),
 	('berliner-feuerwehr.de'),
-	('statistik-bbb.de');
+	('statistik-bbb.de'),
+	('ts.berlin');
 
 -- Add comment to the table
 comment ON TABLE public.allowed_email_domains IS 'Table containing allowed email domains for user registration';
