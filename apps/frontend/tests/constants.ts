@@ -6,7 +6,7 @@ const __dirname = dirname(__filename);
 
 export const defaultBucketName = "documents";
 
-export const defaultUserPassword = "123456";
+export const defaultUserPassword = "123456789!";
 export const defaultUserFirstName = "john";
 export const defaultUserLastName = "doe";
 export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@berlin.de`;

@@ -79,7 +79,7 @@ test.describe("Login", () => {
 		// Fill in the password field with a valid password, but not existing user
 		await page
 			.getByRole("textbox", { name: "Passwort Password anzeigen" })
-			.fill("123456");
+			.fill("123456789!");
 
 		// Logging in with valid email and password format, but non-existing user
 		await page
@@ -378,11 +378,11 @@ test.describe("Password Reset", () => {
 		// Fill in the new password field with a valid password
 		await page
 			.getByRole("textbox", { name: "Neues Passwort Ein" })
-			.fill("123456");
+			.fill("123456789!");
 		// Fill in the password reset field with a valid but different password
 		await page
 			.getByRole("textbox", { name: "Neues Passwort wiederholen" })
-			.fill("1234567");
+			.fill("123456789!0");
 
 		// Try to submit the form
 		await page
@@ -396,7 +396,7 @@ test.describe("Password Reset", () => {
 
 test.describe("User Registration (uses different user to prevent side-effects on other tests)", () => {
 	const givenUserEmail = "user.registration@berlin.de";
-	const givenUserPassword = "123456";
+	const givenUserPassword = "123456789!";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
 
