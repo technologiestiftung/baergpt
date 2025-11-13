@@ -8,6 +8,17 @@ import { WordDocumentExtractionService } from "../services/document-extraction-s
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 
+// Temporary memory instrumentation helper
+const mem = (label: string) => {
+	const m = process.memoryUsage();
+	// Keep logs concise but informative
+	console.log(
+		`[mem] ${label} rss=${(m.rss / 1024 / 1024).toFixed(1)}MB heapUsed=${(
+			m.heapUsed / 1024 / 1024
+		).toFixed(1)}MB`,
+	);
+};
+
 const documents = new Hono();
 const dbService = new DatabaseService();
 const wordExService = new WordDocumentExtractionService();
@@ -16,13 +27,18 @@ const generationService = new GenerationService();
 
 documents.post("/process", async (c: Context) => {
 	try {
+		mem("process:before-json");
 		const body = await c.req.json();
+		mem("process:after-json");
 		const { document } = body;
 		const llmIdentifier = config.defaultModelIdentifier as LLMIdentifier;
-		const extractionResult = await dbService.logAndExtractDocument(document);
+		mem("process:before-logAndExtractDocument");
+		let extractionResult = await dbService.logAndExtractDocument(document);
+		mem("process:after-logAndExtractDocument");
 		const extractedDocument = extractionResult.document;
 
-		const parsedPages = extractionResult.parsedPages;
+		let parsedPages = extractionResult.parsedPages;
+		mem("process:before-summarize+embed");
 		await Promise.all([
 			generationService.summarize(
 				parsedPages,
@@ -33,8 +49,21 @@ documents.post("/process", async (c: Context) => {
 				chunkingTechnique: "markdown",
 			}),
 		]);
+		mem("process:after-summarize+embed");
+		
+		// Clear large objects after processing
+		parsedPages = null;
+		extractionResult = null;
 
 		await dbService.finishProcessing(extractedDocument);
+		mem("process:after-finishProcessing");
+		try {
+			// Attempt to clear references and trigger GC
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
+			global.gc?.();
+			mem("process:after-gc");
+		} catch {}
 		return c.body(null, 204);
 	} catch (error) {
 		captureError(error);
@@ -44,7 +73,9 @@ documents.post("/process", async (c: Context) => {
 
 documents.post("/upload", async (c: Context) => {
 	try {
+		mem("before-parseBody");
 		const body = await c.req.parseBody();
+		mem("after-parseBody");
 		const uploadedFile = body["file"];
 		const sourceUrl = String(body["sourceUrl"] || "");
 		const isPublicDocument = body["isPublicDocument"] === "true";
@@ -52,6 +83,14 @@ documents.post("/upload", async (c: Context) => {
 			return c.json({ error: "No file" }, 400);
 		}
 		const fileName = uploadedFile.name || "document";
+		try {
+			// Log file size if available (in MB)
+			const sizeMb =
+				typeof uploadedFile?.size === "number"
+					? (uploadedFile.size / 1024 / 1024).toFixed(1)
+					: "n/a";
+			console.log(`[upload] file=${fileName} size=${sizeMb}MB`);
+		} catch {}
 
 		const getFileType = (ext: string) => {
 			switch (ext) {
@@ -77,18 +116,29 @@ documents.post("/upload", async (c: Context) => {
 			throw new Error("Unsupported file type");
 		}
 
+		mem("before-upload");
 		await dbService.uploadFileToStorage(
 			sourceUrl,
 			uploadedFile,
 			isPublicDocument,
 		);
+		mem("after-upload");
+		try {
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
+			global.gc?.();
+			mem("after-gc");
+		} catch {}
 
 		if (/\.(docx)$/i.test(fileName)) {
 			try {
-				const wordBuffer = new Uint8Array(await uploadedFile.arrayBuffer());
-				const pdfBytes = await wordExService.convertDocxToPdf(
+				let wordBuffer = new Uint8Array(await uploadedFile.arrayBuffer());
+				let pdfBytes = await wordExService.convertDocxToPdf(
 					Buffer.from(wordBuffer),
 				);
+
+				wordBuffer = null;
+				
 				await dbService.uploadFileToStorage(
 					sourceUrl.replace(/\.docx?$/i, ".pdf"),
 					new File([pdfBytes], fileName.replace(/\.docx?$/i, ".pdf"), {
@@ -96,6 +146,8 @@ documents.post("/upload", async (c: Context) => {
 					}),
 					isPublicDocument,
 				);
+				
+				pdfBytes = null;
 			} catch (err) {
 				captureError(err);
 			}

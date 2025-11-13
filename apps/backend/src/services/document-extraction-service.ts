@@ -1,6 +1,4 @@
 /* eslint-disable no-console */
-
-import { PDFDocument } from "pdf-lib";
 import { PDFParse } from "pdf-parse";
 import type {
 	Document,
@@ -21,11 +19,21 @@ import mammoth from "mammoth";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
 
+const memLog = (label: string) => {
+	const m = process.memoryUsage();
+	console.log(
+		`[mem] ${label} rss=${(m.rss / 1024 / 1024).toFixed(
+			1,
+		)}MB heapUsed=${(m.heapUsed / 1024 / 1024).toFixed(1)}MB`,
+	);
+};
+
 export class DocumentExtractionService {
 	async extractDocument(
 		fileBytes: Uint8Array,
 		document: Document,
 	): Promise<ExtractionResult> {
+		memLog?.("extractDocument:start");
 		if (
 			document.file_name?.toLowerCase().endsWith(".doc") ||
 			document.file_name?.toLowerCase().endsWith(".docx")
@@ -77,6 +85,7 @@ export class DocumentExtractionService {
 
 		// Explicitly dereference the copy to allow garbage collection
 		pdfBytesCopy = null;
+		memLog?.("extractDocument:after-pdf-info");
 
 		if (numPages > config.maxPagesLimit) {
 			throw new ExtractError(
@@ -89,9 +98,21 @@ export class DocumentExtractionService {
 			document.file_name,
 			{ numPages: numPages, ocrProvider: "mistral" },
 		);
+		memLog?.("extractDocument:after-extract-pages");
 
 		const checksum = getHash(fileBytes);
 		const fileSize = fileBytes.byteLength;
+
+		// Explicitly clear fileBytes after we're done with it
+		fileBytes = null;
+
+		// Attempt to reduce retained references; GC is best-effort
+		try {
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
+			global.gc?.();
+			memLog?.("extractDocument:after-gc");
+		} catch {}
 
 		return {
 			document: document,
@@ -455,9 +476,9 @@ class MistralOCRService {
 	): Promise<ParsedPage[]> {
 		const client = new Mistral({ apiKey: config.mistralApiKey });
 
-		const buffer = createBufferView(pdfBytes);
+		let buffer = createBufferView(pdfBytes);
 
-		const uploaded_pdf = await resilientCall(
+		let uploaded_pdf = await resilientCall(
 			() =>
 				client.files.upload({
 					file: {
@@ -469,11 +490,14 @@ class MistralOCRService {
 			{ queueType: "llm" },
 		);
 
+		// Clear buffer after upload to free memory
+		buffer = null;
+
 		const signedUrl = await resilientCall(() =>
 			client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
 		);
 
-		const ocrResponse = await resilientCall(
+		let ocrResponse = await resilientCall(
 			() =>
 				client.ocr.process({
 					model: "mistral-ocr-latest",
@@ -489,7 +513,9 @@ class MistralOCRService {
 			throw new Error("No pages found in OCR response");
 		}
 		await client.files.delete({ fileId: uploaded_pdf.id }); // delete file from Mistral's cloud storage
-		return ocrResponse.pages.map(
+
+		// Build result and clear large objects
+		const result = ocrResponse.pages.map(
 			(page, index) =>
 				({
 					content: page.markdown,
@@ -497,6 +523,12 @@ class MistralOCRService {
 					tokenCount: countTokens(page.markdown),
 				}) as ParsedPage,
 		);
+
+		// Clear references to large objects before returning
+		uploaded_pdf = null;
+		ocrResponse = null;
+
+		return result;
 	}
 }
 

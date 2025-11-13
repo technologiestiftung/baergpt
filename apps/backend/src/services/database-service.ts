@@ -196,12 +196,15 @@ export class DatabaseService {
 	): Promise<ExtractionResult & { document: Document }> {
 		const documentId = await this.logDocument(document);
 		const documentWithId = { ...document, id: documentId };
-		const { buffer: fileBytes } =
+		let { buffer: fileBytes } =
 			await this.getDocumentBufferFromSupabase(documentWithId);
 		const extractionResult = await documentExtraction.extractDocument(
 			fileBytes,
 			documentWithId,
 		);
+
+		fileBytes = null;
+		
 		const updatedDocument = await this.updateMetadataOfLoggedDocument(
 			extractionResult,
 			documentId,
