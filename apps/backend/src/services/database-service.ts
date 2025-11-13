@@ -1,8 +1,6 @@
 import { supabase } from "../supabase";
-import { ExtractError } from "../types/common";
 import {
 	type Document,
-	type DocumentBufferResponse,
 	type Embedding,
 	type ExtractionResult,
 	type HybridSearchResult,
@@ -10,9 +8,14 @@ import {
 	DocumentNotFoundError,
 } from "../types/common";
 import { ragSearchDefaults } from "../constants";
-import { DocumentExtractionService } from "./document-extraction-service";
+import {
+	DocumentExtractionService,
+	WordDocumentExtractionService,
+} from "./document-extraction-service";
+import { captureError } from "../monitoring/capture-error";
 
 const documentExtraction = new DocumentExtractionService();
+const wordExtractionService = new WordDocumentExtractionService();
 
 export class DatabaseService {
 	async logSummarizedDocument(
@@ -84,16 +87,10 @@ export class DatabaseService {
 	async uploadFileToStorage(
 		filePath: string,
 		file: File,
-		isPublicDocument: boolean = false,
+		bucket: string,
 	): Promise<void> {
-		let bucketName = "";
-		if (isPublicDocument) {
-			bucketName = "public_documents";
-		} else {
-			bucketName = "documents";
-		}
 		const { error: uploadError } = await supabase.storage
-			.from(bucketName)
+			.from(bucket)
 			.upload(filePath, file);
 
 		if (uploadError) {
@@ -133,7 +130,7 @@ export class DatabaseService {
 				folder_id: document.folder_id || null,
 				source_url: document.source_url,
 				source_type: document.source_type,
-				file_name: document.file_name,
+				file_name: document.source_url?.split("/").pop(),
 				created_at: document.created_at || new Date().toISOString(),
 				access_group_id: document.access_group_id || null,
 				uploaded_by_user_id: document.uploaded_by_user_id || null,
@@ -196,8 +193,35 @@ export class DatabaseService {
 	): Promise<ExtractionResult & { document: Document }> {
 		const documentId = await this.logDocument(document);
 		const documentWithId = { ...document, id: documentId };
-		const { buffer: fileBytes } =
-			await this.getDocumentBufferFromSupabase(documentWithId);
+		const fileName = document.source_url?.split("/").pop();
+		const bucket =
+			document.source_type === "public_document"
+				? "public_documents"
+				: "documents";
+		try {
+			if (/\.(docx)$/i.test(fileName)) {
+				const wordBuffer = await this.getDocumentBufferFromSupabase(
+					bucket,
+					document.source_url,
+				);
+				const pdfBuffer = await wordExtractionService.convertDocxToPdf(
+					Buffer.from(wordBuffer),
+				);
+				await this.uploadFileToStorage(
+					document.source_url.replace(/\.docx?$/i, ".pdf"),
+					new File([pdfBuffer], fileName.replace(/\.docx?$/i, ".pdf"), {
+						type: "application/pdf",
+					}),
+					bucket,
+				);
+			}
+		} catch (error) {
+			captureError(error);
+		}
+		const fileBytes = await this.getDocumentBufferFromSupabase(
+			bucket,
+			document.source_url,
+		);
 		const extractionResult = await documentExtraction.extractDocument(
 			fileBytes,
 			documentWithId,
@@ -216,38 +240,26 @@ export class DatabaseService {
 	 * @returns Buffer containing the document data
 	 */
 	async getDocumentBufferFromSupabase(
-		document: Document,
-	): Promise<DocumentBufferResponse> {
-		let filename = document.source_url.split("/").slice(-1)[0];
+		bucket: string,
+		sourceUrl: string,
+	): Promise<Uint8Array> {
+		let filename = sourceUrl.split("/").pop();
 		if (!filename.endsWith(".pdf")) {
 			filename += ".pdf";
 		}
 
-		let bucket = "public_documents";
-		const filenameInBucket = document.source_url;
-
-		if (document.owned_by_user_id) {
-			bucket = "documents";
-		}
-
 		const { data, error } = await supabase.storage
 			.from(bucket)
-			.download(filenameInBucket);
+			.download(sourceUrl);
 
 		if (!data) {
-			throw new ExtractError(
-				document,
-				`Could not download ${document.source_url}: ${error}`,
-			);
+			throw new Error(`Could not download ${sourceUrl}: ${error}`);
 		}
 
 		// Convert the Blob to a Buffer
 		const buffer = new Uint8Array(await data.arrayBuffer());
 
-		return {
-			buffer,
-			filename,
-		} as DocumentBufferResponse;
+		return buffer;
 	}
 
 	async finishProcessing(document: Document) {
