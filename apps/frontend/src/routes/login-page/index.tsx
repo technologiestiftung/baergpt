@@ -73,7 +73,7 @@ export function LoginPage() {
 					</form>
 				</div>
 				<p className="mt-6 text-center md:text-left">
-					{Content["loginPage.registerPrompt"]}
+					{Content["loginPage.registerPrompt"]}{" "}
 					<br className="block md:hidden" />
 					<a
 						href={"/register/"}
