@@ -124,7 +124,7 @@ testWithRegisteredUser(
 
 test.describe("Password Reset", () => {
 	testWithRegisteredUser("Password Reset Flow", async ({ page, account }) => {
-		const givenNewPassword = "654321";
+		const givenNewPassword = "!987654321";
 		// Go to the login page
 		await page.goto("/login/");
 
