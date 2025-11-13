@@ -1072,7 +1072,7 @@ export const Content = {
 	"resetPasswordConfirmation.list.li.2":
 		"Bitte prüfen Sie auch Ihren Spam-Ordner",
 	"resetPasswordConfirmation.list.li.3":
-		"Adresse support@baergpt.de als Absender zulassen",
+		"Adresse support@baergpt.berlin als Absender zulassen",
 	"resetPasswordConfirmation.list.li.4":
 		"Bitte prüfen Sie die eingegebene E-Mail-Adresse",
 
