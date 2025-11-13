@@ -22,8 +22,6 @@ export const Content = {
 	"loginPage.emailLabel": "E-Mail-Adresse",
 	"loginPage.passwordLabel": "Passwort",
 	"loginPage.submitButton": "Anmelden",
-	"loginPage.waitingListPrompt": "BärGPT befindet sich in der Testphase.",
-	"loginPage.waitingListLink": "In die Warteliste eintragen.",
 	"loginPage.resetPassword.label": "Passwort vergessen?",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */

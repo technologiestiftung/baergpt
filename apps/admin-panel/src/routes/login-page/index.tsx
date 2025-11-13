@@ -76,16 +76,6 @@ export function LoginPage() {
 						</button>
 					</form>
 				</div>
-				<p className="mt-6 text-center md:text-left">
-					{Content["loginPage.waitingListPrompt"]}{" "}
-					<br className="block lg:hidden" />
-					<a
-						href="https://citylabberlin.typeform.com/to/kHXMKYOE#product_id=baergpt-liste"
-						className="font-bold underline hover:no-underline"
-					>
-						{Content["loginPage.waitingListLink"]}
-					</a>
-				</p>
 			</div>
 		</AuthLayout>
 	);
