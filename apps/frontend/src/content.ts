@@ -784,11 +784,15 @@ export const Content = {
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
 	// file upload counter message
-	"fileUpload.infoMessage.maxUpload": `Pro Upload-Vorgang sind max. ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} Dateien möglich.`,
-	"fileUpload.infoMessage.counter": `von möglichen ${import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED} Dateien hochgeladen.`,
-	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von ${import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED} Dateien erreicht.`,
-	"fileUpload.infoMessage.limitReached.p2": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
-	"fileUpload.maxFilesWarning": `Max. ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} Dateien pro Upload.`,
+	"fileUpload.infoMessage.maxUpload.p1": `Pro Upload-Vorgang sind max.`,
+	"fileUpload.infoMessage.maxUpload.p2": `Dateien möglich.`,
+	"fileUpload.infoMessage.counter.p1": `von möglichen`,
+	"fileUpload.infoMessage.counter.p2": `Dateien hochgeladen.`,
+	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von`,
+	"fileUpload.infoMessage.limitReached.p2": `Dateien erreicht.`,
+	"fileUpload.infoMessage.limitReached.p3": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
+	"fileUpload.maxFilesWarning.p1": `Max.`,
+	"fileUpload.maxFilesWarning.p2": `Dateien pro Upload.`,
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",

@@ -101,14 +101,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 					<div className="text-sm leading-5 font-normal  text-center">
 						{hasReachedTotalUploadLimit ? (
 							<div className="text-warning-100">
-								<p>{Content["fileUpload.infoMessage.limitReached.p1"]}</p>
-								<p>{Content["fileUpload.infoMessage.limitReached.p2"]}</p>
+								<p>{`${Content["fileUpload.infoMessage.limitReached.p1"]} ${import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED} ${Content["fileUpload.infoMessage.limitReached.p2"]}`}</p>
+								<p>{Content["fileUpload.infoMessage.limitReached.p3"]}</p>
 							</div>
 						) : (
 							<div className="text-dunkelblau-80">
-								<p>{Content["fileUpload.infoMessage.maxUpload"]}</p>
+								<p>{`${Content["fileUpload.infoMessage.maxUpload.p1"]} ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} ${Content["fileUpload.infoMessage.maxUpload.p2"]}`}</p>
 								<p>
-									{`${numberOfUploads} ${Content["fileUpload.infoMessage.counter"]}`}
+									{`${numberOfUploads} ${Content["fileUpload.infoMessage.counter.p1"]} ${import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED} ${Content["fileUpload.infoMessage.counter.p2"]}`}
 								</p>
 							</div>
 						)}
