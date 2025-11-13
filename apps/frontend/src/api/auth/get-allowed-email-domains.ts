@@ -14,7 +14,7 @@ export async function getAllowedEmailDomains(
 
 	if (rpcError) {
 		useAuthErrorStore.getState().handleError(new Error(rpcError.message));
-		throw new Error(rpcError.message);
+		return [];
 	}
 
 	return allowedDomains?.map((item) => item.domain) || [];
