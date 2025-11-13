@@ -37,9 +37,6 @@ export function EmailInput({
 			} else {
 				event.currentTarget.setCustomValidity("");
 			}
-		} else {
-			// Only use browser's built-in email validation
-			event.currentTarget.setCustomValidity("");
 		}
 
 		if (inputRef.current) {
