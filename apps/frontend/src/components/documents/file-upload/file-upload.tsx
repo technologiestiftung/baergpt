@@ -25,6 +25,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 	const hasReachedTotalUploadLimit =
 		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
 
+	const isUploadDisabled =
+		!hasAvailableUploadSlots() || hasReachedTotalUploadLimit;
+
 	const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const files = event.target.files;
 
@@ -74,9 +77,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 						<button
 							onClick={triggerFileInput}
 							className="bg-hellblau-60 hover:bg-hellblau-100 disabled:text-dunkelblau-40 disabled:hover:bg-hellblau-60 p-2 rounded-3px focus-visible:outline-default flex gap-2 justify-center w-full"
-							disabled={
-								!hasAvailableUploadSlots() || hasReachedTotalUploadLimit
-							}
+							disabled={isUploadDisabled}
 						>
 							<input
 								type="file"
@@ -91,7 +92,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 							/>
 							{Content["fileUpload.uploadButton"]}
 							<UploadIcon
-								className={`size-5  ${!hasAvailableUploadSlots() || hasReachedTotalUploadLimit ? "text-dunkelblau-40" : "text-dunkelblau-100"}`}
+								className={`size-5  ${isUploadDisabled ? "text-dunkelblau-40" : "text-dunkelblau-100"}`}
 							/>
 						</button>
 					)}
