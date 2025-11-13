@@ -429,6 +429,14 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		// Go to the registration page
 		await page.goto("/register/");
 
+		// Wait for allowed email domains to be loaded before filling the form
+		await page
+			.waitForResponse(
+				(resp) => resp.url().includes("get_allowed_email_domains"),
+				{ timeout: 10000 },
+			)
+			.catch(() => {}); // Ignore if already completed
+
 		// Fill in the registration form
 		await page
 			.getByRole("textbox", { name: "Vorname" })
