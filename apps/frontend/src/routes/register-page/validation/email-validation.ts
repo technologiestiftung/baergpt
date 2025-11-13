@@ -48,8 +48,9 @@ function createDomainPattern(config: DomainConfig): string {
 
 	if (config.allowSubdomains) {
 		// Require subdomains: *.domain.tld but NOT domain.tld
-		// This matches the pattern [A-Za-z0-9-]+\.domain.com (subdomain required)
-		return `[A-Za-z0-9-]+\\.${escapedDomain}`;
+		// RFC 1035 compliant: subdomain labels cannot start or end with hyphens
+		// Pattern: [A-Za-z0-9] starts with alphanumeric, ([A-Za-z0-9-]*[A-Za-z0-9])? allows hyphens in middle but ends with alphanumeric
+		return `[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\\.${escapedDomain}`;
 	}
 
 	return escapedDomain;
