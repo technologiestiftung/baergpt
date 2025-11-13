@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { supabaseAdminClient } from "../supabase.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 
-const defaultUserEmail = "john.doe-a11y@berlin.de";
+const defaultUserEmail = "john.doe-a11y@local.berlin.de";
 const defaultUserPassword = "123456";
 const defaultUserFirstName = "John";
 const defaultUserLastName = "Doe";

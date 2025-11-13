@@ -74,7 +74,7 @@ test.describe("Login", () => {
 		// Fill in the email field with a valid email format, but not existing user
 		await page
 			.getByRole("textbox", { name: "E-Mail-Adresse Das E-Mail-" })
-			.fill("not-existing-user@berlin.de");
+			.fill("not-existing-user@local.berlin.de");
 
 		// Fill in the password field with a valid password, but not existing user
 		await page
@@ -395,7 +395,7 @@ test.describe("Password Reset", () => {
 });
 
 test.describe("User Registration (uses different user to prevent side-effects on other tests)", () => {
-	const givenUserEmail = "user.registration@berlin.de";
+	const givenUserEmail = "user.registration@local.berlin.de";
 	const givenUserPassword = "123456";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
@@ -451,14 +451,26 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await page
 			.locator('[data-testid="label-has-accepted-personal-data-checkbox"]')
 			.check();
-		await page
-			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
-			.click();
+		// Wait for the registration request to complete
+		await Promise.all([
+			page.waitForResponse(
+				(resp) =>
+					resp.url().includes("/auth/v1/signup") && resp.status() === 200,
+			),
+			page
+				.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
+				.click(),
+		]);
+
+		// Wait for the state to update and component to re-render
+		await page.waitForLoadState("networkidle");
+		// Additional small wait for React state updates
+		await page.waitForTimeout(500);
 
 		// Info message about confirmation mail should be visible
 		await expect(
 			page.getByRole("heading", { name: "Registrierung fast abgeschlossen" }),
-		).toBeVisible();
+		).toBeVisible({ timeout: 10000 });
 
 		// Open the email confirmation link in mail inbucket
 		await page.goto("http://localhost:54324/"); // Inbucket URL

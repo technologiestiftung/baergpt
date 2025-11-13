@@ -9,7 +9,7 @@ export const defaultBucketName = "documents";
 export const defaultUserPassword = "123456";
 export const defaultUserFirstName = "john";
 export const defaultUserLastName = "doe";
-export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@berlin.de`;
+export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@local.berlin.de`;
 
 export const defaultDocumentName = "default_document.pdf";
 export const defaultDocumentPath = resolve(
