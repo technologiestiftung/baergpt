@@ -17,6 +17,34 @@ export const defaultDocumentPath = resolve(
 	`./fixtures/${defaultDocumentName}`,
 );
 
+export const defaultDocuments = [
+	{
+		name: "default_document_1.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_1.pdf"),
+	},
+	{
+		name: "default_document_2.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_2.pdf"),
+	},
+	{
+		name: "default_document_3.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_3.pdf"),
+	},
+	{
+		name: "default_document_4.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_4.pdf"),
+	},
+	{
+		name: "default_document_5.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_5.pdf"),
+	},
+	{
+		name: "default_document_6.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_6.pdf"),
+	},
+];
+export const defaultDocumentsType = "application/pdf";
+
 // defaultDocument data for `documents` table
 export const defaultSourceType = "personal_document";
 export const file_checksum = "8f846168ffdef7b234d20c330eb99260";
