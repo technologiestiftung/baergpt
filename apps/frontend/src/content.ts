@@ -786,8 +786,8 @@ export const Content = {
 	// file upload counter message
 	"fileUpload.infoMessage.maxUpload.p1": `Pro Upload-Vorgang sind max.`,
 	"fileUpload.infoMessage.maxUpload.p2": `Dateien möglich.`,
-	"fileUpload.infoMessage.counter.p1": `von möglichen`,
-	"fileUpload.infoMessage.counter.p2": `Dateien hochgeladen.`,
+	"fileUpload.infoMessage.counter.p1": `von`,
+	"fileUpload.infoMessage.counter.p2": `möglichen Dateien hochgeladen.`,
 	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von`,
 	"fileUpload.infoMessage.limitReached.p2": `Dateien erreicht.`,
 	"fileUpload.infoMessage.limitReached.p3": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
