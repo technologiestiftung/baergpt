@@ -39,8 +39,6 @@ export async function processDocument(
 ): Promise<void> {
 	const { session } = useAuthStore.getState();
 	const access_group_id = useAccessGroupStore.getState().accessGroupId;
-
-	const fileExtension = filePath.split(".").pop() ?? undefined;
 	// Create document metadata
 	const documentData = {
 		document: {
@@ -53,7 +51,7 @@ export async function processDocument(
 			access_group_id: access_group_id,
 			uploaded_by_user_id: session?.user.id,
 			metadata: {
-				mimeType: file.type || fileExtension,
+				mimeType: file.type,
 				size: file.size,
 			},
 		},

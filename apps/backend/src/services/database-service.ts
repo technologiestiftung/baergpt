@@ -193,7 +193,7 @@ export class DatabaseService {
 	): Promise<ExtractionResult & { document: Document }> {
 		const documentId = await this.logDocument(document);
 		const documentWithId = { ...document, id: documentId };
-		const fileName = document.source_url?.split("/").pop();
+		const fileName = document.source_url.split("/").pop();
 		const bucket =
 			document.source_type === "public_document"
 				? "public_documents"
@@ -208,8 +208,8 @@ export class DatabaseService {
 					Buffer.from(wordBuffer),
 				);
 				await this.uploadFileToStorage(
-					document.source_url.replace(/\.docx?$/i, ".pdf"),
-					new File([pdfBuffer], fileName.replace(/\.docx?$/i, ".pdf"), {
+					document.source_url.replace(/\.(docx)$/i, ".pdf"),
+					new File([pdfBuffer], fileName.replace(/\.(docx)$/i, ".pdf"), {
 						type: "application/pdf",
 					}),
 					bucket,
