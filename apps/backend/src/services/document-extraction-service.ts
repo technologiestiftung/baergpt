@@ -490,8 +490,8 @@ class MistralOCRService {
 		const buffer = createBufferView(pdfBytes);
 
 		const uploaded_pdf = await resilientCall(
-			() =>
-				client.files.upload({
+			async () =>
+				await client.files.upload({
 					file: {
 						fileName: "uploaded_file.pdf",
 						content: buffer,
@@ -501,13 +501,13 @@ class MistralOCRService {
 			{ queueType: "llm" },
 		);
 
-		const signedUrl = await resilientCall(() =>
-			client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
+		const signedUrl = await resilientCall(
+			async () => await client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
 		);
 
 		const ocrResponse = await resilientCall(
-			() =>
-				client.ocr.process({
+			async () =>
+				await client.ocr.process({
 					model: "mistral-ocr-latest",
 					document: {
 						type: "document_url",
