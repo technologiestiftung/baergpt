@@ -243,11 +243,6 @@ export class DatabaseService {
 		bucket: string,
 		sourceUrl: string,
 	): Promise<Uint8Array> {
-		let filename = sourceUrl.split("/").pop();
-		if (!filename.endsWith(".pdf")) {
-			filename += ".pdf";
-		}
-
 		const { data, error } = await supabase.storage
 			.from(bucket)
 			.download(sourceUrl);
