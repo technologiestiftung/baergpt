@@ -26,7 +26,7 @@ export class DocumentExtractionService {
 		fileBytes: Uint8Array,
 		document: Document,
 	): Promise<ExtractionResult> {
-		const fileName = document.source_url?.split("/").pop();
+		const fileName = document.source_url.split("/").pop();
 		if (
 			fileName?.toLowerCase().endsWith(".doc") ||
 			fileName?.toLowerCase().endsWith(".docx")
