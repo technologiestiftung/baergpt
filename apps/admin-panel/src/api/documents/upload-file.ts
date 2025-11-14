@@ -4,7 +4,9 @@ import { supabase } from "../../../supabase-client";
 import { StorageApiError } from "@supabase/storage-js";
 
 /**
- * Uploads the file to storage via the /documents/upload endpoint using FormData.
+ * Uploads the provided file directly to Supabase Storage in the "public_documents" bucket.
+ * @param file The file to upload.
+ * @param filePath The path (including filename) where the file will be stored in Supabase Storage.
  */
 export async function uploadFileToDb(
 	file: File,
