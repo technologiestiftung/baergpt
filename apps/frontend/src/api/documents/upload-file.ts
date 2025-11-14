@@ -4,7 +4,7 @@ import { useFolderStore } from "../../store/folder-store";
 import { supabase } from "../../../supabase-client";
 
 /**
- * Uploads the file to storage via the /documents/upload endpoint.
+ * Uploads the file directly to Supabase Storage.
  */
 export async function uploadFileToDb(
 	file: File,
