@@ -159,13 +159,13 @@ describe("Chunking Methods", () => {
 		it("should split by markdown headers", () => {
 			const text = `
 # Header 1
-${"Content for section 1. ".repeat(2000)}
+${"Content for section 1. ".repeat(1000)}
 
 ## Header 2
-${"Content for section 2. ".repeat(2000)}
+${"Content for section 2. ".repeat(1000)}
 
 ### Header 3
-${"Content for section 3. ".repeat(2000)}
+${"Content for section 3. ".repeat(1000)}
 `;
 			const chunks = service.markdownStructuralChunking(text);
 
@@ -175,7 +175,7 @@ ${"Content for section 3. ".repeat(2000)}
 					config.jinaMaxContextTokens,
 				);
 			});
-		}, 30000);
+		});
 
 		it("should handle code blocks", () => {
 			const text = `

@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import type { Document } from "../common";
+import type { Document, DocumentWithUrl } from "../common";
 import { getDocuments } from "../api/documents/get-documents";
+import { getPublicDocuments } from "../api/documents/get-public-documents";
 import { deleteDocument } from "../api/documents/delete-document";
 import { updateDocumentFolder } from "../api/documents/update-document-folder";
 import { getDocumentObjectUrl } from "../api/documents/get-document-object-url.ts";
@@ -9,9 +10,13 @@ import { useErrorStore } from "./error-store";
 
 interface DocumentStore {
 	documents: Document[];
+	publicDocuments: DocumentWithUrl[];
 	isDocumentFirstLoad: boolean;
+	isPublicDocumentFirstLoad: boolean;
 	isLoading: boolean;
+	isPublicDocumentsLoading: boolean;
 	getDocuments: (signal: AbortSignal) => Promise<void>;
+	getPublicDocuments: (signal: AbortSignal) => Promise<void>;
 	deleteDocument: (documentId: number) => Promise<Error | null>;
 	removeItemFromFolder: (documentId: number) => Promise<void>;
 	moveItemToFolder: (documentId: number, folderId: number) => Promise<void>;
@@ -34,8 +39,11 @@ interface DocumentStore {
 
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	documents: [],
+	publicDocuments: [],
 	isDocumentFirstLoad: true,
+	isPublicDocumentFirstLoad: true,
 	isLoading: false,
+	isPublicDocumentsLoading: false,
 	getDocuments: async (signal: AbortSignal) => {
 		set({ isLoading: true });
 		try {
@@ -45,6 +53,30 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 			set({ isLoading: false });
 			if (get().isDocumentFirstLoad) {
 				set({ isDocumentFirstLoad: false });
+			}
+		}
+	},
+	getPublicDocuments: async (signal: AbortSignal) => {
+		set({ isPublicDocumentsLoading: true });
+		try {
+			const documents = await getPublicDocuments(signal);
+
+			// Fetch preview URLs for all public documents
+			const documentsWithUrls = await Promise.all(
+				documents.map(async (doc): Promise<DocumentWithUrl> => {
+					const previewUrl = await getDocumentObjectUrl({
+						sourceUrl: doc.source_url,
+						sourceType: doc.source_type,
+					});
+					return { ...doc, previewUrl };
+				}),
+			);
+
+			set({ publicDocuments: documentsWithUrls });
+		} finally {
+			set({ isPublicDocumentsLoading: false });
+			if (get().isPublicDocumentFirstLoad) {
+				set({ isPublicDocumentFirstLoad: false });
 			}
 		}
 	},

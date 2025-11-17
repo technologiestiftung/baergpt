@@ -22,6 +22,49 @@
         "a11y",
         "doc",
         "test"
+     },
+     {
+      "login": "raphael-arce",
+      "name": "Rapha",
+      "avatar_url": "https://avatars.githubusercontent.com/u/8709861?v=4",
+      "profile": "https://github.com/raphael-arce",
+      "contributions": [
+        "code",
+        "ideas",
+        "infra",
+        "research",
+        "review",
+        "a11y",
+        "security", 
+        "test"
+     },
+     {
+      "login": "nlspnsgen",
+      "name": "nlspnsgen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12913491?v=4",
+      "profile": "https://github.com/nlspnsgen",
+      "contributions": [
+        "code",
+        "infra",
+        "review",
+        "test",
+        "ideas",
+        "security"
+     },
+     {
+      "login": "malte-b",
+      "name": "Malte Barth",
+      "avatar_url": "https://avatars.githubusercontent.com/u/27922183?v=4",
+      "profile": "https://github.com/malte-b",
+      "contributions": [
+        "blog",
+        "code",
+        "data",
+        "ideas",
+        "infra",
+        "research",
+        "review",
+        "test"
       ]
     }
   ],
