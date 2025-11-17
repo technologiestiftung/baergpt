@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { supabase } from "../src/supabase";
 import { DatabaseService } from "../src/services/database-service";
-import type { Document } from "../src/types/common";
+import { GenerationService } from "../src/services/generation-service";
+import { EmbeddingService } from "../src/services/embedding-service";
+import { config } from "../src/config";
+import type { Document, LLMIdentifier } from "../src/types/common";
 
 const fileName = "BaerGPT-Handbuch.pdf";
 const sourceUrl = fileName; // Store at root of bucket
@@ -131,7 +134,23 @@ async function processDocument(file: File): Promise<void> {
 	};
 
 	const dbService = new DatabaseService();
-	await dbService.processDocument(documentToProcess);
+	const generationService = new GenerationService();
+	const embeddingService = new EmbeddingService();
+
+	const llmIdentifier = config.defaultModelIdentifier as LLMIdentifier;
+	const extractionResult =
+		await dbService.logAndExtractDocument(documentToProcess);
+	const extractedDocument = extractionResult.document;
+
+	const parsedPages = extractionResult.parsedPages;
+	await Promise.all([
+		generationService.summarize(parsedPages, llmIdentifier, extractedDocument),
+		embeddingService.batchEmbed(parsedPages, extractedDocument, {
+			chunkingTechnique: "markdown",
+		}),
+	]);
+
+	await dbService.finishProcessing(extractedDocument);
 
 	// eslint-disable-next-line no-console
 	console.log("Default document uploaded and processed successfully!");

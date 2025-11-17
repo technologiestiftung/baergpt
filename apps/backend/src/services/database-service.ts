@@ -277,36 +277,6 @@ export class DatabaseService {
 		}
 	}
 
-	/**
-	 * Processes a document: extracts, summarizes, embeds, and marks as finished.
-	 * This is a shared method used by both the API route and setup scripts.
-	 */
-	async processDocument(document: Document): Promise<void> {
-		// Use dynamic imports to avoid circular dependency
-		const { EmbeddingService } = await import("./embedding-service.js");
-		const { GenerationService } = await import("./generation-service.js");
-		const embeddingService = new EmbeddingService();
-		const generationService = new GenerationService();
-		const llmIdentifier = config.defaultModelIdentifier as LLMIdentifier;
-
-		const extractionResult = await this.logAndExtractDocument(document);
-		const extractedDocument = extractionResult.document;
-
-		const parsedPages = extractionResult.parsedPages;
-		await Promise.all([
-			generationService.summarize(
-				parsedPages,
-				llmIdentifier,
-				extractedDocument,
-			),
-			embeddingService.batchEmbed(parsedPages, extractedDocument, {
-				chunkingTechnique: "markdown",
-			}),
-		]);
-
-		await this.finishProcessing(extractedDocument);
-	}
-
 	// Updates the user's document count in the profiles table
 	async updateUserDocumentCount(userId: string): Promise<void> {
 		const { count, error: countError } = await supabase
