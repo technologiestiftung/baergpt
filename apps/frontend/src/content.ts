@@ -768,6 +768,7 @@ export const Content = {
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
+	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Dateien werden verarbeitet",
 	"fileUploadButtonStatus.singleFileUploading": "Datei wird verarbeitet",
@@ -782,7 +783,16 @@ export const Content = {
 	"fileUpload.helpLink.link":
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
-	"fileUpload.maxFilesWarning.p1": "Max. 5 Dateien pro Upload.",
+	// file upload counter message
+	"fileUpload.infoMessage.maxUpload.p1": `Pro Upload-Vorgang sind max.`,
+	"fileUpload.infoMessage.maxUpload.p2": `Dateien möglich.`,
+	"fileUpload.infoMessage.counter.p1": `von`,
+	"fileUpload.infoMessage.counter.p2": `möglichen Dateien hochgeladen.`,
+	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von`,
+	"fileUpload.infoMessage.limitReached.p2": `Dateien erreicht.`,
+	"fileUpload.infoMessage.limitReached.p3": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
+	"fileUpload.maxFilesWarning.p1": `Max.`,
+	"fileUpload.maxFilesWarning.p2": `Dateien pro Upload.`,
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
