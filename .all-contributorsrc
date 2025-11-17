@@ -11,6 +11,19 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "annamehr",
+      "name": "Anna",
+      "avatar_url": "https://avatars.githubusercontent.com/u/31280003?v=4",
+      "profile": "https://github.com/annamehr",
+      "contributions": [
+        "ideas",
+        "projectManagement",
+        "talk",
+        "question",
+        "userTesting"
+        ]
+     },
+     {
       "login": "james-knippes",
       "name": "Jan Knittel",
       "avatar_url": "https://avatars.githubusercontent.com/u/30473830?v=4",
