@@ -11,6 +11,19 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "nlspnsgen",
+      "name": "nlspnsgen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12913491?v=4",
+      "profile": "https://github.com/nlspnsgen",
+      "contributions": [
+        "code",
+        "infra",
+        "review",
+        "test",
+        "ideas",
+        "security"
+     },
+     {
       "login": "malte-b",
       "name": "Malte Barth",
       "avatar_url": "https://avatars.githubusercontent.com/u/27922183?v=4",
