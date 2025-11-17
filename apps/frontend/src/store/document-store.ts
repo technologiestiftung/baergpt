@@ -81,12 +81,19 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		}
 	},
 	deleteDocument: async (documentId: number) => {
+		const { documents } = get();
+		const documentToDelete = documents.find((doc) => doc.id === documentId);
+
+		// Prevent deletion of default documents
+		if (documentToDelete?.source_type === "default_document") {
+			return null;
+		}
+
 		const error = await deleteDocument(documentId);
 		if (error) {
 			return error;
 		}
-		const { documents, selectedChatDocuments, selectedDocumentsForAction } =
-			get();
+		const { selectedChatDocuments, selectedDocumentsForAction } = get();
 
 		const updatedDocuments = documents.filter(({ id }) => id !== documentId);
 		const updatedSelectedChatDocuments = selectedChatDocuments.filter(

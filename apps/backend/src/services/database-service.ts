@@ -5,6 +5,7 @@ import {
 	type ExtractionResult,
 	type HybridSearchResult,
 	type KnowledgeBaseDocument,
+	type LLMIdentifier,
 	DocumentNotFoundError,
 } from "../types/common";
 import { ragSearchDefaults } from "../constants";
@@ -13,6 +14,9 @@ import {
 	WordDocumentExtractionService,
 } from "./document-extraction-service";
 import { captureError } from "../monitoring/capture-error";
+import { EmbeddingService } from "./embedding-service";
+import { GenerationService } from "./generation-service";
+import { config } from "../config";
 
 const documentExtraction = new DocumentExtractionService();
 const wordExtractionService = new WordDocumentExtractionService();
@@ -195,7 +199,8 @@ export class DatabaseService {
 		const documentWithId = { ...document, id: documentId };
 		const fileName = document.source_url.split("/").pop();
 		const bucket =
-			document.source_type === "public_document"
+			document.source_type === "public_document" ||
+			document.source_type === "default_document"
 				? "public_documents"
 				: "documents";
 		try {
@@ -270,6 +275,33 @@ export class DatabaseService {
 		await this.updateUserDocumentCount(
 			document.owned_by_user_id || document.uploaded_by_user_id,
 		);
+	}
+
+	/**
+	 * Processes a document: extracts, summarizes, embeds, and marks as finished.
+	 * This is a shared method used by both the API route and setup scripts.
+	 */
+	async processDocument(document: Document): Promise<void> {
+		const embeddingService = new EmbeddingService();
+		const generationService = new GenerationService();
+		const llmIdentifier = config.defaultModelIdentifier as LLMIdentifier;
+
+		const extractionResult = await this.logAndExtractDocument(document);
+		const extractedDocument = extractionResult.document;
+
+		const parsedPages = extractionResult.parsedPages;
+		await Promise.all([
+			generationService.summarize(
+				parsedPages,
+				llmIdentifier,
+				extractedDocument,
+			),
+			embeddingService.batchEmbed(parsedPages, extractedDocument, {
+				chunkingTechnique: "markdown",
+			}),
+		]);
+
+		await this.finishProcessing(extractedDocument);
 	}
 
 	// Updates the user's document count in the profiles table

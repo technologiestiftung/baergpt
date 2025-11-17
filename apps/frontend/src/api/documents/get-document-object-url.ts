@@ -10,7 +10,9 @@ export async function getDocumentObjectUrl({
 	sourceType: SourceType;
 }): Promise<string | undefined> {
 	const bucket =
-		sourceType === "public_document" ? "public_documents" : "documents";
+		sourceType === "public_document" || sourceType === "default_document"
+			? "public_documents"
+			: "documents";
 
 	const previewSourceUrl = getPreviewSourceUrl(sourceUrl);
 
