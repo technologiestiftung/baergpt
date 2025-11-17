@@ -11,6 +11,7 @@ export function LoginPage() {
 	const { error } = useAuthErrorStore();
 	const { login } = useAuthStore();
 	const formRef = useRef<HTMLFormElement | null>(null);
+	const isLocalEnvironment = process.env.NODE_ENV === "development";
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -76,13 +77,21 @@ export function LoginPage() {
 					</form>
 				</div>
 				<p className="mt-6 text-center md:text-left">
-					{Content["loginPage.registerPrompt"]}
+					{isLocalEnvironment
+						? Content["loginPage.registerPrompt"]
+						: Content["loginPage.waitingListPrompt"]}{" "}
 					<br className="block md:hidden" />
 					<a
-						href="/register/"
+						href={
+							isLocalEnvironment
+								? "/register/"
+								: "https://citylabberlin.typeform.com/to/kHXMKYOE#product_id=baergpt-liste"
+						}
 						className="font-bold underline hover:no-underline"
 					>
-						{Content["loginPage.registerLink"]}
+						{isLocalEnvironment
+							? Content["loginPage.registerLink"]
+							: Content["loginPage.waitingListLink"]}
 					</a>
 				</p>
 			</div>
