@@ -36,4 +36,3 @@ begin
     where id = acting_user_id;
 end;
 $$;
-
