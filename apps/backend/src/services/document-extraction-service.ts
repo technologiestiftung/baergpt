@@ -1,5 +1,4 @@
 import type { Document, ExtractionResult, ParsedPage } from "../types/common";
-import { ExtractError } from "../types/common";
 import { config } from "../config";
 import { Mistral } from "@mistralai/mistralai";
 import { createBufferView, getHash, resilientCall } from "../utils";
