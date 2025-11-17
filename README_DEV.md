@@ -6,9 +6,9 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-# <img src="https://raw.githubusercontent.com/technologiestiftung/baergpt/refs/heads/main/apps/frontend/public/logos/baergpt-logo.svg?token=GHSAT0AAAAAADPA7IA6FNQI4HW26GZXL7NW2I3AMBQ" width="170px" >
+# <img src="./apps/frontend/public/logos/baergpt-logo.svg" width="170px" >
 
-![Screenshot of _Gieß den Kiez_](public/screenshots/beargpt_ui.png)
+![Screenshot of _Gieß den Kiez_](public/screenshots/Mockup_BaerGPT.png)
 
 # BärGPT Dev Setup
 
