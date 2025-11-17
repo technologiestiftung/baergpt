@@ -6,7 +6,7 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-# <img src="./apps/frontend/public/logos/baergpt-logo.svg" width="170px" >
+# <img src="./apps/frontend/public/logos/baergpt-logo-white-bg.svg" width="170px" >
 
 # BärGPT Dev Documentation
 
@@ -34,58 +34,57 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 
 ### 🎨 Frontend
 
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Routing**: React Router
-- **Styling**: Tailwind CSS
-- **State Management**: Zustand
-- **Authentication**: Supabase Auth
-- **AI Integration**: Vercel AI SDK (@ai-sdk/react)
-- **Document Generation**: @mohtasham/md-to-docx, @react-pdf/renderer
-- **File Uploads** and **Drag & Drop**: react-dropzone, react-dnd
-- **Markdown**: react-markdown with remark-gfm
-- **Monitoring**: Sentry
-- **Testing**: Playwright (E2E), Vitest (Unit), @axe-core/playwright (Accessibility)
+- **Framework**: [React](https://github.com/facebook/react) 18 with [TypeScript](https://github.com/microsoft/TypeScript)
+- **Build Tool**: [Vite](https://github.com/vitejs/vite)
+- **Routing**: [React Router](https://github.com/remix-run/react-router)
+- **Styling**: [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **Authentication**: [Supabase Auth](https://github.com/supabase/supabase)
+- **AI Integration**: [Vercel AI SDK](https://github.com/vercel/ai) (@ai-sdk/react)
+- **Document Generation**: @mohtasham/md-to-docx, [@react-pdf/renderer](https://github.com/diegomura/react-pdf)
+- **File Uploads** and **Drag & Drop**: [react-dropzone](https://github.com/react-dropzone/react-dropzone), [react-dnd](https://github.com/react-dnd/react-dnd)
+- **Markdown**: [react-markdown](https://github.com/remarkjs/react-markdown) with [remark-gfm](https://github.com/remarkjs/remark-gfm)
+- **Monitoring**: [Sentry](https://github.com/getsentry/sentry)
+- **Testing**: [Playwright](https://github.com/microsoft/playwright) (E2E), [Vitest](https://github.com/vitest-dev/vitest) (Unit), [@axe-core/playwright](https://github.com/dequelabs/axe-core-npm) (Accessibility)
 
 ### ⚙️ Backend
 
-- **Framework**: Hono (lightweight Node.js web framework)
-- **Runtime**: Node.js with TypeScript
-- **Database**: PostgreSQL via Supabase
-- **LLM Provider**: Mistral AI (mistral-small-latest as default)
-- **AI SDK**: Vercel AI SDK with multiple providers (@ai-sdk/azure, @ai-sdk/mistral, @ai-sdk/openai)
-- **Embeddings**: Jina AI (jina-embeddings-v4)
+- **Framework**: [Hono](https://github.com/honojs/hono) (lightweight Node.js web framework)
+- **Runtime**: [Node.js](https://github.com/nodejs/node) with [TypeScript](https://github.com/microsoft/TypeScript)
+- **Database**: [PostgreSQL](https://github.com/postgres/postgres) via [Supabase](https://github.com/supabase/supabase)
+- **LLM Provider**: [Mistral AI](https://github.com/mistralai)
+- **AI SDK**: [Vercel AI SDK](https://github.com/vercel/ai) with multiple providers (@ai-sdk/azure, @ai-sdk/mistral, @ai-sdk/openai)
+- **Embeddings**: [Jina AI](https://github.com/jina-ai/jina)
 - **Document Processing**:
-  - LlamaParse (PDF parsing)
-  - Gotenberg (PDF conversion)
-  - mammoth (DOCX parsing)
-  - word-extractor (DOC parsing)
-  - xlsx (Excel parsing)
-  - @opendocsg/pdf2md (PDF to Markdown)
+  - [Gotenberg](https://github.com/gotenberg/gotenberg) (PDF conversion)
+  - [mammoth](https://github.com/mwilliamson/mammoth.js) (DOCX parsing)
+  - [word-extractor](https://github.com/morungos/node-word-extractor) (DOC parsing)
+  - [xlsx](https://github.com/SheetJS/sheetjs) (Excel parsing)
+  - [@opendocsg/pdf2md](https://github.com/opendocsg/pdf2md) (PDF to Markdown)
 - **Observability**:
-  - Langfuse (LLM tracing and monitoring)
-  - Sentry (error tracking)
-  - OpenTelemetry (instrumentation)
-- **Testing**: Vitest, Supertest
+  - [Langfuse](https://github.com/langfuse/langfuse) (LLM tracing and monitoring)
+  - [Sentry](https://github.com/getsentry/sentry) (error tracking)
+  - [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-js) (instrumentation)
+- **Testing**: [Vitest](https://github.com/vitest-dev/vitest), [Supertest](https://github.com/ladjs/supertest)
 
 ### 👥 Admin Panel
 
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **UI Components**: shadcn/ui (Radix UI primitives)
-- **Data Tables**: TanStack Table (@tanstack/react-table)
-- **Styling**: Tailwind CSS with tailwindcss-animate
-- **State Management**: Zustand
-- **Authentication**: Supabase Auth
-- **Icons**: Lucide React
-- **Testing**: Playwright (E2E), @axe-core/playwright (Accessibility)
+- **Framework**: [React](https://github.com/facebook/react) 18 with [TypeScript](https://github.com/microsoft/TypeScript)
+- **Build Tool**: [Vite](https://github.com/vitejs/vite)
+- **UI Components**: [shadcn/ui](https://github.com/shadcn-ui/ui) ([Radix UI](https://github.com/radix-ui/primitives) primitives)
+- **Data Tables**: [TanStack Table](https://github.com/TanStack/table) (@tanstack/react-table)
+- **Styling**: [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) with [tailwindcss-animate](https://github.com/jamiebuilds/tailwindcss-animate)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **Authentication**: [Supabase Auth](https://github.com/supabase/supabase)
+- **Icons**: [Lucide React](https://github.com/lucide-icons/lucide)
+- **Testing**: [Playwright](https://github.com/microsoft/playwright) (E2E), [@axe-core/playwright](https://github.com/dequelabs/axe-core-npm) (Accessibility)
 
 ### 🚧 Maintenance Mode
 
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **Testing**: Playwright (E2E)
+- **Framework**: [React](https://github.com/facebook/react) 18 with [TypeScript](https://github.com/microsoft/TypeScript)
+- **Build Tool**: [Vite](https://github.com/vitejs/vite)
+- **Styling**: [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)
+- **Testing**: [Playwright](https://github.com/microsoft/playwright) (E2E)
 
 ### 📦 Shared Libraries
 
@@ -96,12 +95,12 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 
 ### 🏗️ Infrastructure
 
-- **Monorepo Tool**: Turborepo
-- **Package Manager**: npm 11.4.2
+- **Monorepo Tool**: [Turborepo](https://github.com/vercel/turbo)
+- **Package Manager**: [npm](https://github.com/npm/cli) 11.4.2
 - **Node Version**: 22.14.0
-- **Database & Auth**: Supabase (PostgreSQL + Auth + Storage + Realtime)
-- **Deployment**: Vercel (frontend apps), self-hosted options available (backend)
-- **Containerization**: Docker (backend)
+- **Database & Auth**: [Supabase](https://github.com/supabase/supabase) (PostgreSQL + Auth + Storage + Realtime)
+- **Deployment**: [Vercel](https://github.com/vercel/vercel) (frontend apps), self-hosted options available (backend)
+- **Containerization**: [Docker](https://github.com/docker) (backend)
 
 ## 📋 Prerequisites
 
@@ -121,13 +120,11 @@ You'll need accounts and API keys for:
 
 - **Mistral AI**: API key from https://console.mistral.ai/
 - **Jina AI**: API key from https://jina.ai/ (for embeddings)
-- **LlamaParse**: Token from https://cloud.llamaindex.ai/ (for document parsing)
 - **Gotenberg**: URL and credentials for Gotenberg service (PDF conversion)
 - **Sentry**: DSN from https://sentry.io/ (for error monitoring)
 
 #### Optional for Backend
 
-- **Ollama**: Self-hosted endpoint for running local models
 - **Langfuse**: Keys from https://langfuse.com/ (for LLM observability)
 
 #### Optional for Frontend/Admin Panel
@@ -287,8 +284,8 @@ npm run test:e2e
 # From root
 turbo lint:check      # Check linting
 turbo lint:write      # Fix linting issues
-turbo prettier:check  # Check formatting
-turbo prettier:write  # Fix formatting issues
+npm run prettier:write # Check formatting
+npm run prettier:check # Fix formatting issues
 turbo check-types     # Type check all packages
 ```
 

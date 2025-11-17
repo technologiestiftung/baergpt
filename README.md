@@ -6,7 +6,7 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-# <img src="./apps/frontend/public/logos/baergpt-logo.svg" width="170px" >
+# <img src="./apps/frontend/public/logos/baergpt-logo-white-bg.svg" width="170px" >
 
 ![Screenshot of _Gieß den Kiez_](public/screenshots/Mockup_BaerGPT.png)
 
