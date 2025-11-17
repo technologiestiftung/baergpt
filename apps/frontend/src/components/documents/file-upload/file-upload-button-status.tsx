@@ -1,6 +1,6 @@
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
 import { GreenCheckIcon } from "../../primitives/icons/green-check-icon.tsx";
-import { YellowExclamationMarkIcon } from "../../primitives/icons/yellow-exclamation-mark-icon.tsx";
+import { RedErrorXIcon } from "../../primitives/icons/red-error-x-icon.tsx";
 import {
 	useFileUploadsStore,
 	UPLOAD_STATUS_MAP,
@@ -47,7 +47,7 @@ export function FileUploadButtonStatus() {
 
 		return (
 			<span className="flex gap-x-2 items-center">
-				<YellowExclamationMarkIcon />
+				<RedErrorXIcon />
 				{specificErrorMessage}
 			</span>
 		);
@@ -56,7 +56,7 @@ export function FileUploadButtonStatus() {
 	// Multiple files failed - show generic message with count
 	return (
 		<span className="flex gap-x-2 items-center">
-			<YellowExclamationMarkIcon />
+			<RedErrorXIcon />
 			{failedFiles.length} {Content["fileUploadButtonStatus.failed"]}
 		</span>
 	);

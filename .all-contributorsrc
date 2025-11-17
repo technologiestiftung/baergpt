@@ -22,6 +22,21 @@
         "test",
         "ideas",
         "security"
+     },
+     {
+      "login": "malte-b",
+      "name": "Malte Barth",
+      "avatar_url": "https://avatars.githubusercontent.com/u/27922183?v=4",
+      "profile": "https://github.com/malte-b",
+      "contributions": [
+        "blog",
+        "code",
+        "data",
+        "ideas",
+        "infra",
+        "research",
+        "review",
+        "test"
       ]
     }
   ],

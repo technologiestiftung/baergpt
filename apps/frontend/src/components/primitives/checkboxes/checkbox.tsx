@@ -78,6 +78,9 @@ function getErrorMessage(ref: React.RefObject<HTMLInputElement>): string {
 		if (current.id === "has-accepted-privacy-checkbox") {
 			return Content["form.validation.privacy.required.error"];
 		}
+		if (current.id === "has-accepted-personal-data-checkbox") {
+			return Content["form.validation.personalData.required.error"];
+		}
 		return Content["form.validation.general.valueMissing"];
 	}
 

@@ -4,8 +4,8 @@ export function GreenCheckIcon() {
 	return (
 		<img
 			src="/icons/green-check-icon.svg"
-			width={20}
-			height={20}
+			width={24}
+			height={24}
 			alt={Content["greenCheckIcon.imgAlt"]}
 		/>
 	);
