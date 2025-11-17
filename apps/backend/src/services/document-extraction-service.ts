@@ -470,7 +470,7 @@ class MistralOCRService {
 						documentUrl: signedUrl.url,
 					},
 				}),
-			{ retries: 3, queueType: "llm" },
+			{ queueType: "llm" },
 		);
 
 		if (!ocrResponse.pages) {
