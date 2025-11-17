@@ -9,10 +9,9 @@ export async function downloadDocument({
 	sourceUrl: string;
 	sourceType: SourceType;
 }): Promise<Blob | undefined> {
-	const bucket =
-		sourceType === "public_document" || sourceType === "default_document"
-			? "public_documents"
-			: "documents";
+	const bucket = ["public_document", "default_document"].includes(sourceType)
+		? "public_documents"
+		: "documents";
 
 	const { data: downloadBlob, error: downloadError } = await supabase.storage
 		.from(bucket)
