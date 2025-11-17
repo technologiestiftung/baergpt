@@ -1,13 +1,26 @@
 {
-	"projectName": "template-default",
-	"projectOwner": "technologiestiftung",
-	"repoType": "github",
-	"repoHost": "https://github.com",
-	"files": ["README.md"],
-	"imageSize": 64,
-	"commit": true,
-	"commitConvention": "angular",
-	"contributors": [],
-	"contributorsPerLine": 7,
-	"skipCi": true
+  "projectName": "baergpt",
+  "projectOwner": "technologiestiftung",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 64,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "james-knippes",
+      "name": "Jan Knittel",
+      "avatar_url": "https://avatars.githubusercontent.com/u/30473830?v=4",
+      "profile": "https://github.com/james-knippes",
+      "contributions": [
+        "security"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "commitType": "docs"
 }
