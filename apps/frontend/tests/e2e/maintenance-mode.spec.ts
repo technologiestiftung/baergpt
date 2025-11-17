@@ -60,13 +60,10 @@ test.describe("Maintenance Mode", () => {
 			// Step 3: Refresh the page to trigger maintenance mode check
 			await page.reload();
 
-			// Wait a moment for the page to process maintenance mode
-			await page.waitForTimeout(1000);
-
 			// Step 4: Verify user is redirected to landing page (logged out)
 			await expect(
 				page.getByRole("heading", {
-					name: /B.*rGPT, der KI-Assistent f.*r die Berliner Verwaltung/,
+					name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 				}),
 			).toBeVisible();
 		},

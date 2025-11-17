@@ -10,6 +10,7 @@ import {
 import {
 	defaultBucketName,
 	defaultDocumentName,
+	defaultDocumentPath,
 	defaultDocuments,
 	defaultSourceType,
 	longFileName,
@@ -617,6 +618,43 @@ test.describe("Documents", () => {
 			// Verify the download was successful
 			expect(download).toBeDefined();
 			expect(await download.path()).toBeTruthy();
+		},
+	);
+
+	testDesktopOnly(
+		"Shows limit reached message and disables upload button when max files uploaded",
+		async ({ page, account }) => {
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
+
+			// Mock multiple document uploads to reach the limit
+			// We already have 1 document from the fixture, so upload (maxFiles - 1) more
+			for (let i = 1; i < maxFiles; i++) {
+				await mockDocumentUpload({
+					userId: account.id,
+					accessGroupId: null,
+					fileName: `test-document-${i}.pdf`,
+					filePath: defaultDocumentPath,
+					sourceType: defaultSourceType,
+					bucketName: defaultBucketName,
+				});
+			}
+
+			await page.goto("/");
+			await page.waitForLoadState("networkidle");
+
+			// Verify the limit reached info messages are displayed
+			await expect(
+				page.getByText(`Sie haben das Limit von ${maxFiles} Dateien erreicht.`),
+			).toBeVisible();
+			await expect(
+				page.getByText("Löschen Sie eine Datei, um eine neue hochzuladen."),
+			).toBeVisible();
+
+			// Verify the upload button is disabled
+			const uploadButton = page.getByRole("button", {
+				name: "Datei hochladen",
+			});
+			await expect(uploadButton).toBeDisabled();
 		},
 	);
 });

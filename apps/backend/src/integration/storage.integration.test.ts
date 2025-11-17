@@ -21,11 +21,11 @@ const supabaseAnonClient = createClient<Database>(
 
 describe("Integration tests for Storage", async () => {
 	const givenAdminId = "d279dcb8-ec47-410b-acfc-6d8fdf8a4d85";
-	const givenAdminEmail = "storage-test-suite-admin@berlin.de";
+	const givenAdminEmail = "storage-test-suite-admin@local.berlin.de";
 	const givenAdminPassword = "SecurePassword123!";
 
 	const givenUserId = "90ed8ecb-6d80-4369-bf80-04f973333a47";
-	const givenUserEmail = "storage-test-suite-user@berlin.de";
+	const givenUserEmail = "storage-test-suite-user@local.berlin.de";
 	const givenUserPassword = "SecurePassword123!";
 
 	const {

@@ -32,7 +32,7 @@ type UseFileUploadsStore = {
 	uploadFile: (fileUpload: FileUpload) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
-	isLessThanMaxUploadsAmountActive: () => boolean;
+	hasAvailableUploadSlots: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
 	clearFileUploads: () => void;
 };
@@ -107,8 +107,15 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 	uploadFiles: async (files: File[]) => {
 		const { fileUploads, uploadFile } = get();
+		const { documents } = useDocumentStore.getState();
 
-		const maxFileUploads = Number(import.meta.env.VITE_MAX_FILE_UPLOADS);
+		const availableUploadSlots =
+			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) - documents.length;
+		const maxFileUploads = Math.min(
+			availableUploadSlots,
+			Number(import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS),
+		);
+
 		const filesToUpload = files.slice(0, maxFileUploads);
 		const filesToCancel = files.slice(maxFileUploads);
 
@@ -144,9 +151,11 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		);
 	},
 
-	isLessThanMaxUploadsAmountActive: () => {
+	hasAvailableUploadSlots: () => {
 		const { fileUploads } = get();
-		const maxFileUploads = Number(import.meta.env.VITE_MAX_FILE_UPLOADS);
+		const maxFileUploads = Number(
+			import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS,
+		);
 		const activeUploads = fileUploads.filter(
 			(fileUpload) =>
 				fileUpload.status === "uploading" ||

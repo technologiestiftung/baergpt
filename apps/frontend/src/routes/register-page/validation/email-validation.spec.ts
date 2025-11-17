@@ -1,144 +1,231 @@
-import { describe, expect, it } from "vitest";
-import { emailValidationRegex as testUnit } from "./email-validation";
+import { describe, expect, it, beforeEach } from "vitest";
+import {
+	createEmailValidationRegex,
+	getEmailValidationRegex,
+	validateEmail,
+	clearRegexCache,
+	type DomainConfig,
+} from "./email-validation";
 
-describe("registration email validation", async () => {
-	describe("berlin.de domain", async () => {
-		describe("valid emails", async () => {
-			it("should accept @berlin.de emails", async () => {
-				const givenEmail = "example@berlin.de";
+describe("dynamic email validation regex creation", () => {
+	beforeEach(() => {
+		clearRegexCache(); // Clear cache between tests
+	});
 
-				const actualValue = testUnit.test(givenEmail);
+	describe("createEmailValidationRegex", () => {
+		describe("with wildcard domain strings from database", () => {
+			describe("*.berlin.de domain", () => {
+				it("should reject base @berlin.de emails", () => {
+					const regex = createEmailValidationRegex(["*.berlin.de"]);
 
-				expect(actualValue).toBe(true);
+					expect(regex?.test("user@berlin.de")).toBe(false);
+				});
+
+				it("should accept subdomain @subdomain.berlin.de emails", () => {
+					const regex = createEmailValidationRegex(["*.berlin.de"]);
+
+					expect(regex?.test("user@verwaltung.berlin.de")).toBe(true);
+					expect(regex?.test("user@it.berlin.de")).toBe(true);
+				});
+
+				it("should reject fake berlin.de domains", () => {
+					const regex = createEmailValidationRegex(["*.berlin.de"]);
+
+					expect(regex?.test("user@fake-berlin.de")).toBe(false);
+					expect(regex?.test("user@berlin.de-like.com")).toBe(false);
+				});
 			});
 
-			it("should accept @subdomain.berlin.de emails", async () => {
-				const givenEmail = "example@verwaltung.berlin.de";
+			describe("ts.berlin domain (no wildcard)", () => {
+				it("should accept @ts.berlin emails", () => {
+					const regex = createEmailValidationRegex(["ts.berlin"]);
 
-				const actualValue = testUnit.test(givenEmail);
+					expect(regex?.test("user@ts.berlin")).toBe(true);
+				});
 
-				expect(actualValue).toBe(true);
+				it("should reject subdomain @sub.ts.berlin emails", () => {
+					const regex = createEmailValidationRegex(["ts.berlin"]);
+
+					expect(regex?.test("user@sub.ts.berlin")).toBe(false);
+				});
+
+				it("should reject fake ts.berlin domains", () => {
+					const regex = createEmailValidationRegex(["ts.berlin"]);
+
+					expect(regex?.test("user@fake-ts.berlin")).toBe(false);
+					expect(regex?.test("user@ts.berlin-like.com")).toBe(false);
+				});
+			});
+
+			describe("berlin.de domain (no wildcard)", () => {
+				it("should accept base @berlin.de emails", () => {
+					const regex = createEmailValidationRegex(["berlin.de"]);
+
+					expect(regex?.test("user@berlin.de")).toBe(true);
+				});
+
+				it("should reject subdomain @subdomain.berlin.de emails", () => {
+					const regex = createEmailValidationRegex(["berlin.de"]);
+
+					expect(regex?.test("user@verwaltung.berlin.de")).toBe(false);
+				});
 			});
 		});
 
-		describe("invalid emails", () => {
-			it("should reject @fake-berlin.de emails", async () => {
-				const givenEmail = "example@fake-berlin.de";
+		describe("with explicit domain configurations", () => {
+			it("should respect explicit subdomain settings", () => {
+				const configs: DomainConfig[] = [
+					{ domain: "example.com", allowSubdomains: true },
+					{ domain: "test.org", allowSubdomains: false },
+				];
+				const regex = createEmailValidationRegex([], configs);
 
-				const actualValue = testUnit.test(givenEmail);
+				expect(regex?.test("user@example.com")).toBe(false); // base domain rejected when allowSubdomains=true
+				expect(regex?.test("user@sub.example.com")).toBe(true); // subdomain required
+				expect(regex?.test("user@test.org")).toBe(true); // exact match accepted
+				expect(regex?.test("user@sub.test.org")).toBe(false); // subdomain rejected for exact match
+			});
+		});
 
-				expect(actualValue).toBe(false);
+		describe("performance and caching", () => {
+			it("should return the same regex instance for identical configurations", () => {
+				const regex1 = createEmailValidationRegex(["*.berlin.de"]);
+				const regex2 = createEmailValidationRegex(["*.berlin.de"]);
+
+				expect(regex1).toBe(regex2); // Same instance due to caching
+			});
+		});
+
+		describe("with multiple domains", () => {
+			it("should create regex that accepts emails from all allowed domains", () => {
+				const regex = createEmailValidationRegex([
+					"*.berlin.de",
+					"ts.berlin",
+					"itdz-berlin.de",
+				]);
+
+				expect(regex?.test("user@berlin.de")).toBe(false); // base domain rejected for wildcard
+				expect(regex?.test("user@verwaltung.berlin.de")).toBe(true);
+				expect(regex?.test("user@ts.berlin")).toBe(true);
+				expect(regex?.test("user@itdz-berlin.de")).toBe(true);
 			});
 
-			it("should reject @fake.fake-berlin.de emails", async () => {
-				const givenEmail = "example@fake.fake-berlin.de";
+			it("should reject emails from non-allowed domains", () => {
+				const regex = createEmailValidationRegex([
+					"*.berlin.de",
+					"ts.berlin",
+					"itdz-berlin.de",
+				]);
 
-				const actualValue = testUnit.test(givenEmail);
+				expect(regex?.test("user@gmail.com")).toBe(false);
+				expect(regex?.test("user@outlook.com")).toBe(false);
+				expect(regex?.test("user@example.com")).toBe(false);
+			});
+		});
 
-				expect(actualValue).toBe(false);
+		describe("with empty or invalid input", () => {
+			it("should return null when no domains provided", () => {
+				const regex = createEmailValidationRegex([]);
+
+				expect(regex).toBe(null);
 			});
 
-			it("should reject @berlin.de-like.com", async () => {
-				const givenEmail = "example@berlin.de-like.com";
+			it("should handle special characters in domain names", () => {
+				const regex = createEmailValidationRegex(["test.example-domain.org"]);
 
-				const actualValue = testUnit.test(givenEmail);
+				expect(regex?.test("user@test.example-domain.org")).toBe(true);
+			});
+		});
 
-				expect(actualValue).toBe(false);
+		describe("improved email validation", () => {
+			it("should accept more valid email characters", () => {
+				const regex = createEmailValidationRegex(["*.berlin.de"]);
+
+				expect(regex?.test("user+tag@verwaltung.berlin.de")).toBe(true);
+				expect(regex?.test("user.name@it.berlin.de")).toBe(true);
+				expect(regex?.test("user_name@sub.berlin.de")).toBe(true);
 			});
 
-			it("should reject @fake.berlin.de-like.com", async () => {
-				const givenEmail = "example@fake.berlin.de-like.com";
+			it("should be case insensitive", () => {
+				const regex = createEmailValidationRegex(["*.berlin.de"]);
 
-				const actualValue = testUnit.test(givenEmail);
-
-				expect(actualValue).toBe(false);
+				expect(regex?.test("User@Verwaltung.Berlin.de")).toBe(true);
+				expect(regex?.test("USER@IT.BERLIN.DE")).toBe(true);
+				expect(regex?.test("user@sub.berlin.DE")).toBe(true);
 			});
 		});
 	});
 
-	describe("ts.berlin domain", async () => {
-		describe("valid emails", async () => {
-			it("should accept @ts.berlin emails", async () => {
-				const givenEmail = "example@ts.berlin";
+	describe("validateEmail", () => {
+		it("should return validation result with context for wildcard domains", () => {
+			const result = validateEmail("user@verwaltung.berlin.de", [
+				"*.berlin.de",
+			]);
 
-				const actualValue = testUnit.test(givenEmail);
-
-				expect(actualValue).toBe(true);
-			});
+			expect(result.isValid).toBe(true);
+			expect(result.error).toBeUndefined();
+			expect(result.allowedDomains).toEqual(["*.berlin.de"]);
 		});
 
-		describe("invalid emails", async () => {
-			it("should reject @fake-ts.berlin emails", async () => {
-				const givenEmail = "example@fake-ts.berlin";
+		it("should reject base domain when wildcard is used", () => {
+			const result = validateEmail("user@berlin.de", ["*.berlin.de"]);
 
-				const actualValue = testUnit.test(givenEmail);
+			expect(result.isValid).toBe(false);
+			expect(result.error).toBe(
+				"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
+			);
+			expect(result.allowedDomains).toEqual(["*.berlin.de"]);
+		});
 
-				expect(actualValue).toBe(false);
-			});
+		it("should return error message for invalid email", () => {
+			const result = validateEmail("user@gmail.com", ["*.berlin.de"]);
 
-			it("should reject @ts.berlin-like.com", async () => {
-				const givenEmail = "example@ts.berlin-like.com";
+			expect(result.isValid).toBe(false);
+			expect(result.error).toBe(
+				"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
+			);
+			expect(result.allowedDomains).toEqual(["*.berlin.de"]);
+		});
 
-				const actualValue = testUnit.test(givenEmail);
+		it("should handle no domains provided", () => {
+			const result = validateEmail("user@berlin.de");
 
-				expect(actualValue).toBe(false);
-			});
+			expect(result.isValid).toBe(false);
+			expect(result.error).toBe("No allowed email domains configured");
+			expect(result.allowedDomains).toEqual([]);
+		});
+
+		it("should handle empty domains array", () => {
+			const result = validateEmail("user@berlin.de", []);
+
+			expect(result.isValid).toBe(false);
+			expect(result.error).toBe("No allowed email domains configured");
+			expect(result.allowedDomains).toEqual([]);
+		});
+
+		it("should validate against wildcard domains from database", () => {
+			const result = validateEmail("user@verwaltung.berlin.de", [
+				"*.berlin.de",
+				"ts.berlin",
+			]);
+
+			expect(result.isValid).toBe(true);
+			expect(result.allowedDomains).toEqual(["*.berlin.de", "ts.berlin"]);
 		});
 	});
 
-	describe("itdz-berlin.de domain", async () => {
-		describe("valid emails", async () => {
-			it("should accept @itdz-berlin.de emails", async () => {
-				const givenEmail = "example@itdz-berlin.de";
+	describe("getEmailValidationRegex", () => {
+		it("should work with provided wildcard domains", () => {
+			const regex = getEmailValidationRegex(["*.berlin.de"]);
 
-				const actualValue = testUnit.test(givenEmail);
-
-				expect(actualValue).toBe(true);
-			});
+			expect(regex?.test("user@verwaltung.berlin.de")).toBe(true);
+			expect(regex?.test("user@berlin.de")).toBe(false);
 		});
 
-		describe("invalid emails", async () => {
-			it("should reject @fake-itdz-berlin.de emails", async () => {
-				const givenEmail = "example@fake-itdz-berlin.de";
+		it("should return null when no domains provided", () => {
+			const regex = getEmailValidationRegex(undefined);
 
-				const actualValue = testUnit.test(givenEmail);
-
-				expect(actualValue).toBe(false);
-			});
-
-			it("should reject @itdz-berlin.de-like.com", async () => {
-				const givenEmail = "example@itdz-berlin.de-like.com";
-
-				const actualValue = testUnit.test(givenEmail);
-
-				expect(actualValue).toBe(false);
-			});
+			expect(regex).toBe(null);
 		});
-	});
-});
-
-describe("Generally invalid emails", () => {
-	it("should reject @gmail.com emails", async () => {
-		const givenEmail = "example@gmail.com";
-
-		const actualValue = testUnit.test(givenEmail);
-
-		expect(actualValue).toBe(false);
-	});
-
-	it("should reject @outlook.com emails", async () => {
-		const givenEmail = "example@outlook.com";
-
-		const actualValue = testUnit.test(givenEmail);
-
-		expect(actualValue).toBe(false);
-	});
-
-	it("should reject malformed emails", async () => {
-		const givenEmail = "example@ts,berlin";
-
-		const actualValue = testUnit.test(givenEmail);
-
-		expect(actualValue).toBe(false);
 	});
 });
