@@ -18,7 +18,7 @@ In the spring of 2024, the Berlin Senate Chancellery convened an "AI Taskforce" 
 
 ### Large Language Models (LLMs)
 
-BärGPT offers user the latest version in Mistral's "Small" model series. They are served by Mistral's own API which is served from a [data center in France](https://mistral.ai/products/mistral-compute) which falls under GDPR regulations. Input data is neither stored nor used for training purposes by Mistral. 
+BärGPT offers user the latest version in Mistral's "Small" model series. They are served by Mistral's own API which is served from a [data center in France](https://mistral.ai/products/mistral-compute) which falls under GDPR regulations. Input data is neither stored nor used for training purposes by Mistral.
 
 It is important to note that the used AI model is not operated within the Berlin state network. Therefore, personal or otherwise sensitive data, as well as data intended exclusively for use within the Berlin state network, must not be entered.
 
