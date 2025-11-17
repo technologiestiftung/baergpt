@@ -9,7 +9,11 @@ interface AppLayoutProps {
 }
 
 export const LandingPageLayout: React.FC<AppLayoutProps> = ({ children }) => {
-	if (location.pathname !== "/privacy-policy/") {
+	const shouldRedirect =
+		location.pathname !== "/privacy-policy/" &&
+		location.pathname !== "/terms-of-use/";
+
+	if (shouldRedirect) {
 		useSessionRedirect();
 	}
 

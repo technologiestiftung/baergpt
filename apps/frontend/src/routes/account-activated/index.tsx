@@ -25,6 +25,7 @@ export function AccountActivated() {
 
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
+	const [hasAcceptedPersonalData, setHasAcceptedPersonalData] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
 
 	const { first_name, last_name } = session?.user?.user_metadata || {};
@@ -90,8 +91,8 @@ export function AccountActivated() {
 
 	return (
 		<AuthLayout>
-			<div className="flex flex-col min-h-[90svh] w-full justify-center items-center md:bg-hellblau-30 py-12 md:py-[100px] px-5">
-				<div className="flex flex-col border border-black py-8 px-5 md:p-10 rounded-3px bg-white md:min-w-[580px]">
+			<div className="flex flex-col min-h-[90svh] w-full justify-center items-center bg-hellblau-30 py-12 md:py-[100px] px-5">
+				<div className="flex flex-col border border-black py-8 px-5 md:p-10 rounded-3px bg-white md:min-w-[580px] w-full">
 					<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
 						{Content["accountActivated.h1"]}
 					</h1>
@@ -188,17 +189,41 @@ export function AccountActivated() {
 								onChange={setHasAcceptedPrivacy}
 								required={true}
 							>
-								<span className="flex gap-x-1 text-sm md:text-base">
+								<span className="flex flex-row flex-wrap gap-x-1 text-sm md:text-base">
 									<a
 										href={Content["footer.privacy.link"]}
 										className="underline hover:no-underline rounded-3px focus-visible:outline-default cursor-pointer"
 										target="_blank"
 									>
-										{Content["accountActivated.privacyLink"]}
+										{Content["registerPage.privacyLink.label"]}
+									</a>
+									<span>{Content["registerPage.privacyText.p1"]}</span>
+									<a
+										href={Content["footer.termsOfUse.link"]}
+										className="underline hover:no-underline rounded-3px focus-visible:outline-default cursor-pointer"
+										target="_blank"
+									>
+										{Content["registerPage.termsOfUse.label"]}
 									</a>
 									<span data-testid={`label-has-accepted-privacy-checkbox`}>
-										{Content["accountActivated.privacyText"]}
+										{Content["registerPage.privacyText.p2"]}
 									</span>
+								</span>
+							</Checkbox>
+						</div>
+
+						<div className="mt-3">
+							<Checkbox
+								id="has-accepted-personal-data"
+								checked={hasAcceptedPersonalData}
+								onChange={setHasAcceptedPersonalData}
+								required={true}
+							>
+								<span
+									className="text-sm md:text-base"
+									data-testid={`label-has-accepted-personal-data-checkbox`}
+								>
+									{Content["registerPage.personalData.label"]}
 								</span>
 							</Checkbox>
 						</div>

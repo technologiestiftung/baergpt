@@ -45,7 +45,7 @@ export function DropZoneWrapperDocuments({
 			/>
 
 			<div
-				className={`absolute h-full text-lg w-full top-0 left-0 right-0 z-10 rounded-3px bg-hellblau-100/90 backdrop-blur-sm text-da flex flex-col items-center justify-center px-5 py-2 pointer-events-none 
+				className={`absolute h-full text-lg w-full top-0 left-0 right-0 z-20 rounded-3px bg-hellblau-100/90 backdrop-blur-sm text-da flex flex-col items-center justify-center px-5 py-2 pointer-events-none 
 					transition-opacity duration-200 ${isDragActive ? "opacity-100" : "opacity-0"}`}
 			>
 				<img
