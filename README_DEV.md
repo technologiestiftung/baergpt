@@ -10,7 +10,7 @@
 
 # BärGPT Dev Documentation
 
-This is the monorepo for the BärGPT project.
+This is the monorepo for the BärGPT.
 You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [admin-panel](./apps/admin-panel) and [maintenance-mode](./apps/maintenance-mode/) code.
 
 ## Table of Contents
@@ -24,7 +24,6 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 - [🔍 Linting & Formatting](#-linting--formatting)
 - [🏗️ Building for Production](#️-building-for-production)
 - [🗄️ Database Management](#️-database-management)
-- [🐳 Docker Deployment](#-docker-deployment)
 - [🏠 Self-Hosting Supabase](#-self-hosting-supabase)
 - [🚨 Troubleshooting](#-troubleshooting)
 - [📁 Project Structure](#-project-structure)
@@ -339,25 +338,6 @@ supabase migration new your_migration_name
 
 # Apply all migrations
 supabase db reset
-```
-
-## 🐳 Docker Deployment
-
-**Backend Docker commands** (from `apps/backend`):
-
-```bash
-cd apps/backend
-
-# Build image
-docker build -t baergpt-backend .
-
-# Run container (first time)
-docker run -d --network host --name baergpt-backend --env-file .env baergpt-backend
-
-# Manage container
-docker start baergpt-backend    # Start existing container
-docker stop baergpt-backend     # Stop container
-docker logs -f baergpt-backend  # View logs
 ```
 
 ## 🏠 Self-Hosting Supabase
