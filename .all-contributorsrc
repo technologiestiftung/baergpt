@@ -11,6 +11,19 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "zainab-tariq",
+      "name": "Zainab Tariq",
+      "avatar_url": "https://avatars.githubusercontent.com/u/15946816?v=4",
+      "profile": "https://github.com/zainab-tariq",
+      "contributions": [
+        "code",
+        "ideas",
+        "review",
+        "a11y",
+        "test"
+      ]
+     },
+     {
       "login": "aeschi",
       "name": "aeschi",
       "avatar_url": "https://avatars.githubusercontent.com/u/56318362?v=4",
@@ -22,6 +35,7 @@
         "a11y",
         "doc",
         "test"
+      ]
      },
      {
       "login": "raphael-arce",
@@ -37,6 +51,7 @@
         "a11y",
         "security", 
         "test"
+       ]
      },
      {
       "login": "nlspnsgen",
@@ -50,6 +65,7 @@
         "test",
         "ideas",
         "security"
+       ]
      },
      {
       "login": "malte-b",
