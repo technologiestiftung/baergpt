@@ -22,9 +22,12 @@ BärGPT is an open source project by the [Technologiestiftung Berlin](https://ww
 
 ## Repositories
 
-This project is composed of one monorepo:
+This project is composed of one monorepo [BärGPT](https://github.com/technologiestiftung/baergpt) with four apps:
 
-- [BärGPT](https://github.com/technologiestiftung/baergpt)
+- frontend
+- backend
+- admin-panel
+- maintenance-mode
 
 ## Documentation
 

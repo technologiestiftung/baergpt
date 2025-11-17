@@ -8,12 +8,10 @@
 
 # <img src="./apps/frontend/public/logos/baergpt-logo.svg" width="170px" >
 
-![Screenshot of _Gieß den Kiez_](public/screenshots/Mockup_BaerGPT.png)
-
-# BärGPT Dev Setup
+# BärGPT Dev Documentation
 
 This is the monorepo for the BärGPT project.
-You'll find here the [frontend](./apps/frontend), [backend](./apps/backend) and [admin-panel](./apps/admin-panel) code.
+You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [admin-panel](./apps/admin-panel) and [maintenance-mode](./apps/maintenance-mode/) code.
 
 ## Prerequisites
 
@@ -44,11 +42,15 @@ cd apps/frontend && npm run dev
 ```
 
 ```bash
-cd apps/backed && npm run dev
+cd apps/backend && npm run dev
 ```
 
 ```bash
 cd apps/admin-panel && npm run dev
+```
+
+```bash
+cd apps/maintenance-mode && npm run dev
 ```
 
 ## Tests
@@ -73,15 +75,13 @@ cd apps/backend && npm run test
 cd apps/admin-panel && npm run test:e2e
 ```
 
+```bash
+cd apps/maintenance-mode && npm run test:e2e
+```
+
 ## Contributing
 
 Before you create a pull request, write an issue so we can discuss your changes.
-
-## Content Licensing
-
-Texts and content available as [CC BY](https://creativecommons.org/licenses/by/3.0/de/).
-
-Illustrations by {MARIA_MUSTERFRAU}, all rights reserved.
 
 ## Credits
 
