@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { DatabaseService } from "../services/database-service";
-import type { LLMIdentifier } from "../types/common";
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
 import { WordDocumentExtractionService } from "../services/document-extraction-service";
@@ -18,7 +17,7 @@ documents.post("/process", async (c: Context) => {
 	try {
 		const body = await c.req.json();
 		const { document } = body;
-		const llmIdentifier = config.defaultModelIdentifier as LLMIdentifier;
+		const llmIdentifier = config.defaultModelIdentifier;
 		const extractionResult = await dbService.logAndExtractDocument(document);
 		const extractedDocument = extractionResult.document;
 

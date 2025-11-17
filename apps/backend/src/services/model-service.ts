@@ -1,4 +1,3 @@
-import type { LLMIdentifier } from "../types/common";
 import { LLMHandler } from "../types/common";
 import { mistral } from "@ai-sdk/mistral";
 
@@ -7,12 +6,12 @@ type ModelProvider = "Mistral";
 interface ModelStatus {
 	status: number;
 	healthy: boolean;
-	identifier: LLMIdentifier;
+	identifier: string;
 	error: string | undefined;
 }
 
 class Model {
-	identifier: LLMIdentifier;
+	identifier: string;
 	baseModelName: string;
 	provider: ModelProvider;
 	isGdprCompliant: boolean;
@@ -23,7 +22,7 @@ class Model {
 	status?: ModelStatus;
 
 	constructor(params: {
-		identifier: LLMIdentifier;
+		identifier: string;
 		baseModelName: string;
 		provider: ModelProvider;
 		isGdprCompliant: boolean;
@@ -59,7 +58,7 @@ export class ModelService {
 		}),
 	};
 
-	handlers: { [key in LLMIdentifier]: LLMHandler } = {
+	handlers: Record<string, LLMHandler> = {
 		"mistral-small-latest": new LLMHandler(
 			"mistral-small",
 			mistral("mistral-small-latest"),
@@ -67,7 +66,7 @@ export class ModelService {
 		),
 	};
 
-	resolveLlmHandler(llmType: LLMIdentifier): LLMHandler {
+	resolveLlmHandler(llmType: string): LLMHandler {
 		if (!(llmType in this.handlers)) {
 			throw new Error(`LLM type ${llmType} is not supported.`);
 		}

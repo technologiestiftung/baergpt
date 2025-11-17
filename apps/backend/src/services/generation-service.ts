@@ -17,7 +17,7 @@ import {
 } from "../types/common";
 import { DatabaseService } from "./database-service";
 import { LLM_PARAMETERS } from "../constants";
-import type { LLMIdentifier, ParsedPage } from "../types/common";
+import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { captureError } from "../monitoring/capture-error";
@@ -42,7 +42,7 @@ export class GenerationService {
 	 * for the summary prompt. Falls back to at least the first page if none fit.
 	 */
 	private async selectFirstPagesFittingBudget(
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		parsedPages: ParsedPage[],
 	): Promise<ParsedPage[]> {
 		const contextSize = modelService.availableModels[llmIdentifier].contextSize;
@@ -74,7 +74,7 @@ export class GenerationService {
 	 * 2) hard-trimming with a binary search as a final safeguard.
 	 */
 	private async compressToTokenLimit(
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		content: string,
 		options: { tokenLimit: number; maxRounds?: number } = { tokenLimit: 0 },
 	): Promise<string> {
@@ -124,7 +124,7 @@ export class GenerationService {
 	}
 
 	async generateSummary(
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		docInput: string | ParsedPage[],
 		{
 			oneSentenceSummary = false,
@@ -172,7 +172,7 @@ export class GenerationService {
 	}
 
 	async generateTags(
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		docInput: string | ParsedPage[],
 		{ userId }: { userId?: string } = {},
 	): Promise<string[] | null> {
@@ -211,7 +211,7 @@ export class GenerationService {
 
 	async summarize(
 		parsedPages: ParsedPage[],
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		document: Document,
 	): Promise<void> {
 		const numTokens = parsedPages.reduce(
