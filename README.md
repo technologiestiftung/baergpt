@@ -6,68 +6,29 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-# BärGPT 🐻
+# <img src="https://raw.githubusercontent.com/technologiestiftung/baergpt/refs/heads/main/apps/frontend/public/logos/baergpt-logo.svg?token=GHSAT0AAAAAADPA7IA6FNQI4HW26GZXL7NW2I3AMBQ" width="170px" >
 
-This is the monorepo for the BärGPT project.
-You'll find here the [frontend](./apps/frontend), [backend](./apps/backend) and [admin-panel](./apps/admin-panel) code.
+![Screenshot of _Gieß den Kiez_](public/screenshots/beargpt_ui.png)
 
-## Prerequisites
+## About [_BärGPT_](https://www.baergpt.berlin)
 
-- the node version specified in the [`.nvmrc`](./.nvmrc) file
-- the supabase-cli version specified in the [`.tool-versions`](./.tool-versions) file
+BärGPT was launched by CityLAB Berlin and implemented in close cooperation with the Berlin Senate Chancellery. Prototypes were developed, tested and improved in an agile process together with employees from the administration. BärGPT relies on open source technology and is being developed in a transparent, data protection-compliant and user-centred manner – for modern, sovereign administrative digitisation.
 
-## Installation
+#### How BärGPT supports Berlin's administration
 
-Run the following commands to install the dependencies:
+BärGPT provides support with a free chat function that can be used flexibly – similar to well-known AI systems. This allows texts to be quickly created, revised, translated or summarised. The system also reliably answers general questions. Another key feature is intelligent document management: users can upload files, have them analysed automatically and search for specific content using the integrated RAG search – even in several documents at once.
 
-```bash
-npm ci
-```
+BärGPT is an open source project by the [Technologiestiftung Berlin](https://www.technologiestiftung-berlin.de/) and the [CityLAB Berlin](https://citylab-berlin.org/de/start/).
 
-To use Turborepo, install it once globally:
+## Repositories
 
-```bash
-npm install turbo --global
-```
+This project is composed of one monorepo:
 
-## Development
+- [BärGPT](https://github.com/technologiestiftung/baergpt)
 
-Run the following command to start what you need. You'll need some environment variables,
-please check the .env.sample files in each app folder.
+## Documentation
 
-```bash
-cd apps/frontend && npm run dev
-```
-
-```bash
-cd apps/backed && npm run dev
-```
-
-```bash
-cd apps/admin-panel && npm run dev
-```
-
-## Tests
-
-You need to install playwright browsers and have supabase and the backend running for e2e tests to work.
-
-```bash
-npx playwright install --with-deps
-```
-
-Run the following command to execute the test suites:
-
-```bash
-cd apps/frontend && npm run test:e2e
-```
-
-```bash
-cd apps/backend && npm run test
-```
-
-```bash
-cd apps/admin-panel && npm run test:e2e
-```
+To setup BärGPT locally or in production, follow the development setup guide at [README_DEV.md](./README_DEV.md).
 
 ## Contributing
 
@@ -125,5 +86,3 @@ Illustrations by {MARIA_MUSTERFRAU}, all rights reserved.
     </td>
   </tr>
 </table>
-
-## Related Projects
