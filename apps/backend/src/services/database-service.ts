@@ -5,7 +5,6 @@ import {
 	type ExtractionResult,
 	type HybridSearchResult,
 	type KnowledgeBaseDocument,
-	type LLMIdentifier,
 	DocumentNotFoundError,
 } from "../types/common";
 import { ragSearchDefaults } from "../constants";
@@ -14,7 +13,6 @@ import {
 	WordDocumentExtractionService,
 } from "./document-extraction-service";
 import { captureError } from "../monitoring/capture-error";
-import { config } from "../config";
 
 const documentExtraction = new DocumentExtractionService();
 const wordExtractionService = new WordDocumentExtractionService();
