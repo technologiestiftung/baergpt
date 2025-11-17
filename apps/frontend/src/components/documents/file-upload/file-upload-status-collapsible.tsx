@@ -38,7 +38,6 @@ export function FileUploadStatusCollapsible() {
 					</button>
 				)}
 			</div>
-
 			{isOpen && <FileUploadList />}
 		</div>
 	);

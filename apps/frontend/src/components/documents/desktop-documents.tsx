@@ -12,6 +12,7 @@ import { useTooltipStore } from "../../store/tooltip-store.ts";
 import { DropZoneWrapperDocuments } from "./document-list/drop-zone-wrapper-documents.tsx";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useDocumentStore } from "../../store/document-store.ts";
+import { useFileUploadsStore } from "../../store/use-file-uploads-store.ts";
 
 const MIN_WIDTH = 350;
 const MAX_WIDTH = 700;
@@ -25,7 +26,8 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const documentButtonRef = useRef<HTMLButtonElement>(null);
 	const { getUIError } = useErrorStore();
-	const { getDocuments, isLoading } = useDocumentStore();
+	const { getDocuments, isLoading, documents } = useDocumentStore();
+	const { hasAvailableUploadSlots } = useFileUploadsStore();
 
 	const errorMessage = getUIError("documents-fetch");
 
@@ -54,6 +56,13 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 		getDocuments(abortController.signal);
 	};
 
+	const numberOfUploads = documents?.length || 0;
+	const hasReachedTotalUploadLimit =
+		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
+
+	const isDropZoneDisabled =
+		hasReachedTotalUploadLimit || !hasAvailableUploadSlots();
+
 	return (
 		<>
 			<DropZoneWrapperDocuments
@@ -64,6 +73,7 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 				style={{
 					width: isCollapsed ? COLLAPSED_WIDTH : `${width}px`,
 				}}
+				isDropZoneDisabled={isDropZoneDisabled}
 				{...(isCollapsed && {
 					onClick: () => {
 						hideTooltip();
