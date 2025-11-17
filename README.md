@@ -1,7 +1,9 @@
 ![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # <img src="https://raw.githubusercontent.com/technologiestiftung/baergpt/refs/heads/main/apps/frontend/public/logos/baergpt-logo.svg?token=GHSAT0AAAAAADPA7IA6FNQI4HW26GZXL7NW2I3AMBQ" width="170px" >
@@ -42,7 +44,6 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tbody>
     <tr>
-     
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/malte-b"><img src="https://avatars.githubusercontent.com/u/27922183?v=4?s=64" width="64px;" alt="Malte Barth"/><br /><sub><b>Malte Barth</b></sub></a><br /><a href="#blog-malte-b" title="Blogposts">📝</a> <a href="https://github.com/technologiestiftung/baergpt/commits?author=malte-b" title="Code">💻</a> <a href="#data-malte-b" title="Data">🔣</a> <a href="#ideas-malte-b" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-malte-b" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#research-malte-b" title="Research">🔬</a> <a href="https://github.com/technologiestiftung/baergpt/pulls?q=is%3Apr+reviewed-by%3Amalte-b" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/technologiestiftung/baergpt/commits?author=malte-b" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/raphael-arce"><img src="https://avatars.githubusercontent.com/u/8709861?v=4?s=64" width="64px;" alt="Rapha"/><br /><sub><b>Rapha</b></sub></a><br /><a href="https://github.com/technologiestiftung/baergpt/commits?author=raphael-arce" title="Code">💻</a> <a href="#ideas-raphael-arce" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-raphael-arce" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#research-raphael-arce" title="Research">🔬</a> <a href="https://github.com/technologiestiftung/baergpt/pulls?q=is%3Apr+reviewed-by%3Araphael-arce" title="Reviewed Pull Requests">👀</a> <a href="#a11y-raphael-arce" title="Accessibility">️️️️♿️</a> <a href="#security-raphael-arce" title="Security">🛡️</a> <a href="https://github.com/technologiestiftung/baergpt/commits?author=raphael-arce" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://annaeschenbacher.com"><img src="https://avatars.githubusercontent.com/u/56318362?v=4?s=64" width="64px;" alt="aeschi"/><br /><sub><b>aeschi</b></sub></a><br /><a href="https://github.com/technologiestiftung/baergpt/commits?author=aeschi" title="Code">💻</a> <a href="#ideas-aeschi" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/technologiestiftung/baergpt/pulls?q=is%3Apr+reviewed-by%3Aaeschi" title="Reviewed Pull Requests">👀</a> <a href="#a11y-aeschi" title="Accessibility">️️️️♿️</a> <a href="https://github.com/technologiestiftung/baergpt/commits?author=aeschi" title="Documentation">📖</a> <a href="https://github.com/technologiestiftung/baergpt/commits?author=aeschi" title="Tests">⚠️</a></td>
