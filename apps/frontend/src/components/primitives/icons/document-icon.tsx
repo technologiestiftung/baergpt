@@ -2,7 +2,7 @@ import React from "react";
 import Content from "../../../content";
 
 type DocumentIconProps = {
-	variant: "lightBlue" | "black" | "darkBlue" | "white";
+	variant: "lightBlue" | "black" | "darkBlue" | "white" | "lightestBlue";
 	className?: string;
 };
 
@@ -39,6 +39,13 @@ export const DocumentIcon: React.FC<DocumentIconProps> = ({
 			width={24}
 			height={24}
 			className={`${className} ${variant === "white" ? "block" : "hidden"}`}
+		/>
+		<img
+			src="/icons/document-icon-lightest.svg"
+			width={24}
+			height={24}
+			alt={Content["documentIcon.imgAlt"]}
+			className={`${className} ${variant === "lightestBlue" ? "block" : "hidden"}`}
 		/>
 	</>
 );

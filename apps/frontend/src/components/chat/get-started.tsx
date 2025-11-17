@@ -37,83 +37,62 @@ export const GetStarted: React.FC = () => {
 				</p>
 			</div>
 			<div className="flex flex-col gap-5">
-				<h2 className="text-xl leading-7 font-semibold">
-					{isAddressedFormal
-						? Content["chat.getStarted.formal.h2"]
-						: Content["chat.getStarted.informal.h2"]}
-				</h2>
 				<div>
-					<h3 className="text-base leading-6 font-semibold">
-						{Content["chat.getStarted.h3.1"]}
-					</h3>
-					<p className="text-base leading-6 font-normal">
-						{isAddressedFormal
-							? Content["chat.getStarted.formal.h3.1.p"]
-							: Content["chat.getStarted.informal.h3.1.p"]}
-					</p>
-				</div>
-				<div>
-					<h3 className="text-base leading-6 font-semibold">
-						{Content["chat.getStarted.h3.2"]}
-					</h3>
 					<ul className="flex flex-col list-disc ml-4">
 						<li>
 							{isAddressedFormal
-								? Content["chat.getStarted.formal.h3.2.li1"]
-								: Content["chat.getStarted.informal.h3.2.li1"]}
+								? Content["chat.getStarted.li1.formal"]
+								: Content["chat.getStarted.li1.informal"]}
+						</li>
+						<li>
+							{isAddressedFormal
+								? Content["chat.getStarted.li2.formal"]
+								: Content["chat.getStarted.li2.informal"]}
 						</li>
 						<li>
 							<div className="flex items-center">
-								<p>{Content["chat.getStarted.h3.2.li2.1"]}</p>
+								<p>{Content["chat.getStarted.li3.p1"]}</p>
 								<div className="ml-1 mr-0.5 mt-1 size-[18px]">
 									<AddToChatIcon variant="plus-light" />
 								</div>
-								<p>{Content["chat.getStarted.h3.2.li2.2"]}</p>
+								<p>{Content["chat.getStarted.li3.p2"]}</p>
 							</div>
-						</li>
-						<li>
-							{isAddressedFormal
-								? Content["chat.getStarted.formal.h3.2.li3"]
-								: Content["chat.getStarted.informal.h3.2.li3"]}
 						</li>
 					</ul>
 				</div>
 				<div>
-					<h3 className="text-base leading-6 font-semibold">
-						{Content["chat.getStarted.h3.3"]}
-					</h3>
+					<h2 className="text-base leading-6 font-semibold">
+						{Content["chat.getStarted.h2"]}
+					</h2>
 					<ul className="flex flex-col list-disc ml-4">
 						<li>
 							{isAddressedFormal
-								? Content["chat.getStarted.formal.h3.3.li1"]
-								: Content["chat.getStarted.informal.h3.3.li1"]}
+								? Content["chat.getStarted.li4.formal"]
+								: Content["chat.getStarted.li4.informal"]}
 						</li>
-						<li>{Content["chat.getStarted.h3.3.li2"]}</li>
+						<li>{Content["chat.getStarted.li5"]}</li>
 						<li>
 							{isAddressedFormal
-								? Content["chat.getStarted.formal.h3.3.li3"]
-								: Content["chat.getStarted.informal.h3.3.li3"]}
+								? Content["chat.getStarted.li6.formal"]
+								: Content["chat.getStarted.li6.informal"]}
+						</li>
+						<li>
+							<span>
+								{isAddressedFormal
+									? Content["chat.getStarted.li7.formal"]
+									: Content["chat.getStarted.li7.informal"]}
+							</span>{" "}
+							<a
+								href={Content["chat.getStarted.h3.4.link"]}
+								target="_blank"
+								rel="noopener noreferrer"
+								aria-label={Content["chat.getStarted.h3.4.link.ariaLabel"]}
+								className="underline"
+							>
+								{Content["chat.getStarted.h3.4.linkText"]}
+							</a>
 						</li>
 					</ul>
-				</div>
-				<div>
-					<h3 className="text-base leading-6 font-semibold">
-						{Content["chat.getStarted.h3.4"]}
-					</h3>
-					<div>
-						{isAddressedFormal
-							? Content["chat.getStarted.formal.h3.4.p"]
-							: Content["chat.getStarted.informal.h3.4.p"]}
-						<a
-							href={Content["chat.getStarted.h3.4.link"]}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label={Content["chat.getStarted.h3.4.link.ariaLabel"]}
-							className="underline"
-						>
-							{Content["chat.getStarted.h3.4.linkText"]}
-						</a>
-					</div>
 				</div>
 			</div>
 		</div>
