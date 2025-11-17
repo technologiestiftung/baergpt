@@ -11,6 +11,15 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "emmaluisa",
+      "name": "emmaluisa",
+      "avatar_url": "https://avatars.githubusercontent.com/u/93218679?v=4",
+      "profile": "https://github.com/emmaluisa",
+      "contributions": [
+        "design"
+        ]
+     },
+     {
       "login": "elona-m",
       "name": "Elona Müller",
       "avatar_url": "https://avatars.githubusercontent.com/u/177862132?v=4",
