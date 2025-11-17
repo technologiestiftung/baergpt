@@ -6,7 +6,6 @@ export type Document = {
 	access_group_id?: string;
 	source_url: string;
 	source_type: string;
-	file_name?: string;
 	file_checksum?: string;
 	file_size?: number;
 	num_pages?: number;
@@ -283,4 +282,9 @@ export type KnowledgeBaseDocument = {
 	file_name: string;
 	short_summary: string;
 	tags: string[];
+};
+
+export type AllowedEmailDomain = {
+	id: number;
+	domain: string;
 };

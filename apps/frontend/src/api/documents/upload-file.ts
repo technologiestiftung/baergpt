@@ -1,31 +1,30 @@
+import { StorageApiError } from "@supabase/storage-js";
 import { useAuthStore } from "../../store/auth-store";
 import { useFolderStore } from "../../store/folder-store";
+import { supabase } from "../../../supabase-client";
 
 /**
- * Uploads the file to storage via the /documents/upload endpoint.
+ * Uploads the file directly to Supabase Storage.
  */
 export async function uploadFileToDb(
 	file: File,
 	filePath: string,
 ): Promise<void> {
-	const { session } = useAuthStore.getState();
-	const form = new FormData();
-	form.append("file", file, file.name);
-	form.append("sourceUrl", filePath);
+	//const { session } = useAuthStore.getState();
+	try {
+		const { error: uploadError } = await supabase.storage
+			.from("documents")
+			.upload(filePath, file);
 
-	const response = await fetch(
-		`${import.meta.env.VITE_API_URL}/documents/upload`,
-		{
-			method: "POST",
-			headers: { Authorization: `Bearer ${session?.access_token}` },
-			body: form,
-		},
-	);
-	if (response.status === 409) {
-		throw new Error("failed.duplicate");
-	}
-	if (!response.ok) {
-		throw new Error("failed.generic");
+		if (uploadError) {
+			throw uploadError;
+		}
+	} catch (error) {
+		if (error instanceof StorageApiError && error.status === 409) {
+			throw new Error("failed.duplicate");
+		} else {
+			throw new Error("failed.generic");
+		}
 	}
 }
 
@@ -43,7 +42,6 @@ export async function processDocument(
 	const documentData = {
 		document: {
 			id: null,
-			file_name: file.name,
 			folder_id: currentFolder?.id || null,
 			owned_by_user_id: session?.user.id,
 			created_at: new Date().toISOString(),

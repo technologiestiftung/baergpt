@@ -9,6 +9,7 @@ import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { useIsActiveStore } from "./use-is-active-store.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
+import { getAllowedEmailDomains } from "../api/auth/get-allowed-email-domains.ts";
 
 let resendTime: number | null = null;
 
@@ -25,6 +26,7 @@ interface AuthStore {
 	isPasswordRecoveryMode: boolean;
 	isUserAdmin: boolean;
 	isAdminStatusLoaded: boolean;
+	allowedEmailDomains?: string[];
 	register: (args: {
 		firstName: string;
 		lastName: string;
@@ -39,6 +41,7 @@ interface AuthStore {
 	login: (args: { email: string; password: string }) => Promise<void>;
 	logout: () => Promise<void>;
 	checkIsUserAdmin: (signal: AbortSignal) => Promise<void>;
+	getAllowedEmailDomains: (signal: AbortSignal) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>()((set, get) => {
@@ -296,6 +299,11 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			const isAdminStatusLoaded = get().isAdminStatusLoaded || !signal.aborted;
 
 			set({ isUserAdmin: isAdmin, isAdminStatusLoaded });
+		},
+
+		async getAllowedEmailDomains(signal: AbortSignal) {
+			const allowedEmailDomains = await getAllowedEmailDomains(signal);
+			set({ allowedEmailDomains });
 		},
 	};
 });

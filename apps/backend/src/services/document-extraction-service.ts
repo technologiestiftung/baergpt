@@ -14,14 +14,15 @@ export class DocumentExtractionService {
 		fileBytes: Uint8Array,
 		document: Document,
 	): Promise<ExtractionResult> {
+		const fileName = document.source_url.split("/").pop();
 		if (
-			document.file_name?.toLowerCase().endsWith(".doc") ||
-			document.file_name?.toLowerCase().endsWith(".docx")
+			fileName?.toLowerCase().endsWith(".doc") ||
+			fileName?.toLowerCase().endsWith(".docx")
 		) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
 				createBufferView(fileBytes),
-				document.file_name,
+				fileName,
 			);
 			const checksum = getHash(fileBytes);
 			const fileSize = fileBytes.byteLength;
@@ -39,7 +40,7 @@ export class DocumentExtractionService {
 					},
 				],
 			};
-		} else if (document.file_name?.toLowerCase().endsWith(".xlsx")) {
+		} else if (fileName?.toLowerCase().endsWith(".xlsx")) {
 			const excelExtractor = new ExcelExtractionService();
 			const parsedExcelPages =
 				await excelExtractor.extractExcelDocument(fileBytes);
@@ -57,11 +58,16 @@ export class DocumentExtractionService {
 
 		// Use lightweight parsing to determine page count without leaving memory footprint
 		const numPages = await this.getPdfPageCount(fileBytes);
+		if (numPages > config.maxPagesLimit) {
+			throw new ExtractError(
+				document,
+				`Could not extract ${document.source_url}, num pages ${numPages} > limit of ${config.maxPagesLimit} pages.`,
+			);
+		}
 		const parsedPages = await this.extractPdfAsMarkdownPages(fileBytes, {
 			numPages: numPages,
 			ocrProvider: "mistral",
 		});
-
 		const checksum = getHash(fileBytes);
 		const fileSize = fileBytes.byteLength;
 
@@ -446,8 +452,8 @@ class MistralOCRService {
 		const buffer = createBufferView(pdfBytes);
 
 		const uploaded_pdf = await resilientCall(
-			() =>
-				client.files.upload({
+			async () =>
+				await client.files.upload({
 					file: {
 						fileName: "uploaded_file.pdf",
 						content: buffer,
@@ -457,13 +463,13 @@ class MistralOCRService {
 			{ queueType: "llm" },
 		);
 
-		const signedUrl = await resilientCall(() =>
-			client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
+		const signedUrl = await resilientCall(
+			async () => await client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
 		);
 
 		const ocrResponse = await resilientCall(
-			() =>
-				client.ocr.process({
+			async () =>
+				await client.ocr.process({
 					model: "mistral-ocr-latest",
 					document: {
 						type: "document_url",
