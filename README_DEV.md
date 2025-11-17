@@ -10,7 +10,7 @@
 
 # BärGPT Dev Documentation
 
-This is the monorepo for the BärGPT.
+This is the monorepo for BärGPT.
 You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [admin-panel](./apps/admin-panel) and [maintenance-mode](./apps/maintenance-mode/) code.
 
 ## Table of Contents
@@ -344,7 +344,7 @@ supabase db reset
 
 For production deployments with self-hosted Supabase, see:
 
-- **Guide**: [apps/backend/supabase/selfhosting/README.md](./apps/backend/supabase/selfhosting/README.md)
+- **Guide**: [`apps/backend/supabase/selfhosting/README.md`](./apps/backend/supabase/selfhosting/README.md)
 - **Uses**: Ansible, 1Password CLI, Docker Compose
 - **Cloud Provider**: STACKIT (configurable)
 
