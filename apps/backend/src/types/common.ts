@@ -200,16 +200,6 @@ export interface ParsedPage {
 	tokenCount?: number;
 }
 
-export class ExtractError extends Error {
-	document: Document;
-	error: string;
-	constructor(document: Document, error: string) {
-		super();
-		this.document = document;
-		this.error = error;
-	}
-}
-
 export class DocumentNotFoundError extends Error {
 	constructor(documentId: number) {
 		super(
