@@ -1051,7 +1051,7 @@ export const Content = {
 	"registerPage.emailLabel": "E-Mail-Adresse",
 	"registerPage.emailHint":
 		"Nur dienstliche E-Mail-Adressen der Berliner Verwaltung sind erlaubt.",
-	"registerPage.emailPlaceholder": "vorname.nachname@berlin.de",
+	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
 	"registerPage.passwordLabel": "Passwort",
 	"registerPage.passwordPlaceholder": "Passwort",
 	"registerPage.repeatPasswordLabel": "Passwort wiederholen",
@@ -1082,7 +1082,7 @@ export const Content = {
 	"resetPasswordConfirmation.list.li.2":
 		"Bitte prüfen Sie auch Ihren Spam-Ordner",
 	"resetPasswordConfirmation.list.li.3":
-		"Adresse support@baergpt.de als Absender zulassen",
+		"Adresse support@baergpt.berlin als Absender zulassen",
 	"resetPasswordConfirmation.list.li.4":
 		"Bitte prüfen Sie die eingegebene E-Mail-Adresse",
 
@@ -1132,7 +1132,7 @@ export const Content = {
 	"form.validation.general.valueMissing": "Bitte füllen Sie dieses Feld aus.",
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
 	"form.validation.email.customError":
-		'Zulässige Endung: @berlin.de oder @<span class="italic">institution</span>.berlin.de.',
+		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"form.validation.password.tooShort":
 		"Das Passwort muss mindestens 6 Zeichen lang sein.",
 	"form.validation.password.repeatPasswordShouldMatch.error":
@@ -1282,7 +1282,7 @@ export const Content = {
 	"userEditModal.form.emailUpdatedSuccess":
 		"E-Mail-Adresse erfolgreich aktualisiert",
 	"userEditModal.form.invalidEmailError":
-		"Ungültige E-Mail-Adresse, Zulässige Endung: @berlin.de oder @institution.berlin.de.",
+		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"userEditModal.form.emailAlreadyInUseError":
 		"Diese E-Mail-Adresse ist bereits in Verwendung.",
 	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",

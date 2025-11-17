@@ -28,7 +28,7 @@ const createDeterministicEmbedding = (length = EMBEDDING_LENGTH) =>
 	Array.from({ length }, (_, i) => (i % 10) / 10);
 
 describe("Base Knowledge Integration Tests", () => {
-	const testUserEmail = "base-knowledge-test-user@berlin.de";
+	const testUserEmail = "base-knowledge-test-user@local.berlin.de";
 	const testUserPassword = "SecurePassword123!";
 
 	let testUserId: string;

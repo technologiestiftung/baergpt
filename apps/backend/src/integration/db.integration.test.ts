@@ -26,7 +26,7 @@ const supabaseAnonClient = createClient<Database>(
 describe("Integration tests for DB", async () => {
 	describe("registration meta-data", () => {
 		it("should create a profile with the first_name and last_name from the meta-data", async () => {
-			const givenEmail = "example@berlin.de";
+			const givenEmail = "example@local.berlin.de";
 			const givenPassword = "SecurePassword123!";
 			const givenFirstName = "John";
 			const givenLastName = "Doe";
@@ -69,11 +69,11 @@ describe("Integration tests for DB", async () => {
 
 	describe("application users", async () => {
 		const givenAdminId = "d18922bb-7f9a-4e15-a9c9-6788fe81842c";
-		const givenAdminEmail = "db-test-suite-admin@berlin.de";
+		const givenAdminEmail = "db-test-suite-admin@local.berlin.de";
 		const givenAdminPassword = "SecurePassword123!";
 
 		const givenUserId = "73f1b859-1377-4f72-ac92-ea28b1fb5167";
-		const givenUserEmail = "db-test-suite-user@berlin.de";
+		const givenUserEmail = "db-test-suite-user@local.berlin.de";
 		const givenUserPassword = "SecurePassword123!";
 
 		const {
