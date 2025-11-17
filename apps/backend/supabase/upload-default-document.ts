@@ -122,15 +122,35 @@ async function deleteUnprocessedRecord(
 	}
 }
 
+async function getDefaultAccessGroupId(): Promise<string> {
+	const { data: accessGroup, error } = await supabase
+		.from("access_groups")
+		.select("id")
+		.eq("name", "Alle")
+		.single();
+
+	if (error || !accessGroup) {
+		console.error("Error fetching default access group:", error);
+		process.exit(1);
+	}
+
+	return accessGroup.id;
+}
+
 async function processDocument(file: File): Promise<void> {
 	// eslint-disable-next-line no-console
 	console.log("Processing document...");
+
+	// Get the default "Alle" access group ID
+	const accessGroupId = await getDefaultAccessGroupId();
+
 	const documentToProcess: Document = {
 		id: 0, // Will be set by logAndExtractDocument
 		source_url: sourceUrl,
 		source_type: sourceType,
 		file_size: file.size,
 		created_at: new Date().toISOString(),
+		access_group_id: accessGroupId,
 	};
 
 	const dbService = new DatabaseService();
