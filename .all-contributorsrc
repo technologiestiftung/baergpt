@@ -11,6 +11,19 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "aeschi",
+      "name": "aeschi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/56318362?v=4",
+      "profile": "http://annaeschenbacher.com",
+      "contributions": [
+        "code",
+        "ideas",
+        "review",
+        "a11y",
+        "doc",
+        "test"
+     },
+     {
       "login": "raphael-arce",
       "name": "Rapha",
       "avatar_url": "https://avatars.githubusercontent.com/u/8709861?v=4",
