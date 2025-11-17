@@ -93,3 +93,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     </td>
   </tr>
 </table>
+
+## Contact
+
+For questions or further inquiries, please contact us at [support@baergpt.berlin](mailto:support@baergpt.berlin).
