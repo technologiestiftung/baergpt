@@ -1,13 +1,33 @@
 {
-	"projectName": "template-default",
-	"projectOwner": "technologiestiftung",
-	"repoType": "github",
-	"repoHost": "https://github.com",
-	"files": ["README.md"],
-	"imageSize": 64,
-	"commit": true,
-	"commitConvention": "angular",
-	"contributors": [],
-	"contributorsPerLine": 7,
-	"skipCi": true
+  "projectName": "baergpt",
+  "projectOwner": "technologiestiftung",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 64,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "malte-b",
+      "name": "Malte Barth",
+      "avatar_url": "https://avatars.githubusercontent.com/u/27922183?v=4",
+      "profile": "https://github.com/malte-b",
+      "contributions": [
+        "blog",
+        "code",
+        "data",
+        "ideas",
+        "infra",
+        "research",
+        "review",
+        "test"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "commitType": "docs"
 }
