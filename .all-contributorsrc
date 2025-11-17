@@ -1,13 +1,33 @@
 {
-	"projectName": "template-default",
-	"projectOwner": "technologiestiftung",
-	"repoType": "github",
-	"repoHost": "https://github.com",
-	"files": ["README.md"],
-	"imageSize": 64,
-	"commit": true,
-	"commitConvention": "angular",
-	"contributors": [],
-	"contributorsPerLine": 7,
-	"skipCi": true
+  "projectName": "baergpt",
+  "projectOwner": "technologiestiftung",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 64,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "raphael-arce",
+      "name": "Rapha",
+      "avatar_url": "https://avatars.githubusercontent.com/u/8709861?v=4",
+      "profile": "https://github.com/raphael-arce",
+      "contributions": [
+        "code",
+        "ideas",
+        "infra",
+        "research",
+        "review",
+        "a11y",
+        "security",
+        "test"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "commitType": "docs"
 }
