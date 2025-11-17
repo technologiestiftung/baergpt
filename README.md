@@ -1,9 +1,7 @@
 ![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-
-[![All Contributors](https://img.shields.io/badge/all_contributors-0-orange.svg?style=flat-square)](#contributors-)
-
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # BärGPT 🐻
@@ -81,8 +79,11 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <table>
-  <tr>
-  </tr>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/nlspnsgen"><img src="https://avatars.githubusercontent.com/u/12913491?v=4?s=64" width="64px;" alt="nlspnsgen"/><br /><sub><b>nlspnsgen</b></sub></a><br /><a href="https://github.com/technologiestiftung/baergpt/commits?author=nlspnsgen" title="Code">💻</a> <a href="#infra-nlspnsgen" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/technologiestiftung/baergpt/pulls?q=is%3Apr+reviewed-by%3Anlspnsgen" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/technologiestiftung/baergpt/commits?author=nlspnsgen" title="Tests">⚠️</a> <a href="#ideas-nlspnsgen" title="Ideas, Planning, & Feedback">🤔</a> <a href="#security-nlspnsgen" title="Security">🛡️</a></td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- markdownlint-restore -->
