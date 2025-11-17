@@ -194,11 +194,11 @@ export class DatabaseService {
 		const documentId = await this.logDocument(document);
 		const documentWithId = { ...document, id: documentId };
 		const fileName = document.source_url.split("/").pop();
-		const bucket =
-			document.source_type === "public_document" ||
-			document.source_type === "default_document"
-				? "public_documents"
-				: "documents";
+		const bucket = ["public_document", "default_document"].includes(
+			document.source_type,
+		)
+			? "public_documents"
+			: "documents";
 		try {
 			if (/\.(docx)$/i.test(fileName)) {
 				const wordBuffer = await this.getDocumentBufferFromSupabase(
