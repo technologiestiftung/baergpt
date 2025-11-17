@@ -270,9 +270,11 @@ export class DatabaseService {
 			throw error;
 		}
 
-		await this.updateUserDocumentCount(
-			document.owned_by_user_id || document.uploaded_by_user_id,
-		);
+		// Only update user document count if there's a user associated with the document
+		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
+		if (userId) {
+			await this.updateUserDocumentCount(userId);
+		}
 	}
 
 	/**
