@@ -29,6 +29,7 @@ app.use(
 		],
 	}),
 );
+
 app.use("*", basicAuth);
 app.use("*", sentryTracing);
 
