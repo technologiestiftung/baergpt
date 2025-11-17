@@ -220,18 +220,6 @@ export class DocumentNotFoundError extends Error {
 	}
 }
 
-export interface UploadResponse {
-	id: string;
-}
-
-export interface StatusResponse {
-	status: string;
-}
-
-export interface MarkdownResponse {
-	markdown: string;
-}
-
 export interface DocumentBufferResponse {
 	buffer: Uint8Array;
 	filename: string;
@@ -257,7 +245,6 @@ export interface JinaSegmenterResponse {
 	chunks: string[];
 }
 
-export type LLMIdentifier = "mistral-small-latest";
 export class LLMHandler {
 	model: string;
 	languageModel: LanguageModel;
