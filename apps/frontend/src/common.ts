@@ -51,6 +51,10 @@ export type Document = {
 	source_url: string;
 };
 
+export type DocumentWithUrl = Document & {
+	previewUrl?: string;
+};
+
 export type User = {
 	id: string;
 	first_name: string | null;
