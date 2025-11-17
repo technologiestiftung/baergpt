@@ -14,8 +14,6 @@ import {
 	WordDocumentExtractionService,
 } from "./document-extraction-service";
 import { captureError } from "../monitoring/capture-error";
-import { EmbeddingService } from "./embedding-service";
-import { GenerationService } from "./generation-service";
 import { config } from "../config";
 
 const documentExtraction = new DocumentExtractionService();
@@ -282,6 +280,9 @@ export class DatabaseService {
 	 * This is a shared method used by both the API route and setup scripts.
 	 */
 	async processDocument(document: Document): Promise<void> {
+		// Use dynamic imports to avoid circular dependency
+		const { EmbeddingService } = await import("./embedding-service.js");
+		const { GenerationService } = await import("./generation-service.js");
 		const embeddingService = new EmbeddingService();
 		const generationService = new GenerationService();
 		const llmIdentifier = config.defaultModelIdentifier as LLMIdentifier;
