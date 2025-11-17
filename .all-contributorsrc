@@ -11,6 +11,17 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "elona-m",
+      "name": "Elona Müller",
+      "avatar_url": "https://avatars.githubusercontent.com/u/177862132?v=4",
+      "profile": "https://github.com/elona-m",
+      "contributions": [
+        "design",
+        "ideas",
+        "userTesting" 
+      ]
+     },
+     {
       "login": "Esshahn",
       "name": "Ingo Hinterding",
       "avatar_url": "https://avatars.githubusercontent.com/u/434355?v=4",
