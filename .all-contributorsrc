@@ -11,6 +11,15 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "james-knippes",
+      "name": "Jan Knittel",
+      "avatar_url": "https://avatars.githubusercontent.com/u/30473830?v=4",
+      "profile": "https://github.com/james-knippes",
+      "contributions": [
+        "security"
+         ]
+     },
+     {
       "login": "zainab-tariq",
       "name": "Zainab Tariq",
       "avatar_url": "https://avatars.githubusercontent.com/u/15946816?v=4",
