@@ -449,6 +449,9 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			.locator('[data-testid="label-has-accepted-privacy-checkbox"]')
 			.check();
 		await page
+			.locator('[data-testid="label-has-accepted-personal-data-checkbox"]')
+			.check();
+		await page
 			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
 			.click();
 
@@ -578,6 +581,9 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			.fill(givenUserPassword);
 		// Check the checkbox
 		await page1.getByTestId("label-has-accepted-privacy-checkbox").click();
+		await page1
+			.getByTestId("label-has-accepted-personal-data-checkbox")
+			.click();
 
 		// Submit the invite completion form and wait for navigation to main page
 		await page1

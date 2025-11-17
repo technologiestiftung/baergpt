@@ -209,6 +209,78 @@ export async function uploadFileViaFileChooser({
 	return uploadedFile;
 }
 
+export async function uploadMultipleFilesViaFileChooser({
+	files,
+	page,
+	browserName,
+	uploadButtonName,
+}: {
+	files: Array<{ name: string; path: string }>;
+	page: Page;
+	browserName: string;
+	uploadButtonName: string;
+}) {
+	await page.goto("/");
+
+	await page.waitForLoadState("networkidle");
+
+	const filePaths = files.map((file) => file.path);
+
+	if (browserName === "firefox") {
+		// Firefox: setup file chooser handler and use input element directly
+		page.on("filechooser", async (fileChooser) => {
+			// Dismiss any file chooser dialogs that might appear
+			await fileChooser.setFiles([]);
+		});
+
+		const fileInput = page.locator('input[type="file"]').first();
+		await fileInput.setInputFiles(filePaths);
+	} else {
+		// Other browsers: use file chooser event
+		const fileChooserPromise = page.waitForEvent("filechooser");
+		await page.getByRole("button", { name: uploadButtonName }).click();
+		const fileChooser = await fileChooserPromise;
+		await fileChooser.setFiles(filePaths);
+	}
+
+	// Wait for all files to be visible in the upload dialog
+	for (const file of files) {
+		await testWithDocuments
+			.expect(page.getByText(file.name, { exact: true }))
+			.toBeVisible();
+	}
+
+	// Wait for all upload responses
+	const uploadResponses = [];
+	for (let i = 0; i < files.length; i++) {
+		const response = await page.waitForResponse(
+			(givenResponse) =>
+				givenResponse.url().includes("/documents/process") &&
+				givenResponse.request().method() === "POST",
+			{
+				timeout: 60_000,
+			},
+		);
+		uploadResponses.push(response);
+		expect(response.status()).toBe(204);
+	}
+
+	// Wait for all files to appear in the document list
+	const uploadedFiles = [];
+	for (const file of files) {
+		const uploadedFile = page.getByRole("button", {
+			name: `Dokumente-Icon ${file.name}`,
+		});
+		await testWithDocuments.expect(uploadedFile).toBeVisible();
+		uploadedFiles.push(uploadedFile);
+	}
+
+	// Close the file upload dialog
+	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+
+	return uploadedFiles;
+}
+
 export async function uploadFileViaDragAndDrop({
 	page,
 	filePath,

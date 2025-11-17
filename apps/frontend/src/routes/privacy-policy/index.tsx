@@ -15,6 +15,18 @@ import {
 } from "./content.ts";
 
 export const PrivacyPolicyPage: React.FC = () => {
+	const tableOfContentsItems = [
+		Content["privacyPolicyPage.section1.title"],
+		Content["privacyPolicyPage.section2.title"],
+		Content["privacyPolicyPage.section3.title"],
+		Content["privacyPolicyPage.section4.title"],
+		Content["privacyPolicyPage.section5.title"],
+		Content["privacyPolicyPage.section6.title"],
+		Content["privacyPolicyPage.section7.title"],
+		Content["privacyPolicyPage.section8.title"],
+		Content["privacyPolicyPage.section9.title"],
+		Content["privacyPolicyPage.section10.title"],
+	];
 	// Section Content
 	const sections = [
 		{
@@ -175,7 +187,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 					{Content["privacyPolicyPage.tableOfContents.title"]}
 				</h2>
 				<div className="flex flex-col gap-[60px] lg:gap-16">
-					<TableOfContents />
+					<TableOfContents items={tableOfContentsItems} />
 
 					<ol className="list-none pl-0 flex flex-col gap-10 lg:gap-[60px]">
 						{sections.map((section) => (

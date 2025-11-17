@@ -1,0 +1,33 @@
+import React from "react";
+interface UploadIconProps {
+	className?: string;
+}
+
+export const UploadIcon: React.FC<UploadIconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		width="48"
+		height="48"
+		viewBox="0 0 48 48"
+		fill="none"
+		className={className}
+	>
+		<mask
+			id="mask0_2353_24654"
+			style={{ maskType: "alpha" }}
+			maskUnits="userSpaceOnUse"
+			x="0"
+			y="0"
+			width="48"
+			height="48"
+		>
+			<rect width="48" height="48" fill="#D9D9D9" />
+		</mask>
+		<g mask="url(#mask0_2353_24654)">
+			<path
+				d="M22 32V15.7L16.8 20.9L14 18L24 8L34 18L31.2 20.9L26 15.7V32H22ZM12 40C10.9 40 9.95833 39.6083 9.175 38.825C8.39167 38.0417 8 37.1 8 36V30H12V36H36V30H40V36C40 37.1 39.6083 38.0417 38.825 38.825C38.0417 39.6083 37.1 40 36 40H12Z"
+				fill="currentColor"
+			/>
+		</g>
+	</svg>
+);
