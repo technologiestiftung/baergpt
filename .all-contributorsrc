@@ -1,13 +1,27 @@
 {
-	"projectName": "template-default",
-	"projectOwner": "technologiestiftung",
-	"repoType": "github",
-	"repoHost": "https://github.com",
-	"files": ["README.md"],
-	"imageSize": 64,
-	"commit": true,
-	"commitConvention": "angular",
-	"contributors": [],
-	"contributorsPerLine": 7,
-	"skipCi": true
+  "projectName": "baergpt",
+  "projectOwner": "technologiestiftung",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 64,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "elona-m",
+      "name": "Elona Müller",
+      "avatar_url": "https://avatars.githubusercontent.com/u/177862132?v=4",
+      "profile": "https://github.com/elona-m",
+      "contributions": [
+        "design",
+        "ideas"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "commitType": "docs"
 }
