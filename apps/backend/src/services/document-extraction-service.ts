@@ -97,12 +97,11 @@ export class DocumentExtractionService {
 
 		const fileSizeMb = pdfBytes.byteLength / (1024 * 1024);
 		if (fileSizeMb > config.fileUploadLimitMb) {
-			captureError(
-				new Error(
-					`PDF file size ${fileSizeMb.toFixed(2)} MB exceeds upload limit of ${config.fileUploadLimitMb} MB.`,
-				),
+			const error = new Error(
+				`PDF file size ${fileSizeMb.toFixed(2)} MB exceeds upload limit of ${config.fileUploadLimitMb} MB.`,
 			);
-			return [];
+			captureError(error);
+			throw error;
 		}
 
 		let ocrService: MistralOCRService;
