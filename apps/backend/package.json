@@ -40,6 +40,7 @@
 		"hono": "4.8.10",
 		"jsonwebtoken": "9.0.2",
 		"mammoth": "1.9.1",
+		"pdf-lib": "1.17.1",
 		"throttled-queue": "3.0.0",
 		"unpdf": "1.4.0",
 		"word-extractor": "1.0.4",
