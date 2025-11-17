@@ -225,6 +225,412 @@ export const Content = {
 	"privacyPolicyPage.section10.p1":
 		"Diese Datenschutzhinweise werden bei Änderungen der Datenverarbeitung oder gesetzlichen Anforderungen angepasst. Es gilt stets die aktuelle Fassung.",
 
+	/* -------------------- Terms of use Page -------------------- */
+	"termsOfUsePage.h1": "Nutzungsbedingungen für BärGPT",
+	"termsOfUsePage.date.label": "Stand ",
+	"termsOfUsePage.date": "November 2025",
+	"termsOfUsePage.version.label": "Version ",
+	"termsOfUsePage.version": "1.0",
+	"termsOfUsePage.tableOfContents.title": "Inhaltsverzeichnis",
+	//Section 1
+	"termsOfUsePage.section1.title": "Begriffsbestimmungen",
+	"termsOfUsePage.section1.p1":
+		"Im Sinne dieser Nutzungsbedingungen haben die folgenden Begriffe die genannte Bedeutung:",
+	"termsOfUsePage.section1.li1.title": "„Anwendung“ / „BärGPT“",
+	"termsOfUsePage.section1.li1.description":
+		"— der bereitgestellte KI-Assistent einschließlich aller zugehörigen Weboberflächen, Schnittstellen, Dokumentenablagen und darauf bezogener Services.",
+	"termsOfUsePage.section1.li2.title": "„Nutzende“",
+	"termsOfUsePage.section1.li2.description":
+		"— natürliche Personen, die im Rahmen ihres dienstlichen Auftrags Zugang zu BärGPT erhalten (Mitarbeitende der Berliner Landesverwaltung).",
+	"termsOfUsePage.section1.li3.title": "„Betreiber“",
+	"termsOfUsePage.section1.li3.description":
+		"— Technologiestiftung Berlin bzw. die in § 2.2 benannte Projektverantwortung.",
+	"termsOfUsePage.section1.li4.title": "„Inhalte / generierte Inhalte“",
+	"termsOfUsePage.section1.li4.description":
+		"— alle Texte, Dokumente, Antworten, Metadaten und sonstigen Ausgaben, die BärGPT im Rahmen der Nutzung erzeugt.",
+	"termsOfUsePage.section1.li5.title": "„Hochgeladene Dokumente“",
+	"termsOfUsePage.section1.li5.description":
+		"— von Nutzenden in BärGPT eingestellte Dateien (z. B. PDF, Word, Excel), die zur Verarbeitung oder Speicherung bereitgestellt werden.",
+	"termsOfUsePage.section1.li6.title": "„Subprozessor“",
+	"termsOfUsePage.section1.li6.description":
+		"— ein Dritter, der im Auftrag des Betreibers personenbezogene Daten verarbeitet oder Infrastruktur-/Plattformdienste bereitstellt (z. B. Hosting, Modelle, Speicher).",
+	"termsOfUsePage.section1.li7.title": "„RAG-Suche“",
+	"termsOfUsePage.section1.li7.description":
+		"— Retrieval-Augmented-Generation: die Kombination aus Information Retrieval (z. B. Indexierung von Dokumenten) und generativem Modell zur Beantwortung von Anfragen.",
+	"termsOfUsePage.section1.li8.title":
+		"„Arbeitszeiten / normale Arbeitszeiten“",
+	"termsOfUsePage.section1.li8.description":
+		"— soweit nicht anders definiert: Montag bis Freitag, 09:00-17:00 Uhr (Mitteleuropäische Zeit / CET/CEST).",
+	"termsOfUsePage.section1.li9.title":
+		"„Personenbezogene Daten“ / „Daten mit hohem Schutzbedarf“",
+	"termsOfUsePage.section1.li9.description":
+		" — die in den Datenschutzhinweisen näher beschriebenen Kategorien; derzeit ist die Verarbeitung personenbezogener Daten in BärGPT nicht gestattet.",
+	//Section 2
+	"termsOfUsePage.section2.title": "Geltungsbereich und Vertragsgegenstand",
+	//2.1
+	"termsOfUsePage.section2.sub1.number": "2.1",
+	"termsOfUsePage.section2.sub1.title": "Anwendungsbereich",
+	"termsOfUsePage.section2.sub1.p1.1":
+		"Diese Nutzungsbedingungen regeln die Nutzung des KI-Assistenten BärGPT (nachfolgend „BärGPT“ oder „Anwendung“), der über die Webseite ",
+	"termsOfUsePage.section2.sub1.p1.1.link": "https://www.baergpt.berlin",
+	"termsOfUsePage.section2.sub1.p1.2": " bereitgestellt wird.",
+	//2.2
+	"termsOfUsePage.section2.sub2.number": "2.2",
+	"termsOfUsePage.section2.sub2.title": "Anbieter und Verantwortlichkeiten",
+	"termsOfUsePage.section2.sub2.email.label": "E-Mail:",
+	"termsOfUsePage.section2.sub2.a.title": "Verantwortlich im Sinne der DSGVO:",
+	"termsOfUsePage.section2.sub2.a.organisation":
+		"Der Regierende Bürgermeister von Berlin - Senatskanzlei",
+	"termsOfUsePage.section2.sub2.a.role": "Chef der Senatskanzlei",
+	"termsOfUsePage.section2.sub2.a.name": "Florian Graf",
+	"termsOfUsePage.section2.sub2.a.address.street": "Jüdenstr. 1",
+	"termsOfUsePage.section2.sub2.a.address.city": "10178 Berlin",
+	"termsOfUsePage.section2.sub2.a.email": "datenschutz@senatskanzlei.berlin.de",
+	"termsOfUsePage.section2.sub2.b.title":
+		"Technische Verantwortung / Betrieb (Auftragsverarbeiter):",
+	"termsOfUsePage.section2.sub2.b.organisation":
+		"Technologiestiftung Berlin / CityLAB Berlin",
+	"termsOfUsePage.section2.sub2.b.address.street": "Platz der Luftbrücke 4",
+	"termsOfUsePage.section2.sub2.b.address.city": "12101 Berlin",
+	"termsOfUsePage.section2.sub2.b.email": "support@baergpt.berlin",
+	//2.3
+	"termsOfUsePage.section2.sub3.number": "2.3",
+	"termsOfUsePage.section2.sub3.title": "Vertragsgegenstand",
+	"termsOfUsePage.section2.sub3.p1":
+		"BärGPT ist ein KI-gestützter Assistent, der speziell für die Berliner Landesverwaltung entwickelt wurde. Die Anwendung basiert auf einem generativen Sprachmodell und unterstützt Beschäftigte der Berliner Verwaltung bei der Informationsrecherche, Textgenerierung sowie bei wiederkehrenden Verwaltungsaufgaben.",
+	//Section 3
+	"termsOfUsePage.section3.title": "Nutzungsvoraussetzungen und Registrierung",
+	//3.1
+	"termsOfUsePage.section3.sub1.number": "3.1",
+	"termsOfUsePage.section3.sub1.title": "Nutzungsberechtigung",
+	"termsOfUsePage.section3.sub1.p1":
+		"BärGPT darf ausschließlich von Mitarbeitenden der Berliner Landesverwaltung genutzt werden. Die Nutzung ist kostenlos.",
+	//3.2
+	"termsOfUsePage.section3.sub2.number": "3.2",
+	"termsOfUsePage.section3.sub2.title": "Registrierung",
+	"termsOfUsePage.section3.sub2.p1":
+		"Zur Nutzung von BärGPT ist eine Registrierung erforderlich. Dabei sind folgende Angaben notwendig:",
+	"termsOfUsePage.section3.sub2.li1": "Vorname und Nachname",
+	"termsOfUsePage.section3.sub2.li2":
+		"Gültige dienstliche E-Mail-Adresse der Berliner Verwaltung (in der Regel im Format vorname.name@subdomain.berlin.de)",
+	"termsOfUsePage.section3.sub2.li3":
+		"Selbstgewähltes sicheres Passwort (mindestens 6 Zeichen)",
+	"termsOfUsePage.section3.sub2.li4": "Optional: Anrede und akademischer Titel",
+	"termsOfUsePage.section3.sub2.p2":
+		"Ausnahmen von der E-Mail-Adress-Regel können nach Rücksprache mit dem Betreiber geprüft werden.",
+	//3.3
+	"termsOfUsePage.section3.sub3.number": "3.3",
+	"termsOfUsePage.section3.sub3.title": "Wahrheitsgemäße Angaben",
+	"termsOfUsePage.section3.sub3.p1":
+		"Die Nutzenden verpflichten sich, bei der Registrierung ausschließlich wahrheitsgemäße und vollständige Angaben zu machen. Bei Änderungen der angegebenen Daten sind diese unverzüglich im persönlichen Nutzerprofil zu aktualisieren.",
+	//3.4
+	"termsOfUsePage.section3.sub4.number": "3.4",
+	"termsOfUsePage.section3.sub4.title": "Zugangsdaten",
+	"termsOfUsePage.section3.sub4.p1":
+		"Die Nutzenden sind verpflichtet, ihre Zugangsdaten (E-Mail-Adresse und Passwort) vertraulich zu behandeln und vor unbefugtem Zugriff zu schützen. Eine Weitergabe des Accounts an Dritte ist nicht gestattet.",
+	"termsOfUsePage.section3.sub4.p2":
+		"Bei Verdacht auf Missbrauch der Zugangsdaten sind die Nutzenden verpflichtet, dies unverzüglich dem Betreiber zu melden und das Passwort zu ändern.",
+	//Section 4
+	"termsOfUsePage.section4.title": "Nutzungsumfang und -bedingungen",
+	//4.1
+	"termsOfUsePage.section4.sub1.number": "4.1",
+	"termsOfUsePage.section4.sub1.title": "Erlaubte Nutzung",
+	"termsOfUsePage.section4.sub1.p1":
+		"Die Nutzung von BärGPT ist ausschließlich im Rahmen der beruflichen Tätigkeit bei der Berliner Verwaltung gestattet. Private oder kommerzielle Nutzung ist nicht erlaubt.",
+	//4.2
+	"termsOfUsePage.section4.sub2.number": "4.2",
+	"termsOfUsePage.section4.sub2.title": "Funktionsumfang",
+	"termsOfUsePage.section4.sub2.p1":
+		"BärGPT ist ein KI-gestützter Assistent mit folgenden Kernfunktionen:",
+	"termsOfUsePage.section4.sub2.li1.heading": "Textverarbeitung:",
+	"termsOfUsePage.section4.sub2.li1.description":
+		"Generierung, Bearbeitung, Korrektur, Übersetzung und Zusammenfassung von Texten",
+	"termsOfUsePage.section4.sub2.li2.heading": "Dokumentenverwaltung:",
+	"termsOfUsePage.section4.sub2.li2.description":
+		"Hochladen, Speichern und semantische Suche in Dokumenten (RAG-Technologie)",
+	"termsOfUsePage.section4.sub2.li3.heading": "Wissensdatenbank:",
+	"termsOfUsePage.section4.sub2.li3.description":
+		"Zugriff auf kuratierte Verwaltungsinformationen und -dokumente",
+	"termsOfUsePage.section4.sub2.li4.heading": "Interaktionshistorie:",
+	"termsOfUsePage.section4.sub2.li4.description":
+		"Speicherung und Verwaltung früherer Konversationen",
+	"termsOfUsePage.section4.sub2.p2.start":
+		"Der konkrete Funktionsumfang kann sich im Rahmen der Weiterentwicklung ändern (siehe § 7.2). Eine aktuelle und detaillierte Übersicht aller verfügbaren Funktionen finden Sie im Hilfecenter unter ",
+	"termsOfUsePage.section4.sub2.p2.link": "https://hilfe.baergpt.berlin",
+	"termsOfUsePage.section4.sub2.p2.end": " oder direkt in der Anwendung.",
+	//4.3
+	"termsOfUsePage.section4.sub3.number": "4.3",
+	"termsOfUsePage.section4.sub3.title": "Human-in-the-lead-Prinzip",
+	"termsOfUsePage.section4.sub3.p1":
+		"Eine automatisierte Entscheidungsfindung durch die KI ist nicht vorgesehen. Die Verantwortung für die Richtigkeit und Verwendung der generierten Inhalte liegt stets bei den Nutzenden. BärGPT dient ausschließlich als Hilfswerkzeug und kann die fachliche Expertise und Verantwortung der Nutzenden nicht ersetzen.",
+	//4.4
+	"termsOfUsePage.section4.sub4.number": "4.4",
+	"termsOfUsePage.section4.sub4.title": "Prüfpflicht der Nutzenden",
+	"termsOfUsePage.section4.sub4.p1":
+		"Die Nutzenden sind verpflichtet, alle von BärGPT generierten Inhalte kritisch zu prüfen und auf ihre Richtigkeit, Vollständigkeit und Angemessenheit zu überprüfen. KI-Systeme können sogenannte „Halluzinationen“ erzeugen, d.h. Inhalte, die plausibel erscheinen, aber faktisch falsch sein können.",
+	//Section 5
+	"termsOfUsePage.section5.title": "Datenschutz und Datensicherheit",
+	//5.1
+	"termsOfUsePage.section5.sub1.number": "5.1",
+	"termsOfUsePage.section5.sub1.title": "Datenverarbeitung",
+	"termsOfUsePage.section5.sub1.p1.start":
+		"Für die Verarbeitung personenbezogener Daten gelten die separaten Datenschutzhinweise von BärGPT, die unter ",
+	"termsOfUsePage.section5.sub1.p1.link": "https://www.baergpt.berlin",
+	"termsOfUsePage.section5.sub1.p1.end":
+		" abrufbar sind. Diese sind Bestandteil dieser Nutzungsbedingungen.",
+	//5.2
+	"termsOfUsePage.section5.sub2.number": "5.2",
+	"termsOfUsePage.section5.sub2.title": "Verbot personenbezogener Daten",
+	"termsOfUsePage.section5.sub2.p1.title": "Wichtiger Hinweis: ",
+	"termsOfUsePage.section5.sub2.p1":
+		"Zum aktuellen Zeitpunkt (Stand: November 2025) ist die Verarbeitung von personenbezogenen Daten mit BärGPT noch nicht gestattet, da die Rechtsgrundlage hierfür noch nicht vorliegt.",
+	"termsOfUsePage.section5.sub2.p2": "Die Nutzenden verpflichten sich: ",
+	"termsOfUsePage.section5.sub2.li1.start": "Keine personenbezogenen Daten ",
+	"termsOfUsePage.section5.sub2.li1.end":
+		"in BärGPT einzugeben oder hochzuladen.",
+	"termsOfUsePage.section5.sub2.li2.start":
+		"Keine Daten mit hohem Schutzbedarf ",
+	"termsOfUsePage.section5.sub2.li2.end": "zu verarbeiten",
+	"termsOfUsePage.section5.sub2.li3":
+		"Bei Unklarheit über die Klassifizierung von Daten vorab Rücksprache mit der zuständigen Datenschutzstelle zu halten",
+	"termsOfUsePage.section5.sub2.p3":
+		"Eine Aktualisierung des eGov-Gesetzes für Berlin, die die Verarbeitung personenbezogener Daten erlauben wird, ist derzeit in rechtlicher Prüfung und soll voraussichtlich Anfang 2026 in Kraft treten.",
+	//5.3
+	"termsOfUsePage.section5.sub3.number": "5.3",
+	"termsOfUsePage.section5.sub3.title": "Löschpflichten",
+	"termsOfUsePage.section5.sub3.p1":
+		"Nach Ende der Zweckerfüllung sind hochgeladene Dokumente unverzüglich wieder zu löschen. Die Nutzenden sind verpflichtet, nicht mehr benötigte Chats, Dokumente und Ordner eigenständig zu entfernen.",
+	//5.4
+	"termsOfUsePage.section5.sub4.number": "5.4",
+	"termsOfUsePage.section5.sub4.title": "Serverstandort und Datensicherheit",
+	"termsOfUsePage.section5.sub4.p1":
+		"BärGPT wird auf Servern innerhalb der Europäischen Union betrieben und erfüllt die Anforderungen der Datenschutz-Grundverordnung (DSGVO). Es werden keine Daten zu Trainingszwecken an das Sprachmodell weitergegeben.",
+	"termsOfUsePage.section5.sub4.p2":
+		"Detaillierte Informationen zur technischen Infrastruktur und zu den eingesetzten Subprozessoren können den begleitenden Projektdokumenten entnommen werden.",
+	//Section 6
+	"termsOfUsePage.section6.title": "Pflichten der Nutzenden",
+	//6.1
+	"termsOfUsePage.section6.sub1.number": "6.1",
+	"termsOfUsePage.section6.sub1.title": "Verbot missbräuchlicher Nutzung",
+	"termsOfUsePage.section6.sub1.p1":
+		"Die Nutzenden verpflichten sich, BärGPT nicht für rechtswidrige Zwecke zu verwenden. Insbesondere ist untersagt:",
+	"termsOfUsePage.section6.sub1.li1":
+		"Die Verbreitung von gesetzeswidrigen, verleumderischen, diffamierenden oder anderweitig rechtswidrigen Inhalten",
+	"termsOfUsePage.section6.sub1.li2":
+		"Die Beeinträchtigung der Funktionsfähigkeit der Anwendung oder der zugrundeliegenden Infrastruktur",
+	"termsOfUsePage.section6.sub1.li3":
+		"Das Umgehen oder Manipulieren von Sicherheitsmechanismen",
+	"termsOfUsePage.section6.sub1.li4":
+		"Das automatisierte Auslesen von Daten (Scraping)",
+	"termsOfUsePage.section6.sub1.li5":
+		"Die Nutzung für kommerzielle oder private Zwecke außerhalb der dienstlichen Aufgaben",
+	//6.2
+	"termsOfUsePage.section6.sub2.number": "6.2",
+	"termsOfUsePage.section6.sub2.title": "Sorgfaltspflicht",
+	"termsOfUsePage.section6.sub2.p1":
+		"Die Nutzenden sind verpflichtet, die Anwendung sorgfältig und verantwortungsbewusst zu nutzen. Dazu gehört insbesondere:",
+	"termsOfUsePage.section6.sub2.li1":
+		"Die kritische Prüfung aller generierten Inhalte",
+	"termsOfUsePage.section6.sub2.li2":
+		"Die Einhaltung der Datenschutzbestimmungen",
+	"termsOfUsePage.section6.sub2.li3":
+		"Die regelmäßige Löschung nicht mehr benötigter Daten",
+	"termsOfUsePage.section6.sub2.li4":
+		"Die ordnungsgemäße Verwaltung der Zugangsdaten",
+	//6.3
+	"termsOfUsePage.section6.sub3.number": "6.3",
+	"termsOfUsePage.section6.sub3.title": "Meldepflicht",
+	"termsOfUsePage.section6.sub3.p1.start":
+		"Technische Störungen, Sicherheitsvorfälle oder vermutete Datenschutzverletzungen können an ",
+	"termsOfUsePage.section6.sub3.p1.link": "support@baergpt.berlin",
+	"termsOfUsePage.section6.sub3.p1.end": " gemeldet werden.",
+	//Section 7
+	"termsOfUsePage.section7.title": "Rechte und Pflichten des Betreibers",
+	//7.1
+	"termsOfUsePage.section7.sub1.number": "7.1",
+	"termsOfUsePage.section7.sub1.title": "Verfügbarkeit",
+	"termsOfUsePage.section7.sub1.p1":
+		"Der Betreiber bemüht sich um eine möglichst hohe Verfügbarkeit von BärGPT. Ein Rechtsanspruch auf jederzeitige Verfügbarkeit besteht jedoch nicht. Der Betreiber bearbeitet Störmeldungen und Supportanfragen während der normalen Arbeitszeiten (Montag-Freitag, 09:00-17:00 Uhr CET/CEST). Störungen werden entsprechend ihrer Auswirkung priorisiert (z. B. hohe Priorität bei vollständigem Ausfall der Anwendung). Konkrete Maßnahmen zur Behebung richten sich nach der technischen Einschätzung und den zur Verfügung stehenden Ressourcen; die Behebung kann daher variieren und ist nicht garantiert.",
+	"termsOfUsePage.section7.sub1.p2":
+		"Wartungsarbeiten, Systemaktualisierungen oder andere technische Notwendigkeiten können vorübergehende Einschränkungen oder Ausfälle zur Folge haben. Der Betreiber wird versuchen, solche Unterbrechungen auf ein Minimum zu beschränken und nach Möglichkeit rechtzeitig anzukündigen.",
+	//7.2
+	"termsOfUsePage.section7.sub2.number": "7.2",
+	"termsOfUsePage.section7.sub2.title": "Änderungen und Weiterentwicklung",
+	"termsOfUsePage.section7.sub2.p1":
+		"Der Betreiber behält sich das Recht vor, BärGPT jederzeit zu ändern, zu erweitern oder weiterzuentwickeln. Dies umfasst:",
+	"termsOfUsePage.section7.sub2.li1": "Anpassung des Funktionsumfangs",
+	"termsOfUsePage.section7.sub2.li2": "Änderung der Benutzeroberfläche",
+	"termsOfUsePage.section7.sub2.li3": "Integration neuer Funktionen",
+	"termsOfUsePage.section7.sub2.li4":
+		"Austausch oder Aktualisierung von Systemkomponenten (z.B. Sprachmodelle)",
+	"termsOfUsePage.section7.sub2.p2":
+		"Die Nutzenden werden über wesentliche Änderungen informiert.",
+	//7.3
+	"termsOfUsePage.section7.sub3.number": "7.3",
+	"termsOfUsePage.section7.sub3.title": "Sperrung und Löschung von Accounts",
+	"termsOfUsePage.section7.sub3.p1":
+		"Der Betreiber ist berechtigt, Nutzeraccounts zu sperren oder zu löschen, wenn:",
+	"termsOfUsePage.section7.sub3.li1":
+		"Ein Verstoß gegen diese Nutzungsbedingungen vorliegt",
+	"termsOfUsePage.section7.sub3.li2":
+		"Berechtigte Zweifel an der Nutzungsberechtigung bestehen",
+	"termsOfUsePage.section7.sub3.li3":
+		"Die Nutzung gegen geltendes Recht verstößt",
+	"termsOfUsePage.section7.sub3.li4":
+		"Die Sicherheit der Anwendung oder anderer Nutzender gefährdet ist",
+	"termsOfUsePage.section7.sub3.p2":
+		"Vor einer Sperrung oder Löschung wird der Betreiber die betroffenen Nutzenden nach Möglichkeit informieren und ihnen Gelegenheit zur Stellungnahme geben, sofern dies rechtlich zulässig und technisch möglich ist.",
+	//Section 8
+	"termsOfUsePage.section8.title": "Haftung und Gewährleistung",
+	//8.1
+	"termsOfUsePage.section8.sub1.number": "8.1",
+	"termsOfUsePage.section8.sub1.title": "Haftungsausschluss für Inhalte",
+	"termsOfUsePage.section8.sub1.p1":
+		"Der Betreiber übernimmt keine Gewähr für die Richtigkeit, Vollständigkeit oder Aktualität der von BärGPT generierten Inhalte. Die Nutzenden sind selbst für die Prüfung und Verwendung der Ergebnisse verantwortlich.",
+	"termsOfUsePage.section8.sub1.p2":
+		"Insbesondere wird keine Haftung übernommen für: ",
+	"termsOfUsePage.section8.sub1.li1":
+		"Fehlerhafte oder unvollständige Informationen",
+	"termsOfUsePage.section8.sub1.li2": "„Halluzinationen“ des Sprachmodells",
+	"termsOfUsePage.section8.sub1.li3":
+		"Veraltete oder nicht mehr aktuelle Informationen aus dem Verwaltungswissen",
+	"termsOfUsePage.section8.sub1.li4":
+		"Fehlinterpretationen hochgeladener Dokumente",
+	//8.2
+	"termsOfUsePage.section8.sub2.number": "8.2",
+	"termsOfUsePage.section8.sub2.title": "Haftungsbeschränkung",
+	"termsOfUsePage.section8.sub2.p1":
+		"Der Betreiber haftet nur für Schäden, die auf Vorsatz oder grober Fahrlässigkeit beruhen. Die Haftung für leichte Fahrlässigkeit ist ausgeschlossen, soweit nicht Leben, Körper, Gesundheit oder wesentliche Vertragspflichten (Kardinalpflichten) betroffen sind.",
+	"termsOfUsePage.section8.sub2.p2":
+		"Bei Verletzung wesentlicher Vertragspflichten ist die Haftung auf den vorhersehbaren, vertragstypischen Schaden begrenzt.",
+	"termsOfUsePage.section8.sub2.p3":
+		"Die Haftung nach dem Produkthaftungsgesetz bleibt unberührt.",
+	//8.3
+	"termsOfUsePage.section8.sub3.number": "8.3",
+	"termsOfUsePage.section8.sub3.title": "Datenverlust",
+	"termsOfUsePage.section8.sub3.p1":
+		"Der Betreiber führt regelmäßige Backups durch. Dennoch kann ein vollständiger Schutz vor Datenverlust nicht garantiert werden. Die Nutzenden werden gebeten, wichtige Daten zusätzlich lokal zu sichern.",
+	//Section 9
+	"termsOfUsePage.section9.title": "Open Source und Nutzungsrechte",
+	//9.1
+	"termsOfUsePage.section9.sub1.number": "9.1",
+	"termsOfUsePage.section9.sub1.title": "Open Source",
+	"termsOfUsePage.section9.sub1.p1.start":
+		"BärGPT wurde nach dem Prinzip „Public Money, Public Code“ entwickelt. Der Quellcode ist Open Source und öffentlich auf ",
+	"termsOfUsePage.section9.sub1.p1.link":
+		"https://github.com/technologiestiftung/baergpt)",
+	"termsOfUsePage.section9.sub1.p1.link.label": "GitHub",
+	"termsOfUsePage.section9.sub1.p1.end": " verfügbar.",
+	//9.2
+	"termsOfUsePage.section9.sub2.number": "9.2",
+	"termsOfUsePage.section9.sub2.title":
+		"Nutzungsrechte an generierten Inhalten",
+	"termsOfUsePage.section9.sub2.p1":
+		"Die mit BärGPT generierten Inhalte stehen den Nutzenden zur freien Verwendung im Rahmen ihrer dienstlichen Aufgaben zur Verfügung. Der Betreiber erhebt keine Ansprüche an diesen Inhalten.",
+	//9.3
+	"termsOfUsePage.section9.sub3.number": "9.3",
+	"termsOfUsePage.section9.sub3.title":
+		"Nutzungsrechte an hochgeladenen Dokumenten",
+	"termsOfUsePage.section9.sub3.p1":
+		"Die Nutzenden versichern, dass sie über die erforderlichen Rechte an den hochgeladenen Dokumenten verfügen. Der Betreiber erwirbt keine Rechte an den hochgeladenen Dokumenten.",
+	//Section 10
+	"termsOfUsePage.section10.title": "Änderungen der Nutzungsbedingungen",
+	//10.1
+	"termsOfUsePage.section10.sub1.number": "10.1",
+	"termsOfUsePage.section10.sub1.title": "Änderungsvorbehalt",
+	"termsOfUsePage.section10.sub1.p1":
+		"Der Betreiber behält sich vor, diese Nutzungsbedingungen zu ändern, sofern dies aus rechtlichen oder technischen Gründen erforderlich ist oder zur Verbesserung des Angebots dient.",
+	//10.2
+	"termsOfUsePage.section10.sub2.number": "10.2",
+	"termsOfUsePage.section10.sub2.title": "Information über Änderungen",
+	"termsOfUsePage.section10.sub2.p1":
+		"Wesentliche Änderungen werden den Nutzenden rechtzeitig (mindestens zwei Wochen vor Inkrafttreten) per E-Mail oder über die Anwendung mitgeteilt.",
+	//10.3
+	"termsOfUsePage.section10.sub3.number": "10.3",
+	"termsOfUsePage.section10.sub3.title": "Widerspruchsrecht",
+	"termsOfUsePage.section10.sub3.p1":
+		"Die Nutzenden haben das Recht, Änderungen zu widersprechen. Der Widerspruch ist schriftlich oder per E-Mail an support@baergpt.berlin zu richten. Im Falle eines Widerspruchs endet das Nutzungsverhältnis mit Inkrafttreten der neuen Nutzungsbedingungen.",
+	"termsOfUsePage.section10.sub3.p2":
+		"Die weitere Nutzung von BärGPT nach Inkrafttreten der geänderten Nutzungsbedingungen gilt als Zustimmung zu den Änderungen.",
+	//Section 11
+	"termsOfUsePage.section11.title": "Beendigung der Nutzung",
+	//11.1
+	"termsOfUsePage.section11.sub1.number": "11.1",
+	"termsOfUsePage.section11.sub1.title": "Kündigung durch Nutzende",
+	"termsOfUsePage.section11.sub1.p1":
+		"Die Nutzenden können die Nutzung von BärGPT jederzeit ohne Einhaltung einer Frist beenden, indem sie ihren Account über die Profilseite löschen.",
+	//11.2
+	"termsOfUsePage.section11.sub2.number": "11.2",
+	"termsOfUsePage.section11.sub2.title": "Folgen der Accountlöschung",
+	"termsOfUsePage.section11.sub2.p1":
+		"Bei Löschung des Accounts werden unwiderruflich und unmittelbar gelöscht:",
+	"termsOfUsePage.section11.sub2.li1":
+		"Das Nutzerprofil (Vorname, Nachname, E-Mail-Adresse, Anrede, Titel)",
+	"termsOfUsePage.section11.sub2.li2": "Die gesamte Chat-Historie",
+	"termsOfUsePage.section11.sub2.li3":
+		"Alle hochgeladenen Dokumente und Ordner",
+	"termsOfUsePage.section11.sub2.li4": "Alle zugehörigen Metadaten",
+	"termsOfUsePage.section11.sub2.p2":
+		"Die Löschung kann nicht rückgängig gemacht werden.",
+	//11.3
+	"termsOfUsePage.section11.sub3.number": "11.3",
+	"termsOfUsePage.section11.sub3.title": "Kündigung durch den Betreiber",
+	"termsOfUsePage.section11.sub3.p1":
+		"Der Betreiber kann das Nutzungsverhältnis mit einer Frist von zwei Wochen ohne Angabe von Gründen beenden.",
+	"termsOfUsePage.section11.sub3.p2":
+		"Bei Vorliegen eines wichtigen Grundes (z.B. Verstoß gegen diese Nutzungsbedingungen, Verlust der Nutzungsberechtigung) kann eine fristlose Kündigung erfolgen.",
+	//Section 12
+	"termsOfUsePage.section12.title": "Schlussbestimmungen",
+	//12.1
+	"termsOfUsePage.section12.sub1.number": "12.1",
+	"termsOfUsePage.section12.sub1.title": "Gerichtsstand",
+	"termsOfUsePage.section12.sub1.p1":
+		"Soweit gesetzlich zulässig, ist Gerichtsstand für alle Streitigkeiten aus oder im Zusammenhang mit diesem Vertragsverhältnis Berlin.",
+	//12.2
+	"termsOfUsePage.section12.sub2.number": "12.2",
+	"termsOfUsePage.section12.sub2.title": "Salvatorische Klausel",
+	"termsOfUsePage.section12.sub2.p1":
+		"Sollten einzelne Bestimmungen dieser Nutzungsbedingungen unwirksam oder undurchführbar sein oder werden, berührt dies die Wirksamkeit der übrigen Bestimmungen nicht. An die Stelle der unwirksamen oder undurchführbaren Bestimmung tritt eine wirksame Regelung, die dem wirtschaftlichen Zweck der unwirksamen Bestimmung am nächsten kommt.",
+	//12.3
+	"termsOfUsePage.section12.sub3.number": "12.3",
+	"termsOfUsePage.section12.sub3.title": "Sprache",
+	"termsOfUsePage.section12.sub3.p1":
+		"Diese Nutzungsbedingungen sind in deutscher Sprache verfasst. Bei Übersetzungen in andere Sprachen ist im Zweifel die deutsche Fassung maßgeblich.",
+	//12.4
+	"termsOfUsePage.section12.sub4.number": "12.4",
+	"termsOfUsePage.section12.sub4.title": "Support und Kontakt",
+	"termsOfUsePage.section12.sub4.p1":
+		"Bei Fragen zu diesen Nutzungsbedingungen oder zu BärGPT wenden Sie sich bitte an:",
+	"termsOfUsePage.section12.sub4.p1.contact.email.label": "E-Mail: ",
+	"termsOfUsePage.section12.sub4.p1.contact.email": "support@baergpt.berlin",
+	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.label": "Hilfecenter: ",
+	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.link":
+		"https://hilfe.baergpt.berlin",
+	//consent
+	"termsOfUsePage.consent.title": "Einwilligung und Bestätigung",
+	"termsOfUsePage.consent.p1":
+		"Mit der Registrierung und Nutzung von BärGPT bestätigen Sie:",
+	"termsOfUsePage.consent.li1":
+		"Dass Sie die vorliegenden Nutzungsbedingungen vollständig gelesen und verstanden haben",
+	"termsOfUsePage.consent.li2":
+		"Dass Sie die Nutzungsbedingungen in vollem Umfang akzeptieren",
+	"termsOfUsePage.consent.li3":
+		"Dass Sie zur Nutzung von BärGPT berechtigt sind (Beschäftigte/r der Berliner Verwaltung)",
+	"termsOfUsePage.consent.li4":
+		"Dass Sie sich verpflichten, keine personenbezogenen Daten oder Daten mit hohem Schutzbedarf zu verarbeiten (bis zur Inkraftsetzung der entsprechenden Rechtsgrundlage)",
+	"termsOfUsePage.consent.li5":
+		"Dass Sie die Datenschutzhinweise zur Kenntnis genommen haben",
+	"termsOfUsePage.consent.li6":
+		"Dass Sie Ihre Zugangsdaten nicht an Dritte weitergeben werden",
+	"termsOfUsePage.consent.li7":
+		"Dass Sie die Anwendung ausschließlich im Rahmen Ihrer beruflichen Tätigkeit nutzen werden",
+	"termsOfUsePage.contact.organisation": "Technologiestiftung Berlin",
+	"termsOfUsePage.contact.organisation.1": "CityLAB Berlin",
+	"termsOfUsePage.contact.address.street": "Platz der Luftbrücke 4",
+	"termsOfUsePage.contact.address.city": "12101 Berlin",
+	"termsOfUsePage.contact.website": "https://www.baergpt.berlin",
+	"termsOfUsePage.contact.helpcenter.website": "https://hilfe.baergpt.berlin",
+
 	/* -------------------- Video player -------------------- */
 	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
 	"videoPlayer.cookies.buttonAriaLabel":
@@ -330,6 +736,7 @@ export const Content = {
 	"loadingSpinnerIcon.imgAlt": "Ein sich drehendes Spinner-Icon",
 	"previewIcon.imgAlt": "Preview-Icon",
 	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
+	"redErrorXIcon.imgAlt": "Ein Error Icon mit weißem X in rotem Kreis",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
@@ -373,8 +780,9 @@ export const Content = {
 	//fileupload help link
 	"fileUpload.helpLink.label": "Hilfe",
 	"fileUpload.helpLink.link":
-		"https://hilfe.baergpt.berlin/faq#:~:text=Warum%20kann%20ich%20mein%20Dokument%20nicht%20hochladen%3F",
+		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
+	"fileUpload.maxFilesWarning.p1": "Max. 5 Dateien pro Upload.",
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
@@ -415,42 +823,34 @@ export const Content = {
 	//GetStarted
 	"chat.getStarted.h1": "Willkommen bei BärGPT, ",
 	"chat.getStarted.formal.p1":
-		"BärGPT ist ein KI-Assistent entwickelt speziell für die Berliner Verwaltung. Er hilft Ihnen, Informationen schneller zu finden, Dokumente auszuwerten und Texte zu verfassen.",
+		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Ihnen dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
 	"chat.getStarted.informal.p1":
-		"BärGPT ist ein KI-Assistent, entwickelt speziell für die Berliner Verwaltung. Er hilft Dir, Informationen schneller zu finden, Dokumente auszuwerten und Texte zu verfassen.",
-	"chat.getStarted.formal.h2": "So nutzen Sie BärGPT",
-	"chat.getStarted.informal.h2": "So nutzt Du BärGPT",
-	"chat.getStarted.h3.1": "Frage stellen",
-	"chat.getStarted.formal.h3.1.p":
-		"Geben Sie Ihre Frage unten ein. Je präziser Ihre Frage, desto besser die Antwort.",
-	"chat.getStarted.informal.h3.1.p":
-		"Gib deine Frage unten ein. Je präziser deine Frage, desto besser die Antwort.",
+		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
 
-	"chat.getStarted.h3.2": "Dokument befragen",
-	"chat.getStarted.formal.h3.2.li1":
-		"Laden Sie ein PDF über den Button „Datei hochladen“ oder per Drag & Drop hoch.",
-	"chat.getStarted.informal.h3.2.li1":
-		"Füge ein PDF über den Button „Datei hochladen“ oder per Drag & Drop hinzu.",
-	"chat.getStarted.h3.2.li2.1": "Mit ",
-	"chat.getStarted.h3.2.li2.2": "-Button dem Chat hinzufügen.",
-	"chat.getStarted.formal.h3.2.li3": "Geben Sie Ihre Frage zum Dokument ein.",
-	"chat.getStarted.informal.h3.2.li3": "Gib deine Frage zum Dokument ein.",
-	"chat.getStarted.h3.3": "Bitte beachten",
-	"chat.getStarted.formal.h3.3.li1":
-		"BärGPT ist ein KI-Modell und kann Fehler machen, bitte überprüfen Sie Informationen.",
-	"chat.getStarted.informal.h3.3.li1":
-		"BärGPT ist ein KI-Modell und kann Fehler machen, bitte überprüfe alle Informationen.",
-	"chat.getStarted.h3.3.li2":
-		"BärGPT hat keinen Zugriff auf das Internet oder aktuelle Webinhalte.",
-	"chat.getStarted.formal.h3.3.li3":
-		"BärGPT ersetzt die Websuche nicht: Befragen Sie am besten Ihre eigenen Dokumente.",
-	"chat.getStarted.informal.h3.3.li3":
-		"BärGPT ersetzt die Websuche nicht: Befrage am besten deine eigenen Dokumente.",
-	"chat.getStarted.h3.4": "Mehr erfahren?",
-	"chat.getStarted.formal.h3.4.p":
-		"Viele weitere Tipps und Videos finden Sie im ",
-	"chat.getStarted.informal.h3.4.p":
-		"Viele weitere Tipps und Videos findest Du im ",
+	"chat.getStarted.li1.formal": "Stellen Sie mir eine Frage im Textfeld.",
+	"chat.getStarted.li1.informal": "Stelle mir eine Frage im Textfeld.",
+	"chat.getStarted.li2.formal":
+		"Laden Sie ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
+	"chat.getStarted.li2.informal":
+		"Lade ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
+	"chat.getStarted.li3.p1": "Mit",
+	"chat.getStarted.li3.p2":
+		"-Button Dokument zum Chat hinzufügen und dann Fragen stellen.",
+
+	"chat.getStarted.h2": "Wichtig:",
+	"chat.getStarted.li4.formal":
+		"Hoher Andrang: Aktuell kann es zu Wartezeiten, Verzögerungen oder kurzfristigen Störungen kommen. Bitte versuchen Sie es ggf. später erneut.",
+	"chat.getStarted.li4.informal":
+		"Hoher Andrang: Aktuell kann es zu Wartezeiten, Verzögerungen oder kurzfristigen Störungen kommen. Bitte versuche es ggf. später erneut.",
+	"chat.getStarted.li5":
+		"Grenzen: Ich habe keinen Internetzugriff und kann keine aktuellen Webinhalte abrufen.",
+	"chat.getStarted.li6.formal":
+		"Qualität: Als KI kann ich Fehler machen. Bitte überprüfen Sie die Informationen.",
+	"chat.getStarted.li6.informal":
+		"Qualität: Als KI kann ich Fehler machen. Bitte überprüfe die Informationen.",
+	"chat.getStarted.li7.formal": "Tipps & Videos finden Sie im",
+	"chat.getStarted.li7.informal": "Tipps & Videos findest Du im",
+
 	"chat.getStarted.h3.4.link": "https://hilfe.baergpt.berlin/",
 	"chat.getStarted.h3.4.linkText": "Hilfecenter.",
 	"chat.getStarted.h3.4.link.ariaLabel": "Zum Hilfecenter von BärGPT",
@@ -566,6 +966,22 @@ export const Content = {
 	"profile.chatSettings.formal": "Siezen",
 	"profile.chatSettings.informal": "Duzen",
 
+	//Base knowledge documents
+	"profile.baseKnowledge.title": "Verwaltungswissen",
+	"profile.baseKnowledge.description":
+		"BärGPT greift für seine Antworten auf diese Dokumente zu.",
+	"profile.baseKnowledge.usage": "So nutzt BärGPT die Quellen. ",
+	"profile.baseKnowledge.link.label": "Mehr erfahren",
+	"profile.baseKnowledge.link.ariaLabel":
+		"Mehr erfahren über das Verwaltungswissen von BärGPT",
+	"profile.baseKnowledge.link.url":
+		"https://hilfe.baergpt.berlin//faq#wie-funktioniert-verwaltungswissen",
+	"profile.baseKnowledge.viewAll.label.start": "alle ",
+	"profile.baseKnowledge.viewAll.label.end": " Dokumente ansehen",
+	"profile.baseKnowledge.viewAll.ariaLabel":
+		"Alle Verwaltungswissen-Dokumente ansehen",
+	"profile.baseKnowledge.collapseList.label": "Liste einklappen",
+	"profile.baseKnowledge.collapseList.ariaLabel": "Liste einklappen",
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 	"emailChanged.buttonLink": "Zu BärGPT",
@@ -637,8 +1053,12 @@ export const Content = {
 	<li>1 Zahl</li>
 	<li>1 Sonderzeichen</li>
 </ul>`,
-	"registerPage.privacyLink": "Datenschutzbestimmungen",
-	"registerPage.privacyText": "zustimmen",
+	"registerPage.privacyLink.label": "Datenschutzbestimmungen",
+	"registerPage.privacyText.p1": "und",
+	"registerPage.termsOfUse.label": "Nutzungsbedingungen",
+	"registerPage.privacyText.p2": "zustimmen",
+	"registerPage.personalData.label":
+		"Ich versichere, keine personenbezogenen Daten zu bearbeiten.",
 	"registerPage.submitButton": "Registrieren",
 	"registerPage.loginPrompt": "Sie haben bereits einen Account?",
 	"registerPage.loginLink": "Jetzt einloggen",
@@ -652,7 +1072,7 @@ export const Content = {
 	"resetPasswordConfirmation.list.li.2":
 		"Bitte prüfen Sie auch Ihren Spam-Ordner",
 	"resetPasswordConfirmation.list.li.3":
-		"Adresse support@baergpt.de als Absender zulassen",
+		"Adresse support@baergpt.berlin als Absender zulassen",
 	"resetPasswordConfirmation.list.li.4":
 		"Bitte prüfen Sie die eingegebene E-Mail-Adresse",
 
@@ -709,7 +1129,9 @@ export const Content = {
 		"Die Passwörter stimmen nicht überein.",
 	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.privacy.required.error":
-		"Bitte stimmen Sie den Datenschutzbestimmungen zu.",
+		"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
+	"form.validation.personalData.required.error":
+		"Bitte stimmen Sie zu, keine personenbezogenen Daten zu bearbeiten.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
 	"form.validation.userAlreadyRegistered.error":
@@ -725,7 +1147,8 @@ export const Content = {
 	"footer.imprint.link": "https://www.technologiestiftung-berlin.de/impressum",
 	"footer.privacy": "Datenschutz",
 	"footer.privacy.link": "/privacy-policy/",
-
+	"footer.termsOfUse": "Nutzungsbedingungen",
+	"footer.termsOfUse.link": "/terms-of-use/",
 	"footer.citylabLogo.alt": "CityLAB Berlin",
 	"footer.citylabLogo.link": "https://citylab-berlin.org/",
 
