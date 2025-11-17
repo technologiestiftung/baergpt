@@ -81,7 +81,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/elona-m"><img src="https://avatars.githubusercontent.com/u/177862132?v=4?s=64" width="64px;" alt="Elona Müller"/><br /><sub><b>Elona Müller</b></sub></a><br /><a href="#design-elona-m" title="Design">🎨</a> <a href="#ideas-elona-m" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/elona-m"><img src="https://avatars.githubusercontent.com/u/177862132?v=4?s=64" width="64px;" alt="Elona Müller"/><br /><sub><b>Elona Müller</b></sub></a><br /><a href="#design-elona-m" title="Design">🎨</a> <a href="#ideas-elona-m" title="Ideas, Planning, & Feedback">🤔</a> <a href="#userTesting-elona-m" title="User Testing">📓</a></td>
     </tr>
   </tbody>
 </table>
