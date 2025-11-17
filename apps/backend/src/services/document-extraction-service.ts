@@ -26,14 +26,15 @@ export class DocumentExtractionService {
 		fileBytes: Uint8Array,
 		document: Document,
 	): Promise<ExtractionResult> {
+		const fileName = document.source_url.split("/").pop();
 		if (
-			document.file_name?.toLowerCase().endsWith(".doc") ||
-			document.file_name?.toLowerCase().endsWith(".docx")
+			fileName?.toLowerCase().endsWith(".doc") ||
+			fileName?.toLowerCase().endsWith(".docx")
 		) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
 				createBufferView(fileBytes),
-				document.file_name,
+				fileName,
 			);
 			const checksum = getHash(fileBytes);
 			const fileSize = fileBytes.byteLength;
@@ -51,7 +52,7 @@ export class DocumentExtractionService {
 					},
 				],
 			};
-		} else if (document.file_name?.toLowerCase().endsWith(".xlsx")) {
+		} else if (fileName?.toLowerCase().endsWith(".xlsx")) {
 			const excelExtractor = new ExcelExtractionService();
 			const parsedExcelPages =
 				await excelExtractor.extractExcelDocument(fileBytes);
@@ -78,7 +79,7 @@ export class DocumentExtractionService {
 		}
 		const parsedPages = await this.extractPdfAsMarkdownPages(
 			fileBytes,
-			document.file_name,
+			fileName,
 			{ numPages: numPages, ocrProvider: "mistral" },
 		);
 
