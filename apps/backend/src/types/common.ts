@@ -159,17 +159,10 @@ export type DocumentImporter = {
 export type Settings = {
 	supabaseUrl: string;
 	supabaseServiceRoleKey: string;
-	openAiApiKey: string;
 	mistralApiKey: string;
 	mistralModel: string;
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
-	allowDeletion: boolean;
-	maxPagesLimit: number;
-	maxPagesForLlmParseLimit: number;
-	openAiModel: string;
-	openAiEmbeddingModel: string;
-	llamaParseToken: string;
 	processingBatchSize: number;
 };
 
@@ -207,16 +200,6 @@ export interface ParsedPage {
 	tokenCount?: number;
 }
 
-export class ExtractError extends Error {
-	document: Document;
-	error: string;
-	constructor(document: Document, error: string) {
-		super();
-		this.document = document;
-		this.error = error;
-	}
-}
-
 export class DocumentNotFoundError extends Error {
 	constructor(documentId: number) {
 		super(
@@ -224,18 +207,6 @@ export class DocumentNotFoundError extends Error {
 		);
 		this.name = "DocumentNotFoundError";
 	}
-}
-
-export interface UploadResponse {
-	id: string;
-}
-
-export interface StatusResponse {
-	status: string;
-}
-
-export interface MarkdownResponse {
-	markdown: string;
 }
 
 export interface DocumentBufferResponse {
@@ -262,13 +233,6 @@ export interface JinaSegmenterResponse {
 	num_chunks: number;
 	chunks: string[];
 }
-
-export type LLMIdentifier =
-	| "openai-gpt-4o-mini"
-	| "azure-gpt-4o-mini"
-	| "citylab-macstudio-llama-3.1"
-	| "mistral-small-latest"
-	| "qwen3-30b-a3b-fp8";
 
 export class LLMHandler {
 	model: string;
