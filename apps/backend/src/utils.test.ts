@@ -53,7 +53,6 @@ describe("resilientCall()", () => {
 			const promises = Array.from({ length: amountOfCalls }, () =>
 				resilientCall(mockOperation, {
 					queueType: "embeddings",
-					retries: 0,
 				}),
 			);
 
@@ -76,7 +75,7 @@ describe("resilientCall()", () => {
 
 			// Create multiple operations that should be throttled
 			const promises = Array.from({ length: amountOfCalls }, () =>
-				resilientCall(mockOperation, { queueType: "llm", retries: 0 }),
+				resilientCall(mockOperation, { queueType: "llm" }),
 			);
 
 			await Promise.all(promises);

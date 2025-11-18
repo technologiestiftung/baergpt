@@ -39,6 +39,7 @@ function ensureInitialized(): void {
 		reservoirRefreshAmount: config.jinaMaxRPS,
 		reservoirRefreshInterval: 1000,
 		expiration: 600000,
+		heartbeatInterval: 1000,
 	});
 
 	llmLimiter = new Bottleneck({
@@ -50,6 +51,7 @@ function ensureInitialized(): void {
 		reservoirRefreshAmount: config.mistralMaxRPS,
 		reservoirRefreshInterval: 1000,
 		expiration: 600000,
+		heartbeatInterval: 1000,
 	});
 
 	// Ensure scripts are loaded and clients are ready before any schedule() calls.
