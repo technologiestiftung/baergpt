@@ -18,7 +18,7 @@
 		"db:reset": "supabase db reset && npm run db:typegen && npm run db:localseed",
 		"db:typegen": "supabase gen types --lang typescript --local > ../../libs/db-schema/index.ts && prettier --write ../../libs/db-schema/index.ts && ESLINT_USE_FLAT_CONFIG=true eslint --fix ../../libs/db-schema/index.ts",
 		"db:localseed": "tsx ./supabase/local-seed.ts",
-		"db:upload-default-document": "tsx ./supabase/upload-default-document.ts"
+		"db:upload-default-documents": "tsx ./supabase/upload-default-documents.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/azure": "2.0.45",

@@ -90,7 +90,7 @@ jobs:
       - name: Upload default document 📄
         run: |
           cd apps/backend
-          npm run db:upload-default-document
+          npm run db:upload-default-documents
 
       - name: Run integration tests 🧪
         run: |

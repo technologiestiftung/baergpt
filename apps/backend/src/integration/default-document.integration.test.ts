@@ -13,11 +13,6 @@ const DEFAULT_DOCUMENT_SOURCE_URL = DEFAULT_DOCUMENT_FILE_NAME; // Store at root
 const DEFAULT_DOCUMENT_SOURCE_TYPE = "default_document";
 const PUBLIC_DOCUMENTS_BUCKET = "public_documents";
 
-const defaultDocumentFilePath = resolve(
-	process.cwd(),
-	`./src/default_documents/${DEFAULT_DOCUMENT_FILE_NAME}`,
-);
-
 type ExistingDocument = {
 	id: number;
 	source_url: string;
@@ -59,16 +54,17 @@ describe("Default Document Integration Tests", () => {
 		await cleanupDefaultDocument();
 	});
 
-	async function checkExistingDocuments(): Promise<{
+	async function checkExistingDocuments(fileName: string): Promise<{
 		existingDocuments: ExistingDocument[] | null;
 		processedDocument: ExistingDocument | null;
 		existingDocument: ExistingDocument | null;
 	}> {
+		const sourceUrl = fileName; // Store at root of bucket
 		const { data: existingDocuments, error: checkError } =
 			await supabaseAdminClient
 				.from("documents")
 				.select("id, source_url, processing_finished_at, file_name")
-				.eq("source_url", DEFAULT_DOCUMENT_SOURCE_URL)
+				.eq("source_url", sourceUrl)
 				.eq("source_type", DEFAULT_DOCUMENT_SOURCE_TYPE);
 
 		if (checkError) {
@@ -106,22 +102,32 @@ describe("Default Document Integration Tests", () => {
 		}
 	}
 
-	function readFileFromDisk(): Buffer {
+	function readFileFromDisk(
+		fileName: string = DEFAULT_DOCUMENT_FILE_NAME,
+	): Buffer {
+		const filePath = resolve(
+			process.cwd(),
+			`./src/default_documents/${fileName}`,
+		);
 		try {
-			return readFileSync(defaultDocumentFilePath);
+			return readFileSync(filePath);
 		} catch (fileError) {
 			throw new Error(
-				`Error reading file at ${defaultDocumentFilePath}: ${
+				`Error reading file at ${filePath}: ${
 					fileError instanceof Error ? fileError.message : fileError
 				}`,
 			);
 		}
 	}
 
-	async function uploadFileToStorage(file: File): Promise<void> {
+	async function uploadFileToStorage(
+		file: File,
+		fileName: string = DEFAULT_DOCUMENT_FILE_NAME,
+	): Promise<void> {
+		const sourceUrl = fileName; // Store at root of bucket
 		const { error: uploadError } = await supabaseAdminClient.storage
 			.from(PUBLIC_DOCUMENTS_BUCKET)
-			.upload(DEFAULT_DOCUMENT_SOURCE_URL, file, {
+			.upload(sourceUrl, file, {
 				upsert: true, // Replace if exists
 			});
 
@@ -146,10 +152,14 @@ describe("Default Document Integration Tests", () => {
 		}
 	}
 
-	async function processDocument(file: File): Promise<void> {
+	async function processDocument(
+		file: File,
+		fileName: string = DEFAULT_DOCUMENT_FILE_NAME,
+	): Promise<void> {
+		const sourceUrl = fileName; // Store at root of bucket
 		const documentToProcess: Document = {
 			id: 0, // Will be set by logAndExtractDocument
-			source_url: DEFAULT_DOCUMENT_SOURCE_URL,
+			source_url: sourceUrl,
 			source_type: DEFAULT_DOCUMENT_SOURCE_TYPE,
 			file_size: file.size,
 			created_at: new Date().toISOString(),
@@ -176,9 +186,11 @@ describe("Default Document Integration Tests", () => {
 		await dbService.finishProcessing(extractedDocument);
 	}
 
-	async function uploadDefaultDocument(): Promise<void> {
+	async function uploadDefaultDocument(
+		fileName: string = DEFAULT_DOCUMENT_FILE_NAME,
+	): Promise<void> {
 		const { existingDocuments, processedDocument, existingDocument } =
-			await checkExistingDocuments();
+			await checkExistingDocuments(fileName);
 
 		// If document is already fully processed, skip everything
 		if (processedDocument) {
@@ -191,17 +203,13 @@ describe("Default Document Integration Tests", () => {
 		}
 
 		// Read file from disk
-		const fileBuffer = readFileFromDisk();
-		const file = new File(
-			[new Uint8Array(fileBuffer)],
-			DEFAULT_DOCUMENT_FILE_NAME,
-			{
-				type: "application/pdf",
-			},
-		);
+		const fileBuffer = readFileFromDisk(fileName);
+		const file = new File([new Uint8Array(fileBuffer)], fileName, {
+			type: "application/pdf",
+		});
 
 		// Upload to storage
-		await uploadFileToStorage(file);
+		await uploadFileToStorage(file, fileName);
 
 		// If an unprocessed record exists, delete it first
 		if (existingDocument && !existingDocument.processing_finished_at) {
@@ -209,15 +217,18 @@ describe("Default Document Integration Tests", () => {
 		}
 
 		// Process the document
-		await processDocument(file);
+		await processDocument(file, fileName);
 	}
 
-	async function cleanupDefaultDocument(): Promise<void> {
+	async function cleanupDefaultDocument(
+		fileName: string = DEFAULT_DOCUMENT_FILE_NAME,
+	): Promise<void> {
+		const sourceUrl = fileName; // Store at root of bucket
 		// Delete document record
 		const { error: deleteDocError } = await supabaseAdminClient
 			.from("documents")
 			.delete()
-			.eq("source_url", DEFAULT_DOCUMENT_SOURCE_URL)
+			.eq("source_url", sourceUrl)
 			.eq("source_type", DEFAULT_DOCUMENT_SOURCE_TYPE);
 
 		if (deleteDocError) {
@@ -228,7 +239,7 @@ describe("Default Document Integration Tests", () => {
 		// Delete from storage
 		const { error: deleteStorageError } = await supabaseAdminClient.storage
 			.from(PUBLIC_DOCUMENTS_BUCKET)
-			.remove([DEFAULT_DOCUMENT_SOURCE_URL]);
+			.remove([sourceUrl]);
 
 		if (deleteStorageError) {
 			// Storage file might not exist, which is okay
@@ -249,7 +260,7 @@ describe("Default Document Integration Tests", () => {
 			},
 		);
 
-		await uploadFileToStorage(file);
+		await uploadFileToStorage(file, DEFAULT_DOCUMENT_FILE_NAME);
 
 		// Verify file exists in storage
 		const { data: fileData, error: listError } =
@@ -326,7 +337,7 @@ describe("Default Document Integration Tests", () => {
 				type: "application/pdf",
 			},
 		);
-		await uploadFileToStorage(file);
+		await uploadFileToStorage(file, DEFAULT_DOCUMENT_FILE_NAME);
 
 		// Manually create duplicate documents
 		const { data: duplicate1 } = await supabaseAdminClient
@@ -380,7 +391,7 @@ describe("Default Document Integration Tests", () => {
 				type: "application/pdf",
 			},
 		);
-		await uploadFileToStorage(file);
+		await uploadFileToStorage(file, DEFAULT_DOCUMENT_FILE_NAME);
 
 		// Create an unprocessed document record
 		const { data: unprocessedDoc } = await supabaseAdminClient

@@ -15,7 +15,7 @@ interface DocumentStore {
 	isPublicDocumentFirstLoad: boolean;
 	isLoading: boolean;
 	isPublicDocumentsLoading: boolean;
-	isDefaultDocumentDeleted: boolean;
+	deletedDefaultDocumentIds: number[];
 	getDocuments: (signal: AbortSignal) => Promise<void>;
 	getPublicDocuments: (signal: AbortSignal) => Promise<void>;
 	deleteDocument: (documentId: number) => Promise<Error | null>;
@@ -40,12 +40,27 @@ interface DocumentStore {
 
 const STORAGE_KEY = "default-document-deleted";
 
-const getIsDefaultDocumentDeleted = (): boolean => {
+const getDeletedDefaultDocumentIds = (): number[] => {
 	if (typeof window === "undefined") {
-		return false;
+		return [];
 	}
 	const stored = localStorage.getItem(STORAGE_KEY);
-	return stored === "true";
+	if (!stored) {
+		return [];
+	}
+	try {
+		const parsed = JSON.parse(stored);
+		return Array.isArray(parsed) ? parsed : [];
+	} catch {
+		return [];
+	}
+};
+
+const saveDeletedDefaultDocumentIds = (ids: number[]): void => {
+	if (typeof window === "undefined") {
+		return;
+	}
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
 };
 
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
@@ -55,7 +70,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	isPublicDocumentFirstLoad: true,
 	isLoading: false,
 	isPublicDocumentsLoading: false,
-	isDefaultDocumentDeleted: getIsDefaultDocumentDeleted(),
+	deletedDefaultDocumentIds: getDeletedDefaultDocumentIds(),
 	getDocuments: async (signal: AbortSignal) => {
 		set({ isLoading: true });
 		try {
@@ -93,14 +108,18 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		}
 	},
 	deleteDocument: async (documentId: number) => {
-		const { documents } = get();
+		const { documents, deletedDefaultDocumentIds } = get();
 		const documentToDelete = documents.find((doc) => doc.id === documentId);
 
 		// Prevent deletion of default documents
 		if (documentToDelete?.source_type === "default_document") {
-			// Mark that a default document deletion was attempted
-			localStorage.setItem(STORAGE_KEY, "true");
-			set({ isDefaultDocumentDeleted: true });
+			// Save the ID of the deleted default document
+			const updatedIds = [...deletedDefaultDocumentIds];
+			if (!updatedIds.includes(documentId)) {
+				updatedIds.push(documentId);
+				saveDeletedDefaultDocumentIds(updatedIds);
+				set({ deletedDefaultDocumentIds: updatedIds });
+			}
 			return null;
 		}
 

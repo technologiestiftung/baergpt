@@ -13,7 +13,7 @@ import { isDocument } from "./list-item/utils/is-document.ts";
 
 export const DocumentsList: React.FC = () => {
 	const { isFolderFirstLoad, getItemsInCurrentFolder } = useFolderStore();
-	const { isDocumentFirstLoad, isLoading, isDefaultDocumentDeleted } =
+	const { isDocumentFirstLoad, isLoading, deletedDefaultDocumentIds } =
 		useDocumentStore();
 	const { isMobileCheckboxVisible } = useMobileMenuStore();
 
@@ -23,12 +23,10 @@ export const DocumentsList: React.FC = () => {
 
 	const sortedItems = getSortedItems(itemsInCurrentFolder);
 
-	// Filter out default documents if isDefaultDocumentDeleted
-	const filteredItems = isDefaultDocumentDeleted
-		? sortedItems.filter(
-				(item) => !isDocument(item) || item.source_type !== "default_document",
-			)
-		: sortedItems;
+	// Filter out deleted default documents by ID
+	const filteredItems = sortedItems.filter(
+		(item) => !isDocument(item) || !deletedDefaultDocumentIds.includes(item.id),
+	);
 
 	return (
 		<div className="flex flex-col w-full h-full md:mt-3">

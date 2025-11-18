@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { supabase } from "../src/supabase";
 import { DatabaseService } from "../src/services/database-service";
@@ -7,12 +8,32 @@ import { EmbeddingService } from "../src/services/embedding-service";
 import { config } from "../src/config";
 import type { Document, LLMIdentifier } from "../src/types/common";
 
-const fileName = "BaerGPT-Handbuch.pdf";
-const sourceUrl = fileName; // Store at root of bucket
 const sourceType = "default_document";
 const bucketName = "public_documents";
+const defaultDocumentsDir = resolve(process.cwd(), "./src/default_documents");
 
-const filePath = resolve(process.cwd(), `./src/default_documents/${fileName}`);
+async function getPdfFiles(): Promise<string[]> {
+	try {
+		const files = await readdir(defaultDocumentsDir);
+		const pdfFiles: string[] = [];
+
+		for (const file of files) {
+			const filePath = resolve(defaultDocumentsDir, file);
+			const fileStat = await stat(filePath);
+
+			// Only process files (not directories) and PDF files
+			if (fileStat.isFile() && file.toLowerCase().endsWith(".pdf")) {
+				pdfFiles.push(file);
+			}
+		}
+
+		return pdfFiles;
+	} catch (error) {
+		console.error("Error reading default_documents directory:", error);
+		process.exit(1);
+		return []; // Unreachable, but satisfies TypeScript
+	}
+}
 
 type ExistingDocument = {
 	id: number;
@@ -21,11 +42,12 @@ type ExistingDocument = {
 	file_name: string | null;
 };
 
-async function checkExistingDocuments(): Promise<{
+async function checkExistingDocuments(fileName: string): Promise<{
 	existingDocuments: ExistingDocument[] | null;
 	processedDocument: ExistingDocument | null;
 	existingDocument: ExistingDocument | null;
 }> {
+	const sourceUrl = fileName; // Store at root of bucket
 	const { data: existingDocuments, error: checkError } = await supabase
 		.from("documents")
 		.select("id, source_url, processing_finished_at, file_name")
@@ -71,7 +93,8 @@ async function cleanupDuplicates(
 	}
 }
 
-function readFileFromDisk(): Buffer {
+function readFileFromDisk(fileName: string): Buffer {
+	const filePath = resolve(defaultDocumentsDir, fileName);
 	try {
 		return readFileSync(filePath);
 	} catch (fileError) {
@@ -87,7 +110,11 @@ function readFileFromDisk(): Buffer {
 	}
 }
 
-async function uploadFileToStorage(file: File): Promise<void> {
+async function uploadFileToStorage(
+	file: File,
+	fileName: string,
+): Promise<void> {
+	const sourceUrl = fileName; // Store at root of bucket
 	// eslint-disable-next-line no-console
 	console.log(`Uploading ${fileName} to ${bucketName} bucket...`);
 	const { error: uploadError } = await supabase.storage
@@ -137,13 +164,14 @@ async function getDefaultAccessGroupId(): Promise<string> {
 	return accessGroup.id;
 }
 
-async function processDocument(file: File): Promise<void> {
+async function processDocument(file: File, fileName: string): Promise<void> {
 	// eslint-disable-next-line no-console
-	console.log("Processing document...");
+	console.log(`Processing document: ${fileName}...`);
 
 	// Get the default "Alle" access group ID
 	const accessGroupId = await getDefaultAccessGroupId();
 
+	const sourceUrl = fileName; // Store at root of bucket
 	const documentToProcess: Document = {
 		id: 0, // Will be set by logAndExtractDocument
 		source_url: sourceUrl,
@@ -173,44 +201,75 @@ async function processDocument(file: File): Promise<void> {
 	await dbService.finishProcessing(extractedDocument);
 
 	// eslint-disable-next-line no-console
-	console.log("Default document uploaded and processed successfully!");
+	console.log(
+		`Default document ${fileName} uploaded and processed successfully!`,
+	);
 }
 
 async function uploadDefaultDocument() {
 	try {
-		const { existingDocuments, processedDocument, existingDocument } =
-			await checkExistingDocuments();
+		// Get all PDF files from the default_documents directory
+		const pdfFiles = await getPdfFiles();
 
-		// If document is already fully processed, skip everything
-		if (processedDocument) {
+		if (pdfFiles.length === 0) {
 			// eslint-disable-next-line no-console
 			console.log(
-				`Default document already exists and is processed (id: ${processedDocument.id}). Skipping upload.`,
+				"No PDF files found in src/default_documents/ directory. Exiting.",
 			);
 			return;
 		}
 
-		// Clean up duplicates if any (keep the one we'll use)
-		if (existingDocuments && existingDocuments.length > 1 && existingDocument) {
-			await cleanupDuplicates(existingDocuments, existingDocument);
+		// eslint-disable-next-line no-console
+		console.log(
+			`Found ${pdfFiles.length} PDF file(s) to process: ${pdfFiles.join(", ")}`,
+		);
+
+		// Process each PDF file
+		for (const fileName of pdfFiles) {
+			// eslint-disable-next-line no-console
+			console.log(`\n=== Processing ${fileName} ===`);
+
+			const { existingDocuments, processedDocument, existingDocument } =
+				await checkExistingDocuments(fileName);
+
+			// If document is already fully processed, skip everything
+			if (processedDocument) {
+				// eslint-disable-next-line no-console
+				console.log(
+					`Default document ${fileName} already exists and is processed (id: ${processedDocument.id}). Skipping upload.`,
+				);
+				continue;
+			}
+
+			// Clean up duplicates if any (keep the one we'll use)
+			if (
+				existingDocuments &&
+				existingDocuments.length > 1 &&
+				existingDocument
+			) {
+				await cleanupDuplicates(existingDocuments, existingDocument);
+			}
+
+			// Read file from disk
+			const fileBuffer = readFileFromDisk(fileName);
+			const file = new File([new Uint8Array(fileBuffer)], fileName, {
+				type: "application/pdf",
+			});
+
+			// Upload to storage
+			await uploadFileToStorage(file, fileName);
+
+			// If an unprocessed record exists, delete it first
+			if (existingDocument && !existingDocument.processing_finished_at) {
+				await deleteUnprocessedRecord(existingDocument);
+			}
+
+			// Process the document
+			await processDocument(file, fileName);
 		}
 
-		// Read file from disk
-		const fileBuffer = readFileFromDisk();
-		const file = new File([new Uint8Array(fileBuffer)], fileName, {
-			type: "application/pdf",
-		});
-
-		// Upload to storage
-		await uploadFileToStorage(file);
-
-		// If an unprocessed record exists, delete it first
-		if (existingDocument && !existingDocument.processing_finished_at) {
-			await deleteUnprocessedRecord(existingDocument);
-		}
-
-		// Process the document
-		await processDocument(file);
+		// eslint-disable-next-line no-console
+		console.log("\n=== All default documents processed successfully! ===");
 	} catch (error) {
 		console.error("Unexpected error:", error);
 		process.exit(1);
