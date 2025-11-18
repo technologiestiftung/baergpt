@@ -8,15 +8,16 @@ import {
 } from "../api/documents/upload-file.ts";
 import { useErrorStore } from "./error-store.ts";
 export const UPLOAD_STATUS_MAP = {
-	uploading: "wird hochgeladen",
-	uploaded: "erfolgreich hochgeladen",
-	processing: "wird verarbeitet",
-	successful: "erfolgreich verarbeitet",
-	canceled: "hochladen abgebrochen",
-	"failed.generic": "hochladen fehlgeschlagen",
+	uploading: "Wird hochgeladen",
+	uploaded: "Erfolgreich hochgeladen",
+	processing: "Wird verarbeitet",
+	successful: "Erfolgreich verarbeitet",
+	canceled: "Hochladen abgebrochen",
+	"failed.generic": "Hochladen fehlgeschlagen",
 	"failed.duplicate": "Datei existiert bereits",
 	"failed.format": "Ungültiges Dateiformat (nur PDF, Word oder Excel)",
 	"failed.size": `Datei zu groß (max. ${import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB} MB)`,
+	"failed.tooMany": `Hochladen fehlgeschlagen`,
 } as const;
 
 export type UploadStatusKeys = keyof typeof UPLOAD_STATUS_MAP;
@@ -31,6 +32,7 @@ type UseFileUploadsStore = {
 	uploadFile: (fileUpload: FileUpload) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
+	hasAvailableUploadSlots: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
 	clearFileUploads: () => void;
 };
@@ -105,13 +107,33 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 	uploadFiles: async (files: File[]) => {
 		const { fileUploads, uploadFile } = get();
+		const { documents } = useDocumentStore.getState();
 
-		const newFileUploads = files.map((file) => ({
+		const availableUploadSlots =
+			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) - documents.length;
+		const maxFileUploads = Math.min(
+			availableUploadSlots,
+			Number(import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS),
+		);
+
+		const filesToUpload = files.slice(0, maxFileUploads);
+		const filesToCancel = files.slice(maxFileUploads);
+
+		const newFileUploads = filesToUpload.map((file) => ({
 			file,
 			status: "uploading" as UploadStatusKeys,
 		}));
 
-		const updatedFileUploads = [...fileUploads, ...newFileUploads];
+		const canceledFileUploads = filesToCancel.map((file) => ({
+			file,
+			status: "failed.tooMany" as UploadStatusKeys,
+		}));
+
+		const updatedFileUploads = [
+			...fileUploads,
+			...newFileUploads,
+			...canceledFileUploads,
+		];
 
 		set({ fileUploads: updatedFileUploads });
 
@@ -127,6 +149,20 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				fileUpload.status !== "processing" &&
 				fileUpload.status !== "uploaded",
 		);
+	},
+
+	hasAvailableUploadSlots: () => {
+		const { fileUploads } = get();
+		const maxFileUploads = Number(
+			import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS,
+		);
+		const activeUploads = fileUploads.filter(
+			(fileUpload) =>
+				fileUpload.status === "uploading" ||
+				fileUpload.status === "processing" ||
+				fileUpload.status === "uploaded",
+		);
+		return activeUploads.length < maxFileUploads;
 	},
 
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {

@@ -5,10 +5,13 @@ import {
 	mockDocumentUpload,
 	uploadFileViaDragAndDrop,
 	uploadFileViaFileChooser,
+	uploadMultipleFilesViaFileChooser,
 } from "../fixtures/test-with-documents.ts";
 import {
 	defaultBucketName,
 	defaultDocumentName,
+	defaultDocumentPath,
+	defaultDocuments,
 	defaultSourceType,
 	longFileName,
 	longFilePath,
@@ -35,6 +38,104 @@ test.describe("Documents", () => {
 				uploadButtonName: "Datei hochladen",
 			});
 			await deleteFileViaUI({ page, fileName: defaultDocumentName });
+		},
+	);
+
+	testDesktopOnly(
+		"Upload max of 5 documents at once via file chooser",
+		async ({ page, browserName }) => {
+			// Test uploading exactly 5 documents (the max limit)
+			const filesToUpload = defaultDocuments.slice(0, 5);
+
+			await uploadMultipleFilesViaFileChooser({
+				files: filesToUpload,
+				page,
+				browserName,
+				uploadButtonName: "Datei hochladen",
+			});
+
+			// Verify all 5 files are visible in the document list
+			for (const file of filesToUpload) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${file.name}` }),
+				).toBeVisible();
+			}
+
+			// Clean up: delete all uploaded files
+			for (const file of filesToUpload) {
+				await deleteFileViaUI({ page, fileName: file.name });
+			}
+		},
+	);
+
+	testDesktopOnly(
+		"Attempt to upload more than 5 documents shows error for extras",
+		async ({ page, browserName }) => {
+			// Try to upload 6 documents (1 more than the max limit)
+			const allFiles = defaultDocuments.slice(0, 6);
+			const filesToUpload = allFiles.slice(0, 5);
+			const fileToReject = allFiles[5];
+
+			await page.goto("/");
+			await page.waitForLoadState("networkidle");
+
+			const filePaths = allFiles.map((file) => file.path);
+
+			if (browserName === "firefox") {
+				page.on("filechooser", async (fileChooser) => {
+					await fileChooser.setFiles([]);
+				});
+
+				const fileInput = page.locator('input[type="file"]').first();
+				await fileInput.setInputFiles(filePaths);
+			} else {
+				const fileChooserPromise = page.waitForEvent("filechooser");
+				await page.getByRole("button", { name: "Datei hochladen" }).click();
+				const fileChooser = await fileChooserPromise;
+				await fileChooser.setFiles(filePaths);
+			}
+
+			// Wait for the error message for the rejected file
+			await expect(page.getByText("Max. 5 Dateien pro Upload.")).toBeVisible();
+
+			// Verify the first 5 files are being uploaded/uploaded successfully
+			for (const file of filesToUpload) {
+				await expect(page.getByText(file.name, { exact: true })).toBeVisible();
+			}
+
+			// Wait for successful uploads to complete
+			for (let i = 0; i < 5; i++) {
+				await page.waitForResponse(
+					(givenResponse) =>
+						givenResponse.url().includes("/documents/process") &&
+						givenResponse.request().method() === "POST",
+					{
+						timeout: 60_000,
+					},
+				);
+			}
+
+			// Close the file upload dialog
+			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+
+			// Verify only the first 5 files appear in the document list
+			for (const file of filesToUpload) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${file.name}` }),
+				).toBeVisible();
+			}
+
+			// Verify the 6th file is NOT in the document list
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${fileToReject.name}`,
+				}),
+			).not.toBeVisible();
+
+			// Clean up: delete all successfully uploaded files
+			for (const file of filesToUpload) {
+				await deleteFileViaUI({ page, fileName: file.name });
+			}
 		},
 	);
 
@@ -517,6 +618,43 @@ test.describe("Documents", () => {
 			// Verify the download was successful
 			expect(download).toBeDefined();
 			expect(await download.path()).toBeTruthy();
+		},
+	);
+
+	testDesktopOnly(
+		"Shows limit reached message and disables upload button when max files uploaded",
+		async ({ page, account }) => {
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
+
+			// Mock multiple document uploads to reach the limit
+			// We already have 1 document from the fixture, so upload (maxFiles - 1) more
+			for (let i = 1; i < maxFiles; i++) {
+				await mockDocumentUpload({
+					userId: account.id,
+					accessGroupId: null,
+					fileName: `test-document-${i}.pdf`,
+					filePath: defaultDocumentPath,
+					sourceType: defaultSourceType,
+					bucketName: defaultBucketName,
+				});
+			}
+
+			await page.goto("/");
+			await page.waitForLoadState("networkidle");
+
+			// Verify the limit reached info messages are displayed
+			await expect(
+				page.getByText(`Sie haben das Limit von ${maxFiles} Dateien erreicht.`),
+			).toBeVisible();
+			await expect(
+				page.getByText("Löschen Sie eine Datei, um eine neue hochzuladen."),
+			).toBeVisible();
+
+			// Verify the upload button is disabled
+			const uploadButton = page.getByRole("button", {
+				name: "Datei hochladen",
+			});
+			await expect(uploadButton).toBeDisabled();
 		},
 	);
 });

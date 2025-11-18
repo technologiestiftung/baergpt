@@ -15,7 +15,9 @@ export function FileUploadStatusCollapsible() {
 
 	return (
 		<div className="flex flex-col w-full">
-			<div className="flex w-full bg-hellblau-100 hover:bg-hellblau-60 px-4 py-1 rounded-3px">
+			<div
+				className={`flex w-full bg-hellblau-100 hover:bg-hellblau-60 px-4 py-2 rounded-t-3px ${!isOpen && "rounded-b-3px"}`}
+			>
 				<button
 					className="flex justify-between w-full rounded-3px py-1 focus-visible:outline-default"
 					onClick={() => setIsOpen(!isOpen)}
@@ -36,7 +38,6 @@ export function FileUploadStatusCollapsible() {
 					</button>
 				)}
 			</div>
-
 			{isOpen && <FileUploadList />}
 		</div>
 	);

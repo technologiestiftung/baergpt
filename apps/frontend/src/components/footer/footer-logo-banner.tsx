@@ -29,7 +29,7 @@ const logoLinks = [
 
 export function FooterLogoBanner() {
 	return (
-		<ul className="w-full flex flex-col justify-center items-center py-5 md:items-start md:flex-row md:py-6 gap-12 text-center md:text-start text-schwarz-80">
+		<ul className="w-full flex flex-col justify-center items-center py-6 lg:items-start lg:flex-row gap-12 text-center md:text-start text-schwarz-80">
 			{logoLinks.map((item, index) => (
 				<li key={index} className="flex flex-col gap-y-5">
 					<span className="text-sm md:h-5 text-schwarz-40 tracking-[-0.15px]">

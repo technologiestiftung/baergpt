@@ -9,13 +9,41 @@ export const defaultBucketName = "documents";
 export const defaultUserPassword = "123456";
 export const defaultUserFirstName = "john";
 export const defaultUserLastName = "doe";
-export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@berlin.de`;
+export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@local.berlin.de`;
 
 export const defaultDocumentName = "default_document.pdf";
 export const defaultDocumentPath = resolve(
 	__dirname,
 	`./fixtures/${defaultDocumentName}`,
 );
+
+export const defaultDocuments = [
+	{
+		name: "default_document_1.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_1.pdf"),
+	},
+	{
+		name: "default_document_2.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_2.pdf"),
+	},
+	{
+		name: "default_document_3.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_3.pdf"),
+	},
+	{
+		name: "default_document_4.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_4.pdf"),
+	},
+	{
+		name: "default_document_5.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_5.pdf"),
+	},
+	{
+		name: "default_document_6.pdf",
+		path: resolve(__dirname, "./fixtures/default_document_6.pdf"),
+	},
+];
+export const defaultDocumentsType = "application/pdf";
 
 // defaultDocument data for `documents` table
 export const defaultSourceType = "personal_document";
