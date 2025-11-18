@@ -8,7 +8,7 @@ import { GenerationService } from "../services/generation-service";
 import { EmbeddingService } from "../services/embedding-service";
 import type { Document, LLMIdentifier } from "../types/common";
 
-const DEFAULT_DOCUMENT_FILE_NAME = "BaerGPT-Handbuch.pdf";
+const DEFAULT_DOCUMENT_FILE_NAME = "test-default-doc.pdf";
 const DEFAULT_DOCUMENT_SOURCE_URL = DEFAULT_DOCUMENT_FILE_NAME; // Store at root of bucket
 const DEFAULT_DOCUMENT_SOURCE_TYPE = "default_document";
 const PUBLIC_DOCUMENTS_BUCKET = "public_documents";
