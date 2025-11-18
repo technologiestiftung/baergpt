@@ -15,7 +15,7 @@ test.describe("Auth Admin", () => {
 	let userId: string | undefined;
 
 	test.beforeAll(async ({}, testInfo) => {
-		testEmail = `admin+${testInfo.workerIndex}@berlin.de`;
+		testEmail = `admin+${testInfo.workerIndex}@local.berlin.de`;
 		const { data, error } = await supabaseAdminClient.auth.admin.createUser({
 			email: testEmail,
 			password: "password123",

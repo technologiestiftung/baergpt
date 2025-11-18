@@ -6,23 +6,18 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-# BärGPT v2 Backend (API + Database)
+# BärGPT v2 Backend
 
-This project serves as the backend for the _BärGPT v2_ project, see [BärGPT v2 Frontend](https://github.com/technologiestiftung/baer-gpt-v2-frontend).
+This project serves as the backend for the _BärGPT_ project.
 
 It exposes various endpoints which are used to communicate with LLMs.
 
-It allows for using the `gpt-4o-mini` LLM via OpenAI API, an Azure-hosted `gpt-4o-mini` LLM and a self-hosted `llama-3.1` LLM self-hosted on a physical machine.
+It allows for using the `mistral-small` LLM via Mistral API.
 
 ## Prerequisites
 
-- OpenAI Account and API key (https://platform.openai.com/)
-- Azure account and deployed LLM model on Azure (https://azure.com/)
-- Self hosted `llama-3.1` model accessible via API
 - Node.js (https://nodejs.org/en)
 - NVM (https://github.com/nvm-sh/nvm)
-- Completed setup of [baer-gpt-v2-data-processing](https://github.com/technologiestiftung/baer-gpt-v2-data-processing)
-- Completed setup of [baer-gpt-v2-frontend](https://github.com/technologiestiftung/baer-gpt-v2-frontend)
 
 ## Development setup
 
@@ -47,11 +42,6 @@ It allows for using the `gpt-4o-mini` LLM via OpenAI API, an Azure-hosted `gpt-4
 ## Contributing
 
 Before you create a pull request, write an issue so we can discuss your changes.
-
-## Related Projects
-
-- https://github.com/technologiestiftung/baer-gpt-v2-frontend
-- https://github.com/technologiestiftung/baer-gpt-v2-data-processing
 
 ## Contributors
 

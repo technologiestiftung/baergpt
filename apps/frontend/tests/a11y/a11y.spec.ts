@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { supabaseAdminClient } from "../supabase.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 
-const defaultUserEmail = "john.doe-a11y@berlin.de";
+const defaultUserEmail = "john.doe-a11y@local.berlin.de";
 const defaultUserPassword = "123456";
 const defaultUserFirstName = "John";
 const defaultUserLastName = "Doe";
@@ -64,6 +64,9 @@ test.describe("Accessibility - Auth Flow", () => {
 			.getByRole("textbox", { name: "Passwort wiederholen Password" })
 			.fill(defaultUserPassword);
 		await page1.getByTestId("label-has-accepted-privacy-checkbox").click();
+		await page1
+			.getByTestId("label-has-accepted-personal-data-checkbox")
+			.click();
 		await page1
 			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
 			.click();
@@ -127,6 +130,18 @@ test.describe("Accessibility - Public Pages", () => {
 		await page.waitForLoadState("networkidle");
 
 		// Run accessibility scan on the privacy policy page
+		const a11yResults = await new AxeBuilder({ page }).analyze();
+		expect(a11yResults.violations).toEqual([]);
+	});
+
+	// test accessibility for terms of use page
+	test("Terms of use page should be accessible", async ({ page }) => {
+		await page.goto("/terms-of-use/");
+
+		// Wait for page to be fully loaded
+		await page.waitForLoadState("networkidle");
+
+		// Run accessibility scan on the terms of use page
 		const a11yResults = await new AxeBuilder({ page }).analyze();
 		expect(a11yResults.violations).toEqual([]);
 	});

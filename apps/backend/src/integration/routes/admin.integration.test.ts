@@ -20,10 +20,10 @@ const supabaseAnonClient = createClient<Database>(
 );
 
 describe("/admin/", () => {
-	const givenAdminEmail = "admin-test-suite-admin@berlin.de";
+	const givenAdminEmail = "admin-test-suite-admin@local.berlin.de";
 	const givenAdminPassword = "SecurePassword123!";
 
-	const givenUserEmail = "admin-test-suite-user@berlin.de";
+	const givenUserEmail = "admin-test-suite-user@local.berlin.de";
 	const givenUserPassword = "SecurePassword123!";
 
 	const userIds: Record<string, string> = {
@@ -449,7 +449,7 @@ describe("/admin/", () => {
 	});
 
 	it("POST /admin/users/invite should invite a new user and return 200", async () => {
-		const givenEmail = "db-test-suite-new-user@berlin.de";
+		const givenEmail = "db-test-suite-new-user@local.berlin.de";
 		const givenFirstName = "Jane";
 		const givenLastName = "Doe";
 
@@ -506,7 +506,7 @@ describe("/admin/", () => {
 	});
 
 	it("POST /admin/users/invite should resend an invite to an existing user and return 200", async () => {
-		const givenEmail = "db-test-suite-new-user@berlin.de";
+		const givenEmail = "db-test-suite-new-user@local.berlin.de";
 		const givenFirstName = "Jane";
 		const givenLastName = "Doe";
 

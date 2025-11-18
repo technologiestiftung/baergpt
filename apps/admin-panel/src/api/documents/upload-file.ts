@@ -1,41 +1,32 @@
 import { useAuthStore } from "../../store/use-auth-store";
 import { useAccessGroupStore } from "@/store/use-access-group-store";
+import { supabase } from "../../../supabase-client";
+import { StorageApiError } from "@supabase/storage-js";
 
 /**
- * Uploads the file to storage via the /documents/upload endpoint using FormData.
+ * Uploads the provided file directly to Supabase Storage in the "public_documents" bucket.
+ * @param file The file to upload.
+ * @param filePath The path (including filename) where the file will be stored in Supabase Storage.
  */
 export async function uploadFileToDb(
 	file: File,
 	filePath: string,
 ): Promise<void> {
-	const { session } = useAuthStore.getState();
+	try {
+		const { error: uploadError } = await supabase.storage
+			.from("public_documents")
+			.upload(filePath, file);
 
-	const form = new FormData();
-	form.append("file", file, file.name);
-	form.append("sourceUrl", filePath);
-	form.append("isPublicDocument", "true");
-
-	const response = await fetch(
-		`${import.meta.env.VITE_API_URL}/documents/upload`,
-		{
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${session?.access_token}`,
-			},
-			body: form,
-		},
-	);
-
-	if (response.status === 409) {
-		throw new Error("failed.duplicate");
-	}
-
-	if (!response.ok) {
-		const errorResponse = await response
-			.json()
-			.catch(() => ({ message: "Unknown error" }));
-		console.error("Upload failed:", errorResponse);
-		throw new Error("failed.generic");
+		if (uploadError) {
+			console.error("Storage upload error:", uploadError);
+			throw uploadError;
+		}
+	} catch (error) {
+		if (error instanceof StorageApiError && error.status === 409) {
+			throw new Error("failed.duplicate");
+		} else {
+			throw new Error("failed.generic");
+		}
 	}
 }
 
@@ -48,12 +39,10 @@ export async function processDocument(
 ): Promise<void> {
 	const { session } = useAuthStore.getState();
 	const access_group_id = useAccessGroupStore.getState().accessGroupId;
-
 	// Create document metadata
 	const documentData = {
 		document: {
 			id: null,
-			file_name: file.name,
 			folder_id: null,
 			owned_by_user_id: null,
 			created_at: new Date().toISOString(),

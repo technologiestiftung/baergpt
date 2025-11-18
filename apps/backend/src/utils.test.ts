@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { maxRetries } from "./constants";
 
 vi.mock("@sentry/node", () => ({
 	captureException: vi.fn(),
@@ -16,7 +17,7 @@ describe("resilientCall()", () => {
 			let attempts = 0;
 
 			const givenFunction = vi.fn(async () => {
-				if (attempts < config.maxRetries) {
+				if (attempts < maxRetries) {
 					attempts++;
 					throw givenError;
 				}
@@ -24,7 +25,7 @@ describe("resilientCall()", () => {
 			});
 
 			const actualResult = resilientCall(givenFunction, { retryDelay: 1 });
-			const expectedAttempts = config.maxRetries + 1; // Initial attempt + retries
+			const expectedAttempts = maxRetries + 1; // Initial attempt + retries
 
 			await expect(actualResult).resolves.toBe(expectedResult);
 			expect(givenFunction).toHaveBeenCalledTimes(expectedAttempts);
@@ -37,7 +38,7 @@ describe("resilientCall()", () => {
 			});
 
 			const actualResult = resilientCall(givenFunction, { retryDelay: 1 });
-			const expectedAttempts = config.maxRetries + 1; // Initial attempt + retries
+			const expectedAttempts = maxRetries + 1; // Initial attempt + retries
 			await expect(actualResult).rejects.toThrow("PersistentError");
 			expect(givenFunction).toHaveBeenCalledTimes(expectedAttempts);
 		});

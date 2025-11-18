@@ -1,34 +1,73 @@
 import React from "react";
-import Content from "../../content.ts";
 
-export const TableOfContents: React.FC = () => {
-	const items = [
-		Content["privacyPolicyPage.section1.title"],
-		Content["privacyPolicyPage.section2.title"],
-		Content["privacyPolicyPage.section3.title"],
-		Content["privacyPolicyPage.section4.title"],
-		Content["privacyPolicyPage.section5.title"],
-		Content["privacyPolicyPage.section6.title"],
-		Content["privacyPolicyPage.section7.title"],
-		Content["privacyPolicyPage.section8.title"],
-		Content["privacyPolicyPage.section9.title"],
-		Content["privacyPolicyPage.section10.title"],
-	];
+type TableOfContentsItem = {
+	title: string;
+	id?: string;
+	subsections?: TableOfContentsItem[];
+};
+
+type TableOfContentsProps = {
+	items: (string | TableOfContentsItem)[];
+};
+
+const TableOfContentsSection: React.FC<{
+	item: TableOfContentsItem;
+	index: number;
+	parentIndex?: number;
+}> = ({ item, index, parentIndex }) => {
+	const sectionNumber =
+		parentIndex !== undefined
+			? `${parentIndex + 1}.${index + 1}`
+			: `${index + 1}`;
+	const sectionId = item.id || `section-${sectionNumber.replace(".", "-")}`;
+
+	return (
+		<li>
+			<a
+				href={`#${sectionId}`}
+				className={`flex gap-2 leading-7 font-semibold group focus:none focus-visible:outline-none ${
+					parentIndex !== undefined
+						? "text-base lg:text-lg"
+						: "text-lg lg:text-xl"
+				}`}
+			>
+				<span
+					className={`flex-shrink-0 ${
+						parentIndex !== undefined ? "w-8" : "w-6"
+					}`}
+				>
+					{sectionNumber}.
+				</span>
+				<span className="group-hover:underline underline-offset-[5px] group-focus-visible:underline group-focus-visible:outline-default outline-offset-2 rounded-3px">
+					{item.title}
+				</span>
+			</a>
+			{item.subsections && item.subsections.length > 0 && (
+				<ol className="list-none pl-8 flex flex-col gap-1 mt-1.5">
+					{item.subsections.map((subsection, subIndex) => (
+						<TableOfContentsSection
+							key={subIndex}
+							item={subsection}
+							index={subIndex}
+							parentIndex={index}
+						/>
+					))}
+				</ol>
+			)}
+		</li>
+	);
+};
+
+export const TableOfContents: React.FC<TableOfContentsProps> = ({ items }) => {
+	const normalizedItems: TableOfContentsItem[] = items.map((item) =>
+		typeof item === "string" ? { title: item } : item,
+	);
+
 	return (
 		<div className="lg:mb-4">
 			<ol className="list-none pl-0 flex flex-col gap-1.5">
-				{items.map((item, index) => (
-					<li key={index}>
-						<a
-							href={`#section-${index + 1}`}
-							className="flex gap-2 text-lg leading-7 font-semibold lg:text-xl group focus:none focus-visible:outline-none"
-						>
-							<span className="w-6 flex-shrink-0">{index + 1}.</span>
-							<span className="group-hover:underline underline-offset-[5px] group-focus-visible:underline group-focus-visible:outline-default outline-offset-2 rounded-3px">
-								{item}
-							</span>
-						</a>
-					</li>
+				{normalizedItems.map((item, index) => (
+					<TableOfContentsSection key={index} item={item} index={index} />
 				))}
 			</ol>
 		</div>
