@@ -1,7 +1,7 @@
 import Bottleneck from "bottleneck";
 import Redis from "ioredis";
 import { config } from "../config";
-
+import { captureError } from "../monitoring/capture-error";
 type QueueType = "embeddings" | "llm";
 
 let embeddingsLimiter: Bottleneck | undefined;
@@ -19,9 +19,13 @@ function toClientOptions(url: string) {
 	};
 }
 
-function ensureInitialized(): void {
+export function initQueues(): Promise<void> {
+	if (readyPromise) {
+		return readyPromise;
+	}
+
 	if (embeddingsLimiter && llmLimiter) {
-		return;
+		return Promise.resolve();
 	}
 
 	if (!config.redisUrl) {
@@ -54,35 +58,37 @@ function ensureInitialized(): void {
 		heartbeatInterval: 1000,
 	});
 
+	llmLimiter.on("error", (error: Error) => {
+		console.error(error);
+		captureError(error);
+	});
+
+	embeddingsLimiter.on("error", (error: Error) => {
+		console.error(error);
+		captureError(error);
+	});
+
 	// Ensure scripts are loaded and clients are ready before any schedule() calls.
 	readyPromise = Promise.all([
 		embeddingsLimiter.ready(),
 		llmLimiter.ready(),
 	]).then(() => {
 		/* eslint-disable-next-line no-console */
-		console.info("Queue system initialized and ready");
+		console.info("Queue system initialized");
 	});
+
+	return readyPromise;
 }
 
-export function scheduleDistributed<T>(
+export async function scheduleDistributed<T>(
 	queueType: QueueType,
 	task: () => Promise<T>,
 ): Promise<T> {
-	ensureInitialized();
-
-	if (readyPromise) {
-		return readyPromise.then(() => {
-			if (queueType === "embeddings" && embeddingsLimiter) {
-				return embeddingsLimiter.schedule(task);
-			}
-			if (queueType === "llm" && llmLimiter) {
-				return llmLimiter.schedule(task);
-			}
-			throw new Error(
-				`Distributed limiter for "${queueType}" not initialized.`,
-			);
-		});
+	if (!readyPromise) {
+		throw new Error("Queue system not initialized. Call initQueues() first.");
 	}
+
+	await readyPromise;
 
 	if (queueType === "embeddings" && embeddingsLimiter) {
 		return embeddingsLimiter.schedule(task);

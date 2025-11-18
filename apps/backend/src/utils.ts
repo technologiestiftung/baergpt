@@ -54,11 +54,11 @@ export async function resilientCall<T>(
 	const { queueType } = options;
 
 	if (queueType === "embeddings") {
-		return scheduleDistributed("embeddings", () => withRetries(operation));
+		return withRetries(() => scheduleDistributed("embeddings", operation));
 	}
 
 	if (queueType === "llm") {
-		return scheduleDistributed("llm", () => withRetries(operation));
+		return withRetries(() => scheduleDistributed("llm", operation));
 	}
 
 	return withRetries(operation);
