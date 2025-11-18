@@ -78,6 +78,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 - **Authentication**: [Supabase Auth](https://github.com/supabase/supabase)
 - **Icons**: [Lucide React](https://github.com/lucide-icons/lucide)
 - **Testing**: [Playwright](https://github.com/microsoft/playwright) (E2E), [@axe-core/playwright](https://github.com/dequelabs/axe-core-npm) (Accessibility)
+- **API Rate Limting**: [Bottleneck](https://github.com/SGrondin/bottleneck), [Redis](https://redis.io/)
 
 ### 🚧 Maintenance Mode
 
@@ -122,6 +123,7 @@ You'll need accounts and API keys for:
 - **Jina AI**: API key from https://jina.ai/ (for embeddings)
 - **Gotenberg**: URL and credentials for Gotenberg service (PDF conversion)
 - **Sentry**: DSN from https://sentry.io/ (for error monitoring)
+- **Redis**: Connection string (for the API rate limiting queue)
 
 #### Optional for Backend
 
