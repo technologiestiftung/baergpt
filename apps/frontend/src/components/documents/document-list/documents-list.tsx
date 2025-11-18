@@ -9,10 +9,12 @@ import { getSortedItems } from "./list-item/utils/get-sorted-items.ts";
 import { getUniqueId } from "./list-item/utils/get-unique-id.ts";
 import { useMobileMenuStore } from "../../../store/use-mobile-menu.ts";
 import Content from "../../../content.ts";
+import { isDocument } from "./list-item/utils/is-document.ts";
 
 export const DocumentsList: React.FC = () => {
 	const { isFolderFirstLoad, getItemsInCurrentFolder } = useFolderStore();
-	const { isDocumentFirstLoad, isLoading } = useDocumentStore();
+	const { isDocumentFirstLoad, isLoading, isDefaultDocumentDeleted } =
+		useDocumentStore();
 	const { isMobileCheckboxVisible } = useMobileMenuStore();
 
 	const isFirstLoad = isDocumentFirstLoad || isFolderFirstLoad;
@@ -20,6 +22,13 @@ export const DocumentsList: React.FC = () => {
 	const itemsInCurrentFolder = getItemsInCurrentFolder();
 
 	const sortedItems = getSortedItems(itemsInCurrentFolder);
+
+	// Filter out default documents if isDefaultDocumentDeleted
+	const filteredItems = isDefaultDocumentDeleted
+		? sortedItems.filter(
+				(item) => !isDocument(item) || item.source_type !== "default_document",
+			)
+		: sortedItems;
 
 	return (
 		<div className="flex flex-col w-full h-full md:mt-3">
@@ -43,7 +52,7 @@ export const DocumentsList: React.FC = () => {
 
 					{!isFirstLoad &&
 						!isLoading &&
-						sortedItems.map((item) => (
+						filteredItems.map((item) => (
 							<ListItem key={getUniqueId(item)} item={item} />
 						))}
 				</ul>

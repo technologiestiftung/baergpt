@@ -15,6 +15,7 @@ interface DocumentStore {
 	isPublicDocumentFirstLoad: boolean;
 	isLoading: boolean;
 	isPublicDocumentsLoading: boolean;
+	isDefaultDocumentDeleted: boolean;
 	getDocuments: (signal: AbortSignal) => Promise<void>;
 	getPublicDocuments: (signal: AbortSignal) => Promise<void>;
 	deleteDocument: (documentId: number) => Promise<Error | null>;
@@ -37,6 +38,16 @@ interface DocumentStore {
 	unselectDocumentForAction: (documentId: number) => void;
 }
 
+const STORAGE_KEY = "default-document-deleted";
+
+const getIsDefaultDocumentDeleted = (): boolean => {
+	if (typeof window === "undefined") {
+		return false;
+	}
+	const stored = localStorage.getItem(STORAGE_KEY);
+	return stored === "true";
+};
+
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	documents: [],
 	publicDocuments: [],
@@ -44,6 +55,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	isPublicDocumentFirstLoad: true,
 	isLoading: false,
 	isPublicDocumentsLoading: false,
+	isDefaultDocumentDeleted: getIsDefaultDocumentDeleted(),
 	getDocuments: async (signal: AbortSignal) => {
 		set({ isLoading: true });
 		try {
@@ -86,6 +98,9 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
 		// Prevent deletion of default documents
 		if (documentToDelete?.source_type === "default_document") {
+			// Mark that a default document deletion was attempted
+			localStorage.setItem(STORAGE_KEY, "true");
+			set({ isDefaultDocumentDeleted: true });
 			return null;
 		}
 

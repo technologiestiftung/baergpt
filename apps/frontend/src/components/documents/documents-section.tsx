@@ -5,10 +5,15 @@ import { DesktopDocuments } from "./desktop-documents.tsx";
 import { MobileDocuments } from "./mobile-documents.tsx";
 
 export const DocumentsSection: React.FC = () => {
-	const { documents } = useDocumentStore();
+	const { documents, isDefaultDocumentDeleted } = useDocumentStore();
 	const { folders } = useFolderStore();
 
-	const hasItems = [...documents, ...folders].length > 0;
+	// Filter out default documents if isDefaultDocumentDeleted
+	const filteredDocuments = isDefaultDocumentDeleted
+		? documents.filter((doc) => doc.source_type !== "default_document")
+		: documents;
+
+	const hasItems = filteredDocuments.length > 0 || folders.length > 0;
 
 	return (
 		<>
