@@ -15,7 +15,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 
 ## Table of Contents
 
-- [🧰 Tech Stack](#️-tech-stack)
+- [🧰 Tech Stack](#-tech-stack)
 - [📋 Prerequisites](#-prerequisites)
 - [💿 Installation](#-installation)
 - [✅ Setup](#-setup)
