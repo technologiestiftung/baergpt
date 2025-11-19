@@ -236,7 +236,6 @@ export class DatabaseService {
 	}
 
 	async extractDocument(document: Document): Promise<ExtractionResult> {
-		//const documentId = await this.logDocument(document);
 		const fileName = document.source_url.split("/").pop();
 		const bucket =
 			document.source_type === "public_document"
