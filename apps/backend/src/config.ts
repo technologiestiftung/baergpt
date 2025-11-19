@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 export interface Config {
+	redisUrl: string;
 	mistralApiKey: string;
 	mistralMaxRPS: number;
 	jinaApiKey: string;
@@ -27,6 +28,9 @@ export interface Config {
 
 /* eslint-disable-next-line complexity */
 export function verifyConfig(): void {
+	if (!process.env.REDIS_URL) {
+		throw new Error("REDIS_URL must be defined");
+	}
 	if (!process.env.MISTRAL_API_KEY) {
 		throw new Error("MISTRAL_API_KEY must be defined");
 	}
@@ -93,6 +97,7 @@ export function verifyConfig(): void {
 }
 
 export const config: Config = {
+	redisUrl: process.env.REDIS_URL as string,
 	mistralApiKey: process.env.MISTRAL_API_KEY,
 	mistralMaxRPS: parseInt(process.env.MISTRAL_MAX_RPS, 10),
 	jinaApiKey: process.env.JINA_API_KEY,
