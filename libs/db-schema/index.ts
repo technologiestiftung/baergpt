@@ -198,7 +198,7 @@ export type Database = {
 					content: string;
 					document_id: number | null;
 					folder_id: number | null;
-					full_text_search: unknown | null;
+					full_text_search: unknown;
 					id: number;
 					owned_by_user_id: string | null;
 					page: number;
@@ -210,7 +210,7 @@ export type Database = {
 					content: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown | null;
+					full_text_search?: unknown;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page: number;
@@ -222,7 +222,7 @@ export type Database = {
 					content?: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown | null;
+					full_text_search?: unknown;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page?: number;
@@ -465,6 +465,39 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			user_hidden_default_documents: {
+				Row: {
+					created_at: string | null;
+					document_id: number;
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string | null;
+					document_id: number;
+					user_id: string;
+				};
+				Update: {
+					created_at?: string | null;
+					document_id?: number;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "user_hidden_default_documents_document_id_fkey";
+						columns: ["document_id"];
+						isOneToOne: false;
+						referencedRelation: "documents";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "user_hidden_default_documents_user_id_fkey";
+						columns: ["user_id"];
+						isOneToOne: false;
+						referencedRelation: "profiles";
+						referencedColumns: ["id"];
+					},
+				];
+			};
 		};
 		Views: {
 			[_ in never]: never;
@@ -482,12 +515,9 @@ export type Database = {
 				Args: { document_id: number };
 				Returns: undefined;
 			};
-			delete_user: {
-				Args: Record<PropertyKey, never>;
-				Returns: undefined;
-			};
+			delete_user: { Args: never; Returns: undefined };
 			find_unprocessed_documents: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					created_at: string;
 					file_checksum: string;
@@ -502,15 +532,12 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			get_account_activation_timestamp: {
-				Args: Record<PropertyKey, never>;
-				Returns: string;
-			};
+			get_account_activation_timestamp: { Args: never; Returns: string };
 			get_allowed_email_domains: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
-					id: number;
 					domain: string;
+					id: number;
 				}[];
 			};
 			get_base_knowledge_documents: {
@@ -536,12 +563,9 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			get_maintenance_mode_status: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
+			get_maintenance_mode_status: { Args: never; Returns: boolean };
 			get_users: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					academic_title: string;
 					deleted_at: string;
@@ -586,18 +610,9 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			is_application_admin: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
-			is_current_user_active: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
-			log_account_activation: {
-				Args: Record<PropertyKey, never>;
-				Returns: undefined;
-			};
+			is_application_admin: { Args: never; Returns: boolean };
+			is_current_user_active: { Args: never; Returns: boolean };
+			log_account_activation: { Args: never; Returns: undefined };
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];
@@ -658,11 +673,11 @@ export type Database = {
 				}[];
 			};
 			regenerate_embedding_indices_for_chunks: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: undefined;
 			};
 			regenerate_embedding_indices_for_summaries: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: undefined;
 			};
 			verify_own_password: {
