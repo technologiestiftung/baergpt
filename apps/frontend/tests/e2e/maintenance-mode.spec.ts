@@ -57,7 +57,7 @@ test.describe("Maintenance Mode", () => {
 
 			expect(insertError).toBeNull();
 
-			// Step 3: Refresh the page to trigger maintenance mode check
+			// Step 3: Reload the page to trigger maintenance mode check
 			await page.reload();
 
 			// Step 4: Verify user is redirected to landing page (logged out)
