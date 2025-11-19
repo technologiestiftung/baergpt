@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
-import { supabaseAdminClient } from "../supabase.ts";
+import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 
 test.describe("Maintenance Mode", () => {
@@ -66,6 +66,31 @@ test.describe("Maintenance Mode", () => {
 					name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 				}),
 			).toBeVisible();
+		},
+	);
+
+	test("anonymous client cannot update maintenance_mode", async () => {
+		const { error } = await supabaseAnonClient
+			.from("maintenance_mode")
+			.upsert(
+				{ onerow_id: true, is_enabled: true },
+				{ onConflict: "onerow_id" },
+			);
+
+		expect(error).not.toBeNull();
+	});
+
+	testWithLoggedInUser(
+		"authenticated user cannot update maintenance_mode",
+		async () => {
+			const { error } = await supabaseAnonClient
+				.from("maintenance_mode")
+				.upsert(
+					{ onerow_id: true, is_enabled: true },
+					{ onConflict: "onerow_id" },
+				);
+
+			expect(error).not.toBeNull();
 		},
 	);
 });

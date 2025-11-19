@@ -509,8 +509,8 @@ export type Database = {
 			get_allowed_email_domains: {
 				Args: Record<PropertyKey, never>;
 				Returns: {
-					id: number;
 					domain: string;
+					id: number;
 				}[];
 			};
 			get_base_knowledge_documents: {
