@@ -128,8 +128,7 @@ export class DatabaseService {
 	}
 
 	/**
-	 * Creates a complete document record with all metadata, summary, and embeddings.
-	 * Use this after processing is complete to create a finished document record in one go.
+	 * Creates a complete document record with all metadata, summary, and embeddings in the database.
 	 */
 	async logProcessedDocument(
 		document: Document,
@@ -140,7 +139,7 @@ export class DatabaseService {
 			summaryEmbedding: number[];
 		},
 		embeddings: Embedding[],
-	): Promise<Document> {
+	): Promise<void> {
 		if (!document) {
 			throw new Error("Document is undefined");
 		}
@@ -186,7 +185,7 @@ export class DatabaseService {
 				document.owned_by_user_id || document.uploaded_by_user_id,
 			);
 
-			return newDocument;
+			return null;
 		} catch (innerError) {
 			// If saving aux data fails, we should cleanup the document to avoid partial state
 			await this.deleteDocumentById(documentId);
