@@ -7,6 +7,8 @@ import { updateDocumentFolder } from "../api/documents/update-document-folder";
 import { getDocumentObjectUrl } from "../api/documents/get-document-object-url.ts";
 import { downloadDocument } from "../api/documents/download-document.ts";
 import { useErrorStore } from "./error-store";
+import { hideDefaultDocument } from "../api/documents/hide-default-document";
+import { getHiddenDefaultDocumentIds } from "../api/documents/get-hidden-default-document-ids";
 
 interface DocumentStore {
 	documents: Document[];
@@ -38,31 +40,6 @@ interface DocumentStore {
 	unselectDocumentForAction: (documentId: number) => void;
 }
 
-const STORAGE_KEY = "default-document-deleted";
-
-const getDeletedDefaultDocumentIds = (): number[] => {
-	if (typeof window === "undefined") {
-		return [];
-	}
-	const stored = localStorage.getItem(STORAGE_KEY);
-	if (!stored) {
-		return [];
-	}
-	try {
-		const parsed = JSON.parse(stored);
-		return Array.isArray(parsed) ? parsed : [];
-	} catch {
-		return [];
-	}
-};
-
-const saveDeletedDefaultDocumentIds = (ids: number[]): void => {
-	if (typeof window === "undefined") {
-		return;
-	}
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-};
-
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	documents: [],
 	publicDocuments: [],
@@ -70,12 +47,15 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	isPublicDocumentFirstLoad: true,
 	isLoading: false,
 	isPublicDocumentsLoading: false,
-	deletedDefaultDocumentIds: getDeletedDefaultDocumentIds(),
+	deletedDefaultDocumentIds: [],
 	getDocuments: async (signal: AbortSignal) => {
 		set({ isLoading: true });
 		try {
-			const documents = await getDocuments(signal);
-			set({ documents });
+			const [documents, deletedDefaultDocumentIds] = await Promise.all([
+				getDocuments(signal),
+				getHiddenDefaultDocumentIds(),
+			]);
+			set({ documents, deletedDefaultDocumentIds });
 		} finally {
 			set({ isLoading: false });
 			if (get().isDocumentFirstLoad) {
@@ -113,11 +93,13 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
 		// Prevent deletion of default documents
 		if (documentToDelete?.source_type === "default_document") {
-			// Save the ID of the deleted default document
 			const updatedIds = [...deletedDefaultDocumentIds];
 			if (!updatedIds.includes(documentId)) {
 				updatedIds.push(documentId);
-				saveDeletedDefaultDocumentIds(updatedIds);
+				const error = await hideDefaultDocument(documentId);
+				if (error) {
+					return error;
+				}
 				set({ deletedDefaultDocumentIds: updatedIds });
 			}
 			return null;
