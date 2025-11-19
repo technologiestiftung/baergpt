@@ -9,10 +9,20 @@ ALTER TABLE user_hidden_default_documents enable ROW level security;
 
 CREATE POLICY "Users can insert their own hidden default docs" ON user_hidden_default_documents FOR insert TO authenticated
 WITH
-	CHECK (user_id = auth.uid ());
+	CHECK (
+		user_id = (
+			SELECT
+				auth.uid ()
+		)
+	);
 
 CREATE POLICY "Users can view their own hidden default docs" ON user_hidden_default_documents FOR
 SELECT
-	TO authenticated USING (user_id = auth.uid ());
+	TO authenticated USING (
+		user_id = (
+			SELECT
+				auth.uid ()
+		)
+	);
 
 CREATE POLICY "Admins can delete hidden default docs" ON user_hidden_default_documents FOR delete TO authenticated USING (public.is_application_admin ());
