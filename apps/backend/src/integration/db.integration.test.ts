@@ -1,3 +1,5 @@
+import { DatabaseService } from "../services/database-service";
+import { type Document } from "../types/common";
 import {
 	afterEach,
 	afterAll,
@@ -734,6 +736,71 @@ describe("Integration tests for DB", async () => {
 					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
 				});
 			});
+		});
+	});
+
+	describe("DatabaseService Transaction", () => {
+		const testUserId = "a18922bb-7f9a-4e15-a9c9-6788fe81842d";
+		const testEmail = "db-transaction-test@local.berlin.de";
+
+		beforeAll(async () => {
+			await supabaseAdminClient.auth.admin.deleteUser(testUserId);
+
+			const { error } = await supabaseAdminClient.auth.admin.createUser({
+				id: testUserId,
+				email: testEmail,
+				password: "Password123!",
+				email_confirm: true,
+			});
+			expect(error).toBeNull();
+		});
+
+		afterAll(async () => {
+			await supabaseAdminClient.auth.admin.deleteUser(testUserId);
+		});
+
+		class TestDatabaseService extends DatabaseService {
+			async logSummarizedDocument() {
+				throw new Error("Forced Summary Failure");
+			}
+		}
+
+		it("should rollback document creation on summary failure", async () => {
+			const service = new TestDatabaseService();
+			await supabaseAnonClient.auth.signInWithPassword({
+				email: testEmail,
+				password: "Password123!",
+			});
+
+			const doc: Document = {
+				source_url: "test-url-rollback",
+				source_type: "personal_document",
+				file_checksum: "sum",
+				file_size: 100,
+				num_pages: 1,
+				owned_by_user_id: testUserId,
+				uploaded_by_user_id: testUserId,
+				created_at: new Date().toISOString(),
+			};
+
+			const summaryData = {
+				summary: "test",
+				shortSummary: "test",
+				tags: [],
+				summaryEmbedding: [],
+			};
+
+			await expect(
+				service.logProcessedDocument(doc, summaryData, []),
+			).rejects.toThrow("Forced Summary Failure");
+
+			// Verify document is gone from DB
+			const { count } = await supabaseAdminClient
+				.from("documents")
+				.select("*", { count: "exact", head: true })
+				.eq("source_url", "test-url-rollback");
+
+			expect(count).toBe(0);
 		});
 	});
 });

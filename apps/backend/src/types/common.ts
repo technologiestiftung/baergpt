@@ -1,7 +1,7 @@
 import type { ModelMessage, LanguageModel } from "ai";
 
 export type Document = {
-	id: number;
+	id?: number;
 	owned_by_user_id?: string;
 	access_group_id?: string;
 	source_url: string;

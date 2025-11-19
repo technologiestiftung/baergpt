@@ -98,6 +98,19 @@ export class DatabaseService {
 		}
 	}
 
+	async deleteFileFromStorage(
+		source_url: string,
+		bucket: string,
+	): Promise<void> {
+		const { error: deletionError } = await supabase.storage
+			.from(bucket)
+			.remove([source_url]);
+
+		if (deletionError) {
+			throw deletionError;
+		}
+	}
+
 	async updateUserColumnValue(
 		userId: string,
 		columnName: string,
@@ -114,19 +127,32 @@ export class DatabaseService {
 		}
 	}
 
-	async logDocument(document: Document): Promise<number> {
+	/**
+	 * Creates a complete document record with all metadata, summary, and embeddings in the database.
+	 */
+	async logProcessedDocument(
+		document: Document,
+		summaryData: {
+			summary: string;
+			shortSummary: string;
+			tags: string[];
+			summaryEmbedding: number[];
+		},
+		embeddings: Embedding[],
+	): Promise<void> {
 		if (!document) {
 			throw new Error("Document is undefined");
 		}
 
+		// 1. Insert Document
 		const { data, error } = await supabase
 			.from("documents")
 			.insert({
 				owned_by_user_id: document.owned_by_user_id || null,
-				file_checksum: document.file_checksum || null,
-				file_size: document.file_size || null,
-				num_pages: document.num_pages || null,
-				processing_finished_at: document.processing_finished_at || null,
+				file_checksum: document.file_checksum,
+				file_size: document.file_size,
+				num_pages: document.num_pages,
+				processing_finished_at: new Date().toISOString(),
 				folder_id: document.folder_id || null,
 				source_url: document.source_url,
 				source_type: document.source_type,
@@ -141,7 +167,49 @@ export class DatabaseService {
 			throw error;
 		}
 
-		return data[0].id;
+		const newDocument = data[0];
+		const documentId = newDocument.id;
+
+		try {
+			// 2. Insert Summary
+			await this.logSummarizedDocument(summaryData, {
+				...document,
+				id: documentId,
+			});
+
+			// 3. Insert Embeddings
+			await this.logEmbeddings(embeddings, { ...document, id: documentId });
+
+			// 4. Update user document count
+			await this.updateUserDocumentCount(
+				document.owned_by_user_id || document.uploaded_by_user_id,
+			);
+
+			return null;
+		} catch (innerError) {
+			// If saving aux data fails, we should cleanup the document to avoid partial state
+			await this.deleteDocumentById(documentId);
+			throw innerError;
+		}
+	}
+
+	/**
+	 * Cleanup helper for `logProcessedDocument`.
+	 * Deletes a document by its ID after a partial save failure.
+	 * Only logs errors rather than throwing them to avoid masking the original error.
+	 */
+	private async deleteDocumentById(documentId: number): Promise<void> {
+		const { error } = await supabase
+			.from("documents")
+			.delete()
+			.eq("id", documentId);
+
+		if (error) {
+			console.error(
+				`Failed to cleanup document ${documentId} after partial save failure:`,
+				error,
+			);
+		}
 	}
 
 	async logEmbeddings(
@@ -166,33 +234,7 @@ export class DatabaseService {
 		}
 	}
 
-	async updateMetadataOfLoggedDocument(
-		extractionResult: ExtractionResult,
-		file_id: number,
-	): Promise<Document> {
-		const { data, error } = await supabase
-			.from("documents")
-			.update({
-				file_checksum: extractionResult.checksum,
-				file_size: extractionResult.fileSize,
-				num_pages: extractionResult.numPages,
-				processing_finished_at: new Date().toISOString(),
-			})
-			.eq("id", file_id)
-			.select("*");
-
-		if (error) {
-			throw error;
-		}
-
-		return data[0];
-	}
-
-	async logAndExtractDocument(
-		document: Document,
-	): Promise<ExtractionResult & { document: Document }> {
-		const documentId = await this.logDocument(document);
-		const documentWithId = { ...document, id: documentId };
+	async extractDocument(document: Document): Promise<ExtractionResult> {
 		const fileName = document.source_url.split("/").pop();
 		const bucket =
 			document.source_type === "public_document"
@@ -224,14 +266,10 @@ export class DatabaseService {
 		);
 		const extractionResult = await documentExtraction.extractDocument(
 			fileBytes,
-			documentWithId,
-		);
-		const updatedDocument = await this.updateMetadataOfLoggedDocument(
-			extractionResult,
-			documentId,
+			document,
 		);
 
-		return { ...extractionResult, document: updatedDocument };
+		return extractionResult;
 	}
 
 	/**
@@ -255,21 +293,6 @@ export class DatabaseService {
 		const buffer = new Uint8Array(await data.arrayBuffer());
 
 		return buffer;
-	}
-
-	async finishProcessing(document: Document) {
-		const { error } = await supabase
-			.from("documents")
-			.update({ processing_finished_at: new Date().toISOString() })
-			.eq("id", document.id);
-
-		if (error) {
-			throw error;
-		}
-
-		await this.updateUserDocumentCount(
-			document.owned_by_user_id || document.uploaded_by_user_id,
-		);
 	}
 
 	// Updates the user's document count in the profiles table
