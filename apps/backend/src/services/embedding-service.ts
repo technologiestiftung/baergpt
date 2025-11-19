@@ -370,7 +370,7 @@ export class EmbeddingService {
 		options: {
 			chunkingTechnique?: "fixed" | "segmenter" | "markdown";
 		} = { chunkingTechnique: "markdown" },
-	): Promise<void> {
+	): Promise<Embedding[]> {
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
 		const maxChunksPerRequest = config.jinaMaxDocumentsPerRequest;
 		const maxTokensPerChunk = config.jinaMaxContextTokens;
@@ -438,14 +438,14 @@ export class EmbeddingService {
 		// Third pass: process batches in parallel (with concurrency limit)
 		const CONCURRENT_BATCHES = config.jinaConcurrentBatches;
 
-		const processBatch = async (batch: Chunk[]): Promise<void> => {
+		const processBatch = async (batch: Chunk[]): Promise<Embedding[]> => {
 			const response = await this.generateJinaBatchEmbeddings(
 				batch.map((c) => ({ text: c.content })),
 				"retrieval.passage",
 				userId,
 			);
 
-			const embeddings: Embedding[] = response.embeddings.map(
+			return response.embeddings.map(
 				(embedding, idx) =>
 					({
 						content: batch[idx].content,
@@ -454,13 +454,18 @@ export class EmbeddingService {
 						chunkIndex: batch[idx].chunkIndex,
 					}) as Embedding,
 			);
-			await dbService.logEmbeddings(embeddings, document);
 		};
 
-		// Process batches with controlled concurrency
+		// Process batches with controlled concurrency and collect results
+		const allEmbeddings: Embedding[] = [];
 		for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
 			const batchSlice = batches.slice(i, i + CONCURRENT_BATCHES);
-			await Promise.all(batchSlice.map((batch) => processBatch(batch)));
+			const results = await Promise.all(
+				batchSlice.map((batch) => processBatch(batch)),
+			);
+			results.forEach((embeddings) => allEmbeddings.push(...embeddings));
 		}
+
+		return allEmbeddings;
 	}
 }

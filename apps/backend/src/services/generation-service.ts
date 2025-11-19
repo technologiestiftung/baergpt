@@ -213,7 +213,12 @@ export class GenerationService {
 		parsedPages: ParsedPage[],
 		llmIdentifier: string,
 		document: Document,
-	): Promise<void> {
+	): Promise<{
+		summary: string;
+		shortSummary: string;
+		tags: string[];
+		summaryEmbedding: number[];
+	}> {
 		const numTokens = parsedPages.reduce(
 			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
 			0,
@@ -293,15 +298,13 @@ export class GenerationService {
 		if (!tags) {
 			throw new Error("Failed to generate document tags");
 		}
-		await dbService.logSummarizedDocument(
-			{
-				summary,
-				shortSummary,
-				tags,
-				summaryEmbedding: summaryEmbeddingResponse.embedding,
-			},
-			document,
-		);
+
+		return {
+			summary,
+			shortSummary,
+			tags,
+			summaryEmbedding: summaryEmbeddingResponse.embedding,
+		};
 	}
 
 	async generateTextStreamResponse(
