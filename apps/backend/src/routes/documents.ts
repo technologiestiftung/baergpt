@@ -57,7 +57,7 @@ documents.post("/process", async (c: Context) => {
 		]);
 
 		// Step 3: Create complete document record
-		await dbService.logProcessedDocument(document, summaryData, embeddings);
+		await dbService.logProcessedDocument(documentForProcessing, summaryData, embeddings);
 
 		return c.body(null, 204);
 	} catch (error) {
