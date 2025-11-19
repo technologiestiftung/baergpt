@@ -17,3 +17,5 @@
       - git
       - nginx
     state: present
+    update_cache: true
+    force_apt_get: true

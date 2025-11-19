@@ -272,3 +272,5 @@ cython_debug/
 .idea/
 # Turborepo
 .turbo
+# Selfhosting
+.op.env
