@@ -31,7 +31,6 @@ documents.post("/process", async (c: Context) => {
 		// Step 2: Process document (embed and summarize)
 		// Create temporary document object with extraction metadata for processing
 		const documentForProcessing: Document = {
-			id: null,
 			folder_id: document.folder_id,
 			owned_by_user_id: document.owned_by_user_id,
 			created_at: document.created_at,
