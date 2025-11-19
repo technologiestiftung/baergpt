@@ -194,6 +194,11 @@ export class DatabaseService {
 		}
 	}
 
+	/**
+	 * Cleanup helper for `logProcessedDocument`.
+	 * Deletes a document by its ID after a partial save failure.
+	 * Only logs errors rather than throwing them to avoid masking the original error.
+	 */
 	private async deleteDocumentById(documentId: number): Promise<void> {
 		const { error } = await supabase
 			.from("documents")
