@@ -7,21 +7,37 @@ import {
 	useFileUploadsStore,
 } from "../../../store/use-file-uploads-store.ts";
 import Content from "../../../content.ts";
+import { useDocumentStore } from "../../../store/document-store.ts";
 
 export function FileUploadList() {
 	const { fileUploads } = useFileUploadsStore();
+	const { documents } = useDocumentStore();
 
-	const hasErrorAmountExceeded = fileUploads.some(
+	const hasExceededParallelUploadLimit = fileUploads.some(
 		(fileUpload) => fileUpload.status === "failed.tooMany",
 	);
 
+	const numberOfUploads = documents?.length || 0;
+
+	// Only show the warning when the user still has all parallel upload slots available.
+	// Once they have fewer slots remaining, hide the warning to avoid confusion.
+	const maxTotalFiles = Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
+	const maxParallelUploads = Number(
+		import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS,
+	);
+	const remainingSlots = maxTotalFiles - numberOfUploads;
+
+	const isParallelUploadLimitWarningVisible =
+		remainingSlots >= maxParallelUploads;
+
 	return (
 		<ul className="overflow-y-scroll max-h-[228px] relative rounded-b-3px">
-			{hasErrorAmountExceeded && (
-				<div className="w-full px-3 py-2 bg-warning-10 text-sm leading-5 font-normal text-warning-100 z-10 sticky top-0">
-					{Content["fileUpload.maxFilesWarning.p1"]}{" "}
-				</div>
-			)}
+			{isParallelUploadLimitWarningVisible &&
+				hasExceededParallelUploadLimit && (
+					<div className="w-full px-3 py-2 bg-warning-10 text-sm leading-5 font-normal text-warning-100 z-10 sticky top-0">
+						{`${Content["fileUpload.maxFilesWarning.p1"]} ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} ${Content["fileUpload.maxFilesWarning.p2"]}`}
+					</div>
+				)}
 			<div className="flex flex-col gap-y-3.5 pt-3.5 pb-4 bg-white rounded-b-3px">
 				{fileUploads.map(({ file, status }) => (
 					<li

@@ -6,6 +6,7 @@ import { config } from "../../config";
 import { sign } from "hono/jwt";
 import { PDFDocument } from "pdf-lib";
 import { supabase } from "../../supabase";
+import { initQueues } from "../../services/distributed-limiter";
 
 let validToken: string;
 
@@ -187,6 +188,9 @@ const deleteTestUser = async () => {
 
 describe("Integration Tests for Routes", () => {
 	beforeAll(async () => {
+		// Initialize queues for the test process
+		await initQueues();
+
 		const email = "test@example.com";
 		await createTestUser(OWNER_USER_ID, email);
 		// Generate JWT token
@@ -194,7 +198,7 @@ describe("Integration Tests for Routes", () => {
 
 		// Run a full cleanup before all tests
 		await cleanupTestDocuments();
-	});
+	}, 20_000);
 
 	afterAll(async () => {
 		await cleanupTestDocuments();

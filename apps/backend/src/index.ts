@@ -9,6 +9,7 @@ import llms from "./routes/llms";
 import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
 import { captureError } from "./monitoring/capture-error";
+import { initQueues } from "./services/distributed-limiter";
 
 verifyConfig();
 
@@ -45,12 +46,22 @@ app.onError((error, c) => {
 
 // Start server
 if (require.main === module) {
-	serve({
-		fetch: app.fetch,
-		port: config.port,
-	});
-	/* eslint-disable-next-line no-console */
-	console.info(`Server is running on port ${config.port}...`);
+	(async () => {
+		try {
+			await initQueues();
+			serve({
+				fetch: app.fetch,
+				port: config.port,
+			});
+			/* eslint-disable-next-line no-console */
+			console.info(`Server is running on port ${config.port}...`);
+		} catch (error) {
+			captureError(error);
+
+			console.error("Failed to initialize queue system:", error);
+			process.exit(1);
+		}
+	})();
 }
 
 export default app;

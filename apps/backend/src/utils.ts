@@ -1,17 +1,7 @@
 import crypto from "crypto";
-import { config } from "./config";
-import { seconds, throttledQueue } from "throttled-queue";
 import { captureError } from "./monitoring/capture-error";
-
-const addToEmbeddingsQueue = throttledQueue({
-	interval: seconds(1),
-	maxPerInterval: config.jinaMaxRPS,
-});
-
-const addToLLMQueue = throttledQueue({
-	interval: seconds(1),
-	maxPerInterval: config.mistralMaxRPS,
-});
+import { scheduleDistributed } from "./services/distributed-limiter";
+import { maxRetries, retryDelay } from "./constants";
 
 export function getHash(documentBuffer: Uint8Array): string {
 	const hashSum = crypto.createHash("md5");
@@ -23,10 +13,7 @@ export function getHash(documentBuffer: Uint8Array): string {
 export const wait = (ms: number) =>
 	new Promise((resolve) => setTimeout(resolve, ms));
 
-async function withRetries<T>(
-	operation: () => Promise<T>,
-	{ retries, retryDelay }: { retries: number; retryDelay: number },
-): Promise<T> {
+async function withRetries<T>(operation: () => Promise<T>): Promise<T> {
 	const attempt = async (remainingRetries: number): Promise<T> => {
 		try {
 			return await operation();
@@ -37,7 +24,7 @@ async function withRetries<T>(
 
 			// Exponential backoff with jitter
 			const backoffDelay =
-				retryDelay * Math.pow(2, retries - remainingRetries) +
+				retryDelay * Math.pow(2, maxRetries - remainingRetries) +
 				Math.random() * 1000;
 
 			captureError(error);
@@ -55,56 +42,26 @@ async function withRetries<T>(
 		}
 	};
 
-	return attempt(retries);
+	return attempt(maxRetries);
 }
 
 export async function resilientCall<T>(
 	operation: () => Promise<T>,
 	options: {
-		retries?: number;
-		retryDelay?: number;
 		queueType?: "embeddings" | "llm";
 	} = {},
 ): Promise<T> {
-	const {
-		retries = config.maxRetries,
-		retryDelay = config.retryDelay,
-		queueType,
-	} = options;
+	const { queueType } = options;
 
 	if (queueType === "embeddings") {
-		return new Promise<T>((resolve, reject) => {
-			addToEmbeddingsQueue(async () => {
-				try {
-					const result = await withRetries(operation, {
-						retries,
-						retryDelay,
-					});
-					resolve(result);
-				} catch (error) {
-					reject(error);
-				}
-			});
-		});
+		return withRetries(() => scheduleDistributed("embeddings", operation));
 	}
 
 	if (queueType === "llm") {
-		return new Promise<T>((resolve, reject) => {
-			addToLLMQueue(async () => {
-				try {
-					const result = await withRetries(operation, {
-						retries,
-						retryDelay,
-					});
-					resolve(result);
-				} catch (error) {
-					reject(error);
-				}
-			});
-		});
+		return withRetries(() => scheduleDistributed("llm", operation));
 	}
 
-	return withRetries(operation, { retries, retryDelay });
+	return withRetries(operation);
 }
 
 export function createBufferView(uint8Array: Uint8Array): Buffer {
