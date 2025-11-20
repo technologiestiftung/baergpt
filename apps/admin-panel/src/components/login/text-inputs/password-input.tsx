@@ -7,11 +7,13 @@ export function PasswordInput({
 	placeholder,
 	formRef,
 	validateRepeatPassword = false,
+	minLength = 6,
 }: {
 	id: string;
 	placeholder: string;
 	formRef?: RefObject<HTMLFormElement>;
 	validateRepeatPassword?: boolean;
+	minLength?: number;
 }) {
 	const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +81,7 @@ export function PasswordInput({
 						onInvalid={handleInvalid}
 						type={isPasswordVisible ? "text" : "password"}
 						required
-						minLength={10}
+						minLength={minLength}
 						className="w-0 grow focus:outline-none"
 						placeholder={placeholder}
 					/>
@@ -97,7 +99,7 @@ export function PasswordInput({
 
 				{showError && (
 					<div className="hidden group-has-[:user-invalid]:block text-berlin-rot mt-1.5 text-sm">
-						{getErrorMessage(inputRef)}
+						{getErrorMessage(inputRef, minLength)}
 					</div>
 				)}
 			</div>
@@ -105,7 +107,7 @@ export function PasswordInput({
 	);
 }
 
-function getErrorMessage(ref: RefObject<HTMLInputElement>) {
+function getErrorMessage(ref: RefObject<HTMLInputElement>, minLength: number) {
 	const current = ref.current;
 
 	if (!current) {
@@ -119,7 +121,7 @@ function getErrorMessage(ref: RefObject<HTMLInputElement>) {
 	}
 
 	if (validity.tooShort) {
-		return Content["form.validation.password.tooShort"];
+		return `Das Passwort muss mindestens ${minLength} Zeichen lang sein.`;
 	}
 
 	if (validity.valueMissing) {

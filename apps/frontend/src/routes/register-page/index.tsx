@@ -135,7 +135,7 @@ export function RegisterPage() {
 									<QuestionMarkIcon />
 								</button>
 							</span>
-							<PasswordInput id="password" />
+							<PasswordInput id="password" minLength={8} />
 						</label>
 
 						<label

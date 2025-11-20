@@ -1128,6 +1128,8 @@ export const Content = {
 		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"form.validation.password.tooShort":
 		"Das Passwort muss mindestens 10 Zeichen lang sein.",
+	"form.validation.login.password.tooShort":
+		"Das Passwort muss mindestens 6 Zeichen lang sein.",
 	"form.validation.password.repeatPasswordShouldMatch.error":
 		"Die Passwörter stimmen nicht überein.",
 	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
