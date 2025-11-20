@@ -100,8 +100,19 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 				if (error) {
 					return error;
 				}
-				set({ deletedDefaultDocumentIds: updatedIds });
 			}
+
+			const { selectedChatDocuments, selectedDocumentsForAction } = get();
+
+			set({
+				deletedDefaultDocumentIds: updatedIds,
+				selectedChatDocuments: selectedChatDocuments.filter(
+					({ id }) => id !== documentId,
+				),
+				selectedDocumentsForAction: selectedDocumentsForAction.filter(
+					({ id }) => id !== documentId,
+				),
+			});
 			return null;
 		}
 
