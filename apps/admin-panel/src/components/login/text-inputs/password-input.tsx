@@ -99,7 +99,7 @@ export function PasswordInput({
 
 				{showError && (
 					<div className="hidden group-has-[:user-invalid]:block text-berlin-rot mt-1.5 text-sm">
-						{getErrorMessage(inputRef, minLength)}
+						{getErrorMessage(inputRef)}
 					</div>
 				)}
 			</div>
@@ -107,7 +107,7 @@ export function PasswordInput({
 	);
 }
 
-function getErrorMessage(ref: RefObject<HTMLInputElement>, minLength: number) {
+function getErrorMessage(ref: RefObject<HTMLInputElement>) {
 	const current = ref.current;
 
 	if (!current) {
@@ -121,7 +121,7 @@ function getErrorMessage(ref: RefObject<HTMLInputElement>, minLength: number) {
 	}
 
 	if (validity.tooShort) {
-		return `Das Passwort muss mindestens ${minLength} Zeichen lang sein.`;
+		return Content["form.validation.password.tooShort"];
 	}
 
 	if (validity.valueMissing) {
