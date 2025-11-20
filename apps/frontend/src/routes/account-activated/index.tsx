@@ -171,7 +171,7 @@ export function AccountActivated() {
 									<QuestionMarkIcon />
 								</button>
 							</span>
-							<PasswordInput id="password" />
+							<PasswordInput id="password" minLength={10} />
 						</label>
 
 						<label
