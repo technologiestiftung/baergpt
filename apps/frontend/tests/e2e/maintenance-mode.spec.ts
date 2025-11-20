@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
-import { supabaseAdminClient } from "../supabase.ts";
+import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 
 test.describe("Maintenance Mode", () => {
@@ -57,18 +57,40 @@ test.describe("Maintenance Mode", () => {
 
 			expect(insertError).toBeNull();
 
-			// Step 3: Refresh the page to trigger maintenance mode check
+			// Step 3: Reload the page to trigger maintenance mode check
 			await page.reload();
-
-			// Wait a moment for the page to process maintenance mode
-			await page.waitForTimeout(1000);
 
 			// Step 4: Verify user is redirected to landing page (logged out)
 			await expect(
 				page.getByRole("heading", {
-					name: /B.*rGPT, der KI-Assistent f.*r die Berliner Verwaltung/,
+					name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 				}),
 			).toBeVisible();
+		},
+	);
+
+	test("anonymous client cannot update maintenance_mode", async () => {
+		const { error } = await supabaseAnonClient
+			.from("maintenance_mode")
+			.upsert(
+				{ onerow_id: true, is_enabled: true },
+				{ onConflict: "onerow_id" },
+			);
+
+		expect(error).not.toBeNull();
+	});
+
+	testWithLoggedInUser(
+		"authenticated user cannot update maintenance_mode",
+		async () => {
+			const { error } = await supabaseAnonClient
+				.from("maintenance_mode")
+				.upsert(
+					{ onerow_id: true, is_enabled: true },
+					{ onConflict: "onerow_id" },
+				);
+
+			expect(error).not.toBeNull();
 		},
 	);
 });

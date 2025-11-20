@@ -1,116 +1,83 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { DatabaseService } from "../services/database-service";
-import type { LLMIdentifier } from "../types/common";
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
-import { WordDocumentExtractionService } from "../services/document-extraction-service";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
+import { Document } from "../types/common";
 
 const documents = new Hono();
 const dbService = new DatabaseService();
-const wordExService = new WordDocumentExtractionService();
 const embeddingService = new EmbeddingService();
 const generationService = new GenerationService();
 
 documents.post("/process", async (c: Context) => {
+	let sourceUrl: string | null = null;
+	let bucket: string | null = null;
 	try {
 		const body = await c.req.json();
 		const { document } = body;
-		const llmIdentifier = config.defaultModelIdentifier as LLMIdentifier;
-		const extractionResult = await dbService.logAndExtractDocument(document);
-		const extractedDocument = extractionResult.document;
+		sourceUrl = document.source_url;
+		bucket =
+			document.source_type === "personal_document"
+				? "documents"
+				: "public_documents";
+		const llmIdentifier = config.defaultModelIdentifier;
+
+		// Step 1: Extract document content (no DB record created yet)
+		const extractionResult = await dbService.extractDocument(document);
+
+		// Step 2: Process document (embed and summarize)
+		// Create temporary document object with extraction metadata for processing
+		const documentForProcessing: Document = {
+			folder_id: document.folder_id,
+			owned_by_user_id: document.owned_by_user_id,
+			created_at: document.created_at,
+			access_group_id: document.access_group_id,
+			uploaded_by_user_id: document.uploaded_by_user_id,
+			source_url: document.source_url,
+			source_type: document.source_type,
+			file_checksum: extractionResult.checksum,
+			file_size: extractionResult.fileSize,
+			num_pages: extractionResult.numPages,
+		};
 
 		const parsedPages = extractionResult.parsedPages;
-		await Promise.all([
+		const [summaryData, embeddings] = await Promise.all([
 			generationService.summarize(
 				parsedPages,
 				llmIdentifier,
-				extractedDocument,
+				documentForProcessing,
 			),
-			embeddingService.batchEmbed(parsedPages, extractedDocument, {
+			embeddingService.batchEmbed(parsedPages, documentForProcessing, {
 				chunkingTechnique: "markdown",
 			}),
 		]);
 
-		await dbService.finishProcessing(extractedDocument);
+		// Step 3: Create complete document record
+		await dbService.logProcessedDocument(
+			documentForProcessing,
+			summaryData,
+			embeddings,
+		);
+
 		return c.body(null, 204);
 	} catch (error) {
 		captureError(error);
-		return c.json({ error: "Internal Server Error" }, 500);
-	}
-});
-
-documents.post("/upload", async (c: Context) => {
-	try {
-		const body = await c.req.parseBody();
-		const uploadedFile = body["file"];
-		const sourceUrl = String(body["sourceUrl"] || "");
-		const isPublicDocument = body["isPublicDocument"] === "true";
-		if (!(uploadedFile instanceof File)) {
-			return c.json({ error: "No file" }, 400);
-		}
-		const fileName = uploadedFile.name || "document";
-
-		const getFileType = (ext: string) => {
-			switch (ext) {
-				case ".pdf":
-					return "application/pdf";
-				case ".doc":
-					return "application/msword";
-				case ".docx":
-					return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-				case ".xlsx":
-					return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-				default:
-					return null;
-			}
-		};
-
-		const ext = [".pdf", ".docx", ".doc", ".xlsx"].find((extension) =>
-			sourceUrl.endsWith(extension),
-		);
-
-		const fileType = ext ? getFileType(ext) : null;
-		if (!fileType) {
-			throw new Error("Unsupported file type");
-		}
-
-		await dbService.uploadFileToStorage(
-			sourceUrl,
-			uploadedFile,
-			isPublicDocument,
-		);
-
-		if (/\.(docx)$/i.test(fileName)) {
+		// If processing failed, clean up the storage file
+		if (sourceUrl !== null && bucket !== null) {
 			try {
-				const wordBuffer = new Uint8Array(await uploadedFile.arrayBuffer());
-				const pdfBytes = await wordExService.convertDocxToPdf(
-					Buffer.from(wordBuffer),
+				await dbService.deleteFileFromStorage(sourceUrl, bucket);
+			} catch (cleanupError) {
+				captureError(
+					new Error(
+						`Failed to cleanup document ${sourceUrl} after processing error: ${cleanupError}`,
+					),
 				);
-				await dbService.uploadFileToStorage(
-					sourceUrl.replace(/\.docx?$/i, ".pdf"),
-					new File([pdfBytes], fileName.replace(/\.docx?$/i, ".pdf"), {
-						type: "application/pdf",
-					}),
-					isPublicDocument,
-				);
-			} catch (err) {
-				captureError(err);
 			}
 		}
-		return c.body(null, 204);
-	} catch (error) {
-		captureError(error);
-		console.error("Upload error:", error);
-		return c.json(
-			{
-				error: "Failed to upload file",
-				message: error instanceof Error ? error.message : String(error),
-			},
-			500,
-		);
+		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });
 

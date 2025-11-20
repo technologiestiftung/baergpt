@@ -36,7 +36,7 @@ export const BaseKnowledgeSection: React.FC = () => {
 					{Content["profile.baseKnowledge.usage"]}
 					<a
 						href={Content["profile.baseKnowledge.link.url"]}
-						className="underline underline-offset-2 hover:underline"
+						className="underline underline-offset-2 hover:underline focus-visible:outline-default rounded-3px"
 						target="_blank"
 						rel="noopener noreferrer"
 					>
@@ -64,14 +64,14 @@ export const BaseKnowledgeSection: React.FC = () => {
 											href={doc.previewUrl}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex gap-1 items-center py-2 px-3 border-b-[0.5px] border-hellblau-60 hover:bg-hellblau-30 group"
+											className="flex gap-1 items-center py-2 px-3 border-b-[0.5px] border-hellblau-60 hover:bg-hellblau-30 focus-visible:outline-default rounded-3px group"
 										>
 											<div className="flex gap-1 items-center">
 												<DocumentIcon
 													variant="lightestBlue"
 													className="size-5"
 												/>
-												<span className="group-hover:underline underline-offset-2">
+												<span className="group-hover:underline underline-offset-2 group-focus:underline">
 													{doc.file_name}
 												</span>
 											</div>
@@ -84,7 +84,7 @@ export const BaseKnowledgeSection: React.FC = () => {
 						{/* Show all button */}
 						{sortedBaseKnowledgeDocuments.length > 5 && !showAllDocuments && (
 							<button
-								className="group flex items-center text-sm leading-5 font-normal hover:text-dunkelblau-80 justify-self-center"
+								className="group flex items-center text-sm leading-5 font-normal hover:text-dunkelblau-80 justify-self-center focus-visible:outline-default rounded-3px"
 								onClick={() => setShowAllDocuments(true)}
 								aria-label={Content["profile.baseKnowledge.viewAll.ariaLabel"]}
 							>
@@ -107,7 +107,7 @@ export const BaseKnowledgeSection: React.FC = () => {
 						{/* Show less button */}
 						{showAllDocuments && (
 							<button
-								className="group flex items-center text-sm leading-5 font-normal hover:text-dunkelblau-80 justify-self-center"
+								className="group flex items-center text-sm leading-5 font-normal hover:text-dunkelblau-80 justify-self-center focus-visible:outline-default rounded-3px"
 								onClick={() => setShowAllDocuments(false)}
 								aria-label={
 									Content["profile.baseKnowledge.collapseList.ariaLabel"]

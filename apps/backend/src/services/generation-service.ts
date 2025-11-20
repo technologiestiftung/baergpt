@@ -12,13 +12,12 @@ import {
 import { updateActiveTrace } from "@langfuse/tracing";
 import {
 	type Document,
-	type HybridSearchResult,
 	type KnowledgeBaseDocument,
 	type LLMHandler,
 } from "../types/common";
 import { DatabaseService } from "./database-service";
 import { LLM_PARAMETERS } from "../constants";
-import type { LLMIdentifier, ParsedPage } from "../types/common";
+import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { captureError } from "../monitoring/capture-error";
@@ -31,17 +30,10 @@ import {
 	trimToTokenLimitByWords,
 } from "./token-utils";
 
-const ESTIMATED_TOKENS_PER_WORD = config.estimatedTokensPerWord;
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
-
-interface BuildContextFromDocumentsParams {
-	chunkMatches: HybridSearchResult[];
-	summaries: string[];
-}
-
 const maxAvailableSources = ragSearchDefaults.chunk_limit;
 
 export class GenerationService {
@@ -50,7 +42,7 @@ export class GenerationService {
 	 * for the summary prompt. Falls back to at least the first page if none fit.
 	 */
 	private async selectFirstPagesFittingBudget(
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		parsedPages: ParsedPage[],
 	): Promise<ParsedPage[]> {
 		const contextSize = modelService.availableModels[llmIdentifier].contextSize;
@@ -82,7 +74,7 @@ export class GenerationService {
 	 * 2) hard-trimming with a binary search as a final safeguard.
 	 */
 	private async compressToTokenLimit(
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		content: string,
 		options: { tokenLimit: number; maxRounds?: number } = { tokenLimit: 0 },
 	): Promise<string> {
@@ -132,7 +124,7 @@ export class GenerationService {
 	}
 
 	async generateSummary(
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		docInput: string | ParsedPage[],
 		{
 			oneSentenceSummary = false,
@@ -180,7 +172,7 @@ export class GenerationService {
 	}
 
 	async generateTags(
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		docInput: string | ParsedPage[],
 		{ userId }: { userId?: string } = {},
 	): Promise<string[] | null> {
@@ -219,9 +211,14 @@ export class GenerationService {
 
 	async summarize(
 		parsedPages: ParsedPage[],
-		llmIdentifier: LLMIdentifier,
+		llmIdentifier: string,
 		document: Document,
-	): Promise<void> {
+	): Promise<{
+		summary: string;
+		shortSummary: string;
+		tags: string[];
+		summaryEmbedding: number[];
+	}> {
 		const numTokens = parsedPages.reduce(
 			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
 			0,
@@ -301,15 +298,13 @@ export class GenerationService {
 		if (!tags) {
 			throw new Error("Failed to generate document tags");
 		}
-		await dbService.logSummarizedDocument(
-			{
-				summary,
-				shortSummary,
-				tags,
-				summaryEmbedding: summaryEmbeddingResponse.embedding,
-			},
-			document,
-		);
+
+		return {
+			summary,
+			shortSummary,
+			tags,
+			summaryEmbedding: summaryEmbeddingResponse.embedding,
+		};
 	}
 
 	async generateTextStreamResponse(
@@ -575,41 +570,6 @@ export class GenerationService {
 		}
 
 		return overlapStart;
-	}
-
-	/**
-	 * Processes document chunks to build context for the prompt
-	 */
-
-	buildContextFromDocuments({
-		chunkMatches,
-		summaries,
-	}: BuildContextFromDocumentsParams): string {
-		const LIMIT = config.chatCompletionContextTokenLimit;
-		let context = "";
-
-		for (const summary of summaries) {
-			if (
-				(context + summary).split(/\s+/).length * ESTIMATED_TOKENS_PER_WORD <
-				LIMIT
-			) {
-				context += summary;
-			}
-		}
-
-		context += "\n\nZitate aus verfügbaren Dokumenten:\n\n";
-
-		for (const chunkMatch of chunkMatches) {
-			const chunk = chunkMatch.chunk_content;
-			if (
-				`${context + chunk}\n`.split(/\s+/).length * ESTIMATED_TOKENS_PER_WORD <
-				LIMIT
-			) {
-				context += `${chunk}\n`;
-			}
-		}
-
-		return context;
 	}
 
 	/**

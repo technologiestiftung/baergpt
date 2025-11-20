@@ -6,6 +6,7 @@ import { config } from "../../config";
 import { sign } from "hono/jwt";
 import { PDFDocument } from "pdf-lib";
 import { supabase } from "../../supabase";
+import { initQueues } from "../../services/distributed-limiter";
 
 let validToken: string;
 
@@ -35,28 +36,23 @@ const generatePdfBytesFromText = async (text: string): Promise<Uint8Array> => {
 	return await doc.save({ useObjectStreams: false });
 };
 
-// Upload bytes to storage via /documents/upload (multipart)
+// Upload bytes directly to Supabase storage
 const uploadToStorage = async (args: {
-	jwt: string;
 	bytes: Uint8Array;
 	sourceUrl: string;
 	fileName: string;
 }): Promise<void> => {
-	const { jwt, bytes, sourceUrl, fileName } = args;
-	const form = new FormData();
-	const ab = bytes.slice(0).buffer; // ensure ArrayBuffer (not SharedArrayBuffer)
-	const blob = new Blob([ab], { type: "application/pdf" });
-	form.append("file", blob, fileName);
-	form.append("sourceUrl", sourceUrl);
-	form.append("isPublicDocument", "false");
+	const { bytes, sourceUrl, fileName } = args;
+	const file = new File([bytes.slice()], fileName, { type: "application/pdf" });
 
-	const res = await app.request("/documents/upload", {
-		method: "POST",
-		headers: new Headers({ authorization: `Bearer ${jwt}` }),
-		body: form,
-	});
-	if (res.status !== 204) {
-		throw new Error(`Upload failed: ${res.status} ${await res.text()}`);
+	const { error } = await supabase.storage
+		.from("documents")
+		.upload(sourceUrl, file, {
+			contentType: "application/pdf",
+		});
+
+	if (error) {
+		throw new Error(`Storage upload error: ${error.message}`);
 	}
 };
 
@@ -89,6 +85,38 @@ const cleanupTestDocuments = async () => {
 			.from("documents")
 			.delete()
 			.in("owned_by_user_id", [testUserId, testUserId2]);
+
+		const removeUserFiles = async (userId: string) => {
+			const { data, error } = await supabase.storage
+				.from("documents")
+				.list(userId);
+
+			if (error) {
+				if (!error.message?.includes("not found")) {
+					console.error("Error listing storage files:", error);
+				}
+				return;
+			}
+
+			const pathsToRemove = data?.map((file) => `${userId}/${file.name}`) ?? [];
+
+			if (pathsToRemove.length === 0) {
+				return;
+			}
+
+			const { error: removeError } = await supabase.storage
+				.from("documents")
+				.remove(pathsToRemove);
+
+			if (removeError) {
+				console.error("Error removing storage files:", removeError);
+			}
+		};
+
+		await Promise.all([
+			removeUserFiles(testUserId),
+			removeUserFiles(testUserId2),
+		]);
 	} catch (error) {
 		console.error("Error during test documents cleanup:", error);
 	}
@@ -160,6 +188,9 @@ const deleteTestUser = async () => {
 
 describe("Integration Tests for Routes", () => {
 	beforeAll(async () => {
+		// Initialize queues for the test process
+		await initQueues();
+
 		const email = "test@example.com";
 		await createTestUser(OWNER_USER_ID, email);
 		// Generate JWT token
@@ -167,7 +198,7 @@ describe("Integration Tests for Routes", () => {
 
 		// Run a full cleanup before all tests
 		await cleanupTestDocuments();
-	});
+	}, 20_000);
 
 	afterAll(async () => {
 		await cleanupTestDocuments();
@@ -175,12 +206,11 @@ describe("Integration Tests for Routes", () => {
 	});
 
 	it("POST /documents/process should process a document and return 204", async () => {
-		const sourceUrl = "example/file.pdf";
 		const fileName = "example.pdf";
+		const sourceUrl = `${OWNER_USER_ID}/${fileName}`;
 		const pdfBytes = await generatePdfBytesFromText("Test Document");
 
 		await uploadToStorage({
-			jwt: validToken,
 			bytes: pdfBytes,
 			sourceUrl,
 			fileName,
@@ -219,13 +249,14 @@ describe("Integration Tests for Routes", () => {
 			"Here is the second document for testing.",
 		];
 		const fileNames = ["example-1.pdf", "example-2.pdf"];
-		const sourceUrls = ["example/file-1.pdf", "example/file-2.pdf"];
+		const sourceUrls = fileNames.map(
+			(fileName) => `${OWNER_USER_ID}/${fileName}`,
+		);
 
 		for (let i = 0; i < texts.length; i++) {
 			const pdfBytes = await generatePdfBytesFromText(texts[i]);
 
 			await uploadToStorage({
-				jwt: validToken,
 				bytes: pdfBytes,
 				sourceUrl: sourceUrls[i],
 				fileName: fileNames[i],
@@ -299,12 +330,11 @@ describe("Integration Tests for Routes", () => {
 	}, 80_000);
 
 	it("should return no errors when deleting a document with valid document ID", async () => {
-		const sourceUrl = "delete-me/file.pdf";
 		const fileName = "delete-me.pdf";
+		const sourceUrl = `${OWNER_USER_ID}/${fileName}`;
 		const pdfBytes = await generatePdfBytesFromText("Document to be deleted");
 
 		await uploadToStorage({
-			jwt: validToken,
 			bytes: pdfBytes,
 			sourceUrl,
 			fileName,
@@ -357,14 +387,13 @@ describe("Integration Tests for Routes", () => {
 	}, 100_000);
 
 	it("should cascade document deletion to also delete summaries and chunks", async () => {
-		const sourceUrl = "delete-cascade/file.pdf";
 		const fileName = "delete-cascade.pdf";
+		const sourceUrl = `${OWNER_USER_ID}/${fileName}`;
 		const pdfBytes = await generatePdfBytesFromText(
 			"Document to be deleted with cascade",
 		);
 
 		await uploadToStorage({
-			jwt: validToken,
 			bytes: pdfBytes,
 			sourceUrl,
 			fileName,
@@ -484,12 +513,11 @@ describe("Integration Tests for Routes", () => {
 			otherUserEmail,
 		);
 
-		const sourceUrl = "delete-me-2/file.pdf";
 		const fileName = "delete-me-2.pdf";
+		const sourceUrl = `${OTHER_USER_ID}/${fileName}`;
 		const pdfBytes = await generatePdfBytesFromText("Document to be deleted");
 
 		await uploadToStorage({
-			jwt: validToken2,
 			bytes: pdfBytes,
 			sourceUrl,
 			fileName,
@@ -516,7 +544,7 @@ describe("Integration Tests for Routes", () => {
 		expect(uploadRes.status).toBe(204);
 		const docId = await getLatestDocumentIdBySourceUrl(
 			OTHER_USER_ID,
-			"delete-me-2/file.pdf",
+			sourceUrl,
 		);
 		expect(docId).toBeDefined();
 		const authedUserClient = createAuthedClient(validToken);

@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeAll } from "vitest";
+import { maxRetries } from "./constants";
 
 vi.mock("@sentry/node", () => ({
 	captureException: vi.fn(),
@@ -6,8 +7,13 @@ vi.mock("@sentry/node", () => ({
 
 import { resilientCall } from "./utils";
 import { config } from "./config";
+import { initQueues } from "./services/distributed-limiter";
 
 describe("resilientCall()", () => {
+	beforeAll(async () => {
+		await initQueues();
+	}, 20_000);
+
 	describe("with retries", () => {
 		it("should retry the operation on failure up to the default number of retries", async () => {
 			const givenError = new Error("GivenError");
@@ -16,15 +22,15 @@ describe("resilientCall()", () => {
 			let attempts = 0;
 
 			const givenFunction = vi.fn(async () => {
-				if (attempts < config.maxRetries) {
+				if (attempts < maxRetries) {
 					attempts++;
 					throw givenError;
 				}
 				return expectedResult;
 			});
 
-			const actualResult = resilientCall(givenFunction, { retryDelay: 1 });
-			const expectedAttempts = config.maxRetries + 1; // Initial attempt + retries
+			const actualResult = resilientCall(givenFunction);
+			const expectedAttempts = maxRetries + 1; // Initial attempt + retries
 
 			await expect(actualResult).resolves.toBe(expectedResult);
 			expect(givenFunction).toHaveBeenCalledTimes(expectedAttempts);
@@ -36,8 +42,8 @@ describe("resilientCall()", () => {
 				throw givenError;
 			});
 
-			const actualResult = resilientCall(givenFunction, { retryDelay: 1 });
-			const expectedAttempts = config.maxRetries + 1; // Initial attempt + retries
+			const actualResult = resilientCall(givenFunction);
+			const expectedAttempts = maxRetries + 1; // Initial attempt + retries
 			await expect(actualResult).rejects.toThrow("PersistentError");
 			expect(givenFunction).toHaveBeenCalledTimes(expectedAttempts);
 		});
@@ -51,7 +57,9 @@ describe("resilientCall()", () => {
 
 			// Create multiple operations that should be throttled
 			const promises = Array.from({ length: amountOfCalls }, () =>
-				resilientCall(mockOperation, { queueType: "embeddings", retries: 0 }),
+				resilientCall(mockOperation, {
+					queueType: "embeddings",
+				}),
 			);
 
 			await Promise.all(promises);
@@ -63,7 +71,7 @@ describe("resilientCall()", () => {
 			expect(duration).toBeGreaterThanOrEqual(expectedDuration);
 			expect(mockOperation).toHaveBeenCalledTimes(amountOfCalls);
 		});
-	});
+	}, 20_000);
 
 	describe("LLM queue", () => {
 		it("should throttle embeddings operations according to rate limit", async () => {
@@ -73,7 +81,7 @@ describe("resilientCall()", () => {
 
 			// Create multiple operations that should be throttled
 			const promises = Array.from({ length: amountOfCalls }, () =>
-				resilientCall(mockOperation, { queueType: "llm", retries: 0 }),
+				resilientCall(mockOperation, { queueType: "llm" }),
 			);
 
 			await Promise.all(promises);
@@ -85,5 +93,5 @@ describe("resilientCall()", () => {
 			expect(duration).toBeGreaterThanOrEqual(expectedDuration);
 			expect(mockOperation).toHaveBeenCalledTimes(amountOfCalls);
 		});
-	});
+	}, 20_000);
 });

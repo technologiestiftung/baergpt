@@ -18,3 +18,6 @@ export const ragSearchDefaults = {
 
 export const PAGE_SEPARATOR = "[PAGE_BREAK]";
 export const enc = get_encoding("o200k_base");
+
+export const maxRetries = 2;
+export const retryDelay = 1000;

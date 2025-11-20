@@ -1,33 +1,38 @@
 import { type FormEvent, type RefObject, useRef, useState } from "react";
-import { emailValidationRegex } from "../../../routes/register-page/validation/email-validation.ts";
+import { validateEmail } from "../../../routes/register-page/validation/email-validation.ts";
+import { useAuthStore } from "../../../store/auth-store.ts";
 import Content from "../../../content.ts";
 
 export function EmailInput({
 	id,
 	placeholder,
 	className = "",
-	useRegexValidation = false,
 	defaultValue = "",
+	useRegexValidation = false,
 }: {
 	id: string;
 	placeholder?: string;
 	className?: string;
-	useRegexValidation?: boolean;
 	defaultValue?: string;
+	useRegexValidation?: boolean;
 }) {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [value, setValue] = useState<string>(defaultValue || "");
 	const [showError, setShowError] = useState<boolean>(false);
+	const { allowedEmailDomains } = useAuthStore();
 
 	const handleInput = (event: FormEvent<HTMLInputElement>) => {
 		setValue(event.currentTarget.value);
 
 		if (useRegexValidation) {
-			const isValidEmail = emailValidationRegex.test(event.currentTarget.value);
+			const emailValidation = validateEmail(
+				event.currentTarget.value,
+				allowedEmailDomains,
+			);
 
-			if (!isValidEmail) {
+			if (!emailValidation.isValid) {
 				event.currentTarget.setCustomValidity(
-					"Zulässige Endung: @berlin.de oder @institution.berlin.de",
+					emailValidation.error || Content["form.validation.email.customError"],
 				);
 			} else {
 				event.currentTarget.setCustomValidity("");

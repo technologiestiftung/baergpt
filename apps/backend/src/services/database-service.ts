@@ -1,8 +1,6 @@
 import { supabase } from "../supabase";
-import { ExtractError } from "../types/common";
 import {
 	type Document,
-	type DocumentBufferResponse,
 	type Embedding,
 	type ExtractionResult,
 	type HybridSearchResult,
@@ -10,9 +8,14 @@ import {
 	DocumentNotFoundError,
 } from "../types/common";
 import { ragSearchDefaults } from "../constants";
-import { DocumentExtractionService } from "./document-extraction-service";
+import {
+	DocumentExtractionService,
+	WordDocumentExtractionService,
+} from "./document-extraction-service";
+import { captureError } from "../monitoring/capture-error";
 
 const documentExtraction = new DocumentExtractionService();
+const wordExtractionService = new WordDocumentExtractionService();
 
 export class DatabaseService {
 	async logSummarizedDocument(
@@ -84,20 +87,27 @@ export class DatabaseService {
 	async uploadFileToStorage(
 		filePath: string,
 		file: File,
-		isPublicDocument: boolean = false,
+		bucket: string,
 	): Promise<void> {
-		let bucketName = "";
-		if (isPublicDocument) {
-			bucketName = "public_documents";
-		} else {
-			bucketName = "documents";
-		}
 		const { error: uploadError } = await supabase.storage
-			.from(bucketName)
+			.from(bucket)
 			.upload(filePath, file);
 
 		if (uploadError) {
 			throw uploadError;
+		}
+	}
+
+	async deleteFileFromStorage(
+		source_url: string,
+		bucket: string,
+	): Promise<void> {
+		const { error: deletionError } = await supabase.storage
+			.from(bucket)
+			.remove([source_url]);
+
+		if (deletionError) {
+			throw deletionError;
 		}
 	}
 
@@ -117,23 +127,36 @@ export class DatabaseService {
 		}
 	}
 
-	async logDocument(document: Document): Promise<number> {
+	/**
+	 * Creates a complete document record with all metadata, summary, and embeddings in the database.
+	 */
+	async logProcessedDocument(
+		document: Document,
+		summaryData: {
+			summary: string;
+			shortSummary: string;
+			tags: string[];
+			summaryEmbedding: number[];
+		},
+		embeddings: Embedding[],
+	): Promise<void> {
 		if (!document) {
 			throw new Error("Document is undefined");
 		}
 
+		// 1. Insert Document
 		const { data, error } = await supabase
 			.from("documents")
 			.insert({
 				owned_by_user_id: document.owned_by_user_id || null,
-				file_checksum: document.file_checksum || null,
-				file_size: document.file_size || null,
-				num_pages: document.num_pages || null,
-				processing_finished_at: document.processing_finished_at || null,
+				file_checksum: document.file_checksum,
+				file_size: document.file_size,
+				num_pages: document.num_pages,
+				processing_finished_at: new Date().toISOString(),
 				folder_id: document.folder_id || null,
 				source_url: document.source_url,
 				source_type: document.source_type,
-				file_name: document.file_name,
+				file_name: document.source_url?.split("/").pop(),
 				created_at: document.created_at || new Date().toISOString(),
 				access_group_id: document.access_group_id || null,
 				uploaded_by_user_id: document.uploaded_by_user_id || null,
@@ -144,7 +167,49 @@ export class DatabaseService {
 			throw error;
 		}
 
-		return data[0].id;
+		const newDocument = data[0];
+		const documentId = newDocument.id;
+
+		try {
+			// 2. Insert Summary
+			await this.logSummarizedDocument(summaryData, {
+				...document,
+				id: documentId,
+			});
+
+			// 3. Insert Embeddings
+			await this.logEmbeddings(embeddings, { ...document, id: documentId });
+
+			// 4. Update user document count
+			await this.updateUserDocumentCount(
+				document.owned_by_user_id || document.uploaded_by_user_id,
+			);
+
+			return null;
+		} catch (innerError) {
+			// If saving aux data fails, we should cleanup the document to avoid partial state
+			await this.deleteDocumentById(documentId);
+			throw innerError;
+		}
+	}
+
+	/**
+	 * Cleanup helper for `logProcessedDocument`.
+	 * Deletes a document by its ID after a partial save failure.
+	 * Only logs errors rather than throwing them to avoid masking the original error.
+	 */
+	private async deleteDocumentById(documentId: number): Promise<void> {
+		const { error } = await supabase
+			.from("documents")
+			.delete()
+			.eq("id", documentId);
+
+		if (error) {
+			console.error(
+				`Failed to cleanup document ${documentId} after partial save failure:`,
+				error,
+			);
+		}
 	}
 
 	async logEmbeddings(
@@ -169,45 +234,42 @@ export class DatabaseService {
 		}
 	}
 
-	async updateMetadataOfLoggedDocument(
-		extractionResult: ExtractionResult,
-		file_id: number,
-	): Promise<Document> {
-		const { data, error } = await supabase
-			.from("documents")
-			.update({
-				file_checksum: extractionResult.checksum,
-				file_size: extractionResult.fileSize,
-				num_pages: extractionResult.numPages,
-				processing_finished_at: new Date().toISOString(),
-			})
-			.eq("id", file_id)
-			.select("*");
-
-		if (error) {
-			throw error;
+	async extractDocument(document: Document): Promise<ExtractionResult> {
+		const fileName = document.source_url.split("/").pop();
+		const bucket =
+			document.source_type === "public_document"
+				? "public_documents"
+				: "documents";
+		try {
+			if (/\.(docx)$/i.test(fileName)) {
+				const wordBuffer = await this.getDocumentBufferFromSupabase(
+					bucket,
+					document.source_url,
+				);
+				const pdfBuffer = await wordExtractionService.convertDocxToPdf(
+					Buffer.from(wordBuffer),
+				);
+				await this.uploadFileToStorage(
+					document.source_url.replace(/\.(docx)$/i, ".pdf"),
+					new File([pdfBuffer], fileName.replace(/\.(docx)$/i, ".pdf"), {
+						type: "application/pdf",
+					}),
+					bucket,
+				);
+			}
+		} catch (error) {
+			captureError(error);
 		}
-
-		return data[0];
-	}
-
-	async logAndExtractDocument(
-		document: Document,
-	): Promise<ExtractionResult & { document: Document }> {
-		const documentId = await this.logDocument(document);
-		const documentWithId = { ...document, id: documentId };
-		const { buffer: fileBytes } =
-			await this.getDocumentBufferFromSupabase(documentWithId);
+		const fileBytes = await this.getDocumentBufferFromSupabase(
+			bucket,
+			document.source_url,
+		);
 		const extractionResult = await documentExtraction.extractDocument(
 			fileBytes,
-			documentWithId,
-		);
-		const updatedDocument = await this.updateMetadataOfLoggedDocument(
-			extractionResult,
-			documentId,
+			document,
 		);
 
-		return { ...extractionResult, document: updatedDocument };
+		return extractionResult;
 	}
 
 	/**
@@ -216,53 +278,21 @@ export class DatabaseService {
 	 * @returns Buffer containing the document data
 	 */
 	async getDocumentBufferFromSupabase(
-		document: Document,
-	): Promise<DocumentBufferResponse> {
-		let filename = document.source_url.split("/").slice(-1)[0];
-		if (!filename.endsWith(".pdf")) {
-			filename += ".pdf";
-		}
-
-		let bucket = "public_documents";
-		const filenameInBucket = document.source_url;
-
-		if (document.owned_by_user_id) {
-			bucket = "documents";
-		}
-
+		bucket: string,
+		sourceUrl: string,
+	): Promise<Uint8Array> {
 		const { data, error } = await supabase.storage
 			.from(bucket)
-			.download(filenameInBucket);
+			.download(sourceUrl);
 
 		if (!data) {
-			throw new ExtractError(
-				document,
-				`Could not download ${document.source_url}: ${error}`,
-			);
+			throw new Error(`Could not download ${sourceUrl}: ${error}`);
 		}
 
 		// Convert the Blob to a Buffer
 		const buffer = new Uint8Array(await data.arrayBuffer());
 
-		return {
-			buffer,
-			filename,
-		} as DocumentBufferResponse;
-	}
-
-	async finishProcessing(document: Document) {
-		const { error } = await supabase
-			.from("documents")
-			.update({ processing_finished_at: new Date().toISOString() })
-			.eq("id", document.id);
-
-		if (error) {
-			throw error;
-		}
-
-		await this.updateUserDocumentCount(
-			document.owned_by_user_id || document.uploaded_by_user_id,
-		);
+		return buffer;
 	}
 
 	// Updates the user's document count in the profiles table

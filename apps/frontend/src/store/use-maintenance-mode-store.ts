@@ -10,10 +10,9 @@ export const useMaintenanceModeStore = create<MaintenanceModeStore>(() => ({
 	checkMaintenanceMode: async (signal: AbortSignal) => {
 		const isMaintenanceMode = await getMaintenanceModeStatus(signal);
 
-		// If maintenance mode is enabled, logout user and refresh page
+		// If maintenance mode is enabled, logout user
 		if (isMaintenanceMode) {
 			await useAuthStore.getState().logout();
-			window.location.reload();
 		}
 	},
 }));

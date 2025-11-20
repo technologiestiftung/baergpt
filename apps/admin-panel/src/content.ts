@@ -185,7 +185,7 @@ export const Content = {
 	"userEditModal.form.emailUpdatedSuccess":
 		"E-Mail-Adresse erfolgreich aktualisiert",
 	"userEditModal.form.invalidEmailError":
-		"Ungültige E-Mail-Adresse, Zulässige Endung: @berlin.de oder @institution.berlin.de.",
+		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"userEditModal.form.emailAlreadyInUseError":
 		"Diese E-Mail-Adresse ist bereits in Verwendung.",
 	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",

@@ -768,6 +768,7 @@ export const Content = {
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
+	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Dateien werden verarbeitet",
 	"fileUploadButtonStatus.singleFileUploading": "Datei wird verarbeitet",
@@ -782,7 +783,16 @@ export const Content = {
 	"fileUpload.helpLink.link":
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
-	"fileUpload.maxFilesWarning.p1": "Max. 5 Dateien pro Upload.",
+	// file upload counter message
+	"fileUpload.infoMessage.maxUpload.p1": `Pro Upload-Vorgang sind max.`,
+	"fileUpload.infoMessage.maxUpload.p2": `Dateien möglich.`,
+	"fileUpload.infoMessage.counter.p1": `von`,
+	"fileUpload.infoMessage.counter.p2": `möglichen Dateien hochgeladen.`,
+	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von`,
+	"fileUpload.infoMessage.limitReached.p2": `Dateien erreicht.`,
+	"fileUpload.infoMessage.limitReached.p3": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
+	"fileUpload.maxFilesWarning.p1": `Max.`,
+	"fileUpload.maxFilesWarning.p2": `Dateien pro Upload.`,
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
@@ -1041,7 +1051,7 @@ export const Content = {
 	"registerPage.emailLabel": "E-Mail-Adresse",
 	"registerPage.emailHint":
 		"Nur dienstliche E-Mail-Adressen der Berliner Verwaltung sind erlaubt.",
-	"registerPage.emailPlaceholder": "vorname.nachname@berlin.de",
+	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
 	"registerPage.passwordLabel": "Passwort",
 	"registerPage.passwordPlaceholder": "Passwort",
 	"registerPage.repeatPasswordLabel": "Passwort wiederholen",
@@ -1072,7 +1082,7 @@ export const Content = {
 	"resetPasswordConfirmation.list.li.2":
 		"Bitte prüfen Sie auch Ihren Spam-Ordner",
 	"resetPasswordConfirmation.list.li.3":
-		"Adresse support@baergpt.de als Absender zulassen",
+		"Adresse support@baergpt.berlin als Absender zulassen",
 	"resetPasswordConfirmation.list.li.4":
 		"Bitte prüfen Sie die eingegebene E-Mail-Adresse",
 
@@ -1122,7 +1132,7 @@ export const Content = {
 	"form.validation.general.valueMissing": "Bitte füllen Sie dieses Feld aus.",
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
 	"form.validation.email.customError":
-		'Zulässige Endung: @berlin.de oder @<span class="italic">institution</span>.berlin.de.',
+		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"form.validation.password.tooShort":
 		"Das Passwort muss mindestens 10 Zeichen lang sein.",
 	"form.validation.password.repeatPasswordShouldMatch.error":
@@ -1272,7 +1282,7 @@ export const Content = {
 	"userEditModal.form.emailUpdatedSuccess":
 		"E-Mail-Adresse erfolgreich aktualisiert",
 	"userEditModal.form.invalidEmailError":
-		"Ungültige E-Mail-Adresse, Zulässige Endung: @berlin.de oder @institution.berlin.de.",
+		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"userEditModal.form.emailAlreadyInUseError":
 		"Diese E-Mail-Adresse ist bereits in Verwendung.",
 	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",

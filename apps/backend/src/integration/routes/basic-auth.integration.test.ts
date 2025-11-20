@@ -23,7 +23,7 @@ describe("basic auth middleware", () => {
 	});
 
 	describe("with valid session", () => {
-		const givenUserEmail = "basic-auth-test-suite-user@berlin.de";
+		const givenUserEmail = "basic-auth-test-suite-user@local.berlin.de";
 		const givenUserPassword = "SecurePassword123!";
 
 		let session: Session | null = null;

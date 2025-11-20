@@ -38,7 +38,10 @@ export function LoginPage() {
 					>
 						<label htmlFor="email" className="flex flex-col gap-y-1">
 							{Content["loginPage.emailLabel"]}
-							<EmailInput id="email" placeholder="vorname.nachname@berlin.de" />
+							<EmailInput
+								id="email"
+								placeholder="vorname.name@subdomain.berlin.de"
+							/>
 						</label>
 
 						<label htmlFor="password" className="flex flex-col mt-5 gap-y-1">
