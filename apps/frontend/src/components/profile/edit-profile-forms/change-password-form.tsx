@@ -159,7 +159,11 @@ export function ChangePasswordForm() {
 							className="flex flex-col gap-y-1 text-sm md:text-base"
 						>
 							{Content["profile.passwordLabel"]}
-							<PasswordInput id="password" autoComplete="new-password" />
+							<PasswordInput
+								id="password"
+								autoComplete="new-password"
+								minLength={10}
+							/>
 						</label>
 
 						<label
@@ -167,7 +171,11 @@ export function ChangePasswordForm() {
 							className="flex flex-col gap-y-1 text-sm md:text-base"
 						>
 							{Content["profile.passwordRepeatLabel"]}
-							<PasswordInput id="repeatPassword" autoComplete="new-password" />
+							<PasswordInput
+								id="repeatPassword"
+								autoComplete="new-password"
+								minLength={10}
+							/>
 						</label>
 					</div>
 
