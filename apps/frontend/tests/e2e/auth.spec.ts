@@ -763,7 +763,7 @@ testWithRegisteredUser(
 
 		// Go to the profile page
 		await page.goto("/profile/");
-		const updatedEmail = "john.doe@newemail.com";
+		const updatedEmail = "john.doe@local.berlin.de";
 
 		await expect(page.locator("#email")).toHaveValue(account.email);
 
