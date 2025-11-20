@@ -763,7 +763,14 @@ testWithRegisteredUser(
 
 		// Go to the profile page
 		await page.goto("/profile/");
-		const updatedEmail = "john.doe@newemail.com";
+		const updatedEmail = "john.doe@new.berlin.de";
+		// Wait for allowed email domains to be loaded before filling the form
+		await page
+			.waitForResponse(
+				(resp) => resp.url().includes("get_allowed_email_domains"),
+				{ timeout: 10000 },
+			)
+			.catch(() => {}); // Ignore if already completed
 
 		await expect(page.locator("#email")).toHaveValue(account.email);
 
