@@ -59,13 +59,13 @@ export function initQueues(): Promise<void> {
 	});
 
 	llmLimiter.on("error", (error: Error) => {
-		console.error(error);
-		captureError(error);
+		console.error(error.message);
+		captureError(`Redis limiter failed: ${error.message}`);
 	});
 
 	embeddingsLimiter.on("error", (error: Error) => {
-		console.error(error);
-		captureError(error);
+		console.error(error.message);
+		captureError(`Redis limiter failed: ${error.message}`);
 	});
 
 	// Ensure scripts are loaded and clients are ready before any schedule() calls.

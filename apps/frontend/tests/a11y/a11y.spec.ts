@@ -4,7 +4,7 @@ import { supabaseAdminClient } from "../supabase.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 
 const defaultUserEmail = "john.doe-a11y@local.berlin.de";
-const defaultUserPassword = "123456";
+const defaultUserPassword = "123456789!";
 const defaultUserFirstName = "John";
 const defaultUserLastName = "Doe";
 

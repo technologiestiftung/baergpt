@@ -79,7 +79,7 @@ export function PasswordInput({
 						onInvalid={handleInvalid}
 						type={isPasswordVisible ? "text" : "password"}
 						required
-						minLength={6}
+						minLength={10}
 						className="w-0 grow focus:outline-none"
 						placeholder={placeholder}
 					/>
