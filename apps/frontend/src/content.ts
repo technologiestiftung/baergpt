@@ -97,16 +97,10 @@ export const Content = {
 	"privacyPolicyPage.section2.phone.label": "Tel.: ",
 	"privacyPolicyPage.section2.email.label": "E-Mail: ",
 	"privacyPolicyPage.section2.website.label": "Website: ",
-	//a)
-	"privacyPolicyPage.section2.a.title": "a) Testbetrieb durch CityLAB",
-	"privacyPolicyPage.section2.a.li1.heading":
-		"Verantwortlich im Sinne der DSGVO:",
-	"privacyPolicyPage.section2.a.li2.heading": "Datenschutzbeauftragter:",
-	"privacyPolicyPage.section2.a.li2.role": "Datenschutzbeauftragter",
-	"privacyPolicyPage.section2.a.li2.email": "datenschutz@ts.berlin",
+
 	//b)
 	"privacyPolicyPage.section2.b.title":
-		"b) Probeechtbetrieb durch Senatskanzlei Berlin",
+		"Probeechtbetrieb durch Senatskanzlei Berlin",
 	"privacyPolicyPage.section2.b.li1.heading":
 		"Verantwortlich im Sinne der DSGVO:",
 	"privacyPolicyPage.section2.b.li1.organisation":
@@ -884,12 +878,11 @@ export const Content = {
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
 	"chat.copyToClipboardButton.ariaLabel": "In Zwischenablage kopieren",
-	"chat.disclaimer.p1":
-		"BärGPT befindet sich in der Testphase, basiert auf einem Sprachmodell und ",
-	"chat.disclaimer.p2": "kann Fehler machen",
+	"chat.disclaimer.p1": "BärGPT kann",
+	"chat.disclaimer.p2": "Fehler",
 	"chat.disclaimer.p2.link":
-		"https://hilfe.baergpt.berlin/faq#:~:text=Welche%20Risiken%20bestehen%20bei%20der%20Nutzung%20von%20KI%2DChatbots%20wie%20B%C3%A4rGPT%3F",
-	"chat.disclaimer.p3": ". Bitte überprüfen Sie die Informationen.",
+		"https://hilfe.baergpt.berlin/faq#warum-kann-baergpt-fehler-machen",
+	"chat.disclaimer.p3": "machen. Bitte überprüfen Sie die Informationen.",
 
 	"chat.citationsButton.label": "Quellen",
 	"chat.citationsButton.loadingLabel": "Quellen werden gerade hinzugefügt",

@@ -34,7 +34,7 @@ export const ChatSection: React.FC = () => {
 						<ChatForm />
 					</div>
 					<p className="text-center text-sm leading-5 font-normal text-dunkelblau-80 mt-2 w-full max-w-[640px]">
-						<span>{Content["chat.disclaimer.p1"]}</span>
+						<span>{Content["chat.disclaimer.p1"]}</span>{" "}
 						<a
 							href={Content["chat.disclaimer.p2.link"]}
 							target="_blank"
@@ -43,7 +43,7 @@ export const ChatSection: React.FC = () => {
 						>
 							{Content["chat.disclaimer.p2"]}
 						</a>
-						<span>{Content["chat.disclaimer.p3"]}</span>
+						<span> {Content["chat.disclaimer.p3"]}</span>
 					</p>
 				</div>
 			</div>

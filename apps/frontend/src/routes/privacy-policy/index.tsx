@@ -5,7 +5,6 @@ import { TableOfContents } from "../../components/privacy-policy/table-of-conten
 import { ListItem } from "../../components/privacy-policy/list-item.tsx";
 import { ContactInfo } from "../../components/privacy-policy/contact-info.tsx";
 import {
-	section2ContactItemsA,
 	section2ContactItemsB,
 	section3ListItems,
 	section4ListItems,
@@ -47,18 +46,6 @@ export const PrivacyPolicyPage: React.FC = () => {
 			title: Content["privacyPolicyPage.section2.title"],
 			content: (
 				<>
-					<div className="flex flex-col gap-3 lg:gap-5">
-						<h3 className="text-base leading-6 lg:text-lg lg:leading-7 font-semibold">
-							{Content["privacyPolicyPage.section2.a.title"]}
-						</h3>
-						<ul className="list-disc pl-5">
-							{section2ContactItemsA.map((item) => (
-								<li key={item.key}>
-									<ContactInfo data={item.data} />
-								</li>
-							))}
-						</ul>
-					</div>
 					<div className="flex flex-col gap-3 lg:gap-5">
 						<h3 className="text-base leading-6 lg:text-lg lg:leading-7 font-semibold">
 							{Content["privacyPolicyPage.section2.b.title"]}
