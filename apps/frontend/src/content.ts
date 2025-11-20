@@ -314,7 +314,7 @@ export const Content = {
 	"termsOfUsePage.section3.sub2.li2":
 		"Gültige dienstliche E-Mail-Adresse der Berliner Verwaltung (in der Regel im Format vorname.name@subdomain.berlin.de)",
 	"termsOfUsePage.section3.sub2.li3":
-		"Selbstgewähltes sicheres Passwort (mindestens 6 Zeichen)",
+		"Selbstgewähltes sicheres Passwort (mindestens 10 Zeichen)",
 	"termsOfUsePage.section3.sub2.li4": "Optional: Anrede und akademischer Titel",
 	"termsOfUsePage.section3.sub2.p2":
 		"Ausnahmen von der E-Mail-Adress-Regel können nach Rücksprache mit dem Betreiber geprüft werden.",
@@ -1058,7 +1058,7 @@ export const Content = {
 	"registerPage.repeatPasswordPlaceholder": "Passwort",
 	"registerPage.passwordTooltip": `Sichere Passwörter verwenden mindestens:
 <ul class="list-disc pl-5">
-	<li>6 Zeichen</li>
+	<li>10 Zeichen</li>
 	<li>1 Buchstabe</li>
 	<li>1 Zahl</li>
 	<li>1 Sonderzeichen</li>
@@ -1134,7 +1134,7 @@ export const Content = {
 	"form.validation.email.customError":
 		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"form.validation.password.tooShort":
-		"Das Passwort muss mindestens 6 Zeichen lang sein.",
+		"Das Passwort muss mindestens 10 Zeichen lang sein.",
 	"form.validation.password.repeatPasswordShouldMatch.error":
 		"Die Passwörter stimmen nicht überein.",
 	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
