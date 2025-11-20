@@ -878,12 +878,11 @@ export const Content = {
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
 	"chat.copyToClipboardButton.ariaLabel": "In Zwischenablage kopieren",
-	"chat.disclaimer.p1":
-		"BärGPT befindet sich in der Testphase, basiert auf einem Sprachmodell und ",
-	"chat.disclaimer.p2": "kann Fehler machen",
+	"chat.disclaimer.p1": "BärGPT kann",
+	"chat.disclaimer.p2": "Fehler",
 	"chat.disclaimer.p2.link":
-		"https://hilfe.baergpt.berlin/faq#:~:text=Welche%20Risiken%20bestehen%20bei%20der%20Nutzung%20von%20KI%2DChatbots%20wie%20B%C3%A4rGPT%3F",
-	"chat.disclaimer.p3": ". Bitte überprüfen Sie die Informationen.",
+		"https://hilfe.baergpt.berlin/faq#warum-kann-baergpt-fehler-machen",
+	"chat.disclaimer.p3": "machen. Bitte überprüfen Sie die Informationen.",
 
 	"chat.citationsButton.label": "Quellen",
 	"chat.citationsButton.loadingLabel": "Quellen werden gerade hinzugefügt",
