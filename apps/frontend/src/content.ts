@@ -97,16 +97,10 @@ export const Content = {
 	"privacyPolicyPage.section2.phone.label": "Tel.: ",
 	"privacyPolicyPage.section2.email.label": "E-Mail: ",
 	"privacyPolicyPage.section2.website.label": "Website: ",
-	//a)
-	"privacyPolicyPage.section2.a.title": "a) Testbetrieb durch CityLAB",
-	"privacyPolicyPage.section2.a.li1.heading":
-		"Verantwortlich im Sinne der DSGVO:",
-	"privacyPolicyPage.section2.a.li2.heading": "Datenschutzbeauftragter:",
-	"privacyPolicyPage.section2.a.li2.role": "Datenschutzbeauftragter",
-	"privacyPolicyPage.section2.a.li2.email": "datenschutz@ts.berlin",
+
 	//b)
 	"privacyPolicyPage.section2.b.title":
-		"b) Probeechtbetrieb durch Senatskanzlei Berlin",
+		"Probeechtbetrieb durch Senatskanzlei Berlin",
 	"privacyPolicyPage.section2.b.li1.heading":
 		"Verantwortlich im Sinne der DSGVO:",
 	"privacyPolicyPage.section2.b.li1.organisation":

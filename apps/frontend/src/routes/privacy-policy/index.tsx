@@ -49,18 +49,6 @@ export const PrivacyPolicyPage: React.FC = () => {
 				<>
 					<div className="flex flex-col gap-3 lg:gap-5">
 						<h3 className="text-base leading-6 lg:text-lg lg:leading-7 font-semibold">
-							{Content["privacyPolicyPage.section2.a.title"]}
-						</h3>
-						<ul className="list-disc pl-5">
-							{section2ContactItemsA.map((item) => (
-								<li key={item.key}>
-									<ContactInfo data={item.data} />
-								</li>
-							))}
-						</ul>
-					</div>
-					<div className="flex flex-col gap-3 lg:gap-5">
-						<h3 className="text-base leading-6 lg:text-lg lg:leading-7 font-semibold">
 							{Content["privacyPolicyPage.section2.b.title"]}
 						</h3>
 						<ul className="list-disc pl-5">
