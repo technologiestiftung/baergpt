@@ -5,7 +5,6 @@ import { TableOfContents } from "../../components/privacy-policy/table-of-conten
 import { ListItem } from "../../components/privacy-policy/list-item.tsx";
 import { ContactInfo } from "../../components/privacy-policy/contact-info.tsx";
 import {
-	section2ContactItemsA,
 	section2ContactItemsB,
 	section3ListItems,
 	section4ListItems,
