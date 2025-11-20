@@ -44,6 +44,7 @@ export function initQueues(): Promise<void> {
 		reservoirRefreshInterval: 1000,
 		expiration: 600000,
 		heartbeatInterval: 1000,
+		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
 	});
 
 	llmLimiter = new Bottleneck({
@@ -56,6 +57,7 @@ export function initQueues(): Promise<void> {
 		reservoirRefreshInterval: 1000,
 		expiration: 600000,
 		heartbeatInterval: 1000,
+		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
 	});
 
 	llmLimiter.on("error", (error: Error) => {
