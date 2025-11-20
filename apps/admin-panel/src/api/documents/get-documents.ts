@@ -6,6 +6,7 @@ export async function getDocuments(signal: AbortSignal): Promise<Document[]> {
 		.from("documents")
 		.select("*")
 		.is("owned_by_user_id", null) // Fetch only documents where owned_by_user_id is null
+		.neq("source_type", "default_document") // Exclude default documents
 		.not("processing_finished_at", "is", null) // Exclude rows with null "processing_finished_at"
 		.abortSignal(signal);
 

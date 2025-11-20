@@ -26,7 +26,8 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const documentButtonRef = useRef<HTMLButtonElement>(null);
 	const { getUIError } = useErrorStore();
-	const { getDocuments, isLoading, documents } = useDocumentStore();
+	const { getDocuments, isLoading, documents, deletedDefaultDocumentIds } =
+		useDocumentStore();
 	const { hasAvailableUploadSlots } = useFileUploadsStore();
 
 	const errorMessage = getUIError("documents-fetch");
@@ -56,7 +57,9 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 		getDocuments(abortController.signal);
 	};
 
-	const numberOfUploads = documents?.length || 0;
+	const numberOfUploads =
+		documents?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id))
+			.length || 0;
 	const hasReachedTotalUploadLimit =
 		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
 
