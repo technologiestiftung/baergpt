@@ -763,8 +763,7 @@ testWithRegisteredUser(
 
 		// Go to the profile page
 		await page.goto("/profile/");
-		const updatedEmail = "john.doe@local.berlin.de";
-
+		const updatedEmail = "john.doe@new.berlin.de";
 		// Wait for allowed email domains to be loaded before filling the form
 		await page
 			.waitForResponse(
