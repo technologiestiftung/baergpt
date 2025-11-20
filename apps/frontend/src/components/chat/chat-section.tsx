@@ -41,7 +41,7 @@ export const ChatSection: React.FC = () => {
 							rel="noopener noreferrer"
 							className="underline hover:text-dunkelblau-200"
 						>
-							{Content["chat.disclaimer.p2"]}
+							{` ${Content["chat.disclaimer.p2"]} `}
 						</a>
 						<span>{Content["chat.disclaimer.p3"]}</span>
 					</p>
