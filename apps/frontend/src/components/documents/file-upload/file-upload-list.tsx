@@ -17,7 +17,9 @@ export function FileUploadList() {
 		(fileUpload) => fileUpload.status === "failed.tooMany",
 	);
 
-	const numberOfUploads = documents?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id)).length || 0;
+	const numberOfUploads =
+		documents?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id))
+			.length || 0;
 
 	// Only show the warning when the user still has all parallel upload slots available.
 	// Once they have fewer slots remaining, hide the warning to avoid confusion.

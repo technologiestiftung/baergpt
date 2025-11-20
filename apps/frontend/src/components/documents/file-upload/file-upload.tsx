@@ -15,13 +15,20 @@ type FileUploadProps = {
 export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 	const { fileUploads, uploadFiles, hasAvailableUploadSlots } =
 		useFileUploadsStore();
-	const { isDocumentFirstLoad, isLoading, documents, deletedDefaultDocumentIds } = useDocumentStore();
+	const {
+		isDocumentFirstLoad,
+		isLoading,
+		documents,
+		deletedDefaultDocumentIds,
+	} = useDocumentStore();
 	const { isFolderFirstLoad } = useFolderStore();
 	const isFirstLoading = isDocumentFirstLoad || isFolderFirstLoad;
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { error } = useErrorStore.getState();
 
-	const numberOfUploads = documents?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id)).length || 0;
+	const numberOfUploads =
+		documents?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id))
+			.length || 0;
 	const hasReachedTotalUploadLimit =
 		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
 
