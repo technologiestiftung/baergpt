@@ -11,13 +11,13 @@ import { useDocumentStore } from "../../../store/document-store.ts";
 
 export function FileUploadList() {
 	const { fileUploads } = useFileUploadsStore();
-	const { documents } = useDocumentStore();
+	const { documents, deletedDefaultDocumentIds } = useDocumentStore();
 
 	const hasExceededParallelUploadLimit = fileUploads.some(
 		(fileUpload) => fileUpload.status === "failed.tooMany",
 	);
 
-	const numberOfUploads = documents?.length || 0;
+	const numberOfUploads = documents?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id)).length || 0;
 
 	// Only show the warning when the user still has all parallel upload slots available.
 	// Once they have fewer slots remaining, hide the warning to avoid confusion.
