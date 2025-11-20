@@ -91,7 +91,7 @@ function mapErrorMessage(target: HTMLInputElement) {
 		return Content["form.validation.login.password.tooShort"];
 	}
 
-	if (target.validity.tooShort && target.minLength === 8) {
+	if (target.validity.tooShort && target.minLength === 10) {
 		return Content["form.validation.password.tooShort"];
 	}
 
