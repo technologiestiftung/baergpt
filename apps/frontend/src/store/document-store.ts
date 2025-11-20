@@ -7,6 +7,8 @@ import { updateDocumentFolder } from "../api/documents/update-document-folder";
 import { getDocumentObjectUrl } from "../api/documents/get-document-object-url.ts";
 import { downloadDocument } from "../api/documents/download-document.ts";
 import { useErrorStore } from "./error-store";
+import { hideDefaultDocument } from "../api/documents/hide-default-document";
+import { getHiddenDefaultDocumentIds } from "../api/documents/get-hidden-default-document-ids";
 
 interface DocumentStore {
 	documents: Document[];
@@ -15,6 +17,7 @@ interface DocumentStore {
 	isPublicDocumentFirstLoad: boolean;
 	isLoading: boolean;
 	isPublicDocumentsLoading: boolean;
+	deletedDefaultDocumentIds: number[];
 	getDocuments: (signal: AbortSignal) => Promise<void>;
 	getPublicDocuments: (signal: AbortSignal) => Promise<void>;
 	deleteDocument: (documentId: number) => Promise<Error | null>;
@@ -44,11 +47,15 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 	isPublicDocumentFirstLoad: true,
 	isLoading: false,
 	isPublicDocumentsLoading: false,
+	deletedDefaultDocumentIds: [],
 	getDocuments: async (signal: AbortSignal) => {
 		set({ isLoading: true });
 		try {
-			const documents = await getDocuments(signal);
-			set({ documents });
+			const [documents, deletedDefaultDocumentIds] = await Promise.all([
+				getDocuments(signal),
+				getHiddenDefaultDocumentIds(),
+			]);
+			set({ documents, deletedDefaultDocumentIds });
 		} finally {
 			set({ isLoading: false });
 			if (get().isDocumentFirstLoad) {
@@ -81,12 +88,39 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		}
 	},
 	deleteDocument: async (documentId: number) => {
+		const { documents, deletedDefaultDocumentIds } = get();
+		const documentToDelete = documents.find((doc) => doc.id === documentId);
+
+		// Prevent deletion of default documents
+		if (documentToDelete?.source_type === "default_document") {
+			const updatedIds = [...deletedDefaultDocumentIds];
+			if (!updatedIds.includes(documentId)) {
+				updatedIds.push(documentId);
+				const error = await hideDefaultDocument(documentId);
+				if (error) {
+					return error;
+				}
+			}
+
+			const { selectedChatDocuments, selectedDocumentsForAction } = get();
+
+			set({
+				deletedDefaultDocumentIds: updatedIds,
+				selectedChatDocuments: selectedChatDocuments.filter(
+					({ id }) => id !== documentId,
+				),
+				selectedDocumentsForAction: selectedDocumentsForAction.filter(
+					({ id }) => id !== documentId,
+				),
+			});
+			return null;
+		}
+
 		const error = await deleteDocument(documentId);
 		if (error) {
 			return error;
 		}
-		const { documents, selectedChatDocuments, selectedDocumentsForAction } =
-			get();
+		const { selectedChatDocuments, selectedDocumentsForAction } = get();
 
 		const updatedDocuments = documents.filter(({ id }) => id !== documentId);
 		const updatedSelectedChatDocuments = selectedChatDocuments.filter(

@@ -35,7 +35,10 @@ export type DocumentFolder = {
 	user_id: string;
 };
 
-export type SourceType = "public_document" | "personal_document";
+export type SourceType =
+	| "public_document"
+	| "personal_document"
+	| "default_document";
 
 export type Document = {
 	created_at: string | null;

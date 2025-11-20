@@ -475,7 +475,17 @@ class MistralOCRService {
 		if (!ocrResponse.pages) {
 			throw new Error("No pages found in OCR response");
 		}
-		await client.files.delete({ fileId: uploaded_pdf.id }); // delete file from Mistral's cloud storage
+		try {
+			await client.files.delete({ fileId: uploaded_pdf.id }); // delete file from Mistral's cloud storage
+		} catch (error) {
+			if (error?.status !== 404 && error?.statusCode !== 404) {
+				// If the file is already gone, we don't care. Otherwise, log the error.
+				console.warn(
+					`Failed to delete temporary OCR file ${uploaded_pdf.id}:`,
+					error,
+				);
+			}
+		}
 		return ocrResponse.pages.map(
 			(page, index) =>
 				({

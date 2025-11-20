@@ -87,6 +87,11 @@ jobs:
           cd apps/backend
           npm run lint:db
 
+      - name: Upload default document 📄
+        run: |
+          cd apps/backend
+          npm run db:upload-default-documents
+
       - name: Run integration tests 🧪
         run: |
           cd apps/backend

@@ -181,9 +181,10 @@ export class DatabaseService {
 			await this.logEmbeddings(embeddings, { ...document, id: documentId });
 
 			// 4. Update user document count
-			await this.updateUserDocumentCount(
-				document.owned_by_user_id || document.uploaded_by_user_id,
-			);
+			const userId = document.owned_by_user_id || document.uploaded_by_user_id;
+			if (userId) {
+				await this.updateUserDocumentCount(userId);
+			}
 
 			return null;
 		} catch (innerError) {
@@ -236,10 +237,11 @@ export class DatabaseService {
 
 	async extractDocument(document: Document): Promise<ExtractionResult> {
 		const fileName = document.source_url.split("/").pop();
-		const bucket =
-			document.source_type === "public_document"
-				? "public_documents"
-				: "documents";
+		const bucket = ["public_document", "default_document"].includes(
+			document.source_type,
+		)
+			? "public_documents"
+			: "documents";
 		try {
 			if (/\.(docx)$/i.test(fileName)) {
 				const wordBuffer = await this.getDocumentBufferFromSupabase(
