@@ -171,7 +171,7 @@ export function AccountActivated() {
 									<QuestionMarkIcon />
 								</button>
 							</span>
-							<PasswordInput id="password" />
+							<PasswordInput id="password" minLength={10} />
 						</label>
 
 						<label
@@ -179,7 +179,7 @@ export function AccountActivated() {
 							className="flex flex-col mt-4 md:mt-5 gap-y-1 text-sm md:text-base"
 						>
 							{Content["accountActivated.repeatPasswordLabel"]}
-							<PasswordInput id="repeatPassword" />
+							<PasswordInput id="repeatPassword" minLength={10} />
 						</label>
 
 						<div className="mt-6">

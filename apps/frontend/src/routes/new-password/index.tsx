@@ -99,6 +99,7 @@ export function NewPasswordPage() {
 							<PasswordInput
 								id="password"
 								placeholder={Content["newPassword.password.placeholder"]}
+								minLength={10}
 							/>
 						</label>
 
@@ -110,6 +111,7 @@ export function NewPasswordPage() {
 							<PasswordInput
 								id="repeatPassword"
 								placeholder={Content["newPassword.repeatPassword.placeholder"]}
+								minLength={10}
 							/>
 						</label>
 

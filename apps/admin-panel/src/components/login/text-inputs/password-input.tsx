@@ -7,11 +7,13 @@ export function PasswordInput({
 	placeholder,
 	formRef,
 	validateRepeatPassword = false,
+	minLength = 6,
 }: {
 	id: string;
 	placeholder: string;
 	formRef?: RefObject<HTMLFormElement>;
 	validateRepeatPassword?: boolean;
+	minLength?: number;
 }) {
 	const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +81,7 @@ export function PasswordInput({
 						onInvalid={handleInvalid}
 						type={isPasswordVisible ? "text" : "password"}
 						required
-						minLength={10}
+						minLength={minLength}
 						className="w-0 grow focus:outline-none"
 						placeholder={placeholder}
 					/>

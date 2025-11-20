@@ -6,10 +6,12 @@ export function PasswordInput({
 	id,
 	placeholder = "",
 	autoComplete,
+	minLength = 6,
 }: {
 	id: string;
 	placeholder?: string;
 	autoComplete?: string;
+	minLength?: number;
 }) {
 	const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
@@ -53,7 +55,7 @@ export function PasswordInput({
 						onInvalid={handleInvalid}
 						type={isPasswordVisible ? "text" : "password"}
 						required
-						minLength={10}
+						minLength={minLength}
 						className="w-0 grow focus:outline-none"
 						placeholder={placeholder}
 						autoComplete={autoComplete}
@@ -85,7 +87,11 @@ function mapErrorMessage(target: HTMLInputElement) {
 		return "";
 	}
 
-	if (target.validity.tooShort) {
+	if (target.validity.tooShort && target.minLength === 6) {
+		return Content["form.validation.login.password.tooShort"];
+	}
+
+	if (target.validity.tooShort && target.minLength === 10) {
 		return Content["form.validation.password.tooShort"];
 	}
 
