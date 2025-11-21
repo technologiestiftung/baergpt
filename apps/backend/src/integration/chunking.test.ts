@@ -8,7 +8,7 @@ vi.mock("../src/config", () => ({
 	config: {
 		jinaApiKey: "test-key",
 		jinaEmbeddingModel: "embedding-model-1",
-		jinaMaxContextTokens: 32768,
+		jinaMaxContextTokens: 8000,
 		jinaMaxDocumentsPerRequest: 512,
 		jinaConcurrentBatches: 30,
 	},
