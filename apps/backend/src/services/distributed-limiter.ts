@@ -16,6 +16,30 @@ function toClientOptions(url: string) {
 		password: u.password || undefined,
 		username: u.username || undefined,
 		tls: u.protocol === "rediss:" ? {} : undefined,
+		keepAlive: 30000, // Send keepalive packets every 30 seconds to prevent idle disconnects
+		connectTimeout: 10000,
+		retryStrategy: (times: number) => {
+			// Exponential backoff with max 3 second delay
+			const delay = Math.min(times * 50, 3000);
+			console.warn(
+				`Redis connection retry attempt ${times}, waiting ${delay}ms`,
+			);
+			return delay;
+		},
+		reconnectOnError: (err: Error) => {
+			// Automatically reconnect on specific errors
+			const targetErrors = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND"];
+			if (targetErrors.some((target) => err.message.includes(target))) {
+				console.warn(`Redis reconnecting due to: ${err.message}`);
+				return true;
+			}
+			return false;
+		},
+		maxRetriesPerRequest: 3,
+		enableReadyCheck: true,
+		enableOfflineQueue: true, // Queue commands when disconnected, execute when reconnected
+		lazyConnect: false,
+		connectionName: `baergpt-${config.nodeEnv || "unknown"}-${Date.now()}`,
 	};
 }
 
@@ -61,12 +85,12 @@ export function initQueues(): Promise<void> {
 	});
 
 	llmLimiter.on("error", (error: Error) => {
-		console.error(error.message);
+		console.error(`[Redis LLM Limiter] Error: ${error.message}`);
 		captureError(`Redis limiter failed: ${error.message}`);
 	});
 
 	embeddingsLimiter.on("error", (error: Error) => {
-		console.error(error.message);
+		console.error(`[Redis Embeddings Limiter] Error: ${error.message}`);
 		captureError(`Redis limiter failed: ${error.message}`);
 	});
 
