@@ -19,6 +19,12 @@ function toClientOptions(url: string) {
 		keepAlive: 30000, // Send keepalive packets every 30 seconds to prevent idle disconnects
 		connectTimeout: 10000,
 		retryStrategy: (times: number) => {
+			if (times > 10) {
+				console.error(
+					"Redis connection failed after 10 retry attempts, giving up",
+				);
+				return null;
+			}
 			// Exponential backoff with max 3 second delay
 			const delay = Math.min(times * 50, 3000);
 			console.warn(
@@ -28,10 +34,11 @@ function toClientOptions(url: string) {
 		},
 		reconnectOnError: (err: Error) => {
 			// Automatically reconnect on specific errors
+			// Return 1 to reconnect, 2 to reconnect and resend command, false to not reconnect
 			const targetErrors = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND"];
 			if (targetErrors.some((target) => err.message.includes(target))) {
 				console.warn(`Redis reconnecting due to: ${err.message}`);
-				return true;
+				return 2;
 			}
 			return false;
 		},
@@ -39,7 +46,7 @@ function toClientOptions(url: string) {
 		enableReadyCheck: true,
 		enableOfflineQueue: true, // Queue commands when disconnected, execute when reconnected
 		lazyConnect: false,
-		connectionName: `baergpt-${config.nodeEnv || "unknown"}-${Date.now()}`,
+		connectionName: `baergpt-${config.nodeEnv || "unknown"}-${process.pid}`,
 	};
 }
 
