@@ -69,7 +69,7 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 	return (
 		<>
 			<DropZoneWrapperDocuments
-				className={`hidden md:flex flex-col h-full pt-6 pb-5 bg-hellblau-50 will-change-[width] transition-[width] duration-300 ease-in-out
+				className={`hidden md:flex flex-col h-full pt-5 pb-5 bg-hellblau-50 will-change-[width] transition-[width] duration-300 ease-in-out
 					${isResizing && "transition-none"} ${isCollapsed ? "px-4 hover:bg-hellblau-60 cursor-pointer" : "px-6"}
 				`}
 				id="desktop-documents-panel"
