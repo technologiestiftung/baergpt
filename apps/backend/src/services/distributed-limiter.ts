@@ -16,6 +16,37 @@ function toClientOptions(url: string) {
 		password: u.password || undefined,
 		username: u.username || undefined,
 		tls: u.protocol === "rediss:" ? {} : undefined,
+		keepAlive: 30000, // Send keepalive packets every 30 seconds to prevent idle disconnects
+		connectTimeout: 10000,
+		retryStrategy: (times: number) => {
+			if (times > 10) {
+				console.error(
+					"Redis connection failed after 10 retry attempts, giving up",
+				);
+				return null;
+			}
+			// Exponential backoff with max 3 second delay
+			const delay = Math.min(times * 50, 3000);
+			console.warn(
+				`Redis connection retry attempt ${times}, waiting ${delay}ms`,
+			);
+			return delay;
+		},
+		reconnectOnError: (err: Error) => {
+			// Automatically reconnect on specific errors
+			// Return 1 to reconnect, 2 to reconnect and resend command, false to not reconnect
+			const targetErrors = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND"];
+			if (targetErrors.some((target) => err.message.includes(target))) {
+				console.warn(`Redis reconnecting due to: ${err.message}`);
+				return 2;
+			}
+			return false;
+		},
+		maxRetriesPerRequest: 3,
+		enableReadyCheck: true,
+		enableOfflineQueue: true, // Queue commands when disconnected, execute when reconnected
+		lazyConnect: false,
+		connectionName: `baergpt-${config.nodeEnv || "unknown"}-${process.pid}`,
 	};
 }
 
@@ -44,6 +75,7 @@ export function initQueues(): Promise<void> {
 		reservoirRefreshInterval: 1000,
 		expiration: 600000,
 		heartbeatInterval: 1000,
+		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
 	});
 
 	llmLimiter = new Bottleneck({
@@ -56,15 +88,16 @@ export function initQueues(): Promise<void> {
 		reservoirRefreshInterval: 1000,
 		expiration: 600000,
 		heartbeatInterval: 1000,
+		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
 	});
 
 	llmLimiter.on("error", (error: Error) => {
-		console.error(error.message);
+		console.error(`[Redis LLM Limiter] Error: ${error.message}`);
 		captureError(`Redis limiter failed: ${error.message}`);
 	});
 
 	embeddingsLimiter.on("error", (error: Error) => {
-		console.error(error.message);
+		console.error(`[Redis Embeddings Limiter] Error: ${error.message}`);
 		captureError(`Redis limiter failed: ${error.message}`);
 	});
 

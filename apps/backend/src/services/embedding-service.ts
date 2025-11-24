@@ -69,6 +69,7 @@ export class EmbeddingService {
 						dimensions: config.jinaEmbeddingDimensions,
 						late_chunking: false,
 						embedding_type: "float",
+						truncate: true,
 					}),
 				}),
 			{ queueType: "embeddings" },
@@ -123,6 +124,7 @@ export class EmbeddingService {
 						dimensions: config.jinaEmbeddingDimensions,
 						late_chunking: false,
 						embedding_type: "float",
+						truncate: true,
 					}),
 				}),
 			{ queueType: "embeddings" },
@@ -435,17 +437,19 @@ export class EmbeddingService {
 			batches.push(currentBatch);
 		}
 
-		// Third pass: process batches in parallel (with concurrency limit)
-		const CONCURRENT_BATCHES = config.jinaConcurrentBatches;
+		// Third pass: process batches sequentially
+		const allEmbeddings: Embedding[] = [];
 
-		const processBatch = async (batch: Chunk[]): Promise<Embedding[]> => {
+		for (let i = 0; i < batches.length; i++) {
+			const batch = batches[i];
+
 			const response = await this.generateJinaBatchEmbeddings(
 				batch.map((c) => ({ text: c.content })),
 				"retrieval.passage",
 				userId,
 			);
 
-			return response.embeddings.map(
+			const batchEmbeddings = response.embeddings.map(
 				(embedding, idx) =>
 					({
 						content: batch[idx].content,
@@ -454,16 +458,14 @@ export class EmbeddingService {
 						chunkIndex: batch[idx].chunkIndex,
 					}) as Embedding,
 			);
-		};
 
-		// Process batches with controlled concurrency and collect results
-		const allEmbeddings: Embedding[] = [];
-		for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
-			const batchSlice = batches.slice(i, i + CONCURRENT_BATCHES);
-			const results = await Promise.all(
-				batchSlice.map((batch) => processBatch(batch)),
-			);
-			results.forEach((embeddings) => allEmbeddings.push(...embeddings));
+			allEmbeddings.push(...batchEmbeddings);
+
+			// Yield to event loop after each batch
+			// This allows Redis heartbeats and other I/O to proceed
+			if (i < batches.length - 1) {
+				await new Promise((resolve) => setImmediate(resolve));
+			}
 		}
 
 		return allEmbeddings;
