@@ -456,17 +456,13 @@ class MistralOCRService {
 			{ queueType: "llm" },
 		);
 
-		const signedUrl = await resilientCall(
-			async () => await client.files.getSignedUrl({ fileId: uploaded_pdf.id }),
-		);
-
 		const ocrResponse = await resilientCall(
 			async () =>
 				await client.ocr.process({
 					model: "mistral-ocr-latest",
 					document: {
-						type: "document_url",
-						documentUrl: signedUrl.url,
+						type: "file",
+						fileId: uploaded_pdf.id,
 					},
 				}),
 			{ queueType: "llm" },
