@@ -21,8 +21,7 @@ export const LandingPageNavLinks: React.FC = () => {
 						{Content["header.navigation.landingPage.login.label"]}
 					</a>
 				</li>
-				{/* commented out until release */}
-				{/* <li className="hidden sm:flex">
+				<li className="hidden sm:flex">
 					<a
 						href={Content["header.navigation.landingPage.register.link"]}
 						aria-label={
@@ -37,7 +36,7 @@ export const LandingPageNavLinks: React.FC = () => {
 					>
 						{Content["header.navigation.landingPage.register.label"]}
 					</a>
-				</li> */}
+				</li>
 			</ul>
 		</>
 	);
