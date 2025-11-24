@@ -15,9 +15,7 @@ export function LandingPageHero() {
 				<h3 className="z-10 lg:text-2xl lg:leading-8 sm:text-lg sm:leading-7 font-semibold sm:mb-9 mb-4 text-sm leading-5">
 					{Content["landingPage.hero.h3"]}
 				</h3>
-
-				{/* commented out until release */}
-				{/* <a
+				<a
 					href={Content["landingPage.hero.register.link"]}
 					aria-label={Content["landingPage.hero.register.ariaLabel"]}
 					className={`
@@ -28,7 +26,7 @@ export function LandingPageHero() {
                                 `}
 				>
 					{Content["landingPage.hero.register.label"]}
-				</a> */}
+				</a>
 			</div>
 		</div>
 	);
