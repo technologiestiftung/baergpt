@@ -3,7 +3,7 @@ function App() {
 		<main className="w-full h-svh bg-dunkelblau-100 text-hellblau-30 text-center flex items-center justify-center p-5">
 			<div className="flex flex-col justify-center items-center sm:max-w-[546px] mx-auto">
 				<img
-					src="logo_baergpt.svg"
+					src="/logos/logo_baergpt.svg"
 					alt="BärGPT Logo"
 					className="bg-white w-auto h-8"
 				/>
