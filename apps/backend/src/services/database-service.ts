@@ -1,3 +1,4 @@
+import { StorageApiError, StorageUnknownError } from "@supabase/storage-js";
 import { supabase } from "../supabase";
 import {
 	type Document,
@@ -106,9 +107,29 @@ export class DatabaseService {
 			.from(bucket)
 			.remove([source_url]);
 
-		if (deletionError) {
-			throw deletionError;
+		if (!deletionError) {
+			return;
 		}
+
+		if (
+			deletionError instanceof StorageApiError &&
+			deletionError.status === 404
+		) {
+			console.warn(
+				`Attempted to delete ${bucket}/${source_url}, but it was already gone.`,
+			);
+			return;
+		}
+
+		if (deletionError instanceof StorageUnknownError) {
+			console.warn(
+				`Transient storage error while deleting ${bucket}/${source_url}`,
+				deletionError.originalError ?? deletionError,
+			);
+			return;
+		}
+
+		throw deletionError;
 	}
 
 	async updateUserColumnValue(
