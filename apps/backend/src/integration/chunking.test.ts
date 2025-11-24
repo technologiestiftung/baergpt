@@ -10,7 +10,6 @@ vi.mock("../src/config", () => ({
 		jinaEmbeddingModel: "embedding-model-1",
 		jinaMaxContextTokens: 8000,
 		jinaMaxDocumentsPerRequest: 512,
-		jinaConcurrentBatches: 30,
 	},
 }));
 
