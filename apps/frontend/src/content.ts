@@ -1015,9 +1015,6 @@ export const Content = {
 	"loginPage.submitButton": "Anmelden",
 	"loginPage.registerPrompt": "Sie haben noch keinen Account?",
 	"loginPage.registerLink": "Jetzt registrieren",
-	"loginPage.waitingListPrompt": "BärGPT ist derzeit in der Testphase.",
-	"loginPage.waitingListLink":
-		"Gerne können Sie sich in die Warteliste eintragen.",
 	"loginPage.resetPassword.link": "/reset-password/",
 	"loginPage.resetPassword.label": "Passwort vergessen?",
 	/* ---------------------- Reset Password Form ---------------------- */
