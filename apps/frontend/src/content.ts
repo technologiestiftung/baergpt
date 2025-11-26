@@ -1161,7 +1161,7 @@ export const Content = {
 	"footer.senatskanzleiLogo.p": "Gefördert durch",
 	"footer.senatskanzleiLogo.alt":
 		"Der Regierende Bürgermeister von Berlin, Senatskanzlei",
-	"footer.senatskanzleiLogo.link": "https://www.berlin.de/sen/kanzler/",
+	"footer.senatskanzleiLogo.link": "https://www.berlin.de/rbmskzl/",
 
 	// Landing Page Footer Links
 	"footer.support": "Support",
