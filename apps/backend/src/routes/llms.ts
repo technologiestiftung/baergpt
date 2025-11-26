@@ -6,12 +6,15 @@ import { ModelService } from "../services/model-service";
 import { GenerationService } from "../services/generation-service";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
+import { getUserClient } from "../middleware/basic-auth";
+import { DatabaseService } from "../services/database-service";
 
 const llms = new Hono();
 const modelService = new ModelService();
-const generationService = new GenerationService();
-
 llms.post("/just-chatting", async (c: Context) => {
+	const userClient = getUserClient(c);
+	const dbService = new DatabaseService(userClient);
+	const generationService = new GenerationService(dbService);
 	try {
 		const body = (await c.req.json()) as ChatMessageBody;
 		const llmIdentifier = config.defaultModelIdentifier;

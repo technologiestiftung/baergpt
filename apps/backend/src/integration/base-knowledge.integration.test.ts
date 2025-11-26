@@ -35,8 +35,8 @@ describe("Base Knowledge Integration Tests", () => {
 	let accessGroupId: string;
 	let documentId: number;
 
-	const dbService = new DatabaseService();
-	const embeddingService = new EmbeddingService();
+	const dbService = new DatabaseService(supabaseAdminClient);
+	const embeddingService = new EmbeddingService(dbService);
 
 	beforeAll(async () => {
 		// Create test user (idempotent: ignore already registered error)

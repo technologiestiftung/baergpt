@@ -843,6 +843,9 @@ describe("Integration tests for DB", async () => {
 		});
 
 		class TestDatabaseService extends DatabaseService {
+			constructor() {
+				super(supabaseAdminClient);
+			}
 			async logSummarizedDocument() {
 				throw new Error("Forced Summary Failure");
 			}

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
-import { supabase } from "../src/supabase";
+import { adminDatabaseService as supabase } from "../src/supabase";
 import { DatabaseService } from "../src/services/database-service";
 import { GenerationService } from "../src/services/generation-service";
 import { EmbeddingService } from "../src/services/embedding-service";

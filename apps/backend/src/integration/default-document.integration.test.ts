@@ -68,9 +68,9 @@ describe("Default Document Integration Tests", () => {
 	let accessGroupId: string;
 	let documentId: number;
 
-	const dbService = new DatabaseService();
-	const generationService = new GenerationService();
-	const embeddingService = new EmbeddingService();
+	const dbService = new DatabaseService(supabaseAdminClient);
+	const generationService = new GenerationService(dbService);
+	const embeddingService = new EmbeddingService(dbService);
 
 	beforeAll(async () => {
 		// Ensure default access group exists

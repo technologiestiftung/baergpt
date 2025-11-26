@@ -2,11 +2,12 @@ import { createMiddleware } from "hono/factory";
 import type { Context, Next } from "hono";
 import { DatabaseService } from "../services/database-service";
 import { captureError } from "../monitoring/capture-error";
-
-const dbService = new DatabaseService();
+import { getAuthContext } from "./basic-auth";
+import { adminDatabaseService } from "../supabase";
 
 export const adminAuth = createMiddleware(async (c: Context, next: Next) => {
-	const userId = await getUserIdFromRequest(c);
+	const dbService = new DatabaseService(adminDatabaseService);
+	const { userId } = getAuthContext(c);
 
 	if (!userId) {
 		return c.json({ error: "Unauthorized or invalid token" }, 401);

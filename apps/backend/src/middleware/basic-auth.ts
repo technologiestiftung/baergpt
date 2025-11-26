@@ -1,11 +1,29 @@
 import { createMiddleware } from "hono/factory";
 import { verify } from "hono/jwt";
-import { config } from "../config";
 import type { Context, Next } from "hono";
-import { DatabaseService } from "../services/database-service";
+import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
+import { createUserClient } from "../supabase";
 
-const databaseService = new DatabaseService();
+const AUTH_CONTEXT_KEY = "supabaseAuth" as const;
+
+type AuthContextValue = {
+	userId: string;
+	accessToken: string;
+};
+
+export function getAuthContext(c: Context): AuthContextValue {
+	const value = c.get(AUTH_CONTEXT_KEY) as AuthContextValue | undefined;
+	if (!value) {
+		throw new Error("Auth context missing on request");
+	}
+	return value;
+}
+
+export function getUserClient(c: Context) {
+	const { accessToken } = getAuthContext(c);
+	return createUserClient(accessToken);
+}
 
 async function hasValidSupabaseSession(c: Context): Promise<boolean> {
 	const authorizationHeader = c.req.header("authorization") || "";
@@ -37,11 +55,24 @@ async function hasValidSupabaseSession(c: Context): Promise<boolean> {
 		return false;
 	}
 
-	const { is_active } = await databaseService.getUserActiveStatus(
-		decodedToken.sub,
+	// Store auth context first so getUserClient() works
+	c.set(AUTH_CONTEXT_KEY, {
+		userId: decodedToken.sub,
+		accessToken: token,
+	});
+
+	// Use user's own JWT to check active status via RPC (no service role needed)
+	const userClient = createUserClient(token);
+	const { data: isActive, error } = await userClient.rpc(
+		"is_current_user_active",
 	);
 
-	if (!is_active) {
+	if (error) {
+		captureError(error);
+		return false;
+	}
+
+	if (!isActive) {
 		captureError(new Error("User account is deactivated or not found"));
 		return false;
 	}

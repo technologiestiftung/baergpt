@@ -6,13 +6,16 @@ import { GenerationService } from "../services/generation-service";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 import { Document } from "../types/common";
+import { getUserClient } from "../middleware/basic-auth";
 
 const documents = new Hono();
-const dbService = new DatabaseService();
-const embeddingService = new EmbeddingService();
-const generationService = new GenerationService();
 
 documents.post("/process", async (c: Context) => {
+	const userClient = getUserClient(c);
+	const dbService = new DatabaseService(userClient);
+	const embeddingService = new EmbeddingService(dbService);
+	const generationService = new GenerationService(dbService);
+
 	let sourceUrl: string | null = null;
 	let bucket: string | null = null;
 	try {
