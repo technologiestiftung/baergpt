@@ -23,6 +23,8 @@ export interface Config {
 	gotenbergUrl: string;
 	gotenbergApiBasicAuthUsername: string;
 	gotenbergApiBasicAuthPassword: string;
+	presencePenalty: number;
+	frequencyPenalty: number;
 }
 
 /* eslint-disable-next-line complexity */
@@ -118,4 +120,6 @@ export const config: Config = {
 	gotenbergUrl: process.env.GOTENBERG_URL,
 	gotenbergApiBasicAuthUsername: process.env.GOTENBERG_API_BASIC_AUTH_USERNAME,
 	gotenbergApiBasicAuthPassword: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
+	presencePenalty: parseFloat(process.env.PRESENCE_PENALTY || "0"),
+	frequencyPenalty: parseFloat(process.env.FREQUENCY_PENALTY || "0"),
 };
