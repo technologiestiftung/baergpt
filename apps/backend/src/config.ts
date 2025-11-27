@@ -23,6 +23,8 @@ export interface Config {
 	gotenbergUrl: string;
 	gotenbergApiBasicAuthUsername: string;
 	gotenbergApiBasicAuthPassword: string;
+	presencePenalty: number;
+	frequencyPenalty: number;
 }
 
 /* eslint-disable-next-line complexity */
@@ -90,6 +92,12 @@ export function verifyConfig(): void {
 	if (!process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD && !process.env.CI) {
 		throw new Error("GOTENBERG_API_BASIC_AUTH_PASSWORD must be defined");
 	}
+	if (!process.env.PRESENCE_PENALTY && !process.env.CI) {
+		throw new Error("PRESENCE_PENALTY must be defined");
+	}
+	if (!process.env.FREQUENCY_PENALTY && !process.env.CI) {
+		throw new Error("FREQUENCY_PENALTY must be defined");
+	}
 }
 
 export const config: Config = {
@@ -118,4 +126,6 @@ export const config: Config = {
 	gotenbergUrl: process.env.GOTENBERG_URL,
 	gotenbergApiBasicAuthUsername: process.env.GOTENBERG_API_BASIC_AUTH_USERNAME,
 	gotenbergApiBasicAuthPassword: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
+	presencePenalty: parseFloat(process.env.PRESENCE_PENALTY),
+	frequencyPenalty: parseFloat(process.env.FREQUENCY_PENALTY),
 };
