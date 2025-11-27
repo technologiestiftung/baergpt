@@ -4,8 +4,8 @@ import { config } from "./config";
 export interface LLMParameters {
 	temperature: number;
 	stream: boolean;
-	presencePenalty?: number;
-	frequencyPenalty?: number;
+	presencePenalty: number;
+	frequencyPenalty: number;
 }
 
 export const LLM_PARAMETERS: LLMParameters = {
