@@ -50,7 +50,9 @@ export function useChatStreaming() {
 			// If it's a plain text stream, transform it to object format for useObject
 			if (response.headers.get("X-Stream-Type") === "text") {
 				const reader = response.body?.getReader();
-				if (!reader) return response;
+				if (!reader) {
+					return response;
+				}
 
 				let text = "";
 				const encoder = new TextEncoder();

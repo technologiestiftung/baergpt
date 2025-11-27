@@ -461,60 +461,59 @@ export class GenerationService {
 				headers: { "X-Stream-Type": "object" },
 			});
 			return response;
-		} else {
-			const noSourceResponse = await resilientCall(
-				async () =>
-					streamText({
-						model: llmHandler.languageModel,
-						messages: messages,
-						temperature: LLM_PARAMETERS.temperature,
-
-						onFinish: async ({ text, usage }) => {
-							updateActiveTrace({
-								name: "streamed-text-generation",
-								output: text,
-								userId,
-								sessionId,
-							});
-							// Handle token usage tracking after stream completes
-							if (userId && usage?.totalTokens) {
-								try {
-									await dbService.updateUserColumnValue(
-										userId,
-										"num_inference_tokens",
-										usage.totalTokens,
-									);
-									// Increase num_inferences for user by one
-									await dbService.updateUserColumnValue(
-										userId,
-										"num_inferences",
-										1,
-									);
-								} catch (dbError) {
-									captureError(dbError);
-								}
-							}
-						},
-						experimental_telemetry: {
-							isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-							metadata: {
-								sessionId: sessionId ? sessionId : "unknown",
-								langfusePrompt: langfusePrompt
-									? langfusePrompt.toJSON()
-									: undefined,
-							},
-						},
-						onError: (error) => {
-							captureError(error);
-						},
-					}),
-				{ queueType: "llm" },
-			);
-			const response = noSourceResponse.toTextStreamResponse({
-				headers: { "X-Stream-Type": "text" },
-			});
-			return response;
 		}
+		const noSourceResponse = await resilientCall(
+			async () =>
+				streamText({
+					model: llmHandler.languageModel,
+					messages: messages,
+					temperature: LLM_PARAMETERS.temperature,
+
+					onFinish: async ({ text, usage }) => {
+						updateActiveTrace({
+							name: "streamed-text-generation",
+							output: text,
+							userId,
+							sessionId,
+						});
+						// Handle token usage tracking after stream completes
+						if (userId && usage?.totalTokens) {
+							try {
+								await dbService.updateUserColumnValue(
+									userId,
+									"num_inference_tokens",
+									usage.totalTokens,
+								);
+								// Increase num_inferences for user by one
+								await dbService.updateUserColumnValue(
+									userId,
+									"num_inferences",
+									1,
+								);
+							} catch (dbError) {
+								captureError(dbError);
+							}
+						}
+					},
+					experimental_telemetry: {
+						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+						metadata: {
+							sessionId: sessionId ? sessionId : "unknown",
+							langfusePrompt: langfusePrompt
+								? langfusePrompt.toJSON()
+								: undefined,
+						},
+					},
+					onError: (error) => {
+						captureError(error);
+					},
+				}),
+			{ queueType: "llm" },
+		);
+		const response = noSourceResponse.toTextStreamResponse({
+			headers: { "X-Stream-Type": "text" },
+		});
+		return response;
 	}
 
 	async generateTextContent(
