@@ -39,16 +39,54 @@ export function useChatStreaming() {
 	const { object, submit, stop, isLoading } = useObject({
 		api: `${import.meta.env.VITE_API_URL}/llm/just-chatting`,
 		schema: streamedObjectSchema,
-		fetch: (input, init) => {
+		fetch: async (input, init) => {
 			const token = useAuthStore.getState().session?.access_token;
 			const headers = new Headers(init?.headers);
 			headers.set("Content-Type", "application/json");
 			headers.set("Authorization", token ? `Bearer ${token}` : "");
 
-			return fetch(input, {
-				...init,
-				headers,
-			});
+			const response = await fetch(input, { ...init, headers });
+
+			// If it's a plain text stream, transform it to object format for useObject
+			if (response.headers.get("X-Stream-Type") === "text") {
+				const reader = response.body?.getReader();
+				if (!reader) return response;
+
+				let text = "";
+				const encoder = new TextEncoder();
+
+				return new Response(
+					new ReadableStream({
+						async pull(controller) {
+							const { done, value } = await reader.read();
+							if (done) {
+								controller.close();
+								return;
+							}
+							// Parse AI SDK text format: 0:"chunk"
+							const chunk = new TextDecoder().decode(value);
+							for (const line of chunk.split("\n")) {
+								if (line.startsWith("0:")) {
+									try {
+										text += JSON.parse(line.slice(2));
+									} catch {
+										/* ignore parse errors */
+									}
+								}
+							}
+							// Emit as object format that useObject expects
+							controller.enqueue(
+								encoder.encode(
+									JSON.stringify({ content: text, citations: [] }),
+								),
+							);
+						},
+					}),
+					{ headers: response.headers },
+				);
+			}
+
+			return response;
 		},
 		onError: (error) => {
 			captureError(error);

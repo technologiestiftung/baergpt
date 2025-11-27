@@ -444,7 +444,9 @@ export class GenerationService {
 				{ queueType: "llm" },
 			);
 
-			const response = citationAnswer.toTextStreamResponse();
+			const response = citationAnswer.toTextStreamResponse({
+				headers: { "X-Stream-Type": "object" },
+			});
 			return response;
 		} else {
 			const noSourceResponse = await resilientCall(
@@ -495,7 +497,9 @@ export class GenerationService {
 					}),
 				{ queueType: "llm" },
 			);
-			const response = noSourceResponse.toTextStreamResponse();
+			const response = noSourceResponse.toTextStreamResponse({
+				headers: { "X-Stream-Type": "text" },
+			});
 			return response;
 		}
 	}
