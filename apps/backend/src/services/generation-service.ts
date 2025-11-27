@@ -360,6 +360,12 @@ export class GenerationService {
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
 					toolChoice,
+					providerOptions: {
+						mistral: {
+							presencePenalty: LLM_PARAMETERS.presencePenalty,
+							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+						},
+					},
 					experimental_telemetry: {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						functionId: "text-toolCall-generation",
@@ -400,6 +406,13 @@ export class GenerationService {
 					temperature: LLM_PARAMETERS.temperature,
 					// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 					schema: citationAnswerSchema(maxAvailableSources),
+					providerOptions: {
+						mistral: {
+							structuredOutputs: true,
+							presencePenalty: LLM_PARAMETERS.presencePenalty,
+							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+						},
+					},
 					onFinish: async ({ object, usage, error }) => {
 						updateActiveTrace({
 							name: "streamed-structuredOutput-generation",
@@ -469,6 +482,12 @@ export class GenerationService {
 					model: llmHandler.languageModel,
 					messages: messages,
 					temperature: LLM_PARAMETERS.temperature,
+					providerOptions: {
+						mistral: {
+							presencePenalty: LLM_PARAMETERS.presencePenalty,
+							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+						},
+					},
 					experimental_telemetry: {
 						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
 						metadata: {
