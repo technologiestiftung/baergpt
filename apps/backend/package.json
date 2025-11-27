@@ -37,7 +37,7 @@
 		"@sentry/node": "10.20.0",
 		"@supabase/supabase-js": "2.81.1",
 		"ai": "5.0.60",
-		"bottleneck": "2.19.5",
+		"@sergiiivzhenko/bottleneck": "2.19.7",
 		"dotenv": "16.4.7",
 		"hono": "4.8.10",
 		"ioredis": "5.8.2",

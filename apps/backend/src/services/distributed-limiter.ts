@@ -1,4 +1,4 @@
-import Bottleneck from "bottleneck";
+import Bottleneck from "@sergiiivzhenko/bottleneck";
 import Redis from "ioredis";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
