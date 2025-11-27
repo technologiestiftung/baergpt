@@ -1,7 +1,7 @@
 import { enc, ragSearchDefaults } from "../constants";
 import { config } from "../config";
 import type { ModelMessage, Tool, ToolChoice } from "ai";
-import { generateText, streamObject } from "ai";
+import { generateText, streamObject, streamText } from "ai";
 import { ModelService } from "./model-service";
 import { EmbeddingService } from "./embedding-service";
 import {
@@ -390,64 +390,114 @@ export class GenerationService {
 
 		if (toolResult) {
 			messages.push(...newMessages);
-		}
 
-		const citationAnswer = await resilientCall(
-			async () =>
-				streamObject({
-					model: llmHandler.languageModel,
-					messages: messages,
-					temperature: LLM_PARAMETERS.temperature,
-					// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
-					schema: citationAnswerSchema(maxAvailableSources),
-					onFinish: async ({ object, usage, error }) => {
-						updateActiveTrace({
-							name: "streamed-structuredOutput-generation",
-							output: object,
-							userId,
-							sessionId,
-						});
-						// Handle token usage tracking after stream completes
-						if (userId && usage?.totalTokens) {
-							try {
-								await dbService.updateUserColumnValue(
-									userId,
-									"num_inference_tokens",
-									usage.totalTokens,
-								);
-								// Increase num_inferences for user by one
-								await dbService.updateUserColumnValue(
-									userId,
-									"num_inferences",
-									1,
-								);
-							} catch (dbError) {
-								captureError(dbError);
+			const citationAnswer = await resilientCall(
+				async () =>
+					streamObject({
+						model: llmHandler.languageModel,
+						messages: messages,
+						temperature: LLM_PARAMETERS.temperature,
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						schema: citationAnswerSchema(maxAvailableSources),
+						onFinish: async ({ object, usage, error }) => {
+							updateActiveTrace({
+								name: "streamed-structuredOutput-generation",
+								output: object,
+								userId,
+								sessionId,
+							});
+							// Handle token usage tracking after stream completes
+							if (userId && usage?.totalTokens) {
+								try {
+									await dbService.updateUserColumnValue(
+										userId,
+										"num_inference_tokens",
+										usage.totalTokens,
+									);
+									// Increase num_inferences for user by one
+									await dbService.updateUserColumnValue(
+										userId,
+										"num_inferences",
+										1,
+									);
+								} catch (dbError) {
+									captureError(dbError);
+								}
+								if (error) {
+									captureError(error);
+								}
 							}
-							if (error) {
-								captureError(error);
-							}
-						}
-					},
-					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
 						},
-					},
-					onError: (error) => {
-						captureError(error);
-					},
-				}),
-			{ queueType: "llm" },
-		);
+						experimental_telemetry: {
+							isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+							metadata: {
+								sessionId: sessionId ? sessionId : "unknown",
+								langfusePrompt: langfusePrompt
+									? langfusePrompt.toJSON()
+									: undefined,
+							},
+						},
+						onError: (error) => {
+							captureError(error);
+						},
+					}),
+				{ queueType: "llm" },
+			);
 
-		const response = citationAnswer.toTextStreamResponse();
+			const response = citationAnswer.toTextStreamResponse();
+			return response;
+		} else {
+			const noSourceResponse = await resilientCall(
+				async () =>
+					streamText({
+						model: llmHandler.languageModel,
+						messages: messages,
+						temperature: LLM_PARAMETERS.temperature,
 
-		return response;
+						onFinish: async ({ text, usage }) => {
+							updateActiveTrace({
+								name: "streamed-text-generation",
+								output: text,
+								userId,
+								sessionId,
+							});
+							// Handle token usage tracking after stream completes
+							if (userId && usage?.totalTokens) {
+								try {
+									await dbService.updateUserColumnValue(
+										userId,
+										"num_inference_tokens",
+										usage.totalTokens,
+									);
+									// Increase num_inferences for user by one
+									await dbService.updateUserColumnValue(
+										userId,
+										"num_inferences",
+										1,
+									);
+								} catch (dbError) {
+									captureError(dbError);
+								}
+							}
+						},
+						experimental_telemetry: {
+							isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+							metadata: {
+								sessionId: sessionId ? sessionId : "unknown",
+								langfusePrompt: langfusePrompt
+									? langfusePrompt.toJSON()
+									: undefined,
+							},
+						},
+						onError: (error) => {
+							captureError(error);
+						},
+					}),
+				{ queueType: "llm" },
+			);
+			const response = noSourceResponse.toTextStreamResponse();
+			return response;
+		}
 	}
 
 	async generateTextContent(
