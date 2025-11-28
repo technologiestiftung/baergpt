@@ -40,7 +40,7 @@ export const LandingPageBanner: React.FC = () => {
                                 text-sm leading-5 md:text-lg md:leading-7 font-normal z-10 
                                 rounded-3px bg-hellblau-30
                                 hover:bg-hellblau-60 focus-visible:outline-default 
-                                w-fit self-start lg:self-center`}
+                                w-fit self-start lg:self-center lg:mr-6`}
 					target="_blank"
 					rel="noopener noreferrer"
 				>
@@ -48,7 +48,7 @@ export const LandingPageBanner: React.FC = () => {
 				</a>
 			</div>
 			<button
-				className="flex-shrink-0 focus-visible:outline-default rounded-3px self-start lg:self-center"
+				className="absolute top-4 right-4 lg:top-1/2 lg:-translate-y-1/2 lg:right-12 flex-shrink-0 focus-visible:outline-default rounded-3px self-start lg:self-center"
 				onClick={handleClose}
 				aria-label={Content["landingPage.banner.close.ariaLabel"]}
 			>
