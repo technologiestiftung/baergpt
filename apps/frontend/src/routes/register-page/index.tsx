@@ -86,14 +86,19 @@ export function RegisterPage() {
 								{Content["registerPage.notice.heading"]}
 							</p>
 							{isNoticeExpanded && (
-								<div>
+								<>
+									<div>
+										<p className="text-base leading-6 font-normal">
+											{Content["registerPage.notice.content.p1"]}
+										</p>
+										<p className="text-base leading-6 font-normal">
+											{Content["registerPage.notice.content.p2"]}
+										</p>
+									</div>
 									<p className="text-base leading-6 font-normal">
-										{Content["registerPage.notice.content.p1"]}
+										{Content["registerPage.notice.content.p3"]}
 									</p>
-									<p className="text-base leading-6 font-normal">
-										{Content["registerPage.notice.content.p2"]}
-									</p>
-								</div>
+								</>
 							)}
 							<button
 								className="flex items-center text-base leading-5 font-normal focus-visible:outline-default rounded-3px text-start"
