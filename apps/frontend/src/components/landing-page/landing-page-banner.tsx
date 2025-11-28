@@ -21,11 +21,14 @@ export const LandingPageBanner: React.FC = () => {
 						{Content["landingPage.banner.h2"]}
 					</h2>
 					<div>
-						<p className="text-base leading-5 md:leading-6 font-normal">
+						<p className="hidden md:block text-base leading-5 md:leading-6 font-normal">
 							{Content["landingPage.banner.p1"]}
 						</p>
-						<p className="text-base leading-5 md:leading-6 font-normal">
+						<p className="hidden md:block text-base leading-5 md:leading-6 font-normal">
 							{Content["landingPage.banner.p2"]}
+						</p>
+						<p className="block md:hidden text-base leading-5 md:leading-6 font-normal">
+							{Content["landingPage.banner.p.mobile"]}
 						</p>
 					</div>
 				</div>
