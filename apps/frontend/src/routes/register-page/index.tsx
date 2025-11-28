@@ -10,6 +10,7 @@ import { useAuthStore } from "../../store/auth-store.ts";
 import { useAuthErrorStore } from "../../store/auth-error-store.ts";
 import { QuestionMarkIcon } from "../../components/primitives/icons/question-mark-icon.tsx";
 import { useTooltipStore } from "../../store/tooltip-store.ts";
+import { ChevronIcon } from "../../components/primitives/icons/chevron-icon.tsx";
 
 export function RegisterPage() {
 	const { register, getAllowedEmailDomains } = useAuthStore();
@@ -17,6 +18,7 @@ export function RegisterPage() {
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
 	const [hasAcceptedPersonalData, setHasAcceptedPersonalData] = useState(false);
+	const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
 
 	useEffect(() => {
@@ -72,6 +74,45 @@ export function RegisterPage() {
 					<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
 						{Content["registerPage.h1"]}
 					</h1>
+					<div className="flex gap-3 bg-hellblau-55 p-3 rounded-3px mt-5 text-start">
+						<img
+							className="self-start"
+							src="/icons/info-dark-icon.svg"
+							alt="info-icon"
+						/>
+
+						<div className="flex flex-col gap-3">
+							<p className="text-base leading-6 font-semibold">
+								{Content["registerPage.notice.heading"]}
+							</p>
+							{isNoticeExpanded && (
+								<div>
+									<p className="text-base leading-6 font-normal">
+										{Content["registerPage.notice.content.p1"]}
+									</p>
+									<p className="text-base leading-6 font-normal">
+										{Content["registerPage.notice.content.p2"]}
+									</p>
+								</div>
+							)}
+							<button
+								className="flex items-center text-base leading-5 font-normal focus-visible:outline-default rounded-3px text-start"
+								aria-label={
+									Content["registerPage.notice.showMore.button.ariaLabel"]
+								}
+								onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
+							>
+								{isNoticeExpanded
+									? Content["registerPage.notice.showLess.button.label"]
+									: Content["registerPage.notice.showMore.button.label"]}
+								{isNoticeExpanded ? (
+									<ChevronIcon color="dunkelblau-200" direction="up" />
+								) : (
+									<ChevronIcon color="dunkelblau-200" direction="down" />
+								)}
+							</button>
+						</div>
+					</div>
 
 					<form
 						className="flex flex-col mt-12"
