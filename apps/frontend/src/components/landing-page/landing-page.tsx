@@ -5,10 +5,12 @@ import { LandingPageSafety } from "./landing-page-safety.tsx";
 import { LandingPageHelpCenterBanner } from "./landing-page-help-center-banner.tsx";
 import { LandingPageFirstSteps } from "./landing-page-first-steps.tsx";
 import { LandingPageRegisterCTA } from "./landing-page-register-cta.tsx";
+import { LandingPageBanner } from "./landing-page-banner.tsx";
 
 export function LandingPage() {
 	return (
 		<LandingPageLayout>
+			<LandingPageBanner />
 			<LandingPageHero />
 			<LandingPageCards />
 			<LandingPageSafety />
