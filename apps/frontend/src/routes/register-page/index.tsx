@@ -74,34 +74,34 @@ export function RegisterPage() {
 					<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
 						{Content["registerPage.h1"]}
 					</h1>
-					<div className="flex gap-3 bg-hellblau-55 p-3 rounded-3px mt-5 text-start">
+					<div className="flex gap-3 bg-hellblau-55 p-3 rounded-3px mt-5 text-start break-words">
 						<img
 							className="self-start"
 							src="/icons/info-dark-icon.svg"
 							alt="info-icon"
 						/>
 
-						<div className="flex flex-col gap-3">
-							<p className="text-base leading-6 font-semibold">
+						<div className="flex flex-col gap-3 min-w-0">
+							<p className="text-sm leading-5 md:text-base md:leading-6 font-semibold">
 								{Content["registerPage.notice.heading"]}
 							</p>
 							{isNoticeExpanded && (
 								<>
 									<div>
-										<p className="text-base leading-6 font-normal">
+										<p className="text-sm leading-5 md:text-base md:leading-6 font-normal">
 											{Content["registerPage.notice.content.p1"]}
 										</p>
-										<p className="text-base leading-6 font-normal">
+										<p className="text-sm leading-5 md:text-base md:leading-6 font-normal">
 											{Content["registerPage.notice.content.p2"]}
 										</p>
 									</div>
-									<p className="text-base leading-6 font-normal">
+									<p className="text-sm leading-5 md:text-base md:leading-6 font-normal">
 										{Content["registerPage.notice.content.p3"]}
 									</p>
 								</>
 							)}
 							<button
-								className="flex items-center text-base leading-5 font-normal focus-visible:outline-default rounded-3px text-start"
+								className="flex items-center text-sm leading-5 md:text-base md:leading-6 font-normal focus-visible:outline-default rounded-3px text-start w-fit"
 								aria-label={
 									Content["registerPage.notice.showMore.button.ariaLabel"]
 								}
