@@ -128,7 +128,7 @@ export function RegisterPage() {
 						<div className="flex gap-5">
 							<label
 								htmlFor="firstName"
-								className="flex flex-col gap-y-1 text-sm md:text-base"
+								className="flex flex-col gap-y-1 text-sm md:text-base flex-1"
 							>
 								{Content["registerPage.firstNameLabel"]}
 								<TextInput
@@ -139,7 +139,7 @@ export function RegisterPage() {
 
 							<label
 								htmlFor="lastName"
-								className="flex flex-col gap-y-1 text-sm md:text-base"
+								className="flex flex-col gap-y-1 text-sm md:text-base flex-1"
 							>
 								{Content["registerPage.lastNameLabel"]}
 								<TextInput
