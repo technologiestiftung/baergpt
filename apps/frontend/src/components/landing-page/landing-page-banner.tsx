@@ -27,7 +27,7 @@ export const LandingPageBanner: React.FC = () => {
 						<p className="hidden md:block text-base leading-5 md:leading-6 font-normal">
 							{Content["landingPage.banner.p2"]}
 						</p>
-						<p className="block md:hidden text-base leading-5 md:leading-6 font-normal">
+						<p className="block md:hidden text-sm leading-5 md:leading-6 font-normal">
 							{Content["landingPage.banner.p.mobile"]}
 						</p>
 					</div>
@@ -37,7 +37,7 @@ export const LandingPageBanner: React.FC = () => {
 					aria-label={Content["landingPage.banner.link.ariaLabel"]}
 					className={`
                                 flex items-center h-11 text-dunkelblau-100 px-3 py-2
-                                text-lg leading-7 font-normal z-10 
+                                text-sm leading-5 md:text-lg md:leading-7 font-normal z-10 
                                 rounded-3px bg-hellblau-30
                                 hover:bg-hellblau-60 focus-visible:outline-default 
                                 w-fit self-start lg:self-center`}
