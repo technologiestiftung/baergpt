@@ -1045,6 +1045,17 @@ export const Content = {
 
 	/* ---------------------- Register Form ---------------------- */
 	"registerPage.h1": "Registrieren Sie sich",
+	"registerPage.notice.heading":
+		"BärGPT steht aktuell ausschließlich für Beschäftigte der Berliner Verwaltung zur Verfügung.",
+	"registerPage.notice.showMore.button.label": "Mehr Infos",
+	"registerPage.notice.showMore.button.ariaLabel": "Mehr Infos anzeigen",
+	"registerPage.notice.showLess.button.label": "Weniger Infos",
+	"registerPage.notice.showLess.button.ariaLabel": "Weniger Infos anzeigen",
+	"registerPage.notice.content.p1":
+		"Mit einigen Ausnahmen beschränkt sich die Registrierung daher auf E-Mail-Adressen im Format",
+	"registerPage.notice.content.p2": "vorname.nachname@subdomain.berlin.de.",
+	"registerPage.notice.content.p3":
+		"Wir bitten um Verständnis, dass eine Bereitstellung darüber hinaus aktuell noch nicht möglich ist.",
 	"registerPage.firstNameLabel": "Vorname",
 	"registerPage.firstNamePlaceholder": "Maria",
 	"registerPage.lastNameLabel": "Nachname",
