@@ -436,9 +436,9 @@ export class GenerationService {
 								} catch (dbError) {
 									captureError(dbError);
 								}
-								if (error) {
-									captureError(error);
-								}
+							}
+							if (error) {
+								captureError(error);
 							}
 						},
 						experimental_telemetry: {
