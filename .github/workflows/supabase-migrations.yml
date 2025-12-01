@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_PRODUCTION_DB_PASSWORD || secrets.SUPABASE_STAGING_DB_PASSWORD }}
-      PROJECT_ID: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_PRODUCTION_PROJECT_ID || secrets.SUPABASE_STAGING_PROJECT_ID }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_HOST: ${{ github.ref == 'refs/heads/main' && secrets.PROD_SSH_HOST || secrets.STAGING_SSH_HOST }}
 
     steps:
       - name: Checkout repository
@@ -27,7 +27,28 @@ jobs:
         with:
           version: 2.40.7
 
-      - name: Apply Supabase migrations
+      - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY_MIGRATIONS: ${{ secrets.SSH_PRIVATE_KEY_MIGRATIONS }}
         run: |
-          supabase link --project-ref $PROJECT_ID
-          supabase db push
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY_MIGRATIONS" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p $SSH_PORT -H $SSH_HOST >> ~/.ssh/known_hosts
+
+      - name: Create SSH tunnel
+        run: |
+          ssh -f -N -T \
+            -p $SSH_PORT \
+            -L 5439:127.0.0.1:5432 \
+            -o ExitOnForwardFailure=yes \
+            -o StrictHostKeyChecking=no \
+            $SSH_USER@$SSH_HOST
+          sleep 2
+
+      - name: Apply Supabase migrations
+        working-directory: apps/backend/supabase
+        env:
+          DB_URL: ${{ github.ref == 'refs/heads/main' && secrets.PROD_DB_URL || secrets.STAGING_DB_URL }}
+        run: |
+          PGSSLMODE=disable supabase db push --include-all --db-url "$DB_URL"
