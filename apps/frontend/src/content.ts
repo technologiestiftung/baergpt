@@ -1035,7 +1035,7 @@ export const Content = {
 	/* ---------------------- Register Form ---------------------- */
 	"registerPage.h1": "Registrieren Sie sich",
 	"registerPage.notice.heading":
-		"BärGPT steht aktuell ausschließlich für Beschäftigte der Berliner Verwaltung zu Verfügung.",
+		"BärGPT steht aktuell ausschließlich für Beschäftigte der Berliner Verwaltung zur Verfügung.",
 	"registerPage.notice.showMore.button.label": "Mehr Infos",
 	"registerPage.notice.showMore.button.ariaLabel": "Mehr Infos anzeigen",
 	"registerPage.notice.showLess.button.label": "Weniger Infos",
