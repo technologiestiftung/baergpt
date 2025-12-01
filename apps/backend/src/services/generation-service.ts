@@ -468,7 +468,12 @@ export class GenerationService {
 					model: llmHandler.languageModel,
 					messages: messages,
 					temperature: LLM_PARAMETERS.temperature,
-
+					providerOptions: {
+						mistral: {
+							presencePenalty: LLM_PARAMETERS.presencePenalty,
+							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+						},
+					},
 					onFinish: async ({ text, usage }) => {
 						updateActiveTrace({
 							name: "streamed-text-generation",
