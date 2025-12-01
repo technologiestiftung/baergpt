@@ -16,6 +16,17 @@ export const Content = {
 	"header.navigation.landingPage.register.link": "/register/",
 
 	/* -------------------- Landing Page -------------------- */
+	"landingPage.banner.h2": "Sie haben noch mehr Fragen zu BärGPT?",
+	"landingPage.banner.p1":
+		"In der Online-Sprechstunde beantworten wir Ihre individuellen Fragen.",
+	"landingPage.banner.p2": "Dienstags und Donnerstags von 11-12 Uhr.",
+	"landingPage.banner.p.mobile":
+		"Online-Sprechstunde: Dienstags und Donnerstags von 11-12 Uhr.",
+	"landingPage.banner.link.label": "Termin im Intranet finden",
+	"landingPage.banner.link.ariaLabel": "Zur Intranet-Seite",
+	"landingPage.banner.link.href":
+		"https://es.sonicurlprotection-fra.com/click?PV=2&MSGID=202511251300261491352&URLID=9&ESV=10.0.33.8195&IV=07D147C51EBF8F731F4A3EE27A9084FA&TT=1764075627318&ESN=Nrn42nPDAWWLC5NgjHDD%2BtagWPjf7KFcKjiNsMGRo1o%3D&KV=1536961729280&B64_ENCODED_URL=aHR0cHM6Ly9iLWludGVybi5kZS90aGVtZW4va3VlbnN0bGljaGUtaW50ZWxsaWdlbnota2kv&HK=360B6E8673B6846B0CD4776B23DF592D7171C1503EF145630EF198D8A4105A09",
+	"landingPage.banner.close.ariaLabel": "Banner schließen",
 	"landingPage.hero.h1": "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 	"landingPage.hero.h3": "Sicher. Datenschutzkonform. Open Source.",
 	"landingPage.hero.register.label": "Jetzt registrieren",
@@ -1034,6 +1045,17 @@ export const Content = {
 
 	/* ---------------------- Register Form ---------------------- */
 	"registerPage.h1": "Registrieren Sie sich",
+	"registerPage.notice.heading":
+		"BärGPT steht aktuell ausschließlich für Beschäftigte der Berliner Verwaltung zur Verfügung.",
+	"registerPage.notice.showMore.button.label": "Mehr Infos",
+	"registerPage.notice.showMore.button.ariaLabel": "Mehr Infos anzeigen",
+	"registerPage.notice.showLess.button.label": "Weniger Infos",
+	"registerPage.notice.showLess.button.ariaLabel": "Weniger Infos anzeigen",
+	"registerPage.notice.content.p1":
+		"Mit einigen Ausnahmen beschränkt sich die Registrierung daher auf E-Mail-Adressen im Format",
+	"registerPage.notice.content.p2": "vorname.nachname@subdomain.berlin.de.",
+	"registerPage.notice.content.p3":
+		"Wir bitten um Verständnis, dass eine Bereitstellung darüber hinaus aktuell noch nicht möglich ist.",
 	"registerPage.firstNameLabel": "Vorname",
 	"registerPage.firstNamePlaceholder": "Maria",
 	"registerPage.lastNameLabel": "Nachname",
@@ -1161,7 +1183,7 @@ export const Content = {
 	"footer.senatskanzleiLogo.p": "Gefördert durch",
 	"footer.senatskanzleiLogo.alt":
 		"Der Regierende Bürgermeister von Berlin, Senatskanzlei",
-	"footer.senatskanzleiLogo.link": "https://www.berlin.de/sen/kanzler/",
+	"footer.senatskanzleiLogo.link": "https://www.berlin.de/rbmskzl/",
 
 	// Landing Page Footer Links
 	"footer.support": "Support",
