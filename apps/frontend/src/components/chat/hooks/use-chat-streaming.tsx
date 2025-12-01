@@ -56,6 +56,7 @@ export function useChatStreaming() {
 
 				let text = "";
 				const encoder = new TextEncoder();
+				const decoder = new TextDecoder();
 
 				return new Response(
 					new ReadableStream({
@@ -66,7 +67,7 @@ export function useChatStreaming() {
 								return;
 							}
 							// Parse AI SDK text format: 0:"chunk"
-							const chunk = new TextDecoder().decode(value);
+							const chunk = decoder.decode(value);
 							for (const line of chunk.split("\n")) {
 								if (line.startsWith("0:")) {
 									try {
