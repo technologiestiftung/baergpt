@@ -103,7 +103,9 @@ export function RegisterPage() {
 							<button
 								className="flex items-center text-sm leading-5 md:text-base md:leading-6 font-normal focus-visible:outline-default rounded-3px text-start w-fit"
 								aria-label={
-									Content["registerPage.notice.showMore.button.ariaLabel"]
+									isNoticeExpanded
+										? Content["registerPage.notice.showLess.button.ariaLabel"]
+										: Content["registerPage.notice.showMore.button.ariaLabel"]
 								}
 								onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
 							>
