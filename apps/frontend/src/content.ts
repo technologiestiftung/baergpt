@@ -1031,6 +1031,23 @@ export const Content = {
 	"newPassword.repeatPassword.label": "Neues Passwort wiederholen",
 	"newPassword.repeatPassword.placeholder": "Passwort",
 	"newPassword.submitButton": "Passwort ändern",
+	"newPassword.recoveryNotActive.error":
+		"Der Link wurde bereits verwendet oder ist abgelaufen. Bitte fordern Sie einen neuen Link an.",
+
+	/* ---------------------- OTP Confirmation Page ---------------------- */
+	"confirmOtp.title": "Aktion bestätigen",
+	"confirmOtp.description":
+		"Bitte geben Sie den Sicherheitscode aus Ihrer E-Mail ein.",
+	"confirmOtp.token.label": "Sicherheitscode",
+	"confirmOtp.token.placeholder": "z. B. 123456",
+	"confirmOtp.button.submit": "Weiter",
+	"confirmOtp.button.loading": "Überprüfe …",
+	"confirmOtp.error.missingFields":
+		"E-Mail-Adresse und Sicherheitscode werden benötigt.",
+	"confirmOtp.error.tokenExpiredOrInvalid":
+		"Der angegebene Sicherheitscode ist fehlerhaft oder ungültig.",
+	"confirmOtp.error.generic":
+		"Die Bestätigung ist fehlgeschlagen. Bitte versuchen Sie es erneut oder fordern Sie einen neuen Link an.",
 
 	/* ---------------------- Register Form ---------------------- */
 	"registerPage.h1": "Registrieren Sie sich",

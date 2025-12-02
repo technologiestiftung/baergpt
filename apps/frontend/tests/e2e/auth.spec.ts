@@ -168,20 +168,43 @@ test.describe("Password Reset", () => {
 		});
 		await emailLinks.first().click();
 
-		// Clicking on the link should open a new tab
+		// Confirm password reset via OTP flow
 		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Neues Passwort vergeben" })
+		const emailFrame = await page.locator("#preview-html").contentFrame();
+		if (!emailFrame) {
+			throw new Error("Email preview frame not available");
+		}
+
+		const recoveryOtp = (
+			await emailFrame
+				.locator("p")
+				.filter({ hasText: /^\d{6}$/ })
+				.first()
+				.innerText()
+		).trim();
+
+		await emailFrame
+			.getByRole("link", { name: "Identität bestätigen & Passwort wählen" })
+			.click();
+		await emailFrame
+			.getByRole("link", { name: "Identität bestätigen & Passwort wählen" })
 			.click();
 		const page1 = await popupEvent;
 
-		// Wait for the page to fully load
 		await page1.waitForLoadState("networkidle");
 		await page1.waitForTimeout(2000);
 
-		// After clicking on the link, we should be redirected to the reset password page
+		await expect(
+			page1.getByRole("heading", { name: "Aktion bestätigen" }),
+		).toBeVisible();
+
+		await page1
+			.getByRole("textbox", { name: "Sicherheitscode" })
+			.fill(recoveryOtp);
+		await page1.getByRole("button", { name: "Weiter" }).click();
+
+		await expect(page1).toHaveURL("/new-password");
+
 		await expect(
 			page1.getByRole("heading", { name: "Passwort zurücksetzen" }),
 		).toBeVisible();
@@ -268,20 +291,43 @@ test.describe("Password Reset", () => {
 		});
 		await emailLinksNew.first().click();
 
-		// Clicking on the link should open a new tab
+		await page1.waitForTimeout(2000);
+
+		const emailFrameNew = await page1.locator("#preview-html").contentFrame();
+		if (!emailFrameNew) {
+			throw new Error("Email preview frame not available");
+		}
+
+		const recoveryOtpNew = (
+			await emailFrameNew
+				.locator("p")
+				.filter({ hasText: /^\d{6}$/ })
+				.first()
+				.innerText()
+		).trim();
+
 		const popupEventNew = page1.waitForEvent("popup");
-		await page1
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Neues Passwort vergeben" })
+		await emailFrameNew
+			.getByRole("link", {
+				name: "Identität bestätigen & Passwort wählen",
+			})
 			.click();
 		const page2 = await popupEventNew;
 
-		// Wait for the page to fully load
 		await page2.waitForLoadState("networkidle");
 		await page2.waitForTimeout(2000);
 
-		// After clicking on the link, we should be redirected to the reset password page
+		await expect(
+			page2.getByRole("heading", { name: "Aktion bestätigen" }),
+		).toBeVisible();
+
+		await page2
+			.getByRole("textbox", { name: "Sicherheitscode" })
+			.fill(recoveryOtpNew);
+		await page2.getByRole("button", { name: "Weiter" }).click();
+
+		await expect(page2).toHaveURL("/new-password");
+
 		await expect(
 			page2.getByRole("heading", { name: "Passwort zurücksetzen" }),
 		).toBeVisible();
@@ -809,27 +855,43 @@ testWithRegisteredUser(
 		});
 		await emailLinks.first().click();
 
-		// Clicking on the link should open a new tab
 		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Neue E-Mail-Adresse bestätigen" })
+		const emailFrame = await page.locator("#preview-html").contentFrame();
+		if (!emailFrame) {
+			throw new Error("Email preview frame not available");
+		}
+
+		const emailChangeOtp = (
+			await emailFrame
+				.locator("p")
+				.filter({ hasText: /^\d{6}$/ })
+				.first()
+				.innerText()
+		).trim();
+
+		await emailFrame
+			.getByRole("link", { name: "Identität bestätigen & Adresse ändern" })
 			.click();
 		const page1 = await popupEvent;
 
-		// Wait for the page to fully load
 		await page1.waitForLoadState("networkidle");
 
-		// After clicking on the link, we should be redirected to the email confirmation page
+		await expect(
+			page1.getByRole("heading", { name: "Aktion bestätigen" }),
+		).toBeVisible();
+
+		await page1
+			.getByRole("textbox", { name: "Sicherheitscode" })
+			.fill(emailChangeOtp);
+		await page1.getByRole("button", { name: "Weiter" }).click();
+
+		await expect(page1).toHaveURL("/email-changed/");
+
 		await expect(
 			page1.getByRole("heading", {
 				name: "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 			}),
 		).toBeVisible();
-
-		// check that we were redirected to the email-changed page
-		await expect(page1).toHaveURL("/email-changed/#");
 
 		// Go back to main page
 		await page1

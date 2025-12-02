@@ -227,7 +227,11 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 
 		// sets a new password for the user and is triggered by reset password link from mail
 		async resetPassword(newPassword: string) {
-			await updatePassword(newPassword);
+			const { error } = await updatePassword(newPassword);
+
+			if (error) {
+				throw error;
+			}
 
 			set({ isPasswordResetSuccessful: true });
 		},
