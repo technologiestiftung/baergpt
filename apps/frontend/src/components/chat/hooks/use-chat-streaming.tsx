@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import { experimental_useObject as useObject } from "@ai-sdk/react";
-import { streamedObjectSchema } from "../../../schemas/streamed-object-schema.ts";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import type { NewChatMessage } from "../../../common";
 import { useChatsStore } from "../../../store/use-chats-store";
 import { useAuthStore } from "../../../store/auth-store";
@@ -34,63 +34,51 @@ export function useChatStreaming() {
 		useChatsStore.getState();
 
 	const assistantMessageIdRef = useRef<number | null>(null);
+	const citationsRef = useRef<number[]>([]);
+	const requestContextRef = useRef<StartStreamingArgs["requestContext"] | null>(
+		null,
+	);
 	const { ensureCached } = useCitationsStore.getState();
 
-	const { object, submit, stop, isLoading } = useObject({
-		api: `${import.meta.env.VITE_API_URL}/llm/just-chatting`,
-		schema: streamedObjectSchema,
-		fetch: async (input, init) => {
-			const token = useAuthStore.getState().session?.access_token;
-			const headers = new Headers(init?.headers);
-			headers.set("Content-Type", "application/json");
-			headers.set("Authorization", token ? `Bearer ${token}` : "");
+	const { messages, status, stop, sendMessage } = useChat({
+		transport: new DefaultChatTransport({
+			api: `${import.meta.env.VITE_API_URL}/llm/just-chatting`,
+			fetch: async (input, init) => {
+				const token = useAuthStore.getState().session?.access_token;
+				const headers = new Headers(init?.headers);
+				headers.set("Content-Type", "application/json");
+				headers.set("Authorization", token ? `Bearer ${token}` : "");
 
-			const response = await fetch(input, { ...init, headers });
+				return fetch(input, { ...init, headers });
+			},
+			prepareSendMessagesRequest: ({ messages: chatMessages }) => {
+				const context = requestContextRef.current;
+				const chat = useChatsStore.getState().getCurrentChat();
 
-			// If it's a plain text stream, transform it to object format for useObject
-			if (response.headers.get("X-Stream-Type") === "text") {
-				const reader = response.body?.getReader();
-				if (!reader) {
-					return response;
-				}
-
-				let text = "";
-				const encoder = new TextEncoder();
-				const decoder = new TextDecoder();
-
-				return new Response(
-					new ReadableStream({
-						async pull(controller) {
-							const { done, value } = await reader.read();
-							if (done) {
-								controller.close();
-								return;
-							}
-							// Parse AI SDK text format: 0:"chunk"
-							const chunk = decoder.decode(value);
-							for (const line of chunk.split("\n")) {
-								if (line.startsWith("0:")) {
-									try {
-										text += JSON.parse(line.slice(2));
-									} catch {
-										/* ignore parse errors */
-									}
-								}
-							}
-							// Emit as object format that useObject expects
-							controller.enqueue(
-								encoder.encode(
-									JSON.stringify({ content: text, citations: [] }),
-								),
-							);
-						},
-					}),
-					{ headers: response.headers },
-				);
-			}
-
-			return response;
-		},
+				return {
+					body: {
+						messages:
+							chat?.messages
+								.filter(
+									(message) =>
+										!(
+											message.role === "assistant" &&
+											!message.content?.trim() &&
+											!message.citations?.length
+										),
+								)
+								.map(({ role, content }) => ({ role, content })) ??
+							chatMessages,
+						user_id: context?.userId,
+						chat_id: chat?.id ?? context?.chatId,
+						search_type: context?.searchType ?? DEFAULT_SEARCH_TYPE,
+						allowed_document_ids: context?.allowedDocumentIds,
+						allowed_folder_ids: context?.allowedFolderIds,
+						is_addressed_formal: context?.isAddressedFormal,
+					},
+				};
+			},
+		}),
 		onError: (error) => {
 			captureError(error);
 
@@ -106,12 +94,14 @@ export function useChatStreaming() {
 				setStatus("idle");
 			}
 		},
-		onFinish: async ({ object: result }) => {
-			setStatus("idle");
-
-			if (!result) {
-				return;
+		onData: (dataPart) => {
+			// Handle custom data-citations stream part from backend
+			if (dataPart.type === "data-citations" && Array.isArray(dataPart.data)) {
+				citationsRef.current = dataPart.data as number[];
 			}
+		},
+		onFinish: async ({ message }) => {
+			setStatus("idle");
 
 			const chat = useChatsStore.getState().getCurrentChat();
 			const assistantMessageId = assistantMessageIdRef.current;
@@ -120,7 +110,7 @@ export function useChatStreaming() {
 				return;
 			}
 
-			const chunkIds = result.citations ?? [];
+			const chunkIds = citationsRef.current;
 			if (chunkIds.length) {
 				ensureCached(chunkIds);
 			}
@@ -128,33 +118,40 @@ export function useChatStreaming() {
 			updateMessage({
 				chat,
 				messageId: assistantMessageId,
-				content: result.content,
+				content: getTextFromMessage(message),
 				citations: chunkIds.length ? chunkIds : null,
 			});
+
+			// Reset for next message
+			citationsRef.current = [];
+			requestContextRef.current = null;
 		},
 	});
 
 	useUpdateChatOnStreamData({
 		assistantMessageIdRef,
-		streamedObject: object,
+		messages,
 	});
 
 	useStopStreamingOnChatChange({
 		stop,
 	});
 
-	useUpdateInferenceLoadingStatusOnStreamData(object);
+	useUpdateInferenceLoadingStatusOnStreamData(messages, status);
 
 	async function startStreaming({
 		userMessage,
 		requestContext,
 	}: StartStreamingArgs) {
-		if (isLoading) {
+		if (status === "submitted" || status === "streaming") {
 			stop();
 		}
 
 		// Clear any previous errors
 		clearError();
+
+		// Store context for use in prepareSendMessagesRequest
+		requestContextRef.current = requestContext;
 
 		const chat = await getCurrentOrCreateChat(userMessage);
 
@@ -170,25 +167,17 @@ export function useChatStreaming() {
 
 		setStatus("waiting-for-response");
 
-		submit({
-			messages: chat.messages
-				.filter(
-					(message) =>
-						!(
-							message.role === "assistant" &&
-							!message.content?.trim() &&
-							!message.citations?.length
-						),
-				)
-				.map(({ role, content }) => ({ role, content })),
-			user_id: requestContext.userId,
-			chat_id: chat.id,
-			search_type: requestContext.searchType ?? DEFAULT_SEARCH_TYPE,
-			allowed_document_ids: requestContext.allowedDocumentIds,
-			allowed_folder_ids: requestContext.allowedFolderIds,
-			is_addressed_formal: requestContext.isAddressedFormal,
-		});
+		sendMessage({ text: userMessage.content });
 	}
 
 	return { startStreaming };
+}
+
+function getTextFromMessage(message: UIMessage): string {
+	return message.parts
+		.filter(
+			(part): part is { type: "text"; text: string } => part.type === "text",
+		)
+		.map((part) => part.text)
+		.join("");
 }

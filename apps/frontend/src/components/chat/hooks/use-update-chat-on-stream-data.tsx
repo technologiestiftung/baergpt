@@ -1,14 +1,13 @@
 import { type MutableRefObject, useEffect } from "react";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import type { StreamedObject } from "../../../schemas/streamed-object-schema.ts";
-import type { DeepPartial } from "ai";
+import type { UIMessage } from "ai";
 
 export function useUpdateChatOnStreamData({
 	assistantMessageIdRef,
-	streamedObject,
+	messages,
 }: {
 	assistantMessageIdRef: MutableRefObject<number | null>;
-	streamedObject: DeepPartial<StreamedObject> | undefined;
+	messages: UIMessage[];
 }) {
 	useEffect(() => {
 		const chat = useChatsStore.getState().getCurrentChat();
@@ -18,15 +17,30 @@ export function useUpdateChatOnStreamData({
 			return;
 		}
 
-		if (!streamedObject || streamedObject.content === undefined) {
+		const lastMessage = messages.at(-1);
+		if (!lastMessage || lastMessage.role !== "assistant") {
+			return;
+		}
+
+		const textContent = getTextFromMessage(lastMessage);
+		if (!textContent) {
 			return;
 		}
 
 		useChatsStore.getState().updateMessage({
 			chat,
 			messageId: assistantMessageId,
-			content: streamedObject.content,
+			content: textContent,
 			citations: null,
 		});
-	}, [streamedObject?.content, assistantMessageIdRef.current]);
+	}, [messages, assistantMessageIdRef]);
+}
+
+function getTextFromMessage(message: UIMessage): string {
+	return message.parts
+		.filter(
+			(part): part is { type: "text"; text: string } => part.type === "text",
+		)
+		.map((part) => part.text)
+		.join("");
 }

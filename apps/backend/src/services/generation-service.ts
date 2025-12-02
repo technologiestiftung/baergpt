@@ -1,7 +1,13 @@
-import { enc, ragSearchDefaults } from "../constants";
+import { enc } from "../constants";
 import { config } from "../config";
 import type { ModelMessage, Tool, ToolChoice } from "ai";
-import { generateText, streamObject, streamText } from "ai";
+import {
+	createUIMessageStream,
+	createUIMessageStreamResponse,
+	generateObject,
+	generateText,
+	streamText,
+} from "ai";
 import { ModelService } from "./model-service";
 import { EmbeddingService } from "./embedding-service";
 import {
@@ -21,7 +27,6 @@ import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { captureError } from "../monitoring/capture-error";
-import { z } from "zod";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
 import {
@@ -34,7 +39,6 @@ const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
-const maxAvailableSources = ragSearchDefaults.chunk_limit;
 
 export class GenerationService {
 	/**
@@ -393,132 +397,105 @@ export class GenerationService {
 		}
 		const toolResult = generationResult.toolResults[0];
 		const newMessages = generationResult.response.messages;
-
-		if (toolResult) {
+		if (newMessages.length > 0) {
 			messages.push(...newMessages);
-
-			const citationAnswer = await resilientCall(
-				async () =>
-					streamObject({
-						model: llmHandler.languageModel,
-						messages: messages,
-						temperature: LLM_PARAMETERS.temperature,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
-						schema: citationAnswerSchema(maxAvailableSources),
-						providerOptions: {
-							mistral: {
-								structuredOutputs: true,
-								presencePenalty: LLM_PARAMETERS.presencePenalty,
-								frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-							},
-						},
-						onFinish: async ({ object, usage, error }) => {
-							updateActiveTrace({
-								name: "streamed-structuredOutput-generation",
-								output: object,
-								userId,
-								sessionId,
-							});
-							// Handle token usage tracking after stream completes
-							if (userId && usage?.totalTokens) {
-								try {
-									await dbService.updateUserColumnValue(
-										userId,
-										"num_inference_tokens",
-										usage.totalTokens,
-									);
-									// Increase num_inferences for user by one
-									await dbService.updateUserColumnValue(
-										userId,
-										"num_inferences",
-										1,
-									);
-								} catch (dbError) {
-									captureError(dbError);
-								}
-							}
-							if (error) {
-								captureError(error);
-							}
-						},
-						experimental_telemetry: {
-							isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-							metadata: {
-								sessionId: sessionId ? sessionId : "unknown",
-								langfusePrompt: langfusePrompt
-									? langfusePrompt.toJSON()
-									: undefined,
-							},
-						},
-						onError: (error) => {
-							captureError(error);
-						},
-					}),
-				{ queueType: "llm" },
-			);
-
-			const response = citationAnswer.toTextStreamResponse({
-				headers: { "X-Stream-Type": "object" },
-			});
-			return response;
 		}
-		const noSourceResponse = await resilientCall(
-			async () =>
-				streamText({
-					model: llmHandler.languageModel,
-					messages: messages,
-					temperature: LLM_PARAMETERS.temperature,
-					providerOptions: {
-						mistral: {
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
-					onFinish: async ({ text, usage }) => {
-						updateActiveTrace({
-							name: "streamed-text-generation",
-							output: text,
-							userId,
-							sessionId,
-						});
-						// Handle token usage tracking after stream completes
-						if (userId && usage?.totalTokens) {
-							try {
-								await dbService.updateUserColumnValue(
+		const stream = createUIMessageStream({
+			execute: async ({ writer }) => {
+				const streamResponse = await resilientCall(
+					async () =>
+						streamText({
+							model: llmHandler.languageModel,
+							messages: messages,
+							temperature: LLM_PARAMETERS.temperature,
+							providerOptions: {
+								mistral: {
+									presencePenalty: LLM_PARAMETERS.presencePenalty,
+									frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+								},
+							},
+							onFinish: async ({ text, usage }) => {
+								if (toolResult) {
+									const availableSources = toolResult.output.chunkMatches.map(
+										(match: { chunkId: number; snippet: string }) => ({
+											id: match.chunkId,
+											snippet: match.snippet,
+										}),
+									);
+
+									const citationObject = await generateObject({
+										model: llmHandler.languageModel,
+										system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
+										prompt: `Generierte Antwort:
+"""
+${text}
+"""
+
+Verfügbare Quellen:
+${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n${s.snippet}`).join("\n\n")}
+
+Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
+										temperature: LLM_PARAMETERS.temperature,
+										// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+										schema: citationAnswerSchema,
+										experimental_telemetry: {
+											isEnabled: config.nodeEnv !== "test",
+											functionId: "citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+									});
+									writer.write({
+										type: "data-citations",
+										data: citationObject.object.citations,
+									});
+								}
+
+								updateActiveTrace({
+									name: "streamed-text-generation",
+									output: text,
 									userId,
-									"num_inference_tokens",
-									usage.totalTokens,
-								);
-								// Increase num_inferences for user by one
-								await dbService.updateUserColumnValue(
-									userId,
-									"num_inferences",
-									1,
-								);
-							} catch (dbError) {
-								captureError(dbError);
-							}
-						}
-					},
-					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
-						},
-					},
-					onError: (error) => {
-						captureError(error);
-					},
-				}),
-			{ queueType: "llm" },
-		);
-		const response = noSourceResponse.toTextStreamResponse({
-			headers: { "X-Stream-Type": "text" },
+									sessionId,
+								});
+								// Handle token usage tracking after stream completes
+								if (userId && usage?.totalTokens) {
+									try {
+										await dbService.updateUserColumnValue(
+											userId,
+											"num_inference_tokens",
+											usage.totalTokens,
+										);
+										// Increase num_inferences for user by one
+										await dbService.updateUserColumnValue(
+											userId,
+											"num_inferences",
+											1,
+										);
+									} catch (dbError) {
+										captureError(dbError);
+									}
+								}
+							},
+							experimental_telemetry: {
+								isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+								metadata: {
+									sessionId: sessionId ? sessionId : "unknown",
+									langfusePrompt: langfusePrompt
+										? langfusePrompt.toJSON()
+										: undefined,
+								},
+							},
+							onError: (error) => {
+								captureError(error);
+							},
+						}),
+					{ queueType: "llm" },
+				);
+				writer.merge(streamResponse.toUIMessageStream());
+			},
 		});
-		return response;
+		return createUIMessageStreamResponse({ stream });
 	}
 
 	async generateTextContent(
@@ -678,9 +655,6 @@ export class GenerationService {
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
-			citationSchema: JSON.stringify(
-				z.toJSONSchema(citationAnswerSchema(maxAvailableSources)),
-			),
 		});
 		const freeChatPrompt: ModelMessage = {
 			role: "system",

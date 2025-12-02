@@ -1,38 +1,26 @@
 import { useEffect } from "react";
-import type { DeepPartial } from "ai";
-import type { StreamedObject } from "../../../schemas/streamed-object-schema.ts";
+import type { UIMessage } from "ai";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 
+type ChatStatus = "ready" | "submitted" | "streaming" | "error";
+
 export function useUpdateInferenceLoadingStatusOnStreamData(
-	streamedObject: DeepPartial<StreamedObject> | undefined,
+	messages: UIMessage[],
+	chatStatus: ChatStatus,
 ) {
 	const { status, setStatus } = useInferenceLoadingStatusStore();
 
 	useEffect(() => {
-		if (!streamedObject || !streamedObject.content) {
-			return;
+		if (chatStatus === "streaming" && status !== "loading-text") {
+			const lastMessage = messages.at(-1);
+			if (lastMessage?.role === "assistant") {
+				const hasTextContent = lastMessage.parts.some(
+					(part) => part.type === "text" && part.text.length > 0,
+				);
+				if (hasTextContent) {
+					setStatus("loading-text");
+				}
+			}
 		}
-
-		if (
-			typeof streamedObject.content === "string" &&
-			streamedObject.content.length > 0 &&
-			status !== "loading-text"
-		) {
-			setStatus("loading-text");
-		}
-	}, [streamedObject?.content]);
-
-	useEffect(() => {
-		if (!streamedObject || !streamedObject.citations) {
-			return;
-		}
-
-		if (
-			Array.isArray(streamedObject.citations) &&
-			streamedObject.citations.length > 0 &&
-			status !== "loading-citations"
-		) {
-			setStatus("loading-citations");
-		}
-	}, [streamedObject?.citations]);
+	}, [messages, chatStatus, status, setStatus]);
 }
