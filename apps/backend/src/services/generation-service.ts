@@ -445,6 +445,27 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 												sessionId: sessionId ? sessionId : "unknown",
 											},
 										},
+										onFinish: async ({ usage: citationUsage }) => {
+											if (userId && citationUsage?.totalTokens) {
+												try {
+													await dbService.updateUserColumnValue(
+														userId,
+														"num_inference_tokens",
+														citationUsage.totalTokens,
+													);
+													await dbService.updateUserColumnValue(
+														userId,
+														"num_inferences",
+														1,
+													);
+												} catch (error) {
+													captureError(error);
+												}
+											}
+										},
+										onError: (error) => {
+											captureError(error);
+										},
 									});
 									writer.write({
 										type: "data-citations",
