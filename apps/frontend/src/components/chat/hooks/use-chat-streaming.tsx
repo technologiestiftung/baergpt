@@ -97,6 +97,7 @@ export function useChatStreaming() {
 		onData: (dataPart) => {
 			// Handle custom data-citations stream part from backend
 			if (dataPart.type === "data-citations" && Array.isArray(dataPart.data)) {
+				setStatus("loading-citations");
 				citationsRef.current = dataPart.data as number[];
 			}
 		},

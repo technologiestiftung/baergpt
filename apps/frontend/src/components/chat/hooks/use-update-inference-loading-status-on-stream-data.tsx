@@ -9,10 +9,15 @@ export function useUpdateInferenceLoadingStatusOnStreamData(
 	chatStatus: ChatStatus,
 ) {
 	const { status, setStatus } = useInferenceLoadingStatusStore();
+	const lastMessage = messages.at(-1);
 
 	useEffect(() => {
-		if (chatStatus === "streaming" && status !== "loading-text") {
-			const lastMessage = messages.at(-1);
+		const shouldTransitionToLoadingText =
+			chatStatus === "streaming" &&
+			status !== "loading-text" &&
+			status !== "loading-citations";
+
+		if (shouldTransitionToLoadingText) {
 			if (lastMessage?.role === "assistant") {
 				const hasTextContent = lastMessage.parts.some(
 					(part) => part.type === "text" && part.text.length > 0,
