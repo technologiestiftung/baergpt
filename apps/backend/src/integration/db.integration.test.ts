@@ -127,6 +127,64 @@ describe("Integration tests for DB", async () => {
 			}
 		});
 
+		describe("validate_email_domain()", () => {
+			const validEmail = "test@local.berlin.de";
+			const validEmail2 = "test2@local.berlin.de";
+			const invalidEmail = "test@not-allowed.com";
+			let userId: string = "";
+
+			it("should validate the email domain during registration", async () => {
+				const { data, error: signupError } =
+					await supabaseAdminClient.auth.admin.createUser({
+						email: validEmail,
+						password: givenUserPassword,
+						email_confirm: true,
+					});
+				userId = data.user?.id ?? "";
+				expect(userId).not.toBe("");
+				expect(signupError).toBeNull();
+			});
+
+			it("should reject registration with invalid email domain", async () => {
+				const { error: signupError } =
+					await supabaseAdminClient.auth.admin.createUser({
+						email: invalidEmail,
+						password: givenUserPassword,
+						email_confirm: true,
+					});
+				expect(signupError).not.toBeNull();
+			});
+			it("should allow email change to valid domain", async () => {
+				const { data: sessionData, error: sessionError } =
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: validEmail,
+						password: givenUserPassword,
+					});
+				expect(sessionError).toBeNull();
+				expect(sessionData.session).not.toBeNull();
+				expect(userId).not.toBe("");
+				const { error: updateError } =
+					await supabaseAdminClient.auth.admin.updateUserById(userId, {
+						email: validEmail2,
+					});
+				expect(updateError).toBeNull();
+			});
+			it("should reject email change to invalid domain", async () => {
+				expect(userId).not.toBe("");
+				const { error: updateError } =
+					await supabaseAdminClient.auth.admin.updateUserById(userId, {
+						email: invalidEmail,
+					});
+				expect(updateError).not.toBeNull();
+			});
+
+			afterAll(async () => {
+				if (userId) {
+					await supabaseAdminClient.auth.admin.deleteUser(userId);
+				}
+			});
+		});
+
 		describe("is_application_admin()", () => {
 			it("Non-admin users should be able to see their own admin status", async () => {
 				const { data: sessionData, error: sessionError } =
