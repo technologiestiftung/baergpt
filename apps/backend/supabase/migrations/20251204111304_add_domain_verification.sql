@@ -1,12 +1,16 @@
 -- Create a function to validate email against allowed_email_domains table
 CREATE OR REPLACE FUNCTION public.validate_email_domain () returns trigger language plpgsql security definer
 SET
-	search_path = public AS $$
+	search_path = '' AS $$
 DECLARE
     email_domain TEXT;
     domain_pattern TEXT;
     is_valid BOOLEAN := FALSE;
 BEGIN
+    -- Check if email contains @ symbol
+    IF NEW.email NOT LIKE '%@%' THEN
+        RAISE EXCEPTION 'Invalid email format: missing @ symbol';
+    END IF;
     -- Extract domain from email (everything after @)
     email_domain := lower(split_part(NEW.email, '@', 2));
     
@@ -51,10 +55,10 @@ $$;
 comment ON function public.validate_email_domain () IS 'Validates that new user emails have domains in the allowed_email_domains table. Supports wildcards (*.domain.tld) and exact matches.';
 
 -- Create a trigger that validates email BEFORE INSERT on auth.users
-CREATE TRIGGER trigger_validate_email_domain before insert ON auth.users FOR each ROW
+CREATE OR REPLACE TRIGGER trigger_validate_email_domain_before_insert_auth_users before insert ON auth.users FOR each ROW
 EXECUTE function public.validate_email_domain ();
 
 -- Also validate on UPDATE in case email is changed
-CREATE TRIGGER trigger_validate_email_domain_on_update before
+CREATE OR REPLACE TRIGGER trigger_validate_email_domain_on_update_auth_users before
 UPDATE of email ON auth.users FOR each ROW WHEN (old.email IS DISTINCT FROM new.email)
 EXECUTE function public.validate_email_domain ();
