@@ -191,7 +191,7 @@ describe("Integration Tests for Routes", () => {
 		// Initialize queues for the test process
 		await initQueues();
 
-		const email = "test@example.com";
+		const email = "test@local.berlin.de";
 		await createTestUser(OWNER_USER_ID, email);
 		// Generate JWT token
 		validToken = await createValidJwtToken(OWNER_USER_ID, email);
@@ -505,7 +505,7 @@ describe("Integration Tests for Routes", () => {
 
 	it("should return error when deleting if user tries to delete another user's document", async () => {
 		// Create a document for a different user
-		const otherUserEmail = "test2@example.com";
+		const otherUserEmail = "test2@local.berlin.de";
 		await createTestUser(OTHER_USER_ID, otherUserEmail);
 
 		const validToken2 = await createValidJwtToken(

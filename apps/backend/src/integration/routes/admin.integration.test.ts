@@ -109,7 +109,7 @@ describe("/admin/", () => {
 
 	it("PUT /admin/users/:userId/profile should update user profile and return 200", async () => {
 		const givenUpdatedUser = {
-			email: "updated@email.com",
+			email: "updated@local.berlin.de",
 			academic_title: "Dr.",
 			personal_title: "UpdatedTitle",
 			firstName: "UpdatedFirstName",
