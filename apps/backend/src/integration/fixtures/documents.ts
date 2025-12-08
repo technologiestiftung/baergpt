@@ -41,6 +41,9 @@ export async function mockDocumentUpload({
 		.upload(
 			source_url,
 			new File([file], fileName, { type: "application/pdf" }),
+			{
+				upsert: true,
+			},
 		);
 
 	expect(uploadError).toBeNull();
