@@ -25,7 +25,7 @@ export const Content = {
 	"landingPage.banner.link.label": "Termin im Intranet finden",
 	"landingPage.banner.link.ariaLabel": "Zur Intranet-Seite",
 	"landingPage.banner.link.href":
-		"https://es.sonicurlprotection-fra.com/click?PV=2&MSGID=202511251300261491352&URLID=9&ESV=10.0.33.8195&IV=07D147C51EBF8F731F4A3EE27A9084FA&TT=1764075627318&ESN=Nrn42nPDAWWLC5NgjHDD%2BtagWPjf7KFcKjiNsMGRo1o%3D&KV=1536961729280&B64_ENCODED_URL=aHR0cHM6Ly9iLWludGVybi5kZS90aGVtZW4va3VlbnN0bGljaGUtaW50ZWxsaWdlbnota2kv&HK=360B6E8673B6846B0CD4776B23DF592D7171C1503EF145630EF198D8A4105A09",
+		"https://b-intern.de/themen/kuenstliche-intelligenz-ki/",
 	"landingPage.banner.close.ariaLabel": "Banner schließen",
 	"landingPage.hero.h1": "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 	"landingPage.hero.h3": "Sicher. Datenschutzkonform. Open Source.",
@@ -1001,8 +1001,8 @@ export const Content = {
 	"emailChanged.buttonLink": "Zu BärGPT",
 	/* ---------------------- Registration Error ---------------------- */
 	"registrationError.description":
-		"Ihr Einladungslink wurde bereits genutzt. Setzen Sie ihr Passwort zurück, um sich bei BärGPT einzuloggen.",
-	"registrationError.button.label": "Passwort zurücksetzen",
+		"Ihr Account wurde schon bestätigt. Gehen Sie nun direkt zu BärGPT.",
+	"registrationError.button.label": "Zu BärGPT",
 	/* ---------------------- Account Deleted ---------------------- */
 	"accountDeleted.title": "Ihr Account wurde gelöscht.",
 	"accountDeleted.description":
