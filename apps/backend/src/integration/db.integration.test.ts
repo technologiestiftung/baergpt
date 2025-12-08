@@ -154,6 +154,7 @@ describe("Integration tests for DB", async () => {
 					});
 				expect(signupError).not.toBeNull();
 			});
+
 			it("should allow email change to valid domain", async () => {
 				const { data: sessionData, error: sessionError } =
 					await supabaseAnonClient.auth.signInWithPassword({
@@ -169,6 +170,7 @@ describe("Integration tests for DB", async () => {
 					});
 				expect(updateError).toBeNull();
 			});
+			
 			it("should reject email change to invalid domain", async () => {
 				expect(userId).not.toBe("");
 				const { error: updateError } =
@@ -176,6 +178,27 @@ describe("Integration tests for DB", async () => {
 						email: invalidEmail,
 					});
 				expect(updateError).not.toBeNull();
+			});
+
+			it("should reject emails with invalid format", async () => {
+				const { error } = await supabaseAdminClient.auth.admin.createUser({
+					email: "@local.berlin.de",
+					password: givenUserPassword,
+					email_confirm: true,
+				});
+				expect(error).not.toBeNull();
+			});
+			
+			it("should allow registration with exact domain match", async () => {
+				const { data, error } = await supabaseAdminClient.auth.admin.createUser({
+					email: "test@ts.berlin",
+					password: givenUserPassword,
+					email_confirm: true,
+				});
+				expect(error).toBeNull();
+				if (data.user?.id) {
+					await supabaseAdminClient.auth.admin.deleteUser(data.user.id);
+				}
 			});
 
 			afterAll(async () => {
