@@ -8,4 +8,5 @@ VALUES
 	('anlaufstelle-buergerbeteiligung.de'),
 	('itdz-berlin.de'),
 	('sfbb.berlin-brandenburg.de'),
-	('lme.berlin-brandenburg.de');
+	('lme.berlin-brandenburg.de'),
+	('datenschutz-berlin.de');
