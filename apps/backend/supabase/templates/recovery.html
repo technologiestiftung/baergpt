@@ -71,14 +71,36 @@
 						<tr>
 							<td>
 								<h1 style="font-size: 16px; color: #000000; line-height: 1.5">
-									Hallo,
+									Hallo {{ .Data.first_name }} {{ .Data.last_name }},
 								</h1>
 
 								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Sie haben angefragt, Ihr Passwort zurückzusetzen.
-									<br /><br />
-									Klicken Sie auf den Button, um ein neues Passwort festzulegen:
+									Sie haben eine Zurücksetzung Ihres Passworts angefordert. Bitte
+									bestätigen Sie Ihre Identität und wählen anschließend ein neues
+									Passwort.
 								</p>
+
+								<p style="font-size: 14px; color: #000000; line-height: 1.5">
+									Ihr Sicherheitscode (bitte im Formular eingeben):
+								</p>
+
+								<div
+									style="
+										background-color: #ffffff;
+										border: 1px solid #0c2753;
+										color: #0c2753;
+										font-size: 20px;
+										letter-spacing: 0.2em;
+										text-align: center;
+										word-break: break-word;
+										font-family: &quot;Courier New&quot;, Courier, monospace;
+										border-radius: 6px;
+										padding: 16px;
+										margin: 24px 0;
+									"
+								>
+									<p style="margin: 0">{{ .Token }}</p>
+								</div>
 
 								<table
 									cellpadding="0"
@@ -89,7 +111,9 @@
 									<tr>
 										<td align="left">
 											<a
-												href="{{ .ConfirmationURL }}"
+												href="{{ .SiteURL }}/auth/confirm-reset/?type=recovery&email={{ .Email }}&redirect_to={{ .RedirectTo }}"
+												target="_blank"
+												rel="noopener noreferrer"
 												style="
 													background-color: #0c2753;
 													color: #ffffff;
@@ -98,38 +122,13 @@
 													text-decoration: none;
 													border-radius: 6px;
 													display: inline-block;
-													mso-hide: all;
 												"
 											>
-												Neues Passwort vergeben
+												Identität bestätigen &amp; Passwort wählen
 											</a>
 										</td>
 									</tr>
 								</table>
-
-								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Funktioniert der Button nicht? Dann kopieren Sie einfach
-									diesen Link in die Adresszeile Ihres Browsers:
-								</p>
-
-								<div
-									style="
-										background-color: #f7f7f7;
-										padding: 10px;
-										font-size: 14px;
-										color: #444;
-										word-break: break-word;
-										font-family: &quot;Courier New&quot;, Courier, monospace;
-										border-radius: 4px;
-									"
-								>
-									<a
-										href="{{ .ConfirmationURL }}"
-										style="color: #0c2753; text-decoration: none"
-									>
-										{{ .ConfirmationURL }}
-									</a>
-								</div>
 
 								<p
 									style="
@@ -139,10 +138,26 @@
 										margin-top: 30px;
 									"
 								>
-									Der Link ist aus Sicherheitsgründen 30 Minuten gültig.
-									<br />Wenn Sie diese Anfrage nicht gestellt haben, können Sie
-									diese E-Mail einfach ignorieren — es wurden keine Änderungen
-									vorgenommen.
+									Der Link und der Code sind aus Sicherheitsgründen jeweils 60
+									Minuten gültig. Wenn Sie nichts angefordert haben, können Sie
+									diese Nachricht ignorieren.
+								</p>
+
+								<p style="font-size: 14px; color: #666666; line-height: 1.5">
+									Funktioniert der Button nicht? Öffnen Sie folgenden Link
+									manuell:
+									<br />
+									<a
+										href="{{ .SiteURL }}/auth/confirm-reset/?type=recovery&email={{ .Email }}&redirect_to={{ .RedirectTo }}"
+										target="_blank"
+										rel="noopener noreferrer"
+										style="color: #0c2753; word-break: break-word"
+									>
+										{{ .SiteURL }}/auth/confirm-reset/?type=recovery&email={{ .Email }}&redirect_to={{ .RedirectTo }}
+									</a>
+									<br /><br />
+									Ihr Code (bitte im Formular eingeben):
+									<strong>{{ .Token }}</strong>
 								</p>
 
 								<p style="font-size: 14px; color: #666666; line-height: 1.5">

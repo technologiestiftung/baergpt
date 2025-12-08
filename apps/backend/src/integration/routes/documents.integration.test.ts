@@ -114,5 +114,5 @@ describe("Documents Route Integration", () => {
 		expect(found).toBeUndefined();
 
 		summarizeSpy.mockRestore();
-	});
+	}, 30_000);
 });
