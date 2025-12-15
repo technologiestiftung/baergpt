@@ -19,15 +19,13 @@ jobs:
       SSH_HOST: ${{ github.ref == 'refs/heads/main' && secrets.PROD_SSH_HOST || secrets.STAGING_SSH_HOST }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository ⬇️
         uses: actions/checkout@v5
 
-      - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 2.40.7
+      - name: Install tools via asdf ⚙️
+        uses: asdf-vm/actions/install@v4
 
-      - name: Setup SSH key
+      - name: Setup SSH key 🔑
         env:
           SSH_PRIVATE_KEY_MIGRATIONS: ${{ secrets.SSH_PRIVATE_KEY_MIGRATIONS }}
         run: |
@@ -36,18 +34,31 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p $SSH_PORT -H $SSH_HOST >> ~/.ssh/known_hosts
 
-      - name: Create SSH tunnel
+      - name: Create SSH tunnel 🚇
         run: |
           ssh -f -N -T \
             -p $SSH_PORT \
             -L 5439:127.0.0.1:5432 \
             -o ExitOnForwardFailure=yes \
+            -o StrictHostKeyChecking=yes \
             $SSH_USER@$SSH_HOST
           sleep 2
 
-      - name: Apply Supabase migrations
+      - name: Apply Supabase migrations 🔄
         working-directory: apps/backend/supabase
         env:
           DB_URL: ${{ github.ref == 'refs/heads/main' && secrets.PROD_DB_URL || secrets.STAGING_DB_URL }}
         run: |
           PGSSLMODE=disable supabase db push --include-all --db-url "$DB_URL"
+
+      - name: Close SSH tunnel 🔒
+        if: always()
+        run: |
+          pkill -f "ssh.*$SSH_USER@$SSH_HOST" || true
+
+      - name: Cleanup SSH key 🧹
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_rsa
+          rm -f ~/.ssh/known_hosts
+          rm -f ~/.ssh/id_rsa.pub
