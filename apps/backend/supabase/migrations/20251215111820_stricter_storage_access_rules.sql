@@ -31,8 +31,14 @@ CREATE POLICY "Users can only select their own documents." ON storage.objects FO
 SELECT
 	USING (
 		bucket_id = 'documents'
-		AND owner_id = (SELECT auth.uid ())::TEXT
-		AND (storage.foldername (name)) [1] = (SELECT auth.uid ())::TEXT
+		AND owner_id = (
+			SELECT
+				auth.uid ()
+		)::TEXT
+		AND (storage.foldername (name)) [1] = (
+			SELECT
+				auth.uid ()
+		)::TEXT
 	);
 
 DROP POLICY "Authenticated users can upload a new document." ON storage.objects;
@@ -41,8 +47,14 @@ CREATE POLICY "Authenticated users can upload a new document." ON storage.object
 WITH
 	CHECK (
 		bucket_id = 'documents'
-		AND (SELECT auth.uid ()) IS NOT NULL
-		AND (storage.foldername (name)) [1] = (SELECT auth.uid ())::TEXT
+		AND (
+			SELECT
+				auth.uid ()
+		) IS NOT NULL
+		AND (storage.foldername (name)) [1] = (
+			SELECT
+				auth.uid ()
+		)::TEXT
 	);
 
 DROP POLICY "Users can update their own document." ON storage.objects;
@@ -51,20 +63,38 @@ CREATE POLICY "Users can update their own document." ON storage.objects
 FOR UPDATE
 	USING (
 		bucket_id = 'documents'
-		AND owner_id = (SELECT auth.uid ())::TEXT
-		AND (storage.foldername (name)) [1] = (SELECT auth.uid ())::TEXT
+		AND owner_id = (
+			SELECT
+				auth.uid ()
+		)::TEXT
+		AND (storage.foldername (name)) [1] = (
+			SELECT
+				auth.uid ()
+		)::TEXT
 	)
 WITH
 	CHECK (
 		bucket_id = 'documents'
-		AND owner_id = (SELECT auth.uid ())::TEXT
-		AND (storage.foldername (name)) [1] = (SELECT auth.uid ())::TEXT
+		AND owner_id = (
+			SELECT
+				auth.uid ()
+		)::TEXT
+		AND (storage.foldername (name)) [1] = (
+			SELECT
+				auth.uid ()
+		)::TEXT
 	);
 
 DROP POLICY "Users can delete objects where their user ID is in the path" ON storage.objects;
 
 CREATE POLICY "Users can delete objects where their user ID is in the path" ON storage.objects FOR delete USING (
 	bucket_id = 'documents'
-	AND owner_id = (SELECT auth.uid ())::TEXT
-	AND (storage.foldername (name)) [1] = (SELECT auth.uid ())::TEXT
+	AND owner_id = (
+		SELECT
+			auth.uid ()
+	)::TEXT
+	AND (storage.foldername (name)) [1] = (
+		SELECT
+			auth.uid ()
+	)::TEXT
 );
