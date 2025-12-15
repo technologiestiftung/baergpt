@@ -89,7 +89,7 @@ export const History: React.FC = () => {
 			<h2 className="text-base leading-6 font-semibold text-hellblau-50 md:px-2 px-5 whitespace-nowrap">
 				{Content["chatHistory.title"]}
 			</h2>
-			<div className="flex flex-col grow min-h-0 overflow-y-auto px-5 md:px-0">
+			<div className="flex flex-col grow min-h-0 overflow-y-auto px-5 md:px-0 md:pr-4 custom-scrollbar">
 				<div className="w-full h-full">
 					<div
 						className={`w-full ${errorMessage ? "h-full overflow-hidden" : "h-fit"}`}
@@ -106,7 +106,7 @@ export const History: React.FC = () => {
 
 						{!isFirstLoad && (
 							<>
-								<div className={`w-full flex flex-col gap-6 mb-5`}>
+								<div className={`w-full flex flex-col gap-6 mb-5 `}>
 									{chatGroups.map(({ label, chats: chatGroup }) => (
 										<HistoryGroup key={label} label={label} chats={chatGroup} />
 									))}

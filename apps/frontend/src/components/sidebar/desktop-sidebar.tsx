@@ -21,7 +21,7 @@ export const DesktopSidebar: React.FC = () => {
 			>
 				<aside
 					className={`flex flex-col justify-between h-full px-2.5 pt-5 pb-3.5 ${
-						isHistorySidebarOpen ? "pr-[18px] gap-10" : "items-left"
+						isHistorySidebarOpen ? "pr-1 gap-10" : "items-left"
 					}`}
 					aria-label={Content["sidebar.ariaLabel"]}
 				>
