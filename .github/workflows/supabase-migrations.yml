@@ -47,9 +47,10 @@ jobs:
       - name: Apply Supabase migrations 🔄
         working-directory: apps/backend/supabase
         env:
-          DB_URL: ${{ github.ref == 'refs/heads/main' && secrets.PROD_DB_URL || secrets.STAGING_DB_URL }}
+          DB_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.PROD_DB_PASSWORD || secrets.STAGING_DB_PASSWORD }}
         run: |
-          PGSSLMODE=disable supabase db push --include-all --db-url "$DB_URL"
+          TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres"
+          PGSSLMODE=disable supabase db push --include-all --db-url "$TUNNEL_URL"
 
       - name: Close SSH tunnel 🔒
         if: always()
