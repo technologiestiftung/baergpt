@@ -40,7 +40,7 @@ jobs:
             -p $SSH_PORT \
             -L 5439:127.0.0.1:5432 \
             -o ExitOnForwardFailure=yes \
-            -o StrictHostKeyChecking=yes \
+            -o StrictHostKeyChecking=no \
             $SSH_USER@$SSH_HOST
           sleep 2
 
