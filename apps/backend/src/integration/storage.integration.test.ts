@@ -86,6 +86,8 @@ describe("Integration tests for Storage", async () => {
 				filePath: defaultDocumentPath,
 				sourceType: "personal_document",
 				bucketName: "documents",
+				userEmail: givenAdminEmail,
+				userPassword: givenAdminPassword,
 			});
 		});
 

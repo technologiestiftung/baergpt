@@ -492,6 +492,8 @@ describe("Integration tests for DB", async () => {
 					filePath: defaultDocumentPath,
 					sourceType: "personal_document",
 					bucketName: "documents",
+					userEmail: givenAdminEmail,
+					userPassword: givenAdminPassword,
 				});
 			});
 
@@ -647,6 +649,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "personal_document",
 						bucketName: "documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
@@ -778,6 +782,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "personal_document",
 						bucketName: "documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
