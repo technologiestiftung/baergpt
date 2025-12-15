@@ -1,6 +1,9 @@
 import { supabaseAdminClient } from "../supabase.ts";
 import { testWithLoggedInUser } from "./test-with-logged-in-user.ts";
 import { expect, Page } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+import { config } from "../config.ts";
+import type { Database } from "@repo/db-schema";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -27,12 +30,13 @@ export const testWithDocuments = testWithLoggedInUser.extend<{
 	documentChunkId: number;
 }>({
 	documentChunkId: [
-		async ({ account }, use) => {
+		async ({ account, session }, use) => {
 			/**
 			 * This happens before each test that uses this fixture.
 			 */
 			const documentChunkId = await mockDocumentUpload({
 				userId: account.id,
+				accessToken: session.access_token,
 				accessGroupId: null,
 				fileName: defaultDocumentName,
 				filePath: defaultDocumentPath,
@@ -56,6 +60,7 @@ export const testWithDocuments = testWithLoggedInUser.extend<{
 
 export async function mockDocumentUpload({
 	userId,
+	accessToken,
 	accessGroupId,
 	fileName,
 	filePath,
@@ -63,6 +68,7 @@ export async function mockDocumentUpload({
 	bucketName,
 }: {
 	userId: string;
+	accessToken?: string;
 	accessGroupId: string | null;
 	fileName: string;
 	filePath: string;
@@ -72,7 +78,15 @@ export async function mockDocumentUpload({
 	const source_url = `${userId}/${fileName}`;
 	const file = new Uint8Array(readFileSync(filePath));
 
-	const { error: uploadError } = await supabaseAdminClient.storage
+	const uploadClient = createClient<Database>(
+		config.supabaseUrl,
+		config.supabaseAnonKey,
+		{
+			global: { headers: { Authorization: `Bearer ${accessToken}` } },
+		},
+	);
+
+	const { error: uploadError } = await uploadClient.storage
 		.from(bucketName)
 		.upload(
 			source_url,
