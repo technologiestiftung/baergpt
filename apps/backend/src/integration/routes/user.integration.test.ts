@@ -15,8 +15,8 @@ const supabaseAnonClient = createClient<Database>(
 	config.supabaseAnonKey,
 );
 
-const OWNER_USER_ID = "11111111-1111-1111-1111-111111111111";
-const OTHER_USER_ID = "22222222-2222-2222-2222-222222222222";
+const OWNER_USER_ID = "11111111-1111-4111-8111-111111111111";
+const OTHER_USER_ID = "22222222-2222-4222-8222-222222222222";
 
 const RPC_DELETE_DOCUMENT = "delete_document_and_update_count";
 const UPLOAD_DELAY_MS = 1_000;

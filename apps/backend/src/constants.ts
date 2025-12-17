@@ -25,3 +25,11 @@ export const enc = get_encoding("o200k_base");
 
 export const maxRetries = 2;
 export const retryDelay = 1000;
+
+export const allowedSourceTypes = [
+	"personal_document",
+	"public_document",
+	"default_document",
+] as const;
+
+export type SourceType = (typeof allowedSourceTypes)[number];
