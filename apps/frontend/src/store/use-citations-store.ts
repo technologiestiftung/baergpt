@@ -31,12 +31,15 @@ export const useCitationsStore = create<CitationsStore>()((set, get) => ({
 		}
 
 		setStatus("loading-citations");
-		const details = await getCitationDetails(missing);
-		const merged = { ...citationByChunkId };
-		details.forEach((detail) => {
-			merged[detail.chunkId] = detail;
-		});
-		set({ citationByChunkId: merged });
-		setStatus("idle");
+		try {
+			const details = await getCitationDetails(missing);
+			const merged = { ...citationByChunkId };
+			details.forEach((detail) => {
+				merged[detail.chunkId] = detail;
+			});
+			set({ citationByChunkId: merged });
+		} finally {
+			setStatus("idle");
+		}
 	},
 }));

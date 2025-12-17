@@ -58,6 +58,8 @@ export async function getCompletion(
 		headers.set("Content-Type", "application/json");
 		headers.set("Authorization", `Bearer ${session?.access_token}`);
 
+		setStatus("waiting-for-response");
+
 		const response: Response = await fetch(
 			`${import.meta.env.VITE_API_URL}/llm/just-chatting`,
 			{
@@ -77,11 +79,13 @@ export async function getCompletion(
 
 		if (!response.ok) {
 			const errorResponse = await response.json();
+			setStatus("error");
 			handleError(new Error(errorResponse.code));
 			return;
 		}
 
 		if (!response.body) {
+			setStatus("error");
 			handleError(new Error("Response body from API is empty"));
 			return;
 		}
@@ -94,8 +98,6 @@ export async function getCompletion(
 			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
 			citations: null,
 		});
-
-		setStatus("waiting-for-response");
 
 		let currentText = "";
 		let citations: number[] = [];
@@ -151,6 +153,7 @@ export async function getCompletion(
 			},
 		});
 	} catch (error) {
+		setStatus("idle");
 		handleError(error);
 	}
 }
