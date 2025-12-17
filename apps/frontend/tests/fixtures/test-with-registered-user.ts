@@ -4,7 +4,7 @@ import {
 	defaultUserPassword,
 	defaultUserEmail,
 } from "../constants.ts";
-import { test as baseTest } from "@playwright/test";
+import { Page, test as baseTest, expect } from "@playwright/test";
 import { supabaseAdminClient } from "../supabase.ts";
 
 type TestWithRegisteredUser = {
@@ -71,4 +71,55 @@ async function cleanup(id: string) {
 	if (deleteUserError?.message !== "User not found") {
 		testWithRegisteredUser.expect(deleteUserError).toBeNull();
 	}
+}
+
+export async function confirmOtp({
+	page,
+	account,
+}: {
+	page: Page;
+	account: TestWithRegisteredUser["account"];
+}) {
+	await page.goto("http://localhost:54324/"); // Inbucket URL
+
+	// Wait for the email to appear and click on the first (most recent) email
+	await page.waitForTimeout(3_000);
+
+	const emailLinks = page.getByRole("link", {
+		name: `Admin To: ${account.email}`,
+	});
+	await emailLinks.first().click();
+
+	// Confirm password reset via OTP flow
+	const popupEvent = page.waitForEvent("popup");
+	const emailFrame = await page.locator("#preview-html").contentFrame();
+	if (!emailFrame) {
+		throw new Error("Email preview frame not available");
+	}
+
+	const recoveryOtp = (
+		await emailFrame
+			.locator("p")
+			.filter({ hasText: /^\d{6}$/ })
+			.first()
+			.innerText()
+	).trim();
+
+	await emailFrame.getByRole("link", { name: /Identität bestätigen/ }).click();
+
+	const page1 = await popupEvent;
+
+	await page1.waitForLoadState("networkidle");
+	await page1.waitForTimeout(2000);
+
+	await expect(
+		page1.getByRole("heading", { name: "Aktion bestätigen" }),
+	).toBeVisible();
+
+	await page1
+		.getByRole("textbox", { name: "Sicherheitscode" })
+		.fill(recoveryOtp);
+	await page1.getByRole("button", { name: "Weiter" }).click();
+
+	return page1;
 }

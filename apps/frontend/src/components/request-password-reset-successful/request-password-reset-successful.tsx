@@ -1,7 +1,7 @@
 import Content from "../../content.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 
-export function ResetPasswordConfirmation() {
+export function RequestPasswordResetSuccessful() {
 	const { passwordResetEmail } = useAuthStore();
 	return (
 		<div className="flex w-full min-h-[95svh] justify-center items-center bg-hellblau-100 px-6">
