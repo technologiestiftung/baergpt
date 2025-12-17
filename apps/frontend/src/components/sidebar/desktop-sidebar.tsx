@@ -46,7 +46,7 @@ export const DesktopSidebar: React.FC = () => {
 						<div className="h-[130px] flex flex-col justify-between">
 							{/* Full-width border */}
 							{isHistorySidebarOpen && (
-								<span className="block w-[calc(100%+30px)] ml-[-12px] h-px bg-dunkelblau-80" />
+								<span className="block w-[calc(100%+14px)] ml-[-10px] h-px bg-dunkelblau-80" />
 							)}
 
 							{/* Navigation */}
@@ -56,7 +56,7 @@ export const DesktopSidebar: React.FC = () => {
 
 							{/* Full-width border */}
 							{isHistorySidebarOpen && (
-								<span className="block w-[calc(100%+30px)] ml-[-12px] h-px bg-dunkelblau-80" />
+								<span className="block w-[calc(100%+14px)] ml-[-10px] h-px bg-dunkelblau-80" />
 							)}
 						</div>
 

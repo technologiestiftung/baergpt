@@ -127,28 +127,65 @@
 }
 
 @layer utilities {
-	.custom-scrollbar {
+	.history-scrollbar {
 		/* Firefox */
-		scrollbar-width: thin;
+		scrollbar-width: auto;
 		scrollbar-color: #3d5275 transparent;
+		/* Safari - smooth scrolling */
+		-webkit-overflow-scrolling: touch;
 	}
 
-	/* WebKit browsers (Chrome, Edge) */
-	.custom-scrollbar::-webkit-scrollbar {
+	/* WebKit browsers (Chrome, Edge, Safari) */
+	.history-scrollbar::-webkit-scrollbar {
 		width: 6px;
 		height: 6px;
+		-webkit-appearance: none;
 	}
 
-	.custom-scrollbar::-webkit-scrollbar-track {
+	.history-scrollbar::-webkit-scrollbar-track {
 		background: transparent;
-	}
-
-	.custom-scrollbar::-webkit-scrollbar-thumb {
-		background-color: #3d5275;
 		border-radius: 100px;
 	}
 
-	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	.history-scrollbar::-webkit-scrollbar-thumb {
+		background-color: #3d5275;
+		border-radius: 100px;
+		border: none;
+	}
+
+	.history-scrollbar::-webkit-scrollbar-thumb:hover {
 		background-color: #556887;
 	}
+
+	.filesection-scrollbar {
+		/* Firefox */
+		scrollbar-width: auto;
+		scrollbar-color: #9DA8BA transparent;
+		/* Safari - smooth scrolling */
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.filesection-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+		-webkit-appearance: none;
+	}
+
+	.filesection-scrollbar::-webkit-scrollbar-track {
+		border-radius: 100px;
+		background: transparent;
+		border: none;
+	}
+
+	.filesection-scrollbar::-webkit-scrollbar-thumb {
+		background: #9DA8BA;
+		border-radius: 100px;
+		border: none;
+		-webkit-appearance: none;
+	}
+
+	.filesection-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: #8593A9;
+	}
+
 }
