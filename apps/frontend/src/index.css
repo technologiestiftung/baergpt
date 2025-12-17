@@ -125,3 +125,63 @@
 		}
 	}
 }
+
+@layer utilities {
+	.history-scrollbar {
+		/* Firefox */
+		scrollbar-width: auto;
+		scrollbar-color: theme('colors.dunkelblau-80') transparent;
+	}
+
+	/* WebKit browsers (Chrome, Edge, Safari) */
+	.history-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+		-webkit-appearance: none;
+	}
+
+	.history-scrollbar::-webkit-scrollbar-track {
+		background: transparent;
+		border-radius: 100px;
+	}
+
+	.history-scrollbar::-webkit-scrollbar-thumb {
+		background-color: theme('colors.dunkelblau-80');
+		border-radius: 100px;
+		border: none;
+	}
+
+	.history-scrollbar::-webkit-scrollbar-thumb:hover {
+		background-color: theme('colors.dunkelblau-70');
+	}
+
+	.filesection-scrollbar {
+		/* Firefox */
+		scrollbar-width: auto;
+		scrollbar-color: theme('colors.dunkelblau-40') transparent;
+	}
+
+	.filesection-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+		-webkit-appearance: none;
+	}
+
+	.filesection-scrollbar::-webkit-scrollbar-track {
+		border-radius: 100px;
+		background: transparent;
+		border: none;
+	}
+
+	.filesection-scrollbar::-webkit-scrollbar-thumb {
+		background: theme('colors.dunkelblau-40');
+		border-radius: 100px;
+		border: none;
+		-webkit-appearance: none;
+	}
+
+	.filesection-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: theme('colors.dunkelblau-50');
+	}
+
+}
