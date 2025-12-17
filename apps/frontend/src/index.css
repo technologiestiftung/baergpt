@@ -131,8 +131,6 @@
 		/* Firefox */
 		scrollbar-width: auto;
 		scrollbar-color: #3d5275 transparent;
-		/* Safari - smooth scrolling */
-		-webkit-overflow-scrolling: touch;
 	}
 
 	/* WebKit browsers (Chrome, Edge, Safari) */
@@ -161,8 +159,6 @@
 		/* Firefox */
 		scrollbar-width: auto;
 		scrollbar-color: #9DA8BA transparent;
-		/* Safari - smooth scrolling */
-		-webkit-overflow-scrolling: touch;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar {
