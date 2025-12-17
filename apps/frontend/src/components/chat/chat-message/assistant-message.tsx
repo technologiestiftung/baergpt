@@ -24,10 +24,8 @@ export function AssistantMessage({
 	const exportErrorMessage = getUIError("chat-export");
 
 	const isLastMessage = message.id === getCurrentChat()?.messages.at(-1)?.id;
-	const isIdleOrLoadingCitations = ["idle", "loading-citations"].includes(
-		status,
-	);
-	const hasChatButtons = !isLastMessage || isIdleOrLoadingCitations;
+	const isIdle = ["idle"].includes(status);
+	const hasChatButtons = !isLastMessage || isIdle;
 
 	const isBaerIconVisible = content && content.length > 0;
 

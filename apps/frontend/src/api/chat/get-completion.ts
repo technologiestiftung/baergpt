@@ -1,0 +1,205 @@
+import { useChatsStore } from "../../store/use-chats-store.ts";
+import { useErrorStore } from "../../store/error-store.ts";
+import { useAuthStore } from "../../store/auth-store.ts";
+import type { ChatWithMessages } from "../../common.ts";
+import { useDocumentStore } from "../../store/document-store.ts";
+import { useFolderStore } from "../../store/folder-store.ts";
+import { useUserStore } from "../../store/user-store.ts";
+import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
+import { useCitationsStore } from "../../store/use-citations-store.ts";
+
+const { handleError } = useErrorStore.getState();
+const { updateMessage, addMessageToChat } = useChatsStore.getState();
+const { getSelectedChatDocumentIds } = useDocumentStore.getState();
+const { getSelectedChatFolderIds } = useFolderStore.getState();
+const { setStatus } = useInferenceLoadingStatusStore.getState();
+const { ensureCached } = useCitationsStore.getState();
+
+type StreamEvent =
+	| { type: "text-delta"; id: string; delta: string }
+	| { type: "text-end"; id: string }
+	| { type: "finish-step" }
+	| { type: "finish" }
+	| { type: "data-citations"; data: number[] };
+
+export async function getCompletion(
+	currentChat: ChatWithMessages,
+): Promise<void> {
+	const { session } = useAuthStore.getState();
+	const { user } = useUserStore.getState();
+
+	try {
+		const messages = currentChat.messages.map(({ role, content }) => ({
+			role,
+			content,
+		}));
+
+		// fetch selected document and folder IDs
+		const selectedDocumentIds = getSelectedChatDocumentIds();
+		const selectedFolderIds = getSelectedChatFolderIds();
+		const documents = useDocumentStore.getState().documents;
+
+		// fetch documents within the selected folders
+		const folderDocumentIds = documents
+			.filter(
+				(doc) =>
+					doc.folder_id !== undefined &&
+					doc.folder_id !== null &&
+					selectedFolderIds.includes(doc.folder_id),
+			)
+			.map((doc) => doc.id);
+
+		// merge document IDs from selected documents and folders
+		const allowedDocumentIds = Array.from(
+			new Set([...selectedDocumentIds, ...folderDocumentIds]),
+		);
+
+		const headers = new Headers();
+		headers.set("Content-Type", "application/json");
+		headers.set("Authorization", `Bearer ${session?.access_token}`);
+
+		const response: Response = await fetch(
+			`${import.meta.env.VITE_API_URL}/llm/just-chatting`,
+			{
+				method: "POST",
+				headers,
+				body: JSON.stringify({
+					messages,
+					user_id: session?.user.id,
+					chat_id: currentChat.id ?? undefined,
+					search_type: "all_private",
+					allowed_document_ids: allowedDocumentIds,
+					allowed_folder_ids: selectedFolderIds,
+					is_addressed_formal: user?.is_addressed_formal,
+				}),
+			},
+		);
+
+		if (!response.ok) {
+			const errorResponse = await response.json();
+			handleError(new Error(errorResponse.code));
+			return;
+		}
+
+		if (!response.body) {
+			handleError(new Error("Response body from API is empty"));
+			return;
+		}
+
+		const messageId = await addMessageToChat(currentChat, {
+			content: "",
+			type: "text",
+			role: "assistant",
+			allowed_document_ids: selectedDocumentIds, // Save selected document IDs
+			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
+			citations: null,
+		});
+
+		setStatus("waiting-for-response");
+
+		let currentText = "";
+		let citations: number[] = [];
+		let hasReceivedText = false;
+		let isFinished = false;
+
+		await parseStream(response.body, {
+			onTextDelta: (delta: string) => {
+				// Set status to loading-text on first text delta
+				if (!hasReceivedText) {
+					setStatus("loading-text");
+					hasReceivedText = true;
+				}
+
+				currentText += delta;
+				updateMessage({
+					chat: currentChat,
+					messageId,
+					content: currentText,
+					citations: citations.length ? citations : null,
+				});
+			},
+			onCitations: (chunkIds: number[]) => {
+				citations = chunkIds;
+				// Update message immediately when citations arrive
+				updateMessage({
+					chat: currentChat,
+					messageId,
+					content: currentText,
+					citations: citations.length ? citations : null,
+				});
+				// If we've already finished, cache the citations now
+				if (isFinished && citations.length) {
+					ensureCached(citations);
+				}
+			},
+			onFinish: () => {
+				setStatus("idle");
+				isFinished = true;
+
+				// Cache citations if any
+				if (citations.length) {
+					ensureCached(citations);
+				}
+
+				// Final update with citations
+				updateMessage({
+					chat: currentChat,
+					messageId,
+					content: currentText,
+					citations: citations.length ? citations : null,
+				});
+			},
+		});
+	} catch (error) {
+		handleError(error);
+	}
+}
+
+async function parseStream(
+	body: ReadableStream<Uint8Array>,
+	callbacks: {
+		onTextDelta: (delta: string) => void;
+		onCitations: (chunkIds: number[]) => void;
+		onFinish: () => void;
+	},
+) {
+	const reader = body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) {
+			break;
+		}
+
+		buffer += decoder.decode(value, { stream: true });
+		const lines = buffer.split("\n");
+		buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+		for (const line of lines) {
+			if (!line.startsWith("data: ")) {
+				continue;
+			}
+
+			const jsonStr = line.slice(6).trim();
+			if (jsonStr === "[DONE]") {
+				continue;
+			}
+
+			try {
+				const event = JSON.parse(jsonStr) as StreamEvent;
+
+				if (event.type === "text-delta") {
+					callbacks.onTextDelta(event.delta);
+				} else if (event.type === "data-citations") {
+					callbacks.onCitations(event.data);
+				} else if (event.type === "finish") {
+					callbacks.onFinish();
+				}
+			} catch (_e) {
+				console.warn("Failed to parse SSE event:", jsonStr);
+			}
+		}
+	}
+}
