@@ -269,7 +269,7 @@ test.describe("Chat", () => {
 			// Find the add-to-chat button
 			const addButton = page
 				.getByRole("listitem")
-				.filter({ hasText: "BaerGPT-Handbuch.pdf" })
+				.filter({ hasText: defaultDocumentName })
 				.getByLabel("Zum Chat hinzufügen");
 
 			// Click the add-to-chat button
