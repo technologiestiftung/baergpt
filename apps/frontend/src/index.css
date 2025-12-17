@@ -130,7 +130,7 @@
 	.history-scrollbar {
 		/* Firefox */
 		scrollbar-width: auto;
-		scrollbar-color: #3d5275 transparent;
+		scrollbar-color: theme('colors.dunkelblau-80') transparent;
 	}
 
 	/* WebKit browsers (Chrome, Edge, Safari) */
@@ -146,19 +146,19 @@
 	}
 
 	.history-scrollbar::-webkit-scrollbar-thumb {
-		background-color: #3d5275;
+		background-color: theme('colors.dunkelblau-80');
 		border-radius: 100px;
 		border: none;
 	}
 
 	.history-scrollbar::-webkit-scrollbar-thumb:hover {
-		background-color: #556887;
+		background-color: theme('colors.dunkelblau-70');
 	}
 
 	.filesection-scrollbar {
 		/* Firefox */
 		scrollbar-width: auto;
-		scrollbar-color: #9DA8BA transparent;
+		scrollbar-color: theme('colors.dunkelblau-40') transparent;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar {
@@ -174,14 +174,14 @@
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar-thumb {
-		background: #9DA8BA;
+		background: theme('colors.dunkelblau-40');
 		border-radius: 100px;
 		border: none;
 		-webkit-appearance: none;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: #8593A9;
+		background: theme('colors.dunkelblau-50');
 	}
 
 }
