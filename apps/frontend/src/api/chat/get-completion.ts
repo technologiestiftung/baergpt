@@ -7,6 +7,7 @@ import { useFolderStore } from "../../store/folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
 import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
 import { useCitationsStore } from "../../store/use-citations-store.ts";
+import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
@@ -24,8 +25,16 @@ export async function getCompletion(
 
 	const { session } = useAuthStore.getState();
 	const { user } = useUserStore.getState();
+	const { setStreamingAbortController, abortStreaming } =
+		useChatStreamingStore.getState();
 
 	try {
+		// Abort any existing stream before starting a new one
+		abortStreaming();
+
+		// Initialize a new AbortController for this stream
+		const abortController = new AbortController();
+		setStreamingAbortController(abortController);
 		const messages = currentChat.messages.map(({ role, content }) => ({
 			role,
 			content,
@@ -62,6 +71,7 @@ export async function getCompletion(
 			{
 				method: "POST",
 				headers,
+				signal: abortController.signal,
 				body: JSON.stringify({
 					messages,
 					user_id: session?.user.id,
@@ -132,11 +142,16 @@ export async function getCompletion(
 			},
 			onFinish: () => {
 				setStatus("idle");
+				setStreamingAbortController(null);
 			},
 		});
 	} catch (error) {
 		setStatus("error");
-		handleError(error);
+		// Only handle error if it's not an abort error
+		if (error instanceof Error && error.name !== "AbortError") {
+			handleError(error);
+		}
+		setStreamingAbortController(null);
 	}
 }
 

@@ -4,6 +4,7 @@ import { useFolderStore } from "./folder-store.ts";
 import { useCitationsStore } from "./use-citations-store.ts";
 import { useChatsStore } from "./use-chats-store.ts";
 import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-store.ts";
+import { useChatStreamingStore } from "./use-chat-streaming-store.ts";
 
 interface CurrentChatIdStore {
 	currentChatId: number | null;
@@ -50,6 +51,11 @@ export const useCurrentChatIdStore = create<CurrentChatIdStore>()(
 		setCurrentChatId: (chatId) => {
 			const prevChatId = get().currentChatId;
 			const isFirstChat = prevChatId === null;
+
+			// Abort any ongoing streaming when switching chats
+			const { abortStreaming } = useChatStreamingStore.getState();
+			abortStreaming();
+
 			if (!isFirstChat) {
 				resetPreviousChatState();
 			}
