@@ -10,9 +10,6 @@ import { useCitationsStore } from "../../store/use-citations-store.ts";
 
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
-	| { type: "text-end"; id: string }
-	| { type: "finish-step" }
-	| { type: "finish" }
 	| { type: "data-citations"; data: number[] };
 
 export async function getCompletion(
@@ -102,7 +99,6 @@ export async function getCompletion(
 		let currentText = "";
 		let citations: number[] = [];
 		let hasReceivedText = false;
-		let isFinished = false;
 
 		await parseStream(response.body, {
 			onTextDelta: (delta: string) => {
@@ -129,55 +125,18 @@ export async function getCompletion(
 					content: currentText,
 					citations: citations.length ? citations : null,
 				});
-				// If we've already finished, cache the citations now
-				if (isFinished && citations.length) {
+				// Cache the citations now
+				if (citations.length) {
 					ensureCached(citations);
 				}
 			},
 			onFinish: () => {
 				setStatus("idle");
-				isFinished = true;
-
-				// Cache citations if any
-				if (citations.length) {
-					ensureCached(citations);
-				}
-
-				// Final update with citations
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-				});
 			},
 		});
 	} catch (error) {
-		setStatus("idle");
+		setStatus("error");
 		handleError(error);
-	}
-}
-
-function handleStreamEvent(
-	event: StreamEvent,
-	callbacks: {
-		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
-		onFinish: () => void;
-	},
-): boolean {
-	switch (event.type) {
-		case "text-delta":
-			callbacks.onTextDelta(event.delta);
-			return false;
-		case "data-citations":
-			callbacks.onCitations(event.data);
-			return false;
-		case "finish":
-			callbacks.onFinish();
-			return true;
-		default:
-			return false;
 	}
 }
 
@@ -194,15 +153,30 @@ function processStreamLine(
 	}
 
 	const jsonStr = line.slice(6).trim();
+
 	if (jsonStr === "[DONE]") {
-		return false;
+		callbacks.onFinish();
+		return true;
 	}
 
 	try {
 		const event = JSON.parse(jsonStr) as StreamEvent;
-		return handleStreamEvent(event, callbacks);
+
+		if (event.type === "text-delta") {
+			callbacks.onTextDelta(event.delta);
+			return false;
+		}
+
+		if (event.type === "data-citations") {
+			callbacks.onCitations(event.data);
+			return false;
+		}
+
+		return false;
 	} catch (_e) {
-		console.warn("Failed to parse SSE event:", jsonStr);
+		useErrorStore
+			.getState()
+			.handleError(new Error("Failed to parse SSE event"));
 		return false;
 	}
 }
@@ -220,27 +194,32 @@ async function parseStream(
 	let buffer = "";
 	let finishCalled = false;
 
-	try {
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) {
-				break;
-			}
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) {
+			break;
+		}
 
-			buffer += decoder.decode(value, { stream: true });
-			const lines = buffer.split("\n");
-			buffer = lines.pop() || "";
+		buffer += decoder.decode(value, { stream: true });
+		const lines = buffer.split("\n");
+		buffer = lines.pop() || "";
 
-			for (const line of lines) {
-				const isFinished = processStreamLine(line, callbacks);
-				if (isFinished) {
-					finishCalled = true;
-				}
+		for (const line of lines) {
+			const isFinished = processStreamLine(line, callbacks);
+			if (isFinished) {
+				finishCalled = true;
 			}
 		}
-	} finally {
-		if (!finishCalled) {
-			callbacks.onFinish();
-		}
+	}
+
+	if (!finishCalled) {
+		useErrorStore
+			.getState()
+			.handleError(
+				new Error(
+					"stream was done before reaching the the last streaming line ([DONE])",
+				),
+			);
+		callbacks.onFinish();
 	}
 }
