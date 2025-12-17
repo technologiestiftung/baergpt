@@ -35,49 +35,31 @@ export async function mockDocumentUpload({
 	filePath: string;
 	sourceType: "public_document" | "personal_document";
 	bucketName: "documents" | "public_documents";
-	userEmail?: string;
-	userPassword?: string;
+	userEmail: string;
+	userPassword: string;
 }) {
 	const source_url = `${userId}/${fileName}`;
 	const file = readFileSync(filePath);
 
-	// For personal documents, upload as the user (not admin) so owner_id is set correctly
-	// For public documents, use admin client
-	let uploadError;
+	const userClient = createClient(
+		process.env.SUPABASE_URL as string,
+		process.env.SUPABASE_ANON_KEY as string,
+	);
 
-	if (bucketName === "documents" && userEmail && userPassword) {
-		// Create authenticated client and upload as user
-		const userClient = createClient(
-			process.env.SUPABASE_URL as string,
-			process.env.SUPABASE_ANON_KEY as string,
+	const { error: signInError } = await userClient.auth.signInWithPassword({
+		email: userEmail,
+		password: userPassword,
+	});
+
+	expect(signInError).toBeNull();
+
+	const { error: uploadError } = await userClient.storage
+		.from(bucketName)
+		.upload(
+			source_url,
+			new File([file], fileName, { type: "application/pdf" }),
+			{ upsert: true },
 		);
-
-		await userClient.auth.signInWithPassword({
-			email: userEmail,
-			password: userPassword,
-		});
-
-		const { error } = await userClient.storage
-			.from(bucketName)
-			.upload(
-				source_url,
-				new File([file], fileName, { type: "application/pdf" }),
-				{ upsert: true },
-			);
-
-		uploadError = error;
-		await userClient.auth.signOut();
-	} else {
-		// Public documents or fallback to admin client
-		const { error } = await supabaseAdminClient.storage
-			.from(bucketName)
-			.upload(
-				source_url,
-				new File([file], fileName, { type: "application/pdf" }),
-				{ upsert: true },
-			);
-		uploadError = error;
-	}
 
 	expect(uploadError).toBeNull();
 

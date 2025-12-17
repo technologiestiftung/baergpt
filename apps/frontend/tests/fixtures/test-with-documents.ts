@@ -68,7 +68,7 @@ export async function mockDocumentUpload({
 	bucketName,
 }: {
 	userId: string;
-	accessToken?: string;
+	accessToken: string;
 	accessGroupId: string | null;
 	fileName: string;
 	filePath: string;
@@ -78,20 +78,13 @@ export async function mockDocumentUpload({
 	const source_url = `${userId}/${fileName}`;
 	const file = new Uint8Array(readFileSync(filePath));
 
-	// Use admin client for public_documents (only admins can upload there per RLS policies)
-	// Use user's access token for personal documents bucket (required for owner_id to be set correctly)
-	if (bucketName === "documents" && !accessToken) {
-		throw new Error(
-			"accessToken is required when uploading to documents bucket (owner_id must match user)",
-		);
-	}
-
-	const uploadClient =
-		bucketName === "public_documents"
-			? supabaseAdminClient
-			: createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
-					global: { headers: { Authorization: `Bearer ${accessToken}` } },
-				});
+	const uploadClient = createClient<Database>(
+		config.supabaseUrl,
+		config.supabaseAnonKey,
+		{
+			global: { headers: { Authorization: `Bearer ${accessToken}` } },
+		},
+	);
 
 	const { error: uploadError } = await uploadClient.storage
 		.from(bucketName)
