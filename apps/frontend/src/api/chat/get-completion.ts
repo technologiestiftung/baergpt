@@ -158,6 +158,55 @@ export async function getCompletion(
 	}
 }
 
+function handleStreamEvent(
+	event: StreamEvent,
+	callbacks: {
+		onTextDelta: (delta: string) => void;
+		onCitations: (chunkIds: number[]) => void;
+		onFinish: () => void;
+	},
+): boolean {
+	switch (event.type) {
+		case "text-delta":
+			callbacks.onTextDelta(event.delta);
+			return false;
+		case "data-citations":
+			callbacks.onCitations(event.data);
+			return false;
+		case "finish":
+			callbacks.onFinish();
+			return true;
+		default:
+			return false;
+	}
+}
+
+function processStreamLine(
+	line: string,
+	callbacks: {
+		onTextDelta: (delta: string) => void;
+		onCitations: (chunkIds: number[]) => void;
+		onFinish: () => void;
+	},
+): boolean {
+	if (!line.startsWith("data: ")) {
+		return false;
+	}
+
+	const jsonStr = line.slice(6).trim();
+	if (jsonStr === "[DONE]") {
+		return false;
+	}
+
+	try {
+		const event = JSON.parse(jsonStr) as StreamEvent;
+		return handleStreamEvent(event, callbacks);
+	} catch (_e) {
+		console.warn("Failed to parse SSE event:", jsonStr);
+		return false;
+	}
+}
+
 async function parseStream(
 	body: ReadableStream<Uint8Array>,
 	callbacks: {
@@ -169,40 +218,29 @@ async function parseStream(
 	const reader = body.getReader();
 	const decoder = new TextDecoder();
 	let buffer = "";
+	let finishCalled = false;
 
-	while (true) {
-		const { done, value } = await reader.read();
-		if (done) {
-			break;
-		}
-
-		buffer += decoder.decode(value, { stream: true });
-		const lines = buffer.split("\n");
-		buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-		for (const line of lines) {
-			if (!line.startsWith("data: ")) {
-				continue;
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) {
+				break;
 			}
 
-			const jsonStr = line.slice(6).trim();
-			if (jsonStr === "[DONE]") {
-				continue;
-			}
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split("\n");
+			buffer = lines.pop() || "";
 
-			try {
-				const event = JSON.parse(jsonStr) as StreamEvent;
-
-				if (event.type === "text-delta") {
-					callbacks.onTextDelta(event.delta);
-				} else if (event.type === "data-citations") {
-					callbacks.onCitations(event.data);
-				} else if (event.type === "finish") {
-					callbacks.onFinish();
+			for (const line of lines) {
+				const isFinished = processStreamLine(line, callbacks);
+				if (isFinished) {
+					finishCalled = true;
 				}
-			} catch (_e) {
-				console.warn("Failed to parse SSE event:", jsonStr);
 			}
+		}
+	} finally {
+		if (!finishCalled) {
+			callbacks.onFinish();
 		}
 	}
 }
