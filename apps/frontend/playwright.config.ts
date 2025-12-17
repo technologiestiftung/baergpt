@@ -17,7 +17,6 @@ const port = parseInt(process.env.VITE_PORT ?? "5173");
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-	testDir: "./tests",
 	timeout: process.env.CI ? 120_000 : 60_000,
 	expect: {
 		timeout: 30_000,
