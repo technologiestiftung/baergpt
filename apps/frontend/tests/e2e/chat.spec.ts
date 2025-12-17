@@ -12,7 +12,7 @@ import {
 	secondaryDocumentType,
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
-import { supabaseAdminClient } from "../supabase.ts";
+import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 
 test.describe("Chat", () => {
 	testWithLoggedInUser(
@@ -78,11 +78,11 @@ test.describe("Chat", () => {
 			.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 			.click();
 
-		// Wait for the AI response with a longer timeout since it involves backend API calls
-		await page.waitForLoadState("networkidle");
-
 		// Wait for the response to appear (2 markdown containers: question + answer)
-		await expect(page.locator("div.markdown-container")).toHaveCount(2);
+		// Use longer timeout since it involves backend API calls
+		await expect(page.locator("div.markdown-container")).toHaveCount(2, {
+			timeout: 60_000,
+		});
 
 		// Verify the answer is not empty
 		const markdownAnswer = page.locator("div.markdown-container").last();
@@ -212,9 +212,53 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testDesktopOnly(
-		"Chat with public document citations",
-		async ({ page, account }) => {
+	testDesktopOnly("Chat with public document citations", async ({ page }) => {
+		// Create an admin user to upload the public document
+		const adminEmail = "admin.test@local.berlin.de";
+		const adminPassword = "TestPassword123!";
+
+		const { data: adminUserData, error: createAdminError } =
+			await supabaseAdminClient.auth.admin.createUser({
+				email: adminEmail,
+				password: adminPassword,
+				email_confirm: true,
+				user_metadata: {
+					first_name: "Admin",
+					last_name: "Test",
+				},
+			});
+
+		expect(createAdminError).toBeNull();
+
+		if (createAdminError !== null) {
+			throw createAdminError;
+		}
+
+		const adminUserId = adminUserData.user.id;
+
+		try {
+			// Grant admin role by adding to application_admins table
+			const { error: adminRoleError } = await supabaseAdminClient
+				.from("application_admins")
+				.insert({ user_id: adminUserId });
+
+			expect(adminRoleError).toBeNull();
+
+			// Sign in the admin user to get their access token
+			const { data: adminSessionData, error: adminSignInError } =
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: adminEmail,
+					password: adminPassword,
+				});
+
+			expect(adminSignInError).toBeNull();
+
+			if (adminSignInError !== null) {
+				throw adminSignInError;
+			}
+
+			const adminAccessToken = adminSessionData.session.access_token;
+
 			const { data: accessGroupData, error: accessGroupError } =
 				await supabaseAdminClient
 					.from("access_groups")
@@ -231,7 +275,8 @@ test.describe("Chat", () => {
 			const defaultAccessGroupId = accessGroupData.id;
 
 			const publicDocumentChunkId = await mockDocumentUpload({
-				userId: account.id,
+				userId: adminUserId,
+				accessToken: adminAccessToken,
 				accessGroupId: defaultAccessGroupId,
 				fileName: defaultDocumentName,
 				filePath: defaultDocumentPath,
@@ -273,7 +318,9 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
-			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			const allCitationsButton = page.getByRole("button", {
+				name: "Quellen",
+			});
 
 			await allCitationsButton.click();
 
@@ -298,8 +345,10 @@ test.describe("Chat", () => {
 			await citationDialogClosingButton.click();
 
 			await expect(citationsDialogHeader).not.toBeVisible();
-		},
-	);
+		} finally {
+			await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
+		}
+	});
 
 	testWithLoggedInUser(
 		"Export chat messages as Word and PDF document",
