@@ -241,10 +241,10 @@ cd apps/backend && npm run dev
 # Frontend (http://localhost:5173)
 cd apps/frontend && npm run dev
 
-# Admin Panel (http://localhost:5176)
+# Admin Panel (http://localhost:5174)
 cd apps/admin-panel && npm run dev
 
-# Maintenance Mode (http://localhost:5173)
+# Maintenance Mode (http://localhost:5175)
 cd apps/maintenance-mode && npm run dev
 ```
 

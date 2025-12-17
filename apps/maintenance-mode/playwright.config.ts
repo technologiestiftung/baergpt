@@ -1,4 +1,12 @@
+import { dirname, resolve } from "path";
+import { config } from "dotenv";
+import { fileURLToPath } from "url";
 import { defineConfig, devices } from "@playwright/test";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+config({ path: resolve(__dirname, ".env"), override: true });
 
 /**
  * If you need envs, you can use loadEnv from vite to load them from the .env file.
@@ -9,7 +17,7 @@ import { defineConfig, devices } from "@playwright/test";
  * https://vite.dev/guide/api-javascript.html#loadenv
  */
 
-const port = parseInt(process.env.VITE_PORT ?? "5173"); // Vite's default port when running `vite preview`
+const port = parseInt(process.env.VITE_PORT ?? "5175");
 
 /**
  * See https://playwright.dev/docs/test-configuration.
