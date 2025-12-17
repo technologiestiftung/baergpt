@@ -8,13 +8,6 @@ import { useUserStore } from "../../store/user-store.ts";
 import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
 import { useCitationsStore } from "../../store/use-citations-store.ts";
 
-const { handleError } = useErrorStore.getState();
-const { updateMessage, addMessageToChat } = useChatsStore.getState();
-const { getSelectedChatDocumentIds } = useDocumentStore.getState();
-const { getSelectedChatFolderIds } = useFolderStore.getState();
-const { setStatus } = useInferenceLoadingStatusStore.getState();
-const { ensureCached } = useCitationsStore.getState();
-
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
 	| { type: "text-end"; id: string }
@@ -25,6 +18,13 @@ type StreamEvent =
 export async function getCompletion(
 	currentChat: ChatWithMessages,
 ): Promise<void> {
+	const { handleError } = useErrorStore.getState();
+	const { updateMessage, addMessageToChat } = useChatsStore.getState();
+	const { getSelectedChatDocumentIds } = useDocumentStore.getState();
+	const { getSelectedChatFolderIds } = useFolderStore.getState();
+	const { setStatus } = useInferenceLoadingStatusStore.getState();
+	const { ensureCached } = useCitationsStore.getState();
+
 	const { session } = useAuthStore.getState();
 	const { user } = useUserStore.getState();
 
