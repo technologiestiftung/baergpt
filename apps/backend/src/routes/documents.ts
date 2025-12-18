@@ -9,41 +9,13 @@ import { Document } from "../types/common";
 import { getAuthenticatedUserId } from "../middleware/basic-auth";
 import { documentProcessSchema } from "../schemas/document-process-schema";
 import { ZodError } from "zod";
+import { ValidationService } from "../services/validation-service";
 
 const documents = new Hono();
 const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
 const generationService = new GenerationService();
-
-function validatePersonalSourceUrlPath(
-	sourceUrl: string,
-	authenticatedUserId: string,
-): { valid: boolean; error?: string } {
-	const pathPrefix = sourceUrl.split("/")[0];
-	if (pathPrefix !== authenticatedUserId) {
-		return {
-			valid: false,
-			error:
-				"Unauthorized: source_url must be in your own storage folder for personal documents",
-		};
-	}
-	return { valid: true };
-}
-
-function validatePublicSourceUrlPath(
-	sourceUrl: string,
-	accessGroupId: string,
-): { valid: boolean; error?: string } {
-	const pathPrefix = sourceUrl.split("/")[0];
-	if (pathPrefix !== accessGroupId) {
-		return {
-			valid: false,
-			error:
-				"Unauthorized: source_url must match the access_group_id for public documents",
-		};
-	}
-	return { valid: true };
-}
+const validationService = new ValidationService();
 
 documents.post("/process", async (c: Context) => {
 	let sourceUrl: string | null = null;
@@ -67,66 +39,15 @@ documents.post("/process", async (c: Context) => {
 		const { document: inputDocument } = parseResult.data;
 		sourceUrl = inputDocument.source_url;
 
-		// Determine storage bucket based on source_type
-		bucket =
-			inputDocument.source_type === "personal_document"
-				? "documents"
-				: "public_documents";
-
-		// Validate source_url path matches authenticated user
-		let pathValidation: { valid: boolean; error?: string } | null = null;
-		if (inputDocument.source_type === "personal_document") {
-			pathValidation = validatePersonalSourceUrlPath(
-				sourceUrl,
-				authenticatedUserId,
-			);
-		} else {
-			if (!inputDocument.access_group_id) {
-				return c.json(
-					{ error: "access_group_id is required for public/default documents" },
-					400,
-				);
-			}
-			pathValidation = validatePublicSourceUrlPath(
-				sourceUrl,
-				inputDocument.access_group_id,
-			);
-		}
-		if (!pathValidation.valid) {
-			return c.json({ error: pathValidation.error }, 403);
-		}
-
-		// Validate folder ownership if folder_id is provided
-		if (
-			inputDocument.folder_id !== null &&
-			inputDocument.folder_id !== undefined
-		) {
-			const folderBelongsToUser = await dbService.validateFolderOwnership(
-				inputDocument.folder_id,
-				authenticatedUserId,
-			);
-			if (!folderBelongsToUser) {
-				return c.json(
-					{
-						error:
-							"Unauthorized: folder_id does not belong to the authenticated user",
-					},
-					403,
-				);
-			}
-		}
-
-		// Validate file exists in storage (prevents processing arbitrary URLs)
-		const fileExists = await dbService.validateFileExistsInStorage(
-			sourceUrl,
-			bucket,
+		// Validate document request (path, folder ownership, file existence)
+		const validationResult = await validationService.validateDocumentRequest(
+			inputDocument,
+			authenticatedUserId,
 		);
-		if (!fileExists) {
-			return c.json(
-				{ error: "File not found in storage at the specified source_url" },
-				404,
-			);
+		if (validationResult.success === false) {
+			return c.json({ error: validationResult.error }, validationResult.status);
 		}
+		bucket = validationResult.bucket;
 
 		const llmIdentifier = config.defaultModelIdentifier;
 
