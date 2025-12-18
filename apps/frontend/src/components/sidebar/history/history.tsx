@@ -89,7 +89,7 @@ export const History: React.FC = () => {
 			<h2 className="text-base leading-6 font-semibold text-hellblau-50 md:px-2 px-5 whitespace-nowrap">
 				{Content["chatHistory.title"]}
 			</h2>
-			<div className="flex flex-col grow min-h-0 overflow-y-auto px-5 md:px-0">
+			<div className="flex flex-col grow min-h-0 overflow-y-auto px-5 md:px-0 md:pr-4 history-scrollbar">
 				<div className="w-full h-full">
 					<div
 						className={`w-full ${errorMessage ? "h-full overflow-hidden" : "h-fit"}`}

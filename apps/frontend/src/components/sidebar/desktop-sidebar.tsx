@@ -21,7 +21,7 @@ export const DesktopSidebar: React.FC = () => {
 			>
 				<aside
 					className={`flex flex-col justify-between h-full px-2.5 pt-5 pb-3.5 ${
-						isHistorySidebarOpen ? "pr-[18px] gap-10" : "items-left"
+						isHistorySidebarOpen ? "pr-1 gap-10" : "items-left"
 					}`}
 					aria-label={Content["sidebar.ariaLabel"]}
 				>
@@ -46,7 +46,7 @@ export const DesktopSidebar: React.FC = () => {
 						<div className="h-[130px] flex flex-col justify-between">
 							{/* Full-width border */}
 							{isHistorySidebarOpen && (
-								<span className="block w-[calc(100%+30px)] ml-[-12px] h-px bg-dunkelblau-80" />
+								<span className="block w-[calc(100%+14px)] ml-[-10px] h-px bg-dunkelblau-80" />
 							)}
 
 							{/* Navigation */}
@@ -56,7 +56,7 @@ export const DesktopSidebar: React.FC = () => {
 
 							{/* Full-width border */}
 							{isHistorySidebarOpen && (
-								<span className="block w-[calc(100%+30px)] ml-[-12px] h-px bg-dunkelblau-80" />
+								<span className="block w-[calc(100%+14px)] ml-[-10px] h-px bg-dunkelblau-80" />
 							)}
 						</div>
 
