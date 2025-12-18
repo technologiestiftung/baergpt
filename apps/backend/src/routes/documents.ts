@@ -27,16 +27,9 @@ documents.post("/process", async (c: Context) => {
 
 		// Parse and validate request body
 		const body = await c.req.json();
-		const parseResult = documentProcessSchema.safeParse(body);
+		const parseResult = documentProcessSchema.parse(body);
 
-		if (!parseResult.success) {
-			const errors = parseResult.error.issues
-				.map((e) => `${e.path.join(".")}: ${e.message}`)
-				.join("; ");
-			throw new Error(`Validation failed: ${errors}`);
-		}
-
-		const { document: inputDocument } = parseResult.data;
+		const { document: inputDocument } = parseResult;
 		sourceUrl = inputDocument.source_url;
 
 		// Validate document request (path, folder ownership, file existence)
@@ -45,7 +38,8 @@ documents.post("/process", async (c: Context) => {
 			authenticatedUserId,
 		);
 		if (validationResult.success === false) {
-			throw new Error(validationResult.error);
+			captureError(new Error(validationResult.error));
+			return c.json({ error: validationResult.error }, validationResult.status);
 		}
 		bucket = validationResult.bucket;
 
