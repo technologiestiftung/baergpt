@@ -31,5 +31,3 @@ export const allowedSourceTypes = [
 	"public_document",
 	"default_document",
 ] as const;
-
-export type SourceType = (typeof allowedSourceTypes)[number];
