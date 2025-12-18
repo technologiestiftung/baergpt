@@ -55,11 +55,11 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
-		// Find the add-to-chat button
-		const addButton = page.getByRole("button", {
-			name: "Zum Chat hinzufügen",
-			exact: true,
-		});
+		// Find the add-to-chat button for the specific document
+		const addButton = page
+			.getByRole("listitem")
+			.filter({ hasText: defaultDocumentName })
+			.getByLabel("Zum Chat hinzufügen");
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -157,24 +157,29 @@ test.describe("Chat", () => {
 		async ({ page, documentChunkId }) => {
 			await page.goto("/");
 
-			const inferenceWithCitation = {
-				content: `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`,
-				citations: [documentChunkId],
-			};
+			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
+			const citations = [documentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
+				// Format as Server-Sent Events (SSE) stream
+				const streamBody = [
+					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
+				].join("");
+
 				await route.fulfill({
 					status: 200,
-					body: JSON.stringify(inferenceWithCitation),
-					headers: { "Content-Type": "text/stream; charset: utf-8" },
+					body: streamBody,
+					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
 				});
 			});
 
-			// Find the add-to-chat button
-			const addButton = page.getByRole("button", {
-				name: "Zum Chat hinzufügen",
-				exact: true,
-			});
+			// Find the add-to-chat button for the specific document
+			const addButton = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Zum Chat hinzufügen");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -189,7 +194,9 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
+			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
 
 			await allCitationsButton.click();
 
@@ -241,24 +248,29 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
-			const inferenceWithCitation = {
-				content: `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`,
-				citations: [publicDocumentChunkId],
-			};
+			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
+			const citations = [publicDocumentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
+				// Format as Server-Sent Events (SSE) stream
+				const streamBody = [
+					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
+				].join("");
+
 				await route.fulfill({
 					status: 200,
-					body: JSON.stringify(inferenceWithCitation),
-					headers: { "Content-Type": "text/stream; charset: utf-8" },
+					body: streamBody,
+					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
 				});
 			});
 
 			// Find the add-to-chat button
-			const addButton = page.getByRole("button", {
-				name: "Zum Chat hinzufügen",
-				exact: true,
-			});
+			const addButton = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Zum Chat hinzufügen");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -273,7 +285,9 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
+			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
 
 			await allCitationsButton.click();
 
