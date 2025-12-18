@@ -81,6 +81,12 @@ documents.post("/process", async (c: Context) => {
 				authenticatedUserId,
 			);
 		} else {
+			if (!inputDocument.access_group_id) {
+				return c.json(
+					{ error: "access_group_id is required for public/default documents" },
+					400,
+				);
+			}
 			pathValidation = validatePublicSourceUrlPath(
 				sourceUrl,
 				inputDocument.access_group_id,
