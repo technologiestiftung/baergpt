@@ -33,7 +33,7 @@ documents.post("/process", async (c: Context) => {
 			const errors = parseResult.error.issues
 				.map((e) => `${e.path.join(".")}: ${e.message}`)
 				.join("; ");
-			return c.json({ error: `Validation failed: ${errors}` }, 400);
+			throw new Error(`Validation failed: ${errors}`);
 		}
 
 		const { document: inputDocument } = parseResult.data;
@@ -45,7 +45,7 @@ documents.post("/process", async (c: Context) => {
 			authenticatedUserId,
 		);
 		if (validationResult.success === false) {
-			return c.json({ error: validationResult.error }, validationResult.status);
+			throw new Error(validationResult.error);
 		}
 		bucket = validationResult.bucket;
 
@@ -103,6 +103,8 @@ documents.post("/process", async (c: Context) => {
 
 		return c.body(null, 204);
 	} catch (error) {
+		captureError(error);
+
 		// Handle Zod validation errors separately
 		if (error instanceof ZodError) {
 			const errors = error.issues
@@ -111,7 +113,6 @@ documents.post("/process", async (c: Context) => {
 			return c.json({ error: `Validation failed: ${errors}` }, 400);
 		}
 
-		captureError(error);
 		// If processing failed, clean up the storage file
 		if (sourceUrl !== null && bucket !== null) {
 			try {
