@@ -36,7 +36,7 @@ export function ResetPasswordForm() {
 				.getState()
 				.handleError(
 					new Error(
-						"Passwort-Zurücksetzung ist nicht aktiv. Bitte verwenden Sie den Link aus Ihrer E-Mail.",
+						"User tried to reset their password without the recovery mode active.",
 					),
 				);
 			return;
