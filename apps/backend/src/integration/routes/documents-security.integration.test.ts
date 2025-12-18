@@ -25,12 +25,6 @@ let userBToken: string;
 
 describe("Document Process Security Tests", () => {
 	beforeAll(async () => {
-		// Cleanup in case of previous test failures
-		await Promise.all([
-			supabase.auth.admin.deleteUser(USER_A_ID).catch(() => {}),
-			supabase.auth.admin.deleteUser(USER_B_ID).catch(() => {}),
-		]);
-
 		// Create test users
 		await Promise.all([
 			supabase.auth.admin.createUser({
