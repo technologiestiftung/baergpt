@@ -96,6 +96,11 @@ describe("Integration tests for DB", async () => {
 		];
 
 		beforeAll(async () => {
+			// Clean up any leftover users from previous interrupted test runs
+			for (const user of users) {
+				await supabaseAdminClient.auth.admin.deleteUser(user.id);
+			}
+
 			for (const user of users) {
 				const { error: signupError } =
 					await supabaseAdminClient.auth.admin.createUser({
@@ -492,6 +497,8 @@ describe("Integration tests for DB", async () => {
 					filePath: defaultDocumentPath,
 					sourceType: "personal_document",
 					bucketName: "documents",
+					userEmail: givenAdminEmail,
+					userPassword: givenAdminPassword,
 				});
 			});
 
@@ -632,6 +639,13 @@ describe("Integration tests for DB", async () => {
 					});
 
 				expect(signupError).toBeNull();
+
+				// Re-add the user to application_admins
+				const { error: setAdminError } = await supabaseAdminClient
+					.from("application_admins")
+					.insert({ user_id: givenAdminId });
+
+				expect(setAdminError).toBeNull();
 			});
 		});
 
@@ -647,6 +661,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "personal_document",
 						bucketName: "documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
@@ -707,6 +723,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "public_document",
 						bucketName: "public_documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
@@ -729,7 +747,7 @@ describe("Integration tests for DB", async () => {
 						{
 							chunk_id: givenChunkId,
 							file_name: defaultDocumentName,
-							source_url: `${givenAdminId}/${defaultDocumentName}`,
+							source_url: `${accessGroupId}/${defaultDocumentName}`,
 							page: 1,
 							source_type: "public_document",
 							snippet,
@@ -758,9 +776,84 @@ describe("Integration tests for DB", async () => {
 						{
 							chunk_id: givenChunkId,
 							file_name: defaultDocumentName,
-							source_url: `${givenAdminId}/${defaultDocumentName}`,
+							source_url: `${accessGroupId}/${defaultDocumentName}`,
 							page: 1,
 							source_type: "public_document",
+							snippet,
+						},
+					];
+
+					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+				});
+			});
+
+			describe("default documents", () => {
+				let givenChunkId: number;
+
+				beforeEach(async () => {
+					givenChunkId = await mockDocumentUpload({
+						userId: givenAdminId,
+						accessGroupId,
+						fileName: defaultDocumentName,
+						filePath: defaultDocumentPath,
+						sourceType: "default_document",
+						bucketName: "public_documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
+					});
+				});
+
+				afterEach(async () => await cleanupDocuments(givenAdminId));
+
+				it("should return citation details for a (self-owned) default document", async () => {
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+
+					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
+						"get_citation_details",
+						{
+							chunk_ids: [givenChunkId],
+						},
+					);
+
+					const expectedCitationDetails = [
+						{
+							chunk_id: givenChunkId,
+							file_name: defaultDocumentName,
+							source_url: `${accessGroupId}/${defaultDocumentName}`,
+							page: 1,
+							source_type: "default_document",
+							snippet,
+						},
+					];
+
+					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+				});
+
+				it("should return citation details for a (not self-owned) default document", async () => {
+					const { error: signInError } =
+						await supabaseAnonClient.auth.signInWithPassword({
+							email: givenUserEmail,
+							password: givenUserPassword,
+						});
+
+					expect(signInError).toBeNull();
+
+					const { data: actualCitationDetails, error } =
+						await supabaseAnonClient.rpc("get_citation_details", {
+							chunk_ids: [givenChunkId],
+						});
+					expect(error).toBeNull();
+
+					const expectedCitationDetails = [
+						{
+							chunk_id: givenChunkId,
+							file_name: defaultDocumentName,
+							source_url: `${accessGroupId}/${defaultDocumentName}`,
+							page: 1,
+							source_type: "default_document",
 							snippet,
 						},
 					];
@@ -778,6 +871,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "personal_document",
 						bucketName: "documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
