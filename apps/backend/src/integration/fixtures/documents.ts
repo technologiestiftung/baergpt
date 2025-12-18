@@ -84,6 +84,7 @@ export async function mockDocumentUpload({
 			.single();
 
 	expect(documentsInsertError).toBeNull();
+	expect(documentData).not.toBeNull();
 
 	const { error: documentSummariesInsertError } = await supabaseAdminClient
 		.from("document_summaries")
@@ -117,6 +118,7 @@ export async function mockDocumentUpload({
 			.single();
 
 	expect(documentChunksInsertError).toBeNull();
+	expect(chunkData).not.toBeNull();
 
 	return chunkData.id;
 }
@@ -151,7 +153,7 @@ export async function cleanupDocuments(userId: string) {
 
 	expect(personalDocumentsError).toBeNull();
 
-	const personalDocumentsToRemove = personalDocumentsData.map(
+	const personalDocumentsToRemove = (personalDocumentsData ?? []).map(
 		(file) => `${userId}/${file.name}`,
 	);
 
@@ -170,7 +172,7 @@ export async function cleanupDocuments(userId: string) {
 
 	expect(publicDocumentsError).toBeNull();
 
-	const publicDocumentsToRemove = publicDocumentsData.map(
+	const publicDocumentsToRemove = (publicDocumentsData ?? []).map(
 		(file) => `${userId}/${file.name}`,
 	);
 

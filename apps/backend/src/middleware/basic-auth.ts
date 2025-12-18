@@ -7,12 +7,16 @@ import { captureError } from "../monitoring/capture-error";
 
 const databaseService = new DatabaseService();
 
-async function hasValidSupabaseSession(c: Context): Promise<boolean> {
+/**
+ * Validates the Supabase session and extracts the authenticated user ID.
+ * Returns the user ID if valid, null otherwise.
+ */
+async function validateSupabaseSession(c: Context): Promise<string | null> {
 	const authorizationHeader = c.req.header("authorization") || "";
 	const token = authorizationHeader.replace("Bearer ", "");
 
 	if (!token) {
-		return false;
+		return null;
 	}
 
 	let decodedToken: null | { exp?: number; sub?: string } = null;
@@ -24,17 +28,17 @@ async function hasValidSupabaseSession(c: Context): Promise<boolean> {
 		};
 	} catch (error) {
 		captureError(error);
-		return false;
+		return null;
 	}
 
 	if (decodedToken.exp && decodedToken.exp < Date.now() / 1000) {
 		captureError(new Error("Supabase session token expired"));
-		return false;
+		return null;
 	}
 
 	if (!decodedToken.sub) {
 		captureError(new Error("Supabase session token missing user ID"));
-		return false;
+		return null;
 	}
 
 	const { is_active } = await databaseService.getUserActiveStatus(
@@ -43,15 +47,19 @@ async function hasValidSupabaseSession(c: Context): Promise<boolean> {
 
 	if (!is_active) {
 		captureError(new Error("User account is deactivated or not found"));
-		return false;
+		return null;
 	}
 
-	return true;
+	return decodedToken.sub;
 }
 
 const basicAuth = createMiddleware(async (c: Context, next: Next) => {
 	try {
-		if (await hasValidSupabaseSession(c)) {
+		const userId = await validateSupabaseSession(c);
+
+		if (userId) {
+			// Store authenticated user ID in context for use by route handlers
+			c.set("authenticatedUserId", userId);
 			return next();
 		}
 
@@ -61,5 +69,19 @@ const basicAuth = createMiddleware(async (c: Context, next: Next) => {
 		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });
+
+/**
+ * Helper function to get the authenticated user ID from context.
+ * Should only be called after basicAuth middleware has run.
+ */
+export function getAuthenticatedUserId(c: Context): string {
+	const userId = c.get("authenticatedUserId");
+	if (!userId) {
+		throw new Error(
+			"authenticatedUserId not found in context - basicAuth middleware may not have run",
+		);
+	}
+	return userId;
+}
 
 export default basicAuth;
