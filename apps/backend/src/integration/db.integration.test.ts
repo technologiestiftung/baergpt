@@ -711,6 +711,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "public_document",
 						bucketName: "public_documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
