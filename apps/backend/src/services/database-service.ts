@@ -649,11 +649,14 @@ export class DatabaseService {
 		const fileName = pathParts[pathParts.length - 1];
 
 		const { data, error } = await supabase.storage.from(bucket).list(folder, {
-			limit: 1,
 			search: fileName,
 		});
 
 		if (error) {
+			console.error(
+				`Storage error when checking file existence for ${sourceUrl} in bucket ${bucket}:`,
+				error.message,
+			);
 			return false;
 		}
 
