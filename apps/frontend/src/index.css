@@ -158,7 +158,7 @@
 	.filesection-scrollbar {
 		/* Firefox */
 		scrollbar-width: auto;
-		scrollbar-color: theme('colors.dunkelblau-40') transparent;
+		scrollbar-color: theme('colors.hellblau-110') transparent;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar {
@@ -174,14 +174,14 @@
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar-thumb {
-		background: theme('colors.dunkelblau-40');
+		background: theme('colors.hellblau-110');
 		border-radius: 100px;
 		border: none;
 		-webkit-appearance: none;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: theme('colors.dunkelblau-50');
+		background: theme('colors.hellblau-100');
 	}
 
 }
