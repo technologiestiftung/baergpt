@@ -223,6 +223,7 @@ describe("Integration Tests for Routes", () => {
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
+				folder_id: null,
 			},
 		};
 
@@ -269,6 +270,7 @@ describe("Integration Tests for Routes", () => {
 					registered_at: new Date().toISOString(),
 					source_type: "personal_document",
 					source_url: sourceUrls[i],
+					folder_id: null,
 				},
 			};
 
@@ -347,6 +349,7 @@ describe("Integration Tests for Routes", () => {
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
+				folder_id: null,
 			},
 		};
 		const uploadRes = await app.request("/documents/process", {
@@ -406,6 +409,7 @@ describe("Integration Tests for Routes", () => {
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
+				folder_id: null,
 			},
 		};
 		const uploadRes = await app.request("/documents/process", {
@@ -530,6 +534,7 @@ describe("Integration Tests for Routes", () => {
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
+				folder_id: null,
 			},
 		};
 

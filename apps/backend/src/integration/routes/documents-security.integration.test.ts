@@ -174,6 +174,7 @@ describe("Document Process Security Tests", () => {
 					source_url: `${USER_B_ID}/stolen-doc.pdf`, // Trying to access User B's storage
 					source_type: "personal_document",
 					owned_by_user_id: USER_B_ID, // Trying to spoof as User B
+					folder_id: null,
 				},
 			};
 
@@ -199,6 +200,7 @@ describe("Document Process Security Tests", () => {
 					source_url: `${USER_A_ID}/my-doc.pdf`, // User A's folder
 					source_type: "personal_document",
 					owned_by_user_id: USER_B_ID, // Trying to assign to User B
+					folder_id: null,
 				},
 			};
 
@@ -303,6 +305,7 @@ describe("Document Process Security Tests", () => {
 					source_url: `${USER_A_ID}/non-existent-file.pdf`,
 					source_type: "personal_document",
 					owned_by_user_id: USER_A_ID,
+					folder_id: null,
 				},
 			};
 

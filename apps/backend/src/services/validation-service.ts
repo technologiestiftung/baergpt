@@ -71,14 +71,6 @@ export class ValidationService {
 		}
 
 		// Folder ownership validation
-		// check if foldeer_id is undefined
-		if (inputDocument.folder_id === undefined) {
-			return {
-				success: false,
-				error: "folder_id is undefined",
-				status: 400,
-			};
-		}
 		if (inputDocument.folder_id !== null) {
 			const folderBelongsToUser = await dbService.validateFolderOwnership(
 				inputDocument.folder_id,
