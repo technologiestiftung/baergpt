@@ -4,7 +4,7 @@ import { supabase } from "../../supabase-client.ts";
 import { useAuthErrorStore } from "./auth-error-store.ts";
 import { handleSessionChange } from "../api/session/handle-session-change.ts";
 import { updatePassword } from "../api/auth/update-password.ts";
-import { requestPasswordResetForEmail } from "../api/auth/request-password-reset-for-email.ts";
+import { requestPasswordResetByEmail } from "../api/auth/request-password-reset-by-email.ts";
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { useIsActiveStore } from "./use-is-active-store.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
@@ -236,7 +236,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 
 		resendOtpEmail: async ({ email, otpType }) => {
 			if (otpType === "recovery") {
-				const { error } = await requestPasswordResetForEmail(email);
+				const { error } = await requestPasswordResetByEmail(email);
 
 				if (error) {
 					useAuthErrorStore.getState().handleError(error);
@@ -253,7 +253,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		},
 
 		async requestPasswordReset(email: string) {
-			const { error } = await requestPasswordResetForEmail(email);
+			const { error } = await requestPasswordResetByEmail(email);
 
 			if (error) {
 				useAuthErrorStore.getState().handleError(error);
