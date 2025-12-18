@@ -223,6 +223,7 @@ test.describe("Chat", () => {
 		// Create an admin user to upload the public document
 		const adminEmail = "admin.test@local.berlin.de";
 		const adminPassword = "TestPassword123!";
+		let adminUserId: string | undefined;
 
 		const { data: adminUserData, error: createAdminError } =
 			await supabaseAdminClient.auth.admin.createUser({
@@ -241,7 +242,7 @@ test.describe("Chat", () => {
 			throw createAdminError;
 		}
 
-		const adminUserId = adminUserData.user.id;
+		adminUserId = adminUserData.user.id;
 
 		try {
 			// Grant admin role by adding to application_admins table
@@ -358,7 +359,9 @@ test.describe("Chat", () => {
 
 			await expect(citationsDialogHeader).not.toBeVisible();
 		} finally {
-			await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
+			if (adminUserId) {
+				await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
+			}
 		}
 	});
 
