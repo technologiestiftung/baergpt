@@ -33,12 +33,12 @@ export async function mockDocumentUpload({
 	accessGroupId: string | null;
 	fileName: string;
 	filePath: string;
-	sourceType: "public_document" | "personal_document";
+	sourceType: "public_document" | "personal_document" | "default_document";
 	bucketName: "documents" | "public_documents";
 	userEmail: string;
 	userPassword: string;
 }) {
-	const source_url = `${userId}/${fileName}`;
+	const source_url = `${accessGroupId ?? userId}/${fileName}`;
 	const file = readFileSync(filePath);
 
 	const userClient = createClient(

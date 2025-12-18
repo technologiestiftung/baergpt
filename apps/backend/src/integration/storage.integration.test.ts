@@ -159,7 +159,7 @@ describe("Integration tests for Storage", async () => {
 
 			const { data, error: downloadError } = await supabaseAnonClient.storage
 				.from("public_documents")
-				.download(`${givenAdminId}/${defaultDocumentName}`);
+				.download(`${accessGroupId}/${defaultDocumentName}`);
 
 			expect(downloadError).toBeNull();
 			expect(data).not.toBeNull();
@@ -173,22 +173,19 @@ describe("Integration tests for Storage", async () => {
 
 			const { data, error: downloadError } = await supabaseAnonClient.storage
 				.from("public_documents")
-				.download(`${givenAdminId}/${defaultDocumentName}`);
+				.download(`${accessGroupId}/${defaultDocumentName}`);
 
 			expect(downloadError).toBeNull();
 			expect(data).not.toBeNull();
 		});
 
-		it.fails(
-			"should forbid a non-authenticated user to download a personal file (self-owned or not)",
-			async () => {
-				const { data, error: downloadError } = await supabaseAnonClient.storage
-					.from("public_documents")
-					.download(`${givenAdminId}/${defaultDocumentName}`);
+		it("should allow a non-authenticated user to download a public file", async () => {
+			const { data, error: downloadError } = await supabaseAnonClient.storage
+				.from("public_documents")
+				.download(`${accessGroupId}/${defaultDocumentName}`);
 
-				expect(downloadError).not.toBeNull();
-				expect(data).toBeNull();
-			},
-		);
+			expect(downloadError).toBeNull();
+			expect(data).not.toBeNull();
+		});
 	});
 });
