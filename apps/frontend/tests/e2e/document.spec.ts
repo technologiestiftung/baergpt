@@ -141,9 +141,10 @@ test.describe("Documents", () => {
 
 	testDesktopOnly(
 		"Upload document with long name and verify truncation",
-		async ({ page, account }) => {
+		async ({ page, account, session }) => {
 			await mockDocumentUpload({
 				userId: account.id,
+				accessToken: session.access_token,
 				accessGroupId: null,
 				fileName: longFileName,
 				filePath: longFilePath,
@@ -623,7 +624,7 @@ test.describe("Documents", () => {
 
 	testDesktopOnly(
 		"Shows limit reached message and disables upload button when max files uploaded",
-		async ({ page, account }) => {
+		async ({ page, account, session }) => {
 			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
 
 			// Mock multiple document uploads to reach the limit
@@ -631,6 +632,7 @@ test.describe("Documents", () => {
 			for (let i = 1; i < maxFiles; i++) {
 				await mockDocumentUpload({
 					userId: account.id,
+					accessToken: session.access_token,
 					accessGroupId: null,
 					fileName: `test-document-${i}.pdf`,
 					filePath: defaultDocumentPath,

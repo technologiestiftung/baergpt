@@ -103,7 +103,7 @@
 									<tr>
 										<td align="left">
 											<a
-												href="{{ .SiteURL }}/auth/confirm-email-change/?type=email_change&email={{ .NewEmail }}&redirect_to={{ .RedirectTo }}"
+												href="{{ .SiteURL }}/confirm-otp/?type=email_change&email={{ .NewEmail }}"
 												target="_blank"
 												rel="noopener noreferrer"
 												style="
@@ -128,15 +128,17 @@
 								</p>
 
 								<p style="font-size: 14px; color: #666666; line-height: 1.5">
-									Funktioniert der Button nicht? Öffnen Sie folgenden Link manuell:
+									Funktioniert der Button nicht? Öffnen Sie folgenden Link
+									manuell:
 									<br />
 									<a
-										href="{{ .SiteURL }}/auth/confirm-email-change/?type=email_change&email={{ .NewEmail }}&redirect_to={{ .RedirectTo }}"
+										href="{{ .SiteURL }}/confirm-otp/?type=email_change&email={{ .NewEmail }}"
 										target="_blank"
 										rel="noopener noreferrer"
 										style="color: #0c2753; word-break: break-word"
 									>
-										{{ .SiteURL }}/auth/confirm-email-change/?type=email_change&email={{ .NewEmail }}&redirect_to={{ .RedirectTo }}
+										{{ .SiteURL }}/confirm-otp/?type=email_change&email={{
+										.NewEmail }}
 									</a>
 									<br /><br />
 									Ihr Code (bitte im Formular eingeben):
@@ -151,8 +153,8 @@
 										margin-top: 30px;
 									"
 								>
-									Link und Code verfallen nach 60 Minuten. Falls Sie die Änderung
-									nicht angefordert haben, ignorieren Sie diese E-Mail.
+									Link und Code verfallen nach 60 Minuten. Falls Sie die
+									Änderung nicht angefordert haben, ignorieren Sie diese E-Mail.
 								</p>
 
 								<p style="font-size: 14px; color: #666666; line-height: 1.5">

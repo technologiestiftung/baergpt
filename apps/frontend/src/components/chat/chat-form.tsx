@@ -12,18 +12,16 @@ import { useFolderStore } from "../../store/folder-store.ts";
 import { useDocumentStore } from "../../store/document-store.ts";
 import Content from "../../content.ts";
 import type { NewChatMessage } from "../../common.ts";
-import { useAuthStore } from "../../store/auth-store.ts";
-import { useUserStore } from "../../store/user-store.ts";
-import { useChatStreaming } from "./hooks/use-chat-streaming";
+import { getCompletion } from "../../api/chat/get-completion.ts";
+import { useChatsStore } from "../../store/use-chats-store.ts";
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const ChatForm: React.FC = () => {
 	const { status, clearError } = useInferenceLoadingStatusStore();
 	const { selectedChatFolders } = useFolderStore();
 	const { selectedChatDocuments } = useDocumentStore();
-	const { startStreaming } = useChatStreaming();
-	const { session } = useAuthStore.getState();
-	const { user } = useUserStore.getState();
+	const { getCurrentOrCreateChat } = useChatsStore.getState();
+
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
 
@@ -75,13 +73,9 @@ export const ChatForm: React.FC = () => {
 			allowed_document_ids: selectedChatDocuments.map((doc) => doc.id),
 			allowed_folder_ids: selectedChatFolders.map((folder) => folder.id),
 		};
-		const requestContext = {
-			userId: session?.user.id,
-			isAddressedFormal: user?.is_addressed_formal,
-			allowedDocumentIds: selectedChatDocuments.map((doc) => doc.id),
-			allowedFolderIds: selectedChatFolders.map((folder) => folder.id),
-		};
-		await startStreaming({ userMessage, requestContext });
+
+		const chat = await getCurrentOrCreateChat(userMessage);
+		await getCompletion(chat);
 	};
 
 	const isInferenceLoading = [
