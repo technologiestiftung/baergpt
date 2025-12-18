@@ -90,7 +90,7 @@ export async function confirmOtp({
 	});
 	await emailLinks.first().click();
 
-	// Confirm password reset via OTP flow
+	// Confirm via OTP flow
 	const popupEvent = page.waitForEvent("popup");
 	const emailFrame = await page.locator("#preview-html").contentFrame();
 	if (!emailFrame) {
