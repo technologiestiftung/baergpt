@@ -71,7 +71,7 @@ export class ValidationService {
 		}
 
 		// Folder ownership validation
-		if (inputDocument.folder_id !== null) {
+		if (inputDocument.folder_id != null) {
 			const folderBelongsToUser = await dbService.validateFolderOwnership(
 				inputDocument.folder_id,
 				authenticatedUserId,
