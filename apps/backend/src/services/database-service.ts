@@ -604,4 +604,62 @@ export class DatabaseService {
 
 		return (data as KnowledgeBaseDocument[]) || [];
 	}
+
+	/**
+	 * Validates that a folder belongs to a specific user.
+	 * Returns true if the folder exists and belongs to the user, false otherwise.
+	 */
+	async validateFolderOwnership(
+		folderId: number,
+		userId: string,
+	): Promise<boolean> {
+		const { data, error } = await supabase
+			.from("document_folders")
+			.select("id")
+			.eq("id", folderId)
+			.eq("user_id", userId)
+			.single();
+
+		if (error) {
+			// PGRST116 = no rows returned (folder doesn't exist or doesn't belong to user)
+			if (error.code === "PGRST116") {
+				return false;
+			}
+			throw error;
+		}
+
+		return data !== null;
+	}
+
+	/**
+	 * Validates that a file exists in storage at the specified path.
+	 * Returns true if the file exists, false otherwise.
+	 */
+	async validateFileExistsInStorage(
+		sourceUrl: string,
+		bucket: string,
+	): Promise<boolean> {
+		// Extract the folder (user_id or access_group_id) and filename from the path
+		const pathParts = sourceUrl.split("/");
+		if (pathParts.length < 2) {
+			return false;
+		}
+
+		const folder = pathParts.slice(0, -1).join("/");
+		const fileName = pathParts[pathParts.length - 1];
+
+		const { data, error } = await supabase.storage.from(bucket).list(folder, {
+			search: fileName,
+		});
+
+		if (error) {
+			console.error(
+				`Storage error when checking file existence for ${sourceUrl} in bucket ${bucket}:`,
+				error.message,
+			);
+			return false;
+		}
+
+		return data?.some((file) => file.name === fileName) ?? false;
+	}
 }

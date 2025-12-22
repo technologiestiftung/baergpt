@@ -1026,7 +1026,7 @@ export const Content = {
 	"loginPage.submitButton": "Anmelden",
 	"loginPage.registerPrompt": "Sie haben noch keinen Account?",
 	"loginPage.registerLink": "Jetzt registrieren",
-	"loginPage.resetPassword.link": "/reset-password/",
+	"loginPage.resetPassword.link": "/request-password-reset/",
 	"loginPage.resetPassword.label": "Passwort vergessen?",
 	/* ---------------------- Reset Password Form ---------------------- */
 	"resetPassword.h1": "Passwort vergessen?",
@@ -1133,6 +1133,8 @@ export const Content = {
 		"Falls nach fünf Minuten keine E-Mail angekommen ist, können Sie sie erneut senden",
 	"unconfirmedEmail.resendButton": "E-Mail erneut senden",
 	"unconfirmedEmail.resend.success": "E-Mail wurde versendet",
+	"unconfirmedEmail.otp.resend":
+		"Falls der Code nicht mehr gültig ist, können Sie einen neuen anfordern:",
 
 	/* ---------------------- Account Activated ---------------------- */
 	"accountActivated.h1": "Willkommen bei BärGPT",
