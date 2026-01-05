@@ -12,7 +12,6 @@ export function ContextPill({ type, onClose, label }: ContextPillProps) {
 	return (
 		<button
 			type="button"
-			tabIndex={0}
 			onClick={onClose}
 			className={`flex items-center gap-x-1 rounded-full px-2 py-1 focus-visible:outline-default bg-hellblau-30 hover:bg-hellblau-55 text-aktiv-blau-100`}
 			data-type={type}
