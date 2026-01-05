@@ -1,0 +1,67 @@
+import React, { useState, useRef, useCallback } from "react";
+import Content from "../../../content.ts";
+import { ChatFormDropdown } from "./chat-form-dropdown.tsx";
+import { useChatsStore } from "../../../store/use-chats-store.ts";
+import { useClickOutside } from "../../../hooks/use-click-outside.ts";
+
+export const ChatKnowlegeBaseToggleButton: React.FC = () => {
+	const { selectedKnowledgeBaseOptions, setSelectedKnowledgeBaseOptions } =
+		useChatsStore.getState();
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+	const buttonRef = useRef<HTMLDivElement>(null);
+	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	const knowledgeBaseItems = [
+		{
+			label: Content["chat.knowledgeBase.li1.label"],
+			description: Content["chat.knowledgeBase.li1.description"],
+			ariaLabel: Content["chat.knowledgeBase.li1.ariaLabel"],
+		},
+	];
+
+	const handleItemClick = (label: string) => {
+		if (selectedKnowledgeBaseOptions.includes(label)) {
+			setSelectedKnowledgeBaseOptions(
+				selectedKnowledgeBaseOptions.filter((item) => item !== label),
+			);
+		} else {
+			setSelectedKnowledgeBaseOptions([...selectedKnowledgeBaseOptions, label]);
+		}
+	};
+
+	const handleToggleDropdown = () => {
+		setIsDropdownOpen(!isDropdownOpen);
+	};
+
+	const handleClose = useCallback(() => {
+		setIsDropdownOpen(false);
+	}, []);
+
+	useClickOutside(isDropdownOpen, handleClose, [buttonRef, dropdownRef]);
+
+	return (
+		<div className="relative" ref={buttonRef}>
+			<button
+				className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center focus-visible:outline-default"
+				onClick={handleToggleDropdown}
+			>
+				<img
+					src="icons/plus-dark-blue-icon.svg"
+					alt={Content["plusIcon.imgAlt"]}
+					width={24}
+					height={24}
+				/>
+			</button>
+			{isDropdownOpen && (
+				<div ref={dropdownRef}>
+					<ChatFormDropdown
+						items={knowledgeBaseItems}
+						title={Content["chat.knowledgeBase.dropdown.title"]}
+						selectedItems={selectedKnowledgeBaseOptions}
+						onItemClick={handleItemClick}
+					/>
+				</div>
+			)}
+		</div>
+	);
+};

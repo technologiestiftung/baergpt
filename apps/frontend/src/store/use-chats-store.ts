@@ -15,6 +15,8 @@ interface ChatStore {
 	isFirstLoad: boolean;
 	isLoading: boolean;
 	chats: ChatWithMessages[];
+	selectedKnowledgeBaseOptions: string[];
+	setSelectedKnowledgeBaseOptions(options: string[]): void;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
 	getCurrentChat(): ChatWithMessages | undefined;
@@ -39,6 +41,11 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
 	isLoading: false,
 	chats: [],
+	selectedKnowledgeBaseOptions: [],
+
+	setSelectedKnowledgeBaseOptions(options: string[]) {
+		set({ selectedKnowledgeBaseOptions: options });
+	},
 
 	/**
 	 * Fetches the user's chats from the database
