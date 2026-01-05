@@ -62,8 +62,7 @@
 											max-height: 50px;
 										"
 										src="https://www.baergpt.berlin/logos/baergpt-logo.svg"
-										class="email-logo"
-										alt=""
+										alt="BärGPT Logo"
 									/>
 								</a>
 							</td>
@@ -75,9 +74,9 @@
 								</h1>
 
 								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Sie haben eine Zurücksetzung Ihres Passworts angefordert. Bitte
-									bestätigen Sie Ihre Identität und wählen anschließend ein neues
-									Passwort.
+									Sie haben eine Zurücksetzung Ihres Passworts angefordert.
+									Bitte bestätigen Sie Ihre Identität und wählen anschließend
+									ein neues Passwort.
 								</p>
 
 								<p style="font-size: 14px; color: #000000; line-height: 1.5">
@@ -111,7 +110,7 @@
 									<tr>
 										<td align="left">
 											<a
-												href="{{ .SiteURL }}/auth/confirm-reset/?type=recovery&email={{ .Email }}&redirect_to={{ .RedirectTo }}"
+												href="{{ .SiteURL }}/confirm-otp/?type=recovery&email={{ .Email }}"
 												target="_blank"
 												rel="noopener noreferrer"
 												style="
@@ -148,12 +147,12 @@
 									manuell:
 									<br />
 									<a
-										href="{{ .SiteURL }}/auth/confirm-reset/?type=recovery&email={{ .Email }}&redirect_to={{ .RedirectTo }}"
+										href="{{ .SiteURL }}/confirm-otp/?type=recovery&email={{ .Email }}"
 										target="_blank"
 										rel="noopener noreferrer"
 										style="color: #0c2753; word-break: break-word"
 									>
-										{{ .SiteURL }}/auth/confirm-reset/?type=recovery&email={{ .Email }}&redirect_to={{ .RedirectTo }}
+										{{ .SiteURL }}/confirm-otp/?type=recovery&email={{ .Email }}
 									</a>
 									<br /><br />
 									Ihr Code (bitte im Formular eingeben):
