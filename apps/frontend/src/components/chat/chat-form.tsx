@@ -14,6 +14,7 @@ import Content from "../../content.ts";
 import type { NewChatMessage } from "../../common.ts";
 import { getCompletion } from "../../api/chat/get-completion.ts";
 import { useChatsStore } from "../../store/use-chats-store.ts";
+import { ContextPill } from "../primitives/pill/context-pill.tsx";
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const ChatForm: React.FC = () => {
@@ -24,6 +25,9 @@ export const ChatForm: React.FC = () => {
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
+
+	const [isBaseKnowledgeActive, setIsBaseKnowledgeActive] = useState(true);
+	const [isWebSearchActive, setIsWebSearchActive] = useState(true);
 
 	// Resize textarea on input
 	const handleTextAreaInput = () => {
@@ -123,8 +127,21 @@ export const ChatForm: React.FC = () => {
 						<div className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center">
 							+
 						</div>
-						<div className="bg-hellblau-30 text-sm text-aktiv-blau-100 rounded-full px-2 py-1 flex items-center justify-center">
-							Verwaltungswissen
+						<div className="items-center gap-2 hidden md:flex">
+							{isWebSearchActive && (
+								<ContextPill
+									type="websearch"
+									onClose={() => setIsWebSearchActive(false)}
+									label={Content["chat.contextPill.websearch.label"]}
+								/>
+							)}
+							{isBaseKnowledgeActive && (
+								<ContextPill
+									type="baseknowledge"
+									onClose={() => setIsBaseKnowledgeActive(false)}
+									label={Content["chat.contextPill.baseknowledge.label"]}
+								/>
+							)}
 						</div>
 					</div>
 					<div className="flex items-center gap-3">
