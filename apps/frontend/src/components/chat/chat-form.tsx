@@ -93,12 +93,12 @@ export const ChatForm: React.FC = () => {
 		>
 			<SelectedChatItemsCollapsible />
 
-			<div className="flex items-center p-0.5 gap-6 justify-between rounded-b-3px">
+			<div className="flex flex-col justify-between rounded-b-3px">
 				<div
-					className={`rounded-t-[1px] rounded-b-[1px] py-3 pl-4 flex w-full z-10
+					className={`rounded-[1px] my-2 pt-1 mx-3 px-1 flex z-10
 								has-[textarea:focus]:outline
 								has-[textarea:focus]:outline-[2px]
-								has-[textarea:focus]:outline-offset-1
+								has-[textarea:focus]:outline-offset-0
 								has-[textarea:focus]:outline-mittelblau-100
 								has-[textarea:active]:outline
 								has-[textarea:active]:outline-[2px]
@@ -108,7 +108,7 @@ export const ChatForm: React.FC = () => {
 								`}
 				>
 					<textarea
-						className="w-full pb-1 focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80"
+						className="w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80"
 						ref={textareaRef}
 						name="content"
 						rows={1}
@@ -117,16 +117,30 @@ export const ChatForm: React.FC = () => {
 						onKeyDown={handleTextAreaKeyDown}
 						onInput={handleTextAreaInput}
 					/>
-
-					<button
-						type="submit"
-						disabled={
-							(isInferenceLoading && !hasError) || !textareaContent.trim()
-						}
-						className={`rounded-3px bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px mr-4`}
-					>
-						<ArrowWhiteRightIcon />
-					</button>
+				</div>
+				<div className=" pb-3 pt-1 px-4 flex w-full z-10 justify-between">
+					<div className="flex items-center gap-3">
+						<div className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center">
+							+
+						</div>
+						<div className="bg-hellblau-30 text-sm text-aktiv-blau-100 rounded-full px-2 py-1 flex items-center justify-center">
+							Verwaltungswissen
+						</div>
+					</div>
+					<div className="flex items-center gap-3">
+						<div className="hover:bg-hellblau-30 text-dunkelblau-80 text-sm px-2 py-1 h-8 flex items-center justify-center">
+							small
+						</div>
+						<button
+							type="submit"
+							disabled={
+								(isInferenceLoading && !hasError) || !textareaContent.trim()
+							}
+							className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
+						>
+							<ArrowWhiteRightIcon />
+						</button>
+					</div>
 				</div>
 			</div>
 		</form>
