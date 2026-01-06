@@ -42,7 +42,19 @@ jobs:
             -o ExitOnForwardFailure=yes \
             -o StrictHostKeyChecking=no \
             $SSH_USER@$SSH_HOST
-          sleep 2
+          # Wait and verify tunnel with longer timeout
+          echo "Waiting for SSH tunnel to establish..."
+          for i in {1..30}; do
+            if netstat -tln | grep :$SSH_PORT; then
+              echo "✅ SSH tunnel established successfully on port $SSH_PORT (attempt $i)"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ SSH tunnel failed to establish after 30 seconds"
+              exit 1
+            fi
+            sleep 1
+          done
 
       - name: Apply Supabase migrations 🔄
         working-directory: apps/backend/supabase
