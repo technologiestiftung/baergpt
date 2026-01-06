@@ -1,13 +1,12 @@
 import { createMiddleware } from "hono/factory";
 import type { Context, Next } from "hono";
-import { DatabaseService } from "../services/database-service";
+import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
 import { captureError } from "../monitoring/capture-error";
-import { getAuthContext } from "./basic-auth";
-import { adminDatabaseService } from "../supabase";
 
 export const adminAuth = createMiddleware(async (c: Context, next: Next) => {
-	const dbService = new DatabaseService(adminDatabaseService);
-	const { userId } = getAuthContext(c);
+	const UserScopedDbClient = c.get("UserScopedDbClient");
+	const userScopedDbService = new UserScopedDbService(UserScopedDbClient);
+	const userId = c.get("authenticatedUserId");
 
 	if (!userId) {
 		return c.json({ error: "Unauthorized or invalid token" }, 401);
@@ -15,7 +14,7 @@ export const adminAuth = createMiddleware(async (c: Context, next: Next) => {
 
 	let isAdmin = false;
 	try {
-		isAdmin = await dbService.getUserAdminStatus(userId);
+		isAdmin = await userScopedDbService.getUserAdminStatus();
 	} catch (error) {
 		captureError(error);
 	}

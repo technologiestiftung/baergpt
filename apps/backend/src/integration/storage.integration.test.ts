@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { cleanupDocuments, mockDocumentUpload } from "./fixtures/documents";
 import { defaultDocumentName, defaultDocumentPath } from "./fixtures/constants";
-import { supabase as supabaseAdminClient } from "../supabase";
+import { serviceRoleDbClient as supabaseAdminClient } from "../supabase";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../config";

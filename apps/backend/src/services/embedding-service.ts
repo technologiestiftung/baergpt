@@ -10,12 +10,12 @@ import type {
 	JinaEmbeddingResponse,
 } from "../types/common";
 import { countTokens, trimToTokenLimitByWords } from "./token-utils";
-import { DatabaseService } from "./database-service";
+import { BaseContentDbService } from "./db-service/base-db-service";
 import { resilientCall } from "../utils";
 
 export class EmbeddingService {
-	private readonly dbService: DatabaseService;
-	constructor(dbService: DatabaseService) {
+	private readonly dbService: BaseContentDbService;
+	constructor(dbService: BaseContentDbService) {
 		this.dbService = dbService;
 	}
 	async chunkWithJinaSegmenter(

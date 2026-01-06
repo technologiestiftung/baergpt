@@ -1,6 +1,7 @@
-import { StorageApiError, StorageUnknownError } from "@supabase/storage-js";
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
+
+import { StorageApiError, StorageUnknownError } from "@supabase/storage-js";
 
 import {
 	type Document,
@@ -9,23 +10,18 @@ import {
 	type HybridSearchResult,
 	type KnowledgeBaseDocument,
 	DocumentNotFoundError,
-} from "../types/common";
-import { ragSearchDefaults } from "../constants";
+} from "../../types/common";
+import { ragSearchDefaults } from "../../constants";
 import {
 	DocumentExtractionService,
 	WordDocumentExtractionService,
-} from "./document-extraction-service";
-import { captureError } from "../monitoring/capture-error";
-
+} from "../document-extraction-service";
+import { captureError } from "../../monitoring/capture-error";
 const documentExtraction = new DocumentExtractionService();
 const wordExtractionService = new WordDocumentExtractionService();
 
-export class DatabaseService {
-	private readonly client: SupabaseClient<Database>;
-
-	constructor(client: SupabaseClient<Database>) {
-		this.client = client;
-	}
+export abstract class BaseContentDbService {
+	protected abstract client: SupabaseClient<Database>;
 
 	async logSummarizedDocument(
 		summaryData: {
@@ -140,21 +136,11 @@ export class DatabaseService {
 		throw deletionError;
 	}
 
-	async updateUserColumnValue(
+	abstract updateUserColumnValue(
 		userId: string,
 		columnName: string,
-		amount: number = 1,
-	): Promise<void> {
-		const { error } = await this.client.rpc("change_value_for_user_by", {
-			amount,
-			column_name: columnName,
-			user_id_to_update: userId,
-		});
-
-		if (error) {
-			throw error;
-		}
-	}
+		amount: number,
+	): Promise<void>;
 
 	/**
 	 * Creates a complete document record with all metadata, summary, and embeddings in the database.
@@ -352,33 +338,9 @@ export class DatabaseService {
 		}
 	}
 
-	// get user admin status from application_admins table
-	async getUserAdminStatus(userId: string): Promise<boolean> {
-		const { count, error } = await this.client
-			.from("application_admins")
-			.select("user_id", { count: "exact", head: true })
-			.eq("user_id", userId);
-
-		if (error) {
-			throw error;
-		}
-
-		const isAdmin = count > 0;
+	async getUserAdminStatus(): Promise<boolean> {
+		const { data: isAdmin } = await this.client.rpc("is_application_admin");
 		return isAdmin;
-	}
-
-	async getUserActiveStatus(userId: string) {
-		const { data, error } = await this.client
-			.from("user_active_status")
-			.select("*")
-			.eq("id", userId)
-			.single();
-
-		if (error) {
-			throw error;
-		}
-
-		return data;
 	}
 
 	async getMaintenanceModeStatus(): Promise<{ is_enabled: boolean }> {
@@ -394,7 +356,7 @@ export class DatabaseService {
 	}
 
 	async deleteDocument(documentId: number, userId: string): Promise<void> {
-		const isAdmin = await this.getUserAdminStatus(userId);
+		const isAdmin = await this.getUserAdminStatus();
 
 		let query = this.client
 			.from("documents")
@@ -472,7 +434,7 @@ export class DatabaseService {
 		folderId: number,
 		userId: string,
 	): Promise<boolean> {
-		const { data, error } = await supabase
+		const { data, error } = await this.client
 			.from("document_folders")
 			.select("id")
 			.eq("id", folderId)
@@ -507,9 +469,11 @@ export class DatabaseService {
 		const folder = pathParts.slice(0, -1).join("/");
 		const fileName = pathParts[pathParts.length - 1];
 
-		const { data, error } = await supabase.storage.from(bucket).list(folder, {
-			search: fileName,
-		});
+		const { data, error } = await this.client.storage
+			.from(bucket)
+			.list(folder, {
+				search: fileName,
+			});
 
 		if (error) {
 			console.error(

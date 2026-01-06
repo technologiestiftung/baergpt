@@ -10,8 +10,8 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../config";
-import { supabase as supabaseAdminClient } from "../supabase";
-import { DatabaseService } from "../services/database-service";
+import { serviceRoleDbClient as supabaseAdminClient } from "../supabase";
+import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import { EmbeddingService } from "../services/embedding-service";
 import type { KnowledgeBaseDocument } from "../types/common";
 
@@ -35,7 +35,7 @@ describe("Base Knowledge Integration Tests", () => {
 	let accessGroupId: string;
 	let documentId: number;
 
-	const dbService = new DatabaseService(supabaseAdminClient);
+	const dbService = new PrivilegedDbService(supabaseAdminClient);
 	const embeddingService = new EmbeddingService(dbService);
 
 	beforeAll(async () => {

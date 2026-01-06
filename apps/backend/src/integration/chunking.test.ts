@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EmbeddingService } from "../services/embedding-service";
-import type { DatabaseService } from "../services/database-service";
+import type { BaseContentDbService } from "../services/db-service/base-db-service";
 import { countTokens } from "../services/token-utils";
 import { config } from "../config";
 
@@ -25,7 +25,7 @@ describe("Chunking Methods", () => {
 	const mockDbService = {
 		updateUserColumnValue: vi.fn(),
 		logEmbeddings: vi.fn(),
-	} as unknown as DatabaseService;
+	} as unknown as BaseContentDbService;
 
 	beforeEach(() => {
 		service = new EmbeddingService(mockDbService);

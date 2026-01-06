@@ -1,20 +1,19 @@
-import { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@repo/db-schema";
-
+import type { ServiceRoleDbClient } from "../../supabase";
+import { BaseContentDbService } from "./base-db-service";
 /**
  * AdminService handles operations that require the Supabase service role key.
- * These operations cannot be performed with user JWTs and must use elevated privileges.
  *
  * Operations include:
  * - Auth Admin API calls (updateUserById, deleteUser, inviteUserByEmail)
  * - Writing to privileged tables (application_admins)
  * - Soft/hard user deletion and restoration
  */
-export class AdminService {
-	private readonly adminClient: SupabaseClient<Database>;
+export class PrivilegedDbService extends BaseContentDbService {
+	protected readonly client: ServiceRoleDbClient;
 
-	constructor(adminClient: SupabaseClient<Database>) {
-		this.adminClient = adminClient;
+	constructor(client: ServiceRoleDbClient) {
+		super();
+		this.client = client;
 	}
 
 	/**
@@ -57,11 +56,10 @@ export class AdminService {
 
 		// Update user in auth (requires service role)
 		if (Object.keys(authUpdateData).length > 0) {
-			const { error: authError } =
-				await this.adminClient.auth.admin.updateUserById(
-					userId,
-					authUpdateData,
-				);
+			const { error: authError } = await this.client.auth.admin.updateUserById(
+				userId,
+				authUpdateData,
+			);
 
 			if (authError) {
 				throw authError;
@@ -79,7 +77,7 @@ export class AdminService {
 		);
 
 		if (Object.keys(updateData).length > 0) {
-			const { error: profileError } = await this.adminClient
+			const { error: profileError } = await this.client
 				.from("profiles")
 				.update(updateData)
 				.eq("id", userId);
@@ -95,13 +93,9 @@ export class AdminService {
 	 * Requires service role to write to application_admins table.
 	 */
 	async updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<void> {
-		if (typeof isAdmin !== "boolean") {
-			throw new Error("isAdmin must be a boolean value");
-		}
-
 		if (isAdmin) {
 			// Add user to application_admins table
-			const { error } = await this.adminClient
+			const { error } = await this.client
 				.from("application_admins")
 				.insert({ user_id: userId });
 
@@ -113,7 +107,7 @@ export class AdminService {
 		}
 
 		// Remove user from application_admins table
-		const { error } = await this.adminClient
+		const { error } = await this.client
 			.from("application_admins")
 			.delete()
 			.eq("user_id", userId);
@@ -128,7 +122,7 @@ export class AdminService {
 	 * Requires service role to update user_active_status.
 	 */
 	async softDeleteUser(userId: string): Promise<void> {
-		const { error } = await this.adminClient
+		const { error } = await this.client
 			.from("user_active_status")
 			.update({ deleted_at: new Date().toISOString(), is_active: false })
 			.eq("id", userId);
@@ -143,7 +137,7 @@ export class AdminService {
 	 * Requires service role for auth.admin.deleteUser().
 	 */
 	async hardDeleteUser(userId: string): Promise<void> {
-		const { error } = await this.adminClient.auth.admin.deleteUser(userId);
+		const { error } = await this.client.auth.admin.deleteUser(userId);
 
 		if (error) {
 			throw error;
@@ -155,7 +149,7 @@ export class AdminService {
 	 * Requires service role to update user_active_status.
 	 */
 	async restoreUser(userId: string): Promise<void> {
-		const { error } = await this.adminClient
+		const { error } = await this.client
 			.from("user_active_status")
 			.update({ deleted_at: null, is_active: true })
 			.eq("id", userId);
@@ -183,15 +177,24 @@ export class AdminService {
 			data.last_name = lastName;
 		}
 
-		const { error } = await this.adminClient.auth.admin.inviteUserByEmail(
-			email,
-			{
-				data,
-			},
-		);
+		const { error } = await this.client.auth.admin.inviteUserByEmail(email, {
+			data,
+		});
 
 		if (error) {
 			throw error;
 		}
+	}
+
+	async updateUserColumnValue(
+		_userId: string,
+		_columnName: string,
+		_amount: number = 1,
+	): Promise<void> {
+		// No-op: Referenced by some services but guarded against if there is no user.
+		throw new Error(
+			"updateUserColumnValue should not be called on PrivilegedDbService. " +
+				"Ensure userId is checked before calling this method.",
+		);
 	}
 }

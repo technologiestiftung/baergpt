@@ -1,10 +1,13 @@
 import { DocumentProcessInput } from "../schemas/document-process-schema";
 import { ValidationResult } from "../types/common";
-import { DatabaseService } from "./database-service";
-
-const dbService = new DatabaseService();
+import { BaseContentDbService } from "./db-service/base-db-service";
 
 export class ValidationService {
+	private readonly dbService: BaseContentDbService;
+	constructor(dbService: BaseContentDbService) {
+		this.dbService = dbService;
+	}
+
 	validatePersonalSourceUrlPath(
 		sourceUrl: string,
 		authenticatedUserId: string,
@@ -72,7 +75,7 @@ export class ValidationService {
 
 		// Folder ownership validation
 		if (inputDocument.folder_id !== null) {
-			const folderBelongsToUser = await dbService.validateFolderOwnership(
+			const folderBelongsToUser = await this.dbService.validateFolderOwnership(
 				inputDocument.folder_id,
 				authenticatedUserId,
 			);
@@ -87,7 +90,7 @@ export class ValidationService {
 		}
 
 		// File existence validation
-		const fileExists = await dbService.validateFileExistsInStorage(
+		const fileExists = await this.dbService.validateFileExistsInStorage(
 			sourceUrl,
 			bucket,
 		);

@@ -2,17 +2,24 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "./config";
 
-export const adminDatabaseService = createClient<Database>(
+export type UserScopedDbClient = SupabaseClient<Database> & {
+	readonly __brand: "user-scoped";
+};
+export type ServiceRoleDbClient = SupabaseClient<Database> & {
+	readonly __brand: "service-role";
+};
+
+export const serviceRoleDbClient = createClient<Database>(
 	config.supabaseUrl,
 	config.supabaseServiceRoleKey,
 	{
 		auth: { persistSession: false },
 	},
-);
+) as ServiceRoleDbClient;
 
-export function createUserClient(
+export function createUserScopedDbClient(
 	accessToken: string,
-): SupabaseClient<Database> {
+): UserScopedDbClient {
 	return createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
 		auth: { persistSession: false },
 		global: {
@@ -20,8 +27,5 @@ export function createUserClient(
 				Authorization: `Bearer ${accessToken}`,
 			},
 		},
-	});
+	}) as UserScopedDbClient;
 }
-
-// Only use this throughout integration tests and scripts but not in any services.
-export const supabase = adminDatabaseService;

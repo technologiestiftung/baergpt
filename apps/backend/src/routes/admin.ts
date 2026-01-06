@@ -1,16 +1,15 @@
 import { Hono } from "hono";
-import { AdminService } from "../services/admin-service";
+import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import { adminAuth } from "../middleware/admin-auth";
 import { captureError } from "../monitoring/capture-error";
 import basicAuth from "../middleware/basic-auth";
-import { adminDatabaseService } from "../supabase";
+import { serviceRoleDbClient } from "../supabase";
 
 const admin = new Hono();
 admin.use(basicAuth);
 admin.use(adminAuth);
 
-// Singleton AdminService using service role key for privileged operations
-const adminService = new AdminService(adminDatabaseService);
+const serviceRoleAdminService = new PrivilegedDbService(serviceRoleDbClient);
 
 // Route: update user profile (first_name, last_name, academic_title, email, personal_title)
 admin.put("/users/:userId/profile", async (c) => {
@@ -42,7 +41,7 @@ admin.put("/users/:userId/profile", async (c) => {
 		}
 
 		// Update profile fields (requires service role for auth.admin.updateUserById)
-		await adminService.updateUserProfile({
+		await serviceRoleAdminService.updateUserProfile({
 			userId,
 			firstName,
 			lastName,
@@ -75,8 +74,7 @@ admin.put("/users/:userId/admin", async (c) => {
 			return c.json({ error: "isAdmin must be a boolean value" }, 400);
 		}
 
-		// Requires service role to write to application_admins table
-		await adminService.updateUserAdminStatus(userId, isAdmin);
+		await serviceRoleAdminService.updateUserAdminStatus(userId, isAdmin);
 		return c.json({ message: "User admin status updated successfully" });
 	} catch (error) {
 		captureError(error);
@@ -101,13 +99,11 @@ admin.delete("/users/:userId", async (c) => {
 		const hardDelete = c.req.query("hard") === "true";
 
 		if (hardDelete) {
-			// Requires service role for auth.admin.deleteUser
-			await adminService.hardDeleteUser(userId);
+			await serviceRoleAdminService.hardDeleteUser(userId);
 			return c.json({ message: "User permanently deleted successfully" });
 		}
 
-		// Requires service role to update user_active_status
-		await adminService.softDeleteUser(userId);
+		await serviceRoleAdminService.softDeleteUser(userId);
 		return c.json({ message: "User soft deleted successfully" });
 	} catch (error) {
 		captureError(error);
@@ -123,8 +119,7 @@ admin.put("/users/:userId/restore", async (c) => {
 			return c.json({ error: "User ID is required" }, 400);
 		}
 
-		// Requires service role to update user_active_status
-		await adminService.restoreUser(userId);
+		await serviceRoleAdminService.restoreUser(userId);
 		return c.json({ message: "User restored successfully" });
 	} catch (error) {
 		captureError(error);
@@ -140,8 +135,7 @@ admin.post("/users/invite", async (c) => {
 			return c.json({ error: "Email is required" }, 400);
 		}
 
-		// Requires service role for auth.admin.inviteUserByEmail
-		await adminService.sendInviteLink(email, firstName, lastName);
+		await serviceRoleAdminService.sendInviteLink(email, firstName, lastName);
 		return c.json({ message: "Invite link sent successfully" });
 	} catch (error) {
 		captureError(error);

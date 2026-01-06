@@ -1,4 +1,4 @@
-import { adminDatabaseService as supabase } from "../src/supabase";
+import { serviceRoleDbClient as supabase } from "../src/supabase";
 
 export async function seedLocalAdmin() {
 	const id = crypto.randomUUID();

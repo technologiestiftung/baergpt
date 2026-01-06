@@ -21,7 +21,7 @@ import {
 	type KnowledgeBaseDocument,
 	type LLMHandler,
 } from "../types/common";
-import { DatabaseService } from "./database-service";
+import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
 import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
@@ -39,10 +39,10 @@ const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 
 export class GenerationService {
-	private readonly dbService: DatabaseService;
+	private readonly dbService: BaseContentDbService;
 	private readonly embeddingService: EmbeddingService;
 
-	constructor(dbService: DatabaseService) {
+	constructor(dbService: BaseContentDbService) {
 		this.dbService = dbService;
 		this.embeddingService = new EmbeddingService(this.dbService);
 	}

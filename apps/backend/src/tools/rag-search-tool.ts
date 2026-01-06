@@ -1,10 +1,10 @@
 import { tool } from "ai";
-import type { DatabaseService } from "../services/database-service";
+import { BaseContentDbService } from "../services/db-service/base-db-service";
 import type { EmbeddingService } from "../services/embedding-service";
 import { z } from "zod";
 
 type RagSearchToolOptions = {
-	dbService: DatabaseService;
+	dbService: BaseContentDbService;
 	embeddingService: EmbeddingService;
 	userId: string;
 	allowedDocumentIds: number[];
