@@ -42,6 +42,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	return (
 		<div className="relative" ref={buttonRef}>
 			<button
+				type="button"
 				className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center focus-visible:outline-default"
 				onClick={handleToggleDropdown}
 			>

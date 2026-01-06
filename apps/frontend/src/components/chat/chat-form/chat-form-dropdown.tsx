@@ -29,6 +29,7 @@ export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
 					return (
 						<li key={item.label}>
 							<button
+								type="button"
 								className="flex items-center justify-between w-full px-4 py-4 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default^ rounded-3px"
 								onClick={() => onItemClick(item.label)}
 								aria-label={item.ariaLabel}
