@@ -14,7 +14,7 @@ import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import { ChatKnowlegeBaseToggleButton } from "./chat-knowlege-base-toggle-button.tsx";
+import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const ChatForm: React.FC = () => {
@@ -121,7 +121,7 @@ export const ChatForm: React.FC = () => {
 				</div>
 				<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
 					<div className="flex items-center gap-3">
-						<ChatKnowlegeBaseToggleButton />
+						<ChatOptionsToggleButton />
 						<div className="bg-hellblau-30 text-sm text-aktiv-blau-100 rounded-full px-2 py-1 flex items-center justify-center">
 							Verwaltungswissen
 						</div>

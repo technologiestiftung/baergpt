@@ -4,28 +4,28 @@ import { ChatFormDropdown } from "./chat-form-dropdown.tsx";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { useClickOutside } from "../../../hooks/use-click-outside.ts";
 
-export const ChatKnowlegeBaseToggleButton: React.FC = () => {
-	const { selectedKnowledgeBaseOptions, setSelectedKnowledgeBaseOptions } =
+export const ChatOptionsToggleButton: React.FC = () => {
+	const { selectedChatOptions, setSelectedChatOptions } =
 		useChatsStore.getState();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const buttonRef = useRef<HTMLDivElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
-	const knowledgeBaseItems = [
+	const chatOptionsItems = [
 		{
-			label: Content["chat.knowledgeBase.li1.label"],
-			description: Content["chat.knowledgeBase.li1.description"],
-			ariaLabel: Content["chat.knowledgeBase.li1.ariaLabel"],
+			label: Content["chat.options.li1.label"],
+			description: Content["chat.options.li1.description"],
+			ariaLabel: Content["chat.options.li1.ariaLabel"],
 		},
 	];
 
 	const handleItemClick = (label: string) => {
-		if (selectedKnowledgeBaseOptions.includes(label)) {
-			setSelectedKnowledgeBaseOptions(
-				selectedKnowledgeBaseOptions.filter((item) => item !== label),
+		if (selectedChatOptions.includes(label)) {
+			setSelectedChatOptions(
+				selectedChatOptions.filter((item) => item !== label),
 			);
 		} else {
-			setSelectedKnowledgeBaseOptions([...selectedKnowledgeBaseOptions, label]);
+			setSelectedChatOptions([...selectedChatOptions, label]);
 		}
 	};
 
@@ -55,9 +55,9 @@ export const ChatKnowlegeBaseToggleButton: React.FC = () => {
 			{isDropdownOpen && (
 				<div ref={dropdownRef}>
 					<ChatFormDropdown
-						items={knowledgeBaseItems}
-						title={Content["chat.knowledgeBase.dropdown.title"]}
-						selectedItems={selectedKnowledgeBaseOptions}
+						items={chatOptionsItems}
+						title={Content["chat.options.dropdown.title"]}
+						selectedItems={selectedChatOptions}
 						onItemClick={handleItemClick}
 					/>
 				</div>

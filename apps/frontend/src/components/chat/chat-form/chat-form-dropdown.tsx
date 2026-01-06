@@ -46,7 +46,7 @@ export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
 
 								<img
 									src="/icons/check-active-icon.svg"
-									alt={Content["chat.knowledgeBase.selected.icon.imgAlt"]}
+									alt={Content["chat.options.selected.icon.imgAlt"]}
 									width={20}
 									height={20}
 									className={`${isSelected ? "block" : "hidden"}`}
