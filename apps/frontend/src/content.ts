@@ -886,6 +886,9 @@ export const Content = {
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
 	"chat.selectedChatItems.questionmark.arialabel": "Tooltip zeigen",
 	//Chat options dropdown
+	"chat.options.toggleButton.tooltip": "Weitere Funktionen aktivieren",
+	"chat.options.toggleButton.tooltip.ariaLabel":
+		"Weitere Funktionen aktivieren",
 	"chat.options.dropdown.title": "Wissen erweitern",
 	"chat.options.selected.icon.imgAlt": "Ein blaues Häkchen-Icon",
 	"chat.options.li1.label": "Verwaltungswissen",
