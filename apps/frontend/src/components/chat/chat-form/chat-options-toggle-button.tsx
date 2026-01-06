@@ -6,7 +6,7 @@ import { useClickOutside } from "../../../hooks/use-click-outside.ts";
 import type { ChatOption } from "../../../common.ts";
 
 export const ChatOptionsToggleButton: React.FC = () => {
-	const { selectedChatOptions, toggleChatOption } = useChatsStore();
+	const { selectedChatOptions, setSelectedChatOptions } = useChatsStore();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const buttonRef = useRef<HTMLDivElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
@@ -21,7 +21,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	];
 
 	const handleItemClick = (value: string) => {
-		toggleChatOption(value as ChatOption);
+		setSelectedChatOptions(value as ChatOption);
 	};
 
 	const handleToggleDropdown = () => {

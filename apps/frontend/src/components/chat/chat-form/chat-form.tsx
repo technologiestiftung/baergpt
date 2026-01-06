@@ -22,12 +22,14 @@ export const ChatForm: React.FC = () => {
 	const { status, clearError } = useInferenceLoadingStatusStore();
 	const { selectedChatFolders } = useFolderStore();
 	const { selectedChatDocuments } = useDocumentStore();
-	const { getCurrentOrCreateChat } = useChatsStore.getState();
+	const {
+		getCurrentOrCreateChat,
+		selectedChatOptions,
+		setSelectedChatOptions,
+	} = useChatsStore();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
-
-	const { selectedChatOptions, toggleChatOption } = useChatsStore();
 
 	// Resize textarea on input
 	const handleTextAreaInput = () => {
@@ -130,7 +132,7 @@ export const ChatForm: React.FC = () => {
 								<ContextPill
 									key={option}
 									option={option}
-									onClose={() => toggleChatOption(option)}
+									onClose={() => setSelectedChatOptions(option)}
 								/>
 							))}
 						</div>
