@@ -28,7 +28,7 @@ export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
 				{items.map((item) => {
 					const isSelected = selectedItems.includes(item.value);
 					return (
-						<li key={item.label}>
+						<li key={item.value}>
 							<button
 								type="button"
 								className="flex items-center justify-between w-full px-4 py-4 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default^ rounded-3px"
