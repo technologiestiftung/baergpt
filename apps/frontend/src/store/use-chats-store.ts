@@ -16,7 +16,8 @@ interface ChatStore {
 	isLoading: boolean;
 	chats: ChatWithMessages[];
 	selectedChatOptions: ChatOption[];
-	setSelectedChatOptions(options: ChatOption[]): void;
+	toggleChatOption(option: ChatOption): void;
+	hasChatOption(option: ChatOption): boolean;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
 	getCurrentChat(): ChatWithMessages | undefined;
@@ -43,8 +44,21 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	chats: [],
 	selectedChatOptions: [],
 
-	setSelectedChatOptions(options: ChatOption[]) {
-		set({ selectedChatOptions: options });
+	toggleChatOption(option: ChatOption) {
+		const { selectedChatOptions } = get();
+		if (selectedChatOptions.includes(option)) {
+			set({
+				selectedChatOptions: selectedChatOptions.filter(
+					(item) => item !== option,
+				),
+			});
+		} else {
+			set({ selectedChatOptions: [...selectedChatOptions, option] });
+		}
+	},
+
+	hasChatOption(option: ChatOption) {
+		return get().selectedChatOptions.includes(option);
 	},
 
 	/**

@@ -27,8 +27,8 @@ export const ChatForm: React.FC = () => {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
 
-	const [isBaseKnowledgeActive, setIsBaseKnowledgeActive] = useState(true);
-	const [isWebSearchActive, setIsWebSearchActive] = useState(true);
+	const { hasChatOption, toggleChatOption } = useChatsStore();
+	const isBaseKnowledgeActive = hasChatOption("baseKnowledge");
 
 	// Resize textarea on input
 	const handleTextAreaInput = () => {
@@ -127,17 +127,10 @@ export const ChatForm: React.FC = () => {
 					<div className="flex items-center gap-3">
 						<ChatOptionsToggleButton />
 						<div className="items-center gap-2 hidden md:flex">
-							{isWebSearchActive && (
-								<ContextPill
-									type="websearch"
-									onClose={() => setIsWebSearchActive(false)}
-									label={Content["chat.contextPill.websearch.label"]}
-								/>
-							)}
 							{isBaseKnowledgeActive && (
 								<ContextPill
 									type="baseknowledge"
-									onClose={() => setIsBaseKnowledgeActive(false)}
+									onClose={() => toggleChatOption("baseKnowledge")}
 									label={Content["chat.contextPill.baseknowledge.label"]}
 								/>
 							)}
