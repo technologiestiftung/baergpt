@@ -40,13 +40,13 @@ jobs:
             -p $SSH_PORT \
             -L 5439:127.0.0.1:5432 \
             -o ExitOnForwardFailure=yes \
-            -o StrictHostKeyChecking=no \
+            -o StrictHostKeyChecking=yes \
             $SSH_USER@$SSH_HOST
           # Wait and verify tunnel with longer timeout
           echo "Waiting for SSH tunnel to establish..."
           for i in {1..30}; do
-            if netstat -tln | grep :$SSH_PORT; then
-              echo "✅ SSH tunnel established successfully on port $SSH_PORT (attempt $i)"
+            if netstat -tln | grep :5439; then
+              echo "✅ SSH tunnel established successfully on port 5439 (attempt $i)"
               break
             fi
             if [ $i -eq 30 ]; then
