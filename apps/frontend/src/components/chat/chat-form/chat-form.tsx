@@ -4,17 +4,18 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { useChatScrollingStore } from "../../store/use-chat-scrolling-store.ts";
-import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
-import { SelectedChatItemsCollapsible } from "./selected-chat-items/selected-chat-items-collapsible.tsx";
-import { ArrowWhiteRightIcon } from "../primitives/icons/arrow-white-right-icon.tsx";
-import { useFolderStore } from "../../store/folder-store.ts";
-import { useDocumentStore } from "../../store/document-store.ts";
-import Content from "../../content.ts";
-import type { NewChatMessage } from "../../common.ts";
-import { getCompletion } from "../../api/chat/get-completion.ts";
-import { useChatsStore } from "../../store/use-chats-store.ts";
-import { ContextPill } from "../primitives/pill/context-pill.tsx";
+import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.ts";
+import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
+import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
+import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
+import { useFolderStore } from "../../../store/folder-store.ts";
+import { useDocumentStore } from "../../../store/document-store.ts";
+import Content from "../../../content.ts";
+import type { NewChatMessage } from "../../../common.ts";
+import { getCompletion } from "../../../api/chat/get-completion.ts";
+import { useChatsStore } from "../../../store/use-chats-store.ts";
+import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
+import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const ChatForm: React.FC = () => {
@@ -122,11 +123,9 @@ export const ChatForm: React.FC = () => {
 						onInput={handleTextAreaInput}
 					/>
 				</div>
-				<div className=" pb-3 pt-1 px-4 flex w-full z-10 justify-between">
+				<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
 					<div className="flex items-center gap-3">
-						<div className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center">
-							+
-						</div>
+						<ChatOptionsToggleButton />
 						<div className="items-center gap-2 hidden md:flex">
 							{isWebSearchActive && (
 								<ContextPill

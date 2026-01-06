@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import { useAuthStore } from "../../../store/auth-store";
 import { DesktopProfileDropdown } from "../desktop-profile-dropdown/desktop-profile-dropdown";
 import Content from "../../../content";
+import { useClickOutside } from "../../../hooks/use-click-outside";
 
 export const DesktopProfileButton = () => {
 	const { session } = useAuthStore();
@@ -14,37 +15,13 @@ export const DesktopProfileButton = () => {
 		setIsDropdownOpen((prev) => !prev);
 	};
 
-	useEffect(() => {
-		if (!isDropdownOpen) {
-			return () => {};
-		}
+	const handleClose = useCallback(() => {
+		setIsDropdownOpen(false);
+		// Focus the button when closing via Escape key
+		buttonRef.current?.focus();
+	}, []);
 
-		const handleClickOutside = (event: MouseEvent) => {
-			const target = event.target as Node;
-			if (
-				dropdownRef.current?.contains(target) ||
-				buttonRef.current?.contains(target)
-			) {
-				return;
-			}
-			setIsDropdownOpen(false);
-		};
-
-		const handleEscapeKey = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				setIsDropdownOpen(false);
-				buttonRef.current?.focus();
-			}
-		};
-
-		document.addEventListener("mousedown", handleClickOutside);
-		document.addEventListener("keydown", handleEscapeKey);
-
-		return () => {
-			document.removeEventListener("mousedown", handleClickOutside);
-			document.removeEventListener("keydown", handleEscapeKey);
-		};
-	}, [isDropdownOpen]);
+	useClickOutside(isDropdownOpen, handleClose, [buttonRef, dropdownRef]);
 
 	if (!session) {
 		return null;
@@ -57,7 +34,7 @@ export const DesktopProfileButton = () => {
 			<button
 				ref={buttonRef}
 				onClick={toggleDropdown}
-				className="group flex items-center justify-center focus-visible:outline-default"
+				className="group flex items-center justify-center focus-visible:outline-default rounded-3px"
 				aria-haspopup="true"
 				aria-expanded={isDropdownOpen}
 				aria-label={Content["profile.button.ariaLabel"]}

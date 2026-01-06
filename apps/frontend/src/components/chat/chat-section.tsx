@@ -1,6 +1,6 @@
 import React from "react";
 import { useChatsStore } from "../../store/use-chats-store.ts";
-import { ChatForm } from "./chat-form";
+import { ChatForm } from "./chat-form/chat-form.tsx";
 import { ChatMessages } from "./chat-messages";
 import { GetStarted } from "./get-started";
 import { useCurrentChatIdStore } from "../../store/current-chat-id-store.ts";
