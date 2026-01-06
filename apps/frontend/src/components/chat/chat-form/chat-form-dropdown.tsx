@@ -5,11 +5,12 @@ interface ChatFormDropdownProps {
 	title: string;
 	items: {
 		label: string;
+		value: string;
 		description: string;
 		ariaLabel: string;
 	}[];
 	selectedItems: string[];
-	onItemClick: (label: string) => void;
+	onItemClick: (value: string) => void;
 }
 
 export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
@@ -25,13 +26,13 @@ export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
 			</div>
 			<ul className="flex flex-col">
 				{items.map((item) => {
-					const isSelected = selectedItems.includes(item.label);
+					const isSelected = selectedItems.includes(item.value);
 					return (
 						<li key={item.label}>
 							<button
 								type="button"
 								className="flex items-center justify-between w-full px-4 py-4 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default^ rounded-3px"
-								onClick={() => onItemClick(item.label)}
+								onClick={() => onItemClick(item.value)}
 								aria-label={item.ariaLabel}
 							>
 								<div>

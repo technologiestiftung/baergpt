@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ChatWithMessages, NewChatMessage } from "../common";
+import type { ChatWithMessages, NewChatMessage, ChatOption } from "../common";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
 import { getChats as getChatsFromDb } from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";
@@ -15,8 +15,8 @@ interface ChatStore {
 	isFirstLoad: boolean;
 	isLoading: boolean;
 	chats: ChatWithMessages[];
-	selectedChatOptions: string[];
-	setSelectedChatOptions(options: string[]): void;
+	selectedChatOptions: ChatOption[];
+	setSelectedChatOptions(options: ChatOption[]): void;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
 	getCurrentChat(): ChatWithMessages | undefined;
@@ -43,7 +43,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	chats: [],
 	selectedChatOptions: [],
 
-	setSelectedChatOptions(options: string[]) {
+	setSelectedChatOptions(options: ChatOption[]) {
 		set({ selectedChatOptions: options });
 	},
 

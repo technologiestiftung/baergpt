@@ -3,6 +3,7 @@ import Content from "../../../content.ts";
 import { ChatFormDropdown } from "./chat-form-dropdown.tsx";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { useClickOutside } from "../../../hooks/use-click-outside.ts";
+import type { ChatOption } from "../../../common.ts";
 
 export const ChatOptionsToggleButton: React.FC = () => {
 	const { selectedChatOptions, setSelectedChatOptions } =
@@ -14,18 +15,19 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	const chatOptionsItems = [
 		{
 			label: Content["chat.options.li1.label"],
+			value: "baseKnowledge",
 			description: Content["chat.options.li1.description"],
 			ariaLabel: Content["chat.options.li1.ariaLabel"],
 		},
 	];
 
-	const handleItemClick = (label: string) => {
-		if (selectedChatOptions.includes(label)) {
+	const handleItemClick = (value: string) => {
+		if (selectedChatOptions.includes(value as ChatOption)) {
 			setSelectedChatOptions(
-				selectedChatOptions.filter((item) => item !== label),
+				selectedChatOptions.filter((item) => item !== value),
 			);
 		} else {
-			setSelectedChatOptions([...selectedChatOptions, label]);
+			setSelectedChatOptions([...selectedChatOptions, value as ChatOption]);
 		}
 	};
 
