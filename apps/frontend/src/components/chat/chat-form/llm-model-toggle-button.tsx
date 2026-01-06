@@ -29,6 +29,7 @@ export const LlmModelToggleButton: React.FC = () => {
 
 	const handleItemClick = (value: string) => {
 		setSelectedLlmModel(value as LlmModel);
+		setIsDropdownOpen(false);
 	};
 
 	const handleToggleDropdown = () => {
