@@ -20,8 +20,8 @@ export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
 	onItemClick,
 }) => {
 	return (
-		<div className="z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-60 pt-4 focus-visible:outline-default shadow-md min-w-[280px] mb-1">
-			<div className="pb-4 px-4 border-b border-hellblau-60 text-dunkelblau-80 text-sm leading-6">
+		<div className="z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1">
+			<div className="pb-3 px-4 border-b border-hellblau-50 text-dunkelblau-80 text-sm leading-6">
 				{title}
 			</div>
 			<ul className="flex flex-col">
