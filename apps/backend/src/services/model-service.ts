@@ -46,22 +46,38 @@ class Model {
 
 export class ModelService {
 	availableModels: Record<string, Model> = {
-		"mistral-small-latest": new Model({
-			identifier: "mistral-small-latest",
+		"mistral-small": new Model({
+			identifier: "mistral-small",
 			baseModelName: "mistral-small",
 			provider: "Mistral",
 			isGdprCompliant: true,
 			contextSize: 128000,
 			isOpenSource: true,
 			serverLocation: "Frankreich",
-			description: "Aktuelles Modell von Mistral, gehostet von Mistral.",
+			description:
+				"Aktuelles kleines Modell von Mistral, gehostet von Mistral.",
+		}),
+		"mistral-large": new Model({
+			identifier: "mistral-large",
+			baseModelName: "mistral-large",
+			provider: "Mistral",
+			isGdprCompliant: true,
+			contextSize: 128000,
+			isOpenSource: true,
+			serverLocation: "Frankreich",
+			description: "Aktuelles großes Modell von Mistral, gehostet von Mistral.",
 		}),
 	};
 
 	handlers: Record<string, LLMHandler> = {
-		"mistral-small-latest": new LLMHandler(
+		"mistral-small": new LLMHandler(
 			"mistral-small",
 			mistral("mistral-small-latest"),
+			"https://api.mistral.ai/v1",
+		),
+		"mistral-large": new LLMHandler(
+			"mistral-large",
+			mistral("mistral-large-latest"),
 			"https://api.mistral.ai/v1",
 		),
 	};

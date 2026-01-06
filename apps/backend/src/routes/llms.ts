@@ -14,7 +14,7 @@ const generationService = new GenerationService();
 llms.post("/just-chatting", async (c: Context) => {
 	try {
 		const body = (await c.req.json()) as ChatMessageBody;
-		const llmIdentifier = config.defaultModelIdentifier;
+		const llmIdentifier = body.llm_model ?? config.defaultModelIdentifier;
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
 		const allowedDocumentIds = body.allowed_document_ids || [];
 		const allowedFolderIds = body.allowed_folder_ids || [];
