@@ -891,6 +891,18 @@ export const Content = {
 	"chat.options.li1.label": "Verwaltungswissen",
 	"chat.options.li1.description": "Zugriff auf Verwaltungsdokumente",
 	"chat.options.li1.ariaLabel": "Verwaltungswissen auswählen",
+	// Chat llm model dropdown
+	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
+	"chat.llmModel.dropdown.li1.label": "Schnell",
+	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small 3.2 (schnell)",
+	"chat.llmModel.dropdown.li1.description": "Gut für alltägliche Aufgaben",
+	"chat.llmModel.dropdown.li1.ariaLabel":
+		"Mistral Small 3.2 (schnell) auswählen",
+	"chat.llmModel.dropdown.li2.label": "Präzise",
+	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Large 3 (präzise)",
+	"chat.llmModel.dropdown.li2.description":
+		"Leistungsstark für komplexe Aufgaben",
+	"chat.llmModel.dropdown.li2.ariaLabel": "Mistral Large 3 (präzise) auswählen",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
