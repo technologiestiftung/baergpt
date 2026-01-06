@@ -4,12 +4,14 @@ import { ChatFormDropdown } from "./chat-form-dropdown.tsx";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { useClickOutside } from "../../../hooks/use-click-outside.ts";
 import type { ChatOption } from "../../../common.ts";
+import { useTooltipStore } from "../../../store/tooltip-store.ts";
 
 export const ChatOptionsToggleButton: React.FC = () => {
 	const { selectedChatOptions, setSelectedChatOptions } = useChatsStore();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const buttonRef = useRef<HTMLDivElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
+	const { showTooltip, hideTooltip } = useTooltipStore();
 
 	const chatOptionsItems = [
 		{
@@ -20,12 +22,27 @@ export const ChatOptionsToggleButton: React.FC = () => {
 		},
 	];
 
+	const handleShowTooltip = (
+		event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
+	) => {
+		if (isDropdownOpen) {
+			return;
+		}
+
+		showTooltip({
+			event,
+			content: Content["chat.options.toggleButton.tooltip"],
+			offset: { top: -34, right: -28 },
+		});
+	};
+
 	const handleItemClick = (value: string) => {
 		setSelectedChatOptions(value as ChatOption);
 		setIsDropdownOpen(false);
 	};
 
 	const handleToggleDropdown = () => {
+		hideTooltip();
 		setIsDropdownOpen(!isDropdownOpen);
 	};
 
@@ -41,6 +58,11 @@ export const ChatOptionsToggleButton: React.FC = () => {
 				type="button"
 				className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center focus-visible:outline-default"
 				onClick={handleToggleDropdown}
+				aria-label={Content["chat.options.toggleButton.tooltip.ariaLabel"]}
+				onMouseEnter={handleShowTooltip}
+				onMouseLeave={hideTooltip}
+				onFocus={handleShowTooltip}
+				onBlur={hideTooltip}
 			>
 				<img
 					src="icons/plus-dark-blue-icon.svg"
