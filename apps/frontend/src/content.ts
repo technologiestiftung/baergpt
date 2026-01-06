@@ -918,6 +918,10 @@ export const Content = {
 	"chat.exportChatTextButton.pdf.ariaLabel": "Chat als PDF exportieren",
 	"chat.exportChatTextButton.error": "Export fehlgeschlagen",
 
+	"chat.contextPill.websearch.label": "Websuche",
+	"chat.contextPill.baseknowledge.label": "Verwaltungswissen",
+	"chat.contextPill.ariaLabel": "entfernen",
+
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
 	"profile.title.mobile": "Mein Profil",
