@@ -885,6 +885,12 @@ export const Content = {
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
 	"chat.selectedChatItems.questionmark.arialabel": "Tooltip zeigen",
+	//Chat options dropdown
+	"chat.options.dropdown.title": "Wissen erweitern",
+	"chat.options.selected.icon.imgAlt": "Ein blaues Häkchen-Icon",
+	"chat.options.li1.label": "Verwaltungswissen",
+	"chat.options.li1.description": "Zugriff auf Verwaltungsdokumente",
+	"chat.options.li1.ariaLabel": "Verwaltungswissen auswählen",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
