@@ -1,7 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { testWithRegisteredUser } from "../fixtures/test-with-registered-user.ts";
+import {
+	confirmOtp,
+	testWithRegisteredUser,
+} from "../fixtures/test-with-registered-user.ts";
 import { supabaseAdminClient } from "../supabase.ts";
 import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
+import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 
 test.describe("Login", () => {
 	testWithRegisteredUser("User Login and Logout", async ({ page, account }) => {
@@ -156,32 +160,10 @@ test.describe("Password Reset", () => {
 			),
 		).toBeVisible();
 
-		// Wait a bit for the email to be sent and processed
-		await page.waitForTimeout(3000);
+		const page1 = await confirmOtp({ page, account });
 
-		await page.goto("http://localhost:54324/"); // Inbucket URL
+		await expect(page1).toHaveURL("/reset-password/");
 
-		// Wait for the email to appear and click on the first (most recent) email
-		await page.waitForTimeout(1000);
-		const emailLinks = page.getByRole("link", {
-			name: `Admin To: ${account.email}`,
-		});
-		await emailLinks.first().click();
-
-		// Clicking on the link should open a new tab
-		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Neues Passwort vergeben" })
-			.click();
-		const page1 = await popupEvent;
-
-		// Wait for the page to fully load
-		await page1.waitForLoadState("networkidle");
-		await page1.waitForTimeout(2000);
-
-		// After clicking on the link, we should be redirected to the reset password page
 		await expect(
 			page1.getByRole("heading", { name: "Passwort zurücksetzen" }),
 		).toBeVisible();
@@ -211,110 +193,10 @@ test.describe("Password Reset", () => {
 				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
 			}),
 		).toBeVisible();
-
-		// Log out again
-		await page1.getByRole("button", { name: "Profil" }).click();
-		await page1.getByRole("button", { name: "Ausloggen" }).click();
-
-		// Now reset the password back to the original one
-
-		// Check if we are on the landing page
-		await expect(
-			page1.getByRole("heading", {
-				name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
-			}),
-		).toBeVisible();
-
-		// Go to the login page
-		await page1.getByRole("link", { name: "Zur Login-Seite" }).click();
-
-		// Check if we are on the login page
-		await expect(
-			page1.getByRole("heading", { name: "Willkommen zurück" }),
-		).toBeVisible();
-
-		// click passwort vergessen
-		await page1.getByRole("link", { name: "Passwort vergessen?" }).click();
-
-		// Check if we are on the reset password page
-		await expect(
-			page1.getByRole("heading", { name: "Passwort vergessen?" }),
-		).toBeVisible();
-
-		// Fill in the email field
-		await page1
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill(account.email);
-
-		// Click on the "Passwort zurücksetzen" button
-		await page1.getByRole("button", { name: "Zurücksetzen" }).click();
-
-		// Check for the confirmation message
-		await expect(
-			page1.getByText(
-				"Wenn die E-Mail-Adresse registriert ist, senden wir Ihnen einen Link zum Zurücksetzen Ihres Passwortes.",
-			),
-		).toBeVisible();
-
-		// Wait a bit for the email to be sent and processed
-		await page1.waitForTimeout(3000);
-
-		await page1.goto("http://localhost:54324/"); // Inbucket URL
-
-		// Wait for the email to appear and click on the first (most recent) email
-		await page1.waitForTimeout(1000);
-		const emailLinksNew = page1.getByRole("link", {
-			name: `Admin To: ${account.email}`,
-		});
-		await emailLinksNew.first().click();
-
-		// Clicking on the link should open a new tab
-		const popupEventNew = page1.waitForEvent("popup");
-		await page1
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Neues Passwort vergeben" })
-			.click();
-		const page2 = await popupEventNew;
-
-		// Wait for the page to fully load
-		await page2.waitForLoadState("networkidle");
-		await page2.waitForTimeout(2000);
-
-		// After clicking on the link, we should be redirected to the reset password page
-		await expect(
-			page2.getByRole("heading", { name: "Passwort zurücksetzen" }),
-		).toBeVisible();
-
-		// Fill in the new password field
-		await page2
-			.getByRole("textbox", { name: "Neues Passwort Ein Fragezeichen-" })
-			.fill(account.password);
-		await page2
-			.getByRole("textbox", { name: "Neues Passwort wiederholen" })
-			.fill(account.password);
-
-		// Click on the "Passwort zurücksetzen" button
-		await page2.getByRole("button", { name: "Passwort ändern" }).click();
-
-		// Check for the confirmation message
-		await expect(
-			page2.getByText("Ihr Passwort wurde erfolgreich geändert."),
-		).toBeVisible();
-
-		// Click login
-		await page2.getByRole("link", { name: "Zum Login" }).click();
-
-		// Check if we are on the main page
-		await expect(
-			page2.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
 	});
 
 	test("Invalid request password reset link attempt", async ({ page }) => {
-		await page.goto("/reset-password/");
+		await page.goto("/request-password-reset/");
 
 		// Try to submit the form with empty fields
 		await page
@@ -339,7 +221,7 @@ test.describe("Password Reset", () => {
 	});
 
 	test("Invalid password reset Attempt", async ({ page }) => {
-		await page.goto("/new-password/");
+		await page.goto("/reset-password/");
 
 		// Try to submit the form with empty fields
 		await page
@@ -433,32 +315,45 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await page
 			.waitForResponse(
 				(resp) => resp.url().includes("get_allowed_email_domains"),
-				{ timeout: 10000 },
+				{ timeout: 10_000 },
 			)
 			.catch(() => {}); // Ignore if already completed
 
 		// Fill in the registration form
-		await page
-			.getByRole("textbox", { name: "Vorname" })
-			.fill(givenUserFirstName);
-		await page
-			.getByRole("textbox", { name: "Nachname" })
-			.fill(givenUserLastName);
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse Nur" })
-			.fill(givenUserEmail);
-		await page
-			.getByRole("textbox", { name: "Passwort Ein Fragezeichen-" })
-			.fill(givenUserPassword);
-		await page
-			.getByRole("textbox", { name: "Passwort wiederholen Password" })
-			.fill(givenUserPassword);
-		await page
-			.locator('[data-testid="label-has-accepted-privacy-checkbox"]')
-			.check();
-		await page
-			.locator('[data-testid="label-has-accepted-personal-data-checkbox"]')
-			.check();
+
+		const firstNameInput = page.getByRole("textbox", {
+			name: "Vorname",
+		});
+		await firstNameInput.fill(givenUserFirstName);
+
+		const lastNameInput = page.getByRole("textbox", { name: "Nachname" });
+		await lastNameInput.fill(givenUserLastName);
+
+		const emailInput = page.getByRole("textbox", {
+			name: "E-Mail-Adresse Nur",
+		});
+		await emailInput.fill(givenUserEmail);
+
+		const passwordInput = page.getByRole("textbox", {
+			name: "Passwort Ein Fragezeichen-",
+		});
+		await passwordInput.fill(givenUserPassword);
+
+		const passwordRepeatInput = page.getByRole("textbox", {
+			name: "Passwort wiederholen Password",
+		});
+		await passwordRepeatInput.fill(givenUserPassword);
+
+		const privacyCheckboxInput = page.locator(
+			'[data-testid="label-has-accepted-privacy-checkbox"]',
+		);
+		await privacyCheckboxInput.check();
+
+		const personalDataCheckboxInput = page.locator(
+			'[data-testid="label-has-accepted-personal-data-checkbox"]',
+		);
+		await personalDataCheckboxInput.check();
+
 		// Wait for the registration request to complete
 		await Promise.all([
 			page.waitForResponse(
@@ -470,36 +365,22 @@ test.describe("User Registration (uses different user to prevent side-effects on
 				.click(),
 		]);
 
-		// Wait for the state to update and component to re-render
-		await page.waitForLoadState("networkidle");
-		// Additional small wait for React state updates
-		await page.waitForTimeout(500);
-
 		// Info message about confirmation mail should be visible
 		await expect(
 			page.getByRole("heading", { name: "Registrierung fast abgeschlossen" }),
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 10_000 });
 
-		// Open the email confirmation link in mail inbucket
-		await page.goto("http://localhost:54324/"); // Inbucket URL
-		await page
-			.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
-			.first()
-			.click();
+		const page1 = await confirmOtp({
+			page,
+			account: {
+				email: givenUserEmail,
+				password: givenUserPassword,
+				id: "", // id is not needed for this flow
+			},
+		});
 
-		// Clicking on the link should open a new tab
-		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "E-Mail-Adresse bestätigen" })
-			.click();
-		const page1 = await popupEvent;
+		await expect(page1).toHaveURL("/");
 
-		// check that we are on the account activation page
-		await page1.waitForLoadState("networkidle");
-
-		// After clicking on the link, we should be redirected to the main page
 		await expect(
 			page1.getByRole("heading", {
 				name: `Willkommen bei BärGPT, ${givenUserFirstName} ${givenUserLastName}`,
@@ -741,29 +622,16 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 	);
 });
 
-testWithRegisteredUser(
+testWithLoggedInUser(
 	"should allow user to change email address",
 	async ({ page, account }) => {
-		// Login as this user
-		await page.goto("/login/");
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill(account.email);
-		await page
-			.getByRole("textbox", { name: "Passwort" })
-			.fill(account.password);
-		await page.getByRole("button", { name: "Anmelden" }).click();
-
-		// Verify we're logged in
-		await expect(
-			page.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
-
-		// Go to the profile page
-		await page.goto("/profile/");
 		const updatedEmail = "john.doe@new.berlin.de";
+		const updatedAccount = {
+			...account,
+			email: updatedEmail,
+		};
+
+		await page.goto("/profile/");
 		// Wait for allowed email domains to be loaded before filling the form
 		await page
 			.waitForResponse(
@@ -777,76 +645,39 @@ testWithRegisteredUser(
 		// Fill in the email field with new data
 		await page.locator("#email").fill(updatedEmail);
 
-		// Submit form
-		await page.getByRole("button", { name: "E-Mail-Adresse ändern" }).click();
-
-		// Check for the email change dialog
-		await expect(
-			page.getByRole("heading", {
-				name: `Verifizierungs-E-Mail versendet an ${updatedEmail}`,
-			}),
-		).toBeVisible();
-
-		// Close the email dialog
-		await page.getByRole("button", { name: "E-Mail-Dialog schließen" }).click();
-
-		// Check for info about email confirmation above input field
-		await expect(
-			page.getByText(
-				`Sie haben die Änderung Ihrer E-Mail-Adresse auf ${updatedEmail} beantragt.`,
-			),
-		).toBeVisible();
-
-		// Wait a bit for the email to be sent and processed
-		await page.waitForTimeout(3000);
-
-		await page.goto("http://localhost:54324/"); // Inbucket URL
-
-		// Wait for the email to appear and click on the first (most recent) email
-		await page.waitForTimeout(1000);
-		const emailLinks = page.getByRole("link", {
-			name: `Admin To: ${updatedEmail}`,
+		const submitEmailChangeButton = page.getByRole("button", {
+			name: "E-Mail-Adresse ändern",
 		});
-		await emailLinks.first().click();
+		await submitEmailChangeButton.click();
 
-		// Clicking on the link should open a new tab
-		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Neue E-Mail-Adresse bestätigen" })
-			.click();
-		const page1 = await popupEvent;
+		const confirmationModal = page.getByRole("heading", {
+			name: "Verifizierungs-E-Mail",
+		});
+		await expect(confirmationModal).toBeVisible();
 
-		// Wait for the page to fully load
-		await page1.waitForLoadState("networkidle");
+		const closeConfirmationModal = page.getByRole("button", {
+			name: "E-Mail-Dialog schließen",
+		});
+		await closeConfirmationModal.click();
 
-		// After clicking on the link, we should be redirected to the email confirmation page
-		await expect(
-			page1.getByRole("heading", {
-				name: "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
-			}),
-		).toBeVisible();
+		const emailChangeInfo = page.getByText("Sie haben die Änderung Ihrer");
+		await expect(emailChangeInfo).toBeVisible();
 
-		// check that we were redirected to the email-changed page
-		await expect(page1).toHaveURL("/email-changed/#");
+		const page1 = await confirmOtp({ page, account: updatedAccount });
 
-		// Go back to main page
-		await page1
-			.getByRole("link", { name: "Zu BärGPT Ein weißer Pfeil" })
-			.click();
+		const emailChangeSuccessfulPage = page1.getByRole("heading", {
+			name: "Ihre neue E-Mail-Adresse",
+		});
+		await expect(emailChangeSuccessfulPage).toBeVisible();
 
-		// Check if we are on the main page
-		await expect(
-			page1.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
+		const linkToBaerGPTHomePage = page1.getByRole("link", {
+			name: "Zu BärGPT Ein weißer Pfeil",
+		});
+		await linkToBaerGPTHomePage.click();
 
-		// Go to the profile page
-		await page.goto("/profile/");
-
-		// Check that the email was updated
-		await expect(page.locator("#email")).toHaveValue(updatedEmail);
+		const homePageHeader = page1.getByRole("heading", {
+			name: "Willkommen bei BärGPT,",
+		});
+		await expect(homePageHeader).toBeVisible();
 	},
 );

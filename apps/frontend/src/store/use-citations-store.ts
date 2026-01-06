@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getCitationDetails } from "../api/citations/get-citation-details";
+import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-store.ts";
 import type { CitationWithDetails } from "../common";
 
 type CitationsStore = {
@@ -21,6 +22,7 @@ export const useCitationsStore = create<CitationsStore>()((set, get) => ({
 
 	async ensureCached(chunkIds) {
 		const { citationByChunkId } = get();
+		const { setStatus } = useInferenceLoadingStatusStore.getState();
 
 		const unique = Array.from(new Set(chunkIds));
 		const missing = unique.filter((id) => !citationByChunkId[id]);
@@ -28,11 +30,15 @@ export const useCitationsStore = create<CitationsStore>()((set, get) => ({
 			return;
 		}
 
+		setStatus("loading-citations");
+
 		const details = await getCitationDetails(missing);
 		const merged = { ...citationByChunkId };
 		details.forEach((detail) => {
 			merged[detail.chunkId] = detail;
 		});
 		set({ citationByChunkId: merged });
+
+		setStatus("idle");
 	},
 }));

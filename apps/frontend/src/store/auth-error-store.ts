@@ -18,6 +18,8 @@ const errorMessages: { [key: string]: string } = {
 		content["form.validation.password.shouldBeDifferent.error"],
 	"User account has been deactivated.":
 		content["form.validation.userDeactivated.error"],
+	"User tried to reset their password without the recovery mode active.":
+		content["newPassword.recoveryNotActive.error"],
 };
 
 export const useAuthErrorStore = create<AuthErrorStore>()((set) => ({

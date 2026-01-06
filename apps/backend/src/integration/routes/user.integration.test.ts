@@ -15,8 +15,8 @@ const supabaseAnonClient = createClient<Database>(
 	config.supabaseAnonKey,
 );
 
-const OWNER_USER_ID = "11111111-1111-1111-1111-111111111111";
-const OTHER_USER_ID = "22222222-2222-2222-2222-222222222222";
+const OWNER_USER_ID = "11111111-1111-4111-8111-111111111111";
+const OTHER_USER_ID = "22222222-2222-4222-8222-222222222222";
 
 const RPC_DELETE_DOCUMENT = "delete_document_and_update_count";
 const UPLOAD_DELAY_MS = 1_000;
@@ -191,7 +191,7 @@ describe("Integration Tests for Routes", () => {
 		// Initialize queues for the test process
 		await initQueues();
 
-		const email = "test@example.com";
+		const email = "test@local.berlin.de";
 		await createTestUser(OWNER_USER_ID, email);
 		// Generate JWT token
 		validToken = await createValidJwtToken(OWNER_USER_ID, email);
@@ -223,6 +223,7 @@ describe("Integration Tests for Routes", () => {
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
+				folder_id: null,
 			},
 		};
 
@@ -269,6 +270,7 @@ describe("Integration Tests for Routes", () => {
 					registered_at: new Date().toISOString(),
 					source_type: "personal_document",
 					source_url: sourceUrls[i],
+					folder_id: null,
 				},
 			};
 
@@ -347,6 +349,7 @@ describe("Integration Tests for Routes", () => {
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
+				folder_id: null,
 			},
 		};
 		const uploadRes = await app.request("/documents/process", {
@@ -406,6 +409,7 @@ describe("Integration Tests for Routes", () => {
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
+				folder_id: null,
 			},
 		};
 		const uploadRes = await app.request("/documents/process", {
@@ -505,7 +509,7 @@ describe("Integration Tests for Routes", () => {
 
 	it("should return error when deleting if user tries to delete another user's document", async () => {
 		// Create a document for a different user
-		const otherUserEmail = "test2@example.com";
+		const otherUserEmail = "test2@local.berlin.de";
 		await createTestUser(OTHER_USER_ID, otherUserEmail);
 
 		const validToken2 = await createValidJwtToken(
@@ -530,6 +534,7 @@ describe("Integration Tests for Routes", () => {
 				registered_at: new Date().toISOString(),
 				source_type: "personal_document",
 				source_url: sourceUrl,
+				folder_id: null,
 			},
 		};
 

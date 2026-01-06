@@ -6,7 +6,7 @@ import { defineConfig, devices } from "@playwright/test";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-config({ path: resolve(__dirname, ".env") });
+config({ path: resolve(__dirname, ".env"), override: true });
 
 const { verifyConfig } = await import("./tests/config.ts");
 
@@ -17,7 +17,6 @@ const port = parseInt(process.env.VITE_PORT ?? "5173");
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-	testDir: "./tests",
 	timeout: process.env.CI ? 120_000 : 60_000,
 	expect: {
 		timeout: 30_000,
@@ -110,8 +109,10 @@ export default defineConfig({
 			reuseExistingServer: !process.env.CI,
 		},
 		{
-			// Wait for backend to be ready (started by Turborepo via "with" field)
-			command: "echo 'Waiting for backend...'",
+			// Wait for backend to be ready (started by Turborepo via "with" field).
+			// Playwright treats an early-exiting process as a failure, so keep this process alive
+			// while it waits for `url` to become reachable.
+			command: `node -e "setInterval(() => {}, 1000)"`,
 			url: "http://localhost:3000",
 			timeout: 30_000,
 			reuseExistingServer: true,

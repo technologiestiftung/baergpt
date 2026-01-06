@@ -4,12 +4,15 @@ import { supabase } from "../../supabase-client.ts";
 import { useAuthErrorStore } from "./auth-error-store.ts";
 import { handleSessionChange } from "../api/session/handle-session-change.ts";
 import { updatePassword } from "../api/auth/update-password.ts";
-import { resetPasswordForEmail } from "../api/auth/reset-password-for-email.ts";
+import { requestPasswordResetByEmail } from "../api/auth/request-password-reset-by-email.ts";
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { useIsActiveStore } from "./use-is-active-store.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
 import { getAllowedEmailDomains } from "../api/auth/get-allowed-email-domains.ts";
+import { registerUser } from "../api/auth/register-user.ts";
+import { resendEmailConfirmation } from "../api/auth/resend-email-confirmation.ts";
+import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
 
 let resendTime: number | null = null;
 
@@ -36,6 +39,10 @@ interface AuthStore {
 	updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
 	updatePassword: (newPassword: string) => Promise<void>;
 	resendConfirmationEmail: () => Promise<void>;
+	resendOtpEmail: (args: {
+		email: string;
+		otpType: "email" | "email_change" | "recovery";
+	}) => Promise<void>;
 	requestPasswordReset: (email: string) => Promise<void>;
 	resetPassword: (newPassword: string) => Promise<void>;
 	login: (args: { email: string; password: string }) => Promise<void>;
@@ -144,16 +151,15 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isAdminStatusLoaded: false,
 
 		async register({ firstName, lastName, email, password }) {
-			const { data, error } = await supabase.auth.signUp({
+			const { data, error } = await registerUser({
 				email,
 				password,
-				options: {
-					data: { first_name: firstName, last_name: lastName },
-				},
+				firstName,
+				lastName,
 			});
 
 			if (error) {
-				useAuthErrorStore.getState().handleError(new Error(error.message));
+				useAuthErrorStore.getState().handleError(error);
 				return;
 			}
 
@@ -185,39 +191,74 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			return { error };
 		},
 
+		/**
+		 * In case you wonder what is the difference between
+		 * resendConfirmationEmail and resendOtpEmail with otpType "email":
+		 *
+		 * - resendConfirmationEmail is used to resend the email confirmation
+		 * from the page that is shown after submitting the registration form
+		 * or after trying to log in with an unconfirmed email.
+		 * It uses the unconfirmed email from the store
+		 * (the unconfirmed email is shared between different components)
+		 *
+		 * - resendOtpEmail with otpType "email" is used to resend the otp email
+		 * from the confirm-otp page. The page reads the email from a query param.
+		 */
 		resendConfirmationEmail: async () => {
 			const { unconfirmedEmail } = get();
+
 			if (!unconfirmedEmail) {
 				useAuthErrorStore
 					.getState()
 					.handleError(new Error("No unconfirmed email set"));
 				return;
 			}
+
 			/**
 			 * If the user has already re-sent a confirmation email,
 			 * Wait for 60 seconds before allowing them to do it again.
 			 */
 			const isAllowedToResend =
 				resendTime === null || Date.now() - resendTime > 60_000;
+
 			if (!isAllowedToResend) {
 				return;
 			}
+
 			resendTime = Date.now();
-			const { error } = await supabase.auth.resend({
-				type: "signup",
-				email: unconfirmedEmail,
-			});
+
+			const { error } = await resendEmailConfirmation(unconfirmedEmail);
+
 			if (error) {
-				useAuthErrorStore.getState().handleError(new Error(error.message));
+				useAuthErrorStore.getState().handleError(error);
 			}
 		},
 
-		// sends mail to user with reset password link
+		resendOtpEmail: async ({ email, otpType }) => {
+			if (otpType === "recovery") {
+				const { error } = await requestPasswordResetByEmail(email);
+
+				if (error) {
+					useAuthErrorStore.getState().handleError(error);
+				}
+
+				return;
+			}
+
+			const { error } = await resendOtpEmail({ email, otpType });
+
+			if (error) {
+				useAuthErrorStore.getState().handleError(error);
+			}
+		},
+
 		async requestPasswordReset(email: string) {
-			await resetPasswordForEmail(
-				email,
-				import.meta.env.VITE_RECOVERY_AUTH_REDIRECT_URL,
-			);
+			const { error } = await requestPasswordResetByEmail(email);
+
+			if (error) {
+				useAuthErrorStore.getState().handleError(error);
+				return;
+			}
 
 			set({
 				isPasswordResetEmailSent: true,
@@ -227,7 +268,11 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 
 		// sets a new password for the user and is triggered by reset password link from mail
 		async resetPassword(newPassword: string) {
-			await updatePassword(newPassword);
+			const { error } = await updatePassword(newPassword);
+
+			if (error) {
+				throw error;
+			}
 
 			set({ isPasswordResetSuccessful: true });
 		},
@@ -249,7 +294,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 					return;
 				}
 
-				useAuthErrorStore.getState().handleError(new Error(error.message));
+				useAuthErrorStore.getState().handleError(error);
 				return;
 			}
 		},

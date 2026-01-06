@@ -12,7 +12,7 @@ import {
 	secondaryDocumentType,
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
-import { supabaseAdminClient } from "../supabase.ts";
+import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 
 test.describe("Chat", () => {
 	testWithLoggedInUser(
@@ -55,11 +55,11 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
-		// Find the add-to-chat button
-		const addButton = page.getByRole("button", {
-			name: "Zum Chat hinzufügen",
-			exact: true,
-		});
+		// Find the add-to-chat button for the specific document
+		const addButton = page
+			.getByRole("listitem")
+			.filter({ hasText: defaultDocumentName })
+			.getByLabel("Zum Chat hinzufügen");
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -78,11 +78,11 @@ test.describe("Chat", () => {
 			.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 			.click();
 
-		// Wait for the AI response with a longer timeout since it involves backend API calls
-		await page.waitForLoadState("networkidle");
-
 		// Wait for the response to appear (2 markdown containers: question + answer)
-		await expect(page.locator("div.markdown-container")).toHaveCount(2);
+		// Use longer timeout since it involves backend API calls
+		await expect(page.locator("div.markdown-container")).toHaveCount(2, {
+			timeout: 60_000,
+		});
 
 		// Verify the answer is not empty
 		const markdownAnswer = page.locator("div.markdown-container").last();
@@ -157,24 +157,29 @@ test.describe("Chat", () => {
 		async ({ page, documentChunkId }) => {
 			await page.goto("/");
 
-			const inferenceWithCitation = {
-				content: `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`,
-				citations: [documentChunkId],
-			};
+			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
+			const citations = [documentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
+				// Format as Server-Sent Events (SSE) stream
+				const streamBody = [
+					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
+				].join("");
+
 				await route.fulfill({
 					status: 200,
-					body: JSON.stringify(inferenceWithCitation),
-					headers: { "Content-Type": "text/stream; charset: utf-8" },
+					body: streamBody,
+					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
 				});
 			});
 
-			// Find the add-to-chat button
-			const addButton = page.getByRole("button", {
-				name: "Zum Chat hinzufügen",
-				exact: true,
-			});
+			// Find the add-to-chat button for the specific document
+			const addButton = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Zum Chat hinzufügen");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -189,7 +194,9 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
+			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
 
 			await allCitationsButton.click();
 
@@ -212,9 +219,54 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testDesktopOnly(
-		"Chat with public document citations",
-		async ({ page, account }) => {
+	testDesktopOnly("Chat with public document citations", async ({ page }) => {
+		// Create an admin user to upload the public document
+		const adminEmail = "admin.test@local.berlin.de";
+		const adminPassword = "TestPassword123!";
+		let adminUserId: string | undefined;
+
+		const { data: adminUserData, error: createAdminError } =
+			await supabaseAdminClient.auth.admin.createUser({
+				email: adminEmail,
+				password: adminPassword,
+				email_confirm: true,
+				user_metadata: {
+					first_name: "Admin",
+					last_name: "Test",
+				},
+			});
+
+		expect(createAdminError).toBeNull();
+
+		if (createAdminError !== null) {
+			throw createAdminError;
+		}
+
+		adminUserId = adminUserData.user.id;
+
+		try {
+			// Grant admin role by adding to application_admins table
+			const { error: adminRoleError } = await supabaseAdminClient
+				.from("application_admins")
+				.insert({ user_id: adminUserId });
+
+			expect(adminRoleError).toBeNull();
+
+			// Sign in the admin user to get their access token
+			const { data: adminSessionData, error: adminSignInError } =
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: adminEmail,
+					password: adminPassword,
+				});
+
+			expect(adminSignInError).toBeNull();
+
+			if (adminSignInError !== null) {
+				throw adminSignInError;
+			}
+
+			const adminAccessToken = adminSessionData.session.access_token;
+
 			const { data: accessGroupData, error: accessGroupError } =
 				await supabaseAdminClient
 					.from("access_groups")
@@ -231,7 +283,8 @@ test.describe("Chat", () => {
 			const defaultAccessGroupId = accessGroupData.id;
 
 			const publicDocumentChunkId = await mockDocumentUpload({
-				userId: account.id,
+				userId: adminUserId,
+				accessToken: adminAccessToken,
 				accessGroupId: defaultAccessGroupId,
 				fileName: defaultDocumentName,
 				filePath: defaultDocumentPath,
@@ -241,24 +294,29 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
-			const inferenceWithCitation = {
-				content: `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`,
-				citations: [publicDocumentChunkId],
-			};
+			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
+			const citations = [publicDocumentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
+				// Format as Server-Sent Events (SSE) stream
+				const streamBody = [
+					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
+				].join("");
+
 				await route.fulfill({
 					status: 200,
-					body: JSON.stringify(inferenceWithCitation),
-					headers: { "Content-Type": "text/stream; charset: utf-8" },
+					body: streamBody,
+					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
 				});
 			});
 
 			// Find the add-to-chat button
-			const addButton = page.getByRole("button", {
-				name: "Zum Chat hinzufügen",
-				exact: true,
-			});
+			const addButton = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Zum Chat hinzufügen");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -273,7 +331,9 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
+			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
 
 			await allCitationsButton.click();
 
@@ -298,8 +358,12 @@ test.describe("Chat", () => {
 			await citationDialogClosingButton.click();
 
 			await expect(citationsDialogHeader).not.toBeVisible();
-		},
-	);
+		} finally {
+			if (adminUserId) {
+				await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
+			}
+		}
+	});
 
 	testWithLoggedInUser(
 		"Export chat messages as Word and PDF document",

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { supabase as supabaseAdminClient } from "../../supabase";
+import { createClient } from "@supabase/supabase-js";
 import {
 	chunk_index,
 	chunk_jina_embedding,
@@ -25,22 +26,39 @@ export async function mockDocumentUpload({
 	filePath,
 	sourceType,
 	bucketName,
+	userEmail,
+	userPassword,
 }: {
 	userId: string;
-	accessGroupId: string;
+	accessGroupId: string | null;
 	fileName: string;
 	filePath: string;
-	sourceType: "public_document" | "personal_document";
+	sourceType: "public_document" | "personal_document" | "default_document";
 	bucketName: "documents" | "public_documents";
+	userEmail: string;
+	userPassword: string;
 }) {
-	const source_url = `${userId}/${fileName}`;
+	const source_url = `${accessGroupId ?? userId}/${fileName}`;
 	const file = readFileSync(filePath);
 
-	const { error: uploadError } = await supabaseAdminClient.storage
+	const userClient = createClient(
+		process.env.SUPABASE_URL as string,
+		process.env.SUPABASE_ANON_KEY as string,
+	);
+
+	const { error: signInError } = await userClient.auth.signInWithPassword({
+		email: userEmail,
+		password: userPassword,
+	});
+
+	expect(signInError).toBeNull();
+
+	const { error: uploadError } = await userClient.storage
 		.from(bucketName)
 		.upload(
 			source_url,
 			new File([file], fileName, { type: "application/pdf" }),
+			{ upsert: true },
 		);
 
 	expect(uploadError).toBeNull();
@@ -66,6 +84,7 @@ export async function mockDocumentUpload({
 			.single();
 
 	expect(documentsInsertError).toBeNull();
+	expect(documentData).not.toBeNull();
 
 	const { error: documentSummariesInsertError } = await supabaseAdminClient
 		.from("document_summaries")
@@ -99,6 +118,7 @@ export async function mockDocumentUpload({
 			.single();
 
 	expect(documentChunksInsertError).toBeNull();
+	expect(chunkData).not.toBeNull();
 
 	return chunkData.id;
 }
@@ -133,7 +153,7 @@ export async function cleanupDocuments(userId: string) {
 
 	expect(personalDocumentsError).toBeNull();
 
-	const personalDocumentsToRemove = personalDocumentsData.map(
+	const personalDocumentsToRemove = (personalDocumentsData ?? []).map(
 		(file) => `${userId}/${file.name}`,
 	);
 
@@ -152,7 +172,7 @@ export async function cleanupDocuments(userId: string) {
 
 	expect(publicDocumentsError).toBeNull();
 
-	const publicDocumentsToRemove = publicDocumentsData.map(
+	const publicDocumentsToRemove = (publicDocumentsData ?? []).map(
 		(file) => `${userId}/${file.name}`,
 	);
 

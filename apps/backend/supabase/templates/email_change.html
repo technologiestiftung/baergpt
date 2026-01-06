@@ -65,11 +65,34 @@
 								</h1>
 
 								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Sie möchten Ihre E-Mail-Adesse von
-									<span style="font-weight: bold">{{ .Email }} </span> zu
-									<span style="font-weight: bold"> {{ .NewEmail }} </span>
-									ändern. Bitte bestätigen Sie Ihre neue E-Mail-Adresse.
+									Sie möchten Ihre Adresse von
+									<span style="font-weight: bold">{{ .Email }}</span> auf
+									<span style="font-weight: bold">{{ .NewEmail }}</span>
+									ändern. Damit wir sicher sind, dass wirklich Sie es sind,
+									bestätigen Sie bitte die neue Adresse.
 								</p>
+
+								<p style="font-size: 14px; color: #000000; line-height: 1.5">
+									Ihr Sicherheitscode (bitte im Formular eingeben):
+								</p>
+
+								<div
+									style="
+										background-color: #ffffff;
+										border: 1px solid #0c2753;
+										color: #0c2753;
+										font-size: 20px;
+										letter-spacing: 0.2em;
+										text-align: center;
+										word-break: break-word;
+										font-family: &quot;Courier New&quot;, Courier, monospace;
+										border-radius: 6px;
+										padding: 16px;
+										margin: 24px 0;
+									"
+								>
+									<p style="margin: 0">{{ .Token }}</p>
+								</div>
 
 								<table
 									cellpadding="0"
@@ -80,53 +103,58 @@
 									<tr>
 										<td align="left">
 											<a
-												href="{{ .ConfirmationURL }}email-changed/"
+												href="{{ .SiteURL }}/confirm-otp/?type=email_change&email={{ .NewEmail }}"
+												target="_blank"
+												rel="noopener noreferrer"
 												style="
 													background-color: #0c2753;
 													color: #ffffff;
 													padding: 14px 24px;
 													font-size: 16px;
 													text-decoration: none;
-													border-radius: 3px;
+													border-radius: 6px;
 													display: inline-block;
 												"
 											>
-												Neue E-Mail-Adresse bestätigen
+												Identität bestätigen &amp; Adresse ändern
 											</a>
 										</td>
 									</tr>
 								</table>
 
 								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Falls der Button nicht funktioniert, kopieren Sie diesen Link
-									in die Adresszeile Ihres Browsers:
+									Öffnen Sie den Button-Link und geben Sie anschließend diesen
+									Code in das Formular ein:
 								</p>
 
-								<div
+								<p style="font-size: 14px; color: #666666; line-height: 1.5">
+									Funktioniert der Button nicht? Öffnen Sie folgenden Link
+									manuell:
+									<br />
+									<a
+										href="{{ .SiteURL }}/confirm-otp/?type=email_change&email={{ .NewEmail }}"
+										target="_blank"
+										rel="noopener noreferrer"
+										style="color: #0c2753; word-break: break-word"
+									>
+										{{ .SiteURL }}/confirm-otp/?type=email_change&email={{
+										.NewEmail }}
+									</a>
+									<br /><br />
+									Ihr Code (bitte im Formular eingeben):
+									<strong>{{ .Token }}</strong>
+								</p>
+
+								<p
 									style="
-										background-color: #f7f7f7;
-										padding: 10px;
 										font-size: 14px;
-										color: #444;
-										word-break: break-word;
-										font-family: &quot;Courier New&quot;, Courier, monospace;
-										border-radius: 4px;
-										mso-hide: all;
+										color: #666666;
+										line-height: 1.5;
+										margin-top: 30px;
 									"
 								>
-									<a
-										href="{{ .ConfirmationURL }}email-changed/"
-										style="color: #0c2753; text-decoration: none"
-									>
-										{{ .ConfirmationURL }}email-changed/
-									</a>
-								</div>
-
-								<p style="font-size: 14px; color: #666666; line-height: 1.5">
-									Dieser Link ist für <strong>eine Stunde</strong> gültig.
-									<br />
-									Falls Sie die Änderung nicht angefordert haben, ignorieren Sie
-									diese E-Mail.
+									Link und Code verfallen nach 60 Minuten. Falls Sie die
+									Änderung nicht angefordert haben, ignorieren Sie diese E-Mail.
 								</p>
 
 								<p style="font-size: 14px; color: #666666; line-height: 1.5">

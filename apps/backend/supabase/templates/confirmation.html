@@ -39,21 +39,30 @@
 								align="center"
 							>
 								<a
-									href="https://www.baergpt.berlin/"
-									class="email-masthead_name"
 									style="
 										font-family:
 											Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;
+										-webkit-box-sizing: border-box;
+										box-sizing: border-box;
 										font-size: 16px;
 										font-weight: bold;
 										color: #2f3133;
 										text-decoration: none;
+										text-shadow: 0 1px 0 white;
 									"
+									href="https://www.baergpt.berlin/"
+									class="email-masthead_name"
 								>
 									<img
+										style="
+											font-family:
+												Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;
+											-webkit-box-sizing: border-box;
+											box-sizing: border-box;
+											max-height: 50px;
+										"
 										src="https://www.baergpt.berlin/logos/baergpt-logo.svg"
-										alt="BärGPT"
-										style="max-height: 50px"
+										alt="BärGPT Logo"
 									/>
 								</a>
 							</td>
@@ -65,13 +74,31 @@
 								</h1>
 
 								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									schön, dass Sie sich bei BärGPT registriert haben!
+									Sie haben sich bei BärGPT registriert. Bitte bestätigen Sie
+									Ihre Identität, um Ihren Account zu aktivieren.
 								</p>
 
-								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihr Konto zu
-									aktivieren:
+								<p style="font-size: 14px; color: #000000; line-height: 1.5">
+									Ihr Sicherheitscode (bitte im Formular eingeben):
 								</p>
+
+								<div
+									style="
+										background-color: #ffffff;
+										border: 1px solid #0c2753;
+										color: #0c2753;
+										font-size: 20px;
+										letter-spacing: 0.2em;
+										text-align: center;
+										word-break: break-word;
+										font-family: &quot;Courier New&quot;, Courier, monospace;
+										border-radius: 6px;
+										padding: 16px;
+										margin: 24px 0;
+									"
+								>
+									<p style="margin: 0">{{ .Token }}</p>
+								</div>
 
 								<table
 									cellpadding="0"
@@ -82,66 +109,64 @@
 									<tr>
 										<td align="left">
 											<a
-												href="{{ .ConfirmationURL }}"
+												href="{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}"
+												target="_blank"
+												rel="noopener noreferrer"
 												style="
 													background-color: #0c2753;
 													color: #ffffff;
 													padding: 14px 24px;
 													font-size: 16px;
 													text-decoration: none;
-													border-radius: 3px;
+													border-radius: 6px;
 													display: inline-block;
-													mso-hide: all;
 												"
 											>
-												E-Mail-Adresse bestätigen
+												Identität bestätigen &amp; Registrierung abschließen
 											</a>
 										</td>
 									</tr>
 								</table>
 
-								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Falls der Button nicht funktioniert, kopieren Sie einfach
-									diesen Link in die Adresszeile Ihres Browsers:
-								</p>
-
-								<div
+								<p
 									style="
-										background-color: #f7f7f7;
-										padding: 10px;
 										font-size: 14px;
-										color: #444;
-										word-break: break-word;
-										font-family: &quot;Courier New&quot;, Courier, monospace;
-										border-radius: 4px;
-										mso-hide: all;
+										color: #666666;
+										line-height: 1.5;
+										margin-top: 30px;
 									"
 								>
-									<a
-										href="{{ .ConfirmationURL }}"
-										style="color: #0c2753; text-decoration: none"
-									>
-										{{ .ConfirmationURL }}
-									</a>
-								</div>
-
-								<p style="font-size: 14px; color: #666666; line-height: 1.5">
-									Der Bestätigungslink ist für <strong>1 Stunde</strong> gültig.
-									<br />
-									Wenn Sie sich nicht registriert haben, können Sie diese E-Mail
-									einfach ignorieren.
+									Der Link und der Code sind aus Sicherheitsgründen jeweils 60
+									Minuten gültig. Wenn Sie sich nicht bei BärGPT registriert
+									haben, können Sie diese Nachricht ignorieren.
 								</p>
 
 								<p style="font-size: 14px; color: #666666; line-height: 1.5">
-									Bei Fragen stehen wir Ihnen gerne zur Verfügung:
+									Funktioniert der Button nicht? Öffnen Sie folgenden Link
+									manuell:
 									<br />
+									<a
+										href="{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}"
+										target="_blank"
+										rel="noopener noreferrer"
+										style="color: #0c2753; word-break: break-word"
+									>
+										{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}
+									</a>
+									<br /><br />
+									Ihr Code (bitte im Formular eingeben):
+									<strong>{{ .Token }}</strong>
+								</p>
+
+								<p style="font-size: 14px; color: #666666; line-height: 1.5">
+									Bei Fragen stehen wir Ihnen gerne zur Verfügung: <br />
 									<a href="mailto:support@baergpt.berlin"
 										>support@baergpt.berlin</a
 									>
 								</p>
 
 								<p style="font-size: 14px; color: #666666; line-height: 1.5">
-									Viele Grüße<br />
+									Viele Grüße <br />
 									Ihr <strong>BärGPT-Team</strong>
 								</p>
 							</td>

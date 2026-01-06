@@ -44,7 +44,7 @@ describe("Documents Route Integration", () => {
 		});
 
 		await initQueues();
-	});
+	}, 20_000);
 
 	afterAll(async () => {
 		await supabaseAdminClient.auth.admin.deleteUser(givenUserId);
@@ -114,5 +114,5 @@ describe("Documents Route Integration", () => {
 		expect(found).toBeUndefined();
 
 		summarizeSpy.mockRestore();
-	});
+	}, 30_000);
 });

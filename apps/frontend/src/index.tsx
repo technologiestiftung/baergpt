@@ -7,8 +7,9 @@ import { IndexPage } from "./routes";
 import { RegisterPage } from "./routes/register-page";
 import { LoginPage } from "./routes/login-page";
 import { AccountActivated } from "./routes/account-activated";
+import { RequestResetPasswordPage } from "./routes/request-password-reset";
 import { ResetPasswordPage } from "./routes/reset-password";
-import { NewPasswordPage } from "./routes/new-password";
+import { ConfirmOtpPage } from "./routes/confirm-otp";
 import { ProfilePage } from "./routes/profile";
 import { EmailChanged } from "./routes/email-changed";
 import { AccountDeleted } from "./routes/account-deleted";
@@ -38,12 +39,16 @@ const router = createBrowserRouter([
 		element: <RegistrationError />,
 	},
 	{
-		path: "/reset-password/",
-		element: <ResetPasswordPage />,
+		path: "/request-password-reset/",
+		element: <RequestResetPasswordPage />,
 	},
 	{
-		path: "/new-password/",
-		element: <NewPasswordPage />,
+		path: "/confirm-otp/",
+		element: <ConfirmOtpPage />,
+	},
+	{
+		path: "/reset-password/",
+		element: <ResetPasswordPage />,
 	},
 	{
 		path: "/profile/",

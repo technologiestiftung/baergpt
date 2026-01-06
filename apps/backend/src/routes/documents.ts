@@ -6,38 +6,71 @@ import { GenerationService } from "../services/generation-service";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 import { Document } from "../types/common";
+import { getAuthenticatedUserId } from "../middleware/basic-auth";
+import { documentProcessSchema } from "../schemas/document-process-schema";
+import { ZodError } from "zod";
+import { ValidationService } from "../services/validation-service";
 
 const documents = new Hono();
 const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
 const generationService = new GenerationService();
+const validationService = new ValidationService();
 
 documents.post("/process", async (c: Context) => {
 	let sourceUrl: string | null = null;
 	let bucket: string | null = null;
+
 	try {
+		// Get authenticated user ID from context (set by basicAuth middleware)
+		const authenticatedUserId = getAuthenticatedUserId(c);
+
+		// Parse and validate request body
 		const body = await c.req.json();
-		const { document } = body;
-		sourceUrl = document.source_url;
-		bucket =
-			document.source_type === "personal_document"
-				? "documents"
-				: "public_documents";
+		const parseResult = documentProcessSchema.parse(body);
+
+		const { document: inputDocument } = parseResult;
+		sourceUrl = inputDocument.source_url;
+
+		// Validate document request (path, folder ownership, file existence)
+		const validationResult = await validationService.validateDocumentRequest(
+			inputDocument,
+			authenticatedUserId,
+		);
+		if (validationResult.success === false) {
+			captureError(new Error(validationResult.error));
+			return c.json({ error: validationResult.error }, validationResult.status);
+		}
+		bucket = validationResult.bucket;
+
 		const llmIdentifier = config.defaultModelIdentifier;
 
 		// Step 1: Extract document content (no DB record created yet)
-		const extractionResult = await dbService.extractDocument(document);
+		const documentForExtraction: Document = {
+			source_url: sourceUrl,
+			source_type: inputDocument.source_type,
+			created_at: inputDocument.created_at || new Date().toISOString(),
+		};
+		const extractionResult = await dbService.extractDocument(
+			documentForExtraction,
+		);
 
 		// Step 2: Process document (embed and summarize)
-		// Create temporary document object with extraction metadata for processing
+		// Always use authenticated user ID, never trust client input for owned_by_user_id
 		const documentForProcessing: Document = {
-			folder_id: document.folder_id,
-			owned_by_user_id: document.owned_by_user_id,
-			created_at: document.created_at,
-			access_group_id: document.access_group_id,
-			uploaded_by_user_id: document.uploaded_by_user_id,
-			source_url: document.source_url,
-			source_type: document.source_type,
+			folder_id: inputDocument.folder_id ?? undefined,
+			owned_by_user_id:
+				inputDocument.source_type === "personal_document"
+					? authenticatedUserId
+					: undefined,
+			created_at: inputDocument.created_at || new Date().toISOString(),
+			access_group_id: inputDocument.access_group_id ?? undefined,
+			uploaded_by_user_id:
+				inputDocument.source_type !== "personal_document"
+					? authenticatedUserId
+					: undefined,
+			source_url: sourceUrl,
+			source_type: inputDocument.source_type,
 			file_checksum: extractionResult.checksum,
 			file_size: extractionResult.fileSize,
 			num_pages: extractionResult.numPages,
@@ -65,6 +98,15 @@ documents.post("/process", async (c: Context) => {
 		return c.body(null, 204);
 	} catch (error) {
 		captureError(error);
+
+		// Handle Zod validation errors separately
+		if (error instanceof ZodError) {
+			const errors = error.issues
+				.map((e) => `${e.path.join(".")}: ${e.message}`)
+				.join("; ");
+			return c.json({ error: `Validation failed: ${errors}` }, 400);
+		}
+
 		// If processing failed, clean up the storage file
 		if (sourceUrl !== null && bucket !== null) {
 			try {
