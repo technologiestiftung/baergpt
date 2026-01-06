@@ -21,13 +21,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	];
 
 	const handleItemClick = (value: string) => {
-		if (selectedChatOptions.includes(value as ChatOption)) {
-			setSelectedChatOptions(
-				selectedChatOptions.filter((item) => item !== value),
-			);
-		} else {
-			setSelectedChatOptions([...selectedChatOptions, value as ChatOption]);
-		}
+		setSelectedChatOptions(value as ChatOption);
 	};
 
 	const handleToggleDropdown = () => {
