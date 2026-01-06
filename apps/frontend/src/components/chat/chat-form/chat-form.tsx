@@ -15,7 +15,9 @@ import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
+import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
+
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const ChatForm: React.FC = () => {
@@ -138,9 +140,7 @@ export const ChatForm: React.FC = () => {
 						</div>
 					</div>
 					<div className="flex items-center gap-3">
-						<div className="hover:bg-hellblau-30 text-dunkelblau-80 text-sm px-2 py-1 h-8 flex items-center justify-center">
-							small
-						</div>
+						<LlmModelToggleButton />
 						<button
 							type="submit"
 							disabled={

@@ -11,6 +11,7 @@ interface ChatFormDropdownProps {
 	}[];
 	selectedItems: string[];
 	onItemClick: (value: string) => void;
+	className?: string;
 }
 
 export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
@@ -18,9 +19,12 @@ export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
 	title,
 	selectedItems,
 	onItemClick,
+	className,
 }) => {
 	return (
-		<div className="z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1">
+		<div
+			className={`z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1 ${className}`}
+		>
 			<div className="pb-3 px-4 border-b border-hellblau-50 text-dunkelblau-80 text-sm leading-6">
 				{title}
 			</div>
@@ -31,7 +35,7 @@ export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
 						<li key={item.value}>
 							<button
 								type="button"
-								className="flex items-center justify-between w-full px-4 py-4 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default^ rounded-3px"
+								className="flex items-center justify-between w-full px-4 py-3 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default rounded-3px"
 								onClick={() => onItemClick(item.value)}
 								aria-label={item.ariaLabel}
 							>
