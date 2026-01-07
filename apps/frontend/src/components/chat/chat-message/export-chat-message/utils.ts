@@ -7,7 +7,6 @@ export const exportToDocx = async (markdown: string, fileName: string) => {
 			"@mohtasham/md-to-docx"
 		);
 
-		// Remove citation numbers before exporting
 		const blob = await convertMarkdownToDocx(markdown);
 		downloadDocx(blob, `${fileName}.docx`);
 	} catch (error) {
