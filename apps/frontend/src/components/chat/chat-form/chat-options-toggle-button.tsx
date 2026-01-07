@@ -38,7 +38,6 @@ export const ChatOptionsToggleButton: React.FC = () => {
 
 	const handleItemClick = (value: string) => {
 		setSelectedChatOptions(value as ChatOption);
-		setIsDropdownOpen(false);
 	};
 
 	const handleToggleDropdown = () => {
