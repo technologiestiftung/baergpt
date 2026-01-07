@@ -1,3 +1,4 @@
+import { config } from "../config";
 import { LLMHandler } from "../types/common";
 import { mistral } from "@ai-sdk/mistral";
 
@@ -47,7 +48,7 @@ class Model {
 export class ModelService {
 	availableModels: Record<string, Model> = {
 		"mistral-small": new Model({
-			identifier: "mistral-small",
+			identifier: config.defaultModelIdentifier,
 			baseModelName: "mistral-small",
 			provider: "Mistral",
 			isGdprCompliant: true,
@@ -58,11 +59,11 @@ export class ModelService {
 				"Aktuelles kleines Modell von Mistral, gehostet von Mistral.",
 		}),
 		"mistral-large": new Model({
-			identifier: "mistral-large",
+			identifier: config.largeModelIdentifier,
 			baseModelName: "mistral-large",
 			provider: "Mistral",
 			isGdprCompliant: true,
-			contextSize: 128000,
+			contextSize: 256000,
 			isOpenSource: true,
 			serverLocation: "Frankreich",
 			description: "Aktuelles großes Modell von Mistral, gehostet von Mistral.",
@@ -72,12 +73,12 @@ export class ModelService {
 	handlers: Record<string, LLMHandler> = {
 		"mistral-small": new LLMHandler(
 			"mistral-small",
-			mistral("mistral-small-latest"),
+			mistral(config.defaultModelIdentifier),
 			"https://api.mistral.ai/v1",
 		),
 		"mistral-large": new LLMHandler(
 			"mistral-large",
-			mistral("mistral-large-latest"),
+			mistral(config.largeModelIdentifier),
 			"https://api.mistral.ai/v1",
 		),
 	};

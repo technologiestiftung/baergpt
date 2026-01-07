@@ -4,7 +4,6 @@ import type { ChatMessageBody } from "../types/common";
 import type { ModelMessage } from "ai";
 import { ModelService } from "../services/model-service";
 import { GenerationService } from "../services/generation-service";
-import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 
 const llms = new Hono();
@@ -14,8 +13,8 @@ const generationService = new GenerationService();
 llms.post("/just-chatting", async (c: Context) => {
 	try {
 		const body = (await c.req.json()) as ChatMessageBody;
-		const llmIdentifier = body.llm_model ?? config.defaultModelIdentifier;
-		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
+		const llmModelName = body.llm_model;
+		const llmHandler = modelService.resolveLlmHandler(llmModelName);
 		const allowedDocumentIds = body.allowed_document_ids || [];
 		const allowedFolderIds = body.allowed_folder_ids || [];
 		const messages = body.messages as ModelMessage[];
