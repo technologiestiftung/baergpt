@@ -320,12 +320,14 @@ export class GenerationService {
 			langfusePrompt,
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
+			isBaseKnowledgeActive,
 		}: {
 			userId?: string;
 			sessionId?: string;
 			langfusePrompt?: TextPromptClient | ChatPromptClient;
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
+			isBaseKnowledgeActive?: boolean;
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[];
@@ -353,7 +355,8 @@ export class GenerationService {
 					knowledgeBaseDocuments,
 				),
 			};
-			toolChoice = "auto";
+
+			toolChoice = isBaseKnowledgeActive ? "auto" : "none";
 		}
 		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(
