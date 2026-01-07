@@ -49,7 +49,7 @@ export const documentProcessSchema = z.object({
 		file_name: z.string().optional(),
 		folder_id: z.number().int().positive().nullable().optional(),
 		// Accept from client but will be overridden with authenticated user ID
-		owned_by_user_id: z.string().optional(),
+		owned_by_user_id: z.string().nullable().optional(),
 		created_at: z.iso.datetime().optional(),
 		source_type: z.enum(allowedSourceTypes),
 		source_url: sourceUrlSchema,
