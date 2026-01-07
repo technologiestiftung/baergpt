@@ -78,8 +78,8 @@ export function verifyConfig(): void {
 	if (!process.env.MODEL_TEMPERATURE && !process.env.CI) {
 		throw new Error("MODEL_TEMPERATURE must be defined");
 	}
-	if (!process.env.DEFAULT_MODEL_IDENTIFIER) {
-		throw new Error("DEFAULT_MODEL_IDENTIFIER must be defined");
+	if (!process.env.SMALL_MODEL_IDENTIFIER) {
+		throw new Error("SMALL_MODEL_IDENTIFIER must be defined");
 	}
 	if (!process.env.LARGE_MODEL_IDENTIFIER) {
 		throw new Error("LARGE_MODEL_IDENTIFIER must be defined");
@@ -119,7 +119,7 @@ export const config: Config = {
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
-	defaultModelIdentifier: process.env.DEFAULT_MODEL_IDENTIFIER,
+	defaultModelIdentifier: process.env.SMALL_MODEL_IDENTIFIER,
 	largeModelIdentifier: process.env.LARGE_MODEL_IDENTIFIER,
 	sentryDsn: process.env.SENTRY_DSN,
 	gotenbergUrl: process.env.GOTENBERG_URL,
