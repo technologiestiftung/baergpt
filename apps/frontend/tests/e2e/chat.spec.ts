@@ -516,8 +516,8 @@ test.describe("Chat", () => {
 			// Wait for the AI response with a longer timeout since it involves backend API calls
 			await page.waitForLoadState("networkidle");
 
-			// Wait for the response to appear (2 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(2);
+			// Wait for the response to appear (4 markdown containers: question + answer)
+			await expect(page.locator("div.markdown-container")).toHaveCount(4);
 
 			// Verify the answer is not empty
 			const markdownAnswerTwo = page.locator("div.markdown-container").last();
@@ -526,7 +526,7 @@ test.describe("Chat", () => {
 			// Click on the LLM model button
 			await page.getByRole("button", { name: "Präzise" }).click();
 
-			// Verify that the model selecetion window is open
+			// Verify that the model selection window is open
 			await expect(page.getByText("Sprachmodell auswählen")).toBeVisible();
 
 			// Select the small LLM model
@@ -534,7 +534,7 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Mistral Small (schnell)" })
 				.click();
 
-			// Verify that the model selecetion window is closed after selecting a model
+			// Verify that the model selection window is closed after selecting a model
 			await expect(page.getByText("Sprachmodell auswählen")).not.toBeVisible();
 
 			// Verify that the small LLM model is selected

@@ -14,6 +14,14 @@ llms.post("/just-chatting", async (c: Context) => {
 	try {
 		const body = (await c.req.json()) as ChatMessageBody;
 		const llmModelName = body.llm_model;
+		if (!llmModelName || typeof llmModelName !== "string") {
+			return c.json(
+				{
+					error: "Invalid request: llm_model is required and must be a string",
+				},
+				400,
+			);
+		}
 		const llmHandler = modelService.resolveLlmHandler(llmModelName);
 		const allowedDocumentIds = body.allowed_document_ids || [];
 		const allowedFolderIds = body.allowed_folder_ids || [];
