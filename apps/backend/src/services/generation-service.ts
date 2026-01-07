@@ -346,7 +346,7 @@ export class GenerationService {
 				),
 			};
 			toolChoice = { type: "tool", toolName: "ragSearchTool" };
-		} else {
+		} else if (isBaseKnowledgeActive) {
 			knowledgeBaseDocuments =
 				await dbService.getBaseKnowledgeDocuments(userId);
 			tools = {
@@ -355,8 +355,10 @@ export class GenerationService {
 					knowledgeBaseDocuments,
 				),
 			};
-
-			toolChoice = isBaseKnowledgeActive ? "auto" : "none";
+			toolChoice = "none";
+		} else {
+			tools = {};
+			toolChoice = "auto";
 		}
 		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(
