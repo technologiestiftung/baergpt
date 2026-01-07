@@ -73,6 +73,7 @@ export type ChatMessageBody = {
 	is_addressed_formal: boolean;
 	user_title: string;
 	user_name: string;
+	llm_model: string;
 };
 
 export type Embedding = {
