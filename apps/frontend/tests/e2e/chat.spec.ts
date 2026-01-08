@@ -587,5 +587,16 @@ test.describe("Chat", () => {
 
 		// Verify the context pill appears again
 		await expect(contextPill).toBeVisible();
+
+		// Deselect base knowledge through the dropdown
+		await chatOptionsButton.click();
+		await expect(page.getByText("Wissen erweitern")).toBeVisible();
+
+		// Click on "Verwaltungswissen" again to deselect it
+		await baseKnowledgeOption.click();
+		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
+
+		// Verify the context pill disappears after deselecting through dropdown
+		await expect(contextPill).not.toBeVisible();
 	});
 });
