@@ -1,26 +1,26 @@
-import React from "react";
 import Content from "../../../content";
+import type { LlmModel, ChatOption } from "../../../common";
 
-interface ChatFormDropdownProps {
+interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
 	title: string;
 	items: {
 		label: string;
-		value: string;
+		value: T;
 		description: string;
 		ariaLabel: string;
 	}[];
-	selectedItems: string[];
-	onItemClick: (value: string) => void;
+	selectedItems: T[];
+	onItemClick: (value: T) => void;
 	className?: string;
 }
 
-export const ChatFormDropdown: React.FC<ChatFormDropdownProps> = ({
+export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 	items,
 	title,
 	selectedItems,
 	onItemClick,
 	className,
-}) => {
+}: ChatFormDropdownProps<T>) => {
 	return (
 		<div
 			className={`z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1 ${className}`}

@@ -8,7 +8,7 @@ interface ContextPillProps {
 
 export function ContextPill({ option, onClose }: ContextPillProps) {
 	const label = Content[
-		`chat.contextPill.${option.toLowerCase()}.label` as keyof typeof Content
+		`chat.contextPill.${option}.label` as keyof typeof Content
 	] as string;
 
 	return (
@@ -20,8 +20,8 @@ export function ContextPill({ option, onClose }: ContextPillProps) {
 			aria-label={`${label} ${Content["chat.contextPill.ariaLabel"]}`}
 		>
 			<img
-				src={`/icons/${option.toLowerCase()}-icon.svg`}
-				alt={`${option.toLowerCase()}-icon`}
+				src={`/icons/${option}-icon.svg`}
+				alt={`${option}-icon`}
 				className="h-[14px] w-[12px] shrink-0 relative"
 			/>
 			<p className="text-sm leading-5 font-normal whitespace-nowrap shrink-0 relative">

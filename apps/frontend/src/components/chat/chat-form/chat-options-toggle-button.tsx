@@ -7,7 +7,7 @@ import type { ChatOption } from "../../../common.ts";
 import { useTooltipStore } from "../../../store/tooltip-store.ts";
 
 export const ChatOptionsToggleButton: React.FC = () => {
-	const { selectedChatOptions, setSelectedChatOptions } = useChatsStore();
+	const { selectedChatOptions, toggleChatOption } = useChatsStore();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const buttonRef = useRef<HTMLDivElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
@@ -16,7 +16,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	const chatOptionsItems = [
 		{
 			label: Content["chat.options.li1.label"],
-			value: "baseKnowledge",
+			value: "baseKnowledge" as ChatOption,
 			description: Content["chat.options.li1.description"],
 			ariaLabel: Content["chat.options.li1.ariaLabel"],
 		},
@@ -36,8 +36,8 @@ export const ChatOptionsToggleButton: React.FC = () => {
 		});
 	};
 
-	const handleItemClick = (value: string) => {
-		setSelectedChatOptions(value as ChatOption);
+	const handleItemClick = (value: ChatOption) => {
+		toggleChatOption(value);
 		setIsDropdownOpen(false);
 	};
 
