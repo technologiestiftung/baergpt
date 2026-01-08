@@ -12,11 +12,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
 
     env:
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
-      SSH_HOST: ${{ github.ref == 'refs/heads/main' && secrets.PROD_SSH_HOST || secrets.STAGING_SSH_HOST }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
 
     steps:
       - name: Checkout repository ⬇️
@@ -28,11 +29,12 @@ jobs:
       - name: Setup SSH key 🔑
         env:
           SSH_PRIVATE_KEY_MIGRATIONS: ${{ secrets.SSH_PRIVATE_KEY_MIGRATIONS }}
+          SSH_HOST_PUBLIC_KEY: ${{ secrets.SSH_HOST_PUBLIC_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY_MIGRATIONS" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p $SSH_PORT -H $SSH_HOST >> ~/.ssh/known_hosts
+          $SSH_HOST_PUBLIC_KEY >> ~/.ssh/known_hosts
 
       - name: Create SSH tunnel 🚇
         run: |
@@ -59,7 +61,7 @@ jobs:
       - name: Apply Supabase migrations 🔄
         working-directory: apps/backend/supabase
         env:
-          DB_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.PROD_DB_PASSWORD || secrets.STAGING_DB_PASSWORD }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres"
           PGSSLMODE=disable supabase db push --include-all --db-url "$TUNNEL_URL"
@@ -68,10 +70,3 @@ jobs:
         if: always()
         run: |
           pkill -f "ssh.*$SSH_USER@$SSH_HOST" || true
-
-      - name: Cleanup SSH key 🧹
-        if: always()
-        run: |
-          rm -f ~/.ssh/id_rsa
-          rm -f ~/.ssh/known_hosts
-          rm -f ~/.ssh/id_rsa.pub
