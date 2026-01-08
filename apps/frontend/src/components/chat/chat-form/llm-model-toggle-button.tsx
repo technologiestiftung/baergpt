@@ -8,7 +8,7 @@ import type { LlmModel } from "../../../common";
 
 export const LlmModelToggleButton: React.FC = () => {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-	const buttonRef = useRef<HTMLDivElement>(null);
+	const selectButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const { selectedLlmModel, setSelectedLlmModel } = useChatsStore();
 
@@ -27,24 +27,26 @@ export const LlmModelToggleButton: React.FC = () => {
 		},
 	];
 
+	const handleClose = useCallback(() => {
+		setIsDropdownOpen(false);
+		selectButtonRef.current?.focus();
+	}, []);
+
 	const handleItemClick = (value: LlmModel) => {
 		setSelectedLlmModel(value);
-		setIsDropdownOpen(false);
+		handleClose();
 	};
 
 	const handleToggleDropdown = () => {
 		setIsDropdownOpen(!isDropdownOpen);
 	};
 
-	const handleClose = useCallback(() => {
-		setIsDropdownOpen(false);
-	}, []);
-
-	useClickOutside(isDropdownOpen, handleClose, [buttonRef, dropdownRef]);
+	useClickOutside(isDropdownOpen, handleClose, [selectButtonRef, dropdownRef]);
 
 	return (
-		<div className="relative" ref={buttonRef}>
+		<div className="relative">
 			<button
+				ref={selectButtonRef}
 				type="button"
 				className="hover:bg-hellblau-30 px-3 py-1.5 rounded-3px flex gap-2 items-center justify-center focus-visible:outline-default"
 				onClick={handleToggleDropdown}
@@ -65,6 +67,9 @@ export const LlmModelToggleButton: React.FC = () => {
 						selectedItems={[selectedLlmModel]}
 						onItemClick={handleItemClick}
 						className="right-0 whitespace-nowrap"
+						isOpen={isDropdownOpen}
+						onClose={handleClose}
+						selectButtonRef={selectButtonRef}
 					/>
 				</div>
 			)}

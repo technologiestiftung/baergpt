@@ -9,7 +9,7 @@ import { useTooltipStore } from "../../../store/tooltip-store.ts";
 export const ChatOptionsToggleButton: React.FC = () => {
 	const { selectedChatOptions, toggleChatOption } = useChatsStore();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-	const buttonRef = useRef<HTMLDivElement>(null);
+	const selectButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const { showTooltip, hideTooltip } = useTooltipStore();
 
@@ -38,7 +38,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 
 	const handleItemClick = (value: ChatOption) => {
 		toggleChatOption(value);
-		setIsDropdownOpen(false);
+		handleClose();
 	};
 
 	const handleToggleDropdown = () => {
@@ -48,13 +48,15 @@ export const ChatOptionsToggleButton: React.FC = () => {
 
 	const handleClose = useCallback(() => {
 		setIsDropdownOpen(false);
+		selectButtonRef.current?.focus();
 	}, []);
 
-	useClickOutside(isDropdownOpen, handleClose, [buttonRef, dropdownRef]);
+	useClickOutside(isDropdownOpen, handleClose, [selectButtonRef, dropdownRef]);
 
 	return (
-		<div className="relative" ref={buttonRef}>
+		<div className="relative">
 			<button
+				ref={selectButtonRef}
 				type="button"
 				className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center focus-visible:outline-default"
 				onClick={handleToggleDropdown}
@@ -78,6 +80,8 @@ export const ChatOptionsToggleButton: React.FC = () => {
 						title={Content["chat.options.dropdown.title"]}
 						selectedItems={selectedChatOptions}
 						onItemClick={handleItemClick}
+						isOpen={isDropdownOpen}
+						onClose={handleClose}
 					/>
 				</div>
 			)}
