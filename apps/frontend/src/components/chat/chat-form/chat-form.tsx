@@ -24,11 +24,8 @@ export const ChatForm: React.FC = () => {
 	const { status, clearError } = useInferenceLoadingStatusStore();
 	const { selectedChatFolders } = useFolderStore();
 	const { selectedChatDocuments } = useDocumentStore();
-	const {
-		getCurrentOrCreateChat,
-		selectedChatOptions,
-		setSelectedChatOptions,
-	} = useChatsStore();
+	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
+		useChatsStore();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
@@ -134,7 +131,7 @@ export const ChatForm: React.FC = () => {
 								<ContextPill
 									key={option}
 									option={option}
-									onClose={() => setSelectedChatOptions(option)}
+									onClose={() => toggleChatOption(option)}
 								/>
 							))}
 						</div>
