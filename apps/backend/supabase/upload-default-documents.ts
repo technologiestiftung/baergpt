@@ -5,7 +5,6 @@ import { supabase } from "../src/supabase";
 import { DatabaseService } from "../src/services/database-service";
 import { GenerationService } from "../src/services/generation-service";
 import { EmbeddingService } from "../src/services/embedding-service";
-import { config } from "../src/config";
 import type { Document } from "../src/types/common";
 import { initQueues } from "../src/services/distributed-limiter";
 
