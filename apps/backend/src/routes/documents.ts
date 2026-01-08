@@ -3,7 +3,6 @@ import type { Context } from "hono";
 import { DatabaseService } from "../services/database-service";
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
-import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 import { Document } from "../types/common";
 import { getAuthenticatedUserId } from "../middleware/basic-auth";
@@ -27,6 +26,15 @@ documents.post("/process", async (c: Context) => {
 
 		// Parse and validate request body
 		const body = await c.req.json();
+		const llmIdentifier = body.llm_model as string;
+		if (!llmIdentifier || typeof llmIdentifier !== "string") {
+			return c.json(
+				{
+					error: "Invalid request: llm_model is required and must be a string",
+				},
+				400,
+			);
+		}
 		const parseResult = documentProcessSchema.parse(body);
 
 		const { document: inputDocument } = parseResult;
@@ -42,8 +50,6 @@ documents.post("/process", async (c: Context) => {
 			return c.json({ error: validationResult.error }, validationResult.status);
 		}
 		bucket = validationResult.bucket;
-
-		const llmIdentifier = config.defaultModelIdentifier;
 
 		// Step 1: Extract document content (no DB record created yet)
 		const documentForExtraction: Document = {
