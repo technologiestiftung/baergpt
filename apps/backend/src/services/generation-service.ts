@@ -355,10 +355,10 @@ export class GenerationService {
 					knowledgeBaseDocuments,
 				),
 			};
-			toolChoice = "none";
+			toolChoice = "auto";
 		} else {
 			tools = {};
-			toolChoice = "auto";
+			toolChoice = "none";
 		}
 
 		updateActiveTrace({ input: messages[messages.length - 1].content });
