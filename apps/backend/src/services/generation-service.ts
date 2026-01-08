@@ -355,8 +355,12 @@ export class GenerationService {
 					knowledgeBaseDocuments,
 				),
 			};
+			toolChoice = "none";
+		} else {
+			tools = {};
 			toolChoice = "auto";
 		}
+
 		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(
 			() =>
