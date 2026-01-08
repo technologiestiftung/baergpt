@@ -541,4 +541,54 @@ test.describe("Chat", () => {
 			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
 		},
 	);
+
+	testDesktopOnly("Toggle base knowledge on and off", async ({ page }) => {
+		await page.goto("/");
+
+		// Find and click the chat options toggle button
+		const chatOptionsButton = page.getByRole("button", {
+			name: "Weitere Funktionen aktivieren",
+		});
+		await expect(chatOptionsButton).toBeVisible();
+
+		// Click to open the dropdown
+		await chatOptionsButton.click();
+
+		// Verify the dropdown is open with the title "Wissen erweitern"
+		await expect(page.getByText("Wissen erweitern")).toBeVisible();
+
+		// Click on "Verwaltungswissen" option to toggle it on
+		const baseKnowledgeOption = page.getByRole("button", {
+			name: "Verwaltungswissen auswählen",
+		});
+		await expect(baseKnowledgeOption).toBeVisible();
+		await baseKnowledgeOption.click();
+
+		// Verify the dropdown closes after selection
+		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
+
+		// Verify the context pill appears with "Verwaltungswissen" label
+		const contextPill = page.getByRole("button", {
+			name: /Verwaltungswissen entfernen/,
+		});
+		await expect(contextPill).toBeVisible();
+
+		// Click the context pill to toggle base knowledge off
+		await contextPill.click();
+
+		// Verify the context pill disappears
+		await expect(contextPill).not.toBeVisible();
+
+		// Toggle it back on via the dropdown to verify it works both ways
+		await chatOptionsButton.click();
+		await expect(page.getByText("Wissen erweitern")).toBeVisible();
+		await baseKnowledgeOption.click();
+		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
+
+		// Verify the context pill appears again
+		const contextPillAgain = page.getByRole("button", {
+			name: /Verwaltungswissen entfernen/,
+		});
+		await expect(contextPillAgain).toBeVisible();
+	});
 });
