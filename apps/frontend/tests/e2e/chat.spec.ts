@@ -467,4 +467,78 @@ test.describe("Chat", () => {
 		// Check if the chat history is open again
 		await expect(page.getByRole("heading", { name: "Chats" })).toBeVisible();
 	});
+
+	testWithLoggedInUser(
+		"Change LLM model from small to large and back",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Check that the small LLM model is selected
+			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
+
+			// Fill in the chat question
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+
+			// Click the send button
+			await page
+				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
+				.click();
+
+			// Wait for the AI response with a longer timeout since it involves backend API calls
+			await page.waitForLoadState("networkidle");
+
+			// Wait for the response to appear (2 markdown containers: question + answer)
+			await expect(page.locator("div.markdown-container")).toHaveCount(2);
+
+			// Verify the answer is not empty
+			const markdownAnswerOne = page.locator("div.markdown-container").last();
+			await expect(markdownAnswerOne).not.toBeEmpty();
+
+			// Click on the LLM model button
+			await page.getByRole("button", { name: "Schnell" }).click();
+
+			// Select the large LLM model
+			await page
+				.getByRole("button", { name: "Mistral Large (präzise)" })
+				.click();
+
+			// Verify that the large LLM model is selected
+			await expect(page.getByRole("button", { name: "Präzise" })).toBeVisible();
+
+			// Fill in the chat question
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+
+			// Click the send button
+			await page
+				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
+				.click();
+
+			// Wait for the AI response with a longer timeout since it involves backend API calls
+			await page.waitForLoadState("networkidle");
+
+			// Wait for the response to appear (4 markdown containers: question + answer)
+			await expect(page.locator("div.markdown-container")).toHaveCount(4);
+
+			// Verify the answer is not empty
+			const markdownAnswerTwo = page.locator("div.markdown-container").last();
+			await expect(markdownAnswerTwo).not.toBeEmpty();
+
+			// Click on the LLM model button
+			await page.getByRole("button", { name: "Präzise" }).click();
+
+			// Verify that the model selection window is open
+			await expect(page.getByText("Sprachmodell auswählen")).toBeVisible();
+
+			// Select the small LLM model
+			await page
+				.getByRole("button", { name: "Mistral Small (schnell)" })
+				.click();
+
+			// Verify that the model selection window is closed after selecting a model
+			await expect(page.getByText("Sprachmodell auswählen")).not.toBeVisible();
+
+			// Verify that the small LLM model is selected
+			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
+		},
+	);
 });
