@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import DocumentBreadcrumbs from "./document-breadcrumbs.tsx";
 import { CreateFolderButton } from "./create-folder/create-folder-button.tsx";
 import { DeleteItemButton } from "./delete-item/delete-item-button.tsx";
@@ -18,9 +18,12 @@ const MIN_WIDTH = 350;
 const MAX_WIDTH = 700;
 const DEFAULT_WIDTH = 400;
 const COLLAPSED_WIDTH = 64;
+const LG_BREAKPOINT = 1024;
 
 export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	const [isCollapsed, setIsCollapsed] = useState(
+		typeof window !== "undefined" && window.innerWidth < LG_BREAKPOINT,
+	);
 	const [width, setWidth] = useState(DEFAULT_WIDTH);
 	const [isResizing, setIsResizing] = useState(false);
 	const { showTooltip, hideTooltip } = useTooltipStore();
@@ -29,6 +32,15 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 	const { getDocuments, isLoading, documents, deletedDefaultDocumentIds } =
 		useDocumentStore();
 	const { hasAvailableUploadSlots } = useFileUploadsStore();
+
+	useEffect(() => {
+		const handleResize = () => {
+			setIsCollapsed(window.innerWidth < LG_BREAKPOINT);
+		};
+
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
 
 	const errorMessage = getUIError("documents-fetch");
 
