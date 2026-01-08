@@ -16,7 +16,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	const chatOptionsItems = [
 		{
 			label: Content["chat.options.li1.label"],
-			value: "baseKnowledge",
+			value: "baseKnowledge" as ChatOption,
 			description: Content["chat.options.li1.description"],
 			ariaLabel: Content["chat.options.li1.ariaLabel"],
 		},
@@ -36,8 +36,8 @@ export const ChatOptionsToggleButton: React.FC = () => {
 		});
 	};
 
-	const handleItemClick = (value: string) => {
-		toggleChatOption(value as ChatOption);
+	const handleItemClick = (value: ChatOption) => {
+		toggleChatOption(value);
 	};
 
 	const handleToggleDropdown = () => {

@@ -15,20 +15,20 @@ export const LlmModelToggleButton: React.FC = () => {
 	const llmModelItems = [
 		{
 			label: Content["chat.llmModel.dropdown.li1.labelExtended"],
-			value: "mistral-small",
+			value: "mistral-small" as LlmModel,
 			description: Content["chat.llmModel.dropdown.li1.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li1.ariaLabel"],
 		},
 		{
 			label: Content["chat.llmModel.dropdown.li2.labelExtended"],
-			value: "mistral-large",
+			value: "mistral-large" as LlmModel,
 			description: Content["chat.llmModel.dropdown.li2.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li2.ariaLabel"],
 		},
 	];
 
-	const handleItemClick = (value: string) => {
-		setSelectedLlmModel(value as LlmModel);
+	const handleItemClick = (value: LlmModel) => {
+		setSelectedLlmModel(value);
 		setIsDropdownOpen(false);
 	};
 
