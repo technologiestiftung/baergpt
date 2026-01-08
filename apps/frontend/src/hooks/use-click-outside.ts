@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, type RefObject } from "react";
 
 /**
  * Custom hook to handle closing a dropdown/modal when clicking outside or pressing Escape
@@ -11,11 +11,6 @@ export function useClickOutside(
 	onClose: () => void,
 	refs: Array<RefObject<HTMLElement | null>>,
 ) {
-	const refsRef = useRef(refs);
-
-	// Keep refsRef up to date (safe to update during render)
-	refsRef.current = refs;
-
 	useEffect(() => {
 		if (!isOpen) {
 			return undefined;
@@ -23,9 +18,7 @@ export function useClickOutside(
 
 		const handleClickOutside = (event: MouseEvent) => {
 			const target = event.target as Node;
-			const isClickInside = refsRef.current.some((ref) =>
-				ref.current?.contains(target),
-			);
+			const isClickInside = refs.some((ref) => ref.current?.contains(target));
 
 			if (!isClickInside) {
 				onClose();
@@ -45,5 +38,5 @@ export function useClickOutside(
 			document.removeEventListener("mousedown", handleClickOutside);
 			document.removeEventListener("keydown", handleEscapeKey);
 		};
-	}, [isOpen, onClose]);
+	}, [isOpen, onClose, refs]);
 }

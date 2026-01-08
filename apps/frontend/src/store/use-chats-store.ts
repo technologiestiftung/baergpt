@@ -22,7 +22,7 @@ interface ChatStore {
 	chats: ChatWithMessages[];
 	selectedChatOptions: ChatOption[];
 	selectedLlmModel: LlmModel;
-	setSelectedChatOptions(option: ChatOption): void;
+	toggleChatOption(option: ChatOption): void;
 	setSelectedLlmModel(model: LlmModel): void;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
@@ -55,7 +55,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		set({ selectedLlmModel: model });
 	},
 
-	setSelectedChatOptions(option: ChatOption) {
+	toggleChatOption(option: ChatOption) {
 		const { selectedChatOptions } = get();
 		if (selectedChatOptions.includes(option)) {
 			set({
