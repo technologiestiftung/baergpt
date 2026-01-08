@@ -347,15 +347,21 @@ export class GenerationService {
 			};
 			toolChoice = { type: "tool", toolName: "ragSearchTool" };
 		} else if (isBaseKnowledgeActive) {
-			knowledgeBaseDocuments =
-				await dbService.getBaseKnowledgeDocuments(userId);
-			tools = {
-				baseKnowledgeSearchTool: baseKnowledgeSearchTool(
-					userId,
-					knowledgeBaseDocuments,
-				),
-			};
-			toolChoice = "auto";
+			try {
+				knowledgeBaseDocuments =
+					await dbService.getBaseKnowledgeDocuments(userId);
+				tools = {
+					baseKnowledgeSearchTool: baseKnowledgeSearchTool(
+						userId,
+						knowledgeBaseDocuments,
+					),
+				};
+				toolChoice = "auto";
+			} catch (error) {
+				captureError(error);
+				tools = {};
+				toolChoice = "none";
+			}
 		} else {
 			tools = {};
 			toolChoice = "none";
