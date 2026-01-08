@@ -121,7 +121,7 @@ async function processDocument(
 			num_pages: extractionResult.numPages,
 		};
 
-		const llmIdentifier = config.defaultModelIdentifier;
+		const llmIdentifier = "mistral-small";
 		const [summaryData, embeddings] = await Promise.all([
 			generationService.summarize(
 				extractionResult.parsedPages,
