@@ -586,9 +586,6 @@ test.describe("Chat", () => {
 		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
 
 		// Verify the context pill appears again
-		const contextPillAgain = page.getByRole("button", {
-			name: /Verwaltungswissen entfernen/,
-		});
-		await expect(contextPillAgain).toBeVisible();
+		await expect(contextPill).toBeVisible();
 	});
 });
