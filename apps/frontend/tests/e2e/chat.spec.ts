@@ -599,4 +599,155 @@ test.describe("Chat", () => {
 		// Verify the context pill disappears after deselecting through dropdown
 		await expect(contextPill).not.toBeVisible();
 	});
+
+	testDesktopOnly(
+		"Base knowledge option is disabled when documents are in chat",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Add a document to the chat
+			const addButton = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Zum Chat hinzufügen");
+			await expect(addButton).toBeVisible();
+			await addButton.click();
+
+			// Verify the document is added to the chat
+			await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
+
+			// Open the chat options dropdown
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await expect(chatOptionsButton).toBeVisible();
+			await chatOptionsButton.click();
+
+			// Verify the dropdown is open
+			await expect(page.getByText("Wissen erweitern")).toBeVisible();
+
+			// Verify the base knowledge option is disabled
+			const baseKnowledgeOption = page
+				.getByRole("button")
+				.filter({ hasText: "Verwaltungswissen" });
+			await expect(baseKnowledgeOption).toBeDisabled();
+
+			// Verify the disabled description is shown
+			await expect(
+				page.getByText(
+					"Dateien aus dem Chat entfernen, um Verwaltungswissen auswählen zu können.",
+				),
+			).toBeVisible();
+
+			// Verify the context pill is not visible (base knowledge is not selected)
+			await expect(
+				page.getByRole("button", {
+					name: /Verwaltungswissen entfernen/,
+				}),
+			).not.toBeVisible();
+
+			// Close the dropdown before removing the document
+			await chatOptionsButton.click();
+			await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
+
+			// Remove the document from chat
+			await page.getByTestId(`remove-item-${defaultDocumentName}`).click();
+
+			// Verify no files are in chat
+			await expect(
+				page.getByRole("button", { name: "Keine Dateien in diesem Chat" }),
+			).toBeVisible();
+
+			// Open the dropdown again
+			await chatOptionsButton.click();
+			await expect(page.getByText("Wissen erweitern")).toBeVisible();
+
+			// Verify the base knowledge option is now enabled
+			await expect(baseKnowledgeOption).toBeEnabled();
+
+			// Verify the normal description is shown
+			await expect(
+				page.getByText("Zugriff auf Verwaltungsdokumente"),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Base knowledge option is disabled when folders are in chat",
+		async ({ page }) => {
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Ordner Name" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			// Add the folder to the chat
+			await page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Zum Chat hinzufügen")
+				.click();
+
+			// Verify the folder is added to the chat
+			await expect(
+				page.getByRole("button", { name: "1 Ordner in diesem Chat" }),
+			).toBeVisible();
+
+			// Open the chat options dropdown
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await expect(chatOptionsButton).toBeVisible();
+			await chatOptionsButton.click();
+
+			// Verify the dropdown is open
+			await expect(page.getByText("Wissen erweitern")).toBeVisible();
+
+			// Verify the base knowledge option is disabled
+			const baseKnowledgeOption = page
+				.getByRole("button")
+				.filter({ hasText: "Verwaltungswissen" });
+			await expect(baseKnowledgeOption).toBeDisabled();
+
+			// Verify the disabled description is shown
+			await expect(
+				page.getByText(
+					"Dateien aus dem Chat entfernen, um Verwaltungswissen auswählen zu können.",
+				),
+			).toBeVisible();
+
+			// Close the dropdown before removing the folder
+			await chatOptionsButton.click();
+			await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
+
+			// Remove the folder from chat
+			await page.getByTestId(`remove-item-${givenFolderName}`).click();
+
+			// Verify no files are in chat
+			await expect(
+				page.getByRole("button", { name: "Keine Dateien in diesem Chat" }),
+			).toBeVisible();
+
+			// Open the dropdown again
+			await chatOptionsButton.click();
+			await expect(page.getByText("Wissen erweitern")).toBeVisible();
+
+			// Verify the base knowledge option is now enabled
+			await expect(baseKnowledgeOption).toBeEnabled();
+		},
+	);
 });
