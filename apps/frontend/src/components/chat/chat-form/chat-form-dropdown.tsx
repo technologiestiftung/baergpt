@@ -41,7 +41,7 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 							>
 								<div>
 									<div
-										className={`text-dunkelblau-80 text-sm leading-6 ${isSelected && "text-aktiv-blau-100"}`}
+										className={`text-sm leading-6 ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
 									>
 										{item.label}
 									</div>
