@@ -894,6 +894,8 @@ export const Content = {
 	"chat.options.li1.label": "Verwaltungswissen",
 	"chat.options.li1.description": "Zugriff auf Verwaltungsdokumente",
 	"chat.options.li1.ariaLabel": "Verwaltungswissen auswählen",
+	"chat.options.li1.disabled.description":
+		"Dateien aus dem Chat entfernen, um Verwaltungswissen auswählen zu können.",
 	// Chat llm model dropdown
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
 	"chat.llmModel.dropdown.li1.label": "Schnell",

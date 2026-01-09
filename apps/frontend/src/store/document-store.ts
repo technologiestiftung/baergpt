@@ -9,6 +9,7 @@ import { downloadDocument } from "../api/documents/download-document.ts";
 import { useErrorStore } from "./error-store";
 import { hideDefaultDocument } from "../api/documents/hide-default-document";
 import { getHiddenDefaultDocumentIds } from "../api/documents/get-hidden-default-document-ids";
+import { useChatsStore } from "./use-chats-store";
 
 interface DocumentStore {
 	documents: Document[];
@@ -197,6 +198,12 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
 	selectedChatDocuments: [],
 	selectChatDocument: (document) => {
+		const { selectedChatOptions, toggleChatOption } = useChatsStore.getState();
+		// if baseknowledge is selected, deselect it
+		if (selectedChatOptions.includes("baseKnowledge")) {
+			toggleChatOption("baseKnowledge");
+		}
+
 		const { selectedChatDocuments } = get();
 
 		/**

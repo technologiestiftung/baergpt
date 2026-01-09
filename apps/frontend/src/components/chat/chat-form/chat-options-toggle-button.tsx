@@ -5,6 +5,8 @@ import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { useClickOutside } from "../../../hooks/use-click-outside.ts";
 import type { ChatOption } from "../../../common.ts";
 import { useTooltipStore } from "../../../store/tooltip-store.ts";
+import { useDocumentStore } from "../../../store/document-store.ts";
+import { useFolderStore } from "../../../store/folder-store.ts";
 
 export const ChatOptionsToggleButton: React.FC = () => {
 	const { selectedChatOptions, toggleChatOption } = useChatsStore();
@@ -12,12 +14,17 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	const buttonRef = useRef<HTMLDivElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const { showTooltip, hideTooltip } = useTooltipStore();
+	const { selectedChatDocuments } = useDocumentStore();
+	const { selectedChatFolders } = useFolderStore();
 
 	const chatOptionsItems = [
 		{
 			label: Content["chat.options.li1.label"],
 			value: "baseKnowledge" as ChatOption,
-			description: Content["chat.options.li1.description"],
+			description:
+				selectedChatDocuments.length > 0 || selectedChatFolders.length > 0
+					? Content["chat.options.li1.disabled.description"]
+					: Content["chat.options.li1.description"],
 			ariaLabel: Content["chat.options.li1.ariaLabel"],
 		},
 	];
@@ -78,6 +85,11 @@ export const ChatOptionsToggleButton: React.FC = () => {
 						title={Content["chat.options.dropdown.title"]}
 						selectedItems={selectedChatOptions}
 						onItemClick={handleItemClick}
+						disabledOptions={
+							selectedChatDocuments.length > 0 || selectedChatFolders.length > 0
+								? ["baseKnowledge"]
+								: []
+						}
 					/>
 				</div>
 			)}

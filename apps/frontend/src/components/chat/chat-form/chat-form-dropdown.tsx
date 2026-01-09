@@ -12,6 +12,7 @@ interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
 	selectedItems: T[];
 	onItemClick: (value: T) => void;
 	className?: string;
+	disabledOptions?: T[];
 }
 
 export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
@@ -20,6 +21,7 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 	selectedItems,
 	onItemClick,
 	className,
+	disabledOptions,
 }: ChatFormDropdownProps<T>) => {
 	return (
 		<div
@@ -31,17 +33,22 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 			<ul className="flex flex-col">
 				{items.map((item) => {
 					const isSelected = selectedItems.includes(item.value);
+					const isDisabled = disabledOptions
+						? disabledOptions.includes(item.value)
+						: false;
+
 					return (
 						<li key={item.value}>
 							<button
 								type="button"
-								className="flex items-center justify-between w-full px-4 py-3 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default rounded-3px"
+								className="flex items-center justify-between w-full px-4 py-3 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default rounded-3px disabled:bg-hellblau-30 group disabled:cursor-not-allowed"
 								onClick={() => onItemClick(item.value)}
 								aria-label={item.ariaLabel}
+								disabled={isDisabled}
 							>
 								<div>
 									<div
-										className={`text-sm leading-6 ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
+										className={`text-sm leading-6 ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"} group-disabled:text-dunkelblau-50`}
 									>
 										{item.label}
 									</div>

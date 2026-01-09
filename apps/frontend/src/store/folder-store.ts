@@ -5,6 +5,7 @@ import { deleteFolder } from "../api/folders/delete-folder";
 import { useDocumentStore } from "./document-store.ts";
 import { createFolder } from "../api/folders/create-folder.ts";
 import { isDocument } from "../components/documents/document-list/list-item/utils/is-document.ts";
+import { useChatsStore } from "./use-chats-store.ts";
 
 interface FolderStore {
 	folders: DocumentFolder[];
@@ -108,6 +109,12 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 
 	selectedChatFolders: [],
 	selectChatFolder: (folder) => {
+		const { selectedChatOptions, toggleChatOption } = useChatsStore.getState();
+		// if baseknowledge is selected, deselect it
+		if (selectedChatOptions.includes("baseKnowledge")) {
+			toggleChatOption("baseKnowledge");
+		}
+
 		set(({ selectedChatFolders }) => ({
 			selectedChatFolders: [...selectedChatFolders, folder],
 		}));
