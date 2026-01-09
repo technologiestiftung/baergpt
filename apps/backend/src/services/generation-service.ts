@@ -320,12 +320,14 @@ export class GenerationService {
 			langfusePrompt,
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
+			isBaseKnowledgeActive,
 		}: {
 			userId?: string;
 			sessionId?: string;
 			langfusePrompt?: TextPromptClient | ChatPromptClient;
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
+			isBaseKnowledgeActive?: boolean;
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[];
@@ -344,17 +346,27 @@ export class GenerationService {
 				),
 			};
 			toolChoice = { type: "tool", toolName: "ragSearchTool" };
+		} else if (isBaseKnowledgeActive) {
+			try {
+				knowledgeBaseDocuments =
+					await dbService.getBaseKnowledgeDocuments(userId);
+				tools = {
+					baseKnowledgeSearchTool: baseKnowledgeSearchTool(
+						userId,
+						knowledgeBaseDocuments,
+					),
+				};
+				toolChoice = "auto";
+			} catch (error) {
+				captureError(error);
+				tools = {};
+				toolChoice = "none";
+			}
 		} else {
-			knowledgeBaseDocuments =
-				await dbService.getBaseKnowledgeDocuments(userId);
-			tools = {
-				baseKnowledgeSearchTool: baseKnowledgeSearchTool(
-					userId,
-					knowledgeBaseDocuments,
-				),
-			};
-			toolChoice = "auto";
+			tools = {};
+			toolChoice = "none";
 		}
+
 		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(
 			() =>

@@ -39,7 +39,7 @@ export function CitationItem({ citationId }: { citationId: number }) {
 						{citation.fileName}
 					</div>
 					<div
-						className={`${citation.sourceType === "public_document" || citation.sourceType === "default_document" ? "hidden sm:flex" : "hidden"}`}
+						className={`${citation.sourceType === "public_document" ? "hidden sm:flex" : "hidden"}`}
 					>
 						<PublicDocumentPill />
 					</div>
@@ -50,7 +50,7 @@ export function CitationItem({ citationId }: { citationId: number }) {
 					{Content["chat.citationsDialog.page"]} {citation.page}
 				</div>
 				<div
-					className={`${citation.sourceType === "public_document" || citation.sourceType === "default_document" ? "flex sm:hidden" : "hidden"}`}
+					className={`${citation.sourceType === "public_document" ? "flex sm:hidden" : "hidden"}`}
 				>
 					<PublicDocumentPill />
 				</div>

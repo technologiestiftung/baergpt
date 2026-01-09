@@ -27,6 +27,7 @@ llms.post("/just-chatting", async (c: Context) => {
 		const allowedFolderIds = body.allowed_folder_ids || [];
 		const messages = body.messages as ModelMessage[];
 		const isAddressedFormal = body.is_addressed_formal;
+		const isBaseKnowledgeActive = body.is_base_knowledge_active;
 		if (messages.length === 0 || !messages.at(-1)?.content) {
 			return c.json(
 				{
@@ -48,6 +49,7 @@ llms.post("/just-chatting", async (c: Context) => {
 				langfusePrompt: langfusePrompt,
 				allowedDocumentIds: allowedDocumentIds,
 				allowedFolderIds: allowedFolderIds,
+				isBaseKnowledgeActive: isBaseKnowledgeActive,
 			},
 		);
 
