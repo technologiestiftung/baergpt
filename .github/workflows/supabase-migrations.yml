@@ -84,3 +84,4 @@ jobs:
         if: always()
         run: |
           pkill -f "ssh.*$SSH_USER@$SSH_HOST" || true
+          rm -f ~/.ssh/id_rsa ~/.ssh/known_hosts
