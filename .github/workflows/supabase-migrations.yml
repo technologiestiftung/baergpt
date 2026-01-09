@@ -41,7 +41,7 @@ jobs:
         run: |
           echo "Getting IP address of supabase-db container..."
           DB_IP=$(ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
-            "docker inspect supabase-db --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'")
+            "sudo docker inspect supabase-db --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'")
           
           if [ -z "$DB_IP" ]; then
             echo "Failed to get database container IP"
@@ -61,12 +61,12 @@ jobs:
           # Wait and verify tunnel with longer timeout
           echo "Waiting for SSH tunnel to establish..."
           for i in {1..30}; do
-            if netstat -tln | grep :5439; then
-              echo "✅ SSH tunnel established successfully on port 5439 (attempt $i)"
+            if ss -tln | grep -q :5439; then
+              echo "SSH tunnel established successfully on port 5439 (attempt $i)"
               break
             fi
             if [ $i -eq 30 ]; then
-              echo "❌ SSH tunnel failed to establish after 30 seconds"
+              echo "SSH tunnel failed to establish after 30 seconds"
               exit 1
             fi
             sleep 1
