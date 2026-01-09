@@ -36,11 +36,24 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           $SSH_HOST_PUBLIC_KEY >> ~/.ssh/known_hosts
 
+      - name: Get database container IP 🔍
+        run: |
+          echo "Getting IP address of supabase-db container..."
+          DB_IP=$(ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
+            "docker inspect supabase-db --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'")
+          
+          if [ -z "$DB_IP" ]; then
+            echo "Failed to get database container IP"
+            exit 1
+          fi
+          
+          echo "DB_IP=$DB_IP" >> $GITHUB_ENV
+
       - name: Create SSH tunnel 🚇
         run: |
           ssh -f -N -T \
             -p $SSH_PORT \
-            -L 5439:127.0.0.1:5432 \
+            -L 5439:$DB_IP:5432 \
             -o ExitOnForwardFailure=yes \
             -o StrictHostKeyChecking=yes \
             $SSH_USER@$SSH_HOST
@@ -63,8 +76,8 @@ jobs:
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres"
-          PGSSLMODE=disable supabase db push --include-all --db-url "$TUNNEL_URL"
+          TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres?sslmode=require"
+          supabase db push --include-all --db-url "$TUNNEL_URL"
 
       - name: Close SSH tunnel 🔒
         if: always()
