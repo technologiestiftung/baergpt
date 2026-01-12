@@ -1,15 +1,21 @@
+import type { JSX } from "react";
 import type { ChatOption } from "../../../common";
 import Content from "../../../content";
+import { BaseKnowledgeIcon } from "../icons/base-knowledge-icon.tsx";
+import { WebSearchIcon } from "../icons/web-search-icon.tsx";
 
 interface ContextPillProps {
 	option: ChatOption;
 	onClose: () => void;
 }
 
+const icons: Record<ChatOption, JSX.Element> = {
+	baseKnowledge: <BaseKnowledgeIcon />,
+	webSearch: <WebSearchIcon />,
+};
+
 export function ContextPill({ option, onClose }: ContextPillProps) {
-	const label = Content[
-		`chat.contextPill.${option}.label` as keyof typeof Content
-	] as string;
+	const label = Content[`chat.contextPill.${option}.label`];
 
 	return (
 		<button
@@ -19,11 +25,7 @@ export function ContextPill({ option, onClose }: ContextPillProps) {
 			data-option={option}
 			aria-label={`${label} ${Content["chat.contextPill.ariaLabel"]}`}
 		>
-			<img
-				src={`/icons/${option}-icon.svg`}
-				alt={`${option}-icon`}
-				className="h-[14px] w-[12px] shrink-0 relative"
-			/>
+			{icons[option]}
 			<p className="text-sm leading-5 font-normal whitespace-nowrap shrink-0 relative">
 				{label}
 			</p>
