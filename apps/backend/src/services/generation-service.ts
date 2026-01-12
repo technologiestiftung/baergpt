@@ -335,7 +335,7 @@ export class GenerationService {
 		let tools: Record<string, Tool> = {};
 		let toolChoice: ToolChoice<Record<string, Tool>> = "none";
 		let maxSteps = 1;
-		let useAutoToolChoiceAfterFirstStep = false;
+		let useBaseKnowledgeAfterFirstStep = false;
 
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
@@ -360,7 +360,7 @@ export class GenerationService {
 					),
 				};
 				maxSteps = 2;
-				useAutoToolChoiceAfterFirstStep = true;
+				useBaseKnowledgeAfterFirstStep = true;
 			} catch (error) {
 				captureError(error);
 			}
@@ -383,7 +383,7 @@ export class GenerationService {
 						knowledgeBaseDocuments,
 					),
 				};
-				toolChoice = "auto";
+				toolChoice = { type: "tool", toolName: "baseKnowledgeSearchTool" };
 			} catch (error) {
 				captureError(error);
 				tools = {};
@@ -404,10 +404,16 @@ export class GenerationService {
 					tools,
 					toolChoice,
 					stopWhen: stepCountIs(maxSteps),
-					prepareStep: useAutoToolChoiceAfterFirstStep
+					prepareStep: useBaseKnowledgeAfterFirstStep
 						? ({ stepNumber }) => {
-								if (stepNumber > 1) {
-									return { toolChoice: "auto" as const };
+								if (stepNumber === 1) {
+									return {
+										toolChoice: {
+											type: "tool",
+											toolName: "baseKnowledgeSearchTool",
+										} as const,
+										activeTools: ["baseKnowledgeSearchTool"],
+									};
 								}
 								return {};
 							}
