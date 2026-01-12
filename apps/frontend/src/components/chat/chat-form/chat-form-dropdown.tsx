@@ -1,6 +1,7 @@
-import { useEffect, useRef, type KeyboardEvent, type RefObject } from "react";
+import { useRef, type KeyboardEvent } from "react";
 import Content from "../../../content";
 import type { LlmModel, ChatOption } from "../../../common";
+import { useFocusOnOpen } from "./hooks/use-focus-on-open.tsx";
 
 interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
 	title: string;
@@ -15,7 +16,6 @@ interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
 	className?: string;
 	isOpen: boolean;
 	onClose: () => void;
-	selectButtonRef?: RefObject<HTMLButtonElement>;
 }
 
 export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
@@ -26,17 +26,27 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 	className,
 	isOpen,
 	onClose,
-	selectButtonRef,
 }: ChatFormDropdownProps<T>) => {
 	const optionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	useEffect(() => {
-		if (isOpen) {
-			// set focus on first item when dropdown opens
-			optionButtonRefs.current.get(0)?.focus();
-		}
-	}, [isOpen]);
+	useFocusOnOpen(isOpen, optionButtonRefs);
+
+	const selectNextOption = (
+		currentIndex: number,
+		optionButtons: HTMLButtonElement[],
+	) => {
+		const nextIndex = (currentIndex + 1) % optionButtons.length;
+		optionButtons[nextIndex].focus();
+	};
+
+	const selectPreviousOption = (
+		currentIndex: number,
+		optionButtons: HTMLButtonElement[],
+	) => {
+		const previousIndex = Math.abs((currentIndex - 1) % optionButtons.length);
+		optionButtons[previousIndex].focus();
+	};
 
 	// Handle keyboard navigation
 	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -47,44 +57,24 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 
 		switch (event.key) {
 			case "Escape":
+			case "Tab":
+			case "Shift+Tab":
 				event.preventDefault();
 				onClose();
 				break;
 
-			case "Tab":
-				// Check if focus moved outside after Tab
-				setTimeout(() => {
-					const activeElement = document.activeElement;
-					const isWithinDropdown =
-						containerRef.current?.contains(activeElement);
-					const isWithinButton = selectButtonRef?.current === activeElement;
-
-					if (!isWithinDropdown && !isWithinButton) {
-						onClose();
-					}
-				}, 0);
-				break;
-
 			case "ArrowDown":
-			case "ArrowUp": {
 				event.preventDefault();
-				if (optionButtons.length === 0) {
-					break;
-				}
-
-				const direction = event.key === "ArrowDown" ? 1 : -1;
-				const nextIndex =
-					(currentIndex + direction + optionButtons.length) %
-					optionButtons.length;
-				optionButtons[nextIndex]?.focus();
+				selectNextOption(currentIndex, optionButtons);
 				break;
-			}
+			case "ArrowUp":
+				event.preventDefault();
+				selectPreviousOption(currentIndex, optionButtons);
+				break;
 
 			case "Enter":
-				if (currentIndex !== -1) {
-					event.preventDefault();
-					onItemClick(items[currentIndex].value);
-				}
+				event.preventDefault();
+				onItemClick(items[currentIndex].value);
 				break;
 
 			default:

@@ -15,13 +15,13 @@ export const LlmModelToggleButton: React.FC = () => {
 	const llmModelItems = [
 		{
 			label: Content["chat.llmModel.dropdown.li1.labelExtended"],
-			value: "mistral-small" as LlmModel,
+			value: "mistral-small" as const,
 			description: Content["chat.llmModel.dropdown.li1.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li1.ariaLabel"],
 		},
 		{
 			label: Content["chat.llmModel.dropdown.li2.labelExtended"],
-			value: "mistral-large" as LlmModel,
+			value: "mistral-large" as const,
 			description: Content["chat.llmModel.dropdown.li2.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li2.ariaLabel"],
 		},
@@ -69,7 +69,6 @@ export const LlmModelToggleButton: React.FC = () => {
 						className="right-0 whitespace-nowrap"
 						isOpen={isDropdownOpen}
 						onClose={handleClose}
-						selectButtonRef={selectButtonRef}
 					/>
 				</div>
 			)}
