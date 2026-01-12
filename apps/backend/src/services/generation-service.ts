@@ -6,6 +6,7 @@ import {
 	createUIMessageStreamResponse,
 	generateObject,
 	generateText,
+	stepCountIs,
 	streamText,
 } from "ai";
 import { ModelService } from "./model-service";
@@ -331,13 +332,39 @@ export class GenerationService {
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[];
-		let tools: Record<string, Tool>;
-		let toolChoice: ToolChoice<Record<string, unknown>>;
+		let tools: Record<string, Tool> = {};
+		let toolChoice: ToolChoice<Record<string, Tool>> = "none";
+		let maxSteps = 1;
+		let useAutoToolChoiceAfterFirstStep = false;
 
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
 
-		if (hasAllowedDocumentsOrFolders) {
+		if (hasAllowedDocumentsOrFolders && isBaseKnowledgeActive) {
+			tools = {
+				ragSearchTool: ragSearchTool(
+					userId,
+					allowedDocumentIds,
+					allowedFolderIds,
+				),
+			};
+			toolChoice = { type: "tool", toolName: "ragSearchTool" };
+			try {
+				knowledgeBaseDocuments =
+					await dbService.getBaseKnowledgeDocuments(userId);
+				tools = {
+					...tools,
+					baseKnowledgeSearchTool: baseKnowledgeSearchTool(
+						userId,
+						knowledgeBaseDocuments,
+					),
+				};
+				maxSteps = 2;
+				useAutoToolChoiceAfterFirstStep = true;
+			} catch (error) {
+				captureError(error);
+			}
+		} else if (hasAllowedDocumentsOrFolders) {
 			tools = {
 				ragSearchTool: ragSearchTool(
 					userId,
@@ -376,6 +403,15 @@ export class GenerationService {
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
 					toolChoice,
+					stopWhen: stepCountIs(maxSteps),
+					prepareStep: useAutoToolChoiceAfterFirstStep
+						? ({ stepNumber }) => {
+								if (stepNumber > 1) {
+									return { toolChoice: "auto" as const };
+								}
+								return {};
+							}
+						: undefined,
 					providerOptions: {
 						mistral: {
 							presencePenalty: LLM_PARAMETERS.presencePenalty,
@@ -407,7 +443,9 @@ export class GenerationService {
 				captureError(error);
 			}
 		}
-		const toolResult = generationResult.toolResults[0];
+		const allChunkMatches = generationResult.steps.flatMap((step) =>
+			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
+		);
 		const newMessages = generationResult.response.messages;
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);
@@ -427,8 +465,8 @@ export class GenerationService {
 								},
 							},
 							onFinish: async ({ text, usage }) => {
-								if (toolResult) {
-									const availableSources = toolResult.output.chunkMatches.map(
+								if (allChunkMatches.length > 0) {
+									const availableSources = allChunkMatches.map(
 										(match: { chunkId: number; snippet: string }) => ({
 											id: match.chunkId,
 											snippet: match.snippet,
