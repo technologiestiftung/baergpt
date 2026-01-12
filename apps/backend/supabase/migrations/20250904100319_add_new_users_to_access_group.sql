@@ -1,8 +1,8 @@
 -- insert default access group if not exists
 INSERT INTO
-	public.access_groups (name)
+    public.access_groups (name)
 VALUES
-	('Alle')
+    ('Alle')
 ON CONFLICT (name) DO NOTHING;
 
 -- ensure a unique constraint exists for (user_id, access_group_id)
@@ -14,20 +14,20 @@ ADD CONSTRAINT access_group_members_user_access_group_key UNIQUE (user_id, acces
 
 -- add all current users to the default access group
 INSERT INTO
-	public.access_group_members (user_id, access_group_id)
+    public.access_group_members (user_id, access_group_id)
 SELECT
-	p.id,
-	ag.id
+    p.id,
+    ag.id
 FROM
-	public.profiles p,
-	public.access_groups ag
+    public.profiles p,
+    public.access_groups ag
 WHERE
-	ag.name = 'Alle'
+    ag.name = 'Alle'
 ON CONFLICT (user_id, access_group_id) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION add_user_to_access_group () returns trigger language plpgsql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     -- insert default access group in case it was deleted somehow beforehand
     INSERT INTO

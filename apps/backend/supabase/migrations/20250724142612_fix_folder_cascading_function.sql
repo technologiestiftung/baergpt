@@ -3,7 +3,7 @@
 -- Create new simplified cascading function
 CREATE OR REPLACE FUNCTION public.update_folder_id_cascading () returns trigger language plpgsql
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     -- Update folder_id in document_chunks
     UPDATE public.document_chunks

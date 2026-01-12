@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION public.handle_document_deletion () returns trigger language plpgsql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 DECLARE
     file_path TEXT;
     pdf_file_path TEXT;
@@ -25,24 +25,24 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.hybrid_chunk_search (
-	query_text TEXT,
-	query_embedding extensions.vector (1024),
-	match_count INTEGER,
-	allowed_document_ids INTEGER[] DEFAULT NULL::INTEGER[],
-	allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[],
-	full_text_weight DOUBLE PRECISION DEFAULT 1,
-	semantic_weight DOUBLE PRECISION DEFAULT 1,
-	rrf_k INTEGER DEFAULT 50
+    query_text TEXT,
+    query_embedding extensions.vector (1024),
+    match_count INTEGER,
+    allowed_document_ids INTEGER[] DEFAULT NULL::INTEGER[],
+    allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[],
+    full_text_weight DOUBLE PRECISION DEFAULT 1,
+    semantic_weight DOUBLE PRECISION DEFAULT 1,
+    rrf_k INTEGER DEFAULT 50
 ) returns TABLE (
-	id INTEGER,
-	document_id INTEGER,
-	chunk_content TEXT,
-	fts_score REAL,
-	sem_score REAL,
-	hybrid_score REAL
+    id INTEGER,
+    document_id INTEGER,
+    chunk_content TEXT,
+    fts_score REAL,
+    sem_score REAL,
+    hybrid_score REAL
 ) language sql
 SET
-	search_path = 'extensions' AS $$
+    search_path = 'extensions' AS $$
 WITH full_text AS (
   SELECT
     id,

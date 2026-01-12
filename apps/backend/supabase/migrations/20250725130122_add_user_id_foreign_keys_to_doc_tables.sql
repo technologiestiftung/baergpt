@@ -2,35 +2,35 @@
 -- Clean up orphaned documents if there are any
 DELETE FROM documents
 WHERE
-	owned_by_user_id IS NULL
-	OR owned_by_user_id NOT IN (
-		SELECT
-			id
-		FROM
-			auth.users
-	);
+    owned_by_user_id IS NULL
+    OR owned_by_user_id NOT IN (
+        SELECT
+            id
+        FROM
+            auth.users
+    );
 
 -- Clean up orphaned document_summaries if there are any
 DELETE FROM document_summaries
 WHERE
-	owned_by_user_id IS NULL
-	OR owned_by_user_id NOT IN (
-		SELECT
-			id
-		FROM
-			auth.users
-	);
+    owned_by_user_id IS NULL
+    OR owned_by_user_id NOT IN (
+        SELECT
+            id
+        FROM
+            auth.users
+    );
 
 -- Clean up orphaned document_chunks if there are any
 DELETE FROM document_chunks
 WHERE
-	owned_by_user_id IS NULL
-	OR owned_by_user_id NOT IN (
-		SELECT
-			id
-		FROM
-			auth.users
-	);
+    owned_by_user_id IS NULL
+    OR owned_by_user_id NOT IN (
+        SELECT
+            id
+        FROM
+            auth.users
+    );
 
 ALTER TABLE documents
 ALTER COLUMN owned_by_user_id

@@ -1,7 +1,7 @@
 -- Create a function to validate email against allowed_email_domains table
 CREATE OR REPLACE FUNCTION public.validate_email_domain () returns trigger language plpgsql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 DECLARE
     email_domain TEXT;
     domain_pattern TEXT;

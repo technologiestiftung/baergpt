@@ -22,17 +22,17 @@ DROP NOT NULL;
 
 -- add access_groups table
 CREATE TABLE IF NOT EXISTS access_groups (
-	id UUID PRIMARY KEY DEFAULT GEN_RANDOM_UUID(),
-	name TEXT NOT NULL UNIQUE,
-	subset_of UUID REFERENCES access_groups (id),
-	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id UUID PRIMARY KEY DEFAULT GEN_RANDOM_UUID(),
+    name TEXT NOT NULL UNIQUE,
+    subset_of UUID REFERENCES access_groups (id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- function that stamps the updated_at column
 CREATE OR REPLACE FUNCTION tg_set_updated_at () returns trigger
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     NEW.updated_at := NOW();
     RETURN NEW;
@@ -47,10 +47,10 @@ EXECUTE procedure tg_set_updated_at ();
 
 -- add access_group_members table
 CREATE TABLE IF NOT EXISTS access_group_members (
-	user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE PRIMARY KEY,
-	access_group_id UUID NOT NULL REFERENCES access_groups (id) ON DELETE CASCADE,
-	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-	updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE PRIMARY KEY,
+    access_group_id UUID NOT NULL REFERENCES access_groups (id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- trigger that fires on every INSERT or UPDATE
@@ -65,64 +65,64 @@ ADD COLUMN IF NOT EXISTS access_group_id UUID REFERENCES access_groups (id) ON D
 ADD COLUMN IF NOT EXISTS uploaded_by_user_id UUID REFERENCES auth.users (id) ON DELETE SET NULL,
 DROP CONSTRAINT if EXISTS chk_documents_ownership,
 ADD CONSTRAINT chk_documents_ownership CHECK (
-	(
-		owned_by_user_id IS NOT NULL
-		AND access_group_id IS NULL
-	)
-	OR (
-		owned_by_user_id IS NULL
-		AND access_group_id IS NOT NULL
-	)
+    (
+        owned_by_user_id IS NOT NULL
+        AND access_group_id IS NULL
+    )
+    OR (
+        owned_by_user_id IS NULL
+        AND access_group_id IS NOT NULL
+    )
 );
 
 ALTER TABLE document_chunks
 ADD COLUMN IF NOT EXISTS access_group_id UUID REFERENCES access_groups (id) ON DELETE SET NULL,
 DROP CONSTRAINT if EXISTS chk_document_chunks_ownership,
 ADD CONSTRAINT chk_document_chunks_ownership CHECK (
-	(
-		owned_by_user_id IS NOT NULL
-		AND access_group_id IS NULL
-	)
-	OR (
-		owned_by_user_id IS NULL
-		AND access_group_id IS NOT NULL
-	)
+    (
+        owned_by_user_id IS NOT NULL
+        AND access_group_id IS NULL
+    )
+    OR (
+        owned_by_user_id IS NULL
+        AND access_group_id IS NOT NULL
+    )
 );
 
 ALTER TABLE document_summaries
 ADD COLUMN IF NOT EXISTS access_group_id UUID REFERENCES access_groups (id) ON DELETE SET NULL,
 DROP CONSTRAINT if EXISTS chk_document_summaries_ownership,
 ADD CONSTRAINT chk_document_summaries_ownership CHECK (
-	(
-		owned_by_user_id IS NOT NULL
-		AND access_group_id IS NULL
-	)
-	OR (
-		owned_by_user_id IS NULL
-		AND access_group_id IS NOT NULL
-	)
+    (
+        owned_by_user_id IS NOT NULL
+        AND access_group_id IS NULL
+    )
+    OR (
+        owned_by_user_id IS NULL
+        AND access_group_id IS NOT NULL
+    )
 );
 
 -- remove ability to search all documents without a user_id by default
 CREATE OR REPLACE FUNCTION public.hybrid_chunk_search (
-	query_text TEXT,
-	query_embedding extensions.vector (1024),
-	match_count INTEGER,
-	allowed_document_ids INTEGER[] DEFAULT NULL::INTEGER[],
-	allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[],
-	full_text_weight DOUBLE PRECISION DEFAULT 1,
-	semantic_weight DOUBLE PRECISION DEFAULT 1,
-	rrf_k INTEGER DEFAULT 50
+    query_text TEXT,
+    query_embedding extensions.vector (1024),
+    match_count INTEGER,
+    allowed_document_ids INTEGER[] DEFAULT NULL::INTEGER[],
+    allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[],
+    full_text_weight DOUBLE PRECISION DEFAULT 1,
+    semantic_weight DOUBLE PRECISION DEFAULT 1,
+    rrf_k INTEGER DEFAULT 50
 ) returns TABLE (
-	id INTEGER,
-	document_id INTEGER,
-	chunk_content TEXT,
-	fts_score REAL,
-	sem_score REAL,
-	hybrid_score REAL
+    id INTEGER,
+    document_id INTEGER,
+    chunk_content TEXT,
+    fts_score REAL,
+    sem_score REAL,
+    hybrid_score REAL
 ) language sql
 SET
-	search_path = 'extensions' AS $$
+    search_path = 'extensions' AS $$
 WITH full_text AS (
   SELECT
     id,

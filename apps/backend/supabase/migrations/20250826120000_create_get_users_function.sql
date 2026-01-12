@@ -1,23 +1,23 @@
 CREATE OR REPLACE FUNCTION public.get_users () returns TABLE (
-	user_id UUID,
-	email TEXT,
-	registered_at TIMESTAMPTZ,
-	last_login_at TIMESTAMPTZ,
-	invited_at TIMESTAMPTZ,
-	first_name TEXT,
-	last_name TEXT,
-	personal_title TEXT,
-	num_documents INT,
-	num_inferences INT,
-	num_inference_tokens INT,
-	num_embedding_tokens INT,
-	academic_title TEXT,
-	is_admin BOOLEAN,
-	is_active BOOLEAN,
-	deleted_at TIMESTAMPTZ
+    user_id UUID,
+    email TEXT,
+    registered_at TIMESTAMPTZ,
+    last_login_at TIMESTAMPTZ,
+    invited_at TIMESTAMPTZ,
+    first_name TEXT,
+    last_name TEXT,
+    personal_title TEXT,
+    num_documents INT,
+    num_inferences INT,
+    num_inference_tokens INT,
+    num_embedding_tokens INT,
+    academic_title TEXT,
+    is_admin BOOLEAN,
+    is_active BOOLEAN,
+    deleted_at TIMESTAMPTZ
 ) language plpgsql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     -- ensure caller is an admin
     IF NOT EXISTS (SELECT 1 FROM public.application_admins aa WHERE aa.user_id = auth.uid()) THEN

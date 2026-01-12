@@ -9,26 +9,26 @@ DROP POLICY if EXISTS "Admins can delete from public_documents" ON storage.objec
 -- Allow admins to insert files
 CREATE POLICY "Admins can insert into public_documents" ON storage.objects FOR insert TO authenticated
 WITH
-	CHECK (
-		bucket_id = 'public_documents'
-		AND public.is_application_admin ()
-	);
+    CHECK (
+        bucket_id = 'public_documents'
+        AND public.is_application_admin ()
+    );
 
 -- Allow admins to update files
 CREATE POLICY "Admins can update public_documents" ON storage.objects
 FOR UPDATE
-	TO authenticated USING (
-		bucket_id = 'public_documents'
-		AND public.is_application_admin ()
-	)
+    TO authenticated USING (
+        bucket_id = 'public_documents'
+        AND public.is_application_admin ()
+    )
 WITH
-	CHECK (
-		bucket_id = 'public_documents'
-		AND public.is_application_admin ()
-	);
+    CHECK (
+        bucket_id = 'public_documents'
+        AND public.is_application_admin ()
+    );
 
 -- Allow admins to delete files
 CREATE POLICY "Admins can delete from public_documents" ON storage.objects FOR delete TO authenticated USING (
-	bucket_id = 'public_documents'
-	AND public.is_application_admin ()
+    bucket_id = 'public_documents'
+    AND public.is_application_admin ()
 );

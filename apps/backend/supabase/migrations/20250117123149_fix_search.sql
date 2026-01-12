@@ -1,29 +1,24 @@
 DROP FUNCTION if EXISTS public.match_document_chunks (
-	embedding vector,
-	match_threshold DOUBLE PRECISION,
-	match_count INTEGER,
-	num_probes INTEGER,
-	user_id UUID,
-	use_all BOOLEAN,
-	allowed_processed_document_ids INTEGER[]
+    embedding vector,
+    match_threshold DOUBLE PRECISION,
+    match_count INTEGER,
+    num_probes INTEGER,
+    user_id UUID,
+    use_all BOOLEAN,
+    allowed_processed_document_ids INTEGER[]
 );
 
 CREATE OR REPLACE FUNCTION public.match_document_chunks (
-	embedding vector,
-	match_threshold DOUBLE PRECISION,
-	match_count INTEGER,
-	num_probes INTEGER,
-	user_id UUID,
-	use_all BOOLEAN,
-	allowed_processed_document_ids INTEGER[],
-	use_public_documents_only BOOLEAN,
-	allowed_folder_id INTEGER DEFAULT NULL::INTEGER
-) returns TABLE (
-	id INTEGER,
-	processed_document_id INTEGER,
-	content TEXT,
-	similarity DOUBLE PRECISION
-) language plpgsql AS $function$
+    embedding vector,
+    match_threshold DOUBLE PRECISION,
+    match_count INTEGER,
+    num_probes INTEGER,
+    user_id UUID,
+    use_all BOOLEAN,
+    allowed_processed_document_ids INTEGER[],
+    use_public_documents_only BOOLEAN,
+    allowed_folder_id INTEGER DEFAULT NULL::INTEGER
+) returns TABLE (id INTEGER, processed_document_id INTEGER, content TEXT, similarity DOUBLE PRECISION) language plpgsql AS $function$
 	#variable_conflict use_variable
 BEGIN
 	EXECUTE format('SET LOCAL ivfflat.probes = %s', num_probes);
@@ -53,31 +48,26 @@ END;
 $function$;
 
 DROP FUNCTION if EXISTS public.match_summaries (
-	embedding vector,
-	match_threshold DOUBLE PRECISION,
-	match_count INTEGER,
-	num_probes INTEGER,
-	user_id UUID,
-	use_all BOOLEAN,
-	allowed_processed_document_ids INTEGER[]
+    embedding vector,
+    match_threshold DOUBLE PRECISION,
+    match_count INTEGER,
+    num_probes INTEGER,
+    user_id UUID,
+    use_all BOOLEAN,
+    allowed_processed_document_ids INTEGER[]
 );
 
 CREATE OR REPLACE FUNCTION public.match_summaries (
-	embedding vector,
-	match_threshold DOUBLE PRECISION,
-	match_count INTEGER,
-	num_probes INTEGER,
-	user_id UUID,
-	use_all BOOLEAN,
-	allowed_processed_document_ids INTEGER[],
-	use_public_documents_only BOOLEAN,
-	allowed_folder_id INTEGER DEFAULT NULL::INTEGER
-) returns TABLE (
-	id INTEGER,
-	processed_document_id INTEGER,
-	summary TEXT,
-	similarity DOUBLE PRECISION
-) language plpgsql AS $function$
+    embedding vector,
+    match_threshold DOUBLE PRECISION,
+    match_count INTEGER,
+    num_probes INTEGER,
+    user_id UUID,
+    use_all BOOLEAN,
+    allowed_processed_document_ids INTEGER[],
+    use_public_documents_only BOOLEAN,
+    allowed_folder_id INTEGER DEFAULT NULL::INTEGER
+) returns TABLE (id INTEGER, processed_document_id INTEGER, summary TEXT, similarity DOUBLE PRECISION) language plpgsql AS $function$
 	#variable_conflict use_variable
 BEGIN
 	EXECUTE format('SET LOCAL ivfflat.probes = %s', num_probes);
@@ -106,37 +96,37 @@ END;
 $function$;
 
 DROP FUNCTION if EXISTS public.match_summaries_and_chunks (
-	embedding vector,
-	match_threshold DOUBLE PRECISION,
-	chunk_limit INTEGER,
-	summary_limit INTEGER,
-	num_probes_chunks INTEGER,
-	num_probes_summaries INTEGER,
-	user_id UUID,
-	use_all BOOLEAN,
-	allowed_processed_document_ids INTEGER[]
+    embedding vector,
+    match_threshold DOUBLE PRECISION,
+    chunk_limit INTEGER,
+    summary_limit INTEGER,
+    num_probes_chunks INTEGER,
+    num_probes_summaries INTEGER,
+    user_id UUID,
+    use_all BOOLEAN,
+    allowed_processed_document_ids INTEGER[]
 );
 
 CREATE OR REPLACE FUNCTION public.match_summaries_and_chunks (
-	embedding vector,
-	match_threshold DOUBLE PRECISION,
-	chunk_limit INTEGER,
-	summary_limit INTEGER,
-	num_probes_chunks INTEGER,
-	num_probes_summaries INTEGER,
-	user_id UUID,
-	use_all BOOLEAN,
-	allowed_processed_document_ids INTEGER[],
-	use_public_documents_only BOOLEAN,
-	allowed_folder_id INTEGER DEFAULT NULL
+    embedding vector,
+    match_threshold DOUBLE PRECISION,
+    chunk_limit INTEGER,
+    summary_limit INTEGER,
+    num_probes_chunks INTEGER,
+    num_probes_summaries INTEGER,
+    user_id UUID,
+    use_all BOOLEAN,
+    allowed_processed_document_ids INTEGER[],
+    use_public_documents_only BOOLEAN,
+    allowed_folder_id INTEGER DEFAULT NULL
 ) returns TABLE (
-	processed_document_id INTEGER,
-	chunk_ids INTEGER[],
-	chunk_similarities DOUBLE PRECISION[],
-	avg_chunk_similarity DOUBLE PRECISION,
-	summary_ids INTEGER[],
-	summary_similarity DOUBLE PRECISION,
-	similarity DOUBLE PRECISION
+    processed_document_id INTEGER,
+    chunk_ids INTEGER[],
+    chunk_similarities DOUBLE PRECISION[],
+    avg_chunk_similarity DOUBLE PRECISION,
+    summary_ids INTEGER[],
+    summary_similarity DOUBLE PRECISION,
+    similarity DOUBLE PRECISION
 ) language plpgsql AS $function$
 	# variable_conflict use_variable
 BEGIN

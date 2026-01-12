@@ -1,18 +1,18 @@
 CREATE OR REPLACE FUNCTION get_citation_details (
-	chunk_ids INTEGER[],
-	allowed_document_ids INTEGER[] DEFAULT NULL::INTEGER[],
-	allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[]
+    chunk_ids INTEGER[],
+    allowed_document_ids INTEGER[] DEFAULT NULL::INTEGER[],
+    allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[]
 ) returns TABLE (
-	chunk_id INTEGER,
-	file_name TEXT,
-	source_url TEXT,
-	page INT,
-	created_at TIMESTAMPTZ,
-	source_type TEXT,
-	snippet TEXT
+    chunk_id INTEGER,
+    file_name TEXT,
+    source_url TEXT,
+    page INT,
+    created_at TIMESTAMPTZ,
+    source_type TEXT,
+    snippet TEXT
 ) language plpgsql
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     RETURN QUERY
     SELECT

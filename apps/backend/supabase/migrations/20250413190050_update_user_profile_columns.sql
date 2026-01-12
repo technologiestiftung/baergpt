@@ -10,17 +10,17 @@ DROP POLICY if EXISTS "Public profiles are viewable by everyone." ON profiles;
 
 CREATE POLICY "Users can select their own profile." ON profiles FOR
 SELECT
-	USING (
-		(
-			SELECT
-				auth.uid ()
-		) = id
-	);
+    USING (
+        (
+            SELECT
+                auth.uid ()
+        ) = id
+    );
 
 -- This trigger needs to extract first_name and last_name from metadata
 CREATE OR REPLACE FUNCTION public.handle_new_user () returns trigger
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
 INSERT INTO public.profiles (id, first_name, last_name)
 VALUES (
