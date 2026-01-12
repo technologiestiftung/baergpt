@@ -52,6 +52,50 @@ test.describe("Chat", () => {
 		},
 	);
 
+	testWithLoggedInUser(
+		"Copy text with markdown formatting as rich text and plain text",
+		async ({ page, browserName }) => {
+			await page.goto("/");
+
+			// Fill in the chat question
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("**hallo**");
+
+			// Click the send button
+			await page
+				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
+				.click();
+
+			if (browserName === "webkit") {
+				return;
+			}
+
+			// Copy user message with markdown formatting
+			await page.getByAltText("Kopieren").first().click();
+
+			// Wait for clipboard write to complete
+			await page.waitForTimeout(100);
+
+			// Verify the answer is copied to clipboard
+			const clipboardContent = await page.evaluate(async () => {
+				const types = await navigator.clipboard.read();
+				const type = types[0];
+				const htmlBlob = await type.getType("text/html");
+				const plainBlob = await type.getType("text/plain");
+				return {
+					html: await htmlBlob.text(),
+					plain: await plainBlob.text(),
+				};
+			});
+
+			// Verify text/html contains HTML bold tags and not markdown **
+			expect(clipboardContent.html).toContain("<strong>hallo</strong>");
+			expect(clipboardContent.html).not.toContain("**");
+
+			// Verify text/plain contains markdown ** syntax
+			expect(clipboardContent.plain).toContain("**hallo**");
+		},
+	);
+
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
