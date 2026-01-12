@@ -16,7 +16,7 @@ export default {
             files: "*.sql",
             options: {
                 useTabs: false, // use spaces instead of tabs for SQL, as it would otherwise would get overwritten by our default prettier config for TS
-                tabWidth: 2,
+                tabWidth: 4,
             },
         },
     ],
