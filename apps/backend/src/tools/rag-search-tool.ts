@@ -13,7 +13,7 @@ export const ragSearchTool = (
 ) =>
 	tool({
 		description:
-			"Use this tool to answer questions based on the documents provided by the user. It performs a RAG search over the documents and returns structured, cite-ready matches.",
+			"Use this tool ONLY to answer questions based on documents that the user has explicitly uploaded or added to this chat. It performs a RAG search over the user's uploaded documents and returns structured, cite-ready matches.",
 		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		inputSchema: z.object({
 			query: z

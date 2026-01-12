@@ -26,6 +26,7 @@ import { LLM_PARAMETERS } from "../constants";
 import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
+import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import { captureError } from "../monitoring/capture-error";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
@@ -354,6 +355,27 @@ export class GenerationService {
 				),
 			};
 			toolChoice = "auto";
+		}
+		// add mcp tools
+		const parlaMCPToolsResponse = await parlaMCPTools();
+		if (parlaMCPToolsResponse) {
+			// Debug: inspect the parla_vector_search tool
+			const parlaVectorSearch =
+				parlaMCPToolsResponse.tools["parla_vector_search"];
+			console.log("parla_vector_search tool inspection:", {
+				exists: !!parlaVectorSearch,
+				keys: parlaVectorSearch ? Object.keys(parlaVectorSearch) : [],
+				hasExecute: parlaVectorSearch
+					? typeof parlaVectorSearch.execute === "function"
+					: false,
+				description: parlaVectorSearch?.description?.substring(0, 100),
+			});
+
+			tools = {
+				...parlaMCPToolsResponse.tools,
+				...tools,
+			};
+			toolChoice = { type: "tool", toolName: "parla_vector_search" };
 		}
 		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(

@@ -19,7 +19,7 @@ export const baseKnowledgeSearchTool = (
 ) =>
 	tool({
 		description: `
-			Use this tool to answer questions based on the base knowledge documents available to the user. It performs a RAG search over the user's documents and returns structured, cite-ready matches.
+			Use this tool ONLY to answer questions based on the base knowledge documents available to the user. It performs a RAG search over the base knowledge documents about Berlin's public services and returns structured, cite-ready matches.
 			These are the available Knowledge Base documents: ${JSON.stringify(
 				knowledgeBaseDocuments.map((doc) => ({
 					file_name: doc.file_name,
