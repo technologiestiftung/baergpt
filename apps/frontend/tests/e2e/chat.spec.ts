@@ -558,9 +558,10 @@ test.describe("Chat", () => {
 		await expect(page.getByText("Wissen erweitern")).toBeVisible();
 
 		// Click on "Verwaltungswissen" option to toggle it on
-		const baseKnowledgeOption = page.getByRole("button", {
+		const baseKnowledgeOption = page.getByRole("option", {
 			name: "Verwaltungswissen auswählen",
 		});
+
 		await expect(baseKnowledgeOption).toBeVisible();
 		await baseKnowledgeOption.click();
 
