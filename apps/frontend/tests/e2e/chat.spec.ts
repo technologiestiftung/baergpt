@@ -499,7 +499,7 @@ test.describe("Chat", () => {
 
 			// Select the large LLM model
 			await page
-				.getByRole("button", { name: "Mistral Large (präzise)" })
+				.getByRole("option", { name: "Mistral Large (präzise) auswählen" })
 				.click();
 
 			// Verify that the large LLM model is selected
@@ -531,7 +531,7 @@ test.describe("Chat", () => {
 
 			// Select the small LLM model
 			await page
-				.getByRole("button", { name: "Mistral Small (schnell)" })
+				.getByRole("option", { name: "Mistral Small (schnell) auswählen" })
 				.click();
 
 			// Verify that the model selection window is closed after selecting a model
