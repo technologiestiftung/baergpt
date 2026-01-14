@@ -21,7 +21,7 @@ import {
 	type KnowledgeBaseDocument,
 	type LLMHandler,
 } from "../types/common";
-import { DatabaseService } from "./database-service";
+import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
 import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
@@ -37,10 +37,15 @@ import {
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
-const dbService = new DatabaseService();
-const embeddingService = new EmbeddingService();
 
 export class GenerationService {
+	private readonly dbService: BaseContentDbService;
+	private readonly embeddingService: EmbeddingService;
+
+	constructor(dbService: BaseContentDbService) {
+		this.dbService = dbService;
+		this.embeddingService = new EmbeddingService(this.dbService);
+	}
 	/**
 	 * Select the first pages whose combined content fits within a safe token budget
 	 * for the summary prompt. Falls back to at least the first page if none fit.
@@ -285,7 +290,7 @@ export class GenerationService {
 		);
 
 		const summaryEmbeddingResponse =
-			await embeddingService.generateJinaEmbedding(
+			await this.embeddingService.generateJinaEmbedding(
 				summaryForEmbedding,
 				"retrieval.passage",
 				userId,
@@ -337,21 +342,25 @@ export class GenerationService {
 
 		if (hasAllowedDocumentsOrFolders) {
 			tools = {
-				ragSearchTool: ragSearchTool(
+				ragSearchTool: ragSearchTool({
+					dbService: this.dbService,
+					embeddingService: this.embeddingService,
 					userId,
 					allowedDocumentIds,
 					allowedFolderIds,
-				),
+				}),
 			};
 			toolChoice = { type: "tool", toolName: "ragSearchTool" };
 		} else {
 			knowledgeBaseDocuments =
-				await dbService.getBaseKnowledgeDocuments(userId);
+				await this.dbService.getBaseKnowledgeDocuments(userId);
 			tools = {
-				baseKnowledgeSearchTool: baseKnowledgeSearchTool(
+				baseKnowledgeSearchTool: baseKnowledgeSearchTool({
+					dbService: this.dbService,
+					embeddingService: this.embeddingService,
 					userId,
 					knowledgeBaseDocuments,
-				),
+				}),
 			};
 			toolChoice = "auto";
 		}
@@ -385,12 +394,12 @@ export class GenerationService {
 		);
 		if (userId && generationResult.usage?.totalTokens) {
 			try {
-				await dbService.updateUserColumnValue(
+				await this.dbService.updateUserColumnValue(
 					userId,
 					"num_inference_tokens",
 					generationResult.usage.totalTokens,
 				);
-				await dbService.updateUserColumnValue(userId, "num_inferences", 1);
+				await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
 			} catch (error) {
 				captureError(error);
 			}
@@ -448,12 +457,12 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 										onFinish: async ({ usage: citationUsage }) => {
 											if (userId && citationUsage?.totalTokens) {
 												try {
-													await dbService.updateUserColumnValue(
+													await this.dbService.updateUserColumnValue(
 														userId,
 														"num_inference_tokens",
 														citationUsage.totalTokens,
 													);
-													await dbService.updateUserColumnValue(
+													await this.dbService.updateUserColumnValue(
 														userId,
 														"num_inferences",
 														1,
@@ -482,13 +491,13 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 								// Handle token usage tracking after stream completes
 								if (userId && usage?.totalTokens) {
 									try {
-										await dbService.updateUserColumnValue(
+										await this.dbService.updateUserColumnValue(
 											userId,
 											"num_inference_tokens",
 											usage.totalTokens,
 										);
 										// Increase num_inferences for user by one
-										await dbService.updateUserColumnValue(
+										await this.dbService.updateUserColumnValue(
 											userId,
 											"num_inferences",
 											1,
@@ -558,9 +567,9 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		);
 		if (userId) {
 			// Increase num_inferences for user by 1
-			await dbService.updateUserColumnValue(userId, "num_inferences", 1);
+			await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
 			// Increase num_tokens by token count of this generation
-			await dbService.updateUserColumnValue(
+			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_inference_tokens",
 				usage?.totalTokens ?? 0,

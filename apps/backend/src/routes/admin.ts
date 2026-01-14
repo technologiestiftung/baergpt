@@ -1,12 +1,15 @@
 import { Hono } from "hono";
-import { DatabaseService } from "../services/database-service";
+import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import { adminAuth } from "../middleware/admin-auth";
 import { captureError } from "../monitoring/capture-error";
+import basicAuth from "../middleware/basic-auth";
+import { serviceRoleDbClient } from "../supabase";
 
 const admin = new Hono();
-const dbService = new DatabaseService();
-
+admin.use(basicAuth);
 admin.use(adminAuth);
+
+const serviceRoleAdminService = new PrivilegedDbService(serviceRoleDbClient);
 
 // Route: update user profile (first_name, last_name, academic_title, email, personal_title)
 admin.put("/users/:userId/profile", async (c) => {
@@ -37,8 +40,8 @@ admin.put("/users/:userId/profile", async (c) => {
 			);
 		}
 
-		// Update profile fields
-		await dbService.updateUserProfile({
+		// Update profile fields (requires service role for auth.admin.updateUserById)
+		await serviceRoleAdminService.updateUserProfile({
 			userId,
 			firstName,
 			lastName,
@@ -71,7 +74,7 @@ admin.put("/users/:userId/admin", async (c) => {
 			return c.json({ error: "isAdmin must be a boolean value" }, 400);
 		}
 
-		await dbService.updateUserAdminStatus(userId, isAdmin);
+		await serviceRoleAdminService.updateUserAdminStatus(userId, isAdmin);
 		return c.json({ message: "User admin status updated successfully" });
 	} catch (error) {
 		captureError(error);
@@ -96,11 +99,11 @@ admin.delete("/users/:userId", async (c) => {
 		const hardDelete = c.req.query("hard") === "true";
 
 		if (hardDelete) {
-			await dbService.hardDeleteUser(userId);
+			await serviceRoleAdminService.hardDeleteUser(userId);
 			return c.json({ message: "User permanently deleted successfully" });
 		}
 
-		await dbService.softDeleteUser(userId);
+		await serviceRoleAdminService.softDeleteUser(userId);
 		return c.json({ message: "User soft deleted successfully" });
 	} catch (error) {
 		captureError(error);
@@ -116,7 +119,7 @@ admin.put("/users/:userId/restore", async (c) => {
 			return c.json({ error: "User ID is required" }, 400);
 		}
 
-		await dbService.restoreUser(userId);
+		await serviceRoleAdminService.restoreUser(userId);
 		return c.json({ message: "User restored successfully" });
 	} catch (error) {
 		captureError(error);
@@ -132,7 +135,7 @@ admin.post("/users/invite", async (c) => {
 			return c.json({ error: "Email is required" }, 400);
 		}
 
-		await dbService.sendInviteLink(email, firstName, lastName);
+		await serviceRoleAdminService.sendInviteLink(email, firstName, lastName);
 		return c.json({ message: "Invite link sent successfully" });
 	} catch (error) {
 		captureError(error);

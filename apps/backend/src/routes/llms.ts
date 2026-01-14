@@ -6,12 +6,14 @@ import { ModelService } from "../services/model-service";
 import { GenerationService } from "../services/generation-service";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
+import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
 
 const llms = new Hono();
 const modelService = new ModelService();
-const generationService = new GenerationService();
-
 llms.post("/just-chatting", async (c: Context) => {
+	const userClient = c.get("UserScopedDbClient");
+	const userScopedDbService = new UserScopedDbService(userClient);
+	const generationService = new GenerationService(userScopedDbService);
 	try {
 		const body = (await c.req.json()) as ChatMessageBody;
 		const llmIdentifier = config.defaultModelIdentifier;

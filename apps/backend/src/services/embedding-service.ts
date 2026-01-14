@@ -10,12 +10,14 @@ import type {
 	JinaEmbeddingResponse,
 } from "../types/common";
 import { countTokens, trimToTokenLimitByWords } from "./token-utils";
-import { DatabaseService } from "./database-service";
+import { BaseContentDbService } from "./db-service/base-db-service";
 import { resilientCall } from "../utils";
 
-const dbService = new DatabaseService();
-
 export class EmbeddingService {
+	private readonly dbService: BaseContentDbService;
+	constructor(dbService: BaseContentDbService) {
+		this.dbService = dbService;
+	}
 	async chunkWithJinaSegmenter(
 		text: string,
 		tokenLimit: number = 2000,
@@ -91,7 +93,7 @@ export class EmbeddingService {
 
 		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
 		if (userId) {
-			await dbService.updateUserColumnValue(
+			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_embedding_tokens",
 				responseData.usage.total_tokens,
@@ -146,7 +148,7 @@ export class EmbeddingService {
 
 		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
 		if (userId) {
-			await dbService.updateUserColumnValue(
+			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_embedding_tokens",
 				responseData.usage.total_tokens,

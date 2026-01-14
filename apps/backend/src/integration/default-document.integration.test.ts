@@ -2,12 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { config } from "../config";
-import { supabase as supabaseAdminClient } from "../supabase";
-import { DatabaseService } from "../services/database-service";
 import { GenerationService } from "../services/generation-service";
 import { EmbeddingService } from "../services/embedding-service";
 import type { Document } from "../types/common";
 import { initQueues } from "../services/distributed-limiter";
+import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
+import { serviceRoleDbClient } from "../supabase";
 
 const DEFAULT_DOCUMENT_FILE_NAME = "BaerGPT-Handbuch.pdf";
 const DEFAULT_DOCUMENT_SOURCE_TYPE = "default_document";
@@ -18,7 +18,7 @@ const cleanupDefaultDocuments = async (accessGroupId: string) => {
 		const sourceUrl = `${accessGroupId}/${DEFAULT_DOCUMENT_FILE_NAME}`;
 
 		// Delete all default documents
-		const { data: documents } = await supabaseAdminClient
+		const { data: documents } = await serviceRoleDbClient
 			.from("documents")
 			.select("id")
 			.eq("source_type", DEFAULT_DOCUMENT_SOURCE_TYPE)
@@ -28,7 +28,7 @@ const cleanupDefaultDocuments = async (accessGroupId: string) => {
 
 		// Delete related document_chunks
 		if (documentIds.length > 0) {
-			await supabaseAdminClient
+			await serviceRoleDbClient
 				.from("document_chunks")
 				.delete()
 				.in("document_id", documentIds);
@@ -36,21 +36,21 @@ const cleanupDefaultDocuments = async (accessGroupId: string) => {
 
 		// Delete related document_summaries
 		if (documentIds.length > 0) {
-			await supabaseAdminClient
+			await serviceRoleDbClient
 				.from("document_summaries")
 				.delete()
 				.in("document_id", documentIds);
 		}
 
 		// Delete document records
-		await supabaseAdminClient
+		await serviceRoleDbClient
 			.from("documents")
 			.delete()
 			.eq("source_type", DEFAULT_DOCUMENT_SOURCE_TYPE)
 			.eq("source_url", sourceUrl);
 
 		// Delete from storage
-		const { error: removeError } = await supabaseAdminClient.storage
+		const { error: removeError } = await serviceRoleDbClient.storage
 			.from(PUBLIC_DOCUMENTS_BUCKET)
 			.remove([sourceUrl]);
 
@@ -68,13 +68,13 @@ describe("Default Document Integration Tests", () => {
 	let accessGroupId: string;
 	let documentId: number;
 
-	const dbService = new DatabaseService();
-	const generationService = new GenerationService();
-	const embeddingService = new EmbeddingService();
+	const dbService = new PrivilegedDbService(serviceRoleDbClient);
+	const generationService = new GenerationService(dbService);
+	const embeddingService = new EmbeddingService(dbService);
 
 	beforeAll(async () => {
 		// Ensure default access group exists
-		const { data: accessGroup, error } = await supabaseAdminClient
+		const { data: accessGroup, error } = await serviceRoleDbClient
 			.from("access_groups")
 			.select("id")
 			.eq("name", "Alle")
@@ -118,7 +118,7 @@ describe("Default Document Integration Tests", () => {
 		const sourceUrl = `${accessGroupId}/${DEFAULT_DOCUMENT_FILE_NAME}`;
 
 		// Upload file to storage
-		const { error: uploadError } = await supabaseAdminClient.storage
+		const { error: uploadError } = await serviceRoleDbClient.storage
 			.from(PUBLIC_DOCUMENTS_BUCKET)
 			.upload(sourceUrl, file, {
 				upsert: true,
@@ -170,7 +170,7 @@ describe("Default Document Integration Tests", () => {
 		);
 
 		// Get the document ID from the database
-		const { data: savedDocument } = await supabaseAdminClient
+		const { data: savedDocument } = await serviceRoleDbClient
 			.from("documents")
 			.select("id")
 			.eq("source_url", sourceUrl)
@@ -183,7 +183,7 @@ describe("Default Document Integration Tests", () => {
 		documentId = savedDocument.id;
 
 		// Verify document was created in database
-		const { data: verifiedDoc, error: docError } = await supabaseAdminClient
+		const { data: verifiedDoc, error: docError } = await serviceRoleDbClient
 			.from("documents")
 			.select("*")
 			.eq("id", documentId)
@@ -203,7 +203,7 @@ describe("Default Document Integration Tests", () => {
 
 	it("should create document summary and chunks after processing", async () => {
 		// Verify summary was created
-		const { data: summary, error: summaryError } = await supabaseAdminClient
+		const { data: summary, error: summaryError } = await serviceRoleDbClient
 			.from("document_summaries")
 			.select("*")
 			.eq("document_id", documentId)
@@ -215,7 +215,7 @@ describe("Default Document Integration Tests", () => {
 		expect(summary?.short_summary).toBeDefined();
 
 		// Verify chunks were created
-		const { data: chunks, error: chunksError } = await supabaseAdminClient
+		const { data: chunks, error: chunksError } = await serviceRoleDbClient
 			.from("document_chunks")
 			.select("*")
 			.eq("document_id", documentId);
@@ -244,7 +244,7 @@ describe("Default Document Integration Tests", () => {
 		const sourceUrl = `${accessGroupId}/${DEFAULT_DOCUMENT_FILE_NAME}`;
 
 		// Upload file to storage
-		const { error: uploadError } = await supabaseAdminClient.storage
+		const { error: uploadError } = await serviceRoleDbClient.storage
 			.from(PUBLIC_DOCUMENTS_BUCKET)
 			.upload(sourceUrl, file, {
 				upsert: true,
@@ -258,7 +258,7 @@ describe("Default Document Integration Tests", () => {
 
 		// Verify file exists in storage (list files in access group folder)
 		const { data: fileData, error: listError } =
-			await supabaseAdminClient.storage
+			await serviceRoleDbClient.storage
 				.from(PUBLIC_DOCUMENTS_BUCKET)
 				.list(accessGroupId);
 
@@ -270,7 +270,7 @@ describe("Default Document Integration Tests", () => {
 
 		// Verify file can be downloaded
 		const { data: downloadedFile, error: downloadError } =
-			await supabaseAdminClient.storage
+			await serviceRoleDbClient.storage
 				.from(PUBLIC_DOCUMENTS_BUCKET)
 				.download(sourceUrl);
 
