@@ -18,8 +18,9 @@ export interface Config {
 	fileUploadLimitMb?: number;
 	nodeEnv?: string;
 	modelTemperature: number;
-	defaultModelIdentifier: string;
+	smallModelIdentifier: string;
 	largeModelIdentifier: string;
+	defaultDocumentProcessingModel: string;
 	sentryDsn: string;
 	gotenbergUrl: string;
 	gotenbergApiBasicAuthUsername: string;
@@ -84,6 +85,9 @@ export function verifyConfig(): void {
 	if (!process.env.LARGE_MODEL_IDENTIFIER) {
 		throw new Error("LARGE_MODEL_IDENTIFIER must be defined");
 	}
+	if (!process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL) {
+		throw new Error("DEFAULT_DOCUMENT_PROCESSING_MODEL must be defined");
+	}
 	if (!process.env.SENTRY_DSN) {
 		throw new Error("SENTRY_DSN must be defined");
 	}
@@ -119,8 +123,9 @@ export const config: Config = {
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
-	defaultModelIdentifier: process.env.SMALL_MODEL_IDENTIFIER,
+	smallModelIdentifier: process.env.SMALL_MODEL_IDENTIFIER,
 	largeModelIdentifier: process.env.LARGE_MODEL_IDENTIFIER,
+	defaultDocumentProcessingModel: process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL,
 	sentryDsn: process.env.SENTRY_DSN,
 	gotenbergUrl: process.env.GOTENBERG_URL,
 	gotenbergApiBasicAuthUsername: process.env.GOTENBERG_API_BASIC_AUTH_USERNAME,

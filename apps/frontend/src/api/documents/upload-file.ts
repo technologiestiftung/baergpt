@@ -52,7 +52,7 @@ export async function processDocument(
 				size: file.size,
 			},
 		},
-		llm_model: "mistral-small",
+		llm_model: import.meta.env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
 	};
 
 	const url = `${import.meta.env.VITE_API_URL}/documents/process`;
