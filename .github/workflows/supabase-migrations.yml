@@ -41,7 +41,7 @@ jobs:
         run: |
           echo "Getting IP address of supabase-db container..."
           DB_IP=$(ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
-            "sudo docker inspect supabase-db --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'")
+            'sudo $HOME/bin/docker-inspect-db-ip')
           
           if [ -z "$DB_IP" ]; then
             echo "Failed to get database container IP"
