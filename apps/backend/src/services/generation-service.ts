@@ -337,13 +337,13 @@ export class GenerationService {
 				await dbService.getBaseKnowledgeDocuments(userId);
 		}
 		const { tools, toolChoice, maxSteps, useBaseKnowledgeAfterFirstStep } =
-			this.getRelevantTools(
+			this.getRelevantTools({
 				allowedDocumentIds,
 				allowedFolderIds,
-				isBaseKnowledgeActive ?? false,
+				isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
 				userId,
 				knowledgeBaseDocuments,
-			);
+			});
 
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
 
@@ -683,23 +683,30 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		};
 	}
 
-	private getRelevantTools(
-		allowedDocumentIds: number[],
-		allowedFolderIds: number[],
-		isBaseKnowledgeActive: boolean,
-		userId?: string,
-		knowledgeBaseDocuments?: KnowledgeBaseDocument[],
-	): {
+	private getRelevantTools(options: {
+		allowedDocumentIds: number[];
+		allowedFolderIds: number[];
+		isBaseKnowledgeActive: boolean;
+		userId?: string;
+		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
+	}): {
 		tools: Record<string, Tool>;
 		toolChoice: ToolChoice<Record<string, Tool>>;
 		maxSteps: number;
 		useBaseKnowledgeAfterFirstStep: boolean;
 	} {
+		const {
+			allowedDocumentIds,
+			allowedFolderIds,
+			isBaseKnowledgeActive,
+			userId,
+			knowledgeBaseDocuments,
+		} = options;
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
-		const ragTool = ragSearchTool(userId, allowedDocumentIds, allowedFolderIds);
+		const ragTool = ragSearchTool(allowedDocumentIds, allowedFolderIds, userId);
 		const baseKnowledgeTool = knowledgeBaseDocuments
-			? baseKnowledgeSearchTool(userId, knowledgeBaseDocuments)
+			? baseKnowledgeSearchTool(knowledgeBaseDocuments, userId)
 			: null;
 
 		// Case 1: Both RAG and base knowledge are active
@@ -724,9 +731,9 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			return {
 				tools: {
 					ragSearchTool: ragSearchTool(
-						userId,
 						allowedDocumentIds,
 						allowedFolderIds,
+						userId,
 					),
 				},
 				toolChoice: { type: "tool", toolName: "ragSearchTool" },
