@@ -64,7 +64,7 @@ export const documentProcessSchema = z.object({
 		access_group_id: z.uuid().nullable().optional(),
 		uploaded_by_user_id: z.uuid().nullable().optional(),
 	}),
-	llm_model: z.string().nonempty(),
+	llm_model: z.string().min(1, "llm_model is required"),
 });
 
 export type DocumentProcessInput = z.infer<typeof documentProcessSchema>;
