@@ -44,7 +44,8 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 		currentIndex: number,
 		optionButtons: HTMLButtonElement[],
 	) => {
-		const previousIndex = Math.abs((currentIndex - 1) % optionButtons.length);
+		const previousIndex =
+			(currentIndex - 1 + optionButtons.length) % optionButtons.length;
 		optionButtons[previousIndex].focus();
 	};
 
@@ -58,7 +59,6 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 		switch (event.key) {
 			case "Escape":
 			case "Tab":
-			case "Shift+Tab":
 				event.preventDefault();
 				onClose();
 				break;
