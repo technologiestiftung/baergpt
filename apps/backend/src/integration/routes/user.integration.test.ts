@@ -5,7 +5,7 @@ import app from "../../index";
 import { config } from "../../config";
 import { sign } from "hono/jwt";
 import { PDFDocument } from "pdf-lib";
-import { supabase } from "../../supabase";
+import { serviceRoleDbClient } from "../../supabase";
 import { initQueues } from "../../services/distributed-limiter";
 
 let validToken: string;
@@ -41,11 +41,18 @@ const uploadToStorage = async (args: {
 	bytes: Uint8Array;
 	sourceUrl: string;
 	fileName: string;
+	userToken: string;
 }): Promise<void> => {
-	const { bytes, sourceUrl, fileName } = args;
+	const { bytes, sourceUrl, fileName, userToken } = args;
 	const file = new File([bytes.slice()], fileName, { type: "application/pdf" });
 
-	const { error } = await supabase.storage
+	const userClient = createClient(
+		process.env.SUPABASE_URL as string,
+		process.env.SUPABASE_ANON_KEY as string,
+		{ global: { headers: { Authorization: `Bearer ${userToken}` } } },
+	);
+
+	const { error } = await userClient.storage
 		.from("documents")
 		.upload(sourceUrl, file, {
 			contentType: "application/pdf",
@@ -60,7 +67,7 @@ async function getLatestDocumentIdBySourceUrl(
 	ownerId: string,
 	sourceUrl: string,
 ): Promise<number | undefined> {
-	const { data } = await supabase
+	const { data } = await serviceRoleDbClient
 		.from("documents")
 		.select("id")
 		.eq("source_url", sourceUrl)
@@ -81,13 +88,13 @@ const cleanupTestDocuments = async () => {
 		const testUserId2 = OTHER_USER_ID;
 
 		// Delete all documents for the test user
-		await supabase
+		await serviceRoleDbClient
 			.from("documents")
 			.delete()
 			.in("owned_by_user_id", [testUserId, testUserId2]);
 
 		const removeUserFiles = async (userId: string) => {
-			const { data, error } = await supabase.storage
+			const { data, error } = await serviceRoleDbClient.storage
 				.from("documents")
 				.list(userId);
 
@@ -104,7 +111,7 @@ const cleanupTestDocuments = async () => {
 				return;
 			}
 
-			const { error: removeError } = await supabase.storage
+			const { error: removeError } = await serviceRoleDbClient.storage
 				.from("documents")
 				.remove(pathsToRemove);
 
@@ -134,12 +141,13 @@ const delay = (ms: number): Promise<void> => {
  */
 const createTestUser = async (userId: string, email: string) => {
 	try {
-		const { error: createError } = await supabase.auth.admin.createUser({
-			id: userId,
-			email: email,
-			password: "SecureTestPassword123!",
-			email_confirm: true,
-		});
+		const { error: createError } =
+			await serviceRoleDbClient.auth.admin.createUser({
+				id: userId,
+				email: email,
+				password: "SecureTestPassword123!",
+				email_confirm: true,
+			});
 
 		if (createError && !createError.message.includes("already registered")) {
 			console.error("Error creating test user:", createError);
@@ -171,9 +179,9 @@ const createValidJwtToken = async (
 const deleteTestUser = async () => {
 	try {
 		const { error: deleteError } =
-			await supabase.auth.admin.deleteUser(OWNER_USER_ID);
+			await serviceRoleDbClient.auth.admin.deleteUser(OWNER_USER_ID);
 		const { error: deleteError2 } =
-			await supabase.auth.admin.deleteUser(OTHER_USER_ID);
+			await serviceRoleDbClient.auth.admin.deleteUser(OTHER_USER_ID);
 
 		if (deleteError && !deleteError.message.includes("not found")) {
 			console.error("Error deleting test user:", deleteError);
@@ -214,6 +222,7 @@ describe("Integration Tests for Routes", () => {
 			bytes: pdfBytes,
 			sourceUrl,
 			fileName,
+			userToken: validToken,
 		});
 
 		const payload = {
@@ -262,6 +271,7 @@ describe("Integration Tests for Routes", () => {
 				bytes: pdfBytes,
 				sourceUrl: sourceUrls[i],
 				fileName: fileNames[i],
+				userToken: validToken,
 			});
 
 			const payload = {
@@ -343,6 +353,7 @@ describe("Integration Tests for Routes", () => {
 			bytes: pdfBytes,
 			sourceUrl,
 			fileName,
+			userToken: validToken,
 		});
 
 		const newDocPayload = {
@@ -382,7 +393,7 @@ describe("Integration Tests for Routes", () => {
 		expect(deleteError).toBeNull();
 
 		// document should be deleted
-		const { data: deletedDocuments } = await supabase
+		const { data: deletedDocuments } = await serviceRoleDbClient
 			.from("documents")
 			.select("id")
 			.eq("source_url", sourceUrl)
@@ -404,6 +415,7 @@ describe("Integration Tests for Routes", () => {
 			bytes: pdfBytes,
 			sourceUrl,
 			fileName,
+			userToken: validToken,
 		});
 
 		const newDocPayload = {
@@ -435,13 +447,13 @@ describe("Integration Tests for Routes", () => {
 		expect(documentId).toBeDefined();
 
 		// Verify the summaries and chunks exist
-		const { data: preSummaries } = await supabase
+		const { data: preSummaries } = await serviceRoleDbClient
 			.from("document_summaries")
 			.select("document_id")
 			.eq("document_id", documentId as number);
 		expect((preSummaries?.length ?? 0) > 0).toBe(true);
 
-		const { data: preChunks } = await supabase
+		const { data: preChunks } = await serviceRoleDbClient
 			.from("document_chunks")
 			.select("document_id")
 			.eq("document_id", documentId as number);
@@ -456,13 +468,13 @@ describe("Integration Tests for Routes", () => {
 		expect(deleteError).toBeNull();
 
 		// Validate cascade: no summaries and chunks remain
-		const { data: postSummaries } = await supabase
+		const { data: postSummaries } = await serviceRoleDbClient
 			.from("document_summaries")
 			.select("document_id")
 			.eq("document_id", documentId as number);
 		expect(postSummaries?.length ?? 0).toBe(0);
 
-		const { data: postChunks } = await supabase
+		const { data: postChunks } = await serviceRoleDbClient
 			.from("document_chunks")
 			.select("document_id")
 			.eq("document_id", documentId as number);
@@ -530,6 +542,7 @@ describe("Integration Tests for Routes", () => {
 			bytes: pdfBytes,
 			sourceUrl,
 			fileName,
+			userToken: validToken2,
 		});
 
 		const payload2 = {
@@ -566,7 +579,7 @@ describe("Integration Tests for Routes", () => {
 		expect(deleteError).not.toBeNull();
 		expect(deleteError?.message).toContain("not_found");
 		// Cleanup
-		await supabase
+		await serviceRoleDbClient
 			.from("documents")
 			.delete()
 			.eq("id", docId as number);

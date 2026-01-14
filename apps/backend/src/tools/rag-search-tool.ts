@@ -1,16 +1,17 @@
 import { tool } from "ai";
-import { DatabaseService } from "../services/database-service";
-import { EmbeddingService } from "../services/embedding-service";
+import { BaseContentDbService } from "../services/db-service/base-db-service";
+import type { EmbeddingService } from "../services/embedding-service";
 import { z } from "zod";
 
-const dbService = new DatabaseService();
-const embeddingService = new EmbeddingService();
+type RagSearchToolOptions = {
+	dbService: BaseContentDbService;
+	embeddingService: EmbeddingService;
+	userId: string;
+	allowedDocumentIds: number[];
+	allowedFolderIds: number[];
+};
 
-export const ragSearchTool = (
-	allowedDocumentIds: number[],
-	allowedFolderIds: number[],
-	userId?: string,
-) =>
+export const ragSearchTool = (options: RagSearchToolOptions) =>
 	tool({
 		description:
 			"Use this tool to answer questions based on the documents provided by the user. It performs a RAG search over the documents and returns structured, cite-ready matches.",
@@ -22,6 +23,14 @@ export const ragSearchTool = (
 		}),
 		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		execute: async ({ query }) => {
+			const {
+				dbService,
+				embeddingService,
+				userId,
+				allowedDocumentIds,
+				allowedFolderIds,
+			} = options;
+
 			const embedding = await embeddingService.generateJinaEmbedding(
 				query,
 				"retrieval.query",

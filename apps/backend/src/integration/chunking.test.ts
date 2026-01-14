@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EmbeddingService } from "../services/embedding-service";
+import type { BaseContentDbService } from "../services/db-service/base-db-service";
 import { countTokens } from "../services/token-utils";
 import { config } from "../config";
 
@@ -13,13 +14,6 @@ vi.mock("../src/config", () => ({
 	},
 }));
 
-vi.mock("./database-service", () => ({
-	DatabaseService: vi.fn().mockImplementation(() => ({
-		updateUserColumnValue: vi.fn(),
-		logEmbeddings: vi.fn(),
-	})),
-}));
-
 vi.mock("../utils", () => ({
 	resilientCall: vi.fn((fn) => fn()),
 }));
@@ -27,8 +21,14 @@ vi.mock("../utils", () => ({
 describe("Chunking Methods", () => {
 	let service: EmbeddingService;
 
+	// Create a mock DatabaseService with the methods EmbeddingService uses
+	const mockDbService = {
+		updateUserColumnValue: vi.fn(),
+		logEmbeddings: vi.fn(),
+	} as unknown as BaseContentDbService;
+
 	beforeEach(() => {
-		service = new EmbeddingService();
+		service = new EmbeddingService(mockDbService);
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 	});
 

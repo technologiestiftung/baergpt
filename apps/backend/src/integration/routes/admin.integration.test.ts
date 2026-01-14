@@ -11,7 +11,7 @@ import { createClient, type Session } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
-import { supabase as supabaseAdminClient } from "../../supabase";
+import { serviceRoleDbClient } from "../../supabase";
 import { addDays } from "date-fns";
 
 const supabaseAnonClient = createClient<Database>(
@@ -41,7 +41,7 @@ describe("/admin/", () => {
 	beforeAll(async () => {
 		for (const user of users) {
 			const { data, error: signupError } =
-				await supabaseAdminClient.auth.admin.createUser({
+				await serviceRoleDbClient.auth.admin.createUser({
 					email: user.email,
 					password: user.password,
 					email_confirm: true,
@@ -55,12 +55,12 @@ describe("/admin/", () => {
 		const {
 			data: { users: adminUsers },
 			error: listUsersError,
-		} = await supabaseAdminClient.auth.admin.listUsers();
+		} = await serviceRoleDbClient.auth.admin.listUsers();
 		expect(listUsersError).toBeNull();
 
 		const adminUser = adminUsers.find(({ email }) => email === givenAdminEmail);
 
-		const { error: setAdminError } = await supabaseAdminClient
+		const { error: setAdminError } = await serviceRoleDbClient
 			.from("application_admins")
 			.insert({ user_id: adminUser.id });
 
@@ -88,7 +88,7 @@ describe("/admin/", () => {
 	});
 
 	afterAll(async () => {
-		const { data, error } = await supabaseAdminClient.auth.admin.listUsers({});
+		const { data, error } = await serviceRoleDbClient.auth.admin.listUsers({});
 
 		expect(error).toBeNull();
 
@@ -102,7 +102,7 @@ describe("/admin/", () => {
 			}
 
 			const { error: deleteError } =
-				await supabaseAdminClient.auth.admin.deleteUser(user.id);
+				await serviceRoleDbClient.auth.admin.deleteUser(user.id);
 			expect(deleteError).toBeNull();
 		}
 	});
@@ -133,10 +133,10 @@ describe("/admin/", () => {
 		const {
 			data: { users: updatedUsers },
 			error: listUsersError,
-		} = await supabaseAdminClient.auth.admin.listUsers();
+		} = await serviceRoleDbClient.auth.admin.listUsers();
 		expect(listUsersError).toBeNull();
 
-		const { data: profile, error: getUserError } = await supabaseAdminClient
+		const { data: profile, error: getUserError } = await serviceRoleDbClient
 			.from("profiles")
 			.select("*")
 			.eq("id", givenUserId)
@@ -216,7 +216,7 @@ describe("/admin/", () => {
 			message: "User admin status updated successfully",
 		});
 
-		const { count } = await supabaseAdminClient
+		const { count } = await serviceRoleDbClient
 			.from("application_admins")
 			.select("*", { count: "exact", head: true })
 			.eq("user_id", givenUserId);
@@ -226,7 +226,7 @@ describe("/admin/", () => {
 		expect(expected).toBe(true);
 
 		// revert the changes
-		const { error } = await supabaseAdminClient
+		const { error } = await serviceRoleDbClient
 			.from("application_admins")
 			.delete()
 			.eq("user_id", givenUserId);
@@ -272,7 +272,7 @@ describe("/admin/", () => {
 			message: "User soft deleted successfully",
 		});
 
-		const { data: profile, error: getUserError } = await supabaseAdminClient
+		const { data: profile, error: getUserError } = await serviceRoleDbClient
 			.from("user_active_status")
 			.select("*")
 			.eq("id", givenUserId)
@@ -284,7 +284,7 @@ describe("/admin/", () => {
 		expect(profile.deleted_at).toBeDefined();
 
 		// revert the soft delete
-		const { error } = await supabaseAdminClient
+		const { error } = await serviceRoleDbClient
 			.from("user_active_status")
 			.update({
 				is_active: true,
@@ -319,7 +319,7 @@ describe("/admin/", () => {
 		const givenUserId = userIds[givenUserEmail];
 
 		// soft delete a given user first
-		const { error } = await supabaseAdminClient
+		const { error } = await serviceRoleDbClient
 			.from("user_active_status")
 			.update({
 				is_active: false,
@@ -340,7 +340,7 @@ describe("/admin/", () => {
 			message: "User restored successfully",
 		});
 
-		const { data: profile, error: getUserError } = await supabaseAdminClient
+		const { data: profile, error: getUserError } = await serviceRoleDbClient
 			.from("user_active_status")
 			.select("*")
 			.eq("id", givenUserId)
@@ -397,7 +397,7 @@ describe("/admin/", () => {
 		const {
 			data: { users: usersAfterDeletion },
 			error: listUsersError,
-		} = await supabaseAdminClient.auth.admin.listUsers();
+		} = await serviceRoleDbClient.auth.admin.listUsers();
 		const foundUser = usersAfterDeletion.find(
 			(user) => user.id === givenUserId,
 		);
@@ -405,7 +405,7 @@ describe("/admin/", () => {
 		expect(listUsersError).toBeNull();
 		expect(foundUser).toBeUndefined();
 
-		const { data: profile, error: getUserError } = await supabaseAdminClient
+		const { data: profile, error: getUserError } = await serviceRoleDbClient
 			.from("profiles")
 			.select("*")
 			.eq("id", givenUserId);
@@ -416,7 +416,7 @@ describe("/admin/", () => {
 
 		// revert the hard delete
 		const { error: restoreError } =
-			await supabaseAdminClient.auth.admin.createUser({
+			await serviceRoleDbClient.auth.admin.createUser({
 				email: givenUserEmail,
 				password: givenUserPassword,
 				email_confirm: true,
@@ -476,7 +476,7 @@ describe("/admin/", () => {
 		const {
 			data: { users: userList },
 			error: listUsersError,
-		} = await supabaseAdminClient.auth.admin.listUsers();
+		} = await serviceRoleDbClient.auth.admin.listUsers();
 		expect(listUsersError).toBeNull();
 
 		const invitedUser = userList.find((user) => user.email === givenEmail);
@@ -485,7 +485,7 @@ describe("/admin/", () => {
 		expect(invitedUser).not.toBeNull();
 
 		// Check if the user has been added to the profiles table with the correct first and last name
-		const { data: profile, error: getUserError } = await supabaseAdminClient
+		const { data: profile, error: getUserError } = await serviceRoleDbClient
 			.from("profiles")
 			.select("*")
 			.eq("id", invitedUser.id)
@@ -501,7 +501,7 @@ describe("/admin/", () => {
 
 		// Clean up: delete the invited user
 		const { error: deleteError } =
-			await supabaseAdminClient.auth.admin.deleteUser(invitedUser.id);
+			await serviceRoleDbClient.auth.admin.deleteUser(invitedUser.id);
 		expect(deleteError).toBeNull();
 	});
 
@@ -511,7 +511,7 @@ describe("/admin/", () => {
 		const givenLastName = "Doe";
 
 		const { data, error } =
-			await supabaseAdminClient.auth.admin.inviteUserByEmail(givenEmail, {
+			await serviceRoleDbClient.auth.admin.inviteUserByEmail(givenEmail, {
 				data: {
 					first_name: givenFirstName,
 					last_name: givenLastName,
@@ -541,7 +541,7 @@ describe("/admin/", () => {
 
 		// Clean up: delete the invited user
 		const { error: deleteError } =
-			await supabaseAdminClient.auth.admin.deleteUser(invitedUser.id);
+			await serviceRoleDbClient.auth.admin.deleteUser(invitedUser.id);
 		expect(deleteError).toBeNull();
 	});
 
