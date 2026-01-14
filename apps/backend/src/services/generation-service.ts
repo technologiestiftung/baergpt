@@ -709,9 +709,20 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		} = options;
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
-		const ragTool = ragSearchTool(allowedDocumentIds, allowedFolderIds, userId);
+		const ragTool = ragSearchTool({
+			allowedDocumentIds,
+			allowedFolderIds,
+			userId,
+			dbService: this.dbService,
+			embeddingService: this.embeddingService,
+		});
 		const baseKnowledgeTool = knowledgeBaseDocuments
-			? baseKnowledgeSearchTool(knowledgeBaseDocuments, userId)
+			? baseKnowledgeSearchTool({
+					knowledgeBaseDocuments,
+					userId,
+					dbService: this.dbService,
+					embeddingService: this.embeddingService,
+				})
 			: null;
 
 		// Case 1: Both RAG and base knowledge are active
@@ -735,11 +746,13 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		if (hasAllowedDocumentsOrFolders) {
 			return {
 				tools: {
-					ragSearchTool: ragSearchTool(
+					ragSearchTool: ragSearchTool({
 						allowedDocumentIds,
 						allowedFolderIds,
 						userId,
-					),
+						dbService: this.dbService,
+						embeddingService: this.embeddingService,
+					}),
 				},
 				toolChoice: { type: "tool", toolName: "ragSearchTool" },
 				maxSteps: 1,
