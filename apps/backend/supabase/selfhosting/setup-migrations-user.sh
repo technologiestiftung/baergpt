@@ -20,7 +20,7 @@ tee "$USER_HOME/bin/docker-inspect-db-ip" <<'EOF' >/dev/null
 exec /usr/bin/docker inspect supabase-db --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
 EOF
 chmod 755 "$USER_HOME/bin/docker-inspect-db-ip"
-chown $USER:$USER "$USER_HOME/bin/docker-inspect-db-ip"
+chown root:root "$USER_HOME/bin/docker-inspect-db-ip"
 
 # Allow only the wrapper script (no arguments allowed)
 tee /etc/sudoers.d/migrations <<EOF >/dev/null
