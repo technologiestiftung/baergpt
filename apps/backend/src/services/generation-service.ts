@@ -331,68 +331,21 @@ export class GenerationService {
 			isBaseKnowledgeActive?: boolean;
 		} = {},
 	): Promise<Response> {
-		let knowledgeBaseDocuments: KnowledgeBaseDocument[];
-		let tools: Record<string, Tool> = {};
-		let toolChoice: ToolChoice<Record<string, Tool>> = "none";
-		let maxSteps = 1;
-		let useBaseKnowledgeAfterFirstStep = false;
-
-		const hasAllowedDocumentsOrFolders =
-			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
-
-		if (hasAllowedDocumentsOrFolders && isBaseKnowledgeActive) {
-			tools = {
-				ragSearchTool: ragSearchTool(
-					userId,
-					allowedDocumentIds,
-					allowedFolderIds,
-				),
-			};
-			toolChoice = { type: "tool", toolName: "ragSearchTool" };
-			try {
-				knowledgeBaseDocuments =
-					await dbService.getBaseKnowledgeDocuments(userId);
-				tools = {
-					...tools,
-					baseKnowledgeSearchTool: baseKnowledgeSearchTool(
-						userId,
-						knowledgeBaseDocuments,
-					),
-				};
-				maxSteps = 2;
-				useBaseKnowledgeAfterFirstStep = true;
-			} catch (error) {
-				captureError(error);
-			}
-		} else if (hasAllowedDocumentsOrFolders) {
-			tools = {
-				ragSearchTool: ragSearchTool(
-					userId,
-					allowedDocumentIds,
-					allowedFolderIds,
-				),
-			};
-			toolChoice = { type: "tool", toolName: "ragSearchTool" };
-		} else if (isBaseKnowledgeActive) {
-			try {
-				knowledgeBaseDocuments =
-					await dbService.getBaseKnowledgeDocuments(userId);
-				tools = {
-					baseKnowledgeSearchTool: baseKnowledgeSearchTool(
-						userId,
-						knowledgeBaseDocuments,
-					),
-				};
-				toolChoice = { type: "tool", toolName: "baseKnowledgeSearchTool" };
-			} catch (error) {
-				captureError(error);
-				tools = {};
-				toolChoice = "none";
-			}
-		} else {
-			tools = {};
-			toolChoice = "none";
+		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
+		if (isBaseKnowledgeActive) {
+			knowledgeBaseDocuments =
+				await dbService.getBaseKnowledgeDocuments(userId);
 		}
+		const { tools, toolChoice, maxSteps, useBaseKnowledgeAfterFirstStep } =
+			this.getRelevantTools(
+				allowedDocumentIds,
+				allowedFolderIds,
+				isBaseKnowledgeActive ?? false,
+				userId || "",
+				knowledgeBaseDocuments,
+			);
+
+		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
 
 		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(
@@ -404,20 +357,7 @@ export class GenerationService {
 					tools,
 					toolChoice,
 					stopWhen: stepCountIs(maxSteps),
-					prepareStep: useBaseKnowledgeAfterFirstStep
-						? ({ stepNumber }) => {
-								if (stepNumber === 1) {
-									return {
-										toolChoice: {
-											type: "tool",
-											toolName: "baseKnowledgeSearchTool",
-										} as const,
-										activeTools: ["baseKnowledgeSearchTool"],
-									};
-								}
-								return {};
-							}
-						: undefined,
+					prepareStep,
 					providerOptions: {
 						mistral: {
 							presencePenalty: LLM_PARAMETERS.presencePenalty,
@@ -740,6 +680,109 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		return {
 			messages: [freeChatPrompt, ...previousMessages],
 			promptClient: freeChatPromptClient,
+		};
+	}
+
+	private getRelevantTools(
+		allowedDocumentIds: number[],
+		allowedFolderIds: number[],
+		isBaseKnowledgeActive: boolean,
+		userId: string,
+		knowledgeBaseDocuments?: KnowledgeBaseDocument[],
+	): {
+		tools: Record<string, Tool>;
+		toolChoice: ToolChoice<Record<string, Tool>>;
+		maxSteps: number;
+		useBaseKnowledgeAfterFirstStep: boolean;
+	} {
+		const hasAllowedDocumentsOrFolders =
+			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
+		const ragTool = ragSearchTool(userId, allowedDocumentIds, allowedFolderIds);
+		const baseKnowledgeTool = knowledgeBaseDocuments
+			? baseKnowledgeSearchTool(userId, knowledgeBaseDocuments)
+			: null;
+
+		// Case 1: Both RAG and base knowledge are active
+		if (
+			hasAllowedDocumentsOrFolders &&
+			isBaseKnowledgeActive &&
+			baseKnowledgeTool
+		) {
+			return {
+				tools: {
+					ragSearchTool: ragTool,
+					baseKnowledgeSearchTool: baseKnowledgeTool,
+				},
+				toolChoice: { type: "tool", toolName: "ragSearchTool" },
+				maxSteps: 2,
+				useBaseKnowledgeAfterFirstStep: true,
+			};
+		}
+
+		// Case 2: Only RAG is active
+		if (hasAllowedDocumentsOrFolders) {
+			return {
+				tools: {
+					ragSearchTool: ragSearchTool(
+						userId,
+						allowedDocumentIds,
+						allowedFolderIds,
+					),
+				},
+				toolChoice: { type: "tool", toolName: "ragSearchTool" },
+				maxSteps: 1,
+				useBaseKnowledgeAfterFirstStep: false,
+			};
+		}
+
+		// Case 3: Only base knowledge is active
+		if (isBaseKnowledgeActive && baseKnowledgeTool) {
+			return {
+				tools: {
+					baseKnowledgeSearchTool: baseKnowledgeTool,
+				},
+				toolChoice: {
+					type: "tool",
+					toolName: "baseKnowledgeSearchTool",
+				},
+				maxSteps: 1,
+				useBaseKnowledgeAfterFirstStep: false,
+			};
+		}
+
+		// Case 4: No tools active
+		return {
+			tools: {},
+			toolChoice: "none",
+			maxSteps: 1,
+			useBaseKnowledgeAfterFirstStep: false,
+		};
+	}
+
+	private getPrepareStep(useBaseKnowledgeAfterFirstStep: boolean):
+		| (({ stepNumber }: { stepNumber: number }) => {
+				toolChoice?: {
+					type: "tool";
+					toolName: "baseKnowledgeSearchTool";
+				};
+				activeTools?: string[];
+		  })
+		| undefined {
+		if (!useBaseKnowledgeAfterFirstStep) {
+			return undefined;
+		}
+
+		return ({ stepNumber }: { stepNumber: number }) => {
+			if (stepNumber === 1) {
+				return {
+					toolChoice: {
+						type: "tool",
+						toolName: "baseKnowledgeSearchTool",
+					} as const,
+					activeTools: ["baseKnowledgeSearchTool"],
+				};
+			}
+			return {};
 		};
 	}
 }
