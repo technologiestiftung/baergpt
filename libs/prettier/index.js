@@ -12,12 +12,12 @@ export default {
 	functionCase: "upper",
 	expressionWidth: 100,
 	overrides: [ // use default of sql plugin: https://github.com/sql-formatter-org/sql-formatter/blob/master/docs/useTabs.md
-        {
-            files: "*.sql",
-            options: {
-                useTabs: false, // use spaces instead of tabs for SQL, as it would otherwise would get overwritten by our default prettier config for TS
-                tabWidth: 4,
-            },
-        },
-    ],
+		{
+			files: "*.sql",
+			options: {
+				useTabs: false, // use spaces instead of tabs for SQL, as it would otherwise would get overwritten by our default prettier config for TS
+				tabWidth: 4,
+			},
+		},
+	],
 };
