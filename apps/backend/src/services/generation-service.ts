@@ -687,7 +687,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		allowedDocumentIds: number[],
 		allowedFolderIds: number[],
 		isBaseKnowledgeActive: boolean,
-		userId: string,
+		userId?: string,
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[],
 	): {
 		tools: Record<string, Tool>;
