@@ -22,6 +22,7 @@ interface ChatStore {
 	chats: ChatWithMessages[];
 	selectedChatOptions: ChatOption[];
 	selectedLlmModel: LlmModel;
+	resetToDefaultChatOptions(): void;
 	toggleChatOption(option: ChatOption): void;
 	setSelectedLlmModel(model: LlmModel): void;
 	updateChats(givenChat: ChatWithMessages): void;
@@ -48,11 +49,15 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
 	isLoading: false,
 	chats: [],
-	selectedChatOptions: [],
+	selectedChatOptions: ["baseKnowledge"],
 	selectedLlmModel: "mistral-small",
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
+	},
+
+	resetToDefaultChatOptions() {
+		set({ selectedChatOptions: ["baseKnowledge"] });
 	},
 
 	toggleChatOption(option: ChatOption) {

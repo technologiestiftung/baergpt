@@ -551,6 +551,16 @@ test.describe("Chat", () => {
 		});
 		await expect(chatOptionsButton).toBeVisible();
 
+		// Verify the baseKnowledge Pill is visible by default
+		const baseKnowledgePill = page.getByRole("button", {
+			name: /Verwaltungswissen entfernen/,
+		});
+		await expect(baseKnowledgePill).toBeVisible();
+
+		// Verify the baseKnowledge Pill is not visible after clicking to remove
+		await baseKnowledgePill.click();
+		await expect(baseKnowledgePill).not.toBeVisible();
+
 		// Click to open the dropdown
 		await chatOptionsButton.click();
 
@@ -572,21 +582,6 @@ test.describe("Chat", () => {
 		const contextPill = page.getByRole("button", {
 			name: /Verwaltungswissen entfernen/,
 		});
-		await expect(contextPill).toBeVisible();
-
-		// Click the context pill to toggle base knowledge off
-		await contextPill.click();
-
-		// Verify the context pill disappears
-		await expect(contextPill).not.toBeVisible();
-
-		// Toggle it back on via the dropdown to verify it works both ways
-		await chatOptionsButton.click();
-		await expect(page.getByText("Wissen erweitern")).toBeVisible();
-		await baseKnowledgeOption.click();
-		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
-
-		// Verify the context pill appears again
 		await expect(contextPill).toBeVisible();
 
 		// Deselect base knowledge through the dropdown
