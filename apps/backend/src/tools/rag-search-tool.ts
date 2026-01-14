@@ -7,9 +7,9 @@ const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
 
 export const ragSearchTool = (
-	userId: string,
 	allowedDocumentIds: number[],
 	allowedFolderIds: number[],
+	userId?: string,
 ) =>
 	tool({
 		description:

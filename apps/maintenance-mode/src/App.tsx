@@ -8,24 +8,23 @@ function App() {
 					className="bg-white w-auto h-8"
 				/>
 				<h1 className="mt-6 mb-3 text-2xl leading-8 font-normal w-fit mx-auto">
-					BärGPT ist vorübergehend nicht erreichbar.
+					Oh nein, BärGPT ist gerade nicht verfügbar
 				</h1>
 				<p>
-					Wir führen gerade Wartungsarbeiten durch oder das System ist
-					überlastet. Bitte probieren Sie es in ein paar Minuten erneut.
+					Wir arbeiten an Verbesserungen oder das System ist vorübergehend
+					ausgelastet. Bitte versuchen Sie es in ein paar Minuten erneut.
 				</p>
 				<p className="mb-8">
-					Auf der{" "}
+					Mehr Infos finden Sie auf der{" "}
 					<a className="underline" href="https://hilfe.baergpt.berlin/">
 						BärGPT-Hilfeseite
-					</a>{" "}
-					finden Sie mögliche Ursachen.
+					</a>
 				</p>
 				<button
 					className="text-lg leading-7 font-normal border border-hellblau-30 rounded-sm px-3 py-2 hover:bg-dunkelblau-80"
 					onClick={() => window.location.reload()}
 				>
-					Erneut laden
+					Neu laden
 				</button>
 			</div>
 		</main>

@@ -1,11 +1,25 @@
 import React, { useState } from "react";
 import { Content } from "../../../content";
 import { ChatButton } from "../../primitives/buttons/chat-button";
-import { removeCitationNumbers } from "./export-chat-message/utils";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkGfm from "remark-gfm";
+import remarkRehype from "remark-rehype";
+import rehypeStringify from "rehype-stringify";
 
 interface CopyToClipboardButtonProps {
 	generatedAnswer: string;
 }
+
+const markdownToHtml = async (markdown: string): Promise<string> => {
+	const file = await unified()
+		.use(remarkParse)
+		.use(remarkGfm)
+		.use(remarkRehype)
+		.use(rehypeStringify)
+		.process(markdown);
+	return String(file);
+};
 
 export const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
 	generatedAnswer,
@@ -13,9 +27,16 @@ export const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
 	const [isCopiedToClipboard, setIsCopiedToClipboard] = useState(false);
 
 	const copyToClipboard = async () => {
-		// Remove citation numbers before copying to clipboard
-		const cleanText = removeCitationNumbers(generatedAnswer);
-		await navigator.clipboard.writeText(cleanText);
+		const html = await markdownToHtml(generatedAnswer);
+
+		// Rich text apps (Word, Google Docs, etc.) use the HTML and preserve formatting
+		// Plain text apps (VSC,  etc.) use the plain text version with markdown formatting
+		const clipboardItem = new ClipboardItem({
+			"text/html": new Blob([html], { type: "text/html" }),
+			"text/plain": new Blob([generatedAnswer], { type: "text/plain" }),
+		});
+
+		await navigator.clipboard.write([clipboardItem]);
 		setIsCopiedToClipboard(true);
 		setTimeout(() => {
 			setIsCopiedToClipboard(false);

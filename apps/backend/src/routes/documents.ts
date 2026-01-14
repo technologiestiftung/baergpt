@@ -26,18 +26,9 @@ documents.post("/process", async (c: Context) => {
 
 		// Parse and validate request body
 		const body = await c.req.json();
-		const llmIdentifier = body.llm_model as string;
-		if (!llmIdentifier || typeof llmIdentifier !== "string") {
-			return c.json(
-				{
-					error: "Invalid request: llm_model is required and must be a string",
-				},
-				400,
-			);
-		}
 		const parseResult = documentProcessSchema.parse(body);
 
-		const { document: inputDocument } = parseResult;
+		const { document: inputDocument, llm_model: llmIdentifier } = parseResult;
 		sourceUrl = inputDocument.source_url;
 
 		// Validate document request (path, folder ownership, file existence)

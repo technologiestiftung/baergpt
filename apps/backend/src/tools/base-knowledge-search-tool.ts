@@ -7,7 +7,6 @@ const dbService = new DatabaseService();
 const embeddingService = new EmbeddingService();
 
 export const baseKnowledgeSearchTool = (
-	userId: string,
 	knowledgeBaseDocuments: Array<{
 		id: number;
 		folder_id: number;
@@ -16,6 +15,7 @@ export const baseKnowledgeSearchTool = (
 		short_summary: string;
 		tags: string[];
 	}>,
+	userId?: string,
 ) =>
 	tool({
 		description: `
