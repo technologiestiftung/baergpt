@@ -332,7 +332,7 @@ export class GenerationService {
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
-		if (isBaseKnowledgeActive) {
+		if (isBaseKnowledgeActive && userId) {
 			knowledgeBaseDocuments =
 				await dbService.getBaseKnowledgeDocuments(userId);
 		}
