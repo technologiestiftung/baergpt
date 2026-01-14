@@ -1,10 +1,10 @@
 CREATE OR REPLACE FUNCTION public.find_unprocessed_registered_documents () returns TABLE (
-    id INTEGER,
-    owned_by_user_id UUID,
-    source_url TEXT,
-    source_type TEXT,
-    registered_at TIMESTAMP WITH TIME ZONE,
-    metadata JSONB
+	id INTEGER,
+	owned_by_user_id UUID,
+	source_url TEXT,
+	source_type TEXT,
+	registered_at TIMESTAMP WITH TIME ZONE,
+	metadata JSONB
 ) language plpgsql AS $function$
 BEGIN
 RETURN query

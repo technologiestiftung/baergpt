@@ -2,7 +2,7 @@
 -- Enhance handle_document_deletion function to support both user documents and public documents
 CREATE OR REPLACE FUNCTION public.handle_document_deletion () returns trigger language plpgsql security definer
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 DECLARE
     file_path TEXT;
     pdf_file_path TEXT;

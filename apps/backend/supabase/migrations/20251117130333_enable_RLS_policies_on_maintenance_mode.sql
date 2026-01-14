@@ -4,5 +4,5 @@ REVOKE insert,
 UPDATE,
 delete ON public.maintenance_mode
 FROM
-    anon,
-    authenticated;
+	anon,
+	authenticated;

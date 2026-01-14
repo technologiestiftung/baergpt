@@ -1,7 +1,7 @@
 -- Create function to get allowed email domains
 CREATE OR REPLACE FUNCTION public.get_allowed_email_domains () returns TABLE (id INTEGER, domain TEXT) security definer
 SET
-    search_path = public language plpgsql AS $$
+	search_path = public language plpgsql AS $$
 BEGIN
     RETURN QUERY
     SELECT

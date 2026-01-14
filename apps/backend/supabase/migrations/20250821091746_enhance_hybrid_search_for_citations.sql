@@ -1,39 +1,39 @@
 -- enhance hybrid search by exposing more parameters needed for proper citations
 DROP FUNCTION if EXISTS public.hybrid_chunk_search (
-    query_text TEXT,
-    query_embedding extensions.vector (1024),
-    match_count INTEGER,
-    allowed_document_ids INTEGER[],
-    allowed_folder_ids INTEGER[],
-    full_text_weight DOUBLE PRECISION,
-    semantic_weight DOUBLE PRECISION,
-    rrf_k INTEGER
+	query_text TEXT,
+	query_embedding extensions.vector (1024),
+	match_count INTEGER,
+	allowed_document_ids INTEGER[],
+	allowed_folder_ids INTEGER[],
+	full_text_weight DOUBLE PRECISION,
+	semantic_weight DOUBLE PRECISION,
+	rrf_k INTEGER
 );
 
 CREATE OR REPLACE FUNCTION public.hybrid_chunk_search (
-    query_text TEXT,
-    query_embedding extensions.vector (1024),
-    match_count INTEGER,
-    allowed_document_ids INTEGER[] DEFAULT NULL::INTEGER[],
-    allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[],
-    full_text_weight DOUBLE PRECISION DEFAULT 1,
-    semantic_weight DOUBLE PRECISION DEFAULT 1,
-    rrf_k INTEGER DEFAULT 50
+	query_text TEXT,
+	query_embedding extensions.vector (1024),
+	match_count INTEGER,
+	allowed_document_ids INTEGER[] DEFAULT NULL::INTEGER[],
+	allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[],
+	full_text_weight DOUBLE PRECISION DEFAULT 1,
+	semantic_weight DOUBLE PRECISION DEFAULT 1,
+	rrf_k INTEGER DEFAULT 50
 ) returns TABLE (
-    chunk_id INTEGER,
-    document_id INTEGER,
-    chunk_content TEXT,
-    page INTEGER,
-    source_url TEXT,
-    file_name TEXT,
-    created_at TIMESTAMPTZ,
-    source_type TEXT,
-    fts_score REAL,
-    sem_score REAL,
-    hybrid_score REAL
+	chunk_id INTEGER,
+	document_id INTEGER,
+	chunk_content TEXT,
+	page INTEGER,
+	source_url TEXT,
+	file_name TEXT,
+	created_at TIMESTAMPTZ,
+	source_type TEXT,
+	fts_score REAL,
+	sem_score REAL,
+	hybrid_score REAL
 ) language sql
 SET
-    search_path = 'extensions' AS $$
+	search_path = 'extensions' AS $$
 WITH full_text AS (
   SELECT
     id AS chunk_id,

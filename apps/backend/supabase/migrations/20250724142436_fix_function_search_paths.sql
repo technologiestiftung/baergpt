@@ -1,9 +1,13 @@
 -- Fix Function Search Path Mutable security warnings
 -- Add SET search_path = '' and fully qualify table names
 -- 1. change_value_for_user_by
-CREATE OR REPLACE FUNCTION public.change_value_for_user_by (amount INTEGER, column_name TEXT, user_id_to_update UUID) returns void language plpgsql
+CREATE OR REPLACE FUNCTION public.change_value_for_user_by (
+	amount INTEGER,
+	column_name TEXT,
+	user_id_to_update UUID
+) returns void language plpgsql
 SET
-    search_path = '' AS $_$
+	search_path = '' AS $_$
 BEGIN
   EXECUTE format('UPDATE public.profiles SET %I = %I + $1 WHERE id = $2', column_name, column_name)
   USING amount, user_id_to_update;
@@ -12,20 +16,20 @@ $_$;
 
 -- 2. find_unprocessed_documents  
 CREATE OR REPLACE FUNCTION public.find_unprocessed_documents () returns TABLE (
-    id INTEGER,
-    owned_by_user_id UUID,
-    source_url TEXT,
-    source_type TEXT,
-    file_name TEXT,
-    file_checksum TEXT,
-    file_size INTEGER,
-    num_pages INTEGER,
-    folder_id INTEGER,
-    processing_finished_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE
+	id INTEGER,
+	owned_by_user_id UUID,
+	source_url TEXT,
+	source_type TEXT,
+	file_name TEXT,
+	file_checksum TEXT,
+	file_size INTEGER,
+	num_pages INTEGER,
+	folder_id INTEGER,
+	processing_finished_at TIMESTAMP WITH TIME ZONE,
+	created_at TIMESTAMP WITH TIME ZONE
 ) language sql stable
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
   SELECT id, owned_by_user_id, source_url, source_type, file_name, file_checksum, file_size, num_pages, folder_id, processing_finished_at, created_at
     FROM public.documents
    WHERE processing_finished_at IS NULL;
@@ -34,7 +38,7 @@ $$;
 -- 3. is_application_admin
 CREATE OR REPLACE FUNCTION public.is_application_admin () returns BOOLEAN language sql security definer
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 select exists (
     select 1
     from public.application_admins
@@ -45,7 +49,7 @@ $$;
 -- 4. generate_short_id
 CREATE OR REPLACE FUNCTION public.generate_short_id () returns trigger language plpgsql
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 BEGIN
   NEW.short_id := id_encode(NEW.id);
   RETURN NEW;
@@ -55,7 +59,7 @@ $$;
 -- 5. maintain_chat_messages_document_references
 CREATE OR REPLACE FUNCTION public.maintain_chat_messages_document_references () returns trigger language plpgsql
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 BEGIN
     -- When a document is deleted, remove it from all allowed_document_ids arrays
     IF TG_OP = 'DELETE' THEN
@@ -73,7 +77,7 @@ $$;
 -- 6. maintain_chat_messages_folder_references
 CREATE OR REPLACE FUNCTION public.maintain_chat_messages_folder_references () returns trigger language plpgsql
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 BEGIN
     -- When a folder is deleted, remove it from all allowed_folder_ids arrays
     IF TG_OP = 'DELETE' THEN
@@ -90,17 +94,22 @@ $$;
 
 -- 7. match_jina_document_chunks
 CREATE OR REPLACE FUNCTION public.match_jina_document_chunks (
-    query_embedding extensions.vector,
-    match_threshold DOUBLE PRECISION,
-    match_count INTEGER,
-    num_probes INTEGER,
-    user_id UUID,
-    search_type TEXT,
-    allowed_document_ids INTEGER[],
-    allowed_folder_id INTEGER[] DEFAULT NULL::INTEGER[]
-) returns TABLE (id INTEGER, document_id INTEGER, content TEXT, similarity DOUBLE PRECISION) language plpgsql
+	query_embedding extensions.vector,
+	match_threshold DOUBLE PRECISION,
+	match_count INTEGER,
+	num_probes INTEGER,
+	user_id UUID,
+	search_type TEXT,
+	allowed_document_ids INTEGER[],
+	allowed_folder_id INTEGER[] DEFAULT NULL::INTEGER[]
+) returns TABLE (
+	id INTEGER,
+	document_id INTEGER,
+	content TEXT,
+	similarity DOUBLE PRECISION
+) language plpgsql
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 BEGIN
   EXECUTE format('SET LOCAL ivfflat.probes = %s', num_probes);
   RETURN QUERY
@@ -116,17 +125,22 @@ $$;
 
 -- 8. match_jina_summaries
 CREATE OR REPLACE FUNCTION public.match_jina_summaries (
-    query_embedding extensions.vector,
-    match_threshold DOUBLE PRECISION,
-    match_count INTEGER,
-    num_probes INTEGER,
-    user_id UUID,
-    search_type TEXT,
-    allowed_document_ids INTEGER[],
-    allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[]
-) returns TABLE (id INTEGER, document_id INTEGER, summary TEXT, similarity DOUBLE PRECISION) language plpgsql
+	query_embedding extensions.vector,
+	match_threshold DOUBLE PRECISION,
+	match_count INTEGER,
+	num_probes INTEGER,
+	user_id UUID,
+	search_type TEXT,
+	allowed_document_ids INTEGER[],
+	allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[]
+) returns TABLE (
+	id INTEGER,
+	document_id INTEGER,
+	summary TEXT,
+	similarity DOUBLE PRECISION
+) language plpgsql
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 BEGIN
   EXECUTE format('SET LOCAL ivfflat.probes = %s', num_probes);
   RETURN QUERY
@@ -142,27 +156,27 @@ $$;
 
 -- 9. match_jina_summaries_and_chunks
 CREATE OR REPLACE FUNCTION public.match_jina_summaries_and_chunks (
-    query_embedding extensions.vector,
-    match_threshold DOUBLE PRECISION,
-    chunk_limit INTEGER,
-    summary_limit INTEGER,
-    num_probes_chunks INTEGER,
-    num_probes_summaries INTEGER,
-    user_id UUID,
-    allowed_document_ids INTEGER[],
-    search_type TEXT,
-    allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[]
+	query_embedding extensions.vector,
+	match_threshold DOUBLE PRECISION,
+	chunk_limit INTEGER,
+	summary_limit INTEGER,
+	num_probes_chunks INTEGER,
+	num_probes_summaries INTEGER,
+	user_id UUID,
+	allowed_document_ids INTEGER[],
+	search_type TEXT,
+	allowed_folder_ids INTEGER[] DEFAULT NULL::INTEGER[]
 ) returns TABLE (
-    document_id INTEGER,
-    chunk_ids INTEGER[],
-    chunk_similarities DOUBLE PRECISION[],
-    avg_chunk_similarity DOUBLE PRECISION,
-    summary_ids INTEGER[],
-    summary_similarity DOUBLE PRECISION,
-    similarity DOUBLE PRECISION
+	document_id INTEGER,
+	chunk_ids INTEGER[],
+	chunk_similarities DOUBLE PRECISION[],
+	avg_chunk_similarity DOUBLE PRECISION,
+	summary_ids INTEGER[],
+	summary_similarity DOUBLE PRECISION,
+	similarity DOUBLE PRECISION
 ) language plpgsql
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 BEGIN
   RETURN QUERY WITH chunk_winners AS (
     SELECT cw.id AS chunk_id, NULL::integer AS summary_id, cw.document_id, cw.similarity

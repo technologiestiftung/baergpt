@@ -3,19 +3,19 @@ DROP POLICY if EXISTS "Allow authenticated users to delete documents" ON public.
 DROP POLICY if EXISTS "Allow owners to delete documents and admins to delete base knowledg documents" ON public.documents;
 
 CREATE POLICY "Allow owners to delete documents and admins to delete base knowledge documents" ON public.documents FOR delete TO authenticated USING (
-    owned_by_user_id = (
-        SELECT
-            auth.uid ()
-    )
-    OR (
-        public.is_application_admin ()
-        AND owned_by_user_id IS NULL
-    )
+	owned_by_user_id = (
+		SELECT
+			auth.uid ()
+	)
+	OR (
+		public.is_application_admin ()
+		AND owned_by_user_id IS NULL
+	)
 );
 
 CREATE OR REPLACE FUNCTION public.delete_document_and_update_count (document_id BIGINT) returns void language plpgsql security invoker
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 declare
     acting_user_id uuid := (select auth.uid());
     deleted int;

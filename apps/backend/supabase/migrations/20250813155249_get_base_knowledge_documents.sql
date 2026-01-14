@@ -1,14 +1,14 @@
 -- Function to get base knowledge documents for a user with all parent access groups
 CREATE OR REPLACE FUNCTION get_base_knowledge_documents (input_user_id UUID) returns TABLE (
-    id INTEGER,
-    folder_id INTEGER,
-    created_at TIMESTAMPTZ,
-    file_name TEXT,
-    short_summary TEXT,
-    tags TEXT[]
+	id INTEGER,
+	folder_id INTEGER,
+	created_at TIMESTAMPTZ,
+	file_name TEXT,
+	short_summary TEXT,
+	tags TEXT[]
 ) language plpgsql security invoker
 SET
-    search_path = '' AS $$
+	search_path = '' AS $$
 BEGIN
     -- Security check: Only allow users to access their own documents
     -- or if they have admin privileges

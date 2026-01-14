@@ -1,8 +1,8 @@
 -- Create maintenance_mode table to control application maintenance state
 CREATE TABLE maintenance_mode (
-    onerow_id BOOL PRIMARY KEY DEFAULT TRUE CONSTRAINT onerow_uni CHECK (onerow_id),
-    is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	onerow_id BOOL PRIMARY KEY DEFAULT TRUE CONSTRAINT onerow_uni CHECK (onerow_id),
+	is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Prevent deletion of records from maintenance_mode table
@@ -12,7 +12,7 @@ BEGIN
 END;
 $$ language plpgsql security definer
 SET
-    search_path = '';
+	search_path = '';
 
 CREATE TRIGGER trigger_prevent_maintenance_mode_delete before delete ON maintenance_mode FOR each ROW
 EXECUTE function prevent_maintenance_mode_delete ();
@@ -24,7 +24,7 @@ BEGIN
 END;
 $$ language plpgsql security definer
 SET
-    search_path = '';
+	search_path = '';
 
 CREATE TRIGGER trigger_prevent_maintenance_mode_truncate before
 TRUNCATE ON maintenance_mode
@@ -38,7 +38,7 @@ BEGIN
 END;
 $$ language plpgsql security definer
 SET
-    search_path = '';
+	search_path = '';
 
 -- Create trigger to automatically update updated_at on record changes
 CREATE TRIGGER trigger_update_maintenance_mode_updated_at before

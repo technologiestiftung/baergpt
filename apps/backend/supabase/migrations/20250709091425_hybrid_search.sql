@@ -9,21 +9,21 @@ CREATE INDEX idx_document_chunks_semantic_vector_search ON document_chunks USING
 
 -- Create hybrid search function for documents using chunks
 CREATE OR REPLACE FUNCTION hybrid_chunk_search (
-    query_text TEXT,
-    query_embedding vector (1024),
-    match_count INT,
-    allowed_document_ids INTEGER[] DEFAULT NULL,
-    allowed_folder_ids INTEGER[] DEFAULT NULL,
-    full_text_weight FLOAT = 1,
-    semantic_weight FLOAT = 1,
-    rrf_k INT = 50
+	query_text TEXT,
+	query_embedding vector (1024),
+	match_count INT,
+	allowed_document_ids INTEGER[] DEFAULT NULL,
+	allowed_folder_ids INTEGER[] DEFAULT NULL,
+	full_text_weight FLOAT = 1,
+	semantic_weight FLOAT = 1,
+	rrf_k INT = 50
 ) returns TABLE (
-    id INTEGER,
-    document_id INTEGER,
-    chunk_content TEXT,
-    fts_score REAL,
-    sem_score REAL,
-    hybrid_score REAL
+	id INTEGER,
+	document_id INTEGER,
+	chunk_content TEXT,
+	fts_score REAL,
+	sem_score REAL,
+	hybrid_score REAL
 ) language sql AS $$
 WITH full_text AS (
   SELECT

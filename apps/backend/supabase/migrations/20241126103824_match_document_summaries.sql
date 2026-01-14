@@ -1,4 +1,14 @@
-CREATE OR REPLACE FUNCTION public.match_summaries (embedding vector, match_threshold DOUBLE PRECISION, match_count INTEGER, num_probes INTEGER) returns TABLE (id INTEGER, processed_document_id INTEGER, summary TEXT, similarity DOUBLE PRECISION) language plpgsql AS $function$
+CREATE OR REPLACE FUNCTION public.match_summaries (
+	embedding vector,
+	match_threshold DOUBLE PRECISION,
+	match_count INTEGER,
+	num_probes INTEGER
+) returns TABLE (
+	id INTEGER,
+	processed_document_id INTEGER,
+	summary TEXT,
+	similarity DOUBLE PRECISION
+) language plpgsql AS $function$
 	#variable_conflict use_variable
 BEGIN
 	EXECUTE format('SET LOCAL ivfflat.probes = %s', num_probes);

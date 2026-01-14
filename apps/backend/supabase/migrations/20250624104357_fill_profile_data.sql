@@ -1,4 +1,8 @@
-CREATE FUNCTION change_value_for_user_by (amount INT, column_name TEXT, user_id_to_update UUID) returns void AS $$
+CREATE FUNCTION change_value_for_user_by (
+	amount INT,
+	column_name TEXT,
+	user_id_to_update UUID
+) returns void AS $$
 BEGIN
   EXECUTE format('UPDATE profiles SET %I = %I + $1 WHERE id = $2', column_name, column_name)
   USING amount, user_id_to_update;

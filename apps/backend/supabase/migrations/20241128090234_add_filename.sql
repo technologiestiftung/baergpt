@@ -3,18 +3,18 @@ ADD COLUMN filename TEXT;
 
 UPDATE registered_documents
 SET
-    filename = source_url;
+	filename = source_url;
 
 DROP FUNCTION if EXISTS public.find_unprocessed_registered_documents ();
 
 CREATE OR REPLACE FUNCTION public.find_unprocessed_registered_documents () returns TABLE (
-    id INTEGER,
-    owned_by_user_id UUID,
-    source_url TEXT,
-    source_type TEXT,
-    registered_at TIMESTAMP WITH TIME ZONE,
-    metadata JSONB,
-    filename TEXT
+	id INTEGER,
+	owned_by_user_id UUID,
+	source_url TEXT,
+	source_type TEXT,
+	registered_at TIMESTAMP WITH TIME ZONE,
+	metadata JSONB,
+	filename TEXT
 ) language plpgsql AS $function$
 BEGIN
 RETURN query

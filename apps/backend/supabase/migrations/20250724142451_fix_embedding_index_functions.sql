@@ -3,7 +3,7 @@
 -- 1. Fix regenerate_embedding_indices_for_chunks
 CREATE OR REPLACE FUNCTION public.regenerate_embedding_indices_for_chunks () returns void language plpgsql
 SET
-    search_path = '' AS $_$ 
+	search_path = '' AS $_$ 
 BEGIN 
     DO $$
     DECLARE 
@@ -30,7 +30,7 @@ $_$;
 -- 2. Fix regenerate_embedding_indices_for_summaries  
 CREATE OR REPLACE FUNCTION public.regenerate_embedding_indices_for_summaries () returns void language plpgsql
 SET
-    search_path = '' AS $_$
+	search_path = '' AS $_$
 BEGIN 
     DO $$
     DECLARE 
