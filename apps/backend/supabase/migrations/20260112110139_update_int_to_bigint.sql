@@ -9,25 +9,25 @@ ALTER COLUMN num_embedding_tokens type BIGINT;
 DROP FUNCTION IF EXISTS public.get_users ();
 
 CREATE FUNCTION public.get_users () returns TABLE (
-	user_id UUID,
-	email TEXT,
-	registered_at TIMESTAMPTZ,
-	last_login_at TIMESTAMPTZ,
-	invited_at TIMESTAMPTZ,
-	first_name TEXT,
-	last_name TEXT,
-	personal_title TEXT,
-	num_documents INT,
-	num_inferences INT,
-	num_inference_tokens BIGINT,
-	num_embedding_tokens BIGINT,
-	academic_title TEXT,
-	is_admin BOOLEAN,
-	is_active BOOLEAN,
-	deleted_at TIMESTAMPTZ
+    user_id UUID,
+    email TEXT,
+    registered_at TIMESTAMPTZ,
+    last_login_at TIMESTAMPTZ,
+    invited_at TIMESTAMPTZ,
+    first_name TEXT,
+    last_name TEXT,
+    personal_title TEXT,
+    num_documents INT,
+    num_inferences INT,
+    num_inference_tokens BIGINT,
+    num_embedding_tokens BIGINT,
+    academic_title TEXT,
+    is_admin BOOLEAN,
+    is_active BOOLEAN,
+    deleted_at TIMESTAMPTZ
 ) language plpgsql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     -- ensure caller is an admin
     IF NOT EXISTS (SELECT 1 FROM public.application_admins aa WHERE aa.user_id = auth.uid()) THEN
