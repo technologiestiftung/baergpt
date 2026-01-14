@@ -341,7 +341,7 @@ export class GenerationService {
 				allowedDocumentIds,
 				allowedFolderIds,
 				isBaseKnowledgeActive ?? false,
-				userId || "",
+				userId,
 				knowledgeBaseDocuments,
 			);
 
