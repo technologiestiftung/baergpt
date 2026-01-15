@@ -343,7 +343,7 @@ export class GenerationService {
 				await this.dbService.getBaseKnowledgeDocuments(userId);
 		}
 		const { tools, toolChoice, maxSteps, useBaseKnowledgeAfterFirstStep } =
-			this.getRelevantTools({
+			await this.getRelevantTools({
 				allowedDocumentIds,
 				allowedFolderIds,
 				isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
@@ -689,18 +689,18 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		};
 	}
 
-	private getRelevantTools(options: {
+	private async getRelevantTools(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
 		isBaseKnowledgeActive: boolean;
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-	}): {
+	}): Promise<{
 		tools: Record<string, Tool>;
 		toolChoice: ToolChoice<Record<string, Tool>>;
 		maxSteps: number;
 		useBaseKnowledgeAfterFirstStep: boolean;
-	} {
+	}> {
 		const {
 			allowedDocumentIds,
 			allowedFolderIds,
@@ -791,7 +791,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 				description: parlaVectorSearch?.description?.substring(0, 100),
 			});
 
-			return {x
+			return {
 				tools: {
 					...parlaMCPToolsResponse.tools,
 				},
