@@ -7,6 +7,7 @@ import { GenerationService } from "../src/services/generation-service";
 import { EmbeddingService } from "../src/services/embedding-service";
 import type { Document } from "../src/types/common";
 import { initQueues } from "../src/services/distributed-limiter";
+import { config } from "../src/config";
 
 const sourceType = "default_document";
 const bucketName = "public_documents";
@@ -120,7 +121,7 @@ async function processDocument(
 			num_pages: extractionResult.numPages,
 		};
 
-		const llmIdentifier = "mistral-small";
+		const llmIdentifier = config.defaultDocumentProcessingModel;
 		const [summaryData, embeddings] = await Promise.all([
 			generationService.summarize(
 				extractionResult.parsedPages,

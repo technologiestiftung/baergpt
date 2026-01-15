@@ -99,6 +99,7 @@ describe("Documents Route Integration", () => {
 					owned_by_user_id: givenUserId,
 					created_at: new Date().toISOString(),
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			}),
 		});
 

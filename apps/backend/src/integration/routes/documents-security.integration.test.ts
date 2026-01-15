@@ -176,6 +176,7 @@ describe("Document Process Security Tests", () => {
 					owned_by_user_id: USER_B_ID, // Trying to spoof as User B
 					folder_id: null,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -202,6 +203,7 @@ describe("Document Process Security Tests", () => {
 					owned_by_user_id: USER_B_ID, // Trying to assign to User B
 					folder_id: null,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -257,6 +259,7 @@ describe("Document Process Security Tests", () => {
 					folder_id: userAFolderId,
 					owned_by_user_id: USER_B_ID,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -283,6 +286,7 @@ describe("Document Process Security Tests", () => {
 					folder_id: 999999, // Non-existent folder
 					owned_by_user_id: USER_A_ID,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -307,6 +311,7 @@ describe("Document Process Security Tests", () => {
 					owned_by_user_id: USER_A_ID,
 					folder_id: null,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {

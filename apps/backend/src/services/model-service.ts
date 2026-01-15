@@ -48,7 +48,7 @@ class Model {
 export class ModelService {
 	availableModels: Record<string, Model> = {
 		"mistral-small": new Model({
-			identifier: config.defaultModelIdentifier,
+			identifier: config.smallModelIdentifier,
 			baseModelName: "mistral-small",
 			provider: "Mistral",
 			isGdprCompliant: true,
@@ -73,7 +73,7 @@ export class ModelService {
 	handlers: Record<string, LLMHandler> = {
 		"mistral-small": new LLMHandler(
 			"mistral-small",
-			mistral(config.defaultModelIdentifier),
+			mistral(config.smallModelIdentifier),
 			"https://api.mistral.ai/v1",
 		),
 		"mistral-large": new LLMHandler(
