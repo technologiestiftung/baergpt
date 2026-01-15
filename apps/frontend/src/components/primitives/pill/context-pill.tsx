@@ -23,7 +23,7 @@ export function ContextPill({ option, onClose }: ContextPillProps) {
 			onClick={onClose}
 			className={`flex items-center gap-x-1 rounded-full px-2 py-1 focus-visible:outline-default bg-hellblau-30 hover:bg-hellblau-55 text-aktiv-blau-100`}
 			data-option={option}
-			aria-label={`${label} ${Content["chat.contextPill.ariaLabel"]}`}
+			aria-label={`${Content[`chat.contextPill.${option}.ariaLabel`]}`}
 		>
 			{icons[option]}
 			<p className="text-sm leading-5 font-normal whitespace-nowrap shrink-0 relative">

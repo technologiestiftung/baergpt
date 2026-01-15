@@ -933,8 +933,11 @@ export const Content = {
 	"chat.exportChatTextButton.error": "Export fehlgeschlagen",
 
 	"chat.contextPill.webSearch.label": "Websuche",
+	"chat.contextPill.webSearch.ariaLabel": "Websuche entfernen",
+	"chat.contextPill.webSearch.icon.alt": "Websuche icon",
 	"chat.contextPill.baseKnowledge.label": "Verwaltungswissen",
-	"chat.contextPill.ariaLabel": "entfernen",
+	"chat.contextPill.baseKnowledge.ariaLabel": "Verwaltungswissen entfernen",
+	"chat.contextPill.baseKnowledge.icon.alt": "Verwaltungswissen icon",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
