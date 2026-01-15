@@ -12,22 +12,76 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
 
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_PRODUCTION_DB_PASSWORD || secrets.SUPABASE_STAGING_DB_PASSWORD }}
-      PROJECT_ID: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_PRODUCTION_PROJECT_ID || secrets.SUPABASE_STAGING_PROJECT_ID }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository ⬇️
         uses: actions/checkout@v5
 
-      - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 2.40.7
+      - name: Install tools via asdf ⚙️
+        uses: asdf-vm/actions/install@v4
 
-      - name: Apply Supabase migrations
+      - name: Setup SSH key 🔑
+        env:
+          SSH_PRIVATE_KEY_MIGRATIONS: ${{ secrets.SSH_PRIVATE_KEY_MIGRATIONS }}
+          SSH_HOST_PUBLIC_KEY: ${{ secrets.SSH_HOST_PUBLIC_KEY }}
         run: |
-          supabase link --project-ref $PROJECT_ID
-          supabase db push
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY_MIGRATIONS" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "$SSH_HOST_PUBLIC_KEY" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Get database container IP 🔍
+        run: |
+          echo "Getting IP address of supabase-db container..."
+          DB_IP=$(ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
+            'sudo $HOME/bin/docker-inspect-db-ip')
+          
+          if [ -z "$DB_IP" ]; then
+            echo "Failed to get database container IP"
+            exit 1
+          fi
+          
+          echo "DB_IP=$DB_IP" >> $GITHUB_ENV
+
+      - name: Create SSH tunnel 🚇
+        run: |
+          ssh -f -N -T \
+            -p $SSH_PORT \
+            -L 5439:$DB_IP:5432 \
+            -o ExitOnForwardFailure=yes \
+            -o StrictHostKeyChecking=yes \
+            $SSH_USER@$SSH_HOST
+          # Wait and verify tunnel with longer timeout
+          echo "Waiting for SSH tunnel to establish..."
+          for i in {1..30}; do
+            if ss -tln | grep -q :5439; then
+              echo "SSH tunnel established successfully on port 5439 (attempt $i)"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "SSH tunnel failed to establish after 30 seconds"
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Apply Supabase migrations 🔄
+        working-directory: apps/backend/supabase
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres?sslmode=prefer"
+          supabase db push --include-all --db-url "$TUNNEL_URL"
+
+      - name: Close SSH tunnel 🔒
+        if: always()
+        run: |
+          pkill -f "ssh.*$SSH_USER@$SSH_HOST" || true
+          rm -f ~/.ssh/id_rsa ~/.ssh/known_hosts

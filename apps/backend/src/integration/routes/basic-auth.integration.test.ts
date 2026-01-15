@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import app from "../../index";
 import { createClient, type Session } from "@supabase/supabase-js";
-import { supabase as supabaseAdminClient } from "../../supabase";
+import { serviceRoleDbClient } from "../../supabase";
 import type { Database } from "@repo/db-schema";
 import { config } from "../../config";
 
@@ -30,7 +30,7 @@ describe("basic auth middleware", () => {
 
 		beforeEach(async () => {
 			const { data, error: signUpError } =
-				await supabaseAdminClient.auth.admin.createUser({
+				await serviceRoleDbClient.auth.admin.createUser({
 					email: givenUserEmail,
 					password: givenUserPassword,
 					email_confirm: true,
@@ -52,7 +52,7 @@ describe("basic auth middleware", () => {
 
 		afterEach(async () => {
 			const { error: deleteUserError } =
-				await supabaseAdminClient.auth.admin.deleteUser(session.user.id);
+				await serviceRoleDbClient.auth.admin.deleteUser(session.user.id);
 			expect(deleteUserError).toBeNull();
 		});
 

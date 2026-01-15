@@ -8,7 +8,7 @@ import {
 	afterAll,
 } from "vitest";
 import app from "../../index";
-import { supabase as supabaseAdminClient } from "../../supabase";
+import { serviceRoleDbClient } from "../../supabase";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../../config";
@@ -33,10 +33,10 @@ describe("Documents Route Integration", () => {
 
 	beforeAll(async () => {
 		// Cleanup in case of previous test failures
-		await supabaseAdminClient.auth.admin.deleteUser(givenUserId);
+		await serviceRoleDbClient.auth.admin.deleteUser(givenUserId);
 
 		// Create user
-		await supabaseAdminClient.auth.admin.createUser({
+		await serviceRoleDbClient.auth.admin.createUser({
 			id: givenUserId,
 			email: givenUserEmail,
 			password: givenUserPassword,
@@ -47,7 +47,7 @@ describe("Documents Route Integration", () => {
 	}, 20_000);
 
 	afterAll(async () => {
-		await supabaseAdminClient.auth.admin.deleteUser(givenUserId);
+		await serviceRoleDbClient.auth.admin.deleteUser(givenUserId);
 	});
 
 	beforeEach(async () => {
@@ -62,7 +62,7 @@ describe("Documents Route Integration", () => {
 		// 1. Upload file to storage
 		const sourceUrl = `${givenUserId}/${defaultDocumentName}`;
 		const file = readFileSync(defaultDocumentPath);
-		const { error: uploadError } = await supabaseAdminClient.storage
+		const { error: uploadError } = await supabaseAnonClient.storage
 			.from("documents")
 			.upload(sourceUrl, file, {
 				contentType: "application/pdf",
@@ -71,7 +71,7 @@ describe("Documents Route Integration", () => {
 		expect(uploadError).toBeNull();
 
 		// Verify it exists
-		const { data: listBefore } = await supabaseAdminClient.storage
+		const { data: listBefore } = await serviceRoleDbClient.storage
 			.from("documents")
 			.list(givenUserId);
 		expect(
@@ -99,6 +99,7 @@ describe("Documents Route Integration", () => {
 					owned_by_user_id: givenUserId,
 					created_at: new Date().toISOString(),
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			}),
 		});
 
@@ -107,7 +108,7 @@ describe("Documents Route Integration", () => {
 
 		// 4. Verify file is gone
 
-		const { data: listAfter } = await supabaseAdminClient.storage
+		const { data: listAfter } = await serviceRoleDbClient.storage
 			.from("documents")
 			.list(givenUserId);
 		const found = listAfter?.find((f) => f.name === defaultDocumentName);

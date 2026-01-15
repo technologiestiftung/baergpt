@@ -31,7 +31,7 @@ export default {
 				"hellblau-50": "#E1EAF5",
 				"hellblau-55": "#D9E4F2",
 				"hellblau-30": "#F5F8FC",
-				"aktiv-blau-100": "#2285FF",
+				"aktiv-blau-100": "#0D5DBF",
 			},
 			borderRadius: {
 				"3px": "3px",

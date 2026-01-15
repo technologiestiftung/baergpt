@@ -1,27 +1,32 @@
 import { tool } from "ai";
-import { DatabaseService } from "../services/database-service";
-import { EmbeddingService } from "../services/embedding-service";
+import { BaseContentDbService } from "../services/db-service/base-db-service";
+import type { EmbeddingService } from "../services/embedding-service";
 import { z } from "zod";
 
-const dbService = new DatabaseService();
-const embeddingService = new EmbeddingService();
+type KnowledgeBaseDocument = {
+	id: number;
+	folder_id: number;
+	file_name: string;
+	created_at: string;
+	short_summary: string;
+	tags: string[];
+};
+
+type BaseKnowledgeSearchToolOptions = {
+	dbService: BaseContentDbService;
+	embeddingService: EmbeddingService;
+	userId: string;
+	knowledgeBaseDocuments: KnowledgeBaseDocument[];
+};
 
 export const baseKnowledgeSearchTool = (
-	userId: string,
-	knowledgeBaseDocuments: Array<{
-		id: number;
-		folder_id: number;
-		file_name: string;
-		created_at: string;
-		short_summary: string;
-		tags: string[];
-	}>,
+	options: BaseKnowledgeSearchToolOptions,
 ) =>
 	tool({
 		description: `
 			Use this tool ONLY to answer questions based on the base knowledge documents available to the user. It performs a RAG search over the base knowledge documents about Berlin's public services and returns structured, cite-ready matches.
 			These are the available Knowledge Base documents: ${JSON.stringify(
-				knowledgeBaseDocuments.map((doc) => ({
+				options.knowledgeBaseDocuments.map((doc) => ({
 					file_name: doc.file_name,
 					created_at: doc.created_at,
 					short_summary: doc.short_summary,
@@ -39,6 +44,9 @@ export const baseKnowledgeSearchTool = (
 		}),
 		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		execute: async ({ query }) => {
+			const { dbService, embeddingService, userId, knowledgeBaseDocuments } =
+				options;
+
 			const allowedDocumentIds = knowledgeBaseDocuments.map((doc) => doc.id);
 			const allowedFolderIds = Array.from(
 				new Set(knowledgeBaseDocuments.map((doc) => doc.folder_id)),
