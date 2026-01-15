@@ -77,7 +77,7 @@ jobs:
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres"
+          TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres?sslmode=disable"
           supabase db push --include-all --db-url "$TUNNEL_URL"
 
       - name: Close SSH tunnel 🔒
