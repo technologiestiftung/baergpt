@@ -10,6 +10,10 @@ export type NewChatMessage = Pick<
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
+export type ChatOption = "baseKnowledge" | "webSearch";
+
+export type LlmModel = "mistral-small" | "mistral-large";
+
 export type Chat = {
 	created_at: string;
 	id: number;

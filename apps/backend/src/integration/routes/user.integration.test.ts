@@ -234,6 +234,7 @@ describe("Integration Tests for Routes", () => {
 				source_url: sourceUrl,
 				folder_id: null,
 			},
+			llm_model: "mistral-small",
 		};
 
 		const res = await app.request("/documents/process", {
@@ -282,6 +283,7 @@ describe("Integration Tests for Routes", () => {
 					source_url: sourceUrls[i],
 					folder_id: null,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -328,6 +330,7 @@ describe("Integration Tests for Routes", () => {
 			search_type: "all_private",
 			allowed_document_ids: [],
 			allowed_folder_ids: [],
+			llm_model: config.smallModelIdentifier,
 		};
 
 		const res = await app.request("/llm/just-chatting", {
@@ -362,6 +365,7 @@ describe("Integration Tests for Routes", () => {
 				source_url: sourceUrl,
 				folder_id: null,
 			},
+			llm_model: config.defaultDocumentProcessingModel,
 		};
 		const uploadRes = await app.request("/documents/process", {
 			method: "POST",
@@ -423,6 +427,7 @@ describe("Integration Tests for Routes", () => {
 				source_url: sourceUrl,
 				folder_id: null,
 			},
+			llm_model: config.defaultDocumentProcessingModel,
 		};
 		const uploadRes = await app.request("/documents/process", {
 			method: "POST",
@@ -549,6 +554,7 @@ describe("Integration Tests for Routes", () => {
 				source_url: sourceUrl,
 				folder_id: null,
 			},
+			llm_model: config.defaultDocumentProcessingModel,
 		};
 
 		const uploadRes = await app.request("/documents/process", {

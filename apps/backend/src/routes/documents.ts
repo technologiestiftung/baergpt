@@ -3,7 +3,6 @@ import type { Context } from "hono";
 import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
-import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 import { Document } from "../types/common";
 import { documentProcessSchema } from "../schemas/document-process-schema";
@@ -29,7 +28,7 @@ documents.post("/process", async (c: Context) => {
 		const body = await c.req.json();
 		const parseResult = documentProcessSchema.parse(body);
 
-		const { document: inputDocument } = parseResult;
+		const { document: inputDocument, llm_model: llmIdentifier } = parseResult;
 		sourceUrl = inputDocument.source_url;
 
 		// Validate document request (path, folder ownership, file existence)
@@ -42,8 +41,6 @@ documents.post("/process", async (c: Context) => {
 			return c.json({ error: validationResult.error }, validationResult.status);
 		}
 		bucket = validationResult.bucket;
-
-		const llmIdentifier = config.defaultModelIdentifier;
 
 		// Step 1: Extract document content (no DB record created yet)
 		const documentForExtraction: Document = {

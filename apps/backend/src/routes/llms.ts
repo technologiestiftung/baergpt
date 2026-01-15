@@ -4,7 +4,6 @@ import type { ChatMessageBody } from "../types/common";
 import type { ModelMessage } from "ai";
 import { ModelService } from "../services/model-service";
 import { GenerationService } from "../services/generation-service";
-import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
 
@@ -16,12 +15,21 @@ llms.post("/just-chatting", async (c: Context) => {
 	const generationService = new GenerationService(userScopedDbService);
 	try {
 		const body = (await c.req.json()) as ChatMessageBody;
-		const llmIdentifier = config.defaultModelIdentifier;
-		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
+		const llmModelName = body.llm_model;
+		if (!llmModelName || typeof llmModelName !== "string") {
+			return c.json(
+				{
+					error: "Invalid request: llm_model is required and must be a string",
+				},
+				400,
+			);
+		}
+		const llmHandler = modelService.resolveLlmHandler(llmModelName);
 		const allowedDocumentIds = body.allowed_document_ids || [];
 		const allowedFolderIds = body.allowed_folder_ids || [];
 		const messages = body.messages as ModelMessage[];
 		const isAddressedFormal = body.is_addressed_formal;
+		const isBaseKnowledgeActive = body.is_base_knowledge_active;
 		if (messages.length === 0 || !messages.at(-1)?.content) {
 			return c.json(
 				{
@@ -43,6 +51,7 @@ llms.post("/just-chatting", async (c: Context) => {
 				langfusePrompt: langfusePrompt,
 				allowedDocumentIds: allowedDocumentIds,
 				allowedFolderIds: allowedFolderIds,
+				isBaseKnowledgeActive: isBaseKnowledgeActive,
 			},
 		);
 

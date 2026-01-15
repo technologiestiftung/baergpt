@@ -17,7 +17,12 @@ export async function getCompletion(
 	currentChat: ChatWithMessages,
 ): Promise<void> {
 	const { handleError } = useErrorStore.getState();
-	const { updateMessage, addMessageToChat } = useChatsStore.getState();
+	const {
+		updateMessage,
+		addMessageToChat,
+		selectedLlmModel,
+		selectedChatOptions,
+	} = useChatsStore.getState();
 	const { getSelectedChatDocumentIds } = useDocumentStore.getState();
 	const { getSelectedChatFolderIds } = useFolderStore.getState();
 	const { setStatus } = useInferenceLoadingStatusStore.getState();
@@ -80,6 +85,9 @@ export async function getCompletion(
 					allowed_document_ids: allowedDocumentIds,
 					allowed_folder_ids: selectedFolderIds,
 					is_addressed_formal: user?.is_addressed_formal,
+					is_base_knowledge_active:
+						selectedChatOptions.includes("baseKnowledge"),
+					llm_model: selectedLlmModel,
 				}),
 			},
 		);

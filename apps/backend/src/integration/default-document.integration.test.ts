@@ -147,7 +147,7 @@ describe("Default Document Integration Tests", () => {
 			num_pages: extractionResult.numPages,
 		};
 
-		const llmIdentifier = config.defaultModelIdentifier;
+		const llmIdentifier = config.defaultDocumentProcessingModel;
 		const [summaryData, embeddings] = await Promise.all([
 			generationService.summarize(
 				extractionResult.parsedPages,
