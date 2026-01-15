@@ -4,23 +4,28 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { useChatScrollingStore } from "../../store/use-chat-scrolling-store.ts";
-import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
-import { SelectedChatItemsCollapsible } from "./selected-chat-items/selected-chat-items-collapsible.tsx";
-import { ArrowWhiteRightIcon } from "../primitives/icons/arrow-white-right-icon.tsx";
-import { useFolderStore } from "../../store/folder-store.ts";
-import { useDocumentStore } from "../../store/document-store.ts";
-import Content from "../../content.ts";
-import type { NewChatMessage } from "../../common.ts";
-import { getCompletion } from "../../api/chat/get-completion.ts";
-import { useChatsStore } from "../../store/use-chats-store.ts";
+import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.ts";
+import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
+import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
+import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
+import { useFolderStore } from "../../../store/folder-store.ts";
+import { useDocumentStore } from "../../../store/document-store.ts";
+import Content from "../../../content.ts";
+import type { NewChatMessage } from "../../../common.ts";
+import { getCompletion } from "../../../api/chat/get-completion.ts";
+import { useChatsStore } from "../../../store/use-chats-store.ts";
+import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
+import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
+import { ContextPill } from "../../primitives/pill/context-pill.tsx";
+
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const ChatForm: React.FC = () => {
 	const { status, clearError } = useInferenceLoadingStatusStore();
 	const { selectedChatFolders } = useFolderStore();
 	const { selectedChatDocuments } = useDocumentStore();
-	const { getCurrentOrCreateChat } = useChatsStore.getState();
+	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
+		useChatsStore();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
@@ -93,12 +98,12 @@ export const ChatForm: React.FC = () => {
 		>
 			<SelectedChatItemsCollapsible />
 
-			<div className="flex items-center p-0.5 gap-6 justify-between rounded-b-3px">
+			<div className="flex flex-col justify-between rounded-b-3px">
 				<div
-					className={`rounded-t-[1px] rounded-b-[1px] py-3 pl-4 flex w-full z-10
+					className={`rounded-[1px] my-2 pt-1 mx-3 px-1 flex z-10
 								has-[textarea:focus]:outline
 								has-[textarea:focus]:outline-[2px]
-								has-[textarea:focus]:outline-offset-1
+								has-[textarea:focus]:outline-offset-0
 								has-[textarea:focus]:outline-mittelblau-100
 								has-[textarea:active]:outline
 								has-[textarea:active]:outline-[2px]
@@ -108,7 +113,7 @@ export const ChatForm: React.FC = () => {
 								`}
 				>
 					<textarea
-						className="w-full pb-1 focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80"
+						className="w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80"
 						ref={textareaRef}
 						name="content"
 						rows={1}
@@ -117,16 +122,32 @@ export const ChatForm: React.FC = () => {
 						onKeyDown={handleTextAreaKeyDown}
 						onInput={handleTextAreaInput}
 					/>
-
-					<button
-						type="submit"
-						disabled={
-							(isInferenceLoading && !hasError) || !textareaContent.trim()
-						}
-						className={`rounded-3px bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px mr-4`}
-					>
-						<ArrowWhiteRightIcon />
-					</button>
+				</div>
+				<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
+					<div className="flex items-center gap-3">
+						<ChatOptionsToggleButton />
+						<div className="items-center gap-2 hidden md:flex">
+							{selectedChatOptions.map((option) => (
+								<ContextPill
+									key={option}
+									option={option}
+									onClose={() => toggleChatOption(option)}
+								/>
+							))}
+						</div>
+					</div>
+					<div className="flex items-center gap-3">
+						<LlmModelToggleButton />
+						<button
+							type="submit"
+							disabled={
+								(isInferenceLoading && !hasError) || !textareaContent.trim()
+							}
+							className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
+						>
+							<ArrowWhiteRightIcon />
+						</button>
+					</div>
 				</div>
 			</div>
 		</form>

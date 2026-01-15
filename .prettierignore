@@ -1,0 +1,3 @@
+# Exclude migrations applied before January 2026
+apps/backend/supabase/migrations/2024*.sql
+apps/backend/supabase/migrations/2025*.sql

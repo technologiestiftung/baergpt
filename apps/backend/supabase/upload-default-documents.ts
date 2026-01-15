@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
-import { supabase } from "../src/supabase";
-import { DatabaseService } from "../src/services/database-service";
+import { PrivilegedDbService } from "../src/services/db-service/privileged-db-service";
+import { serviceRoleDbClient } from "../src/supabase";
 import { GenerationService } from "../src/services/generation-service";
 import { EmbeddingService } from "../src/services/embedding-service";
-import { config } from "../src/config";
 import type { Document } from "../src/types/common";
 import { initQueues } from "../src/services/distributed-limiter";
+import { config } from "../src/config";
 
 const sourceType = "default_document";
 const bucketName = "public_documents";
@@ -40,7 +40,7 @@ async function checkExistingDocument(
 	accessGroupId: string,
 ): Promise<boolean> {
 	const sourceUrl = `${accessGroupId}/${fileName}`;
-	const { data, error } = await supabase
+	const { data, error } = await serviceRoleDbClient
 		.from("documents")
 		.select("id, processing_finished_at")
 		.eq("source_url", sourceUrl)
@@ -57,7 +57,7 @@ async function checkExistingDocument(
 }
 
 async function getDefaultAccessGroupId(): Promise<string> {
-	const { data: accessGroup, error } = await supabase
+	const { data: accessGroup, error } = await serviceRoleDbClient
 		.from("access_groups")
 		.select("id")
 		.eq("name", "Alle")
@@ -88,7 +88,7 @@ async function processDocument(
 	const sourceUrl = `${accessGroupId}/${fileName}`;
 	// eslint-disable-next-line no-console
 	console.log(`Uploading ${fileName} to ${bucketName}/${sourceUrl}...`);
-	const { error: uploadError } = await supabase.storage
+	const { error: uploadError } = await serviceRoleDbClient.storage
 		.from(bucketName)
 		.upload(sourceUrl, file, { upsert: true });
 
@@ -100,9 +100,9 @@ async function processDocument(
 	// eslint-disable-next-line no-console
 	console.log(`File uploaded successfully to ${bucketName}/${sourceUrl}`);
 
-	const dbService = new DatabaseService();
-	const generationService = new GenerationService();
-	const embeddingService = new EmbeddingService();
+	const dbService = new PrivilegedDbService(serviceRoleDbClient);
+	const generationService = new GenerationService(dbService);
+	const embeddingService = new EmbeddingService(dbService);
 
 	const document: Document = {
 		source_url: sourceUrl,
@@ -121,7 +121,7 @@ async function processDocument(
 			num_pages: extractionResult.numPages,
 		};
 
-		const llmIdentifier = config.defaultModelIdentifier;
+		const llmIdentifier = config.defaultDocumentProcessingModel;
 		const [summaryData, embeddings] = await Promise.all([
 			generationService.summarize(
 				extractionResult.parsedPages,
