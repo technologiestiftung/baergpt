@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { supabase as supabaseAdminClient } from "../../supabase";
+import { serviceRoleDbClient } from "../../supabase";
+import { createClient } from "@supabase/supabase-js";
 import {
 	chunk_index,
 	chunk_jina_embedding,
@@ -25,31 +26,45 @@ export async function mockDocumentUpload({
 	filePath,
 	sourceType,
 	bucketName,
+	userEmail,
+	userPassword,
 }: {
 	userId: string;
-	accessGroupId: string;
+	accessGroupId: string | null;
 	fileName: string;
 	filePath: string;
-	sourceType: "public_document" | "personal_document";
+	sourceType: "public_document" | "personal_document" | "default_document";
 	bucketName: "documents" | "public_documents";
+	userEmail: string;
+	userPassword: string;
 }) {
-	const source_url = `${userId}/${fileName}`;
+	const source_url = `${accessGroupId ?? userId}/${fileName}`;
 	const file = readFileSync(filePath);
 
-	const { error: uploadError } = await supabaseAdminClient.storage
+	const userClient = createClient(
+		process.env.SUPABASE_URL as string,
+		process.env.SUPABASE_ANON_KEY as string,
+	);
+
+	const { error: signInError } = await userClient.auth.signInWithPassword({
+		email: userEmail,
+		password: userPassword,
+	});
+
+	expect(signInError).toBeNull();
+
+	const { error: uploadError } = await userClient.storage
 		.from(bucketName)
 		.upload(
 			source_url,
 			new File([file], fileName, { type: "application/pdf" }),
-			{
-				upsert: true,
-			},
+			{ upsert: true },
 		);
 
 	expect(uploadError).toBeNull();
 
 	const { data: documentData, error: documentsInsertError } =
-		await supabaseAdminClient
+		await serviceRoleDbClient
 			.from("documents")
 			.insert({
 				owned_by_user_id: accessGroupId ? null : userId,
@@ -69,8 +84,9 @@ export async function mockDocumentUpload({
 			.single();
 
 	expect(documentsInsertError).toBeNull();
+	expect(documentData).not.toBeNull();
 
-	const { error: documentSummariesInsertError } = await supabaseAdminClient
+	const { error: documentSummariesInsertError } = await serviceRoleDbClient
 		.from("document_summaries")
 		.insert({
 			owned_by_user_id: accessGroupId ? null : userId,
@@ -86,7 +102,7 @@ export async function mockDocumentUpload({
 	expect(documentSummariesInsertError).toBeNull();
 
 	const { data: chunkData, error: documentChunksInsertError } =
-		await supabaseAdminClient
+		await serviceRoleDbClient
 			.from("document_chunks")
 			.insert({
 				owned_by_user_id: accessGroupId ? null : userId,
@@ -102,66 +118,67 @@ export async function mockDocumentUpload({
 			.single();
 
 	expect(documentChunksInsertError).toBeNull();
+	expect(chunkData).not.toBeNull();
 
 	return chunkData.id;
 }
 
 export async function cleanupDocuments(userId: string) {
-	const { error: deleteDocumentsError } = await supabaseAdminClient
+	const { error: deleteDocumentsError } = await serviceRoleDbClient
 		.from("documents")
 		.delete()
 		.eq("owned_by_user_id", userId);
 	expect(deleteDocumentsError).toBeNull();
 
-	const { error: deleteFoldersError } = await supabaseAdminClient
+	const { error: deleteFoldersError } = await serviceRoleDbClient
 		.from("document_folders")
 		.delete()
 		.eq("user_id", userId);
 	expect(deleteFoldersError).toBeNull();
 
-	const { error: deleteDocumentChunksError } = await supabaseAdminClient
+	const { error: deleteDocumentChunksError } = await serviceRoleDbClient
 		.from("document_chunks")
 		.delete()
 		.eq("owned_by_user_id", userId);
 	expect(deleteDocumentChunksError).toBeNull();
 
-	const { error: deleteDocumentSummariesError } = await supabaseAdminClient
+	const { error: deleteDocumentSummariesError } = await serviceRoleDbClient
 		.from("document_summaries")
 		.delete()
 		.eq("owned_by_user_id", userId);
 	expect(deleteDocumentSummariesError).toBeNull();
 
 	const { data: personalDocumentsData, error: personalDocumentsError } =
-		await supabaseAdminClient.storage.from("documents").list(`${userId}`);
+		await serviceRoleDbClient.storage.from("documents").list(`${userId}`);
 
 	expect(personalDocumentsError).toBeNull();
 
-	const personalDocumentsToRemove = personalDocumentsData.map(
+	const personalDocumentsToRemove = (personalDocumentsData ?? []).map(
 		(file) => `${userId}/${file.name}`,
 	);
 
 	if (personalDocumentsToRemove.length > 0) {
 		const { error: deletePersonalDocumentsError } =
-			await supabaseAdminClient.storage
+			await serviceRoleDbClient.storage
 				.from("documents")
 				.remove(personalDocumentsToRemove);
 		expect(deletePersonalDocumentsError).toBeNull();
 	}
 
 	const { data: publicDocumentsData, error: publicDocumentsError } =
-		await supabaseAdminClient.storage
+		await serviceRoleDbClient.storage
 			.from("public_documents")
 			.list(`${userId}`);
 
 	expect(publicDocumentsError).toBeNull();
 
-	const publicDocumentsToRemove = publicDocumentsData.map(
+	const publicDocumentsToRemove = (publicDocumentsData ?? []).map(
 		(file) => `${userId}/${file.name}`,
 	);
 
 	if (publicDocumentsToRemove.length > 0) {
 		const { error: deletePublicDocumentsError } =
-			await supabaseAdminClient.storage
+			await serviceRoleDbClient.storage
 				.from("public_documents")
 				.remove(publicDocumentsToRemove);
 

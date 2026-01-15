@@ -98,6 +98,6 @@ This project follows the [all-contributors](https://github.com/all-contributors/
   </tr>
 </table>
 
-## Contact
+## Contact & Reporting
 
-For questions or further inquiries, please contact us at [support@baergpt.berlin](mailto:support@baergpt.berlin).
+For questions, reporting vulnerabilities or further inquiries, please contact us at [support@baergpt.berlin](mailto:support@baergpt.berlin).

@@ -43,7 +43,7 @@ export const DocumentsList: React.FC = () => {
 
 			<div className="flex flex-col w-full h-full">
 				<ul
-					className="grow h-0 overflow-y-auto mt-2 md:mt-0 pl-2 md:pl-0"
+					className="grow h-0 overflow-y-auto mt-2 md:mt-0 pl-2 md:pl-0 filesection-scrollbar"
 					style={{ scrollbarGutter: "stable" }}
 				>
 					{(isFirstLoad || isLoading) && <DocumentListSkeleton count={8} />}

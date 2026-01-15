@@ -6,7 +6,7 @@ test.describe("Maintenance Mode Page", () => {
 
 		// Check for maintenance mode heading
 		const heading = page.getByRole("heading", {
-			name: "BärGPT ist vorübergehend nicht erreichbar.",
+			name: "Oh nein, BärGPT ist gerade nicht verfügbar",
 		});
 		await expect(heading).toBeVisible();
 	});

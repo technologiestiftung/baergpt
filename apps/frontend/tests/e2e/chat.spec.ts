@@ -12,7 +12,7 @@ import {
 	secondaryDocumentType,
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
-import { supabaseAdminClient } from "../supabase.ts";
+import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 
 test.describe("Chat", () => {
 	testWithLoggedInUser(
@@ -52,14 +52,58 @@ test.describe("Chat", () => {
 		},
 	);
 
+	testWithLoggedInUser(
+		"Copy text with markdown formatting as rich text and plain text",
+		async ({ page, browserName }) => {
+			await page.goto("/");
+
+			// Fill in the chat question
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("**hallo**");
+
+			// Click the send button
+			await page
+				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
+				.click();
+
+			if (browserName === "webkit") {
+				return;
+			}
+
+			// Copy user message with markdown formatting
+			await page.getByAltText("Kopieren").first().click();
+
+			// Wait for clipboard write to complete
+			await page.waitForTimeout(100);
+
+			// Verify the answer is copied to clipboard
+			const clipboardContent = await page.evaluate(async () => {
+				const types = await navigator.clipboard.read();
+				const type = types[0];
+				const htmlBlob = await type.getType("text/html");
+				const plainBlob = await type.getType("text/plain");
+				return {
+					html: await htmlBlob.text(),
+					plain: await plainBlob.text(),
+				};
+			});
+
+			// Verify text/html contains HTML bold tags and not markdown **
+			expect(clipboardContent.html).toContain("<strong>hallo</strong>");
+			expect(clipboardContent.html).not.toContain("**");
+
+			// Verify text/plain contains markdown ** syntax
+			expect(clipboardContent.plain).toContain("**hallo**");
+		},
+	);
+
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
-		// Find the add-to-chat button
-		const addButton = page.getByRole("button", {
-			name: "Zum Chat hinzufügen",
-			exact: true,
-		});
+		// Find the add-to-chat button for the specific document
+		const addButton = page
+			.getByRole("listitem")
+			.filter({ hasText: defaultDocumentName })
+			.getByLabel("Zum Chat hinzufügen");
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -78,11 +122,11 @@ test.describe("Chat", () => {
 			.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 			.click();
 
-		// Wait for the AI response with a longer timeout since it involves backend API calls
-		await page.waitForLoadState("networkidle");
-
 		// Wait for the response to appear (2 markdown containers: question + answer)
-		await expect(page.locator("div.markdown-container")).toHaveCount(2);
+		// Use longer timeout since it involves backend API calls
+		await expect(page.locator("div.markdown-container")).toHaveCount(2, {
+			timeout: 60_000,
+		});
 
 		// Verify the answer is not empty
 		const markdownAnswer = page.locator("div.markdown-container").last();
@@ -157,24 +201,29 @@ test.describe("Chat", () => {
 		async ({ page, documentChunkId }) => {
 			await page.goto("/");
 
-			const inferenceWithCitation = {
-				content: `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`,
-				citations: [documentChunkId],
-			};
+			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
+			const citations = [documentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
+				// Format as Server-Sent Events (SSE) stream
+				const streamBody = [
+					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
+				].join("");
+
 				await route.fulfill({
 					status: 200,
-					body: JSON.stringify(inferenceWithCitation),
-					headers: { "Content-Type": "text/stream; charset: utf-8" },
+					body: streamBody,
+					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
 				});
 			});
 
-			// Find the add-to-chat button
-			const addButton = page.getByRole("button", {
-				name: "Zum Chat hinzufügen",
-				exact: true,
-			});
+			// Find the add-to-chat button for the specific document
+			const addButton = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Zum Chat hinzufügen");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -189,7 +238,9 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
+			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
 
 			await allCitationsButton.click();
 
@@ -212,9 +263,54 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testDesktopOnly(
-		"Chat with public document citations",
-		async ({ page, account }) => {
+	testDesktopOnly("Chat with public document citations", async ({ page }) => {
+		// Create an admin user to upload the public document
+		const adminEmail = "admin.test@local.berlin.de";
+		const adminPassword = "TestPassword123!";
+		let adminUserId: string | undefined;
+
+		const { data: adminUserData, error: createAdminError } =
+			await supabaseAdminClient.auth.admin.createUser({
+				email: adminEmail,
+				password: adminPassword,
+				email_confirm: true,
+				user_metadata: {
+					first_name: "Admin",
+					last_name: "Test",
+				},
+			});
+
+		expect(createAdminError).toBeNull();
+
+		if (createAdminError !== null) {
+			throw createAdminError;
+		}
+
+		adminUserId = adminUserData.user.id;
+
+		try {
+			// Grant admin role by adding to application_admins table
+			const { error: adminRoleError } = await supabaseAdminClient
+				.from("application_admins")
+				.insert({ user_id: adminUserId });
+
+			expect(adminRoleError).toBeNull();
+
+			// Sign in the admin user to get their access token
+			const { data: adminSessionData, error: adminSignInError } =
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: adminEmail,
+					password: adminPassword,
+				});
+
+			expect(adminSignInError).toBeNull();
+
+			if (adminSignInError !== null) {
+				throw adminSignInError;
+			}
+
+			const adminAccessToken = adminSessionData.session.access_token;
+
 			const { data: accessGroupData, error: accessGroupError } =
 				await supabaseAdminClient
 					.from("access_groups")
@@ -231,7 +327,8 @@ test.describe("Chat", () => {
 			const defaultAccessGroupId = accessGroupData.id;
 
 			const publicDocumentChunkId = await mockDocumentUpload({
-				userId: account.id,
+				userId: adminUserId,
+				accessToken: adminAccessToken,
 				accessGroupId: defaultAccessGroupId,
 				fileName: defaultDocumentName,
 				filePath: defaultDocumentPath,
@@ -241,24 +338,29 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
-			const inferenceWithCitation = {
-				content: `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`,
-				citations: [publicDocumentChunkId],
-			};
+			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
+			const citations = [publicDocumentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
+				// Format as Server-Sent Events (SSE) stream
+				const streamBody = [
+					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
+				].join("");
+
 				await route.fulfill({
 					status: 200,
-					body: JSON.stringify(inferenceWithCitation),
-					headers: { "Content-Type": "text/stream; charset: utf-8" },
+					body: streamBody,
+					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
 				});
 			});
 
 			// Find the add-to-chat button
-			const addButton = page.getByRole("button", {
-				name: "Zum Chat hinzufügen",
-				exact: true,
-			});
+			const addButton = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Zum Chat hinzufügen");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -273,7 +375,9 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
+			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
 
 			await allCitationsButton.click();
 
@@ -298,8 +402,12 @@ test.describe("Chat", () => {
 			await citationDialogClosingButton.click();
 
 			await expect(citationsDialogHeader).not.toBeVisible();
-		},
-	);
+		} finally {
+			if (adminUserId) {
+				await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
+			}
+		}
+	});
 
 	testWithLoggedInUser(
 		"Export chat messages as Word and PDF document",
@@ -402,5 +510,133 @@ test.describe("Chat", () => {
 
 		// Check if the chat history is open again
 		await expect(page.getByRole("heading", { name: "Chats" })).toBeVisible();
+	});
+
+	testWithLoggedInUser(
+		"Change LLM model from small to large and back",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Check that the small LLM model is selected
+			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
+
+			// Fill in the chat question
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+
+			// Click the send button
+			await page
+				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
+				.click();
+
+			// Wait for the AI response with a longer timeout since it involves backend API calls
+			await page.waitForLoadState("networkidle");
+
+			// Wait for the response to appear (2 markdown containers: question + answer)
+			await expect(page.locator("div.markdown-container")).toHaveCount(2);
+
+			// Verify the answer is not empty
+			const markdownAnswerOne = page.locator("div.markdown-container").last();
+			await expect(markdownAnswerOne).not.toBeEmpty();
+
+			// Click on the LLM model button
+			await page.getByRole("button", { name: "Schnell" }).click();
+
+			// Select the large LLM model
+			await page
+				.getByRole("option", { name: "Mistral Large (präzise) auswählen" })
+				.click();
+
+			// Verify that the large LLM model is selected
+			await expect(page.getByRole("button", { name: "Präzise" })).toBeVisible();
+
+			// Fill in the chat question
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+
+			// Click the send button
+			await page
+				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
+				.click();
+
+			// Wait for the AI response with a longer timeout since it involves backend API calls
+			await page.waitForLoadState("networkidle");
+
+			// Wait for the response to appear (4 markdown containers: question + answer)
+			await expect(page.locator("div.markdown-container")).toHaveCount(4);
+
+			// Verify the answer is not empty
+			const markdownAnswerTwo = page.locator("div.markdown-container").last();
+			await expect(markdownAnswerTwo).not.toBeEmpty();
+
+			// Click on the LLM model button
+			await page.getByRole("button", { name: "Präzise" }).click();
+
+			// Verify that the model selection window is open
+			await expect(page.getByText("Sprachmodell auswählen")).toBeVisible();
+
+			// Select the small LLM model
+			await page
+				.getByRole("option", { name: "Mistral Small (schnell) auswählen" })
+				.click();
+
+			// Verify that the model selection window is closed after selecting a model
+			await expect(page.getByText("Sprachmodell auswählen")).not.toBeVisible();
+
+			// Verify that the small LLM model is selected
+			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
+		},
+	);
+
+	testDesktopOnly("Toggle base knowledge on and off", async ({ page }) => {
+		await page.goto("/");
+
+		// Find and click the chat options toggle button
+		const chatOptionsButton = page.getByRole("button", {
+			name: "Weitere Funktionen aktivieren",
+		});
+		await expect(chatOptionsButton).toBeVisible();
+
+		// Verify the baseKnowledge Pill is visible by default
+		const baseKnowledgePill = page.getByRole("button", {
+			name: /Verwaltungswissen entfernen/,
+		});
+		await expect(baseKnowledgePill).toBeVisible();
+
+		// Verify the baseKnowledge Pill is not visible after clicking to remove
+		await baseKnowledgePill.click();
+		await expect(baseKnowledgePill).not.toBeVisible();
+
+		// Click to open the dropdown
+		await chatOptionsButton.click();
+
+		// Verify the dropdown is open with the title "Wissen erweitern"
+		await expect(page.getByText("Wissen erweitern")).toBeVisible();
+
+		// Click on "Verwaltungswissen" option to toggle it on
+		const baseKnowledgeOption = page.getByRole("option", {
+			name: "Verwaltungswissen auswählen",
+		});
+
+		await expect(baseKnowledgeOption).toBeVisible();
+		await baseKnowledgeOption.click();
+
+		// Verify the dropdown closes after selection
+		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
+
+		// Verify the context pill appears with "Verwaltungswissen" label
+		const contextPill = page.getByRole("button", {
+			name: /Verwaltungswissen entfernen/,
+		});
+		await expect(contextPill).toBeVisible();
+
+		// Deselect base knowledge through the dropdown
+		await chatOptionsButton.click();
+		await expect(page.getByText("Wissen erweitern")).toBeVisible();
+
+		// Click on "Verwaltungswissen" again to deselect it
+		await baseKnowledgeOption.click();
+		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
+
+		// Verify the context pill disappears after deselecting through dropdown
+		await expect(contextPill).not.toBeVisible();
 	});
 });

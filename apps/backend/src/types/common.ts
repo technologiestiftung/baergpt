@@ -73,6 +73,8 @@ export type ChatMessageBody = {
 	is_addressed_formal: boolean;
 	user_title: string;
 	user_name: string;
+	is_base_knowledge_active?: boolean;
+	llm_model: string;
 };
 
 export type Embedding = {
@@ -278,3 +280,7 @@ export type AllowedEmailDomain = {
 	id: number;
 	domain: string;
 };
+
+export type ValidationResult =
+	| { success: true; bucket: string }
+	| { success: false; error: string; status: 400 | 403 | 404 };

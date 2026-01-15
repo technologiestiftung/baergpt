@@ -19,13 +19,11 @@
 		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/react": "2.0.26",
 		"@mohtasham/md-to-docx": "2.2.1",
 		"@react-pdf/renderer": "4.3.0",
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/react": "10.5.0",
 		"@supabase/supabase-js": "2.81.1",
-		"ai": "5.0.60",
 		"date-fns": "3.6.0",
 		"dotenv": "16.4.7",
 		"js-tiktoken": "1.0.15",
@@ -37,7 +35,9 @@
 		"react-dropzone": "14.3.5",
 		"react-markdown": "9.0.1",
 		"react-router-dom": "6.26.2",
+		"rehype-stringify": "10.0.1",
 		"remark-gfm": "4.0.0",
+		"remark-rehype": "11.1.2",
 		"remove-markdown": "0.6.2",
 		"slugify": "1.6.6",
 		"zustand": "4.5.5"

@@ -1,5 +1,8 @@
+import { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@repo/db-schema";
+
 import { StorageApiError, StorageUnknownError } from "@supabase/storage-js";
-import { supabase } from "../supabase";
+
 import {
 	type Document,
 	type Embedding,
@@ -7,18 +10,19 @@ import {
 	type HybridSearchResult,
 	type KnowledgeBaseDocument,
 	DocumentNotFoundError,
-} from "../types/common";
-import { ragSearchDefaults } from "../constants";
+} from "../../types/common";
+import { ragSearchDefaults } from "../../constants";
 import {
 	DocumentExtractionService,
 	WordDocumentExtractionService,
-} from "./document-extraction-service";
-import { captureError } from "../monitoring/capture-error";
-
+} from "../document-extraction-service";
+import { captureError } from "../../monitoring/capture-error";
 const documentExtraction = new DocumentExtractionService();
 const wordExtractionService = new WordDocumentExtractionService();
 
-export class DatabaseService {
+export abstract class BaseContentDbService {
+	protected abstract client: SupabaseClient<Database>;
+
 	async logSummarizedDocument(
 		summaryData: {
 			summary: string;
@@ -28,7 +32,7 @@ export class DatabaseService {
 		},
 		documentData: Document,
 	): Promise<void> {
-		const { error } = await supabase.from("document_summaries").insert({
+		const { error } = await this.client.from("document_summaries").insert({
 			owned_by_user_id: documentData.owned_by_user_id || null,
 			summary: summaryData.summary,
 			short_summary: summaryData.shortSummary,
@@ -45,7 +49,7 @@ export class DatabaseService {
 		return;
 	}
 	async retrieveSummaries(documentIds: number[]): Promise<Map<number, string>> {
-		const { error: summariesError, data: summaries } = await supabase
+		const { error: summariesError, data: summaries } = await this.client
 			.from("document_summaries")
 			.select("document_id, summary")
 			.in("document_id", documentIds);
@@ -70,7 +74,7 @@ export class DatabaseService {
 		maxChunks: number = ragSearchDefaults.chunk_limit,
 	): Promise<HybridSearchResult[]> {
 		const procedure = "hybrid_chunk_search";
-		const { error, data } = await supabase.rpc(procedure, {
+		const { error, data } = await this.client.rpc(procedure, {
 			query_text: filterOptions.queryText,
 			query_embedding: JSON.stringify(embedding),
 			match_count: maxChunks,
@@ -90,7 +94,7 @@ export class DatabaseService {
 		file: File,
 		bucket: string,
 	): Promise<void> {
-		const { error: uploadError } = await supabase.storage
+		const { error: uploadError } = await this.client.storage
 			.from(bucket)
 			.upload(filePath, file);
 
@@ -103,7 +107,7 @@ export class DatabaseService {
 		source_url: string,
 		bucket: string,
 	): Promise<void> {
-		const { error: deletionError } = await supabase.storage
+		const { error: deletionError } = await this.client.storage
 			.from(bucket)
 			.remove([source_url]);
 
@@ -132,21 +136,11 @@ export class DatabaseService {
 		throw deletionError;
 	}
 
-	async updateUserColumnValue(
+	abstract updateUserColumnValue(
 		userId: string,
 		columnName: string,
-		amount: number = 1,
-	): Promise<void> {
-		const { error } = await supabase.rpc("change_value_for_user_by", {
-			amount,
-			column_name: columnName,
-			user_id_to_update: userId,
-		});
-
-		if (error) {
-			throw error;
-		}
-	}
+		amount: number,
+	): Promise<void>;
 
 	/**
 	 * Creates a complete document record with all metadata, summary, and embeddings in the database.
@@ -166,7 +160,7 @@ export class DatabaseService {
 		}
 
 		// 1. Insert Document
-		const { data, error } = await supabase
+		const { data, error } = await this.client
 			.from("documents")
 			.insert({
 				owned_by_user_id: document.owned_by_user_id || null,
@@ -186,6 +180,10 @@ export class DatabaseService {
 
 		if (error) {
 			throw error;
+		}
+
+		if (!data || data.length === 0) {
+			throw new Error("Document insert returned no data");
 		}
 
 		const newDocument = data[0];
@@ -221,7 +219,7 @@ export class DatabaseService {
 	 * Only logs errors rather than throwing them to avoid masking the original error.
 	 */
 	private async deleteDocumentById(documentId: number): Promise<void> {
-		const { error } = await supabase
+		const { error } = await this.client
 			.from("documents")
 			.delete()
 			.eq("id", documentId);
@@ -238,7 +236,7 @@ export class DatabaseService {
 		embeddings: Embedding[],
 		document: Document,
 	): Promise<void> {
-		const { error } = await supabase.from("document_chunks").insert(
+		const { error } = await this.client.from("document_chunks").insert(
 			embeddings.map((e) => ({
 				owned_by_user_id: document.owned_by_user_id || null,
 				content: e.content,
@@ -304,7 +302,7 @@ export class DatabaseService {
 		bucket: string,
 		sourceUrl: string,
 	): Promise<Uint8Array> {
-		const { data, error } = await supabase.storage
+		const { data, error } = await this.client.storage
 			.from(bucket)
 			.download(sourceUrl);
 
@@ -320,7 +318,7 @@ export class DatabaseService {
 
 	// Updates the user's document count in the profiles table
 	async updateUserDocumentCount(userId: string): Promise<void> {
-		const { count, error: countError } = await supabase
+		const { count, error: countError } = await this.client
 			.from("documents")
 			.select("*", { count: "exact", head: true })
 			.eq("owned_by_user_id", userId);
@@ -330,7 +328,7 @@ export class DatabaseService {
 		}
 
 		const documentCount = count || 0;
-		const { error: updateError } = await supabase
+		const { error: updateError } = await this.client
 			.from("profiles")
 			.update({ num_documents: documentCount })
 			.eq("id", userId);
@@ -340,37 +338,15 @@ export class DatabaseService {
 		}
 	}
 
-	// get user admin status from application_admins table
-	async getUserAdminStatus(userId: string): Promise<boolean> {
-		const { count, error } = await supabase
-			.from("application_admins")
-			.select("user_id", { count: "exact", head: true })
-			.eq("user_id", userId);
-
-		if (error) {
-			throw error;
-		}
-
-		const isAdmin = count > 0;
+	async getUserAdminStatus(): Promise<boolean> {
+		const { data: isAdmin } = await this.client.rpc("is_application_admin");
 		return isAdmin;
 	}
 
-	async getUserActiveStatus(userId: string) {
-		const { data, error } = await supabase
-			.from("user_active_status")
-			.select("*")
-			.eq("id", userId)
-			.single();
-
-		if (error) {
-			throw error;
-		}
-
-		return data;
-	}
-
 	async getMaintenanceModeStatus(): Promise<{ is_enabled: boolean }> {
-		const { data, error } = await supabase.rpc("get_maintenance_mode_status");
+		const { data, error } = await this.client.rpc(
+			"get_maintenance_mode_status",
+		);
 
 		if (error) {
 			throw error;
@@ -379,168 +355,10 @@ export class DatabaseService {
 		return { is_enabled: data };
 	}
 
-	//update user first_name, last_name, academic_title, and email
-	async updateUserProfile({
-		userId,
-		firstName,
-		lastName,
-		academic_title,
-		email,
-		personal_title,
-	}: {
-		userId: string;
-		firstName?: string;
-		lastName?: string;
-		academic_title?: string;
-		email?: string;
-		personal_title?: string;
-	}): Promise<void> {
-		// Prepare auth update data
-		const authUpdateData: {
-			user_metadata?: { first_name?: string; last_name?: string };
-			email?: string;
-		} = {};
-
-		// Add user metadata if firstName or lastName are provided
-		if (firstName !== undefined || lastName !== undefined) {
-			authUpdateData.user_metadata = {
-				first_name: firstName,
-				last_name: lastName,
-			};
-		}
-
-		// Add email if provided
-		if (email !== undefined) {
-			authUpdateData.email = email;
-		}
-
-		// Update user in auth
-		if (Object.keys(authUpdateData).length > 0) {
-			const { error: authError } = await supabase.auth.admin.updateUserById(
-				userId,
-				authUpdateData,
-			);
-
-			if (authError) {
-				throw authError;
-			}
-		}
-
-		// Update first_name, last_name, academic_title and personal_title in profiles table
-		const updateData = Object.fromEntries(
-			Object.entries({
-				first_name: firstName,
-				last_name: lastName,
-				academic_title: academic_title,
-				personal_title: personal_title,
-			}).filter(([, value]) => value !== undefined),
-		);
-
-		if (Object.keys(updateData).length > 0) {
-			const { error: profileError } = await supabase
-				.from("profiles")
-				.update(updateData)
-				.eq("id", userId);
-
-			if (profileError) {
-				throw profileError;
-			}
-		}
-	}
-
-	// Updates the admin status of a user
-	async updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<void> {
-		if (typeof isAdmin !== "boolean") {
-			throw new Error("isAdmin must be a boolean value");
-		}
-
-		if (isAdmin) {
-			// Add user to application_admins table
-			const { error } = await supabase
-				.from("application_admins")
-				.insert({ user_id: userId });
-
-			if (error) {
-				throw error;
-			}
-
-			return;
-		}
-
-		// Remove user from application_admins table
-		const { error } = await supabase
-			.from("application_admins")
-			.delete()
-			.eq("user_id", userId);
-
-		if (error) {
-			throw error;
-		}
-	}
-
-	// Soft delete a user by setting deleted_at timestamp
-	async softDeleteUser(userId: string): Promise<void> {
-		const { error } = await supabase
-			.from("user_active_status")
-			.update({ deleted_at: new Date().toISOString(), is_active: false })
-			.eq("id", userId);
-
-		if (error) {
-			throw error;
-		}
-	}
-
-	// Hard delete a user (permanently removes from auth and cascades to profile)
-	async hardDeleteUser(userId: string): Promise<void> {
-		// This will permanently delete the user from auth.users
-		// The profile will be automatically deleted due to CASCADE foreign key
-		const { error } = await supabase.auth.admin.deleteUser(userId);
-
-		if (error) {
-			throw error;
-		}
-	}
-
-	// Restore a soft-deleted user
-	async restoreUser(userId: string): Promise<void> {
-		const { error } = await supabase
-			.from("user_active_status")
-			.update({ deleted_at: null, is_active: true })
-			.eq("id", userId);
-
-		if (error) {
-			throw error;
-		}
-	}
-
-	// Sent out invite link to user
-	async sendInviteLink(
-		email: string,
-		firstName?: string,
-		lastName?: string,
-	): Promise<void> {
-		const data: { first_name?: string; last_name?: string } = {};
-
-		if (firstName) {
-			data.first_name = firstName;
-		}
-		if (lastName) {
-			data.last_name = lastName;
-		}
-
-		const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
-			data,
-		});
-
-		if (error) {
-			throw error;
-		}
-	}
-
 	async deleteDocument(documentId: number, userId: string): Promise<void> {
-		const isAdmin = await this.getUserAdminStatus(userId);
+		const isAdmin = await this.getUserAdminStatus();
 
-		let query = supabase
+		let query = this.client
 			.from("documents")
 			.delete({ count: "exact" })
 			.eq("id", documentId);
@@ -568,7 +386,7 @@ export class DatabaseService {
 		const documentCount = await this.getDocumentCountPerUser(userId);
 
 		// Update the user's document count
-		const { error: updateError } = await supabase
+		const { error: updateError } = await this.client
 			.from("profiles")
 			.update({ num_documents: documentCount })
 			.eq("id", userId);
@@ -579,7 +397,7 @@ export class DatabaseService {
 	}
 
 	async getDocumentCountPerUser(userId: string): Promise<number> {
-		const { count, error: countingError } = await supabase
+		const { count, error: countingError } = await this.client
 			.from("documents")
 			.select("*", { count: "exact", head: true })
 			.eq("owned_by_user_id", userId);
@@ -594,14 +412,77 @@ export class DatabaseService {
 	async getBaseKnowledgeDocuments(
 		user_id: string,
 	): Promise<KnowledgeBaseDocument[]> {
-		const { data, error } = await supabase.rpc("get_base_knowledge_documents", {
-			input_user_id: user_id,
-		});
+		const { data, error } = await this.client.rpc(
+			"get_base_knowledge_documents",
+			{
+				input_user_id: user_id,
+			},
+		);
 
 		if (error) {
 			throw error;
 		}
 
 		return (data as KnowledgeBaseDocument[]) || [];
+	}
+
+	/**
+	 * Validates that a folder belongs to a specific user.
+	 * Returns true if the folder exists and belongs to the user, false otherwise.
+	 */
+	async validateFolderOwnership(
+		folderId: number,
+		userId: string,
+	): Promise<boolean> {
+		const { data, error } = await this.client
+			.from("document_folders")
+			.select("id")
+			.eq("id", folderId)
+			.eq("user_id", userId)
+			.single();
+
+		if (error) {
+			// PGRST116 = no rows returned (folder doesn't exist or doesn't belong to user)
+			if (error.code === "PGRST116") {
+				return false;
+			}
+			throw error;
+		}
+
+		return data !== null;
+	}
+
+	/**
+	 * Validates that a file exists in storage at the specified path.
+	 * Returns true if the file exists, false otherwise.
+	 */
+	async validateFileExistsInStorage(
+		sourceUrl: string,
+		bucket: string,
+	): Promise<boolean> {
+		// Extract the folder (user_id or access_group_id) and filename from the path
+		const pathParts = sourceUrl.split("/");
+		if (pathParts.length < 2) {
+			return false;
+		}
+
+		const folder = pathParts.slice(0, -1).join("/");
+		const fileName = pathParts[pathParts.length - 1];
+
+		const { data, error } = await this.client.storage
+			.from(bucket)
+			.list(folder, {
+				search: fileName,
+			});
+
+		if (error) {
+			console.error(
+				`Storage error when checking file existence for ${sourceUrl} in bucket ${bucket}:`,
+				error.message,
+			);
+			return false;
+		}
+
+		return data?.some((file) => file.name === fileName) ?? false;
 	}
 }

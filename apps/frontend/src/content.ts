@@ -885,6 +885,26 @@ export const Content = {
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
 	"chat.selectedChatItems.questionmark.arialabel": "Tooltip zeigen",
+	//Chat options dropdown
+	"chat.options.toggleButton.tooltip": "Weitere Funktionen aktivieren",
+	"chat.options.toggleButton.tooltip.ariaLabel":
+		"Weitere Funktionen aktivieren",
+	"chat.options.dropdown.title": "Wissen erweitern",
+	"chat.options.selected.icon.imgAlt": "Ein blaues Häkchen-Icon",
+	"chat.options.li1.label": "Verwaltungswissen",
+	"chat.options.li1.description": "Zugriff auf Verwaltungsdokumente",
+	"chat.options.li1.ariaLabel": "Verwaltungswissen auswählen",
+	// Chat llm model dropdown
+	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
+	"chat.llmModel.dropdown.li1.label": "Schnell",
+	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small (schnell)",
+	"chat.llmModel.dropdown.li1.description": "Gut für alltägliche Aufgaben",
+	"chat.llmModel.dropdown.li1.ariaLabel": "Mistral Small (schnell) auswählen",
+	"chat.llmModel.dropdown.li2.label": "Präzise",
+	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Large (präzise)",
+	"chat.llmModel.dropdown.li2.description":
+		"Leistungsstark für komplexe Aufgaben",
+	"chat.llmModel.dropdown.li2.ariaLabel": "Mistral Large (präzise) auswählen",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
@@ -911,6 +931,13 @@ export const Content = {
 	"chat.exportChatTextButton.pdf.label": "PDF exportieren",
 	"chat.exportChatTextButton.pdf.ariaLabel": "Chat als PDF exportieren",
 	"chat.exportChatTextButton.error": "Export fehlgeschlagen",
+
+	"chat.contextPill.webSearch.label": "Websuche",
+	"chat.contextPill.webSearch.ariaLabel": "Websuche entfernen",
+	"chat.contextPill.webSearch.icon.alt": "Websuche icon",
+	"chat.contextPill.baseKnowledge.label": "Verwaltungswissen",
+	"chat.contextPill.baseKnowledge.ariaLabel": "Verwaltungswissen entfernen",
+	"chat.contextPill.baseKnowledge.icon.alt": "Verwaltungswissen icon",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
@@ -1026,7 +1053,7 @@ export const Content = {
 	"loginPage.submitButton": "Anmelden",
 	"loginPage.registerPrompt": "Sie haben noch keinen Account?",
 	"loginPage.registerLink": "Jetzt registrieren",
-	"loginPage.resetPassword.link": "/reset-password/",
+	"loginPage.resetPassword.link": "/request-password-reset/",
 	"loginPage.resetPassword.label": "Passwort vergessen?",
 	/* ---------------------- Reset Password Form ---------------------- */
 	"resetPassword.h1": "Passwort vergessen?",
@@ -1133,6 +1160,8 @@ export const Content = {
 		"Falls nach fünf Minuten keine E-Mail angekommen ist, können Sie sie erneut senden",
 	"unconfirmedEmail.resendButton": "E-Mail erneut senden",
 	"unconfirmedEmail.resend.success": "E-Mail wurde versendet",
+	"unconfirmedEmail.otp.resend":
+		"Falls der Code nicht mehr gültig ist, können Sie einen neuen anfordern:",
 
 	/* ---------------------- Account Activated ---------------------- */
 	"accountActivated.h1": "Willkommen bei BärGPT",

@@ -1,7 +1,14 @@
-import { enc, ragSearchDefaults } from "../constants";
+import { enc } from "../constants";
 import { config } from "../config";
 import type { ModelMessage, Tool, ToolChoice } from "ai";
-import { generateText, streamObject } from "ai";
+import {
+	createUIMessageStream,
+	createUIMessageStreamResponse,
+	generateObject,
+	generateText,
+	stepCountIs,
+	streamText,
+} from "ai";
 import { ModelService } from "./model-service";
 import { EmbeddingService } from "./embedding-service";
 import {
@@ -15,13 +22,12 @@ import {
 	type KnowledgeBaseDocument,
 	type LLMHandler,
 } from "../types/common";
-import { DatabaseService } from "./database-service";
+import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
 import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { captureError } from "../monitoring/capture-error";
-import { z } from "zod";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
 import {
@@ -32,11 +38,15 @@ import {
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
-const dbService = new DatabaseService();
-const embeddingService = new EmbeddingService();
-const maxAvailableSources = ragSearchDefaults.chunk_limit;
 
 export class GenerationService {
+	private readonly dbService: BaseContentDbService;
+	private readonly embeddingService: EmbeddingService;
+
+	constructor(dbService: BaseContentDbService) {
+		this.dbService = dbService;
+		this.embeddingService = new EmbeddingService(this.dbService);
+	}
 	/**
 	 * Select the first pages whose combined content fits within a safe token budget
 	 * for the summary prompt. Falls back to at least the first page if none fit.
@@ -281,7 +291,7 @@ export class GenerationService {
 		);
 
 		const summaryEmbeddingResponse =
-			await embeddingService.generateJinaEmbedding(
+			await this.embeddingService.generateJinaEmbedding(
 				summaryForEmbedding,
 				"retrieval.passage",
 				userId,
@@ -316,41 +326,32 @@ export class GenerationService {
 			langfusePrompt,
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
+			isBaseKnowledgeActive,
 		}: {
 			userId?: string;
 			sessionId?: string;
 			langfusePrompt?: TextPromptClient | ChatPromptClient;
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
+			isBaseKnowledgeActive?: boolean;
 		} = {},
 	): Promise<Response> {
-		let knowledgeBaseDocuments: KnowledgeBaseDocument[];
-		let tools: Record<string, Tool>;
-		let toolChoice: ToolChoice<Record<string, unknown>>;
-
-		const hasAllowedDocumentsOrFolders =
-			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
-
-		if (hasAllowedDocumentsOrFolders) {
-			tools = {
-				ragSearchTool: ragSearchTool(
-					userId,
-					allowedDocumentIds,
-					allowedFolderIds,
-				),
-			};
-			toolChoice = { type: "tool", toolName: "ragSearchTool" };
-		} else {
+		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
+		if (isBaseKnowledgeActive && userId) {
 			knowledgeBaseDocuments =
-				await dbService.getBaseKnowledgeDocuments(userId);
-			tools = {
-				baseKnowledgeSearchTool: baseKnowledgeSearchTool(
-					userId,
-					knowledgeBaseDocuments,
-				),
-			};
-			toolChoice = "auto";
+				await this.dbService.getBaseKnowledgeDocuments(userId);
 		}
+		const { tools, toolChoice, maxSteps, useBaseKnowledgeAfterFirstStep } =
+			this.getRelevantTools({
+				allowedDocumentIds,
+				allowedFolderIds,
+				isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
+				userId,
+				knowledgeBaseDocuments,
+			});
+
+		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
+
 		updateActiveTrace({ input: messages[messages.length - 1].content });
 		const generationResult = await resilientCall(
 			() =>
@@ -360,6 +361,8 @@ export class GenerationService {
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
 					toolChoice,
+					stopWhen: stepCountIs(maxSteps),
+					prepareStep,
 					providerOptions: {
 						mistral: {
 							presencePenalty: LLM_PARAMETERS.presencePenalty,
@@ -381,86 +384,140 @@ export class GenerationService {
 		);
 		if (userId && generationResult.usage?.totalTokens) {
 			try {
-				await dbService.updateUserColumnValue(
+				await this.dbService.updateUserColumnValue(
 					userId,
 					"num_inference_tokens",
 					generationResult.usage.totalTokens,
 				);
-				await dbService.updateUserColumnValue(userId, "num_inferences", 1);
+				await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
 			} catch (error) {
 				captureError(error);
 			}
 		}
-		const toolResult = generationResult.toolResults[0];
+		const allChunkMatches = generationResult.steps.flatMap((step) =>
+			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
+		);
 		const newMessages = generationResult.response.messages;
-
-		if (toolResult) {
+		if (newMessages.length > 0) {
 			messages.push(...newMessages);
 		}
+		const stream = createUIMessageStream({
+			execute: async ({ writer }) => {
+				const streamResponse = await resilientCall(
+					async () =>
+						streamText({
+							model: llmHandler.languageModel,
+							messages: messages,
+							temperature: LLM_PARAMETERS.temperature,
+							providerOptions: {
+								mistral: {
+									presencePenalty: LLM_PARAMETERS.presencePenalty,
+									frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+								},
+							},
+							onFinish: async ({ text, usage }) => {
+								if (allChunkMatches.length > 0) {
+									const availableSources = allChunkMatches.map(
+										(match: { chunkId: number; snippet: string }) => ({
+											id: match.chunkId,
+											snippet: match.snippet,
+										}),
+									);
 
-		const citationAnswer = await resilientCall(
-			async () =>
-				streamObject({
-					model: llmHandler.languageModel,
-					messages: messages,
-					temperature: LLM_PARAMETERS.temperature,
-					// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
-					schema: citationAnswerSchema(maxAvailableSources),
-					providerOptions: {
-						mistral: {
-							structuredOutputs: true,
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
-					onFinish: async ({ object, usage, error }) => {
-						updateActiveTrace({
-							name: "streamed-structuredOutput-generation",
-							output: object,
-							userId,
-							sessionId,
-						});
-						// Handle token usage tracking after stream completes
-						if (userId && usage?.totalTokens) {
-							try {
-								await dbService.updateUserColumnValue(
+									const citationObject = await generateObject({
+										model: llmHandler.languageModel,
+										system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
+										prompt: `Generierte Antwort:
+"""
+${text}
+"""
+
+Verfügbare Quellen:
+${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n${s.snippet}`).join("\n\n")}
+
+Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
+										temperature: LLM_PARAMETERS.temperature,
+										// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+										schema: citationAnswerSchema,
+										experimental_telemetry: {
+											isEnabled: config.nodeEnv !== "test",
+											functionId: "citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+										onFinish: async ({ usage: citationUsage }) => {
+											if (userId && citationUsage?.totalTokens) {
+												try {
+													await this.dbService.updateUserColumnValue(
+														userId,
+														"num_inference_tokens",
+														citationUsage.totalTokens,
+													);
+													await this.dbService.updateUserColumnValue(
+														userId,
+														"num_inferences",
+														1,
+													);
+												} catch (error) {
+													captureError(error);
+												}
+											}
+										},
+										onError: (error) => {
+											captureError(error);
+										},
+									});
+									writer.write({
+										type: "data-citations",
+										data: citationObject.object.citations,
+									});
+								}
+
+								updateActiveTrace({
+									name: "streamed-text-generation",
+									output: text,
 									userId,
-									"num_inference_tokens",
-									usage.totalTokens,
-								);
-								// Increase num_inferences for user by one
-								await dbService.updateUserColumnValue(
-									userId,
-									"num_inferences",
-									1,
-								);
-							} catch (dbError) {
-								captureError(dbError);
-							}
-							if (error) {
+									sessionId,
+								});
+								// Handle token usage tracking after stream completes
+								if (userId && usage?.totalTokens) {
+									try {
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inference_tokens",
+											usage.totalTokens,
+										);
+										// Increase num_inferences for user by one
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inferences",
+											1,
+										);
+									} catch (dbError) {
+										captureError(dbError);
+									}
+								}
+							},
+							experimental_telemetry: {
+								isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+								metadata: {
+									sessionId: sessionId ? sessionId : "unknown",
+									langfusePrompt: langfusePrompt
+										? langfusePrompt.toJSON()
+										: undefined,
+								},
+							},
+							onError: (error) => {
 								captureError(error);
-							}
-						}
-					},
-					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
-						},
-					},
-					onError: (error) => {
-						captureError(error);
-					},
-				}),
-			{ queueType: "llm" },
-		);
-
-		const response = citationAnswer.toTextStreamResponse();
-
-		return response;
+							},
+						}),
+					{ queueType: "llm" },
+				);
+				writer.merge(streamResponse.toUIMessageStream());
+			},
+		});
+		return createUIMessageStreamResponse({ stream });
 	}
 
 	async generateTextContent(
@@ -502,9 +559,9 @@ export class GenerationService {
 		);
 		if (userId) {
 			// Increase num_inferences for user by 1
-			await dbService.updateUserColumnValue(userId, "num_inferences", 1);
+			await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
 			// Increase num_tokens by token count of this generation
-			await dbService.updateUserColumnValue(
+			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_inference_tokens",
 				usage?.totalTokens ?? 0,
@@ -620,9 +677,6 @@ export class GenerationService {
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
-			citationSchema: JSON.stringify(
-				z.toJSONSchema(citationAnswerSchema(maxAvailableSources)),
-			),
 		});
 		const freeChatPrompt: ModelMessage = {
 			role: "system",
@@ -631,6 +685,129 @@ export class GenerationService {
 		return {
 			messages: [freeChatPrompt, ...previousMessages],
 			promptClient: freeChatPromptClient,
+		};
+	}
+
+	private getRelevantTools(options: {
+		allowedDocumentIds: number[];
+		allowedFolderIds: number[];
+		isBaseKnowledgeActive: boolean;
+		userId?: string;
+		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
+	}): {
+		tools: Record<string, Tool>;
+		toolChoice: ToolChoice<Record<string, Tool>>;
+		maxSteps: number;
+		useBaseKnowledgeAfterFirstStep: boolean;
+	} {
+		const {
+			allowedDocumentIds,
+			allowedFolderIds,
+			isBaseKnowledgeActive,
+			userId,
+			knowledgeBaseDocuments,
+		} = options;
+		const hasAllowedDocumentsOrFolders =
+			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
+		const ragTool = ragSearchTool({
+			allowedDocumentIds,
+			allowedFolderIds,
+			userId,
+			dbService: this.dbService,
+			embeddingService: this.embeddingService,
+		});
+		const baseKnowledgeTool = knowledgeBaseDocuments
+			? baseKnowledgeSearchTool({
+					knowledgeBaseDocuments,
+					userId,
+					dbService: this.dbService,
+					embeddingService: this.embeddingService,
+				})
+			: null;
+
+		// Case 1: Both RAG and base knowledge are active
+		if (
+			hasAllowedDocumentsOrFolders &&
+			isBaseKnowledgeActive &&
+			baseKnowledgeTool
+		) {
+			return {
+				tools: {
+					ragSearchTool: ragTool,
+					baseKnowledgeSearchTool: baseKnowledgeTool,
+				},
+				toolChoice: { type: "tool", toolName: "ragSearchTool" },
+				maxSteps: 2,
+				useBaseKnowledgeAfterFirstStep: true,
+			};
+		}
+
+		// Case 2: Only RAG is active
+		if (hasAllowedDocumentsOrFolders) {
+			return {
+				tools: {
+					ragSearchTool: ragSearchTool({
+						allowedDocumentIds,
+						allowedFolderIds,
+						userId,
+						dbService: this.dbService,
+						embeddingService: this.embeddingService,
+					}),
+				},
+				toolChoice: { type: "tool", toolName: "ragSearchTool" },
+				maxSteps: 1,
+				useBaseKnowledgeAfterFirstStep: false,
+			};
+		}
+
+		// Case 3: Only base knowledge is active
+		if (isBaseKnowledgeActive && baseKnowledgeTool) {
+			return {
+				tools: {
+					baseKnowledgeSearchTool: baseKnowledgeTool,
+				},
+				toolChoice: {
+					type: "tool",
+					toolName: "baseKnowledgeSearchTool",
+				},
+				maxSteps: 1,
+				useBaseKnowledgeAfterFirstStep: false,
+			};
+		}
+
+		// Case 4: No tools active
+		return {
+			tools: {},
+			toolChoice: "none",
+			maxSteps: 1,
+			useBaseKnowledgeAfterFirstStep: false,
+		};
+	}
+
+	private getPrepareStep(useBaseKnowledgeAfterFirstStep: boolean):
+		| (({ stepNumber }: { stepNumber: number }) => {
+				toolChoice?: {
+					type: "tool";
+					toolName: "baseKnowledgeSearchTool";
+				};
+				activeTools?: string[];
+		  })
+		| undefined {
+		if (!useBaseKnowledgeAfterFirstStep) {
+			return undefined;
+		}
+
+		return ({ stepNumber }: { stepNumber: number }) => {
+			if (stepNumber === 1) {
+				return {
+					toolChoice: {
+						type: "tool",
+						toolName: "baseKnowledgeSearchTool",
+					} as const,
+					activeTools: ["baseKnowledgeSearchTool"],
+				};
+			}
+			return {};
 		};
 	}
 }

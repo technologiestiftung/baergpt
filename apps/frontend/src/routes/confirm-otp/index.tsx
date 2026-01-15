@@ -1,88 +1,110 @@
-import type { VerifyOtpParams } from "@supabase/supabase-js";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ClipboardEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
 import Content from "../../content";
-import { PasswordResetLayout } from "../../layouts/pasword-reset-layout";
+import { ConfirmationLayout } from "../../layouts/confirmation-layout.tsx";
 import { supabase } from "../../../supabase-client";
+import { useErrorStore } from "../../store/error-store.ts";
+import { useAuthStore } from "../../store/auth-store.ts";
 
-type OtpType = "recovery" | "signup" | "invite" | "email_change";
+const redirectToMapping = {
+	email: "/",
+	recovery: "/reset-password/",
+	email_change: "/email-changed/",
+} as const;
 
-interface ConfirmOtpPageProps {
-	defaultType: OtpType;
-	successRedirect: string;
-}
-
-function ConfirmOtpPage({ defaultType, successRedirect }: ConfirmOtpPageProps) {
-	const [searchParams] = useSearchParams();
-	const email = searchParams.get("email") ?? "";
-	const [token, setToken] = useState("");
+export function ConfirmOtpPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [hasEmailBeenRecentlySent, setHasEmailBeenRecentlySent] =
+		useState(false);
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
 
-	const redirectTo = searchParams.get("redirect_to") ?? successRedirect;
+	const email = searchParams.get("email");
+	const otpType = searchParams.get("type");
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+
 		setError(null);
 
-		if (!email || !token) {
+		if (!email) {
 			setError(Content["confirmOtp.error.missingFields"]);
+			useErrorStore
+				.getState()
+				.handleError(
+					new Error(
+						"The confirm otp page was accessed without an email query parameter.",
+					),
+				);
+			return;
+		}
+
+		if (!isOtpTypeValid(otpType)) {
+			setError(Content["confirmOtp.error.generic"]);
+			useErrorStore
+				.getState()
+				.handleError(
+					new Error(
+						`The confirm otp page was accessed with an invalid otp type query parameter: ${otpType}`,
+					),
+				);
 			return;
 		}
 
 		setIsSubmitting(true);
 
-		try {
-			const verifyParams: VerifyOtpParams = {
-				type: defaultType,
-				email,
-				token,
-			};
+		const token = event.currentTarget.token.value;
 
-			const { error: verifyError } =
-				await supabase.auth.verifyOtp(verifyParams);
+		const verifyParams = {
+			type: otpType,
+			email,
+			token,
+		};
 
-			if (verifyError) {
-				throw verifyError;
-			}
-			if (redirectTo.startsWith("http")) {
-				try {
-					const url = new URL(redirectTo);
-					// If same origin, use client-side navigation to preserve state
-					if (url.origin === window.location.origin) {
-						navigate(url.pathname + url.search + url.hash, { replace: true });
-					} else {
-						window.location.assign(redirectTo);
-					}
-				} catch {
-					window.location.assign(redirectTo);
-				}
-			} else {
-				navigate(redirectTo, { replace: true });
-			}
-		} catch (err) {
-			if (err instanceof Error) {
-				if (
-					err.message === "Token has expired or is invalid" ||
-					err.message.includes("expired") ||
-					err.message.includes("invalid")
-				) {
-					setError(Content["confirmOtp.error.tokenExpiredOrInvalid"]);
-				} else {
-					setError(err.message);
-				}
-			} else {
-				setError(Content["confirmOtp.error.generic"]);
-			}
-		} finally {
-			setIsSubmitting(false);
+		const { error: verifyOtpError } =
+			await supabase.auth.verifyOtp(verifyParams);
+
+		setIsSubmitting(false);
+
+		if (!verifyOtpError) {
+			navigate(redirectToMapping[otpType]);
+			return;
 		}
+
+		const isTokenExpiredOrInvalid = ["invalid", "expired"].some((word) =>
+			verifyOtpError?.message.includes(word),
+		);
+
+		if (isTokenExpiredOrInvalid) {
+			setError(Content["confirmOtp.error.tokenExpiredOrInvalid"]);
+			return;
+		}
+
+		useErrorStore.getState().handleError(verifyOtpError);
+		setError(Content["confirmOtp.error.generic"]);
+	};
+
+	const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+		event.preventDefault();
+		event.currentTarget.value = event.clipboardData.getData("text").trim();
+	};
+
+	const handleResendEmail = async () => {
+		if (!email || !isOtpTypeValid(otpType)) {
+			return;
+		}
+
+		await useAuthStore.getState().resendOtpEmail({ email, otpType });
+		setHasEmailBeenRecentlySent(true);
+
+		setTimeout(() => {
+			setHasEmailBeenRecentlySent(false);
+		}, 5_000);
 	};
 
 	return (
-		<PasswordResetLayout>
+		<ConfirmationLayout>
 			<div className="flex flex-col min-h-[95svh] h-full w-full justify-center items-center bg-hellblau-30 px-5 py-12 md:py-24">
 				<div className="flex flex-col border max-w-[580px] w-full border-black py-8 px-5 md:p-10 rounded-3px bg-white">
 					<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
@@ -100,27 +122,13 @@ function ConfirmOtpPage({ defaultType, successRedirect }: ConfirmOtpPageProps) {
 							{Content["confirmOtp.token.label"]}
 							<input
 								id="token"
+								name="token"
 								type="text"
 								inputMode="numeric"
 								pattern="\d{6}"
 								className="border border-schwarz-40 rounded-3px px-3 py-2 focus-visible:outline-default uppercase tracking-[0.3em]"
 								placeholder={Content["confirmOtp.token.placeholder"]}
-								value={token}
-								onChange={(event) => setToken(event.target.value)}
-								onBlur={() => setToken((currentToken) => currentToken.trim())}
-								onPaste={(event) => {
-									event.preventDefault();
-									const pastedText = event.clipboardData?.getData("text") ?? "";
-									const input = event.currentTarget;
-									const selectionStart = input.selectionStart ?? token.length;
-									const selectionEnd = input.selectionEnd ?? token.length;
-									const sanitized = pastedText.replace(/\s+/g, "");
-									const nextValue =
-										input.value.slice(0, selectionStart) +
-										sanitized +
-										input.value.slice(selectionEnd);
-									setToken(nextValue);
-								}}
+								onPaste={handlePaste}
 							/>
 						</label>
 
@@ -139,24 +147,37 @@ function ConfirmOtpPage({ defaultType, successRedirect }: ConfirmOtpPageProps) {
 								? Content["confirmOtp.button.loading"]
 								: Content["confirmOtp.button.submit"]}
 						</button>
+
+						<p>
+							{Content["unconfirmedEmail.otp.resend"]}
+							{hasEmailBeenRecentlySent && (
+								<span className="ml-5 leading-6 md:text-lg md:leading-7 font-semibold text-mittelgruen">
+									{Content["unconfirmedEmail.resend.success"]}
+								</span>
+							)}
+							{!hasEmailBeenRecentlySent && (
+								<button
+									className="ml-5 leading-6 md:text-lg md:leading-7 font-semibold underline hover:no-underline"
+									type="button"
+									onClick={handleResendEmail}
+								>
+									{Content["unconfirmedEmail.resendButton"]}
+								</button>
+							)}
+						</p>
 					</form>
 				</div>
 			</div>
-		</PasswordResetLayout>
+		</ConfirmationLayout>
 	);
 }
 
-export function ConfirmResetPage() {
-	return (
-		<ConfirmOtpPage defaultType="recovery" successRedirect="/new-password/" />
-	);
-}
+function isOtpTypeValid(
+	otpType: string | null,
+): otpType is keyof typeof redirectToMapping {
+	if (!otpType) {
+		return false;
+	}
 
-export function ConfirmEmailChangePage() {
-	return (
-		<ConfirmOtpPage
-			defaultType="email_change"
-			successRedirect="/email-changed/"
-		/>
-	);
+	return otpType in redirectToMapping;
 }

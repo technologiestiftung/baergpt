@@ -1,5 +1,3 @@
-import { DatabaseService } from "../services/database-service";
-import { type Document } from "../types/common";
 import {
 	afterEach,
 	afterAll,
@@ -9,7 +7,7 @@ import {
 	expect,
 	it,
 } from "vitest";
-import { supabase as supabaseAdminClient } from "../supabase";
+import { serviceRoleDbClient } from "../supabase";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../config";
@@ -49,7 +47,7 @@ describe("Integration tests for DB", async () => {
 			expect(signupError).toBeNull();
 
 			const { data: actualProfile, error: profileError } =
-				await supabaseAdminClient
+				await serviceRoleDbClient
 					.from("profiles")
 					.select("first_name, last_name")
 					.eq("id", data.user.id)
@@ -64,7 +62,7 @@ describe("Integration tests for DB", async () => {
 			expect(actualProfile).toStrictEqual(expectedProfile);
 
 			const { error: deleteError } =
-				await supabaseAdminClient.auth.admin.deleteUser(data.user.id);
+				await serviceRoleDbClient.auth.admin.deleteUser(data.user.id);
 			expect(deleteError).toBeNull();
 		});
 	});
@@ -80,7 +78,7 @@ describe("Integration tests for DB", async () => {
 
 		const {
 			data: { id: accessGroupId },
-		} = await supabaseAdminClient
+		} = await serviceRoleDbClient
 			.from("access_groups")
 			.select()
 			.eq("name", "Alle")
@@ -96,9 +94,14 @@ describe("Integration tests for DB", async () => {
 		];
 
 		beforeAll(async () => {
+			// Clean up any leftover users from previous interrupted test runs
+			for (const user of users) {
+				await serviceRoleDbClient.auth.admin.deleteUser(user.id);
+			}
+
 			for (const user of users) {
 				const { error: signupError } =
-					await supabaseAdminClient.auth.admin.createUser({
+					await serviceRoleDbClient.auth.admin.createUser({
 						id: user.id,
 						email: user.email,
 						password: user.password,
@@ -108,7 +111,7 @@ describe("Integration tests for DB", async () => {
 				expect(signupError).toBeNull();
 			}
 
-			const { error: setAdminError } = await supabaseAdminClient
+			const { error: setAdminError } = await serviceRoleDbClient
 				.from("application_admins")
 				.insert({ user_id: givenAdminId });
 
@@ -122,7 +125,7 @@ describe("Integration tests for DB", async () => {
 		afterAll(async () => {
 			for (const { id } of users) {
 				const { error: deleteError } =
-					await supabaseAdminClient.auth.admin.deleteUser(id);
+					await serviceRoleDbClient.auth.admin.deleteUser(id);
 				expect(deleteError).toBeNull();
 			}
 		});
@@ -135,7 +138,7 @@ describe("Integration tests for DB", async () => {
 
 			it("should validate the email domain during registration", async () => {
 				const { data, error: signupError } =
-					await supabaseAdminClient.auth.admin.createUser({
+					await serviceRoleDbClient.auth.admin.createUser({
 						email: validEmail,
 						password: givenUserPassword,
 						email_confirm: true,
@@ -147,7 +150,7 @@ describe("Integration tests for DB", async () => {
 
 			it("should reject registration with invalid email domain", async () => {
 				const { error: signupError } =
-					await supabaseAdminClient.auth.admin.createUser({
+					await serviceRoleDbClient.auth.admin.createUser({
 						email: invalidEmail,
 						password: givenUserPassword,
 						email_confirm: true,
@@ -165,7 +168,7 @@ describe("Integration tests for DB", async () => {
 				expect(sessionData.session).not.toBeNull();
 				expect(userId).not.toBe("");
 				const { error: updateError } =
-					await supabaseAdminClient.auth.admin.updateUserById(userId, {
+					await serviceRoleDbClient.auth.admin.updateUserById(userId, {
 						email: validEmail2,
 					});
 				expect(updateError).toBeNull();
@@ -174,14 +177,14 @@ describe("Integration tests for DB", async () => {
 			it("should reject email change to invalid domain", async () => {
 				expect(userId).not.toBe("");
 				const { error: updateError } =
-					await supabaseAdminClient.auth.admin.updateUserById(userId, {
+					await serviceRoleDbClient.auth.admin.updateUserById(userId, {
 						email: invalidEmail,
 					});
 				expect(updateError).not.toBeNull();
 			});
 
 			it("should reject emails with invalid format", async () => {
-				const { error } = await supabaseAdminClient.auth.admin.createUser({
+				const { error } = await serviceRoleDbClient.auth.admin.createUser({
 					email: "@local.berlin.de",
 					password: givenUserPassword,
 					email_confirm: true,
@@ -190,7 +193,7 @@ describe("Integration tests for DB", async () => {
 			});
 
 			it("should allow registration with exact domain match", async () => {
-				const { data, error } = await supabaseAdminClient.auth.admin.createUser(
+				const { data, error } = await serviceRoleDbClient.auth.admin.createUser(
 					{
 						email: "test@ts.berlin",
 						password: givenUserPassword,
@@ -199,13 +202,13 @@ describe("Integration tests for DB", async () => {
 				);
 				expect(error).toBeNull();
 				if (data.user?.id) {
-					await supabaseAdminClient.auth.admin.deleteUser(data.user.id);
+					await serviceRoleDbClient.auth.admin.deleteUser(data.user.id);
 				}
 			});
 
 			afterAll(async () => {
 				if (userId) {
-					await supabaseAdminClient.auth.admin.deleteUser(userId);
+					await serviceRoleDbClient.auth.admin.deleteUser(userId);
 				}
 			});
 		});
@@ -409,7 +412,7 @@ describe("Integration tests for DB", async () => {
 
 				// Get user IDs from auth.users table using admin client
 				const { data: allUsers, error: listUsersError } =
-					await supabaseAdminClient.auth.admin.listUsers();
+					await serviceRoleDbClient.auth.admin.listUsers();
 
 				expect(listUsersError).toBeNull();
 
@@ -434,7 +437,7 @@ describe("Integration tests for DB", async () => {
 
 				// Check that the admin and the user were added to the default access group
 				const { data: accessGroupMembers, error: memberError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("access_group_members")
 						.select("user_id, access_group_id")
 						.in("user_id", [adminUserId, regularUserId])
@@ -450,7 +453,7 @@ describe("Integration tests for DB", async () => {
 			let givenChatId: number;
 
 			beforeEach(async () => {
-				const { data: chatData, error: chatError } = await supabaseAdminClient
+				const { data: chatData, error: chatError } = await serviceRoleDbClient
 					.from("chats")
 					.insert({
 						user_id: givenAdminId,
@@ -462,7 +465,7 @@ describe("Integration tests for DB", async () => {
 
 				expect(chatError).toBeNull();
 
-				const { error: chatMessageError } = await supabaseAdminClient
+				const { error: chatMessageError } = await serviceRoleDbClient
 					.from("chat_messages")
 					.insert({
 						chat_id: givenChatId,
@@ -476,7 +479,7 @@ describe("Integration tests for DB", async () => {
 
 				expect(chatMessageError).toBeNull();
 
-				const { error: documentFoldersError } = await supabaseAdminClient
+				const { error: documentFoldersError } = await serviceRoleDbClient
 					.from("document_folders")
 					.insert({
 						user_id: givenAdminId,
@@ -492,6 +495,8 @@ describe("Integration tests for DB", async () => {
 					filePath: defaultDocumentPath,
 					sourceType: "personal_document",
 					bucketName: "documents",
+					userEmail: givenAdminEmail,
+					userPassword: givenAdminPassword,
 				});
 			});
 
@@ -518,13 +523,13 @@ describe("Integration tests for DB", async () => {
 
 				// Verify the user no longer exists
 				const { error: getUserError } =
-					await supabaseAdminClient.auth.admin.getUserById(givenAdminId);
+					await serviceRoleDbClient.auth.admin.getUserById(givenAdminId);
 
 				// After successful deletion, we should get a "user not found" error
 				expect(getUserError?.message).toBe("User not found");
 
 				const { data: accessGroupMembersData, error: accessGroupMembersError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("access_group_members")
 						.select("*")
 						.eq("user_id", givenAdminId);
@@ -533,7 +538,7 @@ describe("Integration tests for DB", async () => {
 				expect(accessGroupMembersData?.length).toBe(0);
 
 				const { data: applicationAdminsData, error: applicationAdminsError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("application_admins")
 						.select("*")
 						.eq("user_id", givenAdminId);
@@ -542,7 +547,7 @@ describe("Integration tests for DB", async () => {
 				expect(applicationAdminsData?.length).toBe(0);
 
 				const { data: chatMessages, error: chatMessagesError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("chat_messages")
 						.select("*")
 						.eq("chat_id", givenChatId);
@@ -550,7 +555,7 @@ describe("Integration tests for DB", async () => {
 				expect(chatMessagesError).toBeNull();
 				expect(chatMessages?.length).toBe(0);
 
-				const { data: chatsData, error: chatsError } = await supabaseAdminClient
+				const { data: chatsData, error: chatsError } = await serviceRoleDbClient
 					.from("chats")
 					.select("*")
 					.eq("user_id", givenAdminId);
@@ -559,7 +564,7 @@ describe("Integration tests for DB", async () => {
 				expect(chatsData?.length).toBe(0);
 
 				const { data: documentChunksData, error: documentChunksError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("document_chunks")
 						.select("*")
 						.eq("owned_by_user_id", givenAdminId);
@@ -568,7 +573,7 @@ describe("Integration tests for DB", async () => {
 				expect(documentChunksData?.length).toBe(0);
 
 				const { data: documentFoldersData, error: documentFoldersError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("document_folders")
 						.select("*")
 						.eq("user_id", givenAdminId);
@@ -577,7 +582,7 @@ describe("Integration tests for DB", async () => {
 				expect(documentFoldersData?.length).toBe(0);
 
 				const { data: documentSummariesData, error: documentSummariesError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("document_summaries")
 						.select("*")
 						.eq("owned_by_user_id", givenAdminId);
@@ -586,7 +591,7 @@ describe("Integration tests for DB", async () => {
 				expect(documentSummariesData?.length).toBe(0);
 
 				const { data: documentsData, error: documentsError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("documents")
 						.select("*")
 						.eq("owned_by_user_id", givenAdminId);
@@ -595,7 +600,7 @@ describe("Integration tests for DB", async () => {
 				expect(documentsData?.length).toBe(0);
 
 				const { data: profileData, error: profileError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("profiles")
 						.select("*")
 						.eq("id", givenAdminId);
@@ -604,7 +609,7 @@ describe("Integration tests for DB", async () => {
 				expect(profileData?.length).toBe(0);
 
 				const { data: userActiveStatusData, error: userActiveStatusError } =
-					await supabaseAdminClient
+					await serviceRoleDbClient
 						.from("user_active_status")
 						.select("*")
 						.eq("id", givenAdminId);
@@ -613,7 +618,7 @@ describe("Integration tests for DB", async () => {
 				expect(userActiveStatusData?.length).toBe(0);
 
 				const { data: storageData, error: storageError } =
-					await supabaseAdminClient.storage
+					await serviceRoleDbClient.storage
 						.from("documents")
 						.list(givenAdminId);
 
@@ -624,7 +629,7 @@ describe("Integration tests for DB", async () => {
 				 * Re-create the user to avoid side effects on other tests
 				 */
 				const { error: signupError } =
-					await supabaseAdminClient.auth.admin.createUser({
+					await serviceRoleDbClient.auth.admin.createUser({
 						id: givenAdminId,
 						email: givenAdminEmail,
 						password: givenAdminPassword,
@@ -632,6 +637,13 @@ describe("Integration tests for DB", async () => {
 					});
 
 				expect(signupError).toBeNull();
+
+				// Re-add the user to application_admins
+				const { error: setAdminError } = await serviceRoleDbClient
+					.from("application_admins")
+					.insert({ user_id: givenAdminId });
+
+				expect(setAdminError).toBeNull();
 			});
 		});
 
@@ -647,6 +659,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "personal_document",
 						bucketName: "documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
@@ -707,6 +721,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "public_document",
 						bucketName: "public_documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
@@ -729,7 +745,7 @@ describe("Integration tests for DB", async () => {
 						{
 							chunk_id: givenChunkId,
 							file_name: defaultDocumentName,
-							source_url: `${givenAdminId}/${defaultDocumentName}`,
+							source_url: `${accessGroupId}/${defaultDocumentName}`,
 							page: 1,
 							source_type: "public_document",
 							snippet,
@@ -758,9 +774,84 @@ describe("Integration tests for DB", async () => {
 						{
 							chunk_id: givenChunkId,
 							file_name: defaultDocumentName,
-							source_url: `${givenAdminId}/${defaultDocumentName}`,
+							source_url: `${accessGroupId}/${defaultDocumentName}`,
 							page: 1,
 							source_type: "public_document",
+							snippet,
+						},
+					];
+
+					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+				});
+			});
+
+			describe("default documents", () => {
+				let givenChunkId: number;
+
+				beforeEach(async () => {
+					givenChunkId = await mockDocumentUpload({
+						userId: givenAdminId,
+						accessGroupId,
+						fileName: defaultDocumentName,
+						filePath: defaultDocumentPath,
+						sourceType: "default_document",
+						bucketName: "public_documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
+					});
+				});
+
+				afterEach(async () => await cleanupDocuments(givenAdminId));
+
+				it("should return citation details for a (self-owned) default document", async () => {
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+
+					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
+						"get_citation_details",
+						{
+							chunk_ids: [givenChunkId],
+						},
+					);
+
+					const expectedCitationDetails = [
+						{
+							chunk_id: givenChunkId,
+							file_name: defaultDocumentName,
+							source_url: `${accessGroupId}/${defaultDocumentName}`,
+							page: 1,
+							source_type: "default_document",
+							snippet,
+						},
+					];
+
+					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+				});
+
+				it("should return citation details for a (not self-owned) default document", async () => {
+					const { error: signInError } =
+						await supabaseAnonClient.auth.signInWithPassword({
+							email: givenUserEmail,
+							password: givenUserPassword,
+						});
+
+					expect(signInError).toBeNull();
+
+					const { data: actualCitationDetails, error } =
+						await supabaseAnonClient.rpc("get_citation_details", {
+							chunk_ids: [givenChunkId],
+						});
+					expect(error).toBeNull();
+
+					const expectedCitationDetails = [
+						{
+							chunk_id: givenChunkId,
+							file_name: defaultDocumentName,
+							source_url: `${accessGroupId}/${defaultDocumentName}`,
+							page: 1,
+							source_type: "default_document",
 							snippet,
 						},
 					];
@@ -778,6 +869,8 @@ describe("Integration tests for DB", async () => {
 						filePath: defaultDocumentPath,
 						sourceType: "personal_document",
 						bucketName: "documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
 					});
 				});
 
@@ -819,71 +912,6 @@ describe("Integration tests for DB", async () => {
 					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
 				});
 			});
-		});
-	});
-
-	describe("DatabaseService Transaction", () => {
-		const testUserId = "a18922bb-7f9a-4e15-a9c9-6788fe81842d";
-		const testEmail = "db-transaction-test@local.berlin.de";
-
-		beforeAll(async () => {
-			await supabaseAdminClient.auth.admin.deleteUser(testUserId);
-
-			const { error } = await supabaseAdminClient.auth.admin.createUser({
-				id: testUserId,
-				email: testEmail,
-				password: "Password123!",
-				email_confirm: true,
-			});
-			expect(error).toBeNull();
-		});
-
-		afterAll(async () => {
-			await supabaseAdminClient.auth.admin.deleteUser(testUserId);
-		});
-
-		class TestDatabaseService extends DatabaseService {
-			async logSummarizedDocument() {
-				throw new Error("Forced Summary Failure");
-			}
-		}
-
-		it("should rollback document creation on summary failure", async () => {
-			const service = new TestDatabaseService();
-			await supabaseAnonClient.auth.signInWithPassword({
-				email: testEmail,
-				password: "Password123!",
-			});
-
-			const doc: Document = {
-				source_url: "test-url-rollback",
-				source_type: "personal_document",
-				file_checksum: "sum",
-				file_size: 100,
-				num_pages: 1,
-				owned_by_user_id: testUserId,
-				uploaded_by_user_id: testUserId,
-				created_at: new Date().toISOString(),
-			};
-
-			const summaryData = {
-				summary: "test",
-				shortSummary: "test",
-				tags: [],
-				summaryEmbedding: [],
-			};
-
-			await expect(
-				service.logProcessedDocument(doc, summaryData, []),
-			).rejects.toThrow("Forced Summary Failure");
-
-			// Verify document is gone from DB
-			const { count } = await supabaseAdminClient
-				.from("documents")
-				.select("*", { count: "exact", head: true })
-				.eq("source_url", "test-url-rollback");
-
-			expect(count).toBe(0);
 		});
 	});
 });
