@@ -761,7 +761,21 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			};
 		}
 
-		// Case 3: Only base knowledge is active
+		// Case 3: Parla MCP Tools are active
+		const parlaMCPToolsResponse = await parlaMCPTools();
+		if (parlaMCPToolsResponse) {
+			// TODO: Add flag from frontend to enable/disable Parla MCP Tools
+			return {
+				tools: {
+					...parlaMCPToolsResponse.tools,
+				},
+				toolChoice: { type: "tool", toolName: "parla_vector_search" },
+				maxSteps: 1,
+				useBaseKnowledgeAfterFirstStep: false,
+			};
+		}
+
+		// Case 4: Only base knowledge is active
 		if (isBaseKnowledgeActive && baseKnowledgeTool) {
 			return {
 				tools: {
@@ -771,31 +785,6 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 					type: "tool",
 					toolName: "baseKnowledgeSearchTool",
 				},
-				maxSteps: 1,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
-		}
-
-		// Case 4: Parla MCP Tools are active
-		const parlaMCPToolsResponse = await parlaMCPTools();
-		if (parlaMCPToolsResponse) {
-			// Debug: inspect the parla_vector_search tool
-			const parlaVectorSearch =
-				parlaMCPToolsResponse.tools["parla_vector_search"];
-			console.log("parla_vector_search tool inspection:", {
-				exists: !!parlaVectorSearch,
-				keys: parlaVectorSearch ? Object.keys(parlaVectorSearch) : [],
-				hasExecute: parlaVectorSearch
-					? typeof parlaVectorSearch.execute === "function"
-					: false,
-				description: parlaVectorSearch?.description?.substring(0, 100),
-			});
-
-			return {
-				tools: {
-					...parlaMCPToolsResponse.tools,
-				},
-				toolChoice: { type: "tool", toolName: "parla_vector_search" },
 				maxSteps: 1,
 				useBaseKnowledgeAfterFirstStep: false,
 			};

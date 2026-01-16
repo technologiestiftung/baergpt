@@ -1,6 +1,6 @@
 import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
-import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
-import type { Tool } from "ai";
+import { tool, type Tool } from "ai";
+import { z } from "zod";
 
 export interface ParlaMCPToolsResult {
 	tools: Record<string, Tool>;
@@ -8,69 +8,75 @@ export interface ParlaMCPToolsResult {
 }
 
 export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
-	let parlaLocalClient: MCPClient | undefined;
-	//let clientTwo: MCPClient;
-	//let clientThree: MCPClient;
+	let parlaHttpClient: MCPClient | undefined;
 	try {
-		// Initialize an MCP client to connect to a `stdio` MCP server (local only):
-		const transport = new Experimental_StdioMCPTransport({
-			command: "node",
-			args: ["/Users/maltebarth/Code/parla-mcp/dist/index.js"],
+		parlaHttpClient = await createMCPClient({
+			transport: {
+				type: "http",
+				url: "https://parla-mcp.vercel.app/mcp",
+			},
 		});
 
-		parlaLocalClient = await createMCPClient({
-			transport,
-		});
-		// Connect to an HTTP MCP server directly via the client transport config
-		/*const clientTwo = await createMCPClient({
-            transport: {
-            type: 'http',
-            url: 'http://localhost:3000/mcp',
+		const parlaHttpClientToolSet = await parlaHttpClient.tools();
 
-            // optional: configure headers
-            // headers: { Authorization: 'Bearer my-api-key' },
-            // optional: provide an OAuth client provider for automatic authorization
-            // authProvider: myOAuthClientProvider,
-            },
-        });
+		// Wrap MCP tools with proper Zod validation
+		// The MCP SDK returns tools with JSON Schema, but the AI SDK needs proper Zod schemas
+		const wrappedTools: Record<string, Tool> = {};
 
-        // Connect to a Server-Sent Events (SSE) MCP server directly via the client transport config
-        const clientThree = await createMCPClient({
-            transport: {
-            type: 'sse',
-            url: 'http://localhost:3000/sse',
-
-            // optional: configure headers
-            // headers: { Authorization: 'Bearer my-api-key' },
-            // optional: provide an OAuth client provider for automatic authorization
-            // authProvider: myOAuthClientProvider,
-            },
-        });
-
-        // Alternatively, you can create transports with the official SDKs instead of direct config:
-        // const httpTransport = new StreamableHTTPClientTransport(new URL('http://localhost:3000/mcp'));
-        // clientTwo = await createMCPClient({ transport: httpTransport });
-        // const sseTransport = new SSEClientTransport(new URL('http://localhost:3000/sse'));
-        // clientThree = await createMCPClient({ transport: sseTransport });*/
-
-		const parlaLocalToolSet = await parlaLocalClient.tools();
-		//const toolSetTwo = await clientTwo.tools();
-		//const toolSetThree = await clientThree.tools();
-		const tools = {
-			...parlaLocalToolSet,
-			//...toolSetTwo,
-			//...toolSetThree, // note: this approach causes subsequent tool sets to override tools with the same name
-		};
+		for (const [toolName, mcpTool] of Object.entries(parlaHttpClientToolSet)) {
+			if (toolName === "parla_vector_search") {
+				wrappedTools[toolName] = tool({
+					description: mcpTool.description || "Vector search tool",
+					// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+					inputSchema: z.object({
+						query: z.string().describe("The search query"),
+						match_threshold: z
+							.number()
+							.min(0)
+							.max(1)
+							.optional()
+							.describe("Match threshold (0-1, default 0.7)"),
+						num_probes_chunks: z
+							.number()
+							.optional()
+							.describe("Number of chunk probes (default 8)"),
+						num_probes_summaries: z
+							.number()
+							.max(9)
+							.optional()
+							.describe("Number of summary probes (default 8, max 9)"),
+						chunk_limit: z
+							.number()
+							.optional()
+							.describe("Maximum chunks to return (default 10)"),
+						summary_limit: z
+							.number()
+							.optional()
+							.describe("Maximum summaries to return (default 5)"),
+						document_limit: z
+							.number()
+							.optional()
+							.describe("Maximum documents to return (default 3)"),
+					}),
+					// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+					execute: async (params, options) => {
+						if (mcpTool.execute) {
+							return await mcpTool.execute(params, options);
+						}
+						throw new Error("MCP tool execute function not found");
+					},
+				});
+			} else {
+				// For other tools, use them as-is
+				wrappedTools[toolName] = mcpTool as Tool;
+			}
+		}
 
 		// Return tools and cleanup function instead of closing immediately
 		return {
-			tools: tools as Record<string, Tool>,
+			tools: wrappedTools,
 			cleanup: async () => {
-				await Promise.all([
-					parlaLocalClient?.close(),
-					//clientTwo?.close(),
-					//clientThree?.close(),
-				]);
+				await Promise.all([parlaHttpClient?.close()]);
 			},
 		};
 	} catch (error) {
