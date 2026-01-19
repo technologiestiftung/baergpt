@@ -639,4 +639,60 @@ test.describe("Chat", () => {
 		// Verify the context pill disappears after deselecting through dropdown
 		await expect(contextPill).not.toBeVisible();
 	});
+
+	testDesktopOnly(
+		"Disabling base knowledge should re-activate it when swapping between two chats",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("hallo");
+
+			const sendButton = page.getByRole("button", {
+				name: "Ein weißer Pfeil nach rechts",
+			});
+			await sendButton.click();
+
+			await page.waitForLoadState("networkidle");
+
+			const baseKnowledgePill = page.getByRole("button", {
+				name: /Verwaltungswissen entfernen/,
+			});
+			await baseKnowledgePill.click();
+
+			await expect(baseKnowledgePill).not.toBeVisible();
+
+			const startNewChatButton = page.getByRole("button", {
+				name: "Neuen Chat erstellen",
+			});
+			await startNewChatButton.click();
+
+			await expect(baseKnowledgePill).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Disabling base knowledge should not re-activate it when starting the first chat",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Disable the base knowledge feature
+			const baseKnowledgePill = page.getByRole("button", {
+				name: /Verwaltungswissen entfernen/,
+			});
+			await baseKnowledgePill.click();
+
+			// Start a new chat by asking a question
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+
+			// Click the send button
+			await page
+				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
+				.click();
+
+			await page.waitForLoadState("networkidle");
+
+			await expect(baseKnowledgePill).not.toBeVisible();
+		},
+	);
 });
