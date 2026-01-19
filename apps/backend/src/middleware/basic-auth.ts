@@ -16,7 +16,7 @@ const basicAuth = createMiddleware(async (c: Context, next: Next) => {
 	let decodedToken: null | { exp?: number; sub?: string } = null;
 
 	try {
-		decodedToken = (await verify(token, config.supabaseJwtKey)) as {
+		decodedToken = (await verify(token, config.supabaseJwtKey, "HS256")) as {
 			exp?: number;
 			sub?: string;
 		};
