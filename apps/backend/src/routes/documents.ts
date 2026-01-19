@@ -1,35 +1,34 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { DatabaseService } from "../services/database-service";
+import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
-import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 import { Document } from "../types/common";
-import { getAuthenticatedUserId } from "../middleware/basic-auth";
 import { documentProcessSchema } from "../schemas/document-process-schema";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
 
 const documents = new Hono();
-const dbService = new DatabaseService();
-const embeddingService = new EmbeddingService();
-const generationService = new GenerationService();
-const validationService = new ValidationService();
 
 documents.post("/process", async (c: Context) => {
+	const userClient = c.get("UserScopedDbClient");
+	const userScopedDbService = new UserScopedDbService(userClient);
+	const embeddingService = new EmbeddingService(userScopedDbService);
+	const generationService = new GenerationService(userScopedDbService);
+	const validationService = new ValidationService(userScopedDbService);
+
 	let sourceUrl: string | null = null;
 	let bucket: string | null = null;
 
 	try {
 		// Get authenticated user ID from context (set by basicAuth middleware)
-		const authenticatedUserId = getAuthenticatedUserId(c);
-
+		const authenticatedUserId = c.get("authenticatedUserId");
 		// Parse and validate request body
 		const body = await c.req.json();
 		const parseResult = documentProcessSchema.parse(body);
 
-		const { document: inputDocument } = parseResult;
+		const { document: inputDocument, llm_model: llmIdentifier } = parseResult;
 		sourceUrl = inputDocument.source_url;
 
 		// Validate document request (path, folder ownership, file existence)
@@ -43,15 +42,13 @@ documents.post("/process", async (c: Context) => {
 		}
 		bucket = validationResult.bucket;
 
-		const llmIdentifier = config.defaultModelIdentifier;
-
 		// Step 1: Extract document content (no DB record created yet)
 		const documentForExtraction: Document = {
 			source_url: sourceUrl,
 			source_type: inputDocument.source_type,
 			created_at: inputDocument.created_at || new Date().toISOString(),
 		};
-		const extractionResult = await dbService.extractDocument(
+		const extractionResult = await userScopedDbService.extractDocument(
 			documentForExtraction,
 		);
 
@@ -89,7 +86,7 @@ documents.post("/process", async (c: Context) => {
 		]);
 
 		// Step 3: Create complete document record
-		await dbService.logProcessedDocument(
+		await userScopedDbService.logProcessedDocument(
 			documentForProcessing,
 			summaryData,
 			embeddings,
@@ -110,7 +107,7 @@ documents.post("/process", async (c: Context) => {
 		// If processing failed, clean up the storage file
 		if (sourceUrl !== null && bucket !== null) {
 			try {
-				await dbService.deleteFileFromStorage(sourceUrl, bucket);
+				await userScopedDbService.deleteFileFromStorage(sourceUrl, bucket);
 			} catch (cleanupError) {
 				captureError(
 					new Error(

@@ -1,15 +1,13 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { LangfuseSpanProcessor, ShouldExportSpan } from "@langfuse/otel";
-import { config } from "../config";
-import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
 import * as Sentry from "@sentry/node";
-import { supabase } from "../supabase";
+import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
+import { config } from "../config";
 
 export const sentryClient = Sentry.init({
 	dsn: config.sentryDsn || "",
 	environment: config.nodeEnv || "development",
-	integrations: [Sentry.supabaseIntegration({ supabaseClient: supabase })],
 	tracesSampleRate: 1.0,
 	enabled: ["production", "staging", "test"].includes(config.nodeEnv),
 	skipOpenTelemetrySetup: true,

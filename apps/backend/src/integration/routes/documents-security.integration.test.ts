@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
-import { supabase } from "../../supabase";
+import { serviceRoleDbClient } from "../../supabase";
 import { initQueues } from "../../services/distributed-limiter";
 
 const supabaseAnonClient = createClient<Database>(
@@ -27,13 +27,13 @@ describe("Document Process Security Tests", () => {
 	beforeAll(async () => {
 		// Create test users
 		await Promise.all([
-			supabase.auth.admin.createUser({
+			serviceRoleDbClient.auth.admin.createUser({
 				id: USER_A_ID,
 				email: USER_A_EMAIL,
 				password: USER_A_PASSWORD,
 				email_confirm: true,
 			}),
-			supabase.auth.admin.createUser({
+			serviceRoleDbClient.auth.admin.createUser({
 				id: USER_B_ID,
 				email: USER_B_EMAIL,
 				password: USER_B_PASSWORD,
@@ -62,8 +62,8 @@ describe("Document Process Security Tests", () => {
 	afterAll(async () => {
 		// Cleanup test users and their data
 		await Promise.all([
-			supabase.auth.admin.deleteUser(USER_A_ID).catch(() => {}),
-			supabase.auth.admin.deleteUser(USER_B_ID).catch(() => {}),
+			serviceRoleDbClient.auth.admin.deleteUser(USER_A_ID).catch(() => {}),
+			serviceRoleDbClient.auth.admin.deleteUser(USER_B_ID).catch(() => {}),
 		]);
 	});
 
@@ -176,6 +176,7 @@ describe("Document Process Security Tests", () => {
 					owned_by_user_id: USER_B_ID, // Trying to spoof as User B
 					folder_id: null,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -202,6 +203,7 @@ describe("Document Process Security Tests", () => {
 					owned_by_user_id: USER_B_ID, // Trying to assign to User B
 					folder_id: null,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -224,7 +226,7 @@ describe("Document Process Security Tests", () => {
 
 		beforeAll(async () => {
 			// Create a folder for User A
-			const { data, error } = await supabase
+			const { data, error } = await serviceRoleDbClient
 				.from("document_folders")
 				.insert({ user_id: USER_A_ID, name: "User A's Folder" })
 				.select("id")
@@ -239,7 +241,7 @@ describe("Document Process Security Tests", () => {
 		afterAll(async () => {
 			// Cleanup folder
 			try {
-				await supabase
+				await serviceRoleDbClient
 					.from("document_folders")
 					.delete()
 					.eq("id", userAFolderId);
@@ -257,6 +259,7 @@ describe("Document Process Security Tests", () => {
 					folder_id: userAFolderId,
 					owned_by_user_id: USER_B_ID,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -283,6 +286,7 @@ describe("Document Process Security Tests", () => {
 					folder_id: 999999, // Non-existent folder
 					owned_by_user_id: USER_A_ID,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
@@ -307,6 +311,7 @@ describe("Document Process Security Tests", () => {
 					owned_by_user_id: USER_A_ID,
 					folder_id: null,
 				},
+				llm_model: config.defaultDocumentProcessingModel,
 			};
 
 			const res = await app.request("/documents/process", {
