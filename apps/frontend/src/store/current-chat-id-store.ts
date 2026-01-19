@@ -56,9 +56,8 @@ export const useCurrentChatIdStore = create<CurrentChatIdStore>()(
 			const { abortStreaming } = useChatStreamingStore.getState();
 			abortStreaming();
 
-			useChatsStore.getState().resetToDefaultChatOptions();
-
 			if (!isFirstChat) {
+				useChatsStore.getState().resetToDefaultChatOptions();
 				resetPreviousChatState();
 			}
 			if (chatId !== null) {
