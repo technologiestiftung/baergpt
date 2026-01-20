@@ -440,6 +440,156 @@ describe("Base Knowledge Integration Tests", () => {
 		}
 	});
 
+	describe("RLS Policy Tests for Base Knowledge Inserts", () => {
+		it("should allow admin to insert base knowledge documents through user-scoped client", async () => {
+			const { error: adminError } = await supabaseAdminClient
+				.from("application_admins")
+				.insert({ user_id: testUserId });
+
+			expect(adminError).toBeNull();
+
+			let insertedDocId: number | null = null;
+
+			try {
+				const { data: doc, error: docError } = await supabaseAnonClient
+					.from("documents")
+					.insert({
+						file_name: "rls-test-admin-insert.pdf",
+						source_type: "public_document",
+						source_url: "rls-test-admin-insert.pdf",
+						file_checksum: "rls-admin-test-checksum",
+						file_size: SMALL_FILE_SIZE,
+						num_pages: 1,
+						folder_id: null,
+						owned_by_user_id: null, // Base knowledge = null
+						access_group_id: accessGroupId,
+						processing_finished_at: new Date().toISOString(),
+					})
+					.select("id")
+					.single();
+
+				expect(docError).toBeNull();
+				expect(doc).not.toBeNull();
+				insertedDocId = doc?.id ?? null;
+
+				if (insertedDocId === null) {
+					throw new Error("Document insert failed - no ID returned");
+				}
+
+				const { error: summaryError } = await supabaseAnonClient
+					.from("document_summaries")
+					.insert({
+						document_id: insertedDocId,
+						summary: "RLS test summary for admin insert.",
+						short_summary: "RLS test.",
+						owned_by_user_id: null,
+						folder_id: null,
+						access_group_id: accessGroupId,
+						tags: ["rls-test"],
+					});
+
+				expect(summaryError).toBeNull();
+
+				const testEmbedding = createDeterministicEmbedding();
+				const { error: chunkError } = await supabaseAnonClient
+					.from("document_chunks")
+					.insert({
+						document_id: insertedDocId,
+						content: "RLS test chunk content for admin insert.",
+						page: 1,
+						chunk_index: 0,
+						owned_by_user_id: null,
+						folder_id: null,
+						access_group_id: accessGroupId,
+						chunk_jina_embedding: JSON.stringify(testEmbedding),
+					});
+
+				expect(chunkError).toBeNull();
+			} finally {
+				// Clean up: delete inserted document (cascades to summary/chunks)
+				if (insertedDocId) {
+					await supabaseAdminClient
+						.from("documents")
+						.delete()
+						.eq("id", insertedDocId);
+				}
+
+				await supabaseAdminClient
+					.from("application_admins")
+					.delete()
+					.eq("user_id", testUserId);
+			}
+		});
+
+		it("should prevent non-admin from inserting base knowledge documents", async () => {
+			// Ensure user is NOT an admin
+			const { data: adminCheck } = await supabaseAdminClient
+				.from("application_admins")
+				.select("user_id")
+				.eq("user_id", testUserId)
+				.maybeSingle();
+
+			expect(adminCheck).toBeNull();
+
+			// Try to insert document with owned_by_user_id: null as non-admin
+			// This should fail with RLS violation
+			const { data: doc, error: docError } = await supabaseAnonClient
+				.from("documents")
+				.insert({
+					file_name: "rls-test-non-admin-insert.pdf",
+					source_type: "public_document",
+					source_url: "rls-test-non-admin-insert.pdf",
+					file_checksum: "rls-non-admin-test-checksum",
+					file_size: SMALL_FILE_SIZE,
+					num_pages: 1,
+					folder_id: null,
+					owned_by_user_id: null, // Base knowledge = null, should be blocked
+					access_group_id: accessGroupId,
+					processing_finished_at: new Date().toISOString(),
+				})
+				.select("id")
+				.single();
+
+			expect(docError).not.toBeNull();
+			expect(docError?.code).toBe("42501"); // RLS violation
+			expect(doc).toBeNull();
+
+			// Also verify document_summaries INSERT is blocked for non-admin
+			const { error: summaryError } = await supabaseAnonClient
+				.from("document_summaries")
+				.insert({
+					document_id: documentId, // Use existing document
+					summary: "This should fail.",
+					short_summary: "Fail.",
+					owned_by_user_id: null, // Should be blocked
+					folder_id: null,
+					access_group_id: accessGroupId,
+					tags: ["fail"],
+				});
+
+			expect(summaryError).not.toBeNull();
+			expect(summaryError?.code).toBe("42501"); // RLS violation
+
+			// Also verify document_chunks INSERT is blocked for non-admin
+			const testEmbedding = createDeterministicEmbedding();
+			const { error: chunkError } = await supabaseAnonClient
+				.from("document_chunks")
+				.insert({
+					document_id: documentId, // Use existing document
+					content: "This should fail.",
+					page: 1,
+					chunk_index: 99,
+					owned_by_user_id: null, // Should be blocked
+					folder_id: null,
+					access_group_id: accessGroupId,
+					chunk_jina_embedding: JSON.stringify(testEmbedding),
+				});
+
+			expect(chunkError).not.toBeNull();
+			expect(chunkError?.code).toBe("42501"); // RLS violation
+		});
+	});
+
 	it("should prevent non-admin user from deleting public base knowledge documents", async () => {
 		// Create a test public document
 		const forbiddenTestFileName = "test-forbidden-deletion-doc.pdf";
