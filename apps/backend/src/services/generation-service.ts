@@ -763,13 +763,13 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 
 		// Case 3: Parla MCP Tools are active
 		const parlaMCPToolsResponse = await parlaMCPTools();
-		if (parlaMCPToolsResponse) {
+		if (parlaMCPToolsResponse) { // TODO: Decide whether this can be on at the same time as base knowledge
 			// TODO: Add flag from frontend to enable/disable Parla MCP Tools
 			return {
 				tools: {
 					...parlaMCPToolsResponse.tools,
 				},
-				toolChoice: { type: "tool", toolName: "parla_vector_search" },
+				toolChoice: { type: "tool", toolName: "parla_vector_search" }, // TODO: Potentially expose other tools from Parla here
 				maxSteps: 1,
 				useBaseKnowledgeAfterFirstStep: false,
 			};
