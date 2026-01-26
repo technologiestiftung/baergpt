@@ -42,12 +42,12 @@ jobs:
           echo "Getting IP address of supabase-db container..."
           DB_IP=$(ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
             'sudo $HOME/bin/docker-inspect-db-ip')
-          
+
           if [ -z "$DB_IP" ]; then
             echo "Failed to get database container IP"
             exit 1
           fi
-          
+
           echo "DB_IP=$DB_IP" >> $GITHUB_ENV
 
       - name: Create SSH tunnel 🚇
@@ -79,6 +79,11 @@ jobs:
         run: |
           TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres?sslmode=require"
           supabase db push --include-all --db-url "$TUNNEL_URL"
+
+      - name: Restart the auth service to load latest email templates 🔄
+        run: |
+          ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
+            'cd /opt/supabase-baergpt && docker compose up -d --no-deps --force-recreate auth'
 
       - name: Close SSH tunnel 🔒
         if: always()
