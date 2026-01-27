@@ -41,55 +41,41 @@ export const GetStarted: React.FC = () => {
 					<ul className="flex flex-col list-disc ml-4">
 						<li>
 							{isAddressedFormal
-								? Content["chat.getStarted.li1.formal"]
-								: Content["chat.getStarted.li1.informal"]}
-						</li>
-						<li>
-							{isAddressedFormal
-								? Content["chat.getStarted.li2.formal"]
-								: Content["chat.getStarted.li2.informal"]}
-						</li>
-						<li>
-							<div className="flex items-center">
-								<p>{Content["chat.getStarted.li3.p1"]}</p>
-								<div className="ml-1 mr-0.5 mt-1 size-[18px]">
-									<AddToChatIcon variant="plus-light" />
-								</div>
-								<p>{Content["chat.getStarted.li3.p2"]}</p>
+								? Content["chat.getStarted.li1.formal.1"]
+								: Content["chat.getStarted.li1.informal.1"]}
+
+							<div className="ml-1 mr-0.5 pt-1 size-[18px] inline-block">
+								<AddToChatIcon variant="plus-light" />
 							</div>
-						</li>
-					</ul>
-				</div>
-				<div>
-					<h2 className="text-base leading-6 font-semibold">
-						{Content["chat.getStarted.h2"]}
-					</h2>
-					<ul className="flex flex-col list-disc ml-4">
-						<li>
+
 							{isAddressedFormal
-								? Content["chat.getStarted.li4.formal"]
-								: Content["chat.getStarted.li4.informal"]}
+								? Content["chat.getStarted.li1.formal.2"]
+								: Content["chat.getStarted.li1.informal.2"]}
 						</li>
-						<li>{Content["chat.getStarted.li5"]}</li>
 						<li>
+							<b>
+								{isAddressedFormal
+									? Content["chat.getStarted.li2.formal.1"]
+									: Content["chat.getStarted.li2.informal.1"]}
+							</b>
 							{isAddressedFormal
-								? Content["chat.getStarted.li6.formal"]
-								: Content["chat.getStarted.li6.informal"]}
+								? Content["chat.getStarted.li2.formal.2"]
+								: Content["chat.getStarted.li2.informal.2"]}
 						</li>
 						<li>
 							<span>
 								{isAddressedFormal
-									? Content["chat.getStarted.li7.formal"]
-									: Content["chat.getStarted.li7.informal"]}
+									? Content["chat.getStarted.li3.formal"]
+									: Content["chat.getStarted.li3.informal"]}
 							</span>{" "}
 							<a
-								href={Content["chat.getStarted.h3.4.link"]}
+								href={Content["chat.getStarted.li3.link.href"]}
 								target="_blank"
 								rel="noopener noreferrer"
-								aria-label={Content["chat.getStarted.h3.4.link.ariaLabel"]}
+								aria-label={Content["chat.getStarted.li3.link.ariaLabel"]}
 								className="underline"
 							>
-								{Content["chat.getStarted.h3.4.linkText"]}
+								{Content["chat.getStarted.li3.link.label"]}
 							</a>
 						</li>
 					</ul>
