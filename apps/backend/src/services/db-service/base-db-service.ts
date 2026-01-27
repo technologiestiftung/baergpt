@@ -107,9 +107,13 @@ export abstract class BaseContentDbService {
 		source_url: string,
 		bucket: string,
 	): Promise<void> {
+		const pathsToRemove = [source_url];
+		if (/\.(docx)$/i.test(source_url)) {
+			pathsToRemove.push(source_url.replace(/\.(docx)$/i, ".pdf"));
+		}
 		const { error: deletionError } = await this.client.storage
 			.from(bucket)
-			.remove([source_url]);
+			.remove(pathsToRemove);
 
 		if (!deletionError) {
 			return;
@@ -219,6 +223,9 @@ export abstract class BaseContentDbService {
 	 * Only logs errors rather than throwing them to avoid masking the original error.
 	 */
 	private async deleteDocumentById(documentId: number): Promise<void> {
+		const { bucket, sourceUrl } =
+			await this.getStorageInformationForDocumentId(documentId);
+		await this.deleteFileFromStorage(sourceUrl, bucket);
 		const { error } = await this.client
 			.from("documents")
 			.delete()
@@ -358,41 +365,61 @@ export abstract class BaseContentDbService {
 	async deleteDocument(documentId: number, userId: string): Promise<void> {
 		const isAdmin = await this.getUserAdminStatus();
 
-		let query = this.client
+		let selectQuery = this.client
 			.from("documents")
-			.delete({ count: "exact" })
+			.select("source_url, source_type, owned_by_user_id")
 			.eq("id", documentId);
 
 		if (isAdmin) {
-			// Admin can delete their own docs OR docs with null owned_by_user_id
-			query = query.or(
+			// Admin can access their own docs OR docs with null owned_by_user_id
+			selectQuery = selectQuery.or(
 				`owned_by_user_id.eq.${userId},owned_by_user_id.is.null`,
 			);
 		} else {
-			// Regular users can only delete their own documents
-			query = query.eq("owned_by_user_id", userId);
+			// Regular users can only access their own documents
+			selectQuery = selectQuery.eq("owned_by_user_id", userId);
 		}
 
-		const { error: dbError, count: deletedDocumentsCount } = await query;
+		const { data: documentData, error: selectError } =
+			await selectQuery.single();
 
-		if (dbError) {
-			throw dbError;
-		}
-
-		if (!deletedDocumentsCount) {
+		if (selectError || !documentData) {
 			throw new DocumentNotFoundError(documentId);
 		}
 
-		const documentCount = await this.getDocumentCountPerUser(userId);
+		const bucket = ["public_document", "default_document"].includes(
+			documentData.source_type,
+		)
+			? "public_documents"
+			: "documents";
+
+		if ((isAdmin && bucket === "public_documents") || bucket === "documents") {
+			await this.deleteFileFromStorage(documentData.source_url, bucket);
+		}
+
+		const { error: deleteError } = await this.client
+			.from("documents")
+			.delete()
+			.eq("id", documentId);
+
+		if (deleteError) {
+			throw deleteError;
+		}
 
 		// Update the user's document count
-		const { error: updateError } = await this.client
-			.from("profiles")
-			.update({ num_documents: documentCount })
-			.eq("id", userId);
+		if (documentData.owned_by_user_id) {
+			const documentCount = await this.getDocumentCountPerUser(
+				documentData.owned_by_user_id,
+			);
 
-		if (updateError) {
-			throw updateError;
+			const { error: updateError } = await this.client
+				.from("profiles")
+				.update({ num_documents: documentCount })
+				.eq("id", documentData.owned_by_user_id);
+
+			if (updateError) {
+				throw updateError;
+			}
 		}
 	}
 
@@ -484,5 +511,26 @@ export abstract class BaseContentDbService {
 		}
 
 		return data?.some((file) => file.name === fileName) ?? false;
+	}
+
+	async getStorageInformationForDocumentId(
+		documentId: number,
+	): Promise<{ bucket: string; sourceUrl: string }> {
+		const { data, error } = await this.client
+			.from("documents")
+			.select("source_url, source_type")
+			.eq("id", documentId)
+			.single();
+		if (error) {
+			throw error;
+		}
+
+		const bucket = ["public_document", "default_document"].includes(
+			data.source_type,
+		)
+			? "public_documents"
+			: "documents";
+
+		return { bucket, sourceUrl: data.source_url };
 	}
 }

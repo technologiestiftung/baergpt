@@ -35,7 +35,7 @@ app.use("*", basicAuth);
 app.use("*", sentryTracing);
 
 // Route modules
-app.route("/documents/", documents);
+app.route("/documents", documents);
 app.route("/llm", llms);
 app.route("/admin", admin);
 

@@ -120,4 +120,21 @@ documents.post("/process", async (c: Context) => {
 	}
 });
 
+documents.delete("/:documentId", async (c: Context) => {
+	const userClient = c.get("UserScopedDbClient");
+	const userScopedDbService = new UserScopedDbService(userClient);
+	const documentId = c.req.param("documentId");
+	const authenticatedUserId = c.get("authenticatedUserId");
+
+	if (!authenticatedUserId) {
+		return c.json({ error: "Unauthorized" }, 401);
+	}
+
+	await userScopedDbService.deleteDocument(
+		Number(documentId),
+		authenticatedUserId,
+	);
+	return c.body(null, 204);
+});
+
 export default documents;
