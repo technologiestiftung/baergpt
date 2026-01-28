@@ -4,7 +4,7 @@ import { UserScopedDbService } from "../services/db-service/user-scoped-db-servi
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
 import { captureError } from "../monitoring/capture-error";
-import { Document } from "../types/common";
+import { Document, DocumentNotFoundError } from "../types/common";
 import { documentProcessSchema } from "../schemas/document-process-schema";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
@@ -129,12 +129,24 @@ documents.delete("/:documentId", async (c: Context) => {
 	if (!authenticatedUserId) {
 		return c.json({ error: "Unauthorized" }, 401);
 	}
+	const parsedDocumentId = Number(documentId);
+	if (isNaN(parsedDocumentId)) {
+		return c.json({ error: "Invalid document ID" }, 400);
+	}
 
-	await userScopedDbService.deleteDocument(
-		Number(documentId),
-		authenticatedUserId,
-	);
-	return c.body(null, 204);
+	try {
+		await userScopedDbService.deleteDocument(
+			Number(documentId),
+			authenticatedUserId,
+		);
+		return c.body(null, 204);
+	} catch (error) {
+		if (error instanceof DocumentNotFoundError) {
+			return c.json({ error: "Document not found" }, 404);
+		}
+		captureError(error);
+		return c.json({ error: "Internal Server Error" }, 500);
+	}
 });
 
 export default documents;
