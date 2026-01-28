@@ -237,9 +237,6 @@ export abstract class BaseContentDbService {
 			.from("documents")
 			.delete()
 			.eq("id", documentId);
-			.from("documents")
-			.delete()
-			.eq("id", documentId);
 
 		if (error) {
 			console.error(
