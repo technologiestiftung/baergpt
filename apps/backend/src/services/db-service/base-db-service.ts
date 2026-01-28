@@ -223,10 +223,20 @@ export abstract class BaseContentDbService {
 	 * Only logs errors rather than throwing them to avoid masking the original error.
 	 */
 	private async deleteDocumentById(documentId: number): Promise<void> {
-		const { bucket, sourceUrl } =
-			await this.getStorageInformationForDocumentId(documentId);
-		await this.deleteFileFromStorage(sourceUrl, bucket);
+		try {
+			const { bucket, sourceUrl } =
+				await this.getStorageInformationForDocumentId(documentId);
+			await this.deleteFileFromStorage(sourceUrl, bucket);
+		} catch (cleanupError) {
+			console.error(
+				`Failed to cleanup storage for document ${documentId}:`,
+				cleanupError,
+			);
+		}
 		const { error } = await this.client
+			.from("documents")
+			.delete()
+			.eq("id", documentId);
 			.from("documents")
 			.delete()
 			.eq("id", documentId);
