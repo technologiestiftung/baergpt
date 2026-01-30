@@ -404,13 +404,31 @@ export abstract class BaseContentDbService {
 			await this.deleteFileFromStorage(documentData.source_url, bucket);
 		}
 
-		const { error: deleteError } = await this.client
+		let deleteQuery = this.client
 			.from("documents")
-			.delete()
+			.delete({ count: "exact" })
 			.eq("id", documentId);
+
+		if (isAdmin) {
+			// Admin can delete their own docs OR docs with null owned_by_user_id
+			deleteQuery = deleteQuery.or(
+				`owned_by_user_id.eq.${userId},owned_by_user_id.is.null`,
+			);
+		} else {
+			// Regular users can only delete their own documents
+			deleteQuery = deleteQuery.eq("owned_by_user_id", userId);
+		}
+
+		const { error: deleteError, count: deletedDocumentsCount } =
+			await deleteQuery;
 
 		if (deleteError) {
 			throw deleteError;
+		}
+
+		// Verify that the document was actually deleted
+		if (!deletedDocumentsCount) {
+			throw new DocumentNotFoundError(documentId);
 		}
 
 		// Update the user's document count
