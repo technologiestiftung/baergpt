@@ -394,16 +394,6 @@ export abstract class BaseContentDbService {
 			throw new DocumentNotFoundError(documentId);
 		}
 
-		const bucket = ["public_document", "default_document"].includes(
-			documentData.source_type,
-		)
-			? "public_documents"
-			: "documents";
-
-		if ((isAdmin && bucket === "public_documents") || bucket === "documents") {
-			await this.deleteFileFromStorage(documentData.source_url, bucket);
-		}
-
 		let deleteQuery = this.client
 			.from("documents")
 			.delete({ count: "exact" })
@@ -429,6 +419,16 @@ export abstract class BaseContentDbService {
 		// Verify that the document was actually deleted
 		if (!deletedDocumentsCount) {
 			throw new DocumentNotFoundError(documentId);
+		}
+
+		const bucket = ["public_document", "default_document"].includes(
+			documentData.source_type,
+		)
+			? "public_documents"
+			: "documents";
+
+		if ((isAdmin && bucket === "public_documents") || bucket === "documents") {
+			await this.deleteFileFromStorage(documentData.source_url, bucket);
 		}
 
 		// Update the user's document count
