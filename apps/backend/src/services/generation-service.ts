@@ -36,6 +36,8 @@ import {
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
+import { openDataMCPTools } from "../tools/mcp/open-data-mcp-tools";
+import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
@@ -761,17 +763,35 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			};
 		}
 
-		// Case 3: Parla MCP Tools are active
+		// Case 3: MCP Tools are active (combine all that respond)
+		const mcpTools: Record<string, Tool> = {};
+		// TODO: Right now if Parla MCP is available, most of the time BärGPT will use it, even though another MCP would be the better choice. We need to fix this somehow through better descriptions and prompt engineering.
 		const parlaMCPToolsResponse = await parlaMCPTools();
 		if (parlaMCPToolsResponse) {
 			// TODO: Decide whether this can be on at the same time as base knowledge
 			// TODO: Add flag from frontend to enable/disable Parla MCP Tools
+			Object.assign(mcpTools, parlaMCPToolsResponse.tools);
+		}
+
+		const datawrapperMCPToolsResponse = await datawrapperMCPTools();
+		if (datawrapperMCPToolsResponse) {
+			// TODO: Decide whether this can be on at the same time as base knowledge
+			// TODO: Add flag from frontend to enable/disable Datawrapper MCP Tools
+			Object.assign(mcpTools, datawrapperMCPToolsResponse.tools);
+		}
+
+		const openDataMCPToolsResponse = await openDataMCPTools();
+		if (openDataMCPToolsResponse) {
+			// TODO: Decide whether this can be on at the same time as base knowledge
+			// TODO: Add flag from frontend to enable/disable Open Data MCP Tools
+			Object.assign(mcpTools, openDataMCPToolsResponse.tools);
+		}
+
+		if (Object.keys(mcpTools).length > 0) {
 			return {
-				tools: {
-					...parlaMCPToolsResponse.tools,
-				},
-				toolChoice: { type: "tool", toolName: "parla_vector_search" }, // TODO: Potentially expose other tools from Parla here
-				maxSteps: 1,
+				tools: mcpTools,
+				toolChoice: "auto",
+				maxSteps: 10,
 				useBaseKnowledgeAfterFirstStep: false,
 			};
 		}

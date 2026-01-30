@@ -14,6 +14,7 @@ export interface Config {
 	supabaseServiceRoleKey: string;
 	supabaseAnonKey: string;
 	supabaseJwtKey: string;
+	datawrapperAccessToken?: string;
 	port?: number;
 	fileUploadLimitMb?: number;
 	nodeEnv?: string;
@@ -119,6 +120,7 @@ export const config: Config = {
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
 	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
+	datawrapperAccessToken: process.env.DATAWRAPPER_ACCESS_TOKEN,
 	port: parseInt(process.env.PORT, 10) || 3000,
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
 	nodeEnv: process.env.NODE_ENV,
