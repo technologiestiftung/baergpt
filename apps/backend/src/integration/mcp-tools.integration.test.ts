@@ -57,7 +57,11 @@ describe("MCP Tools Integration", () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
 		expect(vectorSearchTool).toBeDefined();
 
-		if (vectorSearchTool && "execute" in vectorSearchTool && vectorSearchTool.execute) {
+		if (
+			vectorSearchTool &&
+			"execute" in vectorSearchTool &&
+			vectorSearchTool.execute
+		) {
 			expect(typeof vectorSearchTool.execute).toBe("function");
 
 			try {
@@ -84,7 +88,8 @@ describe("MCP Tools Integration", () => {
 		expect(vectorSearchTool).toBeDefined();
 
 		if (vectorSearchTool && "inputSchema" in vectorSearchTool) {
-			const params = vectorSearchTool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
+			const params =
+				vectorSearchTool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
 
 			expect(params).toBeDefined();
 			expect(params.shape).toBeDefined();
@@ -102,15 +107,24 @@ describe("MCP Tools Integration", () => {
 	it("should handle missing execute function gracefully", async () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
 
-		if (vectorSearchTool && "execute" in vectorSearchTool && vectorSearchTool.execute) {
+		if (
+			vectorSearchTool &&
+			"execute" in vectorSearchTool &&
+			vectorSearchTool.execute
+		) {
 			// Create a scenario where execute would fail
 			// by passing invalid parameters that don't match the schema
 			try {
-				await vectorSearchTool.execute({ invalid: "params" } as unknown as Parameters<typeof vectorSearchTool.execute>[0], {
-					abortSignal: new AbortController().signal,
-					toolCallId: "test-call-id",
-					messages: [],
-				});
+				await vectorSearchTool.execute(
+					{ invalid: "params" } as unknown as Parameters<
+						typeof vectorSearchTool.execute
+					>[0],
+					{
+						abortSignal: new AbortController().signal,
+						toolCallId: "test-call-id",
+						messages: [],
+					},
+				);
 			} catch (error) {
 				expect(error).toBeDefined();
 			}
@@ -126,4 +140,3 @@ describe("MCP Tools Integration", () => {
 		}
 	});
 });
-
