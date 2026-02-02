@@ -12,6 +12,14 @@ type DragableProps = {
 
 const TOOLTIP_DELAY = 600;
 
+/**
+ * Renders a draggable document name button that opens a preview on click and shows a delayed tooltip on hover or focus.
+ *
+ * The button supports drag-and-drop (type "ITEM") and measures the visible text width to position the tooltip correctly.
+ *
+ * @param item - The document to display and act on when selected or dragged
+ * @returns A JSX element: a button showing the document icon and truncated name with drag-and-drop and tooltip behavior
+ */
 export function DraggableDocumentName({ item }: DragableProps) {
 	const { selectPreviewDocument } = useDocumentStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();

@@ -4,6 +4,14 @@ import type { Document } from "../../common.ts";
 import { useDrop } from "react-dnd";
 import { AddToChatIcon } from "../primitives/icons/add-to-chat-icon.tsx";
 
+/**
+ * Wraps content in a drag-and-drop drop zone that shows an "add to chat" overlay while an item is hovered and adds or removes documents from the chat on drop.
+ *
+ * @param children - Content rendered inside the drop zone
+ * @param className - Optional className applied to the outer section
+ * @param style - Optional style object applied to the outer section
+ * @returns The drop zone section element containing `children` and an overlay used for adding or removing documents from the chat
+ */
 export function DropZoneWrapperChat({
 	children,
 	className,

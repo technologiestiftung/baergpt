@@ -19,6 +19,14 @@ const MAX_WIDTH = 700;
 const DEFAULT_WIDTH = 400;
 const COLLAPSED_WIDTH = 64;
 
+/**
+ * Render the desktop documents panel: a resizable, collapsible UI for browsing, uploading, and managing documents.
+ *
+ * The panel includes breadcrumb navigation, create/delete actions, a documents list, a file upload area, an integrated drop zone (disabled when upload limits or slot constraints are met), tooltip support for the collapsed state, an error state with retry, and a resizer when expanded.
+ *
+ * @param hasItems - Whether any document items exist; controls visibility of the documents list, delete action, and certain layout states.
+ * @returns The JSX element for the desktop documents panel.
+ */
 export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	const [width, setWidth] = useState(DEFAULT_WIDTH);

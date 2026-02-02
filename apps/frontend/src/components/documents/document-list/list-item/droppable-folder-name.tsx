@@ -13,6 +13,12 @@ type DroppableFolderNameProps = {
 
 const TOOLTIP_DELAY = 600;
 
+/**
+ * Renders a folder name button with an icon that shows a delayed tooltip on hover or focus and sets the current folder when clicked.
+ *
+ * @param item - The DocumentFolder to display and select.
+ * @returns The button element containing the folder icon and truncated folder name.
+ */
 export function DroppableFolderName({ item }: DroppableFolderNameProps) {
 	const { setCurrentFolder } = useFolderStore();
 	const { hoveredFolderId } = useDragAndDropStore();
