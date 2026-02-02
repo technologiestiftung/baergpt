@@ -140,7 +140,7 @@ documents.delete("/:documentId", async (c: Context) => {
 
 	try {
 		await userScopedDbService.deleteDocument(
-			Number(documentId),
+			parsedDocumentId,
 			authenticatedUserId,
 		);
 		return c.body(null, 204);
