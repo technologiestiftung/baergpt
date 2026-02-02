@@ -8,14 +8,15 @@ export const PrimaryButton: React.FC<ButtonProps> = ({
 	ariaLabel,
 	title,
 	children,
+	variant = "default",
 }) => {
 	return (
 		<button
 			className={`
-			flex rounded-3px h-9 w-fit items-center px-2.5 gap-2
-			 bg-white border border-dunkelblau-200 
-			 hover:bg-dunkelblau-100 hover:text-white 
-			 focus-visible:outline-default`}
+			flex rounded-3px w-fit items-center px-2 gap-1.5
+			 bg-dunkelblau-100 text-hellblau-30 text-sm leading-5 font-normal
+			 hover:bg-dunkelblau-90 disabled:bg-dunkelblau-40 disabled:hover:bg-dunkelblau-40
+			 focus-visible:outline-default ${variant === "addToChatButton" ? "h-8" : "h-9"}`}
 			disabled={disabled}
 			onClick={onClick}
 			type={type}

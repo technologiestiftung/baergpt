@@ -63,7 +63,10 @@ export function DraggableDocumentName({ item }: DragableProps) {
 		>
 			<span className="flex gap-x-2 truncate">
 				<DocumentIcon variant="lightBlue" />
-				<span ref={spanRef} className="truncate pointer-events-none">
+				<span
+					ref={spanRef}
+					className="truncate pointer-events-none text-sm leading-5 font-normal"
+				>
 					{getListItemName(item)}
 				</span>
 			</span>

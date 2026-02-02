@@ -1,27 +1,21 @@
 import React from "react";
-import { AddToChatIcon } from "../../../primitives/icons/add-to-chat-icon.tsx";
-import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
+import Content from "../../../../content.ts";
+import { PrimaryButton } from "../../../primitives/buttons/primary-button.tsx";
 
 interface AddToChatButtonProps {
-	isSelectedForChat: boolean;
 	handleAddToChat: () => void;
 }
 
 export const AddToChatButton: React.FC<AddToChatButtonProps> = ({
-	isSelectedForChat,
 	handleAddToChat,
 }) => {
-	const { isMobileCheckboxVisible } = useMobileMenuStore();
 	return (
-		<button
+		<PrimaryButton
 			type="button"
-			aria-label={
-				isSelectedForChat ? "Aus dem Chat entfernen" : "Zum Chat hinzufügen"
-			}
-			className={`rounded-3px w-fit focus-visible:outline-default block ${isMobileCheckboxVisible ? "hidden" : "block"}`}
+			variant="addToChatButton"
 			onClick={handleAddToChat}
 		>
-			<AddToChatIcon variant={isSelectedForChat ? "minus" : "plus-light"} />
-		</button>
+			{Content["documentsList.AddToChat"]}
+		</PrimaryButton>
 	);
 };
