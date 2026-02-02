@@ -378,6 +378,8 @@ export abstract class BaseContentDbService {
 			.select("source_url, source_type, owned_by_user_id")
 			.eq("id", documentId);
 
+		// This security check is added in addition to an existing RLS policy which enforces this as well to make the logic more explicit 
+		// and also block deletion if a service role key is used bypassing RLS policies
 		if (isAdmin) {
 			// Admin can access their own docs OR docs with null owned_by_user_id
 			selectQuery = selectQuery.or(
@@ -403,6 +405,8 @@ export abstract class BaseContentDbService {
 			.delete({ count: "exact" })
 			.eq("id", documentId);
 
+		// This security check is added in addition to an existing RLS policy which enforces this as well to make the logic more explicit 
+		// and also block deletion if a service role key is used bypassing RLS policies
 		if (isAdmin) {
 			// Admin can delete their own docs OR docs with null owned_by_user_id
 			deleteQuery = deleteQuery.or(
