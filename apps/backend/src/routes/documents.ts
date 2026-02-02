@@ -4,7 +4,11 @@ import { UserScopedDbService } from "../services/db-service/user-scoped-db-servi
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
 import { captureError } from "../monitoring/capture-error";
-import { Document } from "../types/common";
+import {
+	Document,
+	DefaultDocumentDeletionError,
+	DocumentNotFoundError,
+} from "../types/common";
 import { documentProcessSchema } from "../schemas/document-process-schema";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
@@ -116,6 +120,38 @@ documents.post("/process", async (c: Context) => {
 				);
 			}
 		}
+		return c.json({ error: "Internal Server Error" }, 500);
+	}
+});
+
+documents.delete("/:documentId", async (c: Context) => {
+	const userClient = c.get("UserScopedDbClient");
+	const userScopedDbService = new UserScopedDbService(userClient);
+	const documentId = c.req.param("documentId");
+	const authenticatedUserId = c.get("authenticatedUserId");
+
+	if (!authenticatedUserId) {
+		return c.json({ error: "Unauthorized" }, 401);
+	}
+	const parsedDocumentId = Number(documentId);
+	if (isNaN(parsedDocumentId)) {
+		return c.json({ error: "Invalid document ID" }, 400);
+	}
+
+	try {
+		await userScopedDbService.deleteDocument(
+			parsedDocumentId,
+			authenticatedUserId,
+		);
+		return c.body(null, 204);
+	} catch (error) {
+		if (error instanceof DocumentNotFoundError) {
+			return c.json({ error: "Document not found" }, 404);
+		}
+		if (error instanceof DefaultDocumentDeletionError) {
+			return c.json({ error: "Default documents cannot be deleted" }, 403);
+		}
+		captureError(error);
 		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });

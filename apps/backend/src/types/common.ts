@@ -211,6 +211,13 @@ export class DocumentNotFoundError extends Error {
 	}
 }
 
+export class DefaultDocumentDeletionError extends Error {
+	constructor(documentId: number) {
+		super(`Default document ${documentId} cannot be deleted.`);
+		this.name = "DefaultDocumentDeletionError";
+	}
+}
+
 export interface DocumentBufferResponse {
 	buffer: Uint8Array;
 	filename: string;
