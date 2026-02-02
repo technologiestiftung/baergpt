@@ -3,7 +3,7 @@ import Content from "../../../content";
 export function LoadingSpinnerIcon({
 	variant = "default",
 }: {
-	variant?: "default" | "disabled";
+	variant?: "default" | "disabled" | "light";
 }) {
 	return (
 		<>
@@ -13,6 +13,14 @@ export function LoadingSpinnerIcon({
 				height={20}
 				alt={Content["loadingSpinnerIcon.imgAlt"]}
 				className={`${variant === "default" ? "block" : "hidden"} animate-spin`}
+			/>
+
+			<img
+				src="/icons/spinner-icon-light.svg"
+				width={20}
+				height={20}
+				alt={Content["loadingSpinnerIcon.imgAlt"]}
+				className={`${variant === "light" ? "block" : "hidden"} animate-spin`}
 			/>
 
 			<img

@@ -688,6 +688,7 @@ export const Content = {
 	"chatHistory.fetchRetry.button.label": "Erneut versuchen",
 	"chatHistory.fetchRetry.button.ariaLabel":
 		"Erneut versuchen Chatverlauf zu laden",
+	"chatHistory.allLoaded": "Alle Chats geladen",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton
