@@ -4,7 +4,11 @@ import { UserScopedDbService } from "../services/db-service/user-scoped-db-servi
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
 import { captureError } from "../monitoring/capture-error";
-import { Document, DocumentNotFoundError } from "../types/common";
+import {
+	Document,
+	DefaultDocumentDeletionError,
+	DocumentNotFoundError,
+} from "../types/common";
 import { documentProcessSchema } from "../schemas/document-process-schema";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
@@ -143,6 +147,9 @@ documents.delete("/:documentId", async (c: Context) => {
 	} catch (error) {
 		if (error instanceof DocumentNotFoundError) {
 			return c.json({ error: "Document not found" }, 404);
+		}
+		if (error instanceof DefaultDocumentDeletionError) {
+			return c.json({ error: "Default documents cannot be deleted" }, 403);
 		}
 		captureError(error);
 		return c.json({ error: "Internal Server Error" }, 500);

@@ -10,6 +10,7 @@ import {
 	type HybridSearchResult,
 	type KnowledgeBaseDocument,
 	DocumentNotFoundError,
+	DefaultDocumentDeletionError,
 } from "../../types/common";
 import { ragSearchDefaults } from "../../constants";
 import {
@@ -392,6 +393,9 @@ export abstract class BaseContentDbService {
 
 		if (selectError || !documentData) {
 			throw new DocumentNotFoundError(documentId);
+		}
+		if (documentData.source_type === "default_document") {
+			throw new DefaultDocumentDeletionError(documentId);
 		}
 
 		let deleteQuery = this.client
