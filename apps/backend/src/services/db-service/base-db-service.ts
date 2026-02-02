@@ -528,10 +528,7 @@ export abstract class BaseContentDbService {
 			});
 
 		if (error) {
-			console.error(
-				`Storage error when checking file existence for ${sourceUrl} in bucket ${bucket}:`,
-				error.message,
-			);
+			captureError(error);
 			return false;
 		}
 
