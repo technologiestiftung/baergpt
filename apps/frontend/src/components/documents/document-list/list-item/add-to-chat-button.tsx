@@ -14,6 +14,7 @@ export const AddToChatButton: React.FC<AddToChatButtonProps> = ({
 			type="button"
 			variant="addToChatButton"
 			onClick={handleAddToChat}
+			ariaLabel={Content["documentsList.AddToChat"]}
 		>
 			{Content["documentsList.AddToChat"]}
 		</PrimaryButton>
