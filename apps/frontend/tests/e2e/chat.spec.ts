@@ -426,7 +426,7 @@ test.describe("Chat", () => {
 				.click();
 
 			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
+			await page.waitForLoadState("networkidle", { timeout: 60_000 });
 
 			// Wait for the response to appear (2 markdown containers: question + answer)
 			await expect(page.locator("div.markdown-container")).toHaveCount(2);

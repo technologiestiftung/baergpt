@@ -511,10 +511,6 @@ export type Database = {
 				};
 				Returns: undefined;
 			};
-			delete_document_and_update_count: {
-				Args: { document_id: number };
-				Returns: undefined;
-			};
 			delete_user: { Args: never; Returns: undefined };
 			find_unprocessed_documents: {
 				Args: never;
