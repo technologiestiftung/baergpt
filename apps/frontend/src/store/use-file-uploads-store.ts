@@ -7,16 +7,17 @@ import {
 	processDocument,
 } from "../api/documents/upload-file.ts";
 import { useErrorStore } from "./error-store.ts";
+
 export const UPLOAD_STATUS_MAP = {
-	uploading: "Wird hochgeladen",
+	uploading: "Hochladen läuft",
 	uploaded: "Erfolgreich hochgeladen",
-	processing: "Wird verarbeitet",
-	successful: "Erfolgreich verarbeitet",
+	processing: "Hochladen läuft",
+	successful: "Erfolgreich hochgeladen",
 	canceled: "Hochladen abgebrochen",
 	"failed.generic": "Hochladen fehlgeschlagen",
 	"failed.duplicate": "Datei existiert bereits",
-	"failed.format": "Ungültiges Dateiformat (nur PDF, Word oder Excel)",
-	"failed.size": `Datei zu groß (max. ${import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB} MB)`,
+	"failed.format": "Falsches Format",
+	"failed.size": `Datei zu groß`,
 	"failed.tooMany": `Hochladen fehlgeschlagen`,
 } as const;
 
@@ -27,6 +28,8 @@ export type FileUpload = {
 	status: UploadStatusKeys;
 };
 
+const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
+
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
 	uploadFile: (fileUpload: FileUpload) => Promise<void>;
@@ -34,6 +37,7 @@ type UseFileUploadsStore = {
 	isUploadingOver: () => boolean;
 	hasAvailableUploadSlots: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
+	removeFileUpload: (fileName: string) => void;
 	clearFileUploads: () => void;
 };
 
@@ -83,6 +87,10 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			updateFileUploadStatus(file, "processing");
 			await processDocument(file, filePath);
 			updateFileUploadStatus(file, "successful");
+
+			setTimeout(() => {
+				get().removeFileUpload(file.name);
+			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 
 			getDocuments(new AbortController().signal).catch(
 				useErrorStore.getState().handleError,
@@ -179,6 +187,13 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		});
 
 		set({ fileUploads: updatedFileUploads });
+	},
+
+	removeFileUpload: (fileName: string) => {
+		const { fileUploads } = get();
+		set({
+			fileUploads: fileUploads.filter((fu) => fu.file.name !== fileName),
+		});
 	},
 
 	clearFileUploads: () => {
