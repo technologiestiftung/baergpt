@@ -15,6 +15,10 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 
 	const [isCollapsibleOpen, setIsCollapsibleOpen] = useIsCollapsibleOpen();
 
+	if (!hasSelectedChatItems) {
+		return null;
+	}
+
 	return (
 		<button
 			type="button"
@@ -23,7 +27,7 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 			className={`
 				flex flex-col items-start justify-center gap-y-3 w-full px-4 py-1.5
 				bg-hellblau-30 rounded-t-3px text-sm leading-5 text-dunkelblau-80
-				focus-visible:outline-2px ${hasSelectedChatItems && "hover:bg-hellblau-50"} ${isCollapsibleOpen && "pb-3"}`}
+				focus-visible:outline-2px hover:bg-hellblau-50 ${isCollapsibleOpen && "pb-3"}`}
 		>
 			<SelectedChatItemsLabel />
 

@@ -191,8 +191,8 @@ test.describe("Chat", () => {
 
 			// Verify the folder and documents are removed from the chat
 			await expect(
-				page.getByRole("button", { name: "Keine Dateien in diesem Chat" }),
-			).toBeVisible();
+				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
+			).not.toBeVisible();
 		},
 	);
 
