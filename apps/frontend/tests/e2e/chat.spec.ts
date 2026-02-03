@@ -103,7 +103,7 @@ test.describe("Chat", () => {
 		const addButton = page
 			.getByRole("listitem")
 			.filter({ hasText: defaultDocumentName })
-			.getByLabel("Zum Chat hinzufügen");
+			.getByLabel("In den Chat");
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -167,17 +167,17 @@ test.describe("Chat", () => {
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: givenFolderName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: secondaryDocumentName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 
 			await expect(
@@ -223,7 +223,7 @@ test.describe("Chat", () => {
 			const addButton = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen");
+				.getByLabel("In den Chat");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -360,7 +360,7 @@ test.describe("Chat", () => {
 			const addButton = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen");
+				.getByLabel("In den Chat");
 
 			// Click the add-to-chat button
 			await addButton.click();

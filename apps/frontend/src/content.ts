@@ -765,7 +765,8 @@ export const Content = {
 	"documentsList.folder.checkbox.ariaLabel":
 		"Ordner auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.name": "Name",
-	"documentsList.AddToChat": "Zum Chat hinzufügen",
+	"documentsList.AddToChat": "In den Chat",
+	"documentsList.RemoveFromChat": "Aus Chat entfernen",
 	//fileUpload
 	"fileUpload.uploadButton": "Datei hochladen",
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
@@ -840,13 +841,11 @@ export const Content = {
 	"chat.getStarted.informal.p1":
 		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten und Texte zu formulieren.",
 
-	"chat.getStarted.li1.formal.1":
-		"Stellen Sie Ihre Frage im Textfeld oder laden Sie ein Dokument hoch (Word, Excel, PDF). Nutzen Sie „Dokument zum Chat hinzufügen“",
-	"chat.getStarted.li1.formal.2": "-Button, um Dateien im Chat zu verwenden.",
+	"chat.getStarted.li1.formal":
+		"Stellen Sie Ihre Frage im Textfeld oder laden Sie ein Dokument hoch (Word, Excel, PDF). Nutzen Sie den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
 
-	"chat.getStarted.li1.informal.1":
-		"Stell Deine Frage im Textfeld oder lade ein Dokument hoch (Word, Excel, PDF). Nutze den „Dokument zum Chat hinzufügen“",
-	"chat.getStarted.li1.informal.2": "-Button, um Dateien im Chat zu verwenden.",
+	"chat.getStarted.li1.informal":
+		"Stell Deine Frage im Textfeld oder lade ein Dokument hoch (Word, Excel, PDF). Nutze den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
 
 	"chat.getStarted.li2.formal.1": "Wichtig: ",
 	"chat.getStarted.li2.formal.2":

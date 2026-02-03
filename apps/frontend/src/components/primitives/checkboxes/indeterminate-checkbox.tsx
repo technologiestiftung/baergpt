@@ -43,7 +43,7 @@ export const IndeterminateCheckbox: React.FC<CheckboxProps> = ({
 	return (
 		<label
 			className={`
-			flex h-fit gap-x-2 items-center cursor-pointer group`}
+			flex h-fit gap-x-2 items-center cursor-pointer group text-sm leading-5 font-semibold text-dunkelblau-100`}
 			aria-label={Content["indeterminateCheckbox.ariaLabel"]}
 			htmlFor={`${id}-checkbox`}
 		>
