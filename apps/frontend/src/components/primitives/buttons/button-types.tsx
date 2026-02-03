@@ -15,5 +15,4 @@ export interface ButtonProps {
 	onMouseEnter?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 	onMouseLeave?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 	testId?: string;
-	variant?: "default" | "addToChatButton";
 }

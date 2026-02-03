@@ -1,12 +1,11 @@
 import React from "react";
 import type { DocumentFolder } from "../../../../common";
 import { useFolderStore } from "../../../../store/folder-store";
-import { AddToChatButton } from "./add-to-chat-button";
 import Checkbox from "../../../primitives/checkboxes/checkbox.tsx";
 import { DroppableFolderName } from "./droppable-folder-name.tsx";
 import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
 import Content from "../../../../content.ts";
-import { RemoveFromChatButton } from "./remove-from-chat-button.tsx";
+import { UpdateChatItemsButton } from "./updateChatItemsButton.tsx";
 
 interface FolderItemProps {
 	item: DocumentFolder;
@@ -38,7 +37,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 		unselectFolderForAction(item.id);
 	};
 
-	const handleToggleFolderInChat = (folder: DocumentFolder) => {
+	const handleUpdateChatItems = (folder: DocumentFolder) => {
 		if (selectedChatFolders.some((fol) => fol.id === folder.id)) {
 			unselectChatFolder(folder.id);
 			return;
@@ -62,15 +61,10 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 			>
 				<DroppableFolderName item={item} />
 
-				{isSelectedForChat ? (
-					<RemoveFromChatButton
-						handleRemoveFromChat={() => handleToggleFolderInChat(item)}
-					/>
-				) : (
-					<AddToChatButton
-						handleAddToChat={() => handleToggleFolderInChat(item)}
-					/>
-				)}
+				<UpdateChatItemsButton
+					handleUpdateChatItems={() => handleUpdateChatItems(item)}
+					isSelectedForChat={isSelectedForChat}
+				/>
 			</div>
 		</>
 	);
