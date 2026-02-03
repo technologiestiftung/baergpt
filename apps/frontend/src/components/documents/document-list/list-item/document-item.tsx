@@ -57,7 +57,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 			</div>
 
 			<div
-				className={`h-11 pl-2.5 gap-x-2 flex justify-between items-center w-0 grow hover:bg-hellblau-55 ${isSelectedForChat && "bg-hellblau-60"}`}
+				className={`h-11 pl-2.5 gap-x-2 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group ${isSelectedForChat && "bg-hellblau-60"}`}
 			>
 				<DraggableDocumentName item={item} />
 
