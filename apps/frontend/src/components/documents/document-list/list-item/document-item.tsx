@@ -6,6 +6,7 @@ import { DraggableDocumentName } from "./draggable-document-name.tsx";
 import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
+import { DocumentDropdownButton } from "./document-dropdown-button.tsx";
 
 interface DocumentItemProps {
 	item: Document;
@@ -65,6 +66,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 					handleToggleChatItem={() => handleToggleChatItem(item)}
 					isSelectedForChat={isSelectedForChat}
 				/>
+				<DocumentDropdownButton document={item} />
 			</div>
 		</>
 	);

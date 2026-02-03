@@ -767,6 +767,8 @@ export const Content = {
 	"documentsList.name": "Name",
 	"documentsList.AddToChat": "In den Chat",
 	"documentsList.RemoveFromChat": "Aus Chat entfernen",
+	"documentsList.menuIcon.imgAlt": "Menü-Icon",
+	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
 	//fileUpload
 	"fileUpload.uploadButton": "Datei hochladen",
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
