@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+
+	body {
+		@apply text-dunkelblau-100;
+	}
+
 	html {
 		scroll-behavior: smooth;
 	}

@@ -13,8 +13,8 @@ export const FolderIcon: React.FC<FolderIconProps> = ({
 	<>
 		<img
 			src="/icons/folder-icon.svg"
-			width={24}
-			height={24}
+			width={20}
+			height={20}
 			className={`${className} ${variant === "default" ? "block" : "hidden"}`}
 			alt={Content["folderIcon.imgAlt"]}
 		/>
