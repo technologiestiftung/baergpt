@@ -5,7 +5,7 @@ import Checkbox from "../../../primitives/checkboxes/checkbox.tsx";
 import { DroppableFolderName } from "./droppable-folder-name.tsx";
 import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
 import Content from "../../../../content.ts";
-import { UpdateChatItemsButton } from "./updateChatItemsButton.tsx";
+import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
 
 interface FolderItemProps {
 	item: DocumentFolder;
@@ -37,7 +37,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 		unselectFolderForAction(item.id);
 	};
 
-	const handleUpdateChatItems = (folder: DocumentFolder) => {
+	const handleToggleChatFolder = (folder: DocumentFolder) => {
 		if (selectedChatFolders.some((fol) => fol.id === folder.id)) {
 			unselectChatFolder(folder.id);
 			return;
@@ -61,8 +61,8 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 			>
 				<DroppableFolderName item={item} />
 
-				<UpdateChatItemsButton
-					handleUpdateChatItems={() => handleUpdateChatItems(item)}
+				<ToggleChatItemButton
+					handleToggleChatItem={() => handleToggleChatFolder(item)}
 					isSelectedForChat={isSelectedForChat}
 				/>
 			</div>

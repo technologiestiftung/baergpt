@@ -1,13 +1,13 @@
 import React from "react";
 import Content from "../../../../content.ts";
 
-interface UpdateChatItemsButtonProps {
-	handleUpdateChatItems: () => void;
+interface ToggleChatItemButtonProps {
+	handleToggleChatItem: () => void;
 	isSelectedForChat: boolean;
 }
 
-export const UpdateChatItemsButton: React.FC<UpdateChatItemsButtonProps> = ({
-	handleUpdateChatItems,
+export const ToggleChatItemButton: React.FC<ToggleChatItemButtonProps> = ({
+	handleToggleChatItem,
 	isSelectedForChat,
 }) => {
 	const label = isSelectedForChat
@@ -24,7 +24,7 @@ export const UpdateChatItemsButton: React.FC<UpdateChatItemsButtonProps> = ({
 					: "text-dunkelblau-100 bg-hellblau-100 hover:bg-mittelblau-70"
 			}`}
 			type="button"
-			onClick={handleUpdateChatItems}
+			onClick={handleToggleChatItem}
 			aria-label={label}
 		>
 			{label}

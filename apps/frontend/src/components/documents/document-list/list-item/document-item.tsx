@@ -5,7 +5,7 @@ import Checkbox from "../../../primitives/checkboxes/checkbox";
 import { DraggableDocumentName } from "./draggable-document-name.tsx";
 import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
 import Content from "../../../../content.ts";
-import { UpdateChatItemsButton } from "./updateChatItemsButton.tsx";
+import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
 
 interface DocumentItemProps {
 	item: Document;
@@ -37,7 +37,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 		unselectDocumentForAction(item.id);
 	};
 
-	const handleUpdateChatItems = (itemToAddToChat: Document) => {
+	const handleToggleChatItem = (itemToAddToChat: Document) => {
 		if (selectedChatDocuments.some((doc) => doc.id === itemToAddToChat.id)) {
 			unselectChatDocument(itemToAddToChat.id);
 			return;
@@ -61,8 +61,8 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 			>
 				<DraggableDocumentName item={item} />
 
-				<UpdateChatItemsButton
-					handleUpdateChatItems={() => handleUpdateChatItems(item)}
+				<ToggleChatItemButton
+					handleToggleChatItem={() => handleToggleChatItem(item)}
 					isSelectedForChat={isSelectedForChat}
 				/>
 			</div>
