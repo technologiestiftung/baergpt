@@ -679,8 +679,6 @@ export const Content = {
 	/* -------------------- Tooltips -------------------- */
 	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
 	"sidebar.tooltip.newChatButton": "Neuen Chat beginnen",
-	"chat.selectedChatItems.questionmark.tooltip":
-		"Datei zum Chat hinzufügen und KI-Assistent Anweisung geben",
 
 	/* -------------------- Chat History -------------------- */
 	"chatHistory.title": "Chats",
@@ -874,11 +872,9 @@ export const Content = {
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
-	"chat.selectedChatItems.noItems": "Keine Dateien in diesem Chat",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
-	"chat.selectedChatItems.questionmark.arialabel": "Tooltip zeigen",
 	//Chat options dropdown
 	"chat.options.toggleButton.tooltip": "Weitere Funktionen aktivieren",
 	"chat.options.toggleButton.tooltip.ariaLabel":
