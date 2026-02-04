@@ -46,9 +46,14 @@ export function DraggableDocumentName({ item }: DragableProps) {
 		hideTooltip();
 	};
 
-	const [, dragRef, preview] = useDrag({
+	const [{ isDragging }, dragRef, preview] = useDrag<
+		Document,
+		unknown,
+		{ isDragging: boolean }
+	>({
 		type: "ITEM",
 		item,
+		collect: (monitor) => ({ isDragging: monitor.isDragging() }),
 	});
 
 	useEffect(() => {
@@ -70,7 +75,7 @@ export function DraggableDocumentName({ item }: DragableProps) {
 				<DocumentIcon variant="lightBlue" />
 				<span
 					ref={spanRef}
-					className="truncate pointer-events-none text-sm leading-5 font-normal text-dunkelblau-100"
+					className={`truncate pointer-events-none text-sm leading-5 font-normal ${isDragging ? "text-hellblau-110 cursor-grab" : "text-dunkelblau-100"}`}
 				>
 					{getListItemName(item)}
 				</span>
