@@ -29,9 +29,12 @@ export type FileUpload = {
 };
 
 const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
+const WARNING_AUTO_DISMISS_DELAY_MS = 10_000;
 
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
+	isParallelUploadWarningDismissed: boolean;
+	warningDismissTimer: ReturnType<typeof setTimeout> | null;
 	uploadFile: (fileUpload: FileUpload) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
@@ -39,6 +42,9 @@ type UseFileUploadsStore = {
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
 	removeFileUpload: (fileName: string) => void;
 	clearFileUploads: () => void;
+	startWarningDismissTimer: () => void;
+	dismissWarning: () => void;
+	resetWarningDismissal: () => void;
 };
 
 function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
@@ -47,6 +53,8 @@ function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
 
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
+	isParallelUploadWarningDismissed: false,
+	warningDismissTimer: null,
 
 	async uploadFile({ file }: FileUpload) {
 		const { updateFileUploadStatus } = get();
@@ -114,7 +122,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	},
 
 	uploadFiles: async (files: File[]) => {
-		const { fileUploads, uploadFile } = get();
+		const { fileUploads, uploadFile, resetWarningDismissal } = get();
 		const { documents } = useDocumentStore.getState();
 
 		const availableUploadSlots =
@@ -145,6 +153,8 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 		set({ fileUploads: updatedFileUploads });
 
+		resetWarningDismissal();
+
 		const promises = newFileUploads.map((fileUpload) => uploadFile(fileUpload));
 		await Promise.all(promises);
 	},
@@ -174,7 +184,12 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	},
 
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {
-		const { fileUploads } = get();
+		const {
+			fileUploads,
+			isParallelUploadWarningDismissed,
+			warningDismissTimer,
+			startWarningDismissTimer,
+		} = get();
 
 		const updatedFileUploads = fileUploads.map((fileUpload) => {
 			if (fileUpload.file.name === file.name) {
@@ -187,6 +202,18 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		});
 
 		set({ fileUploads: updatedFileUploads });
+
+		const shouldStartWarningTimer =
+			status === "successful" &&
+			updatedFileUploads.some(
+				(fileUpload) => fileUpload.status === "failed.tooMany",
+			) &&
+			!isParallelUploadWarningDismissed &&
+			!warningDismissTimer;
+
+		if (shouldStartWarningTimer) {
+			startWarningDismissTimer();
+		}
 	},
 
 	removeFileUpload: (fileName: string) => {
@@ -198,5 +225,40 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 	clearFileUploads: () => {
 		set({ fileUploads: [] });
+	},
+
+	startWarningDismissTimer: () => {
+		const { warningDismissTimer } = get();
+
+		// Clear existing timer
+		if (warningDismissTimer) {
+			clearTimeout(warningDismissTimer);
+		}
+
+		// Start new timer
+		const timer = setTimeout(() => {
+			set({
+				isParallelUploadWarningDismissed: true,
+				warningDismissTimer: null,
+			});
+		}, WARNING_AUTO_DISMISS_DELAY_MS);
+
+		set({ warningDismissTimer: timer });
+	},
+
+	dismissWarning: () => {
+		const { warningDismissTimer } = get();
+		if (warningDismissTimer) {
+			clearTimeout(warningDismissTimer);
+		}
+		set({ isParallelUploadWarningDismissed: true, warningDismissTimer: null });
+	},
+
+	resetWarningDismissal: () => {
+		const { warningDismissTimer } = get();
+		if (warningDismissTimer) {
+			clearTimeout(warningDismissTimer);
+		}
+		set({ isParallelUploadWarningDismissed: false, warningDismissTimer: null });
 	},
 }));
