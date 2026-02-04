@@ -150,11 +150,9 @@ test.describe("Chat", () => {
 
 			// Expect add to chat button in dropdown to be visible and click it
 			await expect(
-				page.getByRole("option", { name: "Dokument zum Chat hinzufügen" }),
+				page.getByRole("option", { name: "In den Chat" }),
 			).toBeVisible();
-			await page
-				.getByRole("option", { name: "Dokument zum Chat hinzufügen" })
-				.click();
+			await page.getByRole("option", { name: "In den Chat" }).click();
 
 			// Verify the document is added to the chat
 			await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
@@ -185,11 +183,9 @@ test.describe("Chat", () => {
 
 			// Expect add to chat button in dropdown to be visible and click it
 			await expect(
-				page.getByRole("option", { name: "Ordner zum Chat hinzufügen" }),
+				page.getByRole("option", { name: "In den Chat" }),
 			).toBeVisible();
-			await page
-				.getByRole("option", { name: "Ordner zum Chat hinzufügen" })
-				.click();
+			await page.getByRole("option", { name: "In den Chat" }).click();
 
 			// Verify the folder is added to the chat
 			await expect(page.getByText("2 Elemente in diesem Chat")).toBeVisible();
