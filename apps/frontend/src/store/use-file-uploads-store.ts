@@ -145,8 +145,12 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			status: "failed.tooMany" as UploadStatusKeys,
 		}));
 
+		const previousFileUploads = fileUploads.filter(
+			({ file }) => !files.some(({ name }) => name === file.name),
+		);
+
 		const updatedFileUploads = [
-			...fileUploads,
+			...previousFileUploads,
 			...newFileUploads,
 			...canceledFileUploads,
 		];
