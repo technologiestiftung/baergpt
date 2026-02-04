@@ -3,14 +3,11 @@ import { DefaultDialog } from "../../primitives/dialogs/default-dialog";
 import { useDocumentStore } from "../../../store/document-store";
 import { useFolderStore } from "../../../store/folder-store";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
-import { PrimaryButton } from "../../primitives/buttons/primary-button.tsx";
 import type { Document, DocumentFolder } from "../../../common.ts";
-import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
-import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 import { isDocument } from "../document-list/list-item/utils/is-document.ts";
 import { getListItemName } from "../document-list/list-item/utils/get-list-item-name.ts";
-import { getUniqueId } from "../document-list/list-item/utils/get-unique-id.ts";
 import Content from "../../../content.ts";
+import { WarningButton } from "../../primitives/buttons/warning-button.tsx";
 
 const deleteDialogId = "delete-dialog";
 
@@ -26,14 +23,21 @@ export function hideDeleteDialog(id: string) {
 	).close();
 }
 
-export const DeleteItemDialog: React.FC<{ id: string }> = ({ id }) => {
+interface DeleteItemDialogProps {
+	id: string;
+	dropdownItemToDelete?: Document | DocumentFolder;
+}
+
+export const DeleteItemDialog: React.FC<DeleteItemDialogProps> = ({
+	id,
+	dropdownItemToDelete,
+}) => {
 	const { selectedDocumentsForAction, deleteDocument } = useDocumentStore();
 	const { selectedFoldersForAction, deleteFolder } = useFolderStore();
 
-	const itemsToDelete = [
-		...selectedDocumentsForAction,
-		...selectedFoldersForAction,
-	];
+	const itemsToDelete = dropdownItemToDelete
+		? [dropdownItemToDelete]
+		: [...selectedDocumentsForAction, ...selectedFoldersForAction];
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -61,17 +65,13 @@ export const DeleteItemDialog: React.FC<{ id: string }> = ({ id }) => {
 
 				<p>{getDialogParagraph(itemsToDelete)}</p>
 
-				<ul className="flex flex-col gap-y-1 mt-3">
-					{getUserFriendlyItemNames(itemsToDelete)}
-				</ul>
-
 				<div className="flex flex-row justify-end gap-4 mt-5">
 					<TertiaryButton type="button" onClick={() => hideDeleteDialog(id)}>
 						{Content["deleteItemDialog.cancel"]}
 					</TertiaryButton>
-					<PrimaryButton type="submit">
+					<WarningButton type="submit">
 						{Content["deleteItemDialog.delete"]}
-					</PrimaryButton>
+					</WarningButton>
 				</div>
 			</form>
 		</DefaultDialog>
@@ -96,25 +96,11 @@ function getDialogParagraph(itemsToDelete: (Document | DocumentFolder)[]) {
 		return `${Content["deleteItemDialog.confirmation.multipleItems"]}`;
 	}
 
-	return `${Content["deleteItemDialog.confirmation.singleItem"]}`;
-}
-
-function getUserFriendlyItemNames(
-	itemsToDelete: (DocumentFolder | Document)[],
-) {
-	return itemsToDelete.map((item) => {
-		return (
-			<li
-				key={getUniqueId(item)}
-				className="flex gap-x-2 flex-row items-center"
-			>
-				{isDocument(item) ? (
-					<DocumentIcon variant="lightBlue" className="size-4" />
-				) : (
-					<FolderIcon className="size-4" />
-				)}
-				<span className="w-0 grow truncate">{getListItemName(item)}</span>
-			</li>
-		);
-	});
+	return (
+		<p>
+			{Content["deleteItemDialog.confirmation.singleItem.p1"]}{" "}
+			<span className="underline">{getListItemName(itemsToDelete[0])}</span>{" "}
+			{Content["deleteItemDialog.confirmation.singleItem.p2"]}
+		</p>
+	);
 }

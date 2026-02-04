@@ -816,8 +816,9 @@ export const Content = {
 	"deleteItemDialog.deleteFiles": "Elemente löschen?",
 	"deleteItemDialog.deleteFile": "Datei löschen?",
 	"deleteItemDialog.deleteFolder": "Ordner löschen?",
-	"deleteItemDialog.confirmation.singleItem":
-		"Folgendes Element wirklich aus Ihren Dateien löschen?",
+	"deleteItemDialog.confirmation.singleItem.p1": "Möchten Sie",
+	"deleteItemDialog.confirmation.singleItem.p2":
+		"wirklich aus Ihren Dateien löschen?",
 	"deleteItemDialog.confirmation.multipleItems":
 		"Folgende Elemente wirklich aus Ihren Dateien löschen?",
 	"deleteItemDialog.confirmation.folder": "Ordner",
