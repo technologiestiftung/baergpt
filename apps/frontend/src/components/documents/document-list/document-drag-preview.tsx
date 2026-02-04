@@ -15,7 +15,7 @@ export const DocumentDragPreview: React.FC = () => {
 		(monitor): DragLayerState => ({
 			isDragging: monitor.isDragging(),
 			item: (monitor.getItem() as Document) ?? null,
-			currentOffset: monitor.getSourceClientOffset(),
+			currentOffset: monitor.getClientOffset(),
 		}),
 	);
 
@@ -26,7 +26,7 @@ export const DocumentDragPreview: React.FC = () => {
 	return (
 		<div className="pointer-events-none fixed inset-0 z-50">
 			<div
-				className="pointer-events-auto inline-flex cursor-grab max-w-52 overflow-hidden rounded-3px bg-hellblau-30 px-3.5 py-2 shadow-md shadow-dunkelblau-100/10"
+				className="inline-flex cursor-grab max-w-52 overflow-hidden rounded-3px bg-hellblau-30 px-3.5 py-2 shadow-md shadow-dunkelblau-100/10"
 				style={{
 					transform: `translate(${currentOffset.x}px, ${currentOffset.y}px)`,
 				}}
