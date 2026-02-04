@@ -31,10 +31,12 @@ export type FileUpload = {
 const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
 const WARNING_AUTO_DISMISS_DELAY_MS = 10_000;
 
+let maxParallelUploadWarningTimeout: ReturnType<typeof setTimeout> | null =
+	null;
+
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
-	isParallelUploadWarningDismissed: boolean;
-	warningDismissTimer: ReturnType<typeof setTimeout> | null;
+	isMaxParallelUploadWarningVisible: boolean;
 	uploadFile: (fileUpload: FileUpload) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
@@ -42,9 +44,8 @@ type UseFileUploadsStore = {
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
 	removeFileUpload: (fileName: string) => void;
 	clearFileUploads: () => void;
-	startWarningDismissTimer: () => void;
-	dismissWarning: () => void;
-	resetWarningDismissal: () => void;
+	startMaxParallelUploadWarningTimer: () => void;
+	hideMaxParallelUploadWarning: () => void;
 };
 
 function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
@@ -53,8 +54,7 @@ function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
 
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
-	isParallelUploadWarningDismissed: false,
-	warningDismissTimer: null,
+	isMaxParallelUploadWarningVisible: false,
 
 	async uploadFile({ file }: FileUpload) {
 		const { updateFileUploadStatus } = get();
@@ -122,7 +122,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	},
 
 	uploadFiles: async (files: File[]) => {
-		const { fileUploads, uploadFile, resetWarningDismissal } = get();
+		const { fileUploads, uploadFile, hideMaxParallelUploadWarning } = get();
 		const { documents } = useDocumentStore.getState();
 
 		const availableUploadSlots =
@@ -153,7 +153,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 		set({ fileUploads: updatedFileUploads });
 
-		resetWarningDismissal();
+		hideMaxParallelUploadWarning();
 
 		const promises = newFileUploads.map((fileUpload) => uploadFile(fileUpload));
 		await Promise.all(promises);
@@ -186,9 +186,8 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {
 		const {
 			fileUploads,
-			isParallelUploadWarningDismissed,
-			warningDismissTimer,
-			startWarningDismissTimer,
+			isMaxParallelUploadWarningVisible,
+			startMaxParallelUploadWarningTimer,
 		} = get();
 
 		const updatedFileUploads = fileUploads.map((fileUpload) => {
@@ -208,18 +207,18 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			updatedFileUploads.some(
 				(fileUpload) => fileUpload.status === "failed.tooMany",
 			) &&
-			!isParallelUploadWarningDismissed &&
-			!warningDismissTimer;
+			!isMaxParallelUploadWarningVisible &&
+			!maxParallelUploadWarningTimeout;
 
 		if (shouldStartWarningTimer) {
-			startWarningDismissTimer();
+			startMaxParallelUploadWarningTimer();
 		}
 	},
 
 	removeFileUpload: (fileName: string) => {
 		const { fileUploads } = get();
 		set({
-			fileUploads: fileUploads.filter((fu) => fu.file.name !== fileName),
+			fileUploads: fileUploads.filter(({ file }) => file.name !== fileName),
 		});
 	},
 
@@ -227,38 +226,24 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		set({ fileUploads: [] });
 	},
 
-	startWarningDismissTimer: () => {
-		const { warningDismissTimer } = get();
-
+	startMaxParallelUploadWarningTimer: () => {
 		// Clear existing timer
-		if (warningDismissTimer) {
-			clearTimeout(warningDismissTimer);
+		if (maxParallelUploadWarningTimeout) {
+			clearTimeout(maxParallelUploadWarningTimeout);
 		}
 
 		// Start new timer
-		const timer = setTimeout(() => {
-			set({
-				isParallelUploadWarningDismissed: true,
-				warningDismissTimer: null,
-			});
+		maxParallelUploadWarningTimeout = setTimeout(() => {
+			maxParallelUploadWarningTimeout = null;
+			set({ isMaxParallelUploadWarningVisible: true });
 		}, WARNING_AUTO_DISMISS_DELAY_MS);
-
-		set({ warningDismissTimer: timer });
 	},
 
-	dismissWarning: () => {
-		const { warningDismissTimer } = get();
-		if (warningDismissTimer) {
-			clearTimeout(warningDismissTimer);
+	hideMaxParallelUploadWarning: () => {
+		if (maxParallelUploadWarningTimeout) {
+			clearTimeout(maxParallelUploadWarningTimeout);
+			maxParallelUploadWarningTimeout = null;
 		}
-		set({ isParallelUploadWarningDismissed: true, warningDismissTimer: null });
-	},
-
-	resetWarningDismissal: () => {
-		const { warningDismissTimer } = get();
-		if (warningDismissTimer) {
-			clearTimeout(warningDismissTimer);
-		}
-		set({ isParallelUploadWarningDismissed: false, warningDismissTimer: null });
+		set({ isMaxParallelUploadWarningVisible: false });
 	},
 }));

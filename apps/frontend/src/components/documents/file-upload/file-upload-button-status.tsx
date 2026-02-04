@@ -33,12 +33,10 @@ export function FileUploadButtonStatus() {
 		);
 	}
 
-	if (hasFailedFiles) {
-		return (
-			<span className="flex gap-x-2 items-center">
-				<RedErrorIcon />
-				{UPLOAD_STATUS_MAP["failed.generic"]}
-			</span>
-		);
-	}
+	return (
+		<span className="flex gap-x-2 items-center">
+			<RedErrorIcon />
+			{UPLOAD_STATUS_MAP["failed.generic"]}
+		</span>
+	);
 }
