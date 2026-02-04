@@ -6,6 +6,7 @@ import { DroppableFolderName } from "./droppable-folder-name.tsx";
 import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
+import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
 
 interface FolderItemProps {
 	item: DocumentFolder;
@@ -15,10 +16,9 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 	const {
 		selectedChatFolders,
 		selectedFoldersForAction,
-		selectChatFolder,
 		selectFolderForAction,
-		unselectChatFolder,
 		unselectFolderForAction,
+		toggleChatFolder,
 	} = useFolderStore();
 	const { isMobileCheckboxVisible } = useMobileMenuStore();
 
@@ -35,14 +35,6 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 			return;
 		}
 		unselectFolderForAction(item.id);
-	};
-
-	const handleToggleChatFolder = (folder: DocumentFolder) => {
-		if (selectedChatFolders.some((fol) => fol.id === folder.id)) {
-			unselectChatFolder(folder.id);
-			return;
-		}
-		selectChatFolder(folder);
 	};
 
 	return (
@@ -62,9 +54,11 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 				<DroppableFolderName item={item} />
 
 				<ToggleChatItemButton
-					handleToggleChatItem={() => handleToggleChatFolder(item)}
+					handleToggleChatItem={() => toggleChatFolder(item)}
 					isSelectedForChat={isSelectedForChat}
 				/>
+
+				<ItemDropdownButton item={item} />
 			</div>
 		</>
 	);

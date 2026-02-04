@@ -6,7 +6,7 @@ import { DraggableDocumentName } from "./draggable-document-name.tsx";
 import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
-import { DocumentDropdownButton } from "./document-dropdown-button.tsx";
+import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
 
 interface DocumentItemProps {
 	item: Document;
@@ -17,9 +17,8 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 		selectDocumentForAction,
 		unselectDocumentForAction,
 		selectedDocumentsForAction,
-		selectChatDocument,
-		unselectChatDocument,
 		selectedChatDocuments,
+		toggleChatDocument,
 	} = useDocumentStore();
 	const { isMobileCheckboxVisible } = useMobileMenuStore();
 
@@ -36,14 +35,6 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 			return;
 		}
 		unselectDocumentForAction(item.id);
-	};
-
-	const handleToggleChatItem = (itemToAddToChat: Document) => {
-		if (selectedChatDocuments.some((doc) => doc.id === itemToAddToChat.id)) {
-			unselectChatDocument(itemToAddToChat.id);
-			return;
-		}
-		selectChatDocument(itemToAddToChat);
 	};
 
 	return (
@@ -63,10 +54,10 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 				<DraggableDocumentName item={item} />
 
 				<ToggleChatItemButton
-					handleToggleChatItem={() => handleToggleChatItem(item)}
+					handleToggleChatItem={() => toggleChatDocument(item)}
 					isSelectedForChat={isSelectedForChat}
 				/>
-				<DocumentDropdownButton document={item} />
+				<ItemDropdownButton item={item} />
 			</div>
 		</>
 	);

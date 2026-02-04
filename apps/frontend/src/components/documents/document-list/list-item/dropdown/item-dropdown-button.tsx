@@ -1,15 +1,15 @@
 import React, { useState, useRef } from "react";
-import type { Document } from "../../../../common";
-import { useClickOutside } from "../../../../hooks/use-click-outside";
-import { DocumentDropdown } from "./document-dropdown";
-import Content from "../../../../content";
+import { useClickOutside } from "../../../../../hooks/use-click-outside";
+import { ItemDropdown } from "./item-dropdown";
+import Content from "../../../../../content";
+import type { Document, DocumentFolder } from "../../../../../common";
 
-interface DocumentDropdownButtonProps {
-	document: Document;
+interface ItemDropdownButtonProps {
+	item: Document | DocumentFolder;
 }
 
-export const DocumentDropdownButton: React.FC<DocumentDropdownButtonProps> = ({
-	document,
+export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
+	item,
 }) => {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownButtonRef = useRef<HTMLButtonElement>(null);
@@ -40,8 +40,8 @@ export const DocumentDropdownButton: React.FC<DocumentDropdownButtonProps> = ({
 					height={18}
 				/>
 			</button>
-			<DocumentDropdown
-				document={document}
+			<ItemDropdown
+				item={item}
 				isOpen={isDropdownOpen}
 				onClose={() => setIsDropdownOpen(false)}
 			/>

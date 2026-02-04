@@ -28,7 +28,7 @@ export const DocumentsList: React.FC = () => {
 
 	return (
 		<div className="flex flex-col w-full h-full">
-			<div className="flex flex-row justify-between items-center h-11 gap-3 px-2 md:pr-2 md:pl-0 py-1.5 border-b-[0.5px] border-b-hellblau-110">
+			<div className="flex flex-row justify-between items-center mr-0.5 h-11 gap-3 px-2 md:pr-2 md:pl-0 py-1.5 border-b-[0.5px] border-b-hellblau-110">
 				<MultiSelectForAction />
 
 				<div
@@ -39,7 +39,7 @@ export const DocumentsList: React.FC = () => {
 			</div>
 
 			<div className="flex flex-col w-full h-full">
-				<ul className="grow h-0 overflow-y-auto mt-2 md:mt-0 pl-2 md:pl-0 filesection-scrollbar">
+				<ul className="grow h-0 overflow-y-auto mt-2 md:mt-0 pl-2 pr-0.5 md:pl-0 filesection-scrollbar">
 					{(isFirstLoad || isLoading) && <DocumentListSkeleton count={8} />}
 
 					{!isFirstLoad &&
