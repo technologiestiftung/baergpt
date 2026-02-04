@@ -52,7 +52,14 @@ export function DraggableDocumentName({ item }: DragableProps) {
 		{ isDragging: boolean }
 	>({
 		type: "ITEM",
-		item,
+		item: () => {
+			if (tooltipTimeoutRef.current) {
+				clearTimeout(tooltipTimeoutRef.current);
+				tooltipTimeoutRef.current = null;
+			}
+			hideTooltip();
+			return item;
+		},
 		collect: (monitor) => ({ isDragging: monitor.isDragging() }),
 	});
 
@@ -68,6 +75,7 @@ export function DraggableDocumentName({ item }: DragableProps) {
 			ref={dragRef}
 			onMouseEnter={handleMouseEnter}
 			onMouseLeave={handleMouseLeave}
+			onMouseDown={handleMouseLeave}
 			onFocus={handleMouseEnter}
 			onBlur={handleMouseLeave}
 		>
@@ -75,7 +83,7 @@ export function DraggableDocumentName({ item }: DragableProps) {
 				<DocumentIcon variant="lightBlue" />
 				<span
 					ref={spanRef}
-					className={`truncate pointer-events-none text-sm leading-5 font-normal ${isDragging ? "text-hellblau-110 cursor-grab" : "text-dunkelblau-100"}`}
+					className={`truncate pointer-events-none text-sm leading-5 font-normal ${isDragging ? "text-hellblau-110" : "text-dunkelblau-100"}`}
 				>
 					{getListItemName(item)}
 				</span>
