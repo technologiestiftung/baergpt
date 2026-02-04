@@ -36,7 +36,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		? selectedChatDocuments.some((doc) => doc.id === item.id)
 		: selectedChatFolders.some((fol) => fol.id === item.id);
 
-	const deleteDialogId = `delete-dialog-${isDoc ? "doc" : "folder"}-${item.id}`;
+	const deleteDialogId = `dropdown-${isDoc ? "doc" : "folder"}-${item.id}`;
 
 	const handleActionSelect = (action: DropdownAction) => {
 		onClose();

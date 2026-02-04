@@ -134,6 +134,69 @@ test.describe("Chat", () => {
 	});
 
 	testDesktopOnly(
+		"Add document and folder to chat via dropdown",
+		async ({ page }) => {
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect add to chat button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Dokument zum Chat hinzufügen" }),
+			).toBeVisible();
+			await page
+				.getByRole("option", { name: "Dokument zum Chat hinzufügen" })
+				.click();
+
+			// Verify the document is added to the chat
+			await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Ordner Name" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			// Add the folder and documents to the chat
+			const menuButtonFolder = page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonFolder).toBeVisible();
+			await menuButtonFolder.click();
+
+			// Expect add to chat button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Ordner zum Chat hinzufügen" }),
+			).toBeVisible();
+			await page
+				.getByRole("option", { name: "Ordner zum Chat hinzufügen" })
+				.click();
+
+			// Verify the folder is added to the chat
+			await expect(page.getByText("2 Elemente in diesem Chat")).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
 		"Add multiple documents / folders to chat",
 		async ({ page }) => {
 			const givenFolderName = "test-folder";

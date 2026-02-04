@@ -63,9 +63,11 @@ export const DeleteItemDialog: React.FC<DeleteItemDialogProps> = ({
 					{getDialogTitle(itemsToDelete)}
 				</p>
 
-				<p>{getDialogParagraph(itemsToDelete)}</p>
+				<p className="text-dunkelblau-100 text-lg leading-7 font-normal mt-1">
+					{getDialogParagraph(itemsToDelete)}
+				</p>
 
-				<div className="flex flex-row justify-end gap-4 mt-5">
+				<div className="flex flex-row justify-end gap-4 mt-6">
 					<TertiaryButton type="button" onClick={() => hideDeleteDialog(id)}>
 						{Content["deleteItemDialog.cancel"]}
 					</TertiaryButton>
