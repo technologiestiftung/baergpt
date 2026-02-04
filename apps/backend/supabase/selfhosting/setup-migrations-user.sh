@@ -22,9 +22,10 @@ EOF
 chmod 755 "$USER_HOME/bin/docker-inspect-db-ip"
 chown root:root "$USER_HOME/bin/docker-inspect-db-ip"
 
-# Allow only the wrapper script (no arguments allowed)
+# Allow only specific commands needed for migrations workflow
 tee /etc/sudoers.d/migrations <<EOF >/dev/null
 $USER ALL=(root) NOPASSWD: $USER_HOME/bin/docker-inspect-db-ip
+$USER ALL=(root) NOPASSWD: /usr/bin/docker compose up -d --no-deps --force-recreate auth
 EOF
 chmod 440 /etc/sudoers.d/migrations
 
