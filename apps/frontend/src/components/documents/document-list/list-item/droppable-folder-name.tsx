@@ -63,7 +63,10 @@ export function DroppableFolderName({ item }: DroppableFolderNameProps) {
 			onBlur={handleMouseLeave}
 		>
 			<FolderIcon />
-			<span ref={spanRef} className="truncate pointer-events-none">
+			<span
+				ref={spanRef}
+				className="truncate pointer-events-none text-sm leading-5 font-normal"
+			>
 				{getListItemName(item)}
 			</span>
 		</button>
