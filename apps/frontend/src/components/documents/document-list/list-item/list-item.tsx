@@ -44,7 +44,7 @@ export const ListItem: React.FC<ListItemProps> = ({ item }) => {
 	return (
 		<li
 			ref={dropRef}
-			className="flex gap-x-2 items-center border-b-[0.5px] border-y-hellblau-110 "
+			className="flex gap-x-0.5 items-center border-b-[0.5px] border-y-hellblau-110 "
 		>
 			{isDocument(item) ? (
 				<DocumentItem item={item} />

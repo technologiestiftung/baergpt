@@ -17,7 +17,7 @@ export const ToggleChatItemButton: React.FC<ToggleChatItemButtonProps> = ({
 	return (
 		<button
 			className={`hidden md:flex
-			rounded-3px w-fit items-center px-2 gap-1.5 text-sm leading-5 font-normal focus-visible:outline-default h-8
+			rounded-3px w-fit items-center px-2 gap-1.5 text-sm leading-5 font-normal focus-visible:outline-2px h-8
 			${
 				isSelectedForChat
 					? "text-dunkelblau-100 bg-hellblau-100 hover:bg-mittelblau-70"

@@ -9,6 +9,7 @@ import {
 	DeleteItemDialog,
 	showDeleteDialog,
 } from "../../../delete-item/delete-item-dialog";
+import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
 
 interface ItemDropdownProps {
 	item: Document | DocumentFolder;
@@ -92,11 +93,9 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		{
 			action: "delete" as const,
 			label: Content["documentsList.delete"],
-			icon: "/icons/bucket-red-icon.svg",
 			ariaLabel: isDoc
 				? Content["documentsList.deleteDocument"]
 				: Content["documentsList.deleteFolder"],
-			imgAlt: Content["documentsList.delete.imgAlt"],
 			isDestructive: true,
 		},
 	];
@@ -112,7 +111,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		<>
 			{isOpen && (
 				<div
-					className="absolute top-full right-0 z-50 bg-white rounded-3px shadow-base min-w-[200px]"
+					className="absolute top-full right-0 z-50 bg-white rounded-3px shadow-md min-w-[200px]"
 					onKeyDown={handleKeyDown}
 					role="listbox"
 				>
@@ -128,27 +127,26 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 											optionButtonRefs.current.delete(index);
 										}
 									}}
-									className="flex items-center w-full h-9 px-1.5 py-1 gap-x-2 text-left hover:bg-hellblau-30 focus-visible:outline-default focus-visible:-outline-offset-1 rounded-3px"
+									className={`flex items-center w-full h-9 px-1.5 py-1 gap-x-2 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
+									${dropdownItem.action === "delete" ? "group/delete text-warning-100 hover:text-dunkelblau-80" : "text-dunkelblau-80"}`}
 									onClick={() => handleActionSelect(dropdownItem.action)}
 									aria-label={dropdownItem.ariaLabel}
 									role="option"
 								>
-									<div className="flex items-center justify-center rounded-3px shrink-0 size-8">
-										<img
-											src={dropdownItem.icon}
-											alt={dropdownItem.imgAlt}
-											className="size-5"
-											width={20}
-											height={20}
-										/>
+									<div className="flex items-center justify-center rounded-3px shrink-0 size-8 relative">
+										{dropdownItem.action === "delete" ? (
+											<DeleteElementIcon />
+										) : (
+											<img
+												src={dropdownItem.icon}
+												alt={dropdownItem.imgAlt}
+												className="size-5"
+												width={20}
+												height={20}
+											/>
+										)}
 									</div>
-									<span
-										className={`text-sm leading-5 ${
-											dropdownItem.isDestructive
-												? "text-warning-100"
-												: "text-dunkelblau-80"
-										}`}
-									>
+									<span className={`text-sm leading-5 `}>
 										{dropdownItem.label}
 									</span>
 								</button>
