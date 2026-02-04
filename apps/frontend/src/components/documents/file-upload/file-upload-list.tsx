@@ -39,7 +39,7 @@ export function FileUploadList() {
 			{isParallelUploadLimitWarningVisible &&
 				hasExceededParallelUploadLimit &&
 				!isParallelUploadWarningDismissed && (
-					<div className="w-full px-3 py-2 bg-warning-10 text-sm leading-5 font-normal text-warning-100 z-10 sticky top-0">
+					<div className="w-full px-3 py-2 bg-warning-85 text-sm leading-5 font-normal text-hellblau-30 z-10 sticky top-0">
 						{`${Content["fileUpload.maxFilesWarning.p1"]} ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} ${Content["fileUpload.maxFilesWarning.p2"]}`}
 					</div>
 				)}
