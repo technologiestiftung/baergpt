@@ -1,10 +1,11 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useDocumentStore } from "../../../../store/document-store.ts";
 import { useDrag } from "react-dnd";
 import type { Document } from "../../../../common.ts";
 import { DocumentIcon } from "../../../primitives/icons/document-icon.tsx";
 import { getListItemName } from "./utils/get-list-item-name.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
+import { getEmptyImage } from "react-dnd-html5-backend";
 
 type DragableProps = {
 	item: Document;
@@ -45,10 +46,14 @@ export function DraggableDocumentName({ item }: DragableProps) {
 		hideTooltip();
 	};
 
-	const [, dragRef] = useDrag({
+	const [, dragRef, preview] = useDrag({
 		type: "ITEM",
 		item,
 	});
+
+	useEffect(() => {
+		preview(getEmptyImage(), { captureDraggingState: true });
+	}, [preview]);
 
 	return (
 		<button
@@ -61,11 +66,11 @@ export function DraggableDocumentName({ item }: DragableProps) {
 			onFocus={handleMouseEnter}
 			onBlur={handleMouseLeave}
 		>
-			<span className="flex gap-x-2 truncate">
+			<span className="flex gap-x-1 truncate">
 				<DocumentIcon variant="lightBlue" />
 				<span
 					ref={spanRef}
-					className="truncate pointer-events-none text-sm leading-5 font-normal"
+					className="truncate pointer-events-none text-sm leading-5 font-normal text-dunkelblau-100"
 				>
 					{getListItemName(item)}
 				</span>
