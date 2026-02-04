@@ -33,24 +33,12 @@ export function FileUploadButtonStatus() {
 		);
 	}
 
-	// Show specific error message for single file failures, or generic for multiple
-	if (failedFiles.length === 1) {
-		const singleFailedFile = failedFiles[0];
-		const specificErrorMessage = UPLOAD_STATUS_MAP[singleFailedFile.status];
-
+	if (hasFailedFiles) {
 		return (
 			<span className="flex gap-x-2 items-center">
 				<RedErrorIcon />
-				{specificErrorMessage}
+				{UPLOAD_STATUS_MAP["failed.generic"]}
 			</span>
 		);
 	}
-
-	// Multiple files failed - show generic message with count
-	return (
-		<span className="flex gap-x-2 items-center">
-			<RedErrorIcon />
-			{failedFiles.length} {Content["fileUploadButtonStatus.failed"]}
-		</span>
-	);
 }

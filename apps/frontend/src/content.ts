@@ -774,7 +774,7 @@ export const Content = {
 	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Hochladen läuft",
-	"fileUploadButtonStatus.uploaded": "Erfolgreich Hochladen",
+	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
 	"fileUploadButtonStatus.failed": "Hochladen fehlgeschlagen",
 	//noFilesDropZone
 	"fileUpload.uploadInstructions.p1": "Dateien hier ablegen oder ",
