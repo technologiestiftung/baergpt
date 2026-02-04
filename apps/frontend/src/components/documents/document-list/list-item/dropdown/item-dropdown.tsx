@@ -66,33 +66,37 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		{
 			action: "addToChat" as const,
 			label: isSelectedForChat
-				? Content["documentsList.RemoveFromChat"]
-				: Content["documentsList.AddToChat"],
+				? Content["documentsList.removeFromChat"]
+				: Content["documentsList.addToChat"],
 			icon: "/icons/plus-dark-blue-icon.svg",
-			ariaLabel: isDoc
-				? "Dokument zum Chat hinzufügen"
-				: "Ordner zum Chat hinzufügen",
-			imgAlt: "Plus-Icon",
+			ariaLabel: isSelectedForChat
+				? Content["documentsList.removeFromChat"]
+				: Content["documentsList.addToChat"],
+			imgAlt: isSelectedForChat
+				? Content["documentsList.removeFromChat.imgAlt"]
+				: Content["documentsList.addToChat.imgAlt"],
 			isDestructive: false,
 		},
 		...(isDoc
 			? [
 					{
 						action: "view" as const,
-						label: "Anzeigen",
-						icon: "/icons/visibility-icon.svg",
-						ariaLabel: "Dokument anzeigen",
-						imgAlt: "Anzeigen-Icon",
+						label: Content["documentsList.view"],
+						icon: "/icons/eye-preview-icon.svg",
+						ariaLabel: Content["documentsList.view"],
+						imgAlt: Content["documentsList.view.imgAlt"],
 						isDestructive: false,
 					},
 				]
 			: []),
 		{
 			action: "delete" as const,
-			label: "Löschen",
+			label: Content["documentsList.delete"],
 			icon: "/icons/bucket-red-icon.svg",
-			ariaLabel: isDoc ? "Dokument löschen" : "Ordner löschen",
-			imgAlt: "Mülleimer-Icon",
+			ariaLabel: isDoc
+				? Content["documentsList.deleteDocument"]
+				: Content["documentsList.deleteFolder"],
+			imgAlt: Content["documentsList.delete.imgAlt"],
 			isDestructive: true,
 		},
 	];

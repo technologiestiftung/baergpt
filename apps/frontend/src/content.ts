@@ -765,8 +765,17 @@ export const Content = {
 	"documentsList.folder.checkbox.ariaLabel":
 		"Ordner auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.name": "Name",
-	"documentsList.AddToChat": "In den Chat",
-	"documentsList.RemoveFromChat": "Aus Chat entfernen",
+	"documentsList.addToChat": "In den Chat",
+	"documentsList.removeFromChat": "Aus Chat entfernen",
+	"documentsList.removeFromChat.imgAlt": "Minus-Icon",
+	"documentsList.addToChat.imgAlt": "Plus-Icon",
+	"documentsList.view": "Dokument anzeigen",
+	"documentsList.view.imgAlt": "Auge-Icon",
+	"documentsList.delete": "Löschen",
+	"documentsList.delete.imgAlt": "Mülleimer-Icon",
+	"documentsList.deleteDocument": "Dokument löschen",
+	"documentsList.deleteFolder": "Ordner löschen",
+
 	"documentsList.menuIcon.imgAlt": "Menü-Icon",
 	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
 	//fileUpload

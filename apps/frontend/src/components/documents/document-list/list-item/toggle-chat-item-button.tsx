@@ -11,13 +11,13 @@ export const ToggleChatItemButton: React.FC<ToggleChatItemButtonProps> = ({
 	isSelectedForChat,
 }) => {
 	const label = isSelectedForChat
-		? Content["documentsList.RemoveFromChat"]
-		: Content["documentsList.AddToChat"];
+		? Content["documentsList.removeFromChat"]
+		: Content["documentsList.addToChat"];
 
 	return (
 		<button
-			className={`
-			flex rounded-3px w-fit items-center px-2 gap-1.5 text-sm leading-5 font-normal focus-visible:outline-default h-8
+			className={`hidden md:flex
+			rounded-3px w-fit items-center px-2 gap-1.5 text-sm leading-5 font-normal focus-visible:outline-default h-8
 			${
 				isSelectedForChat
 					? "text-dunkelblau-100 bg-hellblau-100 hover:bg-mittelblau-70"
