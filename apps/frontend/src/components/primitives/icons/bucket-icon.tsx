@@ -4,7 +4,8 @@ import Content from "../../../content";
 export const BucketIcon: React.FC<{
 	disabled?: boolean;
 	isLight?: boolean;
-}> = ({ disabled = false, isLight = false }) => {
+	className?: string;
+}> = ({ disabled = false, isLight = false, className }) => {
 	return (
 		<>
 			<img
@@ -12,7 +13,7 @@ export const BucketIcon: React.FC<{
 				alt={Content["bucketIcon.imgAlt"]}
 				width={24}
 				height={24}
-				className={!disabled && !isLight ? "block" : "hidden"}
+				className={`${className} ${!disabled && !isLight ? "block" : "hidden"}`}
 			/>
 
 			<img
@@ -20,7 +21,7 @@ export const BucketIcon: React.FC<{
 				alt={Content["bucketIcon.imgAlt"]}
 				width={24}
 				height={24}
-				className={disabled ? "block" : "hidden"}
+				className={`${className} ${disabled ? "block" : "hidden"}`}
 			/>
 
 			<img
@@ -28,7 +29,7 @@ export const BucketIcon: React.FC<{
 				alt={Content["bucketIcon.imgAlt"]}
 				width={24}
 				height={24}
-				className={isLight && !disabled ? "block" : "hidden"}
+				className={`${className} ${isLight && !disabled ? "block" : "hidden"}`}
 			/>
 		</>
 	);

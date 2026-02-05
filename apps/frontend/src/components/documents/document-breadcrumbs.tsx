@@ -26,7 +26,7 @@ const DocumentBreadcrumbs: React.FC = () => {
 	const isHoveredForDrop = hoveredFolderId === "back-folder";
 
 	return (
-		<div className="w-full flex flex-col h-8 gap-1 mb-5 md:mb-0 md:gap-0 md:flex-row md:justify-between">
+		<div className="w-full flex flex-col h-8 mb-4 md:mb-0 md:flex-row md:justify-between">
 			<div
 				className={`flex flex-row items-center gap-1 text-base leading-6 font-normal text-dunkelblau-100`}
 			>

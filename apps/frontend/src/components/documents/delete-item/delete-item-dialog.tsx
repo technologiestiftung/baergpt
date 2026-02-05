@@ -10,26 +10,25 @@ import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 import { isDocument } from "../document-list/list-item/utils/is-document.ts";
 import { getListItemName } from "../document-list/list-item/utils/get-list-item-name.ts";
 import { getUniqueId } from "../document-list/list-item/utils/get-unique-id.ts";
+import { useTooltipStore } from "../../../store/tooltip-store.ts";
 import Content from "../../../content.ts";
 
 const deleteDialogId = "delete-dialog";
 
-export function showDeleteDialog(id: string) {
+export function showDeleteDialog() {
 	(
-		document.getElementById(`${deleteDialogId}-${id}`) as HTMLDialogElement
+		document.getElementById(`${deleteDialogId}`) as HTMLDialogElement
 	).showModal();
 }
 
-export function hideDeleteDialog(id: string) {
-	(
-		document.getElementById(`${deleteDialogId}-${id}`) as HTMLDialogElement
-	).close();
+export function hideDeleteDialog() {
+	(document.getElementById(`${deleteDialogId}`) as HTMLDialogElement).close();
 }
 
-export const DeleteItemDialog: React.FC<{ id: string }> = ({ id }) => {
+export const DeleteItemDialog: React.FC = () => {
+	const { hideTooltip } = useTooltipStore();
 	const { selectedDocumentsForAction, deleteDocument } = useDocumentStore();
 	const { selectedFoldersForAction, deleteFolder } = useFolderStore();
-
 	const itemsToDelete = [
 		...selectedDocumentsForAction,
 		...selectedFoldersForAction,
@@ -38,7 +37,7 @@ export const DeleteItemDialog: React.FC<{ id: string }> = ({ id }) => {
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		hideDeleteDialog(id);
+		hideDeleteDialog();
 
 		for (const item of itemsToDelete) {
 			if (isDocument(item)) {
@@ -51,22 +50,28 @@ export const DeleteItemDialog: React.FC<{ id: string }> = ({ id }) => {
 
 	return (
 		<DefaultDialog
-			id={`${deleteDialogId}-${id}`}
+			id={`${deleteDialogId}`}
 			className="w-full md:w-[29rem] gap-y-4 p-5"
 		>
 			<form className="flex flex-col gap-y-1" onSubmit={handleSubmit}>
-				<p className="text-dunkelblau-100 font-bold text-lg">
+				<p className="text-dunkelblau-100 font-bold text-lg leading-7">
 					{getDialogTitle(itemsToDelete)}
 				</p>
 
-				<p>{getDialogParagraph(itemsToDelete)}</p>
+				<p className="font-normal">{getDialogParagraph(itemsToDelete)}</p>
 
 				<ul className="flex flex-col gap-y-1 mt-3">
 					{getUserFriendlyItemNames(itemsToDelete)}
 				</ul>
 
-				<div className="flex flex-row justify-end gap-4 mt-5">
-					<TertiaryButton type="button" onClick={() => hideDeleteDialog(id)}>
+				<div className="flex flex-row justify-end gap-3 mt-6">
+					<TertiaryButton
+						type="button"
+						onClick={() => {
+							hideDeleteDialog();
+							hideTooltip();
+						}}
+					>
 						{Content["deleteItemDialog.cancel"]}
 					</TertiaryButton>
 					<PrimaryButton type="submit">
@@ -106,7 +111,7 @@ function getUserFriendlyItemNames(
 		return (
 			<li
 				key={getUniqueId(item)}
-				className="flex gap-x-2 flex-row items-center"
+				className="flex gap-x-1 flex-row items-center text-base leading-6 font-normal"
 			>
 				{isDocument(item) ? (
 					<DocumentIcon variant="lightBlue" className="size-4" />

@@ -707,6 +707,8 @@ export const Content = {
 	"createFolderButton.label": "Neuer Ordner",
 	//deleteItemButton
 	"deleteItemButton.label": "Löschen",
+	"deleteItemButton.ariaLabel": "Dialog öffnen, um Elemente zu löschen",
+	"multiSelectForAction.cancel.label": "Auswahl abbrechen",
 	//BottomMenuBar
 	"bottomMenuBar.arialabel": "Sidebar",
 	//indeterminateCheckbox
@@ -766,6 +768,8 @@ export const Content = {
 	"documentsList.folder.checkbox.ariaLabel":
 		"Ordner auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.name": "Name",
+	"documentsList.selectedItemsCount.label": "ausgewählt",
+	"deleteItemButton.tooltip": "Löschen",
 	"documentsList.AddToChat": "In den Chat",
 	"documentsList.RemoveFromChat": "Aus Chat entfernen",
 	//fileUpload

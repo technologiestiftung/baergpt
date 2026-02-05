@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { CheckboxIcon, type CheckboxState } from "../icons/checkbox-icon.tsx";
-import { useMobileMenuStore } from "../../../store/use-mobile-menu.ts";
 import Content from "../../../content.ts";
 
 interface CheckboxProps {
@@ -16,7 +15,6 @@ export const IndeterminateCheckbox: React.FC<CheckboxProps> = ({
 	state,
 	onChange,
 }) => {
-	const { isMobileCheckboxVisible } = useMobileMenuStore();
 	const ref = useRef<HTMLInputElement>(null);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +46,7 @@ export const IndeterminateCheckbox: React.FC<CheckboxProps> = ({
 			htmlFor={`${id}-checkbox`}
 		>
 			<span
-				className={`h-fit rounded-1.5px group/checkbox group-has-[:focus]:outline-default shrink-0 ${isMobileCheckboxVisible ? "flex" : "hidden"} md:flex`}
+				className={`h-fit rounded-1.5px group/checkbox group-has-[:focus]:outline-default shrink-0 flex`}
 			>
 				<CheckboxIcon state={state} />
 			</span>
