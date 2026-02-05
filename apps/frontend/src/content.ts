@@ -740,7 +740,7 @@ export const Content = {
 	"loadingSpinnerIcon.imgAlt": "Ein sich drehendes Spinner-Icon",
 	"previewIcon.imgAlt": "Preview-Icon",
 	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
-	"redErrorXIcon.imgAlt": "Ein Error Icon mit weißem X in rotem Kreis",
+	"redErrorIcon.imgAlt": "Ein Error Icon mit weißem ! in rotem Kreis",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
@@ -775,16 +775,13 @@ export const Content = {
 	"fileUpload.cancel": "Abbrechen",
 	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
 	//fileUploadButtonStatus
-	"fileUploadButtonStatus.uploading": "Dateien werden verarbeitet",
-	"fileUploadButtonStatus.singleFileUploading": "Datei wird verarbeitet",
-	"fileUploadButtonStatus.uploaded": "Upload erfolgreich",
-	"fileUploadButtonStatus.failed": "Fehler beim Upload",
+	"fileUploadButtonStatus.uploading": "Hochladen läuft",
+	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
+	"fileUploadButtonStatus.failed": "Hochladen fehlgeschlagen",
 	//noFilesDropZone
-	"fileUpload.uploadInstructions.p1": "Dateien mit Drag and Drop hochladen ",
-	"fileUpload.uploadInstructions.p2": "oder ",
-	"fileUpload.searchComputerbutton.label": "Computer durchsuchen",
+	"fileUpload.uploadInstructions.p1": "Dateien hier ablegen oder ",
+	"fileUpload.searchComputerbutton.label": "Hochladen",
 	//fileupload help link
-	"fileUpload.helpLink.label": "Hilfe",
 	"fileUpload.helpLink.link":
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",

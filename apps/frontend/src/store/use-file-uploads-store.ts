@@ -7,16 +7,17 @@ import {
 	processDocument,
 } from "../api/documents/upload-file.ts";
 import { useErrorStore } from "./error-store.ts";
+
 export const UPLOAD_STATUS_MAP = {
-	uploading: "Wird hochgeladen",
+	uploading: "Hochladen läuft",
 	uploaded: "Erfolgreich hochgeladen",
-	processing: "Wird verarbeitet",
-	successful: "Erfolgreich verarbeitet",
+	processing: "Hochladen läuft",
+	successful: "Erfolgreich hochgeladen",
 	canceled: "Hochladen abgebrochen",
 	"failed.generic": "Hochladen fehlgeschlagen",
 	"failed.duplicate": "Datei existiert bereits",
-	"failed.format": "Ungültiges Dateiformat (nur PDF, Word oder Excel)",
-	"failed.size": `Datei zu groß (max. ${import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB} MB)`,
+	"failed.format": "Falsches Format",
+	"failed.size": `Datei zu groß`,
 	"failed.tooMany": `Hochladen fehlgeschlagen`,
 } as const;
 
@@ -27,14 +28,24 @@ export type FileUpload = {
 	status: UploadStatusKeys;
 };
 
+const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
+const WARNING_AUTO_DISMISS_DELAY_MS = 10_000;
+
+let maxParallelUploadWarningTimeout: ReturnType<typeof setTimeout> | null =
+	null;
+
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
+	isMaxParallelUploadWarningDismissed: boolean;
 	uploadFile: (fileUpload: FileUpload) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
 	hasAvailableUploadSlots: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
+	removeFileUpload: (fileName: string) => void;
 	clearFileUploads: () => void;
+	startMaxParallelUploadWarningTimer: () => void;
+	hideMaxParallelUploadWarning: () => void;
 };
 
 function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
@@ -43,6 +54,7 @@ function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
 
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
+	isMaxParallelUploadWarningDismissed: false,
 
 	async uploadFile({ file }: FileUpload) {
 		const { updateFileUploadStatus } = get();
@@ -84,6 +96,10 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			await processDocument(file, filePath);
 			updateFileUploadStatus(file, "successful");
 
+			setTimeout(() => {
+				get().removeFileUpload(file.name);
+			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
+
 			getDocuments(new AbortController().signal).catch(
 				useErrorStore.getState().handleError,
 			);
@@ -106,7 +122,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	},
 
 	uploadFiles: async (files: File[]) => {
-		const { fileUploads, uploadFile } = get();
+		const { fileUploads, uploadFile, hideMaxParallelUploadWarning } = get();
 		const { documents } = useDocumentStore.getState();
 
 		const availableUploadSlots =
@@ -137,6 +153,8 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 		set({ fileUploads: updatedFileUploads });
 
+		hideMaxParallelUploadWarning();
+
 		const promises = newFileUploads.map((fileUpload) => uploadFile(fileUpload));
 		await Promise.all(promises);
 	},
@@ -166,7 +184,11 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	},
 
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {
-		const { fileUploads } = get();
+		const {
+			fileUploads,
+			isMaxParallelUploadWarningDismissed,
+			startMaxParallelUploadWarningTimer,
+		} = get();
 
 		const updatedFileUploads = fileUploads.map((fileUpload) => {
 			if (fileUpload.file.name === file.name) {
@@ -179,9 +201,49 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		});
 
 		set({ fileUploads: updatedFileUploads });
+
+		const shouldStartWarningTimer =
+			status === "successful" &&
+			updatedFileUploads.some(
+				(fileUpload) => fileUpload.status === "failed.tooMany",
+			) &&
+			!isMaxParallelUploadWarningDismissed &&
+			!maxParallelUploadWarningTimeout;
+
+		if (shouldStartWarningTimer) {
+			startMaxParallelUploadWarningTimer();
+		}
+	},
+
+	removeFileUpload: (fileName: string) => {
+		const { fileUploads } = get();
+		set({
+			fileUploads: fileUploads.filter(({ file }) => file.name !== fileName),
+		});
 	},
 
 	clearFileUploads: () => {
 		set({ fileUploads: [] });
+	},
+
+	startMaxParallelUploadWarningTimer: () => {
+		// Clear existing timer
+		if (maxParallelUploadWarningTimeout) {
+			clearTimeout(maxParallelUploadWarningTimeout);
+		}
+
+		// Start new timer
+		maxParallelUploadWarningTimeout = setTimeout(() => {
+			maxParallelUploadWarningTimeout = null;
+			set({ isMaxParallelUploadWarningDismissed: true });
+		}, WARNING_AUTO_DISMISS_DELAY_MS);
+	},
+
+	hideMaxParallelUploadWarning: () => {
+		if (maxParallelUploadWarningTimeout) {
+			clearTimeout(maxParallelUploadWarningTimeout);
+			maxParallelUploadWarningTimeout = null;
+		}
+		set({ isMaxParallelUploadWarningDismissed: false });
 	},
 }));
