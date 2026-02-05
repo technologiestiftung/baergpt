@@ -31,7 +31,7 @@ export const DocumentPreviewSection: React.FC = () => {
 		<section className="absolute h-full inset-0 z-30 flex flex-col bg-white">
 			<div className="flex flex-col gap-2.5 md:gap-3 px-5 md:px-[88px] md:py-6 py-3">
 				<div className="flex w-full justify-between gap-1 px-0 md:px-2.5">
-					<h2 className="flex text-baseleading-6 md:text-xl md:leading-7 font-semibold break-all text-dunkelblau-200">
+					<h2 className="flex text-baseleading-6 md:text-xl md:leading-7 font-semibold break-all text-dunkelblau-100">
 						{selectedPreviewDocument?.file_name}
 					</h2>
 					<button
@@ -51,15 +51,15 @@ export const DocumentPreviewSection: React.FC = () => {
 							download={selectedPreviewDocument?.file_name}
 							className="flex rounded-3px h-9 w-fit items-center px-2 gap-1 hover:bg-hellblau-100 focus-visible:outline-default"
 						>
-							<span className="text-sm leading-5 font-normal">
-								{Content["documentsPreviewSection.downloadLink.label"]}
-							</span>
 							<img
 								src="/icons/download-icon.svg"
 								width={20}
 								height={20}
 								alt={Content["downloadIcon.imgAlt"]}
 							/>
+							<span className="text-sm leading-5 font-normal">
+								{Content["documentsPreviewSection.downloadLink.label"]}
+							</span>
 						</a>
 					)}
 					{errorMessage && (
