@@ -4,7 +4,7 @@ export function LoadingSpinnerIcon({
 	variant = "default",
 	size = "large",
 }: {
-	variant?: "default" | "disabled";
+	variant?: "default" | "disabled" | "light";
 	size?: "small" | "large";
 }) {
 	return (
@@ -15,6 +15,14 @@ export function LoadingSpinnerIcon({
 				height={size === "small" ? 20 : 24}
 				alt={Content["loadingSpinnerIcon.imgAlt"]}
 				className={`${variant === "default" ? "block" : "hidden"} animate-spin`}
+			/>
+
+			<img
+				src="/icons/spinner-icon-light.svg"
+				width={20}
+				height={20}
+				alt={Content["loadingSpinnerIcon.imgAlt"]}
+				className={`${variant === "light" ? "block" : "hidden"} animate-spin`}
 			/>
 
 			<img
