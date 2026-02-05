@@ -3,6 +3,7 @@ import DocumentBreadcrumbs from "./document-breadcrumbs.tsx";
 import { CreateFolderButton } from "./create-folder/create-folder-button.tsx";
 import { DeleteItemButton } from "./delete-item/delete-item-button.tsx";
 import { DocumentsList } from "./document-list/documents-list.tsx";
+import { DocumentDragPreview } from "./document-list/document-drag-preview.tsx";
 import { FileUpload } from "./file-upload/file-upload.tsx";
 import { DocumentIcon } from "../primitives/icons/document-icon.tsx";
 import { CloseIcon } from "../primitives/icons/close-icon.tsx";
@@ -164,6 +165,7 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 
 						{hasItems && (
 							<>
+								<DocumentDragPreview />
 								<div className="flex h-full">
 									<DocumentsList />
 								</div>
