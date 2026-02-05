@@ -11,7 +11,7 @@ import { useDocumentStore } from "../../../store/document-store.ts";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 
 export function FileUploadList() {
-	const { fileUploads, isMaxParallelUploadWarningVisible } =
+	const { fileUploads, isMaxParallelUploadWarningDismissed } =
 		useFileUploadsStore();
 	const { documents, deletedDefaultDocumentIds } = useDocumentStore();
 
@@ -38,7 +38,7 @@ export function FileUploadList() {
 		<ul className="overflow-y-auto max-h-[228px] relative rounded-b-3px">
 			{isParallelUploadLimitWarningVisible &&
 				hasExceededParallelUploadLimit &&
-				!isMaxParallelUploadWarningVisible && (
+				!isMaxParallelUploadWarningDismissed && (
 					<div className="border-y-[0.5px] border-dunkelblau-80 w-full p-2.5 bg-dunkelblau-100 text-sm leading-5 font-semibold text-warning-100 z-10 sticky top-0">
 						{`${Content["fileUpload.maxFilesWarning.p1"]} ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} ${Content["fileUpload.maxFilesWarning.p2"]}`}
 					</div>

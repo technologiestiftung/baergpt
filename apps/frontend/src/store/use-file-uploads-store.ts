@@ -36,7 +36,7 @@ let maxParallelUploadWarningTimeout: ReturnType<typeof setTimeout> | null =
 
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
-	isMaxParallelUploadWarningVisible: boolean;
+	isMaxParallelUploadWarningDismissed: boolean;
 	uploadFile: (fileUpload: FileUpload) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
@@ -54,7 +54,7 @@ function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
 
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
-	isMaxParallelUploadWarningVisible: false,
+	isMaxParallelUploadWarningDismissed: false,
 
 	async uploadFile({ file }: FileUpload) {
 		const { updateFileUploadStatus } = get();
@@ -186,7 +186,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {
 		const {
 			fileUploads,
-			isMaxParallelUploadWarningVisible,
+			isMaxParallelUploadWarningDismissed,
 			startMaxParallelUploadWarningTimer,
 		} = get();
 
@@ -207,7 +207,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			updatedFileUploads.some(
 				(fileUpload) => fileUpload.status === "failed.tooMany",
 			) &&
-			!isMaxParallelUploadWarningVisible &&
+			!isMaxParallelUploadWarningDismissed &&
 			!maxParallelUploadWarningTimeout;
 
 		if (shouldStartWarningTimer) {
@@ -235,7 +235,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		// Start new timer
 		maxParallelUploadWarningTimeout = setTimeout(() => {
 			maxParallelUploadWarningTimeout = null;
-			set({ isMaxParallelUploadWarningVisible: true });
+			set({ isMaxParallelUploadWarningDismissed: true });
 		}, WARNING_AUTO_DISMISS_DELAY_MS);
 	},
 
@@ -244,6 +244,6 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			clearTimeout(maxParallelUploadWarningTimeout);
 			maxParallelUploadWarningTimeout = null;
 		}
-		set({ isMaxParallelUploadWarningVisible: false });
+		set({ isMaxParallelUploadWarningDismissed: false });
 	},
 }));
