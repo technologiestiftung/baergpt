@@ -55,7 +55,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 	const hasItemsOrHasFileUploads = hasItems || hasFileUploads;
 
 	return (
-		<div className={`flex flex-col w-full ${!hasItems && "h-full "}`}>
+		<div className={`flex flex-col w-full ${!hasItems && "h-full"}`}>
 			{!hasItems && !error && (
 				<div
 					className={`flex w-full h-full ${hasFileUploads ? "py-8" : "pt-8"}`}
@@ -120,8 +120,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 							</div>
 						) : (
 							<div className="text-dunkelblau-80">
-								<p>{`${Content["fileUpload.infoMessage.maxUpload.p1"]} ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} ${Content["fileUpload.infoMessage.maxUpload.p2"]}`}</p>
-								<p>
+								<p className="pb-2.5 md:pb-0">{`${Content["fileUpload.infoMessage.maxUpload.p1"]} ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} ${Content["fileUpload.infoMessage.maxUpload.p2"]}`}</p>
+								<p className="hidden md:block">
 									{`${numberOfUploads} ${Content["fileUpload.infoMessage.counter.p1"]} ${import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED} ${Content["fileUpload.infoMessage.counter.p2"]}`}
 								</p>
 							</div>

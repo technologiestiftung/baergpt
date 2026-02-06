@@ -6,6 +6,7 @@ import Content from "../../content.ts";
 import { MultiSelectForActionButton } from "./document-list/multi-select-for-action/multi-select-for-action-button.tsx";
 import { DocumentDragPreview } from "./document-list/document-drag-preview.tsx";
 import { CreateFolderButton } from "./create-folder/create-folder-button.tsx";
+import { FileUpload } from "./file-upload/file-upload.tsx";
 
 export function MobileDocuments({ hasItems }: { hasItems: boolean }) {
 	const { openDrawerId, setOpenDrawer } = useDrawerStore();
@@ -31,12 +32,15 @@ export function MobileDocuments({ hasItems }: { hasItems: boolean }) {
 				<MultiSelectForActionButton />
 			</div>
 
-			{hasItems && (
-				<div className="flex h-full px-5">
-					<DocumentsList />
-					<DocumentDragPreview />
-				</div>
-			)}
+			<div className="flex flex-col h-full px-5">
+				{hasItems && (
+					<>
+						<DocumentsList />
+						<DocumentDragPreview />
+					</>
+				)}
+				<FileUpload hasItems={hasItems} />
+			</div>
 		</BottomDrawer>
 	);
 }
