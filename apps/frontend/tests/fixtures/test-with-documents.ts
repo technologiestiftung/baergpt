@@ -362,6 +362,11 @@ export async function deleteFileViaUI({
 	page: Page;
 	fileName: string;
 }) {
+	// Enter multi-select mode (checkboxes for delete appear)
+	await page
+		.getByRole("button", { name: "Checkbox-Icon (ausgewählt) Löschen" })
+		.click();
+
 	// Ensure the checkbox from the uploaded file is present
 	const checkbox = page
 		.getByRole("listitem")
@@ -372,7 +377,11 @@ export async function deleteFileViaUI({
 
 	// Delete the file via the UI
 	await checkbox.click();
-	await page.getByRole("button", { name: "Löschen Mülleimer-Icon" }).click();
+
+	await page
+		.getByRole("button", { name: "Dialog öffnen, um Elemente zu löschen" })
+		.click();
+
 	await page
 		.getByRole("dialog")
 		.getByRole("button", { name: "Löschen" })
