@@ -184,15 +184,20 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 
 	getItemsInCurrentFolder: () => {
 		const { folders, currentFolder } = get();
-		const { documents } = useDocumentStore.getState();
+		const { documents, deletedDefaultDocumentIds } =
+			useDocumentStore.getState();
+		const isNotDeletedDefault = (doc: Document) =>
+			!deletedDefaultDocumentIds.includes(doc.id);
 
 		if (!currentFolder) {
-			const documentsInCurrentFolder = documents.filter(
-				({ folder_id }) => folder_id === null,
-			);
+			const documentsInCurrentFolder = documents
+				.filter(({ folder_id }) => folder_id === null)
+				.filter(isNotDeletedDefault);
 			return [...folders, ...documentsInCurrentFolder];
 		}
 
-		return documents.filter(({ folder_id }) => folder_id === currentFolder.id);
+		return documents
+			.filter(({ folder_id }) => folder_id === currentFolder.id)
+			.filter(isNotDeletedDefault);
 	},
 }));
