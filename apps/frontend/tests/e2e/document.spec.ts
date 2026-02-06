@@ -296,6 +296,14 @@ test.describe("Documents", () => {
 				}),
 			).toBeVisible();
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Löschen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -303,16 +311,14 @@ test.describe("Documents", () => {
 				.locator("label");
 			await folderCheckbox.click();
 
-			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
-			});
-			await deleteButton.click();
+			await page
+				.getByRole("button", { name: "Dialog öffnen, um Elemente zu löschen" })
+				.click();
 
-			const confirmButton = page.getByRole("button", {
-				name: "Löschen",
-				exact: true,
-			});
-			await confirmButton.click();
+			await page
+				.getByRole("dialog")
+				.getByRole("button", { name: "Löschen" })
+				.click();
 
 			// Verify the folder is deleted
 			await expect(
@@ -357,6 +363,14 @@ test.describe("Documents", () => {
 			await folderElement.hover();
 			await page.mouse.up();
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Löschen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -364,8 +378,9 @@ test.describe("Documents", () => {
 				.locator("label");
 			await folderCheckbox.click();
 
+			// Open the delete dialog
 			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
+				name: "Dialog öffnen, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -423,6 +438,14 @@ test.describe("Documents", () => {
 				await page.mouse.up();
 			}
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Löschen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -431,7 +454,7 @@ test.describe("Documents", () => {
 			await folderCheckbox.click();
 
 			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
+				name: "Dialog öffnen, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 

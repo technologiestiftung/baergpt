@@ -362,10 +362,13 @@ export async function deleteFileViaUI({
 	page: Page;
 	fileName: string;
 }) {
-	// Enter multi-select mode (checkboxes for delete appear)
-	await page
-		.getByRole("button", { name: "Checkbox-Icon (ausgewählt) Löschen" })
-		.click();
+	// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+	const enterMultiSelectButton = page.getByRole("button", {
+		name: "Checkbox-Icon (ausgewählt) Löschen",
+	});
+	if (await enterMultiSelectButton.isVisible()) {
+		await enterMultiSelectButton.click();
+	}
 
 	// Ensure the checkbox from the uploaded file is present
 	const checkbox = page
