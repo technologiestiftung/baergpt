@@ -95,12 +95,20 @@ test.describe("Documents", () => {
 				await fileChooser.setFiles(filePaths);
 			}
 
-			// Wait for the error message for the rejected file
-			await expect(page.getByText("Max. 5 Dateien pro Upload.")).toBeVisible();
+			// Wait for the error message for the rejected file (scope to desktop panel)
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText("Max. 5 Dateien pro Upload."),
+			).toBeVisible();
 
 			// Verify the first 5 files are being uploaded/uploaded successfully
 			for (const file of filesToUpload) {
-				await expect(page.getByText(file.name, { exact: true })).toBeVisible();
+				await expect(
+					page
+						.locator("#desktop-documents-panel")
+						.getByText(file.name, { exact: true }),
+				).toBeVisible();
 			}
 
 			// Wait for successful uploads to complete
@@ -119,15 +127,18 @@ test.describe("Documents", () => {
 			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
 
 			// Verify only the first 5 files appear in the document list
+			const desktopPanel = page.locator("#desktop-documents-panel");
 			for (const file of filesToUpload) {
 				await expect(
-					page.getByRole("button", { name: `Dokumente-Icon ${file.name}` }),
+					desktopPanel.getByRole("button", {
+						name: `Dokumente-Icon ${file.name}`,
+					}),
 				).toBeVisible();
 			}
 
 			// Verify the 6th file is NOT in the document list
 			await expect(
-				page.getByRole("button", {
+				desktopPanel.getByRole("button", {
 					name: `Dokumente-Icon ${fileToReject.name}`,
 				}),
 			).not.toBeVisible();
@@ -667,16 +678,21 @@ test.describe("Documents", () => {
 			await page.goto("/");
 			await page.waitForLoadState("networkidle");
 
-			// Verify the limit reached info messages are displayed
+			// Verify the limit reached info messages are displayed (scope to desktop panel)
+			const desktopPanel = page.locator("#desktop-documents-panel");
 			await expect(
-				page.getByText(`Sie haben das Limit von ${maxFiles} Dateien erreicht.`),
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
 			).toBeVisible();
 			await expect(
-				page.getByText("Löschen Sie eine Datei, um eine neue hochzuladen."),
+				desktopPanel.getByText(
+					"Löschen Sie eine Datei, um eine neue hochzuladen.",
+				),
 			).toBeVisible();
 
 			// Verify the upload button is disabled
-			const uploadButton = page.getByRole("button", {
+			const uploadButton = desktopPanel.getByRole("button", {
 				name: "Datei hochladen",
 			});
 			await expect(uploadButton).toBeDisabled();
