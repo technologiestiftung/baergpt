@@ -5,7 +5,7 @@ export const BucketIcon: React.FC<{
 	disabled?: boolean;
 	isLight?: boolean;
 	className?: string;
-}> = ({ disabled = false, isLight = false, className }) => {
+}> = ({ disabled = false, isLight = false, className = "" }) => {
 	return (
 		<>
 			<img

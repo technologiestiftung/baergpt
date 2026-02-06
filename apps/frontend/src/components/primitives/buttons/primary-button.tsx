@@ -7,7 +7,7 @@ export const PrimaryButton: React.FC<ButtonProps> = ({
 	type = "button",
 	ariaLabel,
 	title,
-	hasIcon = false,
+	hasIcon,
 	children,
 }) => {
 	return (
