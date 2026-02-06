@@ -41,7 +41,7 @@ export const IndeterminateCheckbox: React.FC<CheckboxProps> = ({
 	return (
 		<label
 			className={`
-			flex h-fit gap-x-2 items-center cursor-pointer group text-sm leading-5 font-semibold text-dunkelblau-100`}
+			flex h-fit items-center cursor-pointer group text-sm leading-5 font-semibold text-dunkelblau-100`}
 			aria-label={Content["indeterminateCheckbox.ariaLabel"]}
 			htmlFor={`${id}-checkbox`}
 		>
@@ -57,7 +57,7 @@ export const IndeterminateCheckbox: React.FC<CheckboxProps> = ({
 				className="appearance-none size-0 focus-visible:outline-none"
 				onChange={handleChange}
 			/>
-			{children}
+			<span className="ml-2">{children}</span>
 		</label>
 	);
 };

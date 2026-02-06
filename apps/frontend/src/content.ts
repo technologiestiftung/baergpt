@@ -768,6 +768,8 @@ export const Content = {
 	"documentsList.folder.checkbox.ariaLabel":
 		"Ordner auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.name": "Name",
+	"documentsList.selectedItemsCount.label.parenthesis.open": "(",
+	"documentsList.selectedItemsCount.label.parenthesis.close": ")",
 	"documentsList.selectedItemsCount.label": "ausgewählt",
 	"deleteItemButton.tooltip": "Löschen",
 	"documentsList.AddToChat": "In den Chat",
