@@ -6,7 +6,8 @@ import { useFolderStore } from "../../../../../store/folder-store";
 export function isItemSelectedForChat(
 	item: Document | DocumentFolder,
 ): boolean {
-	const selectedChatDocuments = useDocumentStore.getState().selectedChatDocuments;
+	const selectedChatDocuments =
+		useDocumentStore.getState().selectedChatDocuments;
 	const selectedChatFolders = useFolderStore.getState().selectedChatFolders;
 
 	return isDocument(item)

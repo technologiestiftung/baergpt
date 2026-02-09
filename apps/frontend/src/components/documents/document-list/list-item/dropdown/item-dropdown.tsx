@@ -106,7 +106,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		items: dropdownItems,
 		isOpen,
 		onClose,
-		onItemClick: (dropdownItem) => dropdownItem.action,
+		onItemClick: (dropdownItem) => dropdownItem.action(),
 	});
 
 	return (
