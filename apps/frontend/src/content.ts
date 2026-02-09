@@ -772,8 +772,6 @@ export const Content = {
 	"documentsList.selectedItemsCount.label.parenthesis.close": ")",
 	"documentsList.selectedItemsCount.label": "ausgewählt",
 	"deleteItemButton.tooltip": "Löschen",
-	"documentsList.AddToChat": "In den Chat",
-	"documentsList.RemoveFromChat": "Aus Chat entfernen",
 	"documentsList.addToChat": "In den Chat",
 	"documentsList.removeFromChat": "Aus Chat entfernen",
 	"documentsList.removeFromChat.imgAlt": "Minus-Icon",

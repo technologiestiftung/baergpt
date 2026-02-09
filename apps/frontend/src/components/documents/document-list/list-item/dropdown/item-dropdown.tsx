@@ -1,15 +1,13 @@
-import React, { useState } from "react";
+import React from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
 import { useDocumentStore } from "../../../../../store/document-store";
+import { useFolderStore } from "../../../../../store/folder-store";
 import type { Document, DocumentFolder } from "../../../../../common";
 import Content from "../../../../../content";
 import { isDocument } from "../utils/is-document";
 import { toggleItemInChat } from "../utils/toggle-item-in-chat";
 import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
-import {
-	DeleteItemDialog,
-	showDeleteDialog,
-} from "../../../delete-item/delete-item-dialog";
+import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
 import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
 
 interface ItemDropdownProps {
@@ -23,15 +21,20 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	isOpen,
 	onClose,
 }) => {
-	const { selectPreviewDocument } = useDocumentStore();
-
-	const [itemToDelete, setItemToDelete] = useState<
-		Document | DocumentFolder | null
-	>(null);
+	const {
+		selectPreviewDocument,
+		selectDocumentForAction,
+		unselectDocumentForAction,
+		selectedDocumentsForAction,
+	} = useDocumentStore();
+	const {
+		selectFolderForAction,
+		unselectFolderForAction,
+		selectedFoldersForAction,
+	} = useFolderStore();
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
-	const deleteDialogId = `dropdown-${isDoc ? "doc" : "folder"}-${item.id}`;
 
 	const handleAddToChat = () => {
 		onClose();
@@ -40,8 +43,20 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	const handleDeleteItem = () => {
 		onClose();
-		setItemToDelete(item);
-		showDeleteDialog(deleteDialogId);
+		// clear previously selected items
+		selectedDocumentsForAction.forEach((doc) =>
+			unselectDocumentForAction(doc.id),
+		);
+		selectedFoldersForAction.forEach((folder) =>
+			unselectFolderForAction(folder.id),
+		);
+
+		if (isDoc) {
+			selectDocumentForAction(item as Document);
+		} else {
+			selectFolderForAction(item as DocumentFolder);
+		}
+		showDeleteDialog();
 	};
 
 	const handleViewItem = () => {
@@ -147,11 +162,6 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 					</ul>
 				</div>
 			)}
-
-			<DeleteItemDialog
-				id={deleteDialogId}
-				dropdownItemToDelete={itemToDelete as Document | DocumentFolder}
-			/>
 		</>
 	);
 };

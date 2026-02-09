@@ -480,7 +480,14 @@ test.describe("Documents", () => {
 
 			// Assert folder gone and both docs gone
 			await expect(
-				page.getByRole("listitem").filter({ hasText: folder }),
+				page
+					.locator("#desktop-documents-panel")
+					.getByRole("listitem")
+					.filter({
+						has: page.getByRole("button", {
+							name: `Ordner-Icon ${folder}`,
+						}),
+					}),
 			).not.toBeVisible();
 			for (const name of [defaultDocumentName, secondaryDocumentName]) {
 				await expect(
