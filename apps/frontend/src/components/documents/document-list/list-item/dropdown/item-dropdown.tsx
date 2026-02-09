@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
 import { useDocumentStore } from "../../../../../store/document-store";
-import { useFolderStore } from "../../../../../store/folder-store";
 import type { Document, DocumentFolder } from "../../../../../common";
 import Content from "../../../../../content";
 import { isDocument } from "../utils/is-document";
+import { toggleItemInChat } from "../utils/toggle-item-in-chat";
+import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
 import {
 	DeleteItemDialog,
 	showDeleteDialog,
@@ -22,28 +23,19 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	isOpen,
 	onClose,
 }) => {
-	const { selectedChatDocuments, toggleChatDocument, selectPreviewDocument } =
-		useDocumentStore();
-	const { selectedChatFolders, toggleChatFolder } = useFolderStore();
+	const { selectPreviewDocument } = useDocumentStore();
 
 	const [itemToDelete, setItemToDelete] = useState<
 		Document | DocumentFolder | null
 	>(null);
 
 	const isDoc = isDocument(item);
-	const isSelectedForChat = isDoc
-		? selectedChatDocuments.some((doc) => doc.id === item.id)
-		: selectedChatFolders.some((fol) => fol.id === item.id);
-
+	const isSelectedForChat = isItemSelectedForChat(item);
 	const deleteDialogId = `dropdown-${isDoc ? "doc" : "folder"}-${item.id}`;
 
 	const handleAddToChat = () => {
 		onClose();
-		if (isDoc) {
-			toggleChatDocument(item as Document);
-		} else {
-			toggleChatFolder(item as DocumentFolder);
-		}
+		toggleItemInChat(item);
 	};
 
 	const handleDeleteItem = () => {
@@ -58,12 +50,12 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	};
 
 	const toggleContentKey = isSelectedForChat ? "removeFromChat" : "addToChat";
+	const deleteItemKey = isDoc ? "deleteDocument" : "deleteFolder";
 
 	const addToChatItem = {
 		action: handleAddToChat,
 		label: Content[`documentsList.${toggleContentKey}`],
 		ariaLabel: Content[`documentsList.${toggleContentKey}`],
-		imgAlt: Content[`documentsList.${toggleContentKey}.imgAlt`],
 		style: "text-dunkelblau-80",
 		icon: (
 			<img
@@ -84,7 +76,6 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		action: handleViewItem,
 		label: Content["documentsList.view"],
 		ariaLabel: Content["documentsList.view"],
-		imgAlt: Content["documentsList.view.imgAlt"],
 		style: "text-dunkelblau-80",
 		icon: (
 			<img
@@ -96,8 +87,6 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 			/>
 		),
 	};
-
-	const deleteItemKey = isDoc ? "deleteDocument" : "deleteFolder";
 
 	const deleteItem = {
 		action: handleDeleteItem,
