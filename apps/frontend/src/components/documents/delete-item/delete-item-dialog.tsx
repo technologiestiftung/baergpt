@@ -2,6 +2,7 @@ import React, { type FormEvent } from "react";
 import { DefaultDialog } from "../../primitives/dialogs/default-dialog";
 import { useDocumentStore } from "../../../store/document-store";
 import { useFolderStore } from "../../../store/folder-store";
+import { useDocumentsListStore } from "../../../store/use-documents-list-store";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
 import type { Document, DocumentFolder } from "../../../common.ts";
 import { isDocument } from "../document-list/list-item/utils/is-document.ts";
@@ -29,34 +30,25 @@ export const DeleteItemDialog: React.FC = () => {
 	const { hideTooltip } = useTooltipStore();
 	const {
 		selectedDocumentsForAction,
-		singleSelectedDocumentForAction,
-		setSingleSelectedDocumentForAction,
 		deleteDocument,
 		unselectPreviewDocument,
 		unselectDocumentForAction,
 	} = useDocumentStore();
-	const {
-		selectedFoldersForAction,
-		singleSelectedFolderForAction,
-		setSingleSelectedFolderForAction,
-		deleteFolder,
-		unselectFolderForAction,
-	} = useFolderStore();
-
-	const singleItemToDeleteFromDropdown: Document | DocumentFolder | null =
-		singleSelectedDocumentForAction ?? singleSelectedFolderForAction;
+	const { selectedFoldersForAction, deleteFolder, unselectFolderForAction } =
+		useFolderStore();
+	const { singleItemSelectedForAction, setSingleItemSelectedForAction } =
+		useDocumentsListStore();
 
 	const itemsToDelete: (Document | DocumentFolder)[] =
-		singleItemToDeleteFromDropdown !== null
-			? [singleItemToDeleteFromDropdown]
+		singleItemSelectedForAction !== null
+			? [singleItemSelectedForAction]
 			: [...selectedDocumentsForAction, ...selectedFoldersForAction];
 
 	const isMultipleItemsToDelete = itemsToDelete.length > 1;
 
 	const clearSelectionAfterDelete = () => {
-		if (singleItemToDeleteFromDropdown !== null) {
-			setSingleSelectedDocumentForAction(null);
-			setSingleSelectedFolderForAction(null);
+		if (singleItemSelectedForAction !== null) {
+			setSingleItemSelectedForAction(null);
 		} else {
 			for (const item of itemsToDelete) {
 				if (isDocument(item)) {
@@ -108,8 +100,7 @@ export const DeleteItemDialog: React.FC = () => {
 					<TertiaryButton
 						type="button"
 						onClick={() => {
-							setSingleSelectedDocumentForAction(null);
-							setSingleSelectedFolderForAction(null);
+							setSingleItemSelectedForAction(null);
 							hideDeleteDialog();
 							hideTooltip();
 						}}

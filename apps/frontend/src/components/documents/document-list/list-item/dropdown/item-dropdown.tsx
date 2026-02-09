@@ -8,7 +8,7 @@ import { toggleItemInChat } from "../utils/toggle-item-in-chat";
 import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
 import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
 import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
-import { setSingleSelectedItemForAction } from "../utils/set-single-selected-item-for-action";
+import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
 
 interface ItemDropdownProps {
 	item: Document | DocumentFolder;
@@ -22,6 +22,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	onClose,
 }) => {
 	const { selectPreviewDocument } = useDocumentStore();
+	const { setSingleItemSelectedForAction } = useDocumentsListStore();
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
@@ -33,7 +34,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	const handleDeleteItem = (itemToDelete: Document | DocumentFolder) => {
 		onClose();
-		setSingleSelectedItemForAction(itemToDelete);
+		setSingleItemSelectedForAction(itemToDelete);
 		showDeleteDialog();
 	};
 
