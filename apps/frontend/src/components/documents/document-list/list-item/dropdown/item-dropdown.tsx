@@ -1,7 +1,6 @@
 import React from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
 import { useDocumentStore } from "../../../../../store/document-store";
-import { useFolderStore } from "../../../../../store/folder-store";
 import type { Document, DocumentFolder } from "../../../../../common";
 import Content from "../../../../../content";
 import { isDocument } from "../utils/is-document";
@@ -9,6 +8,7 @@ import { toggleItemInChat } from "../utils/toggle-item-in-chat";
 import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
 import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
 import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
+import { setSingleSelectedItemForAction } from "../utils/set-single-selected-item-for-action";
 
 interface ItemDropdownProps {
 	item: Document | DocumentFolder;
@@ -21,9 +21,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	isOpen,
 	onClose,
 }) => {
-	const { selectPreviewDocument, setSingleSelectedDocumentForAction } =
-		useDocumentStore();
-	const { setSingleSelectedFolderForAction } = useFolderStore();
+	const { selectPreviewDocument } = useDocumentStore();
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
@@ -33,15 +31,9 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		toggleItemInChat(item);
 	};
 
-	const handleDeleteItem = () => {
+	const handleDeleteItem = (itemToDelete: Document | DocumentFolder) => {
 		onClose();
-		if (isDoc) {
-			setSingleSelectedDocumentForAction(item as Document);
-			setSingleSelectedFolderForAction(null);
-		} else {
-			setSingleSelectedFolderForAction(item as DocumentFolder);
-			setSingleSelectedDocumentForAction(null);
-		}
+		setSingleSelectedItemForAction(itemToDelete);
 		showDeleteDialog();
 	};
 
@@ -90,7 +82,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	};
 
 	const deleteItem = {
-		action: handleDeleteItem,
+		action: () => handleDeleteItem(item),
 		label: Content["documentsList.delete"],
 		ariaLabel: Content[`documentsList.${deleteItemKey}`],
 		style: "group/delete text-warning-100 hover:text-dunkelblau-80",
