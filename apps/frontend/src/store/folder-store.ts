@@ -126,9 +126,10 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 
 		if (isSelected) {
 			unselectChatFolder(folder.id);
-		} else {
-			selectChatFolder(folder);
+			return;
 		}
+
+		selectChatFolder(folder);
 	},
 	getSelectedChatFolderIds: () => get().selectedChatFolders.map(({ id }) => id),
 

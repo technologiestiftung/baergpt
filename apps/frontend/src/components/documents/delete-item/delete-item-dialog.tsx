@@ -8,6 +8,9 @@ import { isDocument } from "../document-list/list-item/utils/is-document.ts";
 import { getListItemName } from "../document-list/list-item/utils/get-list-item-name.ts";
 import Content from "../../../content.ts";
 import { WarningButton } from "../../primitives/buttons/warning-button.tsx";
+import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
+import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
+import { getUniqueId } from "../document-list/list-item/utils/get-unique-id.ts";
 
 const deleteDialogId = "delete-dialog";
 
@@ -39,6 +42,8 @@ export const DeleteItemDialog: React.FC<DeleteItemDialogProps> = ({
 		? [dropdownItemToDelete]
 		: [...selectedDocumentsForAction, ...selectedFoldersForAction];
 
+	const isMultipleItemsToDelete = itemsToDelete.length > 1;
+
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
@@ -63,9 +68,15 @@ export const DeleteItemDialog: React.FC<DeleteItemDialogProps> = ({
 					{getDialogTitle(itemsToDelete)}
 				</p>
 
-				<p className="text-dunkelblau-100 text-lg leading-7 font-normal mt-1">
+				<div className="text-dunkelblau-100 text-lg leading-7 font-normal mt-1">
 					{getDialogParagraph(itemsToDelete)}
-				</p>
+				</div>
+
+				{isMultipleItemsToDelete && (
+					<ul className="flex flex-col gap-y-1 mt-3">
+						{getUserFriendlyItemNames(itemsToDelete)}
+					</ul>
+				)}
 
 				<div className="flex flex-row justify-end gap-4 mt-6">
 					<TertiaryButton type="button" onClick={() => hideDeleteDialog(id)}>
@@ -105,4 +116,24 @@ function getDialogParagraph(itemsToDelete: (Document | DocumentFolder)[]) {
 			{Content["deleteItemDialog.confirmation.singleItem.p2"]}
 		</p>
 	);
+}
+
+function getUserFriendlyItemNames(
+	itemsToDelete: (DocumentFolder | Document)[],
+) {
+	return itemsToDelete.map((item) => {
+		return (
+			<li
+				key={getUniqueId(item)}
+				className="flex gap-x-2 flex-row items-center"
+			>
+				{isDocument(item) ? (
+					<DocumentIcon variant="lightBlue" className="size-4" />
+				) : (
+					<FolderIcon className="size-4" />
+				)}
+				<span className="w-0 grow truncate">{getListItemName(item)}</span>
+			</li>
+		);
+	});
 }

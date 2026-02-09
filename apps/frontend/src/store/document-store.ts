@@ -236,9 +236,10 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
 		if (isSelected) {
 			unselectChatDocument(document.id);
-		} else {
-			selectChatDocument(document);
+			return;
 		}
+
+		selectChatDocument(document);
 	},
 	getSelectedChatDocumentIds: () => {
 		const { selectedChatDocuments } = get();
