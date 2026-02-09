@@ -39,6 +39,8 @@ interface DocumentStore {
 	selectedDocumentsForAction: Document[];
 	selectDocumentForAction: (document: Document) => void;
 	unselectDocumentForAction: (documentId: number) => void;
+	singleSelectedDocumentForAction: Document | null;
+	setSingleSelectedDocumentForAction: (document: Document | null) => void;
 }
 
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
@@ -273,5 +275,10 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 				(doc) => doc.id !== documentId,
 			),
 		}));
+	},
+
+	singleSelectedDocumentForAction: null,
+	setSingleSelectedDocumentForAction: (document) => {
+		set({ singleSelectedDocumentForAction: document });
 	},
 }));

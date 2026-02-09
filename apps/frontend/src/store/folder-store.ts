@@ -24,9 +24,11 @@ interface FolderStore {
 
 	selectedFoldersForAction: DocumentFolder[];
 	selectFolderForAction: (folder: DocumentFolder) => void;
-	selectAllItemsInCurrentFolder: () => void;
 	unselectFolderForAction: (folderId: number) => void;
 	unselectAllItemsInCurrentFolder: () => void;
+
+	singleSelectedFolderForAction: DocumentFolder | null;
+	setSingleSelectedFolderForAction: (folder: DocumentFolder | null) => void;
 
 	getDocumentsInFolder: (folderId: number) => Document[];
 	getItemsInCurrentFolder: () => (DocumentFolder | Document)[];
@@ -174,6 +176,10 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 				({ id }) => id !== folderId,
 			),
 		}));
+	},
+	singleSelectedFolderForAction: null,
+	setSingleSelectedFolderForAction: (folder) => {
+		set({ singleSelectedFolderForAction: folder });
 	},
 	unselectAllItemsInCurrentFolder: () => {
 		const { getItemsInCurrentFolder, unselectFolderForAction } = get();

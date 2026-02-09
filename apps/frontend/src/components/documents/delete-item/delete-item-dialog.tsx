@@ -29,15 +29,44 @@ export const DeleteItemDialog: React.FC = () => {
 	const { hideTooltip } = useTooltipStore();
 	const {
 		selectedDocumentsForAction,
+		singleSelectedDocumentForAction,
+		setSingleSelectedDocumentForAction,
 		deleteDocument,
 		unselectPreviewDocument,
+		unselectDocumentForAction,
 	} = useDocumentStore();
-	const { selectedFoldersForAction, deleteFolder } = useFolderStore();
-	const itemsToDelete = [
-		...selectedDocumentsForAction,
-		...selectedFoldersForAction,
-	];
+	const {
+		selectedFoldersForAction,
+		singleSelectedFolderForAction,
+		setSingleSelectedFolderForAction,
+		deleteFolder,
+		unselectFolderForAction,
+	} = useFolderStore();
+
+	const singleItemToDeleteFromDropdown: Document | DocumentFolder | null =
+		singleSelectedDocumentForAction ?? singleSelectedFolderForAction;
+
+	const itemsToDelete: (Document | DocumentFolder)[] =
+		singleItemToDeleteFromDropdown !== null
+			? [singleItemToDeleteFromDropdown]
+			: [...selectedDocumentsForAction, ...selectedFoldersForAction];
+
 	const isMultipleItemsToDelete = itemsToDelete.length > 1;
+
+	const clearSelectionAfterDelete = () => {
+		if (singleItemToDeleteFromDropdown !== null) {
+			setSingleSelectedDocumentForAction(null);
+			setSingleSelectedFolderForAction(null);
+		} else {
+			for (const item of itemsToDelete) {
+				if (isDocument(item)) {
+					unselectDocumentForAction(item.id);
+				} else {
+					unselectFolderForAction(item.id);
+				}
+			}
+		}
+	};
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -52,6 +81,7 @@ export const DeleteItemDialog: React.FC = () => {
 				await deleteFolder(item.id);
 			}
 		}
+		clearSelectionAfterDelete();
 	};
 
 	return (
@@ -78,6 +108,8 @@ export const DeleteItemDialog: React.FC = () => {
 					<TertiaryButton
 						type="button"
 						onClick={() => {
+							setSingleSelectedDocumentForAction(null);
+							setSingleSelectedFolderForAction(null);
 							hideDeleteDialog();
 							hideTooltip();
 						}}

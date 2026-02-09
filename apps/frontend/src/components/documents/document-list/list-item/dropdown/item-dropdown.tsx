@@ -21,17 +21,9 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	isOpen,
 	onClose,
 }) => {
-	const {
-		selectPreviewDocument,
-		selectDocumentForAction,
-		unselectDocumentForAction,
-		selectedDocumentsForAction,
-	} = useDocumentStore();
-	const {
-		selectFolderForAction,
-		unselectFolderForAction,
-		selectedFoldersForAction,
-	} = useFolderStore();
+	const { selectPreviewDocument, setSingleSelectedDocumentForAction } =
+		useDocumentStore();
+	const { setSingleSelectedFolderForAction } = useFolderStore();
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
@@ -43,18 +35,12 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	const handleDeleteItem = () => {
 		onClose();
-		// clear previously selected items
-		selectedDocumentsForAction.forEach((doc) =>
-			unselectDocumentForAction(doc.id),
-		);
-		selectedFoldersForAction.forEach((folder) =>
-			unselectFolderForAction(folder.id),
-		);
-
 		if (isDoc) {
-			selectDocumentForAction(item as Document);
+			setSingleSelectedDocumentForAction(item as Document);
+			setSingleSelectedFolderForAction(null);
 		} else {
-			selectFolderForAction(item as DocumentFolder);
+			setSingleSelectedFolderForAction(item as DocumentFolder);
+			setSingleSelectedDocumentForAction(null);
 		}
 		showDeleteDialog();
 	};
