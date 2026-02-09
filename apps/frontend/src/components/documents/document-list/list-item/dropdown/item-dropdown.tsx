@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
 import { useDocumentStore } from "../../../../../store/document-store";
 import type { Document, DocumentFolder } from "../../../../../common";
@@ -6,11 +6,9 @@ import Content from "../../../../../content";
 import { isDocument } from "../utils/is-document";
 import { toggleItemInChat } from "../utils/toggle-item-in-chat";
 import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
-import {
-	DeleteItemDialog,
-	showDeleteDialog,
-} from "../../../delete-item/delete-item-dialog";
+import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
 import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
+import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
 
 interface ItemDropdownProps {
 	item: Document | DocumentFolder;
@@ -24,24 +22,20 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	onClose,
 }) => {
 	const { selectPreviewDocument } = useDocumentStore();
-
-	const [itemToDelete, setItemToDelete] = useState<
-		Document | DocumentFolder | null
-	>(null);
+	const { setSingleItemSelectedForAction } = useDocumentsListStore();
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
-	const deleteDialogId = `dropdown-${isDoc ? "doc" : "folder"}-${item.id}`;
 
 	const handleAddToChat = () => {
 		onClose();
 		toggleItemInChat(item);
 	};
 
-	const handleDeleteItem = () => {
+	const handleDeleteItem = (itemToDelete: Document | DocumentFolder) => {
 		onClose();
-		setItemToDelete(item);
-		showDeleteDialog(deleteDialogId);
+		setSingleItemSelectedForAction(itemToDelete);
+		showDeleteDialog();
 	};
 
 	const handleViewItem = () => {
@@ -89,7 +83,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	};
 
 	const deleteItem = {
-		action: handleDeleteItem,
+		action: () => handleDeleteItem(item),
 		label: Content["documentsList.delete"],
 		ariaLabel: Content[`documentsList.${deleteItemKey}`],
 		style: "group/delete text-warning-100 hover:text-dunkelblau-80",
@@ -147,11 +141,6 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 					</ul>
 				</div>
 			)}
-
-			<DeleteItemDialog
-				id={deleteDialogId}
-				dropdownItemToDelete={itemToDelete as Document | DocumentFolder}
-			/>
 		</>
 	);
 };

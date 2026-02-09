@@ -1,8 +1,5 @@
 import React from "react";
-import {
-	CreateFolderDialog,
-	showCreateFolderDialog,
-} from "./create-folder-dialog";
+import { showCreateFolderDialog } from "./create-folder-dialog";
 import { useFolderStore } from "../../../store/folder-store";
 import { SecondaryButton } from "../../primitives/buttons/secondary-button.tsx";
 import { PlusIcon } from "../../primitives/icons/plus-icon.tsx";
@@ -22,8 +19,6 @@ export const CreateFolderButton: React.FC = () => {
 				</span>
 				<PlusIcon enabled={currentFolder === null} />
 			</SecondaryButton>
-
-			<CreateFolderDialog />
 		</>
 	);
 };

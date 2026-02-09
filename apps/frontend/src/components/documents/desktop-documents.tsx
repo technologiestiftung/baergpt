@@ -1,7 +1,6 @@
 import React, { useRef, useState } from "react";
 import DocumentBreadcrumbs from "./document-breadcrumbs.tsx";
 import { CreateFolderButton } from "./create-folder/create-folder-button.tsx";
-import { DeleteItemButton } from "./delete-item/delete-item-button.tsx";
 import { DocumentsList } from "./document-list/documents-list.tsx";
 import { DocumentDragPreview } from "./document-list/document-drag-preview.tsx";
 import { FileUpload } from "./file-upload/file-upload.tsx";
@@ -14,6 +13,7 @@ import { DropZoneWrapperDocuments } from "./document-list/drop-zone-wrapper-docu
 import { useErrorStore } from "../../store/error-store.ts";
 import { useDocumentStore } from "../../store/document-store.ts";
 import { useFileUploadsStore } from "../../store/use-file-uploads-store.ts";
+import { MultiSelectForActionButton } from "./document-list/multi-select-for-action/multi-select-for-action-button.tsx";
 
 const MIN_WIDTH = 350;
 const MAX_WIDTH = 700;
@@ -160,7 +160,7 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 
 						<div className="hidden md:flex gap-4 items-center my-4">
 							<CreateFolderButton />
-							{hasItems && <DeleteItemButton id={"desktop"} />}
+							<MultiSelectForActionButton />
 						</div>
 
 						{hasItems && (
