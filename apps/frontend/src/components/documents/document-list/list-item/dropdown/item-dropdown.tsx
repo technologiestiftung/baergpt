@@ -17,8 +17,6 @@ interface ItemDropdownProps {
 	onClose: () => void;
 }
 
-type DropdownAction = "addToChat" | "view" | "delete";
-
 export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	item,
 	isOpen,
@@ -39,63 +37,74 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	const deleteDialogId = `dropdown-${isDoc ? "doc" : "folder"}-${item.id}`;
 
-	const handleActionSelect = (action: DropdownAction) => {
+	const handleAddToChat = () => {
 		onClose();
-
-		switch (action) {
-			case "addToChat": {
-				if (isDoc) {
-					toggleChatDocument(item as Document);
-				} else {
-					toggleChatFolder(item as DocumentFolder);
-				}
-				break;
-			}
-			case "view":
-				selectPreviewDocument(item as Document);
-				break;
-			case "delete":
-				setItemToDelete(item);
-				showDeleteDialog(deleteDialogId);
-				break;
-			default:
-				break;
+		if (isDoc) {
+			toggleChatDocument(item as Document);
+		} else {
+			toggleChatFolder(item as DocumentFolder);
 		}
 	};
 
+	const handleDeleteItem = () => {
+		onClose();
+		setItemToDelete(item);
+		showDeleteDialog(deleteDialogId);
+	};
+
+	const handleViewItem = () => {
+		onClose();
+		selectPreviewDocument(item as Document);
+	};
+
+	const toggleContentKey = isSelectedForChat ? "removeFromChat" : "addToChat";
+
 	const addToChatItem = {
-		action: "addToChat" as const,
-		label: isSelectedForChat
-			? Content["documentsList.removeFromChat"]
-			: Content["documentsList.addToChat"],
-		icon: isSelectedForChat
-			? "/icons/minus-dark-blue-icon.svg"
-			: "/icons/plus-dark-blue-icon.svg",
-		ariaLabel: isSelectedForChat
-			? Content["documentsList.removeFromChat"]
-			: Content["documentsList.addToChat"],
-		imgAlt: isSelectedForChat
-			? Content["documentsList.removeFromChat.imgAlt"]
-			: Content["documentsList.addToChat.imgAlt"],
-		isDestructive: false,
+		action: handleAddToChat,
+		label: Content[`documentsList.${toggleContentKey}`],
+		ariaLabel: Content[`documentsList.${toggleContentKey}`],
+		imgAlt: Content[`documentsList.${toggleContentKey}.imgAlt`],
+		style: "text-dunkelblau-80",
+		icon: (
+			<img
+				src={
+					isSelectedForChat
+						? "/icons/minus-dark-blue-icon.svg"
+						: "/icons/plus-dark-blue-icon.svg"
+				}
+				alt={Content[`documentsList.${toggleContentKey}.imgAlt`]}
+				className="size-5"
+				width={20}
+				height={20}
+			/>
+		),
 	};
 
 	const viewItem = {
-		action: "view" as const,
+		action: handleViewItem,
 		label: Content["documentsList.view"],
-		icon: "/icons/eye-preview-icon.svg",
 		ariaLabel: Content["documentsList.view"],
 		imgAlt: Content["documentsList.view.imgAlt"],
-		isDestructive: false,
+		style: "text-dunkelblau-80",
+		icon: (
+			<img
+				src="/icons/eye-preview-icon.svg"
+				alt={Content["documentsList.view.imgAlt"]}
+				className="size-5"
+				width={20}
+				height={20}
+			/>
+		),
 	};
 
+	const deleteItemKey = isDoc ? "deleteDocument" : "deleteFolder";
+
 	const deleteItem = {
-		action: "delete" as const,
+		action: handleDeleteItem,
 		label: Content["documentsList.delete"],
-		ariaLabel: isDoc
-			? Content["documentsList.deleteDocument"]
-			: Content["documentsList.deleteFolder"],
-		isDestructive: true,
+		ariaLabel: Content[`documentsList.${deleteItemKey}`],
+		style: "group/delete text-warning-100 hover:text-dunkelblau-80",
+		icon: <DeleteElementIcon />,
 	};
 
 	const dropdownItems = [
@@ -108,7 +117,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		items: dropdownItems,
 		isOpen,
 		onClose,
-		onItemClick: (dropdownItem) => handleActionSelect(dropdownItem.action),
+		onItemClick: (dropdownItem) => dropdownItem.action,
 	});
 
 	return (
@@ -121,7 +130,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 				>
 					<ul className="flex flex-col">
 						{dropdownItems.map((dropdownItem, index) => (
-							<li key={dropdownItem.action}>
+							<li key={dropdownItem.label}>
 								<button
 									type="button"
 									ref={(el) => {
@@ -132,23 +141,13 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 										}
 									}}
 									className={`flex items-center w-full h-9 px-1.5 py-1 gap-x-2 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
-									${dropdownItem.action === "delete" ? "group/delete text-warning-100 hover:text-dunkelblau-80" : "text-dunkelblau-80"}`}
-									onClick={() => handleActionSelect(dropdownItem.action)}
+										${dropdownItem.style}`}
+									onClick={dropdownItem.action}
 									aria-label={dropdownItem.ariaLabel}
 									role="option"
 								>
 									<div className="flex items-center justify-center rounded-3px shrink-0 size-8 relative">
-										{dropdownItem.action === "delete" ? (
-											<DeleteElementIcon />
-										) : (
-											<img
-												src={dropdownItem.icon}
-												alt={dropdownItem.imgAlt}
-												className="size-5"
-												width={20}
-												height={20}
-											/>
-										)}
+										{dropdownItem.icon}
 									</div>
 									<span className={`text-sm leading-5 `}>
 										{dropdownItem.label}
