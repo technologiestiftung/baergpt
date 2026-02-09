@@ -28,10 +28,10 @@ export const DocumentPreviewSection: React.FC = () => {
 	);
 
 	return (
-		<section className="absolute h-full inset-0 z-30 flex flex-col bg-white">
-			<div className="flex flex-col gap-2.5 md:gap-3 px-5 md:px-[88px] md:py-6 py-3">
+		<section className="absolute h-full inset-0 z-30 flex flex-col bg-hellblau-30">
+			<div className="flex flex-col gap-4 md:gap-5 px-5 md:px-[60px] md:pt-6 md:pb-2 pb-1 pt-2.5">
 				<div className="flex w-full justify-between gap-1 px-0 md:px-2.5">
-					<h2 className="flex text-baseleading-6 md:text-xl md:leading-7 font-semibold break-all text-dunkelblau-100">
+					<h2 className="flex text-base leading-6 md:text-xl md:leading-7 font-semibold break-all text-dunkelblau-100">
 						{selectedPreviewDocument?.file_name}
 					</h2>
 					<button
@@ -39,7 +39,7 @@ export const DocumentPreviewSection: React.FC = () => {
 						onClick={unselectPreviewDocument}
 						aria-label="close-preview-section"
 					>
-						<CloseIcon />
+						<CloseIcon variant="darkBlue" />
 					</button>
 				</div>
 				<div className="flex">
@@ -95,7 +95,7 @@ export const DocumentPreviewSection: React.FC = () => {
 						</p>
 						<iframe
 							key={selectedPreviewDocument.id}
-							src={`${selectedPreviewDocumentPreviewUrl}#toolbar=0`}
+							src={`${selectedPreviewDocumentPreviewUrl}#toolbar=0&view=fitH`}
 							width="100%"
 							height="100%"
 							className="bg-white shadow-[0px_0px_12px_0px_rgba(3,8,18,0.25)]"
