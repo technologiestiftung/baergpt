@@ -6,6 +6,7 @@ import { useUserStore } from "../../../store/user-store.ts";
 import { useNavigate } from "react-router-dom";
 import { PasswordInput } from "../../primitives/text-inputs/password-input.tsx";
 import { verifyPassword } from "../../../api/auth/verify-password.ts";
+import { WarningButton } from "../../primitives/buttons/warning-button.tsx";
 
 const deleteAccountDialogId = "delete-account-dialog";
 
@@ -90,14 +91,13 @@ export const DeleteAccountDialog = () => {
 						<TertiaryButton type="button" onClick={handleHideDeleteDialog}>
 							{Content["profile.deleteAccount.dialog.cancel"]}
 						</TertiaryButton>
-						<button
-							id="confirm-delete-account-button"
-							className="p-2 rounded-[3px] w-fit flex-shrink-0 self-end md:self-center text-white text-sm leading-5 font-normal bg-warning-100 hover:bg-warning-85 focus-visible:outline-default"
+						<WarningButton
 							type="submit"
-							aria-label={Content["profile.deleteAccount.button"]}
+							ariaLabel={Content["profile.deleteAccount.button"]}
+							testId="confirm-delete-account-button"
 						>
 							{Content["profile.deleteAccount.button"]}
-						</button>
+						</WarningButton>
 					</div>
 				</form>
 			</div>

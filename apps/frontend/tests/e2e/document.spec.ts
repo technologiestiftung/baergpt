@@ -316,7 +316,7 @@ test.describe("Documents", () => {
 
 			// Verify the folder is deleted
 			await expect(
-				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
 			).not.toBeVisible();
 		},
 	);
@@ -377,8 +377,11 @@ test.describe("Documents", () => {
 
 			// Assert folder gone
 			await expect(
-				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+				page.getByRole("button", {
+					name: `Ordner-Icon ${givenFolderName}`,
+				}),
 			).not.toBeVisible();
+
 			// Assert document gone as well (no longer visible anywhere)
 			await expect(
 				page.getByRole("button", {
@@ -450,6 +453,79 @@ test.describe("Documents", () => {
 					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
 				).not.toBeVisible();
 			}
+		},
+	);
+
+	testDesktopOnly(
+		"Delete Document and Folder via dropdown",
+		async ({ page }) => {
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect delete button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Dokument löschen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Dokument löschen" }).click();
+
+			// Expect delete dialog to be visible and confirm deletion
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await page.getByRole("button", { name: "Löschen", exact: true }).click();
+
+			// Expect document to be deleted
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).not.toBeVisible();
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Ordner Name" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			const menuButtonFolder = page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonFolder).toBeVisible();
+
+			await menuButtonFolder.click();
+
+			// Expect delete button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Ordner löschen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Ordner löschen" }).click();
+
+			// Expect delete dialog to be visible and confirm deletion
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await page.getByRole("button", { name: "Löschen", exact: true }).click();
+
+			// Expect folder to be deleted
+			await expect(
+				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
+			).not.toBeVisible();
 		},
 	);
 
@@ -543,6 +619,32 @@ test.describe("Documents", () => {
 			// Verify the download was successful
 			expect(download).toBeDefined();
 			expect(await download.path()).toBeTruthy();
+		},
+	);
+
+	testDesktopOnly(
+		"Open pdf document preview via dropdown",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect view button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Dokument anzeigen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Dokument anzeigen" }).click();
+
+			// Expect preview to be visible
+			await expect(
+				page.getByRole("heading", { name: defaultDocumentName }),
+			).toBeVisible();
 		},
 	);
 
