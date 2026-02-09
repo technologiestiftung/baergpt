@@ -35,7 +35,11 @@ export const DeleteItemDialog: React.FC<DeleteItemDialogProps> = ({
 	id,
 	dropdownItemToDelete,
 }) => {
-	const { selectedDocumentsForAction, deleteDocument } = useDocumentStore();
+	const {
+		selectedDocumentsForAction,
+		deleteDocument,
+		unselectPreviewDocument,
+	} = useDocumentStore();
 	const { selectedFoldersForAction, deleteFolder } = useFolderStore();
 
 	const itemsToDelete = dropdownItemToDelete
@@ -47,6 +51,7 @@ export const DeleteItemDialog: React.FC<DeleteItemDialogProps> = ({
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
+		unselectPreviewDocument();
 		hideDeleteDialog(id);
 
 		for (const item of itemsToDelete) {
