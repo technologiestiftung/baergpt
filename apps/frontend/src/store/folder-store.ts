@@ -19,6 +19,7 @@ interface FolderStore {
 	selectedChatFolders: DocumentFolder[];
 	selectChatFolder: (folder: DocumentFolder) => void;
 	unselectChatFolder: (folderId: number) => void;
+	toggleChatFolder: (folder: DocumentFolder) => void;
 	getSelectedChatFolderIds: () => number[];
 
 	selectedFoldersForAction: DocumentFolder[];
@@ -118,6 +119,17 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 				({ id }) => id !== folderId,
 			),
 		}));
+	},
+	toggleChatFolder: (folder) => {
+		const { selectedChatFolders, selectChatFolder, unselectChatFolder } = get();
+		const isSelected = selectedChatFolders.some((fol) => fol.id === folder.id);
+
+		if (isSelected) {
+			unselectChatFolder(folder.id);
+			return;
+		}
+
+		selectChatFolder(folder);
 	},
 	getSelectedChatFolderIds: () => get().selectedChatFolders.map(({ id }) => id),
 

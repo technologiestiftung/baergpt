@@ -6,6 +6,7 @@ import Checkbox from "../../../primitives/checkboxes/checkbox.tsx";
 import { DroppableFolderName } from "./droppable-folder-name.tsx";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
+import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
 
 interface FolderItemProps {
 	item: DocumentFolder;
@@ -15,10 +16,9 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 	const {
 		selectedChatFolders,
 		selectedFoldersForAction,
-		selectChatFolder,
 		selectFolderForAction,
-		unselectChatFolder,
 		unselectFolderForAction,
+		toggleChatFolder,
 	} = useFolderStore();
 
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
@@ -38,14 +38,6 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 		unselectFolderForAction(item.id);
 	};
 
-	const handleToggleChatFolder = (folder: DocumentFolder) => {
-		if (selectedChatFolders.some((fol) => fol.id === folder.id)) {
-			unselectChatFolder(folder.id);
-			return;
-		}
-		selectChatFolder(folder);
-	};
-
 	return (
 		<>
 			<div className={isMultiSelectForActionVisible ? "flex" : "hidden"}>
@@ -58,14 +50,16 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 			</div>
 
 			<div
-				className={`h-11 gap-x-2 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group ${isSelectedForChat && "bg-hellblau-60"}`}
+				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group ${isSelectedForChat && "bg-hellblau-60"}`}
 			>
 				<DroppableFolderName item={item} />
 
 				<ToggleChatItemButton
-					handleToggleChatItem={() => handleToggleChatFolder(item)}
+					handleToggleChatItem={() => toggleChatFolder(item)}
 					isSelectedForChat={isSelectedForChat}
 				/>
+
+				<ItemDropdownButton item={item} />
 			</div>
 		</>
 	);

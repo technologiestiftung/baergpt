@@ -6,6 +6,7 @@ import Checkbox from "../../../primitives/checkboxes/checkbox";
 import { DraggableDocumentName } from "./draggable-document-name.tsx";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
+import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
 
 interface DocumentItemProps {
 	item: Document;
@@ -16,9 +17,8 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 		selectDocumentForAction,
 		unselectDocumentForAction,
 		selectedDocumentsForAction,
-		selectChatDocument,
-		unselectChatDocument,
 		selectedChatDocuments,
+		toggleChatDocument,
 	} = useDocumentStore();
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
 
@@ -37,14 +37,6 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 		unselectDocumentForAction(item.id);
 	};
 
-	const handleToggleChatItem = (itemToAddToChat: Document) => {
-		if (selectedChatDocuments.some((doc) => doc.id === itemToAddToChat.id)) {
-			unselectChatDocument(itemToAddToChat.id);
-			return;
-		}
-		selectChatDocument(itemToAddToChat);
-	};
-
 	return (
 		<>
 			<div className={isMultiSelectForActionVisible ? "flex" : "hidden"}>
@@ -57,14 +49,15 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 			</div>
 
 			<div
-				className={`h-11 gap-x-2 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group ${isSelectedForChat && "bg-hellblau-60"}`}
+				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group ${isSelectedForChat && "bg-hellblau-60"}`}
 			>
 				<DraggableDocumentName item={item} />
 
 				<ToggleChatItemButton
-					handleToggleChatItem={() => handleToggleChatItem(item)}
+					handleToggleChatItem={() => toggleChatDocument(item)}
 					isSelectedForChat={isSelectedForChat}
 				/>
+				<ItemDropdownButton item={item} />
 			</div>
 		</>
 	);
