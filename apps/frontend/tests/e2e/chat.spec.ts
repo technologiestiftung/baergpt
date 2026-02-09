@@ -13,6 +13,7 @@ import {
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 
 test.describe("Chat", () => {
 	testWithLoggedInUser(
@@ -569,6 +570,61 @@ test.describe("Chat", () => {
 
 		// Check if the chat history is open again
 		await expect(page.getByRole("heading", { name: "Chats" })).toBeVisible();
+	});
+
+	testDesktopOnlyWithManyChats("Chat history loading", async ({ page }) => {
+		const isNextChatsPageRequest = (url: URL) =>
+			url.pathname.includes("/rest/v1/chats") &&
+			url.searchParams.get("offset") === "20";
+
+		const createDeferredPromise = () => {
+			let resolveDeferredPromise: (value?: unknown) => void = () => {};
+			const deferredPromise = new Promise((resolve) => {
+				resolveDeferredPromise = resolve;
+			});
+			return { deferredPromise, resolveDeferredPromise };
+		};
+
+		const { deferredPromise, resolveDeferredPromise } = createDeferredPromise();
+
+		const requestPromise = page.route(isNextChatsPageRequest, async (route) => {
+			await deferredPromise;
+			await route.continue();
+		});
+
+		await page.goto("/");
+
+		const firstChatInHistory = page
+			.getByRole("complementary")
+			.locator("div")
+			.filter({ hasText: /^Test Chat 30$/ });
+
+		await expect(firstChatInHistory).toBeVisible();
+
+		const loadingSpinner = page
+			.getByRole("complementary", { name: "Sidebar" })
+			.getByTestId("load-more-chats-spinner");
+
+		await expect(loadingSpinner).toBeVisible();
+
+		resolveDeferredPromise();
+
+		const lastChatInHistory = page
+			.getByRole("complementary")
+			.locator("div")
+			.filter({ hasText: /^Test Chat 11$/ });
+
+		await lastChatInHistory.scrollIntoViewIfNeeded();
+
+		await requestPromise;
+
+		await expect(loadingSpinner).not.toBeVisible();
+
+		const allChatsLoadedMessage = page
+			.getByRole("complementary")
+			.getByText("Alle Chats geladen");
+
+		await expect(allChatsLoadedMessage).toBeVisible();
 	});
 
 	testWithLoggedInUser(

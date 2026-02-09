@@ -1,15 +1,15 @@
 import Content from "../../../content";
 
-type GreyXIconProps = {
+type RedErrorIconProps = {
 	size?: "small" | "large";
 };
-export function GreyXIcon({ size = "large" }: GreyXIconProps) {
+export function RedErrorIcon({ size = "large" }: RedErrorIconProps) {
 	return (
 		<img
-			src="/icons/grey-x-icon.svg"
+			src="/icons/error-icon.svg"
 			width={size === "small" ? 20 : 24}
 			height={size === "small" ? 20 : 24}
-			alt={Content["greyXIcon.imgAlt"]}
+			alt={Content["redErrorIcon.imgAlt"]}
 		/>
 	);
 }

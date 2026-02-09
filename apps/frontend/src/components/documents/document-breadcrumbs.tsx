@@ -28,10 +28,10 @@ const DocumentBreadcrumbs: React.FC = () => {
 	return (
 		<div className="w-full flex flex-col h-8 gap-1 mb-5 md:mb-0 md:gap-0 md:flex-row md:justify-between">
 			<div
-				className={`flex flex-row items-center gap-1 text-base leading-6 font-normal`}
+				className={`flex flex-row items-center gap-1 text-base leading-6 font-normal text-dunkelblau-100`}
 			>
 				<button
-					className={`focus-visible:outline-default rounded-3px hover:underline underline-offset-4 ${isHoveredForDrop && "bg-hellblau-100 outline-default outline-dunkelblau-100"}`}
+					className={`focus-visible:outline-default rounded-3px hover:underline underline-offset-4 px-0.5 ${isHoveredForDrop && "bg-hellblau-100 outline outline-1 outline-dunkelblau-100"}`}
 					onClick={() => setCurrentFolder(null)}
 					ref={drop}
 				>

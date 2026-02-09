@@ -15,7 +15,9 @@ interface ListItemProps {
 
 export const ListItem: React.FC<ListItemProps> = ({ item }) => {
 	const { moveItemToFolder } = useDocumentStore();
-	const { setHoveredFolderId } = useDragAndDropStore();
+	const { setHoveredFolderId, hoveredFolderId } = useDragAndDropStore();
+
+	const isHoveredForDrop = getDragAndDropId(item) === hoveredFolderId;
 
 	const [, dropRef] = useDrop({
 		accept: "ITEM",
@@ -44,7 +46,7 @@ export const ListItem: React.FC<ListItemProps> = ({ item }) => {
 	return (
 		<li
 			ref={dropRef}
-			className="flex gap-x-0.5 items-center border-b-[0.5px] border-y-hellblau-110 "
+			className={`flex gap-x-2 items-center ${isHoveredForDrop ? "bg-hellblau-100 border border-dunkelblau-100 rounded-3px" : "border-b-[0.5px] border-y-hellblau-110 "}`}
 		>
 			{isDocument(item) ? (
 				<DocumentItem item={item} />
