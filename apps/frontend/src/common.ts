@@ -10,7 +10,10 @@ export type NewChatMessage = Pick<
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
-export type ChatOption = "baseKnowledge" | "webSearch";
+export type McpOptions = "parla";
+export type ChatOption = "baseKnowledge" | "webSearch" | McpOptions;
+
+export type ChatOptionsDropdownValue = ChatOption | "mcpServer";
 
 export type LlmModel = "mistral-small" | "mistral-large";
 

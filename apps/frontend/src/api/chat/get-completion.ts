@@ -88,6 +88,7 @@ export async function getCompletion(
 					is_base_knowledge_active:
 						selectedChatOptions.includes("baseKnowledge"),
 					llm_model: selectedLlmModel,
+					is_parla_mcp_tool_active: selectedChatOptions.includes("parla"),
 				}),
 			},
 		);
