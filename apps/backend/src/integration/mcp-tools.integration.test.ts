@@ -1,4 +1,25 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+
+/**
+ * We rewrite some modules so we can mock them
+ * in specific test cases if needed.
+ */
+vi.mock("@ai-sdk/mcp", async () => {
+	const actual = await vi.importActual("@ai-sdk/mcp");
+	return {
+		...actual,
+	};
+});
+
+vi.mock("../monitoring/capture-error", async () => {
+	const actual = await vi.importActual("../monitoring/capture-error");
+	return {
+		...actual,
+	};
+});
+import * as mcpModule from "@ai-sdk/mcp";
+import * as captureErrorModule from "../monitoring/capture-error";
+
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import type { ParlaMCPToolsResult } from "../tools/mcp/parla-mcp-tools";
 import { z } from "zod";
@@ -39,18 +60,20 @@ describe("MCP Tools Integration", () => {
 	});
 
 	it("should handle initialization errors gracefully", async () => {
-		// Mock createMCPClient to throw an error
-		const consoleErrorSpy = vi
-			.spyOn(console, "error")
-			.mockImplementation(() => {});
+		const givenError = new Error("MCP server is down");
 
-		// This test verifies error handling by calling parlaMCPTools again
-		// In a real scenario where the MCP server is down, it should return null
-		// For now, we just verify the function doesn't throw
+		vi.spyOn(mcpModule, "createMCPClient").mockImplementation(() => {
+			throw givenError;
+		});
+
+		const captureErrorSpy = vi
+			.spyOn(captureErrorModule, "captureError")
+			.mockImplementationOnce(() => {});
+
 		const result = await parlaMCPTools();
-		expect(result).not.toBeUndefined();
+		expect(result).toBeNull();
 
-		consoleErrorSpy.mockRestore();
+		expect(captureErrorSpy).toHaveBeenNthCalledWith(1, givenError);
 	});
 
 	it("parla_vector_search tool should have execute function that can be called", async () => {
