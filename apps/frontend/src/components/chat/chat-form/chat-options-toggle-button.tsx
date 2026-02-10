@@ -14,24 +14,29 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	const selectButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const { showTooltip, hideTooltip } = useTooltipStore();
+	const isMcpParlaAllowed =
+		import.meta.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true";
 
 	const chatOptionsItems: {
 		label: string;
 		value: ChatOptionsDropdownValue;
 		description: string;
 		ariaLabel: string;
+		isEnabled: boolean;
 	}[] = [
 		{
 			label: Content["chat.options.li1.label"],
 			value: "baseKnowledge",
 			description: Content["chat.options.li1.description"],
 			ariaLabel: Content["chat.options.li1.ariaLabel"],
+			isEnabled: true,
 		},
 		{
 			label: Content["chat.options.li2.label"],
 			value: "mcpServer",
 			description: Content["chat.options.li2.description"],
 			ariaLabel: Content["chat.options.li2.ariaLabel"],
+			isEnabled: isMcpParlaAllowed,
 		},
 	];
 
@@ -95,7 +100,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 				{isDropdownOpen && (
 					<div ref={dropdownRef}>
 						<ChatFormDropdown
-							items={chatOptionsItems}
+							items={chatOptionsItems.filter((item) => item.isEnabled)}
 							title={Content["chat.options.dropdown.title"]}
 							selectedItems={selectedChatOptions}
 							onItemClick={handleItemClick}
