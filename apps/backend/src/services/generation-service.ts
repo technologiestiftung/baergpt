@@ -371,7 +371,8 @@ export class GenerationService {
 						},
 					},
 					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+						isEnabled:
+							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
 						functionId: "text-toolCall-generation",
 						metadata: {
 							sessionId: sessionId ? sessionId : "unknown",
@@ -441,7 +442,9 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 										// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 										schema: citationAnswerSchema,
 										experimental_telemetry: {
-											isEnabled: config.nodeEnv !== "test",
+											isEnabled:
+												config.nodeEnv !== "test" &&
+												config.nodeEnv !== "production", // Disable telemetry in CI and production
 											functionId: "citation-extraction",
 											metadata: {
 												sessionId: sessionId ? sessionId : "unknown",
@@ -501,7 +504,8 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 								}
 							},
 							experimental_telemetry: {
-								isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+								isEnabled:
+									config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
 								metadata: {
 									sessionId: sessionId ? sessionId : "unknown",
 									langfusePrompt: langfusePrompt
@@ -547,7 +551,8 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 						},
 					},
 					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
+						isEnabled:
+							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
 						metadata: {
 							sessionId: sessionId ? sessionId : "unknown",
 							langfusePrompt: langfusePrompt

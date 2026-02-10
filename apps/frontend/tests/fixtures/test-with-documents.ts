@@ -196,7 +196,11 @@ export async function uploadFileViaFileChooser({
 	}
 
 	await testWithDocuments
-		.expect(page.getByText(fileName, { exact: true }))
+		.expect(
+			page.locator("#desktop-documents-panel").getByText(fileName, {
+				exact: true,
+			}),
+		)
 		.toBeVisible();
 
 	const response = await page.waitForResponse(
@@ -210,10 +214,12 @@ export async function uploadFileViaFileChooser({
 
 	expect(response.status()).toBe(204);
 
-	// Wait for the file to appear in the document list
-	const uploadedFile = page.getByRole("button", {
-		name: `Dokumente-Icon ${fileName}`,
-	});
+	// Wait for the file to appear in the document list (scope to desktop panel)
+	const uploadedFile = page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", {
+			name: `Dokumente-Icon ${fileName}`,
+		});
 
 	await testWithDocuments.expect(uploadedFile).toBeVisible();
 
@@ -260,7 +266,11 @@ export async function uploadMultipleFilesViaFileChooser({
 	// Wait for all files to be visible in the upload dialog
 	for (const file of files) {
 		await testWithDocuments
-			.expect(page.getByText(file.name, { exact: true }))
+			.expect(
+				page.locator("#desktop-documents-panel").getByText(file.name, {
+					exact: true,
+				}),
+			)
 			.toBeVisible();
 	}
 
@@ -279,12 +289,14 @@ export async function uploadMultipleFilesViaFileChooser({
 		expect(response.status()).toBe(204);
 	}
 
-	// Wait for all files to appear in the document list
+	// Wait for all files to appear in the document list (scope to desktop panel)
 	const uploadedFiles = [];
 	for (const file of files) {
-		const uploadedFile = page.getByRole("button", {
-			name: `Dokumente-Icon ${file.name}`,
-		});
+		const uploadedFile = page
+			.locator("#desktop-documents-panel")
+			.getByRole("button", {
+				name: `Dokumente-Icon ${file.name}`,
+			});
 		await testWithDocuments.expect(uploadedFile).toBeVisible();
 		uploadedFiles.push(uploadedFile);
 	}
@@ -344,10 +356,12 @@ export async function uploadFileViaDragAndDrop({
 
 	expect(response.status()).toBe(204);
 
-	// Wait for the file to appear in the document list
-	const uploadedFile = page.getByRole("button", {
-		name: `Dokumente-Icon ${fileName}`,
-	});
+	// Wait for the file to appear in the document list (scope to desktop panel)
+	const uploadedFile = page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", {
+			name: `Dokumente-Icon ${fileName}`,
+		});
 
 	await testWithDocuments.expect(uploadedFile).toBeVisible();
 
@@ -362,8 +376,17 @@ export async function deleteFileViaUI({
 	page: Page;
 	fileName: string;
 }) {
-	// Ensure the checkbox from the uploaded file is present
+	// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+	const enterMultiSelectButton = page.getByRole("button", {
+		name: "Checkbox-Icon (ausgewählt) Löschen",
+	});
+	if (await enterMultiSelectButton.isVisible()) {
+		await enterMultiSelectButton.click();
+	}
+
+	// Ensure the checkbox from the uploaded file is present (scope to desktop panel)
 	const checkbox = page
+		.locator("#desktop-documents-panel")
 		.getByRole("listitem")
 		.filter({ hasText: fileName })
 		.locator("label");
@@ -372,15 +395,21 @@ export async function deleteFileViaUI({
 
 	// Delete the file via the UI
 	await checkbox.click();
-	await page.getByRole("button", { name: "Löschen Mülleimer-Icon" }).click();
+
+	await page
+		.getByRole("button", { name: "Dialog öffnen, um Elemente zu löschen" })
+		.click();
+
 	await page
 		.getByRole("dialog")
 		.getByRole("button", { name: "Löschen" })
 		.click();
 
-	const deletedDocumentLocator = page.getByRole("button", {
-		name: `Dokumente-Icon ${fileName}`,
-	});
+	const deletedDocumentLocator = page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", {
+			name: `Dokumente-Icon ${fileName}`,
+		});
 
 	await expect(deletedDocumentLocator).not.toBeVisible();
 }

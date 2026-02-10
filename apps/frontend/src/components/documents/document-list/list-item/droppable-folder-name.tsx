@@ -52,7 +52,7 @@ export function DroppableFolderName({ item }: DroppableFolderNameProps) {
 
 	return (
 		<button
-			className={`flex w-0 grow gap-x-2 py-1 rounded-3px focus-visible:outline-default ${isHoveredForDrop && "bg-hellblau-100 outline-default outline-dunkelblau-100"}`}
+			className={`flex w-0 grow gap-x-1 rounded-3px focus-visible:outline-default`}
 			onClick={() => {
 				setCurrentFolder(item);
 				handleMouseLeave();
@@ -62,8 +62,11 @@ export function DroppableFolderName({ item }: DroppableFolderNameProps) {
 			onFocus={handleMouseEnter}
 			onBlur={handleMouseLeave}
 		>
-			<FolderIcon />
-			<span ref={spanRef} className="truncate pointer-events-none">
+			<FolderIcon variant={isHoveredForDrop ? "darkblue" : "default"} />
+			<span
+				ref={spanRef}
+				className="truncate pointer-events-none text-sm leading-5 font-normal text-dunkelblau-100"
+			>
 				{getListItemName(item)}
 			</span>
 		</button>

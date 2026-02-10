@@ -19,9 +19,9 @@ export const Content = {
 	"landingPage.banner.h2": "Sie haben noch mehr Fragen zu BärGPT?",
 	"landingPage.banner.p1":
 		"In der Online-Sprechstunde beantworten wir Ihre individuellen Fragen.",
-	"landingPage.banner.p2": "Dienstags und Donnerstags von 11-12 Uhr.",
+	"landingPage.banner.p2": "Donnerstags von 11-12 Uhr.",
 	"landingPage.banner.p.mobile":
-		"Online-Sprechstunde: Dienstags und Donnerstags von 11-12 Uhr.",
+		"Online-Sprechstunde: Donnerstags von 11-12 Uhr.",
 	"landingPage.banner.link.label": "Termin im Intranet finden",
 	"landingPage.banner.link.ariaLabel": "Zur Intranet-Seite",
 	"landingPage.banner.link.href":
@@ -679,8 +679,6 @@ export const Content = {
 	/* -------------------- Tooltips -------------------- */
 	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
 	"sidebar.tooltip.newChatButton": "Neuen Chat beginnen",
-	"chat.selectedChatItems.questionmark.tooltip":
-		"Datei zum Chat hinzufügen und KI-Assistent Anweisung geben",
 
 	/* -------------------- Chat History -------------------- */
 	"chatHistory.title": "Chats",
@@ -690,6 +688,7 @@ export const Content = {
 	"chatHistory.fetchRetry.button.label": "Erneut versuchen",
 	"chatHistory.fetchRetry.button.ariaLabel":
 		"Erneut versuchen Chatverlauf zu laden",
+	"chatHistory.allLoaded": "Alle Chats geladen",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton
@@ -708,6 +707,8 @@ export const Content = {
 	"createFolderButton.label": "Neuer Ordner",
 	//deleteItemButton
 	"deleteItemButton.label": "Löschen",
+	"deleteItemButton.ariaLabel": "Dialog öffnen, um Elemente zu löschen",
+	"multiSelectForAction.cancel.label": "Auswahl abbrechen",
 	//BottomMenuBar
 	"bottomMenuBar.arialabel": "Sidebar",
 	//indeterminateCheckbox
@@ -741,7 +742,7 @@ export const Content = {
 	"loadingSpinnerIcon.imgAlt": "Ein sich drehendes Spinner-Icon",
 	"previewIcon.imgAlt": "Preview-Icon",
 	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
-	"redErrorXIcon.imgAlt": "Ein Error Icon mit weißem X in rotem Kreis",
+	"redErrorIcon.imgAlt": "Ein Error Icon mit weißem ! in rotem Kreis",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
@@ -767,7 +768,23 @@ export const Content = {
 	"documentsList.folder.checkbox.ariaLabel":
 		"Ordner auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.name": "Name",
-	"documentsList.AddToChat": "Zum Chat hinzufügen",
+	"documentsList.selectedItemsCount.label.parenthesis.open": "(",
+	"documentsList.selectedItemsCount.label.parenthesis.close": ")",
+	"documentsList.selectedItemsCount.label": "ausgewählt",
+	"deleteItemButton.tooltip": "Löschen",
+	"documentsList.addToChat": "In den Chat",
+	"documentsList.removeFromChat": "Aus Chat entfernen",
+	"documentsList.removeFromChat.imgAlt": "Minus-Icon",
+	"documentsList.addToChat.imgAlt": "Plus-Icon",
+	"documentsList.view": "Dokument anzeigen",
+	"documentsList.view.imgAlt": "Auge-Icon",
+	"documentsList.delete": "Löschen",
+	"documentsList.delete.imgAlt": "Mülleimer-Icon",
+	"documentsList.deleteDocument": "Dokument löschen",
+	"documentsList.deleteFolder": "Ordner löschen",
+
+	"documentsList.menuIcon.imgAlt": "Menü-Icon",
+	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
 	//fileUpload
 	"fileUpload.uploadButton": "Datei hochladen",
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
@@ -775,16 +792,13 @@ export const Content = {
 	"fileUpload.cancel": "Abbrechen",
 	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
 	//fileUploadButtonStatus
-	"fileUploadButtonStatus.uploading": "Dateien werden verarbeitet",
-	"fileUploadButtonStatus.singleFileUploading": "Datei wird verarbeitet",
-	"fileUploadButtonStatus.uploaded": "Upload erfolgreich",
-	"fileUploadButtonStatus.failed": "Fehler beim Upload",
+	"fileUploadButtonStatus.uploading": "Hochladen läuft",
+	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
+	"fileUploadButtonStatus.failed": "Hochladen fehlgeschlagen",
 	//noFilesDropZone
-	"fileUpload.uploadInstructions.p1": "Dateien mit Drag and Drop hochladen ",
-	"fileUpload.uploadInstructions.p2": "oder ",
-	"fileUpload.searchComputerbutton.label": "Computer durchsuchen",
+	"fileUpload.uploadInstructions.p1": "Dateien hier ablegen oder ",
+	"fileUpload.searchComputerbutton.label": "Hochladen",
 	//fileupload help link
-	"fileUpload.helpLink.label": "Hilfe",
 	"fileUpload.helpLink.link":
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
@@ -815,8 +829,9 @@ export const Content = {
 	"deleteItemDialog.deleteFiles": "Elemente löschen?",
 	"deleteItemDialog.deleteFile": "Datei löschen?",
 	"deleteItemDialog.deleteFolder": "Ordner löschen?",
-	"deleteItemDialog.confirmation.singleItem":
-		"Folgendes Element wirklich aus Ihren Dateien löschen?",
+	"deleteItemDialog.confirmation.singleItem.p1": "Möchten Sie",
+	"deleteItemDialog.confirmation.singleItem.p2":
+		"wirklich aus Ihren Dateien löschen?",
 	"deleteItemDialog.confirmation.multipleItems":
 		"Folgende Elemente wirklich aus Ihren Dateien löschen?",
 	"deleteItemDialog.confirmation.folder": "Ordner",
@@ -838,37 +853,29 @@ export const Content = {
 	//GetStarted
 	"chat.getStarted.h1": "Willkommen bei BärGPT, ",
 	"chat.getStarted.formal.p1":
-		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Ihnen dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
+		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Ihnen dabei Dokumente auszuwerten und Texte zu formulieren.",
 	"chat.getStarted.informal.p1":
-		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
+		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten und Texte zu formulieren.",
 
-	"chat.getStarted.li1.formal": "Stellen Sie mir eine Frage im Textfeld.",
-	"chat.getStarted.li1.informal": "Stelle mir eine Frage im Textfeld.",
-	"chat.getStarted.li2.formal":
-		"Laden Sie ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
-	"chat.getStarted.li2.informal":
-		"Lade ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
-	"chat.getStarted.li3.p1": "Mit",
-	"chat.getStarted.li3.p2":
-		"-Button Dokument zum Chat hinzufügen und dann Fragen stellen.",
+	"chat.getStarted.li1.formal":
+		"Stellen Sie Ihre Frage im Textfeld oder laden Sie ein Dokument hoch (Word, Excel, PDF). Nutzen Sie den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
 
-	"chat.getStarted.h2": "Wichtig:",
-	"chat.getStarted.li4.formal":
-		"Hoher Andrang: Aktuell kann es zu Wartezeiten, Verzögerungen oder kurzfristigen Störungen kommen. Bitte versuchen Sie es ggf. später erneut.",
-	"chat.getStarted.li4.informal":
-		"Hoher Andrang: Aktuell kann es zu Wartezeiten, Verzögerungen oder kurzfristigen Störungen kommen. Bitte versuche es ggf. später erneut.",
-	"chat.getStarted.li5":
-		"Grenzen: Ich habe keinen Internetzugriff und kann keine aktuellen Webinhalte abrufen.",
-	"chat.getStarted.li6.formal":
-		"Qualität: Als KI kann ich Fehler machen. Bitte überprüfen Sie die Informationen.",
-	"chat.getStarted.li6.informal":
-		"Qualität: Als KI kann ich Fehler machen. Bitte überprüfe die Informationen.",
-	"chat.getStarted.li7.formal": "Tipps & Videos finden Sie im",
-	"chat.getStarted.li7.informal": "Tipps & Videos findest Du im",
+	"chat.getStarted.li1.informal":
+		"Stell Deine Frage im Textfeld oder lade ein Dokument hoch (Word, Excel, PDF). Nutze den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
 
-	"chat.getStarted.h3.4.link": "https://hilfe.baergpt.berlin/",
-	"chat.getStarted.h3.4.linkText": "Hilfecenter.",
-	"chat.getStarted.h3.4.link.ariaLabel": "Zum Hilfecenter von BärGPT",
+	"chat.getStarted.li2.formal.1": "Wichtig: ",
+	"chat.getStarted.li2.formal.2":
+		"Als KI kann ich Fehler machen. Überprüfen Sie wichtige Informationen. Ich habe keinen Internetzugriff.",
+	"chat.getStarted.li2.informal.1": "Wichtig: ",
+	"chat.getStarted.li2.informal.2":
+		"Als KI kann ich Fehler machen. Überprüfe wichtige Informationen. Ich habe keinen Internetzugriff.",
+
+	"chat.getStarted.li3.formal": "Tipps & Videos finden Sie im",
+	"chat.getStarted.li3.informal": "Tipps & Videos findest Du im",
+
+	"chat.getStarted.li3.link.href": "https://hilfe.baergpt.berlin/",
+	"chat.getStarted.li3.link.label": "Hilfecenter.",
+	"chat.getStarted.li3.link.ariaLabel": "Zum Hilfecenter von BärGPT",
 
 	"chat.loadingText": "BärGPT überlegt...",
 	//Chat error text
@@ -880,11 +887,9 @@ export const Content = {
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
-	"chat.selectedChatItems.noItems": "Keine Dateien in diesem Chat",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
-	"chat.selectedChatItems.questionmark.arialabel": "Tooltip zeigen",
 	//Chat options dropdown
 	"chat.options.toggleButton.tooltip": "Weitere Funktionen aktivieren",
 	"chat.options.toggleButton.tooltip.ariaLabel":

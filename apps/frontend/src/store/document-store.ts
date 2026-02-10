@@ -33,6 +33,7 @@ interface DocumentStore {
 	selectedChatDocuments: Document[];
 	selectChatDocument: (document: Document) => void;
 	unselectChatDocument: (documentId: number) => void;
+	toggleChatDocument: (document: Document) => void;
 	getSelectedChatDocumentIds: () => number[];
 
 	selectedDocumentsForAction: Document[];
@@ -225,6 +226,20 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 				(doc) => doc.id !== documentId,
 			),
 		}));
+	},
+	toggleChatDocument: (document) => {
+		const { selectedChatDocuments, selectChatDocument, unselectChatDocument } =
+			get();
+		const isSelected = selectedChatDocuments.some(
+			(doc) => doc.id === document.id,
+		);
+
+		if (isSelected) {
+			unselectChatDocument(document.id);
+			return;
+		}
+
+		selectChatDocument(document);
 	},
 	getSelectedChatDocumentIds: () => {
 		const { selectedChatDocuments } = get();

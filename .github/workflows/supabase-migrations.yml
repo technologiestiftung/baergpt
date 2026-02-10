@@ -83,7 +83,7 @@ jobs:
       - name: Restart the auth service to load latest email templates 🔄
         run: |
           ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
-            'cd /opt/supabase-baergpt && docker compose up -d --no-deps --force-recreate auth'
+            'sudo -n $HOME/bin/docker-restart-auth'
 
       - name: Close SSH tunnel 🔒
         if: always()

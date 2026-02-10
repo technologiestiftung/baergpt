@@ -13,6 +13,7 @@ import {
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 
 test.describe("Chat", () => {
 	testWithLoggedInUser(
@@ -103,7 +104,7 @@ test.describe("Chat", () => {
 		const addButton = page
 			.getByRole("listitem")
 			.filter({ hasText: defaultDocumentName })
-			.getByLabel("Zum Chat hinzufügen");
+			.getByLabel("In den Chat");
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -132,6 +133,65 @@ test.describe("Chat", () => {
 		const markdownAnswer = page.locator("div.markdown-container").last();
 		await expect(markdownAnswer).not.toBeEmpty();
 	});
+
+	testDesktopOnly(
+		"Add document and folder to chat via dropdown",
+		async ({ page }) => {
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect add to chat button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "In den Chat" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "In den Chat" }).click();
+
+			// Verify the document is added to the chat
+			await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Ordner Name" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			// Add the folder and documents to the chat
+			const menuButtonFolder = page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonFolder).toBeVisible();
+			await menuButtonFolder.click();
+
+			// Expect add to chat button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "In den Chat" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "In den Chat" }).click();
+
+			// Verify the folder is added to the chat
+			await expect(page.getByText("2 Elemente in diesem Chat")).toBeVisible();
+		},
+	);
 
 	testDesktopOnly(
 		"Add multiple documents / folders to chat",
@@ -167,17 +227,17 @@ test.describe("Chat", () => {
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: givenFolderName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: secondaryDocumentName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 
 			await expect(
@@ -191,8 +251,8 @@ test.describe("Chat", () => {
 
 			// Verify the folder and documents are removed from the chat
 			await expect(
-				page.getByRole("button", { name: "Keine Dateien in diesem Chat" }),
-			).toBeVisible();
+				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
+			).not.toBeVisible();
 		},
 	);
 
@@ -223,7 +283,7 @@ test.describe("Chat", () => {
 			const addButton = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen");
+				.getByLabel("In den Chat");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -360,7 +420,7 @@ test.describe("Chat", () => {
 			const addButton = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen");
+				.getByLabel("In den Chat");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -426,7 +486,7 @@ test.describe("Chat", () => {
 				.click();
 
 			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
+			await page.waitForLoadState("networkidle", { timeout: 60_000 });
 
 			// Wait for the response to appear (2 markdown containers: question + answer)
 			await expect(page.locator("div.markdown-container")).toHaveCount(2);
@@ -510,6 +570,61 @@ test.describe("Chat", () => {
 
 		// Check if the chat history is open again
 		await expect(page.getByRole("heading", { name: "Chats" })).toBeVisible();
+	});
+
+	testDesktopOnlyWithManyChats("Chat history loading", async ({ page }) => {
+		const isNextChatsPageRequest = (url: URL) =>
+			url.pathname.includes("/rest/v1/chats") &&
+			url.searchParams.get("offset") === "20";
+
+		const createDeferredPromise = () => {
+			let resolveDeferredPromise: (value?: unknown) => void = () => {};
+			const deferredPromise = new Promise((resolve) => {
+				resolveDeferredPromise = resolve;
+			});
+			return { deferredPromise, resolveDeferredPromise };
+		};
+
+		const { deferredPromise, resolveDeferredPromise } = createDeferredPromise();
+
+		const requestPromise = page.route(isNextChatsPageRequest, async (route) => {
+			await deferredPromise;
+			await route.continue();
+		});
+
+		await page.goto("/");
+
+		const firstChatInHistory = page
+			.getByRole("complementary")
+			.locator("div")
+			.filter({ hasText: /^Test Chat 30$/ });
+
+		await expect(firstChatInHistory).toBeVisible();
+
+		const loadingSpinner = page
+			.getByRole("complementary", { name: "Sidebar" })
+			.getByTestId("load-more-chats-spinner");
+
+		await expect(loadingSpinner).toBeVisible();
+
+		resolveDeferredPromise();
+
+		const lastChatInHistory = page
+			.getByRole("complementary")
+			.locator("div")
+			.filter({ hasText: /^Test Chat 11$/ });
+
+		await lastChatInHistory.scrollIntoViewIfNeeded();
+
+		await requestPromise;
+
+		await expect(loadingSpinner).not.toBeVisible();
+
+		const allChatsLoadedMessage = page
+			.getByRole("complementary")
+			.getByText("Alle Chats geladen");
+
+		await expect(allChatsLoadedMessage).toBeVisible();
 	});
 
 	testWithLoggedInUser(

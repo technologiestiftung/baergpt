@@ -95,12 +95,20 @@ test.describe("Documents", () => {
 				await fileChooser.setFiles(filePaths);
 			}
 
-			// Wait for the error message for the rejected file
-			await expect(page.getByText("Max. 5 Dateien pro Upload.")).toBeVisible();
+			// Wait for the error message for the rejected file (scope to desktop panel)
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText("Max. 5 Dateien pro Upload."),
+			).toBeVisible();
 
 			// Verify the first 5 files are being uploaded/uploaded successfully
 			for (const file of filesToUpload) {
-				await expect(page.getByText(file.name, { exact: true })).toBeVisible();
+				await expect(
+					page
+						.locator("#desktop-documents-panel")
+						.getByText(file.name, { exact: true }),
+				).toBeVisible();
 			}
 
 			// Wait for successful uploads to complete
@@ -119,15 +127,18 @@ test.describe("Documents", () => {
 			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
 
 			// Verify only the first 5 files appear in the document list
+			const desktopPanel = page.locator("#desktop-documents-panel");
 			for (const file of filesToUpload) {
 				await expect(
-					page.getByRole("button", { name: `Dokumente-Icon ${file.name}` }),
+					desktopPanel.getByRole("button", {
+						name: `Dokumente-Icon ${file.name}`,
+					}),
 				).toBeVisible();
 			}
 
 			// Verify the 6th file is NOT in the document list
 			await expect(
-				page.getByRole("button", {
+				desktopPanel.getByRole("button", {
 					name: `Dokumente-Icon ${fileToReject.name}`,
 				}),
 			).not.toBeVisible();
@@ -296,6 +307,14 @@ test.describe("Documents", () => {
 				}),
 			).toBeVisible();
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Löschen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -303,20 +322,18 @@ test.describe("Documents", () => {
 				.locator("label");
 			await folderCheckbox.click();
 
-			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
-			});
-			await deleteButton.click();
+			await page
+				.getByRole("button", { name: "Dialog öffnen, um Elemente zu löschen" })
+				.click();
 
-			const confirmButton = page.getByRole("button", {
-				name: "Löschen",
-				exact: true,
-			});
-			await confirmButton.click();
+			await page
+				.getByRole("dialog")
+				.getByRole("button", { name: "Löschen" })
+				.click();
 
 			// Verify the folder is deleted
 			await expect(
-				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
 			).not.toBeVisible();
 		},
 	);
@@ -357,6 +374,14 @@ test.describe("Documents", () => {
 			await folderElement.hover();
 			await page.mouse.up();
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Löschen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -364,8 +389,9 @@ test.describe("Documents", () => {
 				.locator("label");
 			await folderCheckbox.click();
 
+			// Open the delete dialog
 			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
+				name: "Dialog öffnen, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -377,8 +403,11 @@ test.describe("Documents", () => {
 
 			// Assert folder gone
 			await expect(
-				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+				page.getByRole("button", {
+					name: `Ordner-Icon ${givenFolderName}`,
+				}),
 			).not.toBeVisible();
+
 			// Assert document gone as well (no longer visible anywhere)
 			await expect(
 				page.getByRole("button", {
@@ -423,6 +452,14 @@ test.describe("Documents", () => {
 				await page.mouse.up();
 			}
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Löschen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -431,7 +468,7 @@ test.describe("Documents", () => {
 			await folderCheckbox.click();
 
 			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
+				name: "Dialog öffnen, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -443,13 +480,93 @@ test.describe("Documents", () => {
 
 			// Assert folder gone and both docs gone
 			await expect(
-				page.getByRole("listitem").filter({ hasText: folder }),
+				page
+					.locator("#desktop-documents-panel")
+					.getByRole("listitem")
+					.filter({
+						has: page.getByRole("button", {
+							name: `Ordner-Icon ${folder}`,
+						}),
+					}),
 			).not.toBeVisible();
 			for (const name of [defaultDocumentName, secondaryDocumentName]) {
 				await expect(
 					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
 				).not.toBeVisible();
 			}
+		},
+	);
+
+	testDesktopOnly(
+		"Delete Document and Folder via dropdown",
+		async ({ page }) => {
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect delete button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Dokument löschen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Dokument löschen" }).click();
+
+			// Expect delete dialog to be visible and confirm deletion
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await page.getByRole("button", { name: "Löschen", exact: true }).click();
+
+			// Expect document to be deleted
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).not.toBeVisible();
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Ordner Name" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			const menuButtonFolder = page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonFolder).toBeVisible();
+
+			await menuButtonFolder.click();
+
+			// Expect delete button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Ordner löschen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Ordner löschen" }).click();
+
+			// Expect delete dialog to be visible and confirm deletion
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await page.getByRole("button", { name: "Löschen", exact: true }).click();
+
+			// Expect folder to be deleted
+			await expect(
+				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
+			).not.toBeVisible();
 		},
 	);
 
@@ -543,6 +660,32 @@ test.describe("Documents", () => {
 			// Verify the download was successful
 			expect(download).toBeDefined();
 			expect(await download.path()).toBeTruthy();
+		},
+	);
+
+	testDesktopOnly(
+		"Open pdf document preview via dropdown",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect view button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Dokument anzeigen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Dokument anzeigen" }).click();
+
+			// Expect preview to be visible
+			await expect(
+				page.getByRole("heading", { name: defaultDocumentName }),
+			).toBeVisible();
 		},
 	);
 
@@ -644,16 +787,21 @@ test.describe("Documents", () => {
 			await page.goto("/");
 			await page.waitForLoadState("networkidle");
 
-			// Verify the limit reached info messages are displayed
+			// Verify the limit reached info messages are displayed (scope to desktop panel)
+			const desktopPanel = page.locator("#desktop-documents-panel");
 			await expect(
-				page.getByText(`Sie haben das Limit von ${maxFiles} Dateien erreicht.`),
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
 			).toBeVisible();
 			await expect(
-				page.getByText("Löschen Sie eine Datei, um eine neue hochzuladen."),
+				desktopPanel.getByText(
+					"Löschen Sie eine Datei, um eine neue hochzuladen.",
+				),
 			).toBeVisible();
 
 			// Verify the upload button is disabled
-			const uploadButton = page.getByRole("button", {
+			const uploadButton = desktopPanel.getByRole("button", {
 				name: "Datei hochladen",
 			});
 			await expect(uploadButton).toBeDisabled();

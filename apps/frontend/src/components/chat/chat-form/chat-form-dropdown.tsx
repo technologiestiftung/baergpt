@@ -1,7 +1,6 @@
-import { useRef, type KeyboardEvent } from "react";
 import Content from "../../../content";
 import type { LlmModel, ChatOption } from "../../../common";
-import { useFocusOnOpen } from "./hooks/use-focus-on-open.tsx";
+import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
 
 interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
 	title: string;
@@ -27,64 +26,15 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 	isOpen,
 	onClose,
 }: ChatFormDropdownProps<T>) => {
-	const optionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
-	const containerRef = useRef<HTMLDivElement>(null);
-
-	useFocusOnOpen(isOpen, optionButtonRefs);
-
-	const selectNextOption = (
-		currentIndex: number,
-		optionButtons: HTMLButtonElement[],
-	) => {
-		const nextIndex = (currentIndex + 1) % optionButtons.length;
-		optionButtons[nextIndex].focus();
-	};
-
-	const selectPreviousOption = (
-		currentIndex: number,
-		optionButtons: HTMLButtonElement[],
-	) => {
-		const previousIndex =
-			(currentIndex - 1 + optionButtons.length) % optionButtons.length;
-		optionButtons[previousIndex].focus();
-	};
-
-	// Handle keyboard navigation
-	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-		const optionButtons = Array.from(optionButtonRefs.current.values());
-		const currentIndex = optionButtons.findIndex(
-			(button) => button === document.activeElement,
-		);
-
-		switch (event.key) {
-			case "Escape":
-			case "Tab":
-				event.preventDefault();
-				onClose();
-				break;
-
-			case "ArrowDown":
-				event.preventDefault();
-				selectNextOption(currentIndex, optionButtons);
-				break;
-			case "ArrowUp":
-				event.preventDefault();
-				selectPreviousOption(currentIndex, optionButtons);
-				break;
-
-			case "Enter":
-				event.preventDefault();
-				onItemClick(items[currentIndex].value);
-				break;
-
-			default:
-				break;
-		}
-	};
+	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
+		items,
+		isOpen,
+		onClose,
+		onItemClick: (item) => onItemClick(item.value),
+	});
 
 	return (
 		<div
-			ref={containerRef}
 			className={`z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1 ${className}`}
 			onKeyDown={handleKeyDown}
 			role="listbox"

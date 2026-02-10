@@ -1,3 +1,4 @@
+import { captureError } from "../../monitoring/capture-error";
 import type { ServiceRoleDbClient } from "../../supabase";
 import { BaseContentDbService } from "./base-db-service";
 /**
@@ -137,10 +138,39 @@ export class PrivilegedDbService extends BaseContentDbService {
 	 * Requires service role for auth.admin.deleteUser().
 	 */
 	async hardDeleteUser(userId: string): Promise<void> {
-		const { error } = await this.client.auth.admin.deleteUser(userId);
+		// Get all documents for the user with storage info
+		const { data: documents, error: documentsError } = await this.client
+			.from("documents")
+			.select("source_url, source_type")
+			.eq("owned_by_user_id", userId);
 
-		if (error) {
-			throw error;
+		if (documentsError) {
+			throw documentsError;
+		}
+
+		// Delete the user from auth (cascades to documents and related tables)
+		const { error: deleteUserError } =
+			await this.client.auth.admin.deleteUser(userId);
+
+		if (deleteUserError) {
+			throw deleteUserError;
+		}
+
+		// Clean up storage files after DB cascade completes
+		if (documents && documents.length > 0) {
+			for (const doc of documents) {
+				const bucket = ["public_document", "default_document"].includes(
+					doc.source_type,
+				)
+					? "public_documents"
+					: "documents";
+
+				try {
+					await this.deleteFileFromStorage(doc.source_url, bucket);
+				} catch (storageError) {
+					captureError(storageError);
+				}
+			}
 		}
 	}
 
