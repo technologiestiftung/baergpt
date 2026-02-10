@@ -27,6 +27,7 @@ export interface Config {
 	gotenbergApiBasicAuthPassword: string;
 	presencePenalty: number;
 	frequencyPenalty: number;
+	featureFlagMcpAllowed: boolean;
 }
 
 /* eslint-disable-next-line complexity */
@@ -132,4 +133,5 @@ export const config: Config = {
 	gotenbergApiBasicAuthPassword: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
 	presencePenalty: parseFloat(process.env.PRESENCE_PENALTY || "0"),
 	frequencyPenalty: parseFloat(process.env.FREQUENCY_PENALTY || "0"),
+	featureFlagMcpAllowed: process.env.FEATURE_FLAG_MCP_ALLOWED === "true",
 };
