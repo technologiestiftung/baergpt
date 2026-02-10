@@ -709,7 +709,6 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		toolChoice: ToolChoice<Record<string, Tool>>;
 		maxSteps: number;
 		useBaseKnowledgeAfterFirstStep: boolean;
-		isParlaMCPToolActive?: boolean;
 	}> {
 		const {
 			allowedDocumentIds,
