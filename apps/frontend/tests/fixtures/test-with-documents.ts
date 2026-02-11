@@ -338,7 +338,7 @@ export async function uploadFileViaDragAndDrop({
 	);
 
 	const dropZone = page.getByText(
-		"Dateien ablegen, um sie hochzuladen inMeine DateienDateienMeine DateienNeuer",
+		"Dateien ablegen, um sie hochzuladen inMeine Dateien",
 	);
 
 	await dropZone.dispatchEvent("dragenter", { dataTransfer });
