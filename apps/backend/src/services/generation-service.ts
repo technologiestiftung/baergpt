@@ -426,7 +426,9 @@ export class GenerationService {
 								},
 							},
 							onFinish: async ({ text, usage }) => {
-								await toolsCleanup();
+								if (typeof toolsCleanup === "function") {
+									await toolsCleanup();
+								}
 
 								if (allChunkMatches.length > 0) {
 									const availableSources = allChunkMatches.map(
