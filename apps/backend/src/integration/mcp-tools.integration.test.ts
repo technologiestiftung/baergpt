@@ -87,70 +87,62 @@ describe("MCP Tools Integration", () => {
 		) {
 			expect(typeof vectorSearchTool.execute).toBe("function");
 
-			try {
-				const mockParams = {
-					query: "test search query",
-					match_threshold: 0.7,
-					chunk_limit: 5,
-				};
+			const mockParams = {
+				query: "test search query",
+				match_threshold: 0.7,
+				chunk_limit: 5,
+			};
 
-				const result = await vectorSearchTool.execute(mockParams, {
-					abortSignal: new AbortController().signal,
-					toolCallId: "test-call-id",
-					messages: [],
-				});
-				expect(result).toBeDefined();
-			} catch (error) {
-				expect(error).toBeDefined();
-			}
+			const result = await vectorSearchTool.execute(mockParams, {
+				abortSignal: new AbortController().signal,
+				toolCallId: "test-call-id",
+				messages: [],
+			});
+			expect(result).toBeDefined();
 		}
 	}, 60_000);
 
 	it("should wrap tools with proper Zod validation for parla_vector_search", async () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
 		expect(vectorSearchTool).toBeDefined();
+		expect(vectorSearchTool).toHaveProperty("inputSchema");
 
-		if (vectorSearchTool && "inputSchema" in vectorSearchTool) {
-			const params =
-				vectorSearchTool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
+		const params =
+			vectorSearchTool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
 
-			expect(params).toBeDefined();
-			expect(params.shape).toBeDefined();
+		expect(params).toBeDefined();
+		expect(params.shape).toBeDefined();
 
-			expect(params.shape).toHaveProperty("query");
-			expect(params.shape).toHaveProperty("match_threshold");
-			expect(params.shape).toHaveProperty("num_probes_chunks");
-			expect(params.shape).toHaveProperty("num_probes_summaries");
-			expect(params.shape).toHaveProperty("chunk_limit");
-			expect(params.shape).toHaveProperty("summary_limit");
-			expect(params.shape).toHaveProperty("document_limit");
-		}
+		expect(params.shape).toHaveProperty("query");
+		expect(params.shape).toHaveProperty("match_threshold");
+		expect(params.shape).toHaveProperty("num_probes_chunks");
+		expect(params.shape).toHaveProperty("num_probes_summaries");
+		expect(params.shape).toHaveProperty("chunk_limit");
+		expect(params.shape).toHaveProperty("summary_limit");
+		expect(params.shape).toHaveProperty("document_limit");
 	});
 
 	it("should handle missing execute function gracefully", async () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
 
-		if (
-			vectorSearchTool &&
-			"execute" in vectorSearchTool &&
-			vectorSearchTool.execute
-		) {
-			// Create a scenario where execute would fail
-			// by passing invalid parameters that don't match the schema
-			try {
-				await vectorSearchTool.execute(
-					{ invalid: "params" } as unknown as Parameters<
-						typeof vectorSearchTool.execute
-					>[0],
-					{
-						abortSignal: new AbortController().signal,
-						toolCallId: "test-call-id",
-						messages: [],
-					},
-				);
-			} catch (error) {
-				expect(error).toBeDefined();
-			}
+		expect(vectorSearchTool).toBeDefined();
+		expect(vectorSearchTool.execute).toBeDefined();
+
+		// Create a scenario where execute would fail
+		// by passing invalid parameters that don't match the schema
+		try {
+			await vectorSearchTool.execute(
+				{ invalid: "params" } as unknown as Parameters<
+					typeof vectorSearchTool.execute
+				>[0],
+				{
+					abortSignal: new AbortController().signal,
+					toolCallId: "test-call-id",
+					messages: [],
+				},
+			);
+		} catch (error) {
+			expect(error).toBeDefined();
 		}
 	});
 
