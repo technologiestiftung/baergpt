@@ -823,6 +823,7 @@ export const Content = {
 	"documentsPreviewSection.noPreviewAvailable":
 		"Die Vorschau von Excel-Dateien wird aktuell noch nicht unterstützt. Wir arbeiten daran, dieses Feature zu einem späteren Zeitpunkt anzubieten. Vielen Dank für Ihr Verständnis.",
 	"documentsPreviewSection.loadingPreview": "Die Vorschau wird geladen...",
+	"documentsPreviewSection.title": "Dokumentvorschau",
 
 	/* -------------------- Dialogs -------------------- */
 	//DeleteItemDialog
