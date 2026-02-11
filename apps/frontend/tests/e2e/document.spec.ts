@@ -239,10 +239,10 @@ test.describe("Documents", () => {
 
 			// Create a new folder
 			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
 				.click();
 			await page
-				.getByRole("textbox", { name: "Ordner Name" })
+				.getByRole("textbox", { name: "Neuer Ordner" })
 				.fill(givenFolderName);
 			await page
 				.getByRole("button", { name: "Erstellen", exact: true })
@@ -345,12 +345,12 @@ test.describe("Documents", () => {
 			await page.goto("/");
 
 			const createNewFolderButton = page.getByRole("button", {
-				name: "Neuer Ordner Plus-Icon",
+				name: "Ordner-Icon Ordner erstellen",
 			});
 			await createNewFolderButton.click();
 
 			const folderNameInput = page.getByRole("textbox", {
-				name: "Ordner Name",
+				name: "Neuer Ordner",
 			});
 			await folderNameInput.fill(givenFolderName);
 
@@ -425,9 +425,9 @@ test.describe("Documents", () => {
 
 			// Create folder
 			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
 				.click();
-			await page.getByRole("textbox", { name: "Ordner Name" }).fill(folder);
+			await page.getByRole("textbox", { name: "Neuer Ordner" }).fill(folder);
 			await page
 				.getByRole("button", { name: "Erstellen", exact: true })
 				.click();
@@ -531,10 +531,10 @@ test.describe("Documents", () => {
 
 			// Create a new folder
 			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
 				.click();
 			await page
-				.getByRole("textbox", { name: "Ordner Name" })
+				.getByRole("textbox", { name: "Neuer Ordner" })
 				.fill(givenFolderName);
 			await page
 				.getByRole("button", { name: "Erstellen", exact: true })

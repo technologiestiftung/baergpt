@@ -16,7 +16,7 @@ export const SecondaryButton: React.FC<ButtonProps> = ({
 			flex rounded-3px h-9 w-fit items-center px-2.5 gap-2
 			bg-hellblau-60 hover:bg-hellblau-100 
 			disabled:text-dunkelblau-40 disabled:hover:bg-hellblau-60
-			focus-visible:outline-default text-dunkelblau-100
+			focus-visible:outline-default text-dunkelblau-100 text-sm leading-5 font-normal
 			${className}`}
 			disabled={disabled}
 			onClick={onClick}
