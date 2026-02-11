@@ -1,8 +1,13 @@
 import Content from "../../../content";
-import type { LlmModel, ChatOption } from "../../../common";
+import type {
+	LlmModel,
+	ChatOptionsDropdownValue,
+	McpOptions,
+} from "../../../common";
 import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
+import { MCP_OPTIONS_VALUES } from "./mcp-options-dialog.tsx";
 
-interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
+interface ChatFormDropdownProps<T extends LlmModel | ChatOptionsDropdownValue> {
 	title: string;
 	items: {
 		label: string;
@@ -17,7 +22,9 @@ interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
 	onClose: () => void;
 }
 
-export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
+export const ChatFormDropdown = <
+	T extends LlmModel | ChatOptionsDropdownValue,
+>({
 	items,
 	title,
 	selectedItems,
@@ -33,6 +40,10 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 		onItemClick: (item) => onItemClick(item.value),
 	});
 
+	const isMcpOptionSelected = selectedItems.some((selectedItem) =>
+		Object.values(MCP_OPTIONS_VALUES).includes(selectedItem as McpOptions),
+	);
+
 	return (
 		<div
 			className={`z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1 ${className}`}
@@ -44,7 +55,10 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 			</div>
 			<ul className="flex flex-col">
 				{items.map((item, index) => {
-					const isSelected = selectedItems.includes(item.value);
+					const isSelected =
+						selectedItems.includes(item.value) ||
+						(item.value === "mcpServer" && isMcpOptionSelected);
+
 					return (
 						<li key={item.value}>
 							<button

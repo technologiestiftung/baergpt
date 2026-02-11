@@ -328,6 +328,7 @@ export class GenerationService {
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
 			isBaseKnowledgeActive,
+			isParlaMCPToolActive,
 		}: {
 			userId?: string;
 			sessionId?: string;
@@ -335,6 +336,7 @@ export class GenerationService {
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
 			isBaseKnowledgeActive?: boolean;
+			isParlaMCPToolActive?: boolean;
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
@@ -349,6 +351,7 @@ export class GenerationService {
 				isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
 				userId,
 				knowledgeBaseDocuments,
+				isParlaMCPToolActive,
 			});
 
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
@@ -700,6 +703,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		isBaseKnowledgeActive: boolean;
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
+		isParlaMCPToolActive?: boolean;
 	}): Promise<{
 		tools: Record<string, Tool>;
 		toolChoice: ToolChoice<Record<string, Tool>>;
@@ -712,6 +716,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			isBaseKnowledgeActive,
 			userId,
 			knowledgeBaseDocuments,
+			isParlaMCPToolActive,
 		} = options;
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
@@ -767,18 +772,20 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		}
 
 		// Case 3: Parla MCP Tools are active
-		const parlaMCPToolsResponse = await parlaMCPTools();
-		if (parlaMCPToolsResponse) {
-			// TODO: Decide whether this can be on at the same time as base knowledge
-			// TODO: Add flag from frontend to enable/disable Parla MCP Tools
-			return {
-				tools: {
-					...parlaMCPToolsResponse.tools,
-				},
-				toolChoice: { type: "tool", toolName: "parla_vector_search" }, // TODO: Potentially expose other tools from Parla here
-				maxSteps: 1,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
+		if (config.featureFlagMcpParlaAllowed && isParlaMCPToolActive) {
+			const parlaMCPToolsResponse = await parlaMCPTools();
+			if (parlaMCPToolsResponse) {
+				// TODO: Decide whether this can be on at the same time as base knowledge
+				// TODO: Add flag from frontend to enable/disable Parla MCP Tools
+				return {
+					tools: {
+						...parlaMCPToolsResponse.tools,
+					},
+					toolChoice: { type: "tool", toolName: "parla_vector_search" }, // TODO: Potentially expose other tools from Parla here
+					maxSteps: 1,
+					useBaseKnowledgeAfterFirstStep: false,
+				};
+			}
 		}
 
 		// Case 4: Only base knowledge is active

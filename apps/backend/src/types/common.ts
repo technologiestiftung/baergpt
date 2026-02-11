@@ -74,6 +74,7 @@ export type ChatMessageBody = {
 	user_title: string;
 	user_name: string;
 	is_base_knowledge_active?: boolean;
+	is_parla_mcp_tool_active?: boolean;
 	llm_model: string;
 };
 
