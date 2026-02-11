@@ -98,6 +98,7 @@ export const DocumentPreviewSection: React.FC = () => {
 								key={selectedPreviewDocument.id}
 								src={`${selectedPreviewDocumentPreviewUrl}#toolbar=0&view=fitH&zoom=150`}
 								className="absolute -inset-1.5 w-[calc(100%+12px)] h-[calc(100%+12px)] shadow-md"
+								title={Content["documentsPreviewSection.title"]}
 							/>
 						</div>
 					</>
