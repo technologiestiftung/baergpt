@@ -8,6 +8,10 @@ import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 export const CreateFolderButton: React.FC = () => {
 	const { currentFolder } = useFolderStore();
 
+	if (currentFolder) {
+		return null;
+	}
+
 	return (
 		<>
 			<SecondaryButton
