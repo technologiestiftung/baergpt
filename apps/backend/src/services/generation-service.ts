@@ -344,15 +344,20 @@ export class GenerationService {
 			knowledgeBaseDocuments =
 				await this.dbService.getBaseKnowledgeDocuments(userId);
 		}
-		const { tools, toolChoice, maxSteps, useBaseKnowledgeAfterFirstStep } =
-			await this.getRelevantTools({
-				allowedDocumentIds,
-				allowedFolderIds,
-				isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
-				userId,
-				knowledgeBaseDocuments,
-				isParlaMCPToolActive,
-			});
+		const {
+			tools,
+			toolChoice,
+			maxSteps,
+			useBaseKnowledgeAfterFirstStep,
+			cleanup: toolsCleanup,
+		} = await this.getRelevantTools({
+			allowedDocumentIds,
+			allowedFolderIds,
+			isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
+			userId,
+			knowledgeBaseDocuments,
+			isParlaMCPToolActive,
+		});
 
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
 
@@ -421,6 +426,8 @@ export class GenerationService {
 								},
 							},
 							onFinish: async ({ text, usage }) => {
+								await toolsCleanup();
+
 								if (allChunkMatches.length > 0) {
 									const availableSources = allChunkMatches.map(
 										(match: { chunkId: number; snippet: string }) => ({
@@ -429,10 +436,11 @@ export class GenerationService {
 										}),
 									);
 
-									const citationObject = await generateObject({
-										model: llmHandler.languageModel,
-										system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
-										prompt: `Generierte Antwort:
+									const { object, usage: generateObjectUsage } =
+										await generateObject({
+											model: llmHandler.languageModel,
+											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
+											prompt: `Generierte Antwort:
 """
 ${text}
 """
@@ -441,44 +449,38 @@ Verfügbare Quellen:
 ${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n${s.snippet}`).join("\n\n")}
 
 Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
-										temperature: LLM_PARAMETERS.temperature,
-										// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
-										schema: citationAnswerSchema,
-										experimental_telemetry: {
-											isEnabled:
-												config.nodeEnv !== "test" &&
-												config.nodeEnv !== "production", // Disable telemetry in CI and production
-											functionId: "citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
+											temperature: LLM_PARAMETERS.temperature,
+											schema: citationAnswerSchema,
+											experimental_telemetry: {
+												isEnabled:
+													config.nodeEnv !== "test" &&
+													config.nodeEnv !== "production", // Disable telemetry in CI and production
+												functionId: "citation-extraction",
+												metadata: {
+													sessionId: sessionId ? sessionId : "unknown",
+												},
 											},
-										},
-										onFinish: async ({ usage: citationUsage }) => {
-											if (userId && citationUsage?.totalTokens) {
-												try {
-													await this.dbService.updateUserColumnValue(
-														userId,
-														"num_inference_tokens",
-														citationUsage.totalTokens,
-													);
-													await this.dbService.updateUserColumnValue(
-														userId,
-														"num_inferences",
-														1,
-													);
-												} catch (error) {
-													captureError(error);
-												}
-											}
-										},
-										onError: (error) => {
-											captureError(error);
-										},
-									});
+										});
+
 									writer.write({
 										type: "data-citations",
-										data: citationObject.object.citations,
+										data: object.citations,
 									});
+
+									try {
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inference_tokens",
+											generateObjectUsage.totalTokens,
+										);
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inferences",
+											1,
+										);
+									} catch (error) {
+										captureError(error);
+									}
 								}
 
 								updateActiveTrace({
@@ -709,6 +711,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		toolChoice: ToolChoice<Record<string, Tool>>;
 		maxSteps: number;
 		useBaseKnowledgeAfterFirstStep: boolean;
+		cleanup?: () => Promise<void>;
 	}> {
 		const {
 			allowedDocumentIds,
@@ -784,6 +787,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 					toolChoice: { type: "tool", toolName: "parla_vector_search" }, // TODO: Potentially expose other tools from Parla here
 					maxSteps: 1,
 					useBaseKnowledgeAfterFirstStep: false,
+					cleanup: parlaMCPToolsResponse.cleanup,
 				};
 			}
 		}

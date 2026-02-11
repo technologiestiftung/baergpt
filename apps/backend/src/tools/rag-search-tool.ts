@@ -15,13 +15,11 @@ export const ragSearchTool = (options: RagSearchToolOptions) =>
 	tool({
 		description:
 			"Use this tool ONLY to answer questions based on documents that the user has explicitly uploaded or added to this chat. It performs a RAG search over the user's uploaded documents and returns structured, cite-ready matches.",
-		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		inputSchema: z.object({
 			query: z
 				.string()
 				.describe("The question to answer using the given documents."),
 		}),
-		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		execute: async ({ query }) => {
 			const {
 				dbService,
