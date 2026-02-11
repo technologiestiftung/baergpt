@@ -50,6 +50,7 @@ export const McpOptionsDialog: React.FC = () => {
 						type="button"
 						className="size-7 p-1 rounded-3px focus-visible:outline-default hover:bg-hellblau-50 flex items-center justify-center"
 						onClick={hideMcpOptionsDialog}
+						data-testid="mcp-options-dialog-close"
 					>
 						<CloseIcon variant="darkBlue" />
 					</button>
