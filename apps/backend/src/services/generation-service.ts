@@ -40,6 +40,14 @@ import {
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 
+type RelevantTools = {
+	tools: Record<string, Tool>;
+	toolChoice: ToolChoice<Record<string, Tool>>;
+	maxSteps: number;
+	useBaseKnowledgeAfterFirstStep: boolean;
+	cleanup?: () => Promise<void>;
+};
+
 export class GenerationService {
 	private readonly dbService: BaseContentDbService;
 	private readonly embeddingService: EmbeddingService;
@@ -708,21 +716,32 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
 		isParlaMCPToolActive?: boolean;
-	}): Promise<{
-		tools: Record<string, Tool>;
-		toolChoice: ToolChoice<Record<string, Tool>>;
-		maxSteps: number;
-		useBaseKnowledgeAfterFirstStep: boolean;
-		cleanup?: () => Promise<void>;
-	}> {
+	}): Promise<RelevantTools> {
+		if (!config.featureFlagMcpParlaAllowed) {
+			return this.getRelevantToolsV1(options);
+		}
+
+		return this.getRelevantToolsV2(options);
+	}
+
+	/**
+	 * Original implementation (pre-mcp addition)
+	 */
+	private async getRelevantToolsV1(options: {
+		allowedDocumentIds: number[];
+		allowedFolderIds: number[];
+		isBaseKnowledgeActive: boolean;
+		userId?: string;
+		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
+	}): Promise<RelevantTools> {
 		const {
 			allowedDocumentIds,
 			allowedFolderIds,
 			isBaseKnowledgeActive,
 			userId,
 			knowledgeBaseDocuments,
-			isParlaMCPToolActive,
 		} = options;
+
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
 		const ragTool = ragSearchTool({
@@ -776,25 +795,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			};
 		}
 
-		// Case 3: Parla MCP Tools are active
-		if (config.featureFlagMcpParlaAllowed && isParlaMCPToolActive) {
-			const parlaMCPToolsResponse = await parlaMCPTools();
-			if (parlaMCPToolsResponse) {
-				// TODO: Decide whether this can be on at the same time as base knowledge
-				// TODO: Add flag from frontend to enable/disable Parla MCP Tools
-				return {
-					tools: {
-						...parlaMCPToolsResponse.tools,
-					},
-					toolChoice: { type: "tool", toolName: "parla_vector_search" }, // TODO: Potentially expose other tools from Parla here
-					maxSteps: 1,
-					useBaseKnowledgeAfterFirstStep: false,
-					cleanup: parlaMCPToolsResponse.cleanup,
-				};
-			}
-		}
-
-		// Case 4: Only base knowledge is active
+		// Case 3: Only base knowledge is active
 		if (isBaseKnowledgeActive && baseKnowledgeTool) {
 			return {
 				tools: {
@@ -809,13 +810,85 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			};
 		}
 
-		// Case 5: No tools active
+		// Case 4: No tools active
 		return {
 			tools: {},
 			toolChoice: "none",
 			maxSteps: 1,
 			useBaseKnowledgeAfterFirstStep: false,
 		};
+	}
+
+	/**
+	 * WIP implementation after MCP addition.
+	 */
+	private async getRelevantToolsV2(options: {
+		allowedDocumentIds: number[];
+		allowedFolderIds: number[];
+		isBaseKnowledgeActive: boolean;
+		userId?: string;
+		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
+		isParlaMCPToolActive?: boolean;
+	}): Promise<RelevantTools> {
+		const {
+			allowedDocumentIds,
+			allowedFolderIds,
+			isBaseKnowledgeActive,
+			userId,
+			knowledgeBaseDocuments,
+			isParlaMCPToolActive,
+		} = options;
+
+		const relevantTools: RelevantTools = {
+			tools: {},
+			toolChoice: "none",
+			maxSteps: 1,
+			useBaseKnowledgeAfterFirstStep: false,
+			cleanup: async () => {},
+		};
+
+		if (isBaseKnowledgeActive && knowledgeBaseDocuments) {
+			relevantTools.tools.baseKnowledgeSearchTool = baseKnowledgeSearchTool({
+				knowledgeBaseDocuments,
+				userId,
+				dbService: this.dbService,
+				embeddingService: this.embeddingService,
+			});
+			relevantTools.toolChoice = "auto";
+		}
+
+		const hasAllowedDocumentsOrFolders =
+			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
+		if (hasAllowedDocumentsOrFolders) {
+			relevantTools.tools.ragSearchTool = ragSearchTool({
+				allowedDocumentIds,
+				allowedFolderIds,
+				userId,
+				dbService: this.dbService,
+				embeddingService: this.embeddingService,
+			});
+			relevantTools.toolChoice = "auto";
+		}
+
+		// Case 3: Parla MCP Tools are active
+		if (isParlaMCPToolActive) {
+			const parlaMCPToolsResponse = await parlaMCPTools();
+			if (parlaMCPToolsResponse) {
+				relevantTools.tools = {
+					...relevantTools.tools,
+					...parlaMCPToolsResponse.tools,
+				};
+				relevantTools.toolChoice = "auto";
+				relevantTools.cleanup = parlaMCPToolsResponse.cleanup;
+			}
+		}
+
+		relevantTools.maxSteps = Math.max(
+			1,
+			Object.keys(relevantTools.tools).length,
+		);
+
+		return relevantTools;
 	}
 
 	private getPrepareStep(useBaseKnowledgeAfterFirstStep: boolean):
