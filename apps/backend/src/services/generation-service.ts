@@ -772,7 +772,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		}
 
 		// Case 3: Parla MCP Tools are active
-		if (isParlaMCPToolActive) {
+		if (config.featureFlagMcpParlaAllowed && isParlaMCPToolActive) {
 			const parlaMCPToolsResponse = await parlaMCPTools();
 			if (parlaMCPToolsResponse) {
 				// TODO: Decide whether this can be on at the same time as base knowledge
