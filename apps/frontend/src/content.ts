@@ -704,7 +704,7 @@ export const Content = {
 	"newChatButton.label": "Neuer Chat",
 	"newChatButton.ariaLabel": "Neuen Chat erstellen",
 	//createFolderButton
-	"createFolderButton.label": "Neuer Ordner",
+	"createFolderButton.label": "Ordner erstellen",
 	//deleteItemButton
 	"deleteItemButton.label": "Löschen",
 	"deleteItemButton.ariaLabel": "Dialog öffnen, um Elemente zu löschen",
@@ -839,7 +839,7 @@ export const Content = {
 	"deleteItemDialog.delete": "Löschen",
 	//CreateFolderDialog
 	"createFolderDialog.title": "Neuer Ordner",
-	"createFolderDialog.folderName": "Ordner Name",
+	"createFolderDialog.folderName": "Unbenannter Ordner",
 	"createFolderDialog.cancel": "Abbrechen",
 	"createFolderDialog.create": "Erstellen",
 	//DeleteHistoryEntryDialog

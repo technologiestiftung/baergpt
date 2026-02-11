@@ -160,10 +160,10 @@ test.describe("Chat", () => {
 
 			// Create a new folder
 			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
 				.click();
 			await page
-				.getByRole("textbox", { name: "Ordner Name" })
+				.getByRole("textbox", { name: "Neuer Ordner" })
 				.fill(givenFolderName);
 			await page
 				.getByRole("button", { name: "Erstellen", exact: true })
@@ -209,10 +209,10 @@ test.describe("Chat", () => {
 
 			// Create a new folder
 			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
 				.click();
 			await page
-				.getByRole("textbox", { name: "Ordner Name" })
+				.getByRole("textbox", { name: "Neuer Ordner" })
 				.fill(givenFolderName);
 			await page
 				.getByRole("button", { name: "Erstellen", exact: true })
