@@ -66,7 +66,7 @@ export const McpOptionsDialog: React.FC = () => {
 									onClick={() => toggleChatOption(item.value)}
 								>
 									<div className="flex gap-x-3">
-										<img src={item.logo} width={20} height={20} />
+										<img src={item.logo} alt="" width={20} height={20} />
 										<div className="flex flex-col text-start">
 											<div
 												className={`${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
