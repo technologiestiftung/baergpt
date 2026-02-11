@@ -65,6 +65,7 @@ export const McpOptionsDialog: React.FC = () => {
 									type="button"
 									className="flex items-center justify-between w-full py-3 px-4 hover:bg-hellblau-30 focus-visible:outline-2px rounded-3px"
 									onClick={() => toggleChatOption(item.value)}
+									aria-label={item.ariaLabel}
 								>
 									<div className="flex gap-x-3">
 										<img src={item.logo} alt="" width={20} height={20} />
