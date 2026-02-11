@@ -93,11 +93,11 @@ export const DocumentPreviewSection: React.FC = () => {
 						>
 							{Content["documentsPreviewSection.disclaimer.docx"]}
 						</p>
-						<div className="w-full h-full overflow-hidden relative">
+						<div className="w-full h-full overflow-hidden relative shadow-md">
 							<iframe
 								key={selectedPreviewDocument.id}
 								src={`${selectedPreviewDocumentPreviewUrl}#toolbar=0&view=fitH`}
-								className="absolute -inset-1.5 w-[calc(100%+12px)] h-[calc(100%+12px)] shadow-md"
+								className="absolute -inset-1.5 w-[calc(100%+12px)] h-[calc(100%+12px)]"
 								title={Content["documentsPreviewSection.title"]}
 							/>
 						</div>
