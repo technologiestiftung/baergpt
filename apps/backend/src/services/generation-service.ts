@@ -27,6 +27,7 @@ import { LLM_PARAMETERS } from "../constants";
 import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
+import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import { captureError } from "../monitoring/capture-error";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
@@ -38,6 +39,14 @@ import {
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
+
+type RelevantTools = {
+	tools: Record<string, Tool>;
+	toolChoice: ToolChoice<Record<string, Tool>>;
+	maxSteps: number;
+	useBaseKnowledgeAfterFirstStep: boolean;
+	cleanup?: () => Promise<void>;
+};
 
 export class GenerationService {
 	private readonly dbService: BaseContentDbService;
@@ -327,6 +336,7 @@ export class GenerationService {
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
 			isBaseKnowledgeActive,
+			isParlaMCPToolActive,
 		}: {
 			userId?: string;
 			sessionId?: string;
@@ -334,6 +344,7 @@ export class GenerationService {
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
 			isBaseKnowledgeActive?: boolean;
+			isParlaMCPToolActive?: boolean;
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
@@ -341,14 +352,20 @@ export class GenerationService {
 			knowledgeBaseDocuments =
 				await this.dbService.getBaseKnowledgeDocuments(userId);
 		}
-		const { tools, toolChoice, maxSteps, useBaseKnowledgeAfterFirstStep } =
-			this.getRelevantTools({
-				allowedDocumentIds,
-				allowedFolderIds,
-				isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
-				userId,
-				knowledgeBaseDocuments,
-			});
+		const {
+			tools,
+			toolChoice,
+			maxSteps,
+			useBaseKnowledgeAfterFirstStep,
+			cleanup: toolsCleanup,
+		} = await this.getRelevantTools({
+			allowedDocumentIds,
+			allowedFolderIds,
+			isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
+			userId,
+			knowledgeBaseDocuments,
+			isParlaMCPToolActive,
+		});
 
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
 
@@ -417,6 +434,10 @@ export class GenerationService {
 								},
 							},
 							onFinish: async ({ text, usage }) => {
+								if (typeof toolsCleanup === "function") {
+									await toolsCleanup();
+								}
+
 								if (allChunkMatches.length > 0) {
 									const availableSources = allChunkMatches.map(
 										(match: { chunkId: number; snippet: string }) => ({
@@ -425,10 +446,11 @@ export class GenerationService {
 										}),
 									);
 
-									const citationObject = await generateObject({
-										model: llmHandler.languageModel,
-										system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
-										prompt: `Generierte Antwort:
+									const { object, usage: generateObjectUsage } =
+										await generateObject({
+											model: llmHandler.languageModel,
+											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
+											prompt: `Generierte Antwort:
 """
 ${text}
 """
@@ -437,44 +459,38 @@ Verfügbare Quellen:
 ${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n${s.snippet}`).join("\n\n")}
 
 Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
-										temperature: LLM_PARAMETERS.temperature,
-										// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
-										schema: citationAnswerSchema,
-										experimental_telemetry: {
-											isEnabled:
-												config.nodeEnv !== "test" &&
-												config.nodeEnv !== "production", // Disable telemetry in CI and production
-											functionId: "citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
+											temperature: LLM_PARAMETERS.temperature,
+											schema: citationAnswerSchema,
+											experimental_telemetry: {
+												isEnabled:
+													config.nodeEnv !== "test" &&
+													config.nodeEnv !== "production", // Disable telemetry in CI and production
+												functionId: "citation-extraction",
+												metadata: {
+													sessionId: sessionId ? sessionId : "unknown",
+												},
 											},
-										},
-										onFinish: async ({ usage: citationUsage }) => {
-											if (userId && citationUsage?.totalTokens) {
-												try {
-													await this.dbService.updateUserColumnValue(
-														userId,
-														"num_inference_tokens",
-														citationUsage.totalTokens,
-													);
-													await this.dbService.updateUserColumnValue(
-														userId,
-														"num_inferences",
-														1,
-													);
-												} catch (error) {
-													captureError(error);
-												}
-											}
-										},
-										onError: (error) => {
-											captureError(error);
-										},
-									});
+										});
+
 									writer.write({
 										type: "data-citations",
-										data: citationObject.object.citations,
+										data: object.citations,
 									});
+
+									try {
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inference_tokens",
+											generateObjectUsage.totalTokens,
+										);
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inferences",
+											1,
+										);
+									} catch (error) {
+										captureError(error);
+									}
 								}
 
 								updateActiveTrace({
@@ -693,18 +709,31 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		};
 	}
 
-	private getRelevantTools(options: {
+	private async getRelevantTools(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
 		isBaseKnowledgeActive: boolean;
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-	}): {
-		tools: Record<string, Tool>;
-		toolChoice: ToolChoice<Record<string, Tool>>;
-		maxSteps: number;
-		useBaseKnowledgeAfterFirstStep: boolean;
-	} {
+		isParlaMCPToolActive?: boolean;
+	}): Promise<RelevantTools> {
+		if (!config.featureFlagMcpParlaAllowed) {
+			return this.getRelevantToolsV1(options);
+		}
+
+		return this.getRelevantToolsV2(options);
+	}
+
+	/**
+	 * Original implementation (pre-mcp addition)
+	 */
+	private async getRelevantToolsV1(options: {
+		allowedDocumentIds: number[];
+		allowedFolderIds: number[];
+		isBaseKnowledgeActive: boolean;
+		userId?: string;
+		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
+	}): Promise<RelevantTools> {
 		const {
 			allowedDocumentIds,
 			allowedFolderIds,
@@ -712,6 +741,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			userId,
 			knowledgeBaseDocuments,
 		} = options;
+
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
 		const ragTool = ragSearchTool({
@@ -787,6 +817,78 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			maxSteps: 1,
 			useBaseKnowledgeAfterFirstStep: false,
 		};
+	}
+
+	/**
+	 * WIP implementation after MCP addition.
+	 */
+	private async getRelevantToolsV2(options: {
+		allowedDocumentIds: number[];
+		allowedFolderIds: number[];
+		isBaseKnowledgeActive: boolean;
+		userId?: string;
+		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
+		isParlaMCPToolActive?: boolean;
+	}): Promise<RelevantTools> {
+		const {
+			allowedDocumentIds,
+			allowedFolderIds,
+			isBaseKnowledgeActive,
+			userId,
+			knowledgeBaseDocuments,
+			isParlaMCPToolActive,
+		} = options;
+
+		const relevantTools: RelevantTools = {
+			tools: {},
+			toolChoice: "none",
+			maxSteps: 1,
+			useBaseKnowledgeAfterFirstStep: false,
+			cleanup: async () => {},
+		};
+
+		if (isBaseKnowledgeActive && knowledgeBaseDocuments) {
+			relevantTools.tools.baseKnowledgeSearchTool = baseKnowledgeSearchTool({
+				knowledgeBaseDocuments,
+				userId,
+				dbService: this.dbService,
+				embeddingService: this.embeddingService,
+			});
+			relevantTools.toolChoice = "auto";
+		}
+
+		const hasAllowedDocumentsOrFolders =
+			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
+		if (hasAllowedDocumentsOrFolders) {
+			relevantTools.tools.ragSearchTool = ragSearchTool({
+				allowedDocumentIds,
+				allowedFolderIds,
+				userId,
+				dbService: this.dbService,
+				embeddingService: this.embeddingService,
+			});
+			relevantTools.toolChoice = "auto";
+		}
+
+		// Case 3: Parla MCP Tools are active
+		if (isParlaMCPToolActive) {
+			const parlaMCPToolsResponse = await parlaMCPTools();
+			if (parlaMCPToolsResponse) {
+				relevantTools.tools = {
+					...relevantTools.tools,
+					...parlaMCPToolsResponse.tools,
+				};
+				relevantTools.toolChoice = "auto";
+				relevantTools.cleanup = parlaMCPToolsResponse.cleanup;
+			}
+		}
+
+		relevantTools.maxSteps = Math.max(
+			1,
+			Object.keys(relevantTools.tools).length,
+		);
+
+		return relevantTools;
 	}
 
 	private getPrepareStep(useBaseKnowledgeAfterFirstStep: boolean):

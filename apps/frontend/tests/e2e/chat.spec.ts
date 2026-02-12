@@ -755,6 +755,85 @@ test.describe("Chat", () => {
 		await expect(contextPill).not.toBeVisible();
 	});
 
+	testDesktopOnly("Toggle Parla Berlin MCP", async ({ page }) => {
+		await page.goto("/");
+
+		// Open the chat options dropdown ("Wissen erweitern")
+		const chatOptionsButton = page.getByRole("button", {
+			name: "Weitere Funktionen aktivieren",
+		});
+		await expect(chatOptionsButton).toBeVisible();
+		await chatOptionsButton.click();
+
+		const mcpServerOption = page.getByRole("option", {
+			name: "MCP Server auswählen",
+		});
+
+		// Skip when MCP is disabled via VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED
+		await test.step("Skip when MCP Server option is not available (feature flag off)", async () => {
+			if (!(await mcpServerOption.isVisible())) {
+				test.skip(
+					true,
+					"MCP Server option not available (VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED is not enabled)",
+				);
+			}
+		});
+
+		// Open the MCP server selection dialog
+		await mcpServerOption.click();
+
+		const mcpDialog = page.locator("#mcp-options-dialog");
+		await expect(mcpDialog).toBeVisible();
+
+		// locate the Parla Berlin option inside the dialog
+		const parlaBerlinOption = mcpDialog.getByRole("button", {
+			name: /Parla Berlin/,
+		});
+		await expect(parlaBerlinOption).toBeVisible();
+		await expect(
+			mcpDialog.getByText("Schriftliche Anfragen des Abgh. Berlins"),
+		).toBeVisible();
+
+		// Select Parla Berlin and assert the check icon is visible
+		await test.step("Select Parla Berlin", async () => {
+			await parlaBerlinOption.click();
+			await expect(
+				parlaBerlinOption.getByAltText("Ein blaues Häkchen-Icon"),
+			).toBeVisible();
+		});
+
+		// Deselect Parla Berlin in the dialog and assert the check icon is hidden
+		await test.step("Deselect Parla Berlin", async () => {
+			await parlaBerlinOption.click();
+			await expect(
+				parlaBerlinOption.getByAltText("Ein blaues Häkchen-Icon"),
+			).toBeHidden();
+		});
+
+		// Close the MCP options dialog
+		await test.step("Close MCP options dialog", async () => {
+			await page.getByTestId("mcp-options-dialog-close").click();
+			await expect(mcpDialog).not.toBeVisible();
+		});
+
+		// Re-select Parla Berlin via the dialog to verify the context pill
+		await chatOptionsButton.click();
+		await mcpServerOption.click();
+		await parlaBerlinOption.click();
+		await page.getByTestId("mcp-options-dialog-close").click();
+
+		// Verify the context pill appears with "Parla Berlin entfernen" (remove option)
+		const contextPill = page.getByRole("button", {
+			name: /Parla Berlin entfernen/,
+		});
+		await expect(contextPill).toBeVisible();
+
+		// Deselect by clicking the pill; pill and label should disappear
+		await contextPill.click();
+		await expect(page.getByText("Parla Berlin")).not.toBeVisible();
+		await expect(contextPill).not.toBeVisible();
+	});
+
 	testDesktopOnly(
 		"Disabling base knowledge should re-activate it when swapping between two chats",
 		async ({ page }) => {

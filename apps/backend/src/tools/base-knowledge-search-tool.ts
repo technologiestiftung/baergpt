@@ -24,7 +24,7 @@ export const baseKnowledgeSearchTool = (
 ) =>
 	tool({
 		description: `
-			Use this tool to answer questions based on the base knowledge documents available to the user. It performs a RAG search over the user's documents and returns structured, cite-ready matches.
+			Use this tool ONLY to answer questions based on the base knowledge documents available to the user. It performs a RAG search over the base knowledge documents about Berlin's public services and returns structured, cite-ready matches.
 			These are the available Knowledge Base documents: ${JSON.stringify(
 				options.knowledgeBaseDocuments.map((doc) => ({
 					file_name: doc.file_name,
@@ -36,13 +36,11 @@ export const baseKnowledgeSearchTool = (
 				2,
 			)}.
 			`,
-		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		inputSchema: z.object({
 			query: z
 				.string()
 				.describe("The question to answer using the base knowledge."),
 		}),
-		// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 		execute: async ({ query }) => {
 			const { dbService, embeddingService, userId, knowledgeBaseDocuments } =
 				options;

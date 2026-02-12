@@ -900,6 +900,20 @@ export const Content = {
 	"chat.options.li1.label": "Verwaltungswissen",
 	"chat.options.li1.description": "Zugriff auf Verwaltungsdokumente",
 	"chat.options.li1.ariaLabel": "Verwaltungswissen auswählen",
+	"chat.options.li2.label": "MCP Server",
+	"chat.options.li2.description": "Externe Datenquellen verbinden",
+	"chat.options.li2.ariaLabel": "MCP Server auswählen",
+	// MCP Options Dialog
+	"mcp.options.dialog.title": "MCP Server auswählen",
+	"mcp.options.dialog.confirmButton.label": "Bestätigen",
+	"mcp.options.dialog.confirmButton.ariaLabel": "Bestätigen",
+	"mcp.options.dialog.cancelButton.label": "Abbrechen",
+	"mcp.options.dialog.cancelButton.ariaLabel": "Abbrechen",
+	"mcp.options.dialog.option1.label": "Parla Berlin",
+	"mcp.options.dialog.option1.description":
+		"Schriftliche Anfragen des Abgh. Berlins",
+	"mcp.options.dialog.option1.ariaLabel": "Parla Berlin auswählen",
+
 	// Chat llm model dropdown
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
 	"chat.llmModel.dropdown.li1.label": "Schnell",
@@ -944,6 +958,9 @@ export const Content = {
 	"chat.contextPill.baseKnowledge.label": "Verwaltungswissen",
 	"chat.contextPill.baseKnowledge.ariaLabel": "Verwaltungswissen entfernen",
 	"chat.contextPill.baseKnowledge.icon.alt": "Verwaltungswissen icon",
+	"chat.contextPill.parla.label": "Parla Berlin",
+	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
+	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
