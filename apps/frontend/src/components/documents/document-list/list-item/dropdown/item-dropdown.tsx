@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
 import { useDocumentStore } from "../../../../../store/document-store";
 import type { Document, DocumentFolder } from "../../../../../common";
@@ -14,18 +14,57 @@ interface ItemDropdownProps {
 	item: Document | DocumentFolder;
 	isOpen: boolean;
 	onClose: () => void;
+	triggerRef: React.RefObject<HTMLButtonElement>;
 }
 
 export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	item,
 	isOpen,
 	onClose,
+	triggerRef,
 }) => {
 	const { selectPreviewDocument } = useDocumentStore();
 	const { setSingleItemSelectedForAction } = useDocumentsListStore();
+	const [position, setPosition] = useState<{
+		top: number;
+		right: number;
+	}>({ top: 0, right: 0 });
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
+
+	const calculatePosition = () => {
+		if (triggerRef.current) {
+			const rect = triggerRef.current.getBoundingClientRect();
+			return {
+				top: rect.bottom,
+				right: window.innerWidth - rect.right,
+			};
+		}
+		return { top: 0, right: 0 };
+	};
+
+	useEffect(() => {
+		if (isOpen) {
+			setPosition(calculatePosition());
+
+			const handleScroll = () => {
+				setPosition(calculatePosition());
+			};
+
+			const scrollContainer = document.querySelector(".filesection-scrollbar");
+			if (scrollContainer) {
+				scrollContainer.addEventListener("scroll", handleScroll);
+			}
+
+			return () => {
+				if (scrollContainer) {
+					scrollContainer.removeEventListener("scroll", handleScroll);
+				}
+			};
+		}
+		return undefined;
+	}, [isOpen, triggerRef]);
 
 	const handleAddToChat = () => {
 		onClose();
@@ -103,44 +142,46 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		onItemClick: (dropdownItem) => dropdownItem.action(),
 	});
 
+	if (!isOpen) {
+		return null;
+	}
+
 	return (
-		<>
-			{isOpen && (
-				<div
-					className="absolute top-full right-0 z-50 bg-white rounded-3px shadow-md min-w-[200px]"
-					onKeyDown={handleKeyDown}
-					role="listbox"
-				>
-					<ul className="flex flex-col">
-						{dropdownItems.map((dropdownItem, index) => (
-							<li key={dropdownItem.label}>
-								<button
-									type="button"
-									ref={(el) => {
-										if (el) {
-											optionButtonRefs.current.set(index, el);
-										} else {
-											optionButtonRefs.current.delete(index);
-										}
-									}}
-									className={`flex items-center w-full h-9 px-1.5 py-1 gap-x-2 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
-										${dropdownItem.style}`}
-									onClick={dropdownItem.action}
-									aria-label={dropdownItem.ariaLabel}
-									role="option"
-								>
-									<div className="flex items-center justify-center rounded-3px shrink-0 size-8 relative">
-										{dropdownItem.icon}
-									</div>
-									<span className={`text-sm leading-5 `}>
-										{dropdownItem.label}
-									</span>
-								</button>
-							</li>
-						))}
-					</ul>
-				</div>
-			)}
-		</>
+		<div
+			className="fixed z-50 bg-white rounded-3px shadow-md min-w-[200px]"
+			style={{
+				top: `${position.top}px`,
+				right: `${position.right}px`,
+			}}
+			onKeyDown={handleKeyDown}
+			role="listbox"
+		>
+			<ul className="flex flex-col">
+				{dropdownItems.map((dropdownItem, index) => (
+					<li key={dropdownItem.label}>
+						<button
+							type="button"
+							ref={(el) => {
+								if (el) {
+									optionButtonRefs.current.set(index, el);
+								} else {
+									optionButtonRefs.current.delete(index);
+								}
+							}}
+							className={`flex items-center w-full h-9 px-1.5 py-1 gap-x-2 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
+								${dropdownItem.style}`}
+							onClick={dropdownItem.action}
+							aria-label={dropdownItem.ariaLabel}
+							role="option"
+						>
+							<div className="flex items-center justify-center rounded-3px shrink-0 size-8 relative">
+								{dropdownItem.icon}
+							</div>
+							<span className={`text-sm leading-5 `}>{dropdownItem.label}</span>
+						</button>
+					</li>
+				))}
+			</ul>
+		</div>
 	);
 };
