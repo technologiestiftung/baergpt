@@ -34,7 +34,7 @@
 		"@opentelemetry/sdk-node": "0.206.0",
 		"@opentelemetry/sdk-trace-node": "2.1.0",
 		"@repo/db-schema": "file:../../libs/db-schema",
-		"@sentry/node": "10.20.0",
+		"@sentry/node": "10.27.0",
 		"@sergiiivzhenko/bottleneck": "2.19.7",
 		"@supabase/supabase-js": "2.81.1",
 		"ai": "5.0.60",
