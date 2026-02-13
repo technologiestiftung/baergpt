@@ -30,6 +30,7 @@ llms.post("/just-chatting", async (c: Context) => {
 		const messages = body.messages as ModelMessage[];
 		const isAddressedFormal = body.is_addressed_formal;
 		const isBaseKnowledgeActive = body.is_base_knowledge_active;
+		const isParlaMCPToolActive = body.is_parla_mcp_tool_active;
 		if (messages.length === 0 || !messages.at(-1)?.content) {
 			return c.json(
 				{
@@ -52,6 +53,7 @@ llms.post("/just-chatting", async (c: Context) => {
 				allowedDocumentIds: allowedDocumentIds,
 				allowedFolderIds: allowedFolderIds,
 				isBaseKnowledgeActive: isBaseKnowledgeActive,
+				isParlaMCPToolActive: isParlaMCPToolActive,
 			},
 		);
 

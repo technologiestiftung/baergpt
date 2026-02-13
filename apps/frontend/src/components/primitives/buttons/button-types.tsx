@@ -8,8 +8,8 @@ export interface ButtonProps {
 	ariaLabel?: string;
 	title?: string;
 	isLoading?: boolean;
-	icon?: React.ReactNode;
 	isOutlineVisible?: boolean;
+	hasIcon?: "left" | "right";
 	className?: string;
 	children?: string | ReactNode;
 	onMouseEnter?: (event: React.MouseEvent<HTMLButtonElement>) => void;

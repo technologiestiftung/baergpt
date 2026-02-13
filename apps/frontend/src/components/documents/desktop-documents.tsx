@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
 import DocumentBreadcrumbs from "./document-breadcrumbs.tsx";
 import { CreateFolderButton } from "./create-folder/create-folder-button.tsx";
-import { DeleteItemButton } from "./delete-item/delete-item-button.tsx";
 import { DocumentsList } from "./document-list/documents-list.tsx";
+import { DocumentDragPreview } from "./document-list/document-drag-preview.tsx";
 import { FileUpload } from "./file-upload/file-upload.tsx";
 import { DocumentIcon } from "../primitives/icons/document-icon.tsx";
 import { CloseIcon } from "../primitives/icons/close-icon.tsx";
@@ -13,6 +13,7 @@ import { DropZoneWrapperDocuments } from "./document-list/drop-zone-wrapper-docu
 import { useErrorStore } from "../../store/error-store.ts";
 import { useDocumentStore } from "../../store/document-store.ts";
 import { useFileUploadsStore } from "../../store/use-file-uploads-store.ts";
+import { MultiSelectForActionButton } from "./document-list/multi-select-for-action/multi-select-for-action-button.tsx";
 
 const MIN_WIDTH = 350;
 const MAX_WIDTH = 700;
@@ -153,18 +154,19 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 
 				{!isCollapsed && (
 					<>
-						<div className="mt-11">
+						<div className="mt-8">
 							<DocumentBreadcrumbs />
 						</div>
 
-						<div className="hidden md:flex gap-4 items-center mt-8 mb-2">
+						<div className="hidden md:flex gap-4 items-center my-4">
 							<CreateFolderButton />
-							{hasItems && <DeleteItemButton id={"desktop"} />}
+							<MultiSelectForActionButton />
 						</div>
 
 						{hasItems && (
 							<>
-								<div className="flex h-full mt-3 md:mt-0">
+								<DocumentDragPreview />
+								<div className="flex h-full">
 									<DocumentsList />
 								</div>
 								{/* Full-width border */}
@@ -172,7 +174,7 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 							</>
 						)}
 						{!hasItems && errorMessage && !isLoading && (
-							<div className="flex flex-col gap-3 text-sm leading-5 font-normal text-dunkelblau-100 text-center items-center justify-center h-full w-40 mx-auto">
+							<div className="flex flex-col gap-3 text-sm leading-5 font-normal text-center items-center justify-center h-full w-40 mx-auto">
 								<p>{errorMessage}</p>
 								<button
 									className="flex gap-0.5 underline underline-offset-2 cursor-pointer"

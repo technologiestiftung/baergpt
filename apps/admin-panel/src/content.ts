@@ -22,7 +22,6 @@ export const Content = {
 	"loginPage.emailLabel": "E-Mail-Adresse",
 	"loginPage.passwordLabel": "Passwort",
 	"loginPage.submitButton": "Anmelden",
-	"loginPage.resetPassword.label": "Passwort vergessen?",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
 	"unconfirmedEmail.h1": "Registrierung fast abgeschlossen",
@@ -42,7 +41,7 @@ export const Content = {
 
 	"form.validation.general.valueMissing": "Bitte füllen Sie dieses Feld aus.",
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
-	"form.validation.password.worng.error": "Das Passwort ist falsch.",
+	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.password.tooShort":
 		"Das Passwort muss mindestens 6 Zeichen lang sein.",
 	"form.validation.password.customError":

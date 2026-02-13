@@ -1,11 +1,12 @@
 import React from "react";
 import type { DocumentFolder } from "../../../../common";
 import { useFolderStore } from "../../../../store/folder-store";
-import { AddToChatButton } from "./add-to-chat-button";
+import { useDocumentsListStore } from "../../../../store/use-documents-list-store.ts";
 import Checkbox from "../../../primitives/checkboxes/checkbox.tsx";
 import { DroppableFolderName } from "./droppable-folder-name.tsx";
-import { useMobileMenuStore } from "../../../../store/use-mobile-menu.ts";
 import Content from "../../../../content.ts";
+import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
+import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
 
 interface FolderItemProps {
 	item: DocumentFolder;
@@ -15,12 +16,12 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 	const {
 		selectedChatFolders,
 		selectedFoldersForAction,
-		selectChatFolder,
 		selectFolderForAction,
-		unselectChatFolder,
 		unselectFolderForAction,
+		toggleChatFolder,
 	} = useFolderStore();
-	const { isMobileCheckboxVisible } = useMobileMenuStore();
+
+	const { isMultiSelectForActionVisible } = useDocumentsListStore();
 
 	const isSelectedForAction = selectedFoldersForAction.some(
 		(folder) => folder.id === item.id,
@@ -37,17 +38,9 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 		unselectFolderForAction(item.id);
 	};
 
-	const handleAddFolderToChat = (folder: DocumentFolder) => {
-		if (selectedChatFolders.some((fol) => fol.id === folder.id)) {
-			unselectChatFolder(folder.id);
-			return;
-		}
-		selectChatFolder(folder);
-	};
-
 	return (
 		<>
-			<div className={`${isMobileCheckboxVisible ? "flex" : "hidden"} md:flex`}>
+			<div className={isMultiSelectForActionVisible ? "flex" : "hidden"}>
 				<Checkbox
 					id={`${item.id.toString()}-folder`}
 					checked={isSelectedForAction}
@@ -57,14 +50,16 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 			</div>
 
 			<div
-				className={`rounded-3px h-10 px-2 gap-x-2 flex justify-between items-center w-0 grow hover:bg-hellblau-60 ${isSelectedForChat && "bg-hellblau-60"}`}
+				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group ${isSelectedForChat && "bg-hellblau-60"}`}
 			>
 				<DroppableFolderName item={item} />
 
-				<AddToChatButton
+				<ToggleChatItemButton
+					handleToggleChatItem={() => toggleChatFolder(item)}
 					isSelectedForChat={isSelectedForChat}
-					handleAddToChat={() => handleAddFolderToChat(item)}
 				/>
+
+				<ItemDropdownButton item={item} />
 			</div>
 		</>
 	);

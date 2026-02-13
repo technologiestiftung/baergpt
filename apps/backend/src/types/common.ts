@@ -74,6 +74,7 @@ export type ChatMessageBody = {
 	user_title: string;
 	user_name: string;
 	is_base_knowledge_active?: boolean;
+	is_parla_mcp_tool_active?: boolean;
 	llm_model: string;
 };
 
@@ -208,6 +209,13 @@ export class DocumentNotFoundError extends Error {
 			`Document with ID ${documentId} not found, it may not exist or you may not have access to it.`,
 		);
 		this.name = "DocumentNotFoundError";
+	}
+}
+
+export class DefaultDocumentDeletionError extends Error {
+	constructor(documentId: number) {
+		super(`Default document ${documentId} cannot be deleted.`);
+		this.name = "DefaultDocumentDeletionError";
 	}
 }
 

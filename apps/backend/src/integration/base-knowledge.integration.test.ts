@@ -14,6 +14,8 @@ import { serviceRoleDbClient as supabaseAdminClient } from "../supabase";
 import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import { EmbeddingService } from "../services/embedding-service";
 import type { KnowledgeBaseDocument } from "../types/common";
+import app from "../index";
+import { sign } from "hono/jwt";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -26,6 +28,52 @@ const SMALL_FILE_SIZE = 500;
 
 const createDeterministicEmbedding = (length = EMBEDDING_LENGTH) =>
 	Array.from({ length }, (_, i) => (i % 10) / 10);
+
+// Helper to create JWT token for testing
+const createTestToken = async (
+	userId: string,
+	email: string,
+): Promise<string> => {
+	return await sign(
+		{
+			exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour from now
+			sub: userId,
+			email: email,
+			role: "authenticated",
+		},
+		config.supabaseJwtKey,
+	);
+};
+
+// Helper to delete document via backend route
+const deleteDocument = async (
+	documentId: number,
+	userToken: string,
+): Promise<{ success: boolean; status: number; error?: string }> => {
+	const response = await app.request(
+		`/documents/${documentId}`,
+		{
+			method: "DELETE",
+			headers: {
+				Authorization: `Bearer ${userToken}`,
+			},
+		},
+		{
+			JWT_SECRET: config.supabaseJwtKey,
+		},
+	);
+
+	if (response.status === 204) {
+		return { success: true, status: 204 };
+	}
+
+	const body = await response.json();
+	return {
+		success: false,
+		status: response.status,
+		error: body.error || "Unknown error",
+	};
+};
 
 describe("Base Knowledge Integration Tests", () => {
 	const testUserEmail = "base-knowledge-test-user@local.berlin.de";
@@ -396,12 +444,12 @@ describe("Base Knowledge Integration Tests", () => {
 
 			expect(checkError).toBeNull();
 			expect(docExists).not.toBeNull();
-			// Test admin deletion through the database function
-			const { error: deleteError } = await supabaseAnonClient.rpc(
-				"delete_document_and_update_count",
-				{ document_id: testDoc.id },
-			);
-			expect(deleteError).toBeNull();
+
+			// Test admin deletion through the backend route
+			const adminToken = await createTestToken(testUserId, testUserEmail);
+			const deleteResult = await deleteDocument(testDoc.id, adminToken);
+			expect(deleteResult.success).toBe(true);
+			expect(deleteResult.status).toBe(204);
 
 			// Verify the document was deleted from database
 			const { data: deletedDoc, error: verifyError } = await supabaseAdminClient
@@ -438,6 +486,156 @@ describe("Base Knowledge Integration Tests", () => {
 				.from(PUBLIC_BUCKET)
 				.remove([testFileName]);
 		}
+	});
+
+	describe("RLS Policy Tests for Base Knowledge Inserts", () => {
+		it("should allow admin to insert base knowledge documents through user-scoped client", async () => {
+			const { error: adminError } = await supabaseAdminClient
+				.from("application_admins")
+				.insert({ user_id: testUserId });
+
+			expect(adminError).toBeNull();
+
+			let insertedDocId: number | null = null;
+
+			try {
+				const { data: doc, error: docError } = await supabaseAnonClient
+					.from("documents")
+					.insert({
+						file_name: "rls-test-admin-insert.pdf",
+						source_type: "public_document",
+						source_url: "rls-test-admin-insert.pdf",
+						file_checksum: "rls-admin-test-checksum",
+						file_size: SMALL_FILE_SIZE,
+						num_pages: 1,
+						folder_id: null,
+						owned_by_user_id: null, // Base knowledge = null
+						access_group_id: accessGroupId,
+						processing_finished_at: new Date().toISOString(),
+					})
+					.select("id")
+					.single();
+
+				expect(docError).toBeNull();
+				expect(doc).not.toBeNull();
+				insertedDocId = doc?.id ?? null;
+
+				if (insertedDocId === null) {
+					throw new Error("Document insert failed - no ID returned");
+				}
+
+				const { error: summaryError } = await supabaseAnonClient
+					.from("document_summaries")
+					.insert({
+						document_id: insertedDocId,
+						summary: "RLS test summary for admin insert.",
+						short_summary: "RLS test.",
+						owned_by_user_id: null,
+						folder_id: null,
+						access_group_id: accessGroupId,
+						tags: ["rls-test"],
+					});
+
+				expect(summaryError).toBeNull();
+
+				const testEmbedding = createDeterministicEmbedding();
+				const { error: chunkError } = await supabaseAnonClient
+					.from("document_chunks")
+					.insert({
+						document_id: insertedDocId,
+						content: "RLS test chunk content for admin insert.",
+						page: 1,
+						chunk_index: 0,
+						owned_by_user_id: null,
+						folder_id: null,
+						access_group_id: accessGroupId,
+						chunk_jina_embedding: JSON.stringify(testEmbedding),
+					});
+
+				expect(chunkError).toBeNull();
+			} finally {
+				// Clean up: delete inserted document (cascades to summary/chunks)
+				if (insertedDocId) {
+					await supabaseAdminClient
+						.from("documents")
+						.delete()
+						.eq("id", insertedDocId);
+				}
+
+				await supabaseAdminClient
+					.from("application_admins")
+					.delete()
+					.eq("user_id", testUserId);
+			}
+		});
+
+		it("should prevent non-admin from inserting base knowledge documents", async () => {
+			// Ensure user is NOT an admin
+			const { data: adminCheck } = await supabaseAdminClient
+				.from("application_admins")
+				.select("user_id")
+				.eq("user_id", testUserId)
+				.maybeSingle();
+
+			expect(adminCheck).toBeNull();
+
+			// Try to insert document with owned_by_user_id: null as non-admin
+			// This should fail with RLS violation
+			const { data: doc, error: docError } = await supabaseAnonClient
+				.from("documents")
+				.insert({
+					file_name: "rls-test-non-admin-insert.pdf",
+					source_type: "public_document",
+					source_url: "rls-test-non-admin-insert.pdf",
+					file_checksum: "rls-non-admin-test-checksum",
+					file_size: SMALL_FILE_SIZE,
+					num_pages: 1,
+					folder_id: null,
+					owned_by_user_id: null, // Base knowledge = null, should be blocked
+					access_group_id: accessGroupId,
+					processing_finished_at: new Date().toISOString(),
+				})
+				.select("id")
+				.single();
+
+			expect(docError).not.toBeNull();
+			expect(docError?.code).toBe("42501"); // RLS violation
+			expect(doc).toBeNull();
+
+			// Also verify document_summaries INSERT is blocked for non-admin
+			const { error: summaryError } = await supabaseAnonClient
+				.from("document_summaries")
+				.insert({
+					document_id: documentId, // Use existing document
+					summary: "This should fail.",
+					short_summary: "Fail.",
+					owned_by_user_id: null, // Should be blocked
+					folder_id: null,
+					access_group_id: accessGroupId,
+					tags: ["fail"],
+				});
+
+			expect(summaryError).not.toBeNull();
+			expect(summaryError?.code).toBe("42501"); // RLS violation
+
+			// Also verify document_chunks INSERT is blocked for non-admin
+			const testEmbedding = createDeterministicEmbedding();
+			const { error: chunkError } = await supabaseAnonClient
+				.from("document_chunks")
+				.insert({
+					document_id: documentId, // Use existing document
+					content: "This should fail.",
+					page: 1,
+					chunk_index: 99,
+					owned_by_user_id: null, // Should be blocked
+					folder_id: null,
+					access_group_id: accessGroupId,
+					chunk_jina_embedding: JSON.stringify(testEmbedding),
+				});
+
+			expect(chunkError).not.toBeNull();
+			expect(chunkError?.code).toBe("42501"); // RLS violation
+		});
 	});
 
 	it("should prevent non-admin user from deleting public base knowledge documents", async () => {
@@ -480,12 +678,10 @@ describe("Base Knowledge Integration Tests", () => {
 			expect(adminCheck).toBeNull();
 
 			// Attempt to delete the public document as a non-admin user should fail
-			const { error: deleteError } = await supabaseAnonClient.rpc(
-				"delete_document_and_update_count",
-				{ document_id: testDoc.id },
-			);
-			expect(deleteError).not.toBeNull();
-			expect(deleteError?.message).toContain("unauthorized");
+			const nonAdminToken = await createTestToken(testUserId, testUserEmail);
+			const deleteResult = await deleteDocument(testDoc.id, nonAdminToken);
+			expect(deleteResult.success).toBe(false);
+			expect(deleteResult.status).toBe(404);
 
 			// Verify the document still exists
 			const { data: stillExists, error: verifyError } =

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLargeIcon } from "../../primitives/icons/chevron-large-icon.tsx";
+import { ChevronIcon } from "../../primitives/icons/chevron-icon.tsx";
 import { CloseIcon } from "../../primitives/icons/close-icon.tsx";
 import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
 import { FileUploadList } from "./file-upload-list.tsx";
@@ -16,16 +16,20 @@ export function FileUploadStatusCollapsible() {
 	return (
 		<div className="flex flex-col w-full">
 			<div
-				className={`flex w-full bg-hellblau-100 hover:bg-hellblau-60 px-4 py-2 rounded-t-3px ${!isOpen && "rounded-b-3px"}`}
+				className={`bg-dunkelblau-100 hover:bg-dunkelblau-90 disabled:hover:bg-hellblau-60 py-2.5 px-2 rounded-t-3px focus-visible:outline-default flex gap-2 justify-center items-center w-full ${!isOpen && "rounded-b-3px"}`}
 			>
 				<button
-					className="flex justify-between w-full rounded-3px py-1 focus-visible:outline-default"
+					className="flex justify-between items-center w-full focus-visible:outline-default text-hellblau-30 text-sm leading-5 font-semibold "
 					onClick={() => setIsOpen(!isOpen)}
 					aria-expanded={isOpen}
 				>
 					<FileUploadButtonStatus />
 					<span className="p-1">
-						<ChevronLargeIcon direction={isOpen ? "down" : "up"} />
+						<ChevronIcon
+							direction={isOpen ? "down" : "up"}
+							color="hellblau-30"
+							classname="size-6"
+						/>
 					</span>
 				</button>
 
@@ -34,7 +38,7 @@ export function FileUploadStatusCollapsible() {
 						onClick={clearFileUploads}
 						className="p-1 rounded-3px focus-visible:outline-default"
 					>
-						<CloseIcon />
+						<CloseIcon variant="white" />
 					</button>
 				)}
 			</div>

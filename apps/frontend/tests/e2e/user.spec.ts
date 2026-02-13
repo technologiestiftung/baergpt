@@ -125,7 +125,7 @@ testWithLoggedInUser.describe("User Profile", () => {
 			await page.goto("/profile/");
 
 			// Click the delete account button to open dialog
-			await page.click("#delete-account-button");
+			await page.getByTestId("delete-account-button").click();
 
 			// Dialog should be visible
 			const dialog = page.locator("#delete-account-dialog");
@@ -137,7 +137,7 @@ testWithLoggedInUser.describe("User Profile", () => {
 			await page.fill("#currentPasswordValidation", account.password);
 
 			// Click delete button in dialog to confirm
-			await page.click("#confirm-delete-account-button");
+			await page.getByTestId("confirm-delete-account-button").click();
 
 			// Should be redirected to account deleted page after account deletion
 			await page.waitForURL("/account-deleted/");
