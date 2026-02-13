@@ -25,6 +25,7 @@ export default {
 				"dunkelblau-40": "#9DA8BA",
 				"dunkelblau-30": "#bac2cf",
 				"mittelblau-100": "#5F8EC8",
+				"mittelblau-70": "#8FB0D8",
 				"hellblau-110": "#AEC2D9",
 				"hellblau-100": "#B0C8E4",
 				"hellblau-60": "#D1DFF0",

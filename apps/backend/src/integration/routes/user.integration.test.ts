@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
 import { sign } from "hono/jwt";
@@ -10,23 +9,11 @@ import { initQueues } from "../../services/distributed-limiter";
 
 let validToken: string;
 
-const supabaseAnonClient = createClient<Database>(
-	config.supabaseUrl,
-	config.supabaseAnonKey,
-);
-
 const OWNER_USER_ID = "11111111-1111-4111-8111-111111111111";
 const OTHER_USER_ID = "22222222-2222-4222-8222-222222222222";
 
-const RPC_DELETE_DOCUMENT = "delete_document_and_update_count";
 const UPLOAD_DELAY_MS = 1_000;
 const RATE_LIMIT_RETRY_DELAY_MS = 5_000;
-
-const createAuthedClient = (jwt: string) =>
-	createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
-		auth: { persistSession: false },
-		global: { headers: { Authorization: `Bearer ${jwt}` } },
-	});
 
 // Generate a PDF from text and return bytes
 const generatePdfBytesFromText = async (text: string): Promise<Uint8Array> => {
@@ -61,6 +48,35 @@ const uploadToStorage = async (args: {
 	if (error) {
 		throw new Error(`Storage upload error: ${error.message}`);
 	}
+};
+
+const deleteDocument = async (
+	documentId: number,
+	userToken: string,
+): Promise<{ success: boolean; status: number; error?: string }> => {
+	const response = await app.request(
+		`/documents/${documentId}`,
+		{
+			method: "DELETE",
+			headers: {
+				Authorization: `Bearer ${userToken}`,
+			},
+		},
+		{
+			JWT_SECRET: config.supabaseJwtKey,
+		},
+	);
+
+	if (response.status === 204) {
+		return { success: true, status: 204 };
+	}
+
+	const body = await response.json();
+	return {
+		success: false,
+		status: response.status,
+		error: body.error || "Unknown error",
+	};
 };
 
 async function getLatestDocumentIdBySourceUrl(
@@ -385,12 +401,9 @@ describe("Integration Tests for Routes", () => {
 		expect(documentId).toBeDefined();
 
 		// Delete the uploaded document as the authenticated owner
-		const authedUserClient = createAuthedClient(validToken);
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: documentId as number },
-		);
-		expect(deleteError).toBeNull();
+		const deleteResult = await deleteDocument(documentId as number, validToken);
+		expect(deleteResult.success).toBe(true);
+		expect(deleteResult.status).toBe(204);
 
 		// document should be deleted
 		const { data: deletedDocuments } = await serviceRoleDbClient
@@ -459,13 +472,8 @@ describe("Integration Tests for Routes", () => {
 			.eq("document_id", documentId as number);
 		expect((preChunks?.length ?? 0) > 0).toBe(true);
 
-		// Delete the document via RPC
-		const authedUserClient = createAuthedClient(validToken);
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: documentId as number },
-		);
-		expect(deleteError).toBeNull();
+		const deleteResult = await deleteDocument(documentId as number, validToken);
+		expect(deleteResult.success).toBe(true);
 
 		// Validate cascade: no summaries and chunks remain
 		const { data: postSummaries } = await serviceRoleDbClient
@@ -482,46 +490,28 @@ describe("Integration Tests for Routes", () => {
 	}, 80_000);
 
 	it("should return error when deleting for non-existent document ID", async () => {
-		const authedUserClient = createAuthedClient(validToken);
-
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: 999 },
-		);
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain("not_found");
+		const deleteResult = await deleteDocument(999, validToken);
+		expect(deleteResult.success).toBe(false);
+		expect(deleteResult.status).toBe(404);
 	}, 80_000);
 
 	it("should return error when deleting documents if document ID is missing", async () => {
-		const authedUserClient = createAuthedClient(validToken);
-
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: null as unknown as number },
+		const deleteResult = await deleteDocument(
+			null as unknown as number,
+			validToken,
 		);
-
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain("not_found");
+		expect(deleteResult.success).toBe(false);
 	}, 20_000);
 
-	it("should return syntax error when deleting if document ID is not a number", async () => {
-		const { error: deleteError } = await supabaseAnonClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: "abc" as unknown as number },
-		);
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain(
-			`invalid input syntax for type bigint: "abc"`,
-		);
+	it("should return error when deleting if document ID is not a number", async () => {
+		const deleteResult = await deleteDocument(Number("abc"), validToken);
+		expect(deleteResult.success).toBe(false);
 	}, 20_000);
 
 	it("should return error when deleting if user is not authenticated", async () => {
-		const { error: deleteError } = await supabaseAnonClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: 1 },
-		);
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain("not_found");
+		const deleteResult = await deleteDocument(1, "invalid-token");
+		expect(deleteResult.success).toBe(false);
+		expect(deleteResult.status).toBe(401);
 	}, 20_000);
 
 	it("should return error when deleting if user tries to delete another user's document", async () => {
@@ -571,13 +561,9 @@ describe("Integration Tests for Routes", () => {
 			sourceUrl,
 		);
 		expect(docId).toBeDefined();
-		const authedUserClient = createAuthedClient(validToken);
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: docId as number },
-		);
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain("not_found");
+		const deleteResult = await deleteDocument(docId as number, validToken);
+		expect(deleteResult.success).toBe(false);
+		expect(deleteResult.status).toBe(404);
 		// Cleanup
 		await serviceRoleDbClient
 			.from("documents")

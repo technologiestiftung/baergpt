@@ -511,10 +511,6 @@ export type Database = {
 				};
 				Returns: undefined;
 			};
-			delete_document_and_update_count: {
-				Args: { document_id: number };
-				Returns: undefined;
-			};
 			delete_user: {
 				Args: Record<PropertyKey, never>;
 				Returns: undefined;

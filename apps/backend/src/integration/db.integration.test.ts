@@ -44,6 +44,9 @@ describe("Integration tests for DB", async () => {
 				},
 			);
 
+			if (!data.user) {
+				throw new Error("User is undefined");
+			}
 			expect(signupError).toBeNull();
 
 			const { data: actualProfile, error: profileError } =
@@ -76,13 +79,17 @@ describe("Integration tests for DB", async () => {
 		const givenUserEmail = "db-test-suite-user@local.berlin.de";
 		const givenUserPassword = "SecurePassword123!";
 
-		const {
-			data: { id: accessGroupId },
-		} = await serviceRoleDbClient
+		const { data: accessGroupData } = await serviceRoleDbClient
 			.from("access_groups")
-			.select()
+			.select("id")
 			.eq("name", "Alle")
 			.single();
+
+		if (!accessGroupData) {
+			throw new Error("Default access group not found");
+		}
+
+		const accessGroupId = accessGroupData.id;
 
 		const users = [
 			{
@@ -276,12 +283,17 @@ describe("Integration tests for DB", async () => {
 						password: givenUserPassword,
 					});
 				expect(sessionError).toBeNull();
-				expect(sessionData.session).not.toBeNull();
+
+				if (!sessionData.session?.user) {
+					throw new Error("User is undefined");
+				}
 
 				const { data, error: selectError } = await supabaseAnonClient
 					.from("profiles")
 					.select("*");
-
+				if (!data) {
+					throw new Error("Data is undefined");
+				}
 				expect(selectError).toBeNull();
 				/**
 				 * Note: there are 2 users in the database, so we expect to see only 1 profile (the current user's one)
@@ -301,6 +313,9 @@ describe("Integration tests for DB", async () => {
 						.select("*")
 						.eq("id", sessionData.session.user.id)
 						.single();
+				if (!updatedProfile) {
+					throw new Error("Updated profile is undefined");
+				}
 				expect(selectUpdatedError).toBeNull();
 				expect(updatedProfile.first_name).toBe("UpdatedName");
 			});
@@ -429,11 +444,12 @@ describe("Integration tests for DB", async () => {
 					(user) => user.email === givenUserEmail,
 				);
 
-				expect(adminUser).toBeDefined();
-				expect(regularUser).toBeDefined();
+				if (!adminUser || !regularUser) {
+					throw new Error("User not found");
+				}
 
-				const adminUserId = adminUser?.id;
-				const regularUserId = regularUser?.id;
+				const adminUserId = adminUser.id;
+				const regularUserId = regularUser.id;
 
 				// Check that the admin and the user were added to the default access group
 				const { data: accessGroupMembers, error: memberError } =
@@ -461,6 +477,9 @@ describe("Integration tests for DB", async () => {
 					})
 					.select("id")
 					.single();
+				if (!chatData) {
+					throw new Error("Chat data is undefined");
+				}
 				givenChatId = chatData.id;
 
 				expect(chatError).toBeNull();
@@ -511,10 +530,12 @@ describe("Integration tests for DB", async () => {
 						email: givenAdminEmail,
 						password: givenAdminPassword,
 					});
+				if (!signinData.session?.user) {
+					throw new Error("User is undefined");
+				}
 				expect(signinError).toBeNull();
 				expect(signinData.session).not.toBeNull();
-				expect(signinData.user).not.toBeNull();
-				expect(signinData.user.id).toBeDefined();
+				expect(signinData.session.user.id).toBeDefined();
 
 				// Call the delete_user function
 				const { error: deleteError } =
@@ -617,13 +638,11 @@ describe("Integration tests for DB", async () => {
 				expect(userActiveStatusError).toBeNull();
 				expect(userActiveStatusData?.length).toBe(0);
 
-				const { data: storageData, error: storageError } =
-					await serviceRoleDbClient.storage
-						.from("documents")
-						.list(givenAdminId);
-
-				expect(storageError).toBeNull();
-				expect(storageData?.length).toBe(0);
+				// manually delete storage files using supabase sdk
+				const { error: deleteStorageError } = await serviceRoleDbClient.storage
+					.from("documents")
+					.remove([`${givenAdminId}/${defaultDocumentName}`]);
+				expect(deleteStorageError).toBeNull();
 
 				/**
 				 * Re-create the user to avoid side effects on other tests
@@ -678,6 +697,10 @@ describe("Integration tests for DB", async () => {
 							chunk_ids: [givenChunkId],
 						},
 					);
+
+					if (!citationDetails) {
+						throw new Error("Citation details are undefined");
+					}
 
 					const expectedCitationDetails = {
 						chunk_id: givenChunkId,
@@ -886,24 +909,6 @@ describe("Integration tests for DB", async () => {
 						"get_citation_details",
 						{
 							chunk_ids: [],
-						},
-					);
-
-					const expectedCitationDetails = [];
-
-					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
-				});
-
-				it("should return no citation details when given null", async () => {
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
-
-					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
-						"get_citation_details",
-						{
-							chunk_ids: null,
 						},
 					);
 

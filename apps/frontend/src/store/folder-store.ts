@@ -19,11 +19,11 @@ interface FolderStore {
 	selectedChatFolders: DocumentFolder[];
 	selectChatFolder: (folder: DocumentFolder) => void;
 	unselectChatFolder: (folderId: number) => void;
+	toggleChatFolder: (folder: DocumentFolder) => void;
 	getSelectedChatFolderIds: () => number[];
 
 	selectedFoldersForAction: DocumentFolder[];
 	selectFolderForAction: (folder: DocumentFolder) => void;
-	selectAllItemsInCurrentFolder: () => void;
 	unselectFolderForAction: (folderId: number) => void;
 	unselectAllItemsInCurrentFolder: () => void;
 
@@ -119,6 +119,17 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 			),
 		}));
 	},
+	toggleChatFolder: (folder) => {
+		const { selectedChatFolders, selectChatFolder, unselectChatFolder } = get();
+		const isSelected = selectedChatFolders.some((fol) => fol.id === folder.id);
+
+		if (isSelected) {
+			unselectChatFolder(folder.id);
+			return;
+		}
+
+		selectChatFolder(folder);
+	},
 	getSelectedChatFolderIds: () => get().selectedChatFolders.map(({ id }) => id),
 
 	selectedFoldersForAction: [],
@@ -184,15 +195,20 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 
 	getItemsInCurrentFolder: () => {
 		const { folders, currentFolder } = get();
-		const { documents } = useDocumentStore.getState();
+		const { documents, deletedDefaultDocumentIds } =
+			useDocumentStore.getState();
+		const isNotDeletedDefault = (doc: Document) =>
+			!deletedDefaultDocumentIds.includes(doc.id);
 
 		if (!currentFolder) {
-			const documentsInCurrentFolder = documents.filter(
-				({ folder_id }) => folder_id === null,
-			);
+			const documentsInCurrentFolder = documents
+				.filter(({ folder_id }) => folder_id === null)
+				.filter(isNotDeletedDefault);
 			return [...folders, ...documentsInCurrentFolder];
 		}
 
-		return documents.filter(({ folder_id }) => folder_id === currentFolder.id);
+		return documents
+			.filter(({ folder_id }) => folder_id === currentFolder.id)
+			.filter(isNotDeletedDefault);
 	},
 }));

@@ -1,15 +1,16 @@
 import React from "react";
-import {
-	CreateFolderDialog,
-	showCreateFolderDialog,
-} from "./create-folder-dialog";
+import { showCreateFolderDialog } from "./create-folder-dialog";
 import { useFolderStore } from "../../../store/folder-store";
 import { SecondaryButton } from "../../primitives/buttons/secondary-button.tsx";
-import { PlusIcon } from "../../primitives/icons/plus-icon.tsx";
 import Content from "../../../content.ts";
+import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 
 export const CreateFolderButton: React.FC = () => {
 	const { currentFolder } = useFolderStore();
+
+	if (currentFolder) {
+		return null;
+	}
 
 	return (
 		<>
@@ -17,13 +18,11 @@ export const CreateFolderButton: React.FC = () => {
 				onClick={showCreateFolderDialog}
 				disabled={currentFolder !== null}
 			>
+				<FolderIcon variant="new" />
 				<span className="whitespace-nowrap">
 					{Content["createFolderButton.label"]}
 				</span>
-				<PlusIcon enabled={currentFolder === null} />
 			</SecondaryButton>
-
-			<CreateFolderDialog />
 		</>
 	);
 };
