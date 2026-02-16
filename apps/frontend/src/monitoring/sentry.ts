@@ -6,13 +6,10 @@ Sentry.init({
 	dsn: `${import.meta.env.VITE_SENTRY_DSN}`,
 	integrations: [
 		Sentry.browserTracingIntegration(),
-		Sentry.replayIntegration(),
 		Sentry.supabaseIntegration({ supabaseClient: supabase }),
 	],
 	environment: import.meta.env.VITE_VERCEL_ENV || "development",
 	tracesSampleRate: 0,
-	replaysSessionSampleRate: 0,
-	replaysOnErrorSampleRate: 1.0,
 	tracePropagationTargets: import.meta.env.VITE_TRACE_PROPAGATION_TARGETS.split(
 		",",
 	),
