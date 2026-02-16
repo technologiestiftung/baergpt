@@ -9,6 +9,7 @@ import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
 import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
 import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
 import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
+import { useIsMobile } from "../../../../../hooks/use-mobile";
 
 interface ItemDropdownProps {
 	item: Document | DocumentFolder;
@@ -32,6 +33,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
+	const isMobile = useIsMobile();
 
 	const calculatePosition = () => {
 		if (triggerRef.current) {
@@ -150,7 +152,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		<div
 			className="fixed z-50 bg-white rounded-3px shadow-md min-w-[200px]"
 			style={{
-				top: `${position.top}px`,
+				top: `${position.top - (isMobile ? 68 : 0)}px`, // -68px on mobile to account for the bottom drawer top-[calc(50px+18px)]
 				right: `${position.right}px`,
 			}}
 			onKeyDown={handleKeyDown}
