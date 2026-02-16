@@ -44,6 +44,7 @@ export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
 				item={item}
 				isOpen={isDropdownOpen}
 				onClose={() => setIsDropdownOpen(false)}
+				triggerRef={dropdownButtonRef}
 			/>
 		</div>
 	);
