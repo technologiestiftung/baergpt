@@ -2,6 +2,7 @@ import "./monitoring/sentry";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { PostHogProvider } from "posthog-js/react";
 import "./index.css";
 import { IndexPage } from "./routes";
 import { RegisterPage } from "./routes/register-page";
@@ -73,9 +74,23 @@ function render() {
 		return;
 	}
 
+	const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+	const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
+
 	ReactDOM.createRoot(root).render(
 		<React.StrictMode>
-			<RouterProvider router={router} />
+			{posthogKey && posthogHost ? (
+				<PostHogProvider
+					apiKey={posthogKey}
+					options={{
+						api_host: posthogHost,
+					}}
+				>
+					<RouterProvider router={router} />
+				</PostHogProvider>
+			) : (
+				<RouterProvider router={router} />
+			)}
 		</React.StrictMode>,
 	);
 }
