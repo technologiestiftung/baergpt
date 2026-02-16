@@ -6,7 +6,6 @@ import { useDocumentStore } from "../../../store/document-store.ts";
 import { useFolderStore } from "../../../store/folder-store.ts";
 import Content from "../../../content.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
-import { UploadIcon } from "../../icons/upload-icon.tsx";
 
 type FileUploadProps = {
 	hasItems: boolean;
@@ -56,7 +55,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 	const hasItemsOrHasFileUploads = hasItems || hasFileUploads;
 
 	return (
-		<div className={`flex flex-col w-full ${!hasItems && "h-full "}`}>
+		<div className={`flex flex-col w-full ${!hasItems && "h-full"}`}>
 			{!hasItems && !error && (
 				<div
 					className={`flex w-full h-full ${hasFileUploads ? "py-8" : "pt-8"}`}
@@ -80,31 +79,39 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 
 			{hasItemsOrHasFileUploads && (
 				<div className="bg-hellblau-50 flex flex-col gap-y-3 pt-6">
-					{hasItems && (
-						<button
-							onClick={triggerFileInput}
-							className="bg-hellblau-60 hover:bg-hellblau-100 disabled:text-dunkelblau-40 disabled:hover:bg-hellblau-60 p-2 rounded-3px focus-visible:outline-default flex gap-2 justify-center w-full"
-							disabled={isUploadDisabled}
-						>
-							<input
-								type="file"
-								ref={fileInputRef}
-								onChange={handleFileSelect}
-								accept={
-									"application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-								}
-								aria-label={Content["fileUpload.upload"]}
-								style={{ display: "none" }}
-								multiple
-							/>
-							{Content["fileUpload.uploadButton"]}
-							<UploadIcon
-								className={`size-5  ${isUploadDisabled ? "text-dunkelblau-40" : "text-dunkelblau-100"}`}
-							/>
-						</button>
+					{hasFileUploads ? (
+						<FileUploadStatusCollapsible />
+					) : (
+						hasItems && (
+							<button
+								onClick={triggerFileInput}
+								className="bg-dunkelblau-100 hover:bg-dunkelblau-90 disabled:bg-dunkelblau-40 py-2.5 px-2 rounded-3px focus-visible:outline-default flex gap-2 justify-center items-center w-full"
+								disabled={isUploadDisabled}
+							>
+								<input
+									type="file"
+									ref={fileInputRef}
+									onChange={handleFileSelect}
+									accept={
+										"application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+									}
+									aria-label={Content["fileUpload.upload"]}
+									style={{ display: "none" }}
+									multiple
+								/>
+								<img
+									src="/icons/upload-light-icon.svg"
+									width={24}
+									height={24}
+									alt=""
+								/>
+								<span className="text-sm leading-5 font-semibold text-hellblau-30 disabled:text-dunkelblau-40">
+									{Content["fileUpload.uploadButton"]}
+								</span>
+							</button>
+						)
 					)}
 
-					{hasFileUploads && <FileUploadStatusCollapsible />}
 					<div className="text-sm leading-5 font-normal  text-center">
 						{hasReachedTotalUploadLimit ? (
 							<div className="text-warning-100">
@@ -113,8 +120,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 							</div>
 						) : (
 							<div className="text-dunkelblau-80">
-								<p>{`${Content["fileUpload.infoMessage.maxUpload.p1"]} ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} ${Content["fileUpload.infoMessage.maxUpload.p2"]}`}</p>
-								<p>
+								<p className="pb-2.5 md:pb-0">{`${Content["fileUpload.infoMessage.maxUpload.p1"]} ${import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS} ${Content["fileUpload.infoMessage.maxUpload.p2"]}`}</p>
+								<p className="hidden md:block">
 									{`${numberOfUploads} ${Content["fileUpload.infoMessage.counter.p1"]} ${import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED} ${Content["fileUpload.infoMessage.counter.p2"]}`}
 								</p>
 							</div>

@@ -1,0 +1,189 @@
+import React, { useState, useEffect } from "react";
+import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
+import { useDocumentStore } from "../../../../../store/document-store";
+import type { Document, DocumentFolder } from "../../../../../common";
+import Content from "../../../../../content";
+import { isDocument } from "../utils/is-document";
+import { toggleItemInChat } from "../utils/toggle-item-in-chat";
+import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
+import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
+import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
+import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
+import { useIsMobile } from "../../../../../hooks/use-mobile";
+
+interface ItemDropdownProps {
+	item: Document | DocumentFolder;
+	isOpen: boolean;
+	onClose: () => void;
+	triggerRef: React.RefObject<HTMLButtonElement>;
+}
+
+export const ItemDropdown: React.FC<ItemDropdownProps> = ({
+	item,
+	isOpen,
+	onClose,
+	triggerRef,
+}) => {
+	const { selectPreviewDocument } = useDocumentStore();
+	const { setSingleItemSelectedForAction } = useDocumentsListStore();
+	const [position, setPosition] = useState<{
+		top: number;
+		right: number;
+	}>({ top: 0, right: 0 });
+
+	const isDoc = isDocument(item);
+	const isSelectedForChat = isItemSelectedForChat(item);
+	const isMobile = useIsMobile();
+
+	const calculatePosition = () => {
+		if (triggerRef.current) {
+			const rect = triggerRef.current.getBoundingClientRect();
+			return {
+				top: rect.bottom,
+				right: window.innerWidth - rect.right,
+			};
+		}
+		return { top: 0, right: 0 };
+	};
+
+	useEffect(() => {
+		if (isOpen) {
+			setPosition(calculatePosition());
+
+			const handleScroll = () => {
+				setPosition(calculatePosition());
+			};
+
+			const scrollContainer = document.querySelector(".filesection-scrollbar");
+			if (scrollContainer) {
+				scrollContainer.addEventListener("scroll", handleScroll);
+			}
+
+			return () => {
+				if (scrollContainer) {
+					scrollContainer.removeEventListener("scroll", handleScroll);
+				}
+			};
+		}
+		return undefined;
+	}, [isOpen, triggerRef]);
+
+	const handleAddToChat = () => {
+		onClose();
+		toggleItemInChat(item);
+	};
+
+	const handleDeleteItem = (itemToDelete: Document | DocumentFolder) => {
+		onClose();
+		setSingleItemSelectedForAction(itemToDelete);
+		showDeleteDialog();
+	};
+
+	const handleViewItem = () => {
+		onClose();
+		selectPreviewDocument(item as Document);
+	};
+
+	const toggleContentKey = isSelectedForChat ? "removeFromChat" : "addToChat";
+	const deleteItemKey = isDoc ? "deleteDocument" : "deleteFolder";
+
+	const addToChatItem = {
+		action: handleAddToChat,
+		label: Content[`documentsList.${toggleContentKey}`],
+		ariaLabel: Content[`documentsList.${toggleContentKey}`],
+		style: "text-dunkelblau-80",
+		icon: (
+			<img
+				src={
+					isSelectedForChat
+						? "/icons/minus-dark-blue-icon.svg"
+						: "/icons/plus-dark-blue-icon.svg"
+				}
+				alt={Content[`documentsList.${toggleContentKey}.imgAlt`]}
+				className="size-5"
+				width={20}
+				height={20}
+			/>
+		),
+	};
+
+	const viewItem = {
+		action: handleViewItem,
+		label: Content["documentsList.view"],
+		ariaLabel: Content["documentsList.view"],
+		style: "text-dunkelblau-80",
+		icon: (
+			<img
+				src="/icons/eye-preview-icon.svg"
+				alt={Content["documentsList.view.imgAlt"]}
+				className="size-5"
+				width={20}
+				height={20}
+			/>
+		),
+	};
+
+	const deleteItem = {
+		action: () => handleDeleteItem(item),
+		label: Content["documentsList.delete"],
+		ariaLabel: Content[`documentsList.${deleteItemKey}`],
+		style: "group/delete text-warning-100 hover:text-dunkelblau-80",
+		icon: <DeleteElementIcon />,
+	};
+
+	const dropdownItems = [
+		addToChatItem,
+		...(isDoc ? [viewItem] : []),
+		deleteItem,
+	];
+
+	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
+		items: dropdownItems,
+		isOpen,
+		onClose,
+		onItemClick: (dropdownItem) => dropdownItem.action(),
+	});
+
+	if (!isOpen) {
+		return null;
+	}
+
+	return (
+		<div
+			className="fixed z-50 bg-white rounded-3px shadow-md min-w-[200px]"
+			style={{
+				top: `${position.top - (isMobile ? 68 : 0)}px`, // -68px on mobile to account for the bottom drawer top-[calc(50px+18px)]
+				right: `${position.right}px`,
+			}}
+			onKeyDown={handleKeyDown}
+			role="listbox"
+		>
+			<ul className="flex flex-col">
+				{dropdownItems.map((dropdownItem, index) => (
+					<li key={dropdownItem.label}>
+						<button
+							type="button"
+							ref={(el) => {
+								if (el) {
+									optionButtonRefs.current.set(index, el);
+								} else {
+									optionButtonRefs.current.delete(index);
+								}
+							}}
+							className={`flex items-center w-full h-9 px-1.5 py-1 gap-x-2 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
+								${dropdownItem.style}`}
+							onClick={dropdownItem.action}
+							aria-label={dropdownItem.ariaLabel}
+							role="option"
+						>
+							<div className="flex items-center justify-center rounded-3px shrink-0 size-8 relative">
+								{dropdownItem.icon}
+							</div>
+							<span className={`text-sm leading-5 `}>{dropdownItem.label}</span>
+						</button>
+					</li>
+				))}
+			</ul>
+		</div>
+	);
+};

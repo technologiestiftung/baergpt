@@ -1,5 +1,4 @@
 import React from "react";
-import { AddToChatIcon } from "../primitives/icons/add-to-chat-icon.tsx";
 import Content from "../../content.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
@@ -41,16 +40,8 @@ export const GetStarted: React.FC = () => {
 					<ul className="flex flex-col list-disc ml-4">
 						<li>
 							{isAddressedFormal
-								? Content["chat.getStarted.li1.formal.1"]
-								: Content["chat.getStarted.li1.informal.1"]}
-
-							<div className="ml-1 mr-0.5 pt-1 size-[18px] inline-block">
-								<AddToChatIcon variant="plus-light" />
-							</div>
-
-							{isAddressedFormal
-								? Content["chat.getStarted.li1.formal.2"]
-								: Content["chat.getStarted.li1.informal.2"]}
+								? Content["chat.getStarted.li1.formal"]
+								: Content["chat.getStarted.li1.informal"]}
 						</li>
 						<li>
 							<b>

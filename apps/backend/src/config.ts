@@ -27,6 +27,8 @@ export interface Config {
 	gotenbergApiBasicAuthPassword: string;
 	presencePenalty: number;
 	frequencyPenalty: number;
+	featureFlagMcpParlaAllowed: boolean;
+	mcpParlaUrl: string;
 }
 
 /* eslint-disable-next-line complexity */
@@ -100,6 +102,14 @@ export function verifyConfig(): void {
 	if (!process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD && !process.env.CI) {
 		throw new Error("GOTENBERG_API_BASIC_AUTH_PASSWORD must be defined");
 	}
+	if (
+		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true" &&
+		!process.env.MCP_PARLA_URL
+	) {
+		throw new Error(
+			"MCP_PARLA_URL must be defined when FEATURE_FLAG_MCP_PARLA_ALLOWED is true",
+		);
+	}
 }
 
 export const config: Config = {
@@ -132,4 +142,7 @@ export const config: Config = {
 	gotenbergApiBasicAuthPassword: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
 	presencePenalty: parseFloat(process.env.PRESENCE_PENALTY || "0"),
 	frequencyPenalty: parseFloat(process.env.FREQUENCY_PENALTY || "0"),
+	featureFlagMcpParlaAllowed:
+		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
+	mcpParlaUrl: process.env.MCP_PARLA_URL,
 };

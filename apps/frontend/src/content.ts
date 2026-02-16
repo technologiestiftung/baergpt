@@ -679,8 +679,6 @@ export const Content = {
 	/* -------------------- Tooltips -------------------- */
 	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
 	"sidebar.tooltip.newChatButton": "Neuen Chat beginnen",
-	"chat.selectedChatItems.questionmark.tooltip":
-		"Datei zum Chat hinzufügen und KI-Assistent Anweisung geben",
 
 	/* -------------------- Chat History -------------------- */
 	"chatHistory.title": "Chats",
@@ -690,6 +688,7 @@ export const Content = {
 	"chatHistory.fetchRetry.button.label": "Erneut versuchen",
 	"chatHistory.fetchRetry.button.ariaLabel":
 		"Erneut versuchen Chatverlauf zu laden",
+	"chatHistory.allLoaded": "Alle Chats geladen",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton
@@ -705,9 +704,11 @@ export const Content = {
 	"newChatButton.label": "Neuer Chat",
 	"newChatButton.ariaLabel": "Neuen Chat erstellen",
 	//createFolderButton
-	"createFolderButton.label": "Neuer Ordner",
+	"createFolderButton.label": "Ordner erstellen",
 	//deleteItemButton
 	"deleteItemButton.label": "Löschen",
+	"deleteItemButton.ariaLabel": "Dialog öffnen, um Elemente zu löschen",
+	"multiSelectForAction.cancel.label": "Auswahl abbrechen",
 	//BottomMenuBar
 	"bottomMenuBar.arialabel": "Sidebar",
 	//indeterminateCheckbox
@@ -741,7 +742,7 @@ export const Content = {
 	"loadingSpinnerIcon.imgAlt": "Ein sich drehendes Spinner-Icon",
 	"previewIcon.imgAlt": "Preview-Icon",
 	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
-	"redErrorXIcon.imgAlt": "Ein Error Icon mit weißem X in rotem Kreis",
+	"redErrorIcon.imgAlt": "Ein Error Icon mit weißem ! in rotem Kreis",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
@@ -767,7 +768,23 @@ export const Content = {
 	"documentsList.folder.checkbox.ariaLabel":
 		"Ordner auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.name": "Name",
-	"documentsList.AddToChat": "Zum Chat hinzufügen",
+	"documentsList.selectedItemsCount.label.parenthesis.open": "(",
+	"documentsList.selectedItemsCount.label.parenthesis.close": ")",
+	"documentsList.selectedItemsCount.label": "ausgewählt",
+	"deleteItemButton.tooltip": "Löschen",
+	"documentsList.addToChat": "In den Chat",
+	"documentsList.removeFromChat": "Aus Chat entfernen",
+	"documentsList.removeFromChat.imgAlt": "Minus-Icon",
+	"documentsList.addToChat.imgAlt": "Plus-Icon",
+	"documentsList.view": "Dokument anzeigen",
+	"documentsList.view.imgAlt": "Auge-Icon",
+	"documentsList.delete": "Löschen",
+	"documentsList.delete.imgAlt": "Mülleimer-Icon",
+	"documentsList.deleteDocument": "Dokument löschen",
+	"documentsList.deleteFolder": "Ordner löschen",
+
+	"documentsList.menuIcon.imgAlt": "Menü-Icon",
+	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
 	//fileUpload
 	"fileUpload.uploadButton": "Datei hochladen",
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
@@ -775,16 +792,13 @@ export const Content = {
 	"fileUpload.cancel": "Abbrechen",
 	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
 	//fileUploadButtonStatus
-	"fileUploadButtonStatus.uploading": "Dateien werden verarbeitet",
-	"fileUploadButtonStatus.singleFileUploading": "Datei wird verarbeitet",
-	"fileUploadButtonStatus.uploaded": "Upload erfolgreich",
-	"fileUploadButtonStatus.failed": "Fehler beim Upload",
+	"fileUploadButtonStatus.uploading": "Hochladen läuft",
+	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
+	"fileUploadButtonStatus.failed": "Hochladen fehlgeschlagen",
 	//noFilesDropZone
-	"fileUpload.uploadInstructions.p1": "Dateien mit Drag and Drop hochladen ",
-	"fileUpload.uploadInstructions.p2": "oder ",
-	"fileUpload.searchComputerbutton.label": "Computer durchsuchen",
+	"fileUpload.uploadInstructions.p1": "Dateien hier ablegen oder ",
+	"fileUpload.searchComputerbutton.label": "Hochladen",
 	//fileupload help link
-	"fileUpload.helpLink.label": "Hilfe",
 	"fileUpload.helpLink.link":
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
@@ -809,14 +823,16 @@ export const Content = {
 	"documentsPreviewSection.noPreviewAvailable":
 		"Die Vorschau von Excel-Dateien wird aktuell noch nicht unterstützt. Wir arbeiten daran, dieses Feature zu einem späteren Zeitpunkt anzubieten. Vielen Dank für Ihr Verständnis.",
 	"documentsPreviewSection.loadingPreview": "Die Vorschau wird geladen...",
+	"documentsPreviewSection.title": "Dokumentvorschau",
 
 	/* -------------------- Dialogs -------------------- */
 	//DeleteItemDialog
 	"deleteItemDialog.deleteFiles": "Elemente löschen?",
 	"deleteItemDialog.deleteFile": "Datei löschen?",
 	"deleteItemDialog.deleteFolder": "Ordner löschen?",
-	"deleteItemDialog.confirmation.singleItem":
-		"Folgendes Element wirklich aus Ihren Dateien löschen?",
+	"deleteItemDialog.confirmation.singleItem.p1": "Möchten Sie",
+	"deleteItemDialog.confirmation.singleItem.p2":
+		"wirklich aus Ihren Dateien löschen?",
 	"deleteItemDialog.confirmation.multipleItems":
 		"Folgende Elemente wirklich aus Ihren Dateien löschen?",
 	"deleteItemDialog.confirmation.folder": "Ordner",
@@ -824,7 +840,7 @@ export const Content = {
 	"deleteItemDialog.delete": "Löschen",
 	//CreateFolderDialog
 	"createFolderDialog.title": "Neuer Ordner",
-	"createFolderDialog.folderName": "Ordner Name",
+	"createFolderDialog.folderName": "Unbenannter Ordner",
 	"createFolderDialog.cancel": "Abbrechen",
 	"createFolderDialog.create": "Erstellen",
 	//DeleteHistoryEntryDialog
@@ -842,13 +858,11 @@ export const Content = {
 	"chat.getStarted.informal.p1":
 		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten und Texte zu formulieren.",
 
-	"chat.getStarted.li1.formal.1":
-		"Stellen Sie Ihre Frage im Textfeld oder laden Sie ein Dokument hoch (Word, Excel, PDF). Nutzen Sie „Dokument zum Chat hinzufügen“",
-	"chat.getStarted.li1.formal.2": "-Button, um Dateien im Chat zu verwenden.",
+	"chat.getStarted.li1.formal":
+		"Stellen Sie Ihre Frage im Textfeld oder laden Sie ein Dokument hoch (Word, Excel, PDF). Nutzen Sie den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
 
-	"chat.getStarted.li1.informal.1":
-		"Stell Deine Frage im Textfeld oder lade ein Dokument hoch (Word, Excel, PDF). Nutze den „Dokument zum Chat hinzufügen“",
-	"chat.getStarted.li1.informal.2": "-Button, um Dateien im Chat zu verwenden.",
+	"chat.getStarted.li1.informal":
+		"Stell Deine Frage im Textfeld oder lade ein Dokument hoch (Word, Excel, PDF). Nutze den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
 
 	"chat.getStarted.li2.formal.1": "Wichtig: ",
 	"chat.getStarted.li2.formal.2":
@@ -874,11 +888,9 @@ export const Content = {
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
-	"chat.selectedChatItems.noItems": "Keine Dateien in diesem Chat",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
-	"chat.selectedChatItems.questionmark.arialabel": "Tooltip zeigen",
 	//Chat options dropdown
 	"chat.options.toggleButton.tooltip": "Weitere Funktionen aktivieren",
 	"chat.options.toggleButton.tooltip.ariaLabel":
@@ -888,6 +900,20 @@ export const Content = {
 	"chat.options.li1.label": "Verwaltungswissen",
 	"chat.options.li1.description": "Zugriff auf Verwaltungsdokumente",
 	"chat.options.li1.ariaLabel": "Verwaltungswissen auswählen",
+	"chat.options.li2.label": "MCP Server",
+	"chat.options.li2.description": "Externe Datenquellen verbinden",
+	"chat.options.li2.ariaLabel": "MCP Server auswählen",
+	// MCP Options Dialog
+	"mcp.options.dialog.title": "MCP Server auswählen",
+	"mcp.options.dialog.confirmButton.label": "Bestätigen",
+	"mcp.options.dialog.confirmButton.ariaLabel": "Bestätigen",
+	"mcp.options.dialog.cancelButton.label": "Abbrechen",
+	"mcp.options.dialog.cancelButton.ariaLabel": "Abbrechen",
+	"mcp.options.dialog.option1.label": "Parla Berlin",
+	"mcp.options.dialog.option1.description":
+		"Schriftliche Anfragen des Abgh. Berlins",
+	"mcp.options.dialog.option1.ariaLabel": "Parla Berlin auswählen",
+
 	// Chat llm model dropdown
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
 	"chat.llmModel.dropdown.li1.label": "Schnell",
@@ -932,6 +958,9 @@ export const Content = {
 	"chat.contextPill.baseKnowledge.label": "Verwaltungswissen",
 	"chat.contextPill.baseKnowledge.ariaLabel": "Verwaltungswissen entfernen",
 	"chat.contextPill.baseKnowledge.icon.alt": "Verwaltungswissen icon",
+	"chat.contextPill.parla.label": "Parla Berlin",
+	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
+	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
