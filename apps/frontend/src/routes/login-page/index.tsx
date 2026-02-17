@@ -6,6 +6,7 @@ import { AuthLayout } from "../../layouts/auth-layout.tsx";
 import { useAuthStore } from "../../store/auth-store.ts";
 import Content from "../../content.ts";
 import { useAuthErrorStore } from "../../store/auth-error-store.ts";
+import * as Sentry from "@sentry/react";
 
 export function LoginPage() {
 	const { error } = useAuthErrorStore();
@@ -18,7 +19,12 @@ export function LoginPage() {
 		const email = event.currentTarget.email.value;
 		const password = event.currentTarget.password.value;
 
-		login({ email, password });
+		Sentry.startSpan(
+			{ name: "User Login", op: "user.login.submit" },
+			async (span) => {
+				await login({ email, password, span });
+			},
+		);
 	};
 
 	return (

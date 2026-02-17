@@ -7,6 +7,8 @@ import {
 	processDocument,
 } from "../api/documents/upload-file.ts";
 import { useErrorStore } from "./error-store.ts";
+import * as Sentry from "@sentry/react";
+import type { Span } from "@sentry/react";
 
 export const UPLOAD_STATUS_MAP = {
 	uploading: "Hochladen läuft",
@@ -37,7 +39,7 @@ let maxParallelUploadWarningTimeout: ReturnType<typeof setTimeout> | null =
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
 	isMaxParallelUploadWarningDismissed: boolean;
-	uploadFile: (fileUpload: FileUpload) => Promise<void>;
+	uploadFile: (args: { fileUpload: FileUpload; span: Span }) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
 	hasAvailableUploadSlots: () => boolean;
@@ -56,7 +58,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
 	isMaxParallelUploadWarningDismissed: false,
 
-	async uploadFile({ file }: FileUpload) {
+	async uploadFile({ fileUpload: { file }, span }) {
 		const { updateFileUploadStatus } = get();
 		const { session } = useAuthStore.getState();
 		const { documents, getDocuments, deleteDocument } =
@@ -100,21 +102,21 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				get().removeFileUpload(file.name);
 			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 
-			getDocuments(new AbortController().signal).catch(
-				useErrorStore.getState().handleError,
-			);
+			await getDocuments(new AbortController().signal);
 		} catch (error) {
-			useErrorStore.getState().handleError(error);
+			useErrorStore.getState().handleError(error, span);
+
 			if (isKnownError(error)) {
 				updateFileUploadStatus(file, error.message);
 				return;
 			}
-			console.error(error);
+
 			updateFileUploadStatus(file, "failed.generic");
 			// If the document processing fails, remove the document from the store
 			const documentToDelete = documents.find(
 				(doc) => doc.source_url === filePath,
 			);
+
 			if (documentToDelete) {
 				await deleteDocument(documentToDelete.id);
 			}
@@ -163,7 +165,14 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 		hideMaxParallelUploadWarning();
 
-		const promises = newFileUploads.map((fileUpload) => uploadFile(fileUpload));
+		const promises = newFileUploads.map(async (fileUpload) => {
+			await Sentry.startSpan(
+				{ name: "File Upload", op: "file.upload" },
+				async (span) => {
+					await uploadFile({ fileUpload, span });
+				},
+			);
+		});
 		await Promise.all(promises);
 	},
 

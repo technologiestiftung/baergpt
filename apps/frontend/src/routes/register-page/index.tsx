@@ -11,6 +11,7 @@ import { useAuthErrorStore } from "../../store/auth-error-store.ts";
 import { QuestionMarkIcon } from "../../components/primitives/icons/question-mark-icon.tsx";
 import { useTooltipStore } from "../../store/tooltip-store.ts";
 import { ChevronIcon } from "../../components/primitives/icons/chevron-icon.tsx";
+import * as Sentry from "@sentry/react";
 
 export function RegisterPage() {
 	const { register, getAllowedEmailDomains } = useAuthStore();
@@ -38,7 +39,15 @@ export function RegisterPage() {
 		const email = event.currentTarget.email.value;
 		const password = event.currentTarget.password.value;
 
-		register({ firstName, lastName, email, password });
+		Sentry.startSpan(
+			{
+				name: "Registration Form Submitted",
+				op: "user.registration.submit",
+			},
+			async (span) => {
+				await register({ firstName, lastName, email, password, span });
+			},
+		);
 	};
 
 	const handleChange = (event: React.ChangeEvent<HTMLFormElement>) => {
