@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import content from "../content";
 import { captureError } from "../monitoring/capture-error";
+import type { Span } from "@sentry/react";
 
 interface AuthErrorStore {
 	error?: string;
-	handleError: (error: unknown) => void;
+	handleError: (error: unknown, span?: Span) => void;
 }
 
 const errorMessages: { [key: string]: string } = {
@@ -25,13 +26,13 @@ const errorMessages: { [key: string]: string } = {
 export const useAuthErrorStore = create<AuthErrorStore>()((set) => ({
 	error: undefined,
 
-	handleError: (error) => {
+	handleError: (error, span) => {
+		captureError(error, span);
+
 		if (!isError(error)) {
 			console.error("Given error object is not an instance of Error:", error);
 			return;
 		}
-
-		captureError(error);
 
 		const userReadableErrorMessage = errorMessages[error.message];
 

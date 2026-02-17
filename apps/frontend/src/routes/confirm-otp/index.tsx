@@ -5,12 +5,19 @@ import { ConfirmationLayout } from "../../layouts/confirmation-layout.tsx";
 import { supabase } from "../../../supabase-client";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
+import * as Sentry from "@sentry/react";
 
 const redirectToMapping = {
 	email: "/",
 	recovery: "/reset-password/",
 	email_change: "/email-changed/",
 } as const;
+
+const otpTypeSpanOpMapping = {
+	email: "user.registration.email.confirm",
+	recovery: "user.request-password-reset.confirm",
+	email_change: "user.request-email-change.confirm",
+};
 
 export function ConfirmOtpPage() {
 	const [error, setError] = useState<string | null>(null);
@@ -62,27 +69,36 @@ export function ConfirmOtpPage() {
 			token,
 		};
 
-		const { error: verifyOtpError } =
-			await supabase.auth.verifyOtp(verifyParams);
+		Sentry.startSpan(
+			{
+				name: `Confirm OTP for ${otpType}`,
+				op: otpTypeSpanOpMapping[otpType],
+			},
+			async (span) => {
+				const { error: verifyOtpError } =
+					await supabase.auth.verifyOtp(verifyParams);
 
-		setIsSubmitting(false);
+				setIsSubmitting(false);
 
-		if (!verifyOtpError) {
-			navigate(redirectToMapping[otpType]);
-			return;
-		}
+				if (!verifyOtpError) {
+					navigate(redirectToMapping[otpType]);
+					return;
+				}
 
-		const isTokenExpiredOrInvalid = ["invalid", "expired"].some((word) =>
-			verifyOtpError?.message.includes(word),
+				useErrorStore.getState().handleError(verifyOtpError, span);
+
+				const isTokenExpiredOrInvalid = ["invalid", "expired"].some((word) =>
+					verifyOtpError.message.includes(word),
+				);
+
+				if (isTokenExpiredOrInvalid) {
+					setError(Content["confirmOtp.error.tokenExpiredOrInvalid"]);
+					return;
+				}
+
+				setError(Content["confirmOtp.error.generic"]);
+			},
 		);
-
-		if (isTokenExpiredOrInvalid) {
-			setError(Content["confirmOtp.error.tokenExpiredOrInvalid"]);
-			return;
-		}
-
-		useErrorStore.getState().handleError(verifyOtpError);
-		setError(Content["confirmOtp.error.generic"]);
 	};
 
 	const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {

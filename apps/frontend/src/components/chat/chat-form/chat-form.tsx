@@ -17,6 +17,7 @@ import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
+import * as Sentry from "@sentry/react";
 
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
@@ -79,8 +80,13 @@ export const ChatForm: React.FC = () => {
 			allowed_folder_ids: selectedChatFolders.map((folder) => folder.id),
 		};
 
-		const chat = await getCurrentOrCreateChat(userMessage);
-		await getCompletion(chat);
+		Sentry.startSpan(
+			{ name: "Stream Chat Message Response", op: "chat.message.stream" },
+			async (span) => {
+				const chat = await getCurrentOrCreateChat(userMessage);
+				await getCompletion(chat, span);
+			},
+		);
 	};
 
 	const isInferenceLoading = [
