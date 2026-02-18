@@ -5,19 +5,41 @@ import type { CitationWithDetails } from "../common";
 
 type CitationsStore = {
 	citationByChunkId: Record<number, CitationWithDetails>;
+	parlaCitationsById: Record<string, CitationWithDetails>;
 	ensureCached: (chunkIds: number[]) => Promise<void>;
-	getCitation: (chunkId: number) => CitationWithDetails | undefined;
+	storeParlaCitations: (parlaCitations: CitationWithDetails[]) => void;
+	getCitation: (citationId: number | string) => CitationWithDetails | undefined;
 };
 
 export const useCitationsStore = create<CitationsStore>()((set, get) => ({
 	citationByChunkId: {},
-	getCitation: (chunkId) => {
+	parlaCitationsById: {},
+
+	getCitation: (citationId) => {
 		const state = get();
-		const cached = state.citationByChunkId[chunkId];
+
+		// Check if it's a Parla citation (string ID)
+		if (typeof citationId === "string") {
+			return state.parlaCitationsById[citationId];
+		}
+
+		// Otherwise, it's a chunk ID from the database
+		const cached = state.citationByChunkId[citationId];
 		if (cached) {
 			return cached;
 		}
 		return undefined;
+	},
+
+	storeParlaCitations(parlaCitations) {
+		const { parlaCitationsById } = get();
+		const merged = { ...parlaCitationsById };
+		parlaCitations.forEach((citation) => {
+			if (citation.id) {
+				merged[citation.id] = citation;
+			}
+		});
+		set({ parlaCitationsById: merged });
 	},
 
 	async ensureCached(chunkIds) {

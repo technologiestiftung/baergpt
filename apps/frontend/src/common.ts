@@ -28,7 +28,7 @@ export type ChatMessage = {
 	allowed_folder_ids: number[] | null;
 	chat_id: number;
 	content: string;
-	citations: number[] | null;
+	citations: (number | string)[] | null;
 	created_at: string;
 	id: number;
 	role: string;
@@ -45,7 +45,8 @@ export type DocumentFolder = {
 export type SourceType =
 	| "public_document"
 	| "personal_document"
-	| "default_document";
+	| "default_document"
+	| "parla_document";
 
 export type Document = {
 	created_at: string | null;
@@ -81,6 +82,7 @@ export type User = {
 };
 
 export type CitationWithDetails = {
+	id?: string;
 	snippet: string;
 	page: number;
 	fileName: string;

@@ -415,6 +415,9 @@ export class GenerationService {
 		const allChunkMatches = generationResult.steps.flatMap((step) =>
 			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
 		);
+		const allParlaCitations = generationResult.steps.flatMap((step) =>
+			step.toolResults.flatMap((tr) => tr.output?.parlaCitations || []),
+		);
 		const newMessages = generationResult.response.messages;
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);
@@ -491,6 +494,14 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 									} catch (error) {
 										captureError(error);
 									}
+								}
+
+								// Send Parla citations separately (no need for LLM extraction)
+								if (allParlaCitations.length > 0) {
+									writer.write({
+										type: "data-parla-citations",
+										data: allParlaCitations,
+									});
 								}
 
 								updateActiveTrace({

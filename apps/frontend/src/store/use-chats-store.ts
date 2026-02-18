@@ -46,7 +46,7 @@ interface ChatStore {
 		chat: ChatWithMessages;
 		messageId: number;
 		content: string;
-		citations: number[] | null;
+		citations: (number | string)[] | null;
 	}): void;
 }
 

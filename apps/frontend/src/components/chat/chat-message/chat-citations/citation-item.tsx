@@ -1,11 +1,12 @@
 import { downloadDocument } from "../../../../api/documents/download-document.ts";
 import { PublicDocumentPill } from "./public-document-pill.tsx";
+import { ParlaDocumentPill } from "./parla-document-pill.tsx";
 import { TruncatedSnippet } from "./truncated-snippet.tsx";
 import removeMarkdown from "remove-markdown";
 import Content from "../../../../content.ts";
 import { useCitationsStore } from "../../../../store/use-citations-store.ts";
 
-export function CitationItem({ citationId }: { citationId: number }) {
+export function CitationItem({ citationId }: { citationId: number | string }) {
 	const { getCitation } = useCitationsStore();
 
 	const citation = getCitation(citationId);
@@ -15,6 +16,12 @@ export function CitationItem({ citationId }: { citationId: number }) {
 	}
 
 	const handleClick = async () => {
+		// For Parla documents, open the source URL directly
+		if (citation.sourceType === "parla_document") {
+			window.open(`${citation.sourceUrl}#page=${citation.page}`, "_blank");
+			return;
+		}
+
 		const blob = await downloadDocument(citation);
 
 		if (!blob) {
@@ -43,6 +50,11 @@ export function CitationItem({ citationId }: { citationId: number }) {
 					>
 						<PublicDocumentPill />
 					</div>
+					<div
+						className={`${citation.sourceType === "parla_document" ? "hidden sm:flex" : "hidden"}`}
+					>
+						<ParlaDocumentPill />
+					</div>
 				</div>
 			</div>
 			<div className="flex flex-row items-center gap-2">
@@ -53,6 +65,11 @@ export function CitationItem({ citationId }: { citationId: number }) {
 					className={`${citation.sourceType === "public_document" ? "flex sm:hidden" : "hidden"}`}
 				>
 					<PublicDocumentPill />
+				</div>
+				<div
+					className={`${citation.sourceType === "parla_document" ? "flex sm:hidden" : "hidden"}`}
+				>
+					<ParlaDocumentPill />
 				</div>
 			</div>
 			<div className="relative flex text-sm leading-5 group-hover:underline text-dunkelblau-200 h-10">

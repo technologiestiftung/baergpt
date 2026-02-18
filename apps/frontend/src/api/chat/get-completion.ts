@@ -1,7 +1,7 @@
 import { useChatsStore } from "../../store/use-chats-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
-import type { ChatWithMessages } from "../../common.ts";
+import type { ChatWithMessages, CitationWithDetails } from "../../common.ts";
 import { useDocumentStore } from "../../store/document-store.ts";
 import { useFolderStore } from "../../store/folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
@@ -11,7 +11,8 @@ import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
-	| { type: "data-citations"; data: number[] };
+	| { type: "data-citations"; data: number[] }
+	| { type: "data-parla-citations"; data: CitationWithDetails[] };
 
 export async function getCompletion(
 	currentChat: ChatWithMessages,
@@ -116,7 +117,7 @@ export async function getCompletion(
 		});
 
 		let currentText = "";
-		let citations: number[] = [];
+		let citations: (number | string)[] = [];
 		let hasReceivedText = false;
 
 		await parseStream(response.body, {
@@ -136,7 +137,7 @@ export async function getCompletion(
 				});
 			},
 			onCitations: (chunkIds: number[]) => {
-				citations = chunkIds;
+				citations = [...citations, ...chunkIds];
 				// Update message immediately when citations arrive
 				updateMessage({
 					chat: currentChat,
@@ -145,9 +146,27 @@ export async function getCompletion(
 					citations: citations.length ? citations : null,
 				});
 				// Cache the citations now
-				if (citations.length) {
-					ensureCached(citations);
+				if (chunkIds.length) {
+					ensureCached(chunkIds);
 				}
+			},
+			onParlaCitations: (parlaCitations: CitationWithDetails[]) => {
+				const { storeParlaCitations } = useCitationsStore.getState();
+				storeParlaCitations(parlaCitations);
+
+				// Add Parla citation IDs to the citations array
+				const parlaIds = parlaCitations
+					.map((c) => c.id)
+					.filter((id): id is string => !!id);
+				citations = [...citations, ...parlaIds];
+
+				// Update message with all citations
+				updateMessage({
+					chat: currentChat,
+					messageId,
+					content: currentText,
+					citations: citations.length ? citations : null,
+				});
 			},
 			onFinish: () => {
 				setStatus("idle");
@@ -169,6 +188,7 @@ function processStreamLine(
 	callbacks: {
 		onTextDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
+		onParlaCitations: (parlaCitations: CitationWithDetails[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -196,6 +216,11 @@ function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "data-parla-citations") {
+			callbacks.onParlaCitations(event.data);
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -210,6 +235,7 @@ async function parseStream(
 	callbacks: {
 		onTextDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
+		onParlaCitations: (parlaCitations: CitationWithDetails[]) => void;
 		onFinish: () => void;
 	},
 ) {
