@@ -16,6 +16,10 @@ type ExternalCitationFromDb = {
 export async function getExternalCitationsForMessages(
 	messageIds: number[],
 ): Promise<CitationWithDetails[]> {
+	if (messageIds.length === 0) {
+		return [];
+	}
+
 	const { handleError } = useErrorStore.getState();
 
 	const { data, error } = await supabase.rpc(
