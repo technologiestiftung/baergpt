@@ -332,6 +332,7 @@ export class GenerationService {
 		{
 			userId,
 			sessionId,
+			messageId,
 			langfusePrompt,
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
@@ -340,6 +341,7 @@ export class GenerationService {
 		}: {
 			userId?: string;
 			sessionId?: string;
+			messageId?: number;
 			langfusePrompt?: TextPromptClient | ChatPromptClient;
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
@@ -418,6 +420,20 @@ export class GenerationService {
 		const allParlaCitations = generationResult.steps.flatMap((step) =>
 			step.toolResults.flatMap((tr) => tr.output?.parlaCitations || []),
 		);
+
+		// Save external citations to database
+		if (messageId && allParlaCitations.length > 0) {
+			try {
+				await this.dbService.saveExternalCitations(
+					messageId,
+					allParlaCitations,
+				);
+			} catch (error) {
+				captureError(error);
+				console.error("Failed to save external citations:", error);
+			}
+		}
+
 		const newMessages = generationResult.response.messages;
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);

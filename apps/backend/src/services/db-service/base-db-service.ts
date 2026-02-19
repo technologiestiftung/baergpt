@@ -62,6 +62,43 @@ export abstract class BaseContentDbService {
 		return new Map(summaries.map((s) => [s.document_id, s.summary]));
 	}
 
+	async saveExternalCitations(
+		messageId: number,
+		citations: Array<{
+			id?: string;
+			snippet: string;
+			page: number;
+			fileName: string;
+			sourceUrl: string;
+			createdAt: string;
+			sourceType: string;
+		}>,
+	): Promise<void> {
+		if (citations.length === 0) {
+			return;
+		}
+
+		const rows = citations.map((citation) => ({
+			id: citation.id,
+			message_id: messageId,
+			snippet: citation.snippet,
+			page: citation.page,
+			file_name: citation.fileName,
+			source_url: citation.sourceUrl,
+			created_at: citation.createdAt,
+			source_type: citation.sourceType,
+		}));
+
+		const { error } = await this.client
+			.from("external_citations")
+			.insert(rows);
+
+		if (error) {
+			captureError(error);
+			console.error("Failed to save external citations:", error);
+		}
+	}
+
 	/**
 	 * Performs a hybrid search combining full-text and semantic vector search.
 	 */

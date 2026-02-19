@@ -65,6 +65,7 @@ export type GenerateAnswerBody = {
 
 export type ChatMessageBody = {
 	messages: ModelMessage[];
+	message_id?: number;
 	user_id: string;
 	chat_id: string;
 	search_type: string;
