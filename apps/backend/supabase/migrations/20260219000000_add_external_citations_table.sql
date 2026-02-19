@@ -32,7 +32,10 @@ SELECT
                 JOIN chats ON chats.id = chat_messages.chat_id
             WHERE
                 chat_messages.id = external_citations.message_id
-                AND chats.user_id = (SELECT auth.uid ())
+                AND chats.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
         )
     );
 
@@ -48,7 +51,10 @@ WITH
                 JOIN chats ON chats.id = chat_messages.chat_id
             WHERE
                 chat_messages.id = external_citations.message_id
-                AND chats.user_id = (SELECT auth.uid ())
+                AND chats.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
         )
     );
 
@@ -62,6 +68,9 @@ CREATE POLICY delete_external_citations_policy ON external_citations FOR DELETE 
             JOIN chats ON chats.id = chat_messages.chat_id
         WHERE
             chat_messages.id = external_citations.message_id
-            AND chats.user_id = (SELECT auth.uid ())
+            AND chats.user_id = (
+                SELECT
+                    auth.uid ()
+            )
     )
 );

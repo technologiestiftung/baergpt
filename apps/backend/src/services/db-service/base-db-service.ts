@@ -89,9 +89,7 @@ export abstract class BaseContentDbService {
 			source_type: citation.sourceType,
 		}));
 
-		const { error } = await this.client
-			.from("external_citations")
-			.insert(rows);
+		const { error } = await this.client.from("external_citations").insert(rows);
 
 		if (error) {
 			captureError(error);
