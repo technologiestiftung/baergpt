@@ -262,13 +262,23 @@ test.describe("Chat", () => {
 			await page.goto("/");
 
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
-			const citations = [documentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
-				// Format as Server-Sent Events (SSE) stream
+				const body = JSON.parse(route.request().postData() || "{}");
+				const messageId = body.message_id;
+
+				const { data: citationRow } = await supabaseAdminClient
+					.from("chat_message_citations")
+					.insert({
+						message_id: messageId,
+						document_chunk_ids: [documentChunkId],
+					})
+					.select("id")
+					.single();
+
 				const streamBody = [
 					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
-					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: [citationRow!.id] })}\n\n`,
 					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
 				].join("");
 
@@ -399,13 +409,26 @@ test.describe("Chat", () => {
 			await page.goto("/");
 
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
-			const citations = [publicDocumentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
-				// Format as Server-Sent Events (SSE) stream
+				const body = JSON.parse(route.request().postData() || "{}");
+				const messageId = body.message_id;
+
+				const { data: citationRow } = await supabaseAdminClient
+					.from("chat_message_citations")
+					.insert({
+						message_id: messageId,
+						document_chunk_ids: [publicDocumentChunkId],
+					})
+					.select("id")
+					.single();
+
+				if (!citationRow || !citationRow.id) {
+					throw new Error("Failed to retrieve citationRow or citationRow.id");
+				}
 				const streamBody = [
 					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
-					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: [citationRow.id] })}\n\n`,
 					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
 				].join("");
 
@@ -420,6 +443,7 @@ test.describe("Chat", () => {
 			const addButton = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
+				.first()
 				.getByLabel("In den Chat");
 
 			// Click the add-to-chat button

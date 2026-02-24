@@ -667,6 +667,40 @@ describe("Integration tests for DB", async () => {
 		});
 
 		describe("get_citation_details", () => {
+			let givenChatId: number;
+			let givenMessageId: number;
+
+			beforeEach(async () => {
+				const { data: chatData } = await serviceRoleDbClient
+					.from("chats")
+					.insert({ user_id: givenAdminId, name: "Citation Test Chat" })
+					.select("id")
+					.single();
+				if (!chatData) {
+					throw new Error("Chat creation failed");
+				}
+				givenChatId = chatData.id;
+
+				const { data: messageData } = await serviceRoleDbClient
+					.from("chat_messages")
+					.insert({
+						chat_id: givenChatId,
+						role: "assistant",
+						content: "test",
+						type: "text",
+					})
+					.select("id")
+					.single();
+				if (!messageData) {
+					throw new Error("Message creation failed");
+				}
+				givenMessageId = messageData.id;
+			});
+
+			afterEach(async () => {
+				await serviceRoleDbClient.from("chats").delete().eq("id", givenChatId);
+			});
+
 			describe("personal documents", () => {
 				let givenChunkId: number;
 
@@ -691,10 +725,22 @@ describe("Integration tests for DB", async () => {
 						password: givenAdminPassword,
 					});
 
+					const { data: citationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: givenMessageId,
+							document_chunk_ids: [givenChunkId],
+						})
+						.select("id")
+						.single();
+					if (!citationRow) {
+						throw new Error("Citation creation failed");
+					}
+
 					const { data: citationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
 						{
-							chunk_ids: [givenChunkId],
+							citation_ids: [citationRow.id],
 						},
 					);
 
@@ -703,7 +749,7 @@ describe("Integration tests for DB", async () => {
 					}
 
 					const expectedCitationDetails = {
-						chunk_id: givenChunkId,
+						citation_id: citationRow.id,
 						file_name: defaultDocumentName,
 						source_url: `${givenAdminId}/${defaultDocumentName}`,
 						page: 1,
@@ -715,6 +761,18 @@ describe("Integration tests for DB", async () => {
 				});
 
 				it("should return no citation details for a not self-owned document", async () => {
+					const { data: citationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: givenMessageId,
+							document_chunk_ids: [givenChunkId],
+						})
+						.select("id")
+						.single();
+					if (!citationRow) {
+						throw new Error("Citation creation failed");
+					}
+
 					await supabaseAnonClient.auth.signInWithPassword({
 						email: givenUserEmail,
 						password: givenUserPassword,
@@ -723,13 +781,11 @@ describe("Integration tests for DB", async () => {
 					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
 						{
-							chunk_ids: [givenChunkId],
+							citation_ids: [citationRow.id],
 						},
 					);
 
-					const expectedCitationDetails = [];
-
-					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+					expect(actualCitationDetails).toMatchObject([]);
 				});
 			});
 
@@ -757,16 +813,28 @@ describe("Integration tests for DB", async () => {
 						password: givenAdminPassword,
 					});
 
+					const { data: citationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: givenMessageId,
+							document_chunk_ids: [givenChunkId],
+						})
+						.select("id")
+						.single();
+					if (!citationRow) {
+						throw new Error("Citation creation failed");
+					}
+
 					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
 						{
-							chunk_ids: [givenChunkId],
+							citation_ids: [citationRow.id],
 						},
 					);
 
 					const expectedCitationDetails = [
 						{
-							chunk_id: givenChunkId,
+							citation_id: citationRow.id,
 							file_name: defaultDocumentName,
 							source_url: `${accessGroupId}/${defaultDocumentName}`,
 							page: 1,
@@ -779,6 +847,41 @@ describe("Integration tests for DB", async () => {
 				});
 
 				it("should return citation details for a (not self-owned) public document", async () => {
+					const { data: userChat } = await serviceRoleDbClient
+						.from("chats")
+						.insert({ user_id: givenUserId, name: "User Citation Chat" })
+						.select("id")
+						.single();
+					if (!userChat) {
+						throw new Error("User chat creation failed");
+					}
+
+					const { data: userMessage } = await serviceRoleDbClient
+						.from("chat_messages")
+						.insert({
+							chat_id: userChat.id,
+							role: "assistant",
+							content: "test",
+							type: "text",
+						})
+						.select("id")
+						.single();
+					if (!userMessage) {
+						throw new Error("User message creation failed");
+					}
+
+					const { data: citationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: userMessage.id,
+							document_chunk_ids: [givenChunkId],
+						})
+						.select("id")
+						.single();
+					if (!citationRow) {
+						throw new Error("Citation creation failed");
+					}
+
 					const { error: signInError } =
 						await supabaseAnonClient.auth.signInWithPassword({
 							email: givenUserEmail,
@@ -789,13 +892,13 @@ describe("Integration tests for DB", async () => {
 
 					const { data: actualCitationDetails, error } =
 						await supabaseAnonClient.rpc("get_citation_details", {
-							chunk_ids: [givenChunkId],
+							citation_ids: [citationRow.id],
 						});
 					expect(error).toBeNull();
 
 					const expectedCitationDetails = [
 						{
-							chunk_id: givenChunkId,
+							citation_id: citationRow.id,
 							file_name: defaultDocumentName,
 							source_url: `${accessGroupId}/${defaultDocumentName}`,
 							page: 1,
@@ -805,6 +908,11 @@ describe("Integration tests for DB", async () => {
 					];
 
 					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+
+					await serviceRoleDbClient
+						.from("chats")
+						.delete()
+						.eq("id", userChat.id);
 				});
 			});
 
@@ -832,16 +940,28 @@ describe("Integration tests for DB", async () => {
 						password: givenAdminPassword,
 					});
 
+					const { data: citationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: givenMessageId,
+							document_chunk_ids: [givenChunkId],
+						})
+						.select("id")
+						.single();
+					if (!citationRow) {
+						throw new Error("Citation creation failed");
+					}
+
 					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
 						{
-							chunk_ids: [givenChunkId],
+							citation_ids: [citationRow.id],
 						},
 					);
 
 					const expectedCitationDetails = [
 						{
-							chunk_id: givenChunkId,
+							citation_id: citationRow.id,
 							file_name: defaultDocumentName,
 							source_url: `${accessGroupId}/${defaultDocumentName}`,
 							page: 1,
@@ -854,6 +974,41 @@ describe("Integration tests for DB", async () => {
 				});
 
 				it("should return citation details for a (not self-owned) default document", async () => {
+					const { data: userChat } = await serviceRoleDbClient
+						.from("chats")
+						.insert({ user_id: givenUserId, name: "User Citation Chat" })
+						.select("id")
+						.single();
+					if (!userChat) {
+						throw new Error("User chat creation failed");
+					}
+
+					const { data: userMessage } = await serviceRoleDbClient
+						.from("chat_messages")
+						.insert({
+							chat_id: userChat.id,
+							role: "assistant",
+							content: "test",
+							type: "text",
+						})
+						.select("id")
+						.single();
+					if (!userMessage) {
+						throw new Error("User message creation failed");
+					}
+
+					const { data: citationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: userMessage.id,
+							document_chunk_ids: [givenChunkId],
+						})
+						.select("id")
+						.single();
+					if (!citationRow) {
+						throw new Error("Citation creation failed");
+					}
+
 					const { error: signInError } =
 						await supabaseAnonClient.auth.signInWithPassword({
 							email: givenUserEmail,
@@ -864,13 +1019,13 @@ describe("Integration tests for DB", async () => {
 
 					const { data: actualCitationDetails, error } =
 						await supabaseAnonClient.rpc("get_citation_details", {
-							chunk_ids: [givenChunkId],
+							citation_ids: [citationRow.id],
 						});
 					expect(error).toBeNull();
 
 					const expectedCitationDetails = [
 						{
-							chunk_id: givenChunkId,
+							citation_id: citationRow.id,
 							file_name: defaultDocumentName,
 							source_url: `${accessGroupId}/${defaultDocumentName}`,
 							page: 1,
@@ -880,25 +1035,15 @@ describe("Integration tests for DB", async () => {
 					];
 
 					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+
+					await serviceRoleDbClient
+						.from("chats")
+						.delete()
+						.eq("id", userChat.id);
 				});
 			});
 
 			describe("invalid args", () => {
-				beforeEach(async () => {
-					await mockDocumentUpload({
-						userId: givenAdminId,
-						accessGroupId: null,
-						fileName: defaultDocumentName,
-						filePath: defaultDocumentPath,
-						sourceType: "personal_document",
-						bucketName: "documents",
-						userEmail: givenAdminEmail,
-						userPassword: givenAdminPassword,
-					});
-				});
-
-				afterEach(async () => await cleanupDocuments(givenAdminId));
-
 				it("should return no citation details when given an empty array", async () => {
 					await supabaseAnonClient.auth.signInWithPassword({
 						email: givenUserEmail,
@@ -908,7 +1053,7 @@ describe("Integration tests for DB", async () => {
 					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
 						{
-							chunk_ids: [],
+							citation_ids: [],
 						},
 					);
 

@@ -72,8 +72,8 @@ export async function getCompletion(
 			content: "",
 			type: "text",
 			role: "assistant",
-			allowed_document_ids: selectedDocumentIds,
-			allowed_folder_ids: selectedFolderIds,
+			allowed_document_ids: selectedDocumentIds, // Save selected document IDs
+			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
 			citations: null,
 		});
 
@@ -123,6 +123,7 @@ export async function getCompletion(
 
 		await parseStream(response.body, {
 			onTextDelta: (delta: string) => {
+				// Set status to loading-text on first text delta
 				if (!hasReceivedText) {
 					setStatus("loading-text");
 					hasReceivedText = true;
@@ -136,6 +137,7 @@ export async function getCompletion(
 					citations: citations.length ? citations : null,
 				});
 			},
+			// Update message immediately when citations arrive
 			onCitations: (citationIds: number[]) => {
 				citations = [...citations, ...citationIds];
 				updateMessage({
@@ -144,6 +146,7 @@ export async function getCompletion(
 					content: currentText,
 					citations: citations.length ? citations : null,
 				});
+				// Cache the citations now
 				if (citationIds.length) {
 					ensureCached(citationIds);
 				}
