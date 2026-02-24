@@ -14,9 +14,6 @@ CREATE TABLE IF NOT EXISTS external_citations (
 -- Add index for faster lookups by message_id
 CREATE INDEX IF NOT EXISTS idx_external_citations_message_id ON external_citations (message_id);
 
--- Add index for faster lookups by id
-CREATE INDEX IF NOT EXISTS idx_external_citations_id ON external_citations (id);
-
 -- Enable Row Level Security
 ALTER TABLE external_citations ENABLE ROW LEVEL SECURITY;
 

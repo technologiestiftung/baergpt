@@ -63,13 +63,17 @@ CREATE POLICY delete_chat_message_citations_policy ON chat_message_citations FOR
     )
 );
 
--- 2. Migrate existing data from the old mixed-type citations format
+-- 2. Migrate old citations JSON array into chat_message_citations rows,
+--    then rewrite chat_messages.citations to hold the new row IDs.
 DO $$
 DECLARE
     msg RECORD;
     citation_element JSONB;
     new_citation_id BIGINT;
     new_citation_ids BIGINT[];
+    migrated_messages INT := 0;
+    migrated_citations INT := 0;
+    skipped_elements INT := 0;
 BEGIN
     FOR msg IN
         SELECT id, citations
@@ -87,11 +91,14 @@ BEGIN
                 INSERT INTO public.chat_message_citations (message_id, document_chunk_ids)
                 VALUES (msg.id, ARRAY[citation_element::text::integer])
                 RETURNING id INTO new_citation_id;
+                migrated_citations := migrated_citations + 1;
             ELSIF jsonb_typeof(citation_element) = 'string' THEN
                 INSERT INTO public.chat_message_citations (message_id, external_citation_ids)
                 VALUES (msg.id, ARRAY[citation_element #>> '{}'])
                 RETURNING id INTO new_citation_id;
+                migrated_citations := migrated_citations + 1;
             ELSE
+                skipped_elements := skipped_elements + 1;
                 CONTINUE;
             END IF;
 
@@ -101,7 +108,12 @@ BEGIN
         UPDATE public.chat_messages
         SET citations = to_jsonb(new_citation_ids)
         WHERE id = msg.id;
+
+        migrated_messages := migrated_messages + 1;
     END LOOP;
+
+    RAISE NOTICE 'Citation migration complete: % messages migrated, % citation rows created, % elements skipped',
+        migrated_messages, migrated_citations, skipped_elements;
 END;
 $$;
 
@@ -155,6 +167,3 @@ BEGIN
     AND cmc.external_citation_ids != '{}';
 END;
 $$;
-
--- 4. Drop the old function (no longer needed with unified approach)
-DROP FUNCTION IF EXISTS get_external_citations_for_messages;
