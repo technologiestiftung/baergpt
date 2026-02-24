@@ -71,8 +71,8 @@ function extractParlaCitations(
 ): ParlaCitation[] {
 	const citations: ParlaCitation[] = [];
 
-	try {
-		for (const match of documentMatches) {
+	for (const match of documentMatches) {
+		try {
 			const { registered_document, processed_document_chunk_matches } = match;
 
 			// Get the document title from metadata
@@ -98,10 +98,17 @@ function extractParlaCitations(
 					});
 				}
 			}
+		} catch (error) {
+			captureError(error);
+			const docId = match?.registered_document?.id;
+			const fileName = (
+				match?.registered_document?.metadata?.Titel as string[]
+			)?.[0];
+			console.error(
+				`Failed to extract Parla citation for document ${docId ?? "unknown"}${fileName ? ` (${fileName})` : ""}:`,
+				error,
+			);
 		}
-	} catch (error) {
-		captureError(error);
-		console.error("Failed to extract Parla citations:", error);
 	}
 
 	return citations;
