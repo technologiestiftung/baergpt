@@ -499,11 +499,10 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 												documentChunkIds: [chunkId],
 											}),
 										);
-										const ids =
-											await this.dbService.saveChatMessageCitations(
-												messageId,
-												chunkCitationRows,
-											);
+										const ids = await this.dbService.saveChatMessageCitations(
+											messageId,
+											chunkCitationRows,
+										);
 										allCitationIds.push(...ids);
 									}
 
@@ -525,17 +524,14 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 
 								if (messageId && allParlaCitations.length > 0) {
 									const externalCitationRows = allParlaCitations
-										.filter(
-											(c: { id?: string }) => c.id !== undefined,
-										)
+										.filter((c: { id?: string }) => c.id !== undefined)
 										.map((c: { id?: string }) => ({
 											externalCitationIds: [c.id as string],
 										}));
-									const ids =
-										await this.dbService.saveChatMessageCitations(
-											messageId,
-											externalCitationRows,
-										);
+									const ids = await this.dbService.saveChatMessageCitations(
+										messageId,
+										externalCitationRows,
+									);
 									allCitationIds.push(...ids);
 								}
 
