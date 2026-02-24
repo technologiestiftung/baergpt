@@ -1043,6 +1043,204 @@ describe("Integration tests for DB", async () => {
 				});
 			});
 
+			describe("external citations", () => {
+				const givenExternalCitationId = "parla-test-citation-001";
+				const givenExternalSnippet = "Berliner Verwaltung Testinhalt";
+				const givenExternalPage = 3;
+				const givenExternalFileName = "parla-document.pdf";
+				const givenExternalSourceUrl =
+					"https://pardok.parlament-berlin.de/test-doc";
+
+				afterEach(async () => {
+					await serviceRoleDbClient
+						.from("external_citations")
+						.delete()
+						.eq("id", givenExternalCitationId);
+				});
+
+				it("should return citation details for an external citation", async () => {
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+
+					const { error: externalCitationError } = await serviceRoleDbClient
+						.from("external_citations")
+						.insert({
+							id: givenExternalCitationId,
+							message_id: givenMessageId,
+							snippet: givenExternalSnippet,
+							page: givenExternalPage,
+							file_name: givenExternalFileName,
+							source_url: givenExternalSourceUrl,
+							created_at: new Date().toISOString(),
+							source_type: "parla_document",
+						});
+					expect(externalCitationError).toBeNull();
+
+					const { data: citationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: givenMessageId,
+							external_citation_ids: [givenExternalCitationId],
+						})
+						.select("id")
+						.single();
+					if (!citationRow) {
+						throw new Error("Citation creation failed");
+					}
+
+					const { data: actualCitationDetails, error } =
+						await supabaseAnonClient.rpc("get_citation_details", {
+							citation_ids: [citationRow.id],
+						});
+					expect(error).toBeNull();
+
+					const expectedCitationDetails = [
+						{
+							citation_id: citationRow.id,
+							file_name: givenExternalFileName,
+							source_url: givenExternalSourceUrl,
+							page: givenExternalPage,
+							source_type: "parla_document",
+							snippet: givenExternalSnippet,
+						},
+					];
+
+					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+				});
+
+				it("should return no external citation details for a non-owner user", async () => {
+					const { error: externalCitationError } = await serviceRoleDbClient
+						.from("external_citations")
+						.insert({
+							id: givenExternalCitationId,
+							message_id: givenMessageId,
+							snippet: givenExternalSnippet,
+							page: givenExternalPage,
+							file_name: givenExternalFileName,
+							source_url: givenExternalSourceUrl,
+							created_at: new Date().toISOString(),
+							source_type: "parla_document",
+						});
+					expect(externalCitationError).toBeNull();
+
+					const { data: citationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: givenMessageId,
+							external_citation_ids: [givenExternalCitationId],
+						})
+						.select("id")
+						.single();
+					if (!citationRow) {
+						throw new Error("Citation creation failed");
+					}
+
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenUserEmail,
+						password: givenUserPassword,
+					});
+
+					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
+						"get_citation_details",
+						{
+							citation_ids: [citationRow.id],
+						},
+					);
+
+					expect(actualCitationDetails).toMatchObject([]);
+				});
+
+				it("should return mixed citation details for document chunks and external citations", async () => {
+					const givenChunkId = await mockDocumentUpload({
+						userId: givenAdminId,
+						accessGroupId: null,
+						fileName: defaultDocumentName,
+						filePath: defaultDocumentPath,
+						sourceType: "personal_document",
+						bucketName: "documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
+					});
+
+					const { error: externalCitationError } = await serviceRoleDbClient
+						.from("external_citations")
+						.insert({
+							id: givenExternalCitationId,
+							message_id: givenMessageId,
+							snippet: givenExternalSnippet,
+							page: givenExternalPage,
+							file_name: givenExternalFileName,
+							source_url: givenExternalSourceUrl,
+							created_at: new Date().toISOString(),
+							source_type: "parla_document",
+						});
+					expect(externalCitationError).toBeNull();
+
+					const { data: chunkCitationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: givenMessageId,
+							document_chunk_ids: [givenChunkId],
+						})
+						.select("id")
+						.single();
+					if (!chunkCitationRow) {
+						throw new Error("Chunk citation creation failed");
+					}
+
+					const { data: externalCitationRow } = await serviceRoleDbClient
+						.from("chat_message_citations")
+						.insert({
+							message_id: givenMessageId,
+							external_citation_ids: [givenExternalCitationId],
+						})
+						.select("id")
+						.single();
+					if (!externalCitationRow) {
+						throw new Error("External citation creation failed");
+					}
+
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+
+					const { data: actualCitationDetails, error } =
+						await supabaseAnonClient.rpc("get_citation_details", {
+							citation_ids: [chunkCitationRow.id, externalCitationRow.id],
+						});
+					expect(error).toBeNull();
+					expect(actualCitationDetails).toHaveLength(2);
+
+					const chunkCitation = actualCitationDetails?.find(
+						(c: { citation_id: number }) =>
+							c.citation_id === chunkCitationRow.id,
+					);
+					expect(chunkCitation).toMatchObject({
+						citation_id: chunkCitationRow.id,
+						file_name: defaultDocumentName,
+						source_type: "personal_document",
+						snippet,
+					});
+
+					const externalCitation = actualCitationDetails?.find(
+						(c: { citation_id: number }) =>
+							c.citation_id === externalCitationRow.id,
+					);
+					expect(externalCitation).toMatchObject({
+						citation_id: externalCitationRow.id,
+						file_name: givenExternalFileName,
+						source_url: givenExternalSourceUrl,
+						source_type: "parla_document",
+						snippet: givenExternalSnippet,
+					});
+
+					await cleanupDocuments(givenAdminId);
+				});
+			});
+
 			describe("invalid args", () => {
 				it("should return no citation details when given an empty array", async () => {
 					await supabaseAnonClient.auth.signInWithPassword({
