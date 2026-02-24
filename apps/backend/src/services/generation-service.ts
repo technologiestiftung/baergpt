@@ -457,6 +457,8 @@ export class GenerationService {
 									await toolsCleanup();
 								}
 
+								const allCitationIds: number[] = [];
+
 								if (allChunkMatches.length > 0) {
 									const availableSources = allChunkMatches.map(
 										(match: { chunkId: number; snippet: string }) => ({
@@ -483,7 +485,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 											experimental_telemetry: {
 												isEnabled:
 													config.nodeEnv !== "test" &&
-													config.nodeEnv !== "production", // Disable telemetry in CI and production
+													config.nodeEnv !== "production",
 												functionId: "citation-extraction",
 												metadata: {
 													sessionId: sessionId ? sessionId : "unknown",
@@ -491,10 +493,19 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 											},
 										});
 
-									writer.write({
-										type: "data-citations",
-										data: object.citations,
-									});
+									if (messageId && object.citations.length > 0) {
+										const chunkCitationRows = object.citations.map(
+											(chunkId: number) => ({
+												documentChunkIds: [chunkId],
+											}),
+										);
+										const ids =
+											await this.dbService.saveChatMessageCitations(
+												messageId,
+												chunkCitationRows,
+											);
+										allCitationIds.push(...ids);
+									}
 
 									try {
 										await this.dbService.updateUserColumnValue(
@@ -512,11 +523,26 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 									}
 								}
 
-								// Send Parla citations separately (no need for LLM extraction)
-								if (allParlaCitations.length > 0) {
+								if (messageId && allParlaCitations.length > 0) {
+									const externalCitationRows = allParlaCitations
+										.filter(
+											(c: { id?: string }) => c.id !== undefined,
+										)
+										.map((c: { id?: string }) => ({
+											externalCitationIds: [c.id as string],
+										}));
+									const ids =
+										await this.dbService.saveChatMessageCitations(
+											messageId,
+											externalCitationRows,
+										);
+									allCitationIds.push(...ids);
+								}
+
+								if (allCitationIds.length > 0) {
 									writer.write({
-										type: "data-parla-citations",
-										data: allParlaCitations,
+										type: "data-citations",
+										data: allCitationIds,
 									});
 								}
 

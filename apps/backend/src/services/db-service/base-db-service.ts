@@ -97,6 +97,35 @@ export abstract class BaseContentDbService {
 		}
 	}
 
+	async saveChatMessageCitations(
+		messageId: number,
+		citations: Array<{
+			documentChunkIds?: number[];
+			externalCitationIds?: string[];
+		}>,
+	): Promise<number[]> {
+		if (citations.length === 0) {
+			return [];
+		}
+
+		const rows = citations.map((citation) => ({
+			message_id: messageId,
+			document_chunk_ids: citation.documentChunkIds ?? [],
+			external_citation_ids: citation.externalCitationIds ?? [],
+		}));
+
+		const { data, error } = await this.client
+			.from("chat_message_citations")
+			.insert(rows)
+			.select("id");
+
+		if (error) {
+			throw error;
+		}
+
+		return (data ?? []).map((row) => row.id);
+	}
+
 	/**
 	 * Performs a hybrid search combining full-text and semantic vector search.
 	 */

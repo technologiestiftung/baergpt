@@ -6,7 +6,7 @@ import removeMarkdown from "remove-markdown";
 import Content from "../../../../content.ts";
 import { useCitationsStore } from "../../../../store/use-citations-store.ts";
 
-export function CitationItem({ citationId }: { citationId: number | string }) {
+export function CitationItem({ citationId }: { citationId: number }) {
 	const { getCitation } = useCitationsStore();
 
 	const citation = getCitation(citationId);

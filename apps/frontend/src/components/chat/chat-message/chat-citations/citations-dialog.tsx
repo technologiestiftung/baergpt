@@ -5,7 +5,7 @@ import { CitationItem } from "./citation-item.tsx";
 
 interface CitationsDialogProps {
 	messageId: number | null;
-	citations: (number | string)[] | null;
+	citations: number[] | null;
 }
 
 export const citationsDialogId = "citations-dialog";

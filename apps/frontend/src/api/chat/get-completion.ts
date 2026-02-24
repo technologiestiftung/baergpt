@@ -1,7 +1,7 @@
 import { useChatsStore } from "../../store/use-chats-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
-import type { ChatWithMessages, CitationWithDetails } from "../../common.ts";
+import type { ChatWithMessages } from "../../common.ts";
 import { useDocumentStore } from "../../store/document-store.ts";
 import { useFolderStore } from "../../store/folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
@@ -11,8 +11,7 @@ import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
-	| { type: "data-citations"; data: number[] }
-	| { type: "data-parla-citations"; data: CitationWithDetails[] };
+	| { type: "data-citations"; data: number[] };
 
 export async function getCompletion(
 	currentChat: ChatWithMessages,
@@ -119,12 +118,11 @@ export async function getCompletion(
 		}
 
 		let currentText = "";
-		let citations: (number | string)[] = [];
+		let citations: number[] = [];
 		let hasReceivedText = false;
 
 		await parseStream(response.body, {
 			onTextDelta: (delta: string) => {
-				// Set status to loading-text on first text delta
 				if (!hasReceivedText) {
 					setStatus("loading-text");
 					hasReceivedText = true;
@@ -138,37 +136,17 @@ export async function getCompletion(
 					citations: citations.length ? citations : null,
 				});
 			},
-			onCitations: (chunkIds: number[]) => {
-				citations = [...citations, ...chunkIds];
-				// Update message immediately when citations arrive
+			onCitations: (citationIds: number[]) => {
+				citations = [...citations, ...citationIds];
 				updateMessage({
 					chat: currentChat,
 					messageId,
 					content: currentText,
 					citations: citations.length ? citations : null,
 				});
-				// Cache the citations now
-				if (chunkIds.length) {
-					ensureCached(chunkIds);
+				if (citationIds.length) {
+					ensureCached(citationIds);
 				}
-			},
-			onParlaCitations: (parlaCitations: CitationWithDetails[]) => {
-				const { storeParlaCitations } = useCitationsStore.getState();
-				storeParlaCitations(parlaCitations);
-
-				// Add Parla citation IDs to the citations array
-				const parlaIds = parlaCitations
-					.map((c) => c.id)
-					.filter((id): id is string => !!id);
-				citations = [...citations, ...parlaIds];
-
-				// Update message with all citations
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-				});
 			},
 			onFinish: () => {
 				setStatus("idle");
@@ -189,8 +167,7 @@ function processStreamLine(
 	line: string,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
-		onParlaCitations: (parlaCitations: CitationWithDetails[]) => void;
+		onCitations: (citationIds: number[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -218,11 +195,6 @@ function processStreamLine(
 			return false;
 		}
 
-		if (event.type === "data-parla-citations") {
-			callbacks.onParlaCitations(event.data);
-			return false;
-		}
-
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -236,8 +208,7 @@ async function parseStream(
 	body: ReadableStream<Uint8Array>,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
-		onParlaCitations: (parlaCitations: CitationWithDetails[]) => void;
+		onCitations: (citationIds: number[]) => void;
 		onFinish: () => void;
 	},
 ) {

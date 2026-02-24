@@ -28,7 +28,7 @@ export type ChatMessage = {
 	allowed_folder_ids: number[] | null;
 	chat_id: number;
 	content: string;
-	citations: (number | string)[] | null;
+	citations: number[] | null;
 	created_at: string;
 	id: number;
 	role: string;
@@ -82,7 +82,7 @@ export type User = {
 };
 
 export type CitationWithDetails = {
-	id?: string;
+	citationId: number;
 	snippet: string;
 	page: number;
 	fileName: string;

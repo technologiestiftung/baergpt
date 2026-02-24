@@ -4,50 +4,24 @@ import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-s
 import type { CitationWithDetails } from "../common";
 
 type CitationsStore = {
-	citationByChunkId: Record<number, CitationWithDetails>;
-	parlaCitationsById: Record<string, CitationWithDetails>;
-	ensureCached: (chunkIds: number[]) => Promise<void>;
-	storeParlaCitations: (parlaCitations: CitationWithDetails[]) => void;
-	getCitation: (citationId: number | string) => CitationWithDetails | undefined;
+	citationById: Record<number, CitationWithDetails>;
+	ensureCached: (citationIds: number[]) => Promise<void>;
+	getCitation: (citationId: number) => CitationWithDetails | undefined;
 };
 
 export const useCitationsStore = create<CitationsStore>()((set, get) => ({
-	citationByChunkId: {},
-	parlaCitationsById: {},
+	citationById: {},
 
 	getCitation: (citationId) => {
-		const state = get();
-
-		// Check if it's a Parla citation (string ID)
-		if (typeof citationId === "string") {
-			return state.parlaCitationsById[citationId];
-		}
-
-		// Otherwise, it's a chunk ID from the database
-		const cached = state.citationByChunkId[citationId];
-		if (cached) {
-			return cached;
-		}
-		return undefined;
+		return get().citationById[citationId];
 	},
 
-	storeParlaCitations(parlaCitations) {
-		const { parlaCitationsById } = get();
-		const merged = { ...parlaCitationsById };
-		parlaCitations.forEach((citation) => {
-			if (citation.id) {
-				merged[citation.id] = citation;
-			}
-		});
-		set({ parlaCitationsById: merged });
-	},
-
-	async ensureCached(chunkIds) {
-		const { citationByChunkId } = get();
+	async ensureCached(citationIds) {
+		const { citationById } = get();
 		const { setStatus } = useInferenceLoadingStatusStore.getState();
 
-		const unique = Array.from(new Set(chunkIds));
-		const missing = unique.filter((id) => !citationByChunkId[id]);
+		const unique = Array.from(new Set(citationIds));
+		const missing = unique.filter((id) => !citationById[id]);
 		if (missing.length === 0) {
 			return;
 		}
@@ -55,11 +29,11 @@ export const useCitationsStore = create<CitationsStore>()((set, get) => ({
 		setStatus("loading-citations");
 
 		const details = await getCitationDetails(missing);
-		const merged = { ...citationByChunkId };
+		const mergedCitations = { ...citationById };
 		details.forEach((detail) => {
-			merged[detail.chunkId] = detail;
+			mergedCitations[detail.citationId] = detail;
 		});
-		set({ citationByChunkId: merged });
+		set({ citationById: mergedCitations });
 
 		setStatus("idle");
 	},
