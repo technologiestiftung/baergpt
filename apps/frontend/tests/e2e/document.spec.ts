@@ -807,4 +807,72 @@ test.describe("Documents", () => {
 			await expect(uploadButton).toBeDisabled();
 		},
 	);
+
+	testDesktopOnly(
+		"Hidden default documents do not count toward upload limit",
+		async ({ page, account, session }) => {
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
+			// Relies on db:upload-default-documents (or seed) providing one default doc, e.g. BaerGPT-Handbuch.pdf
+			const seedDefaultDocumentName = "BaerGPT-Handbuch.pdf";
+
+			// Fixture has 1 personal doc; mock 28 more → 29 personal. With 1 seed default = 30 visible (at limit)
+			for (let i = 1; i < maxFiles - 1; i++) {
+				await mockDocumentUpload({
+					userId: account.id,
+					accessToken: session.access_token,
+					accessGroupId: null,
+					fileName: `test-document-edge-${i}.pdf`,
+					filePath: defaultDocumentPath,
+					sourceType: defaultSourceType,
+					bucketName: defaultBucketName,
+				});
+			}
+
+			await page.goto("/");
+			await page.waitForLoadState("networkidle");
+
+			const desktopPanel = page.locator("#desktop-documents-panel");
+
+			// At 30 visible → limit reached
+			await expect(
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
+			).toBeVisible();
+			const uploadButton = desktopPanel.getByRole("button", {
+				name: "Datei hochladen",
+			});
+			await expect(uploadButton).toBeDisabled();
+
+			// Delete (hide) the seed default document via UI → 29 visible, one slot free
+			await deleteFileViaUI({ page, fileName: seedDefaultDocumentName });
+
+			// Wait for document list refetch and UI to reflect 29 visible (hidden default no longer counted)
+			await expect(
+				desktopPanel.getByText(`${maxFiles - 1} von ${maxFiles}`),
+			).toBeVisible({ timeout: 15_000 });
+			await expect(uploadButton).toBeEnabled();
+
+			// Upload the 30th (visible) file (setInputFiles
+			const fileInput = page.locator('input[type="file"]').first();
+			await fileInput.setInputFiles(secondaryDocumentPath);
+
+			await page.waitForResponse(
+				(res) =>
+					res.url().includes("/documents/process") &&
+					res.request().method() === "POST",
+				{ timeout: 60_000 },
+			);
+
+			await page.waitForLoadState("networkidle");
+
+			// Now at 30 visible → limit reached again
+			await expect(
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
+			).toBeVisible();
+			await expect(uploadButton).toBeDisabled();
+		},
+	);
 });
