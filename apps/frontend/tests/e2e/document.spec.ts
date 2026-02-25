@@ -24,6 +24,7 @@ import {
 	secondaryDocumentName,
 	secondaryDocumentPath,
 	secondaryDocumentType,
+	seedDefaultDocumentName,
 } from "../constants.ts";
 
 test.describe("Documents", () => {
@@ -813,7 +814,6 @@ test.describe("Documents", () => {
 		async ({ page, account, session }) => {
 			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
 			// Relies on db:upload-default-documents (or seed) providing one default doc, e.g. BaerGPT-Handbuch.pdf
-			const seedDefaultDocumentName = "BaerGPT-Handbuch.pdf";
 
 			// Fixture has 1 personal doc; mock 28 more → 29 personal. With 1 seed default = 30 visible (at limit)
 			for (let i = 1; i < maxFiles - 1; i++) {
@@ -853,7 +853,7 @@ test.describe("Documents", () => {
 			).toBeVisible({ timeout: 15_000 });
 			await expect(uploadButton).toBeEnabled();
 
-			// Upload the 30th (visible) file (setInputFiles
+			// Upload the 30th visible file using setInputFiles to simulate user file selection
 			const fileInput = page.locator('input[type="file"]').first();
 			await fileInput.setInputFiles(secondaryDocumentPath);
 
