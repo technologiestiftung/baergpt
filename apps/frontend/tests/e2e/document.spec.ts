@@ -26,6 +26,7 @@ import {
 	secondaryDocumentType,
 	seedDefaultDocumentName,
 } from "../constants.ts";
+import { supabaseAdminClient } from "../supabase.ts";
 
 test.describe("Documents", () => {
 	testDesktopOnly(
@@ -813,9 +814,32 @@ test.describe("Documents", () => {
 		"Hidden default documents do not count toward upload limit",
 		async ({ page, account, session }) => {
 			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
-			// Relies on db:upload-default-documents (or seed) providing one default doc, e.g. BaerGPT-Handbuch.pdf
 
-			// Fixture has 1 personal doc; mock 28 more → 29 personal. With 1 seed default = 30 visible (at limit)
+			// Get the "Alle" access group ID for creating default documents
+			const { data: accessGroup, error: accessGroupError } =
+				await supabaseAdminClient
+					.from("access_groups")
+					.select("id")
+					.eq("name", "Alle")
+					.single();
+
+			expect(accessGroupError).toBeNull();
+			if (!accessGroup) {
+				throw new Error("Failed to get default access group");
+			}
+
+			// Create a mock default document
+			await mockDocumentUpload({
+				userId: account.id,
+				accessToken: session.access_token,
+				accessGroupId: accessGroup.id,
+				fileName: seedDefaultDocumentName,
+				filePath: defaultDocumentPath,
+				sourceType: "default_document" as const,
+				bucketName: "public_documents",
+			});
+
+			// Fixture has 1 personal doc; mock 28 more → 29 personal. With 1 default (created above) = 30 visible (at limit)
 			for (let i = 1; i < maxFiles - 1; i++) {
 				await mockDocumentUpload({
 					userId: account.id,
