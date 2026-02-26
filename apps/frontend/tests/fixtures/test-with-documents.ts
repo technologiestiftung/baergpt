@@ -427,6 +427,12 @@ async function cleanup(userId: string) {
 		.eq("user_id", userId);
 	expect(deleteFoldersError).toBeNull();
 
+	const { error: deleteHiddenDefaultsError } = await supabaseAdminClient
+		.from("user_hidden_default_documents")
+		.delete()
+		.eq("user_id", userId);
+	expect(deleteHiddenDefaultsError).toBeNull();
+
 	const { error: deleteDocumentChunksError } = await supabaseAdminClient
 		.from("document_chunks")
 		.delete()
