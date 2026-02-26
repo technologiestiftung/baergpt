@@ -32,18 +32,28 @@ The setup uses:
 
 ### 1. Environment Variables (1Password)
 
-The `.op.env` file contains references to secrets stored in 1Password:
+Each environment has its own secrets file. Copy the example and fill in your 1Password references:
 
 ```bash
-# Example structure (see .op.env.example)
+cp ansible/.op.env.staging.example ansible/.op.env.staging
+cp ansible/.op.env.production.example ansible/.op.env.production
+```
+
+The file contains references to secrets stored in 1Password:
+
+```bash
+# Example structure (see .op.env.staging.example)
 STACKIT_PROJECT_ID=op://vault/item/field
 STACKIT_SERVICE_ACCOUNT_JSON=op://vault/item/field
-ENV_FILE_REF=op://vault/item/field
+ENV_FILE_REF=vault/item/field   # no op:// prefix — resolved by op read internally
+ANSIBLE_SSH_KEY=op://vault/item/field
 DOMAIN=example.berlin
 LETSENCRYPT_EMAIL=example@example.berlin
 ```
 
-The `ENV_FILE_REF` reference should point to a complete Supabase `.env` file containing all required variables:
+> **Note:** `ENV_FILE_REF` must **not** have the `op://` prefix. It is passed as a plain string and used internally by `op read` during the playbook run.
+
+The `ENV_FILE_REF` reference should point to a complete Supabase `.env` document in 1Password containing all required variables:
 
 - Database credentials (POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB)
 - JWT configuration (JWT_SECRET, JWT_EXPIRY, ANON_KEY, SERVICE_ROLE_KEY)
@@ -64,37 +74,40 @@ Key variables are defined in `ansible/group_vars/all.yml`:
 
 ### 3. Inventory
 
-Server configuration is in `ansible/inventory/hosts.yml` - defines the target host(s). You will need to set this.
+Per-environment inventory files live in `ansible/inventory/`:
+
+- `staging.yml` — staging server
+- `production.yml` — production server
 
 ## Running the Deployment
 
 ### Full Deployment
 
-To provision and deploy Supabase with all secrets injected from 1Password:
-
 ```bash
 cd ansible
-op run --env-file=.op.env -- ansible-playbook -i inventory/hosts.yml site.yml
+
+# Staging
+op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml site.yml
+
+# Production
+op run --env-file .op.env.production -- ansible-playbook -i inventory/production.yml site.yml
 ```
 
-This will:
+This will provision the server with:
 
-1. Load 1Password secret references from `.op.env`
-2. Resolve them to actual secret values
-3. Run the ansible playbook with injected environment variables
-4. Provision the server with:
-   - Common utilities
-   - Docker
-   - Supabase stack
-   - SSL certificates (certbot)
-   - Nginx reverse proxy
+1. Common utilities
+2. Docker
+3. Supabase stack (docker-compose + .env from 1Password)
+4. SSL certificates (certbot) with pre/post renewal hooks for nginx
+5. Nginx reverse proxy
+6. `migrations` system user with SSH access and Docker wrapper scripts
 
 ### Dry Run
 
 To see what would change without making actual changes:
 
 ```bash
-op run --env-file=.op.env -- ansible-playbook -i inventory/hosts.yml site.yml --check
+op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml site.yml --check --diff
 ```
 
 ### Verbose Output
@@ -102,7 +115,7 @@ op run --env-file=.op.env -- ansible-playbook -i inventory/hosts.yml site.yml --
 For debugging, add verbosity flags:
 
 ```bash
-op run --env-file=.op.env -- ansible-playbook -i inventory/hosts.yml site.yml -vv
+op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml site.yml -vv
 ```
 
 ## Custom Docker Compose

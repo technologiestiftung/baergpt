@@ -1,0 +1,3 @@
+#!/bin/bash
+set -euo pipefail
+{% raw %}/usr/bin/docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' supabase-db{% endraw %}

@@ -26,14 +26,13 @@
     force: true
 
 - name: Render .env from 1Password (local)
-  ansible.builtin.copy:
-    content: "{{ lookup('env','ENV_FILE_REF') }}"
-    dest: "{{ playbook_dir }}/../staging/.env"
-    mode: "0640"
+  ansible.builtin.command:
+    cmd: "op read 'op://{{ lookup('env', 'ENV_FILE_REF') }}' --out-file {{ playbook_dir }}/../staging/.env --force"
   delegate_to: localhost
   run_once: true
   become: false
   no_log: true
+  check_mode: false
 
 - name: Upload resolved .env
   ansible.builtin.copy:

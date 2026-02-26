@@ -44,10 +44,32 @@
   args:
     creates: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
 
-- name: Add cron for renewals (randomized sleep)
+- name: Ensure certbot renewal pre-hook dir exists
+  ansible.builtin.file:
+    path: /etc/letsencrypt/renewal-hooks/pre
+    state: directory
+    mode: "0755"
+
+- name: Write certbot pre-hook to stop nginx
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/pre/stop-nginx.sh
+    content: |
+      #!/bin/bash
+      systemctl stop nginx
+    mode: "0755"
+
+- name: Write certbot post-hook to start nginx
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/post/start-nginx.sh
+    content: |
+      #!/bin/bash
+      systemctl start nginx
+    mode: "0755"
+
+- name: Schedule certbot renewal
   ansible.builtin.cron:
-    name: "Certbot renew"
-    user: "root"
+    name: "Certbot renewx"
     minute: "0"
-    hour: "0,12"
-    job: "sleep $((RANDOM%3601)) && /usr/bin/certbot renew -q"
+    hour: "2"
+    job: "/opt/certbot/bin/certbot renew --quiet"
+    user: root

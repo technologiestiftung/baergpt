@@ -8,3 +8,4 @@
     - supabase
     - certbot
     - nginx
+    - migrations_user
