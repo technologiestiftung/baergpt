@@ -63,7 +63,7 @@ export abstract class BaseContentDbService {
 	}
 
 	async saveExternalCitations(
-		messageId: number,
+		_messageId: number,
 		citations: Array<{
 			id?: string;
 			snippet: string;
@@ -78,22 +78,41 @@ export abstract class BaseContentDbService {
 			return;
 		}
 
-		const rows = citations.map((citation) => ({
+		// Deduplicate citations by ID to avoid duplicate key errors
+		const uniqueCitations = Array.from(
+			new Map(citations.map((c) => [c.id, c])).values(),
+		);
+
+		const rows = uniqueCitations.map((citation) => ({
 			id: citation.id,
-			message_id: messageId,
 			snippet: citation.snippet,
 			page: citation.page,
 			file_name: citation.fileName,
 			source_url: citation.sourceUrl,
 			created_at: citation.createdAt,
 			source_type: citation.sourceType,
-		}));
+		})) as Array<{
+			id: string;
+			snippet: string;
+			page: number;
+			file_name: string;
+			source_url: string;
+			created_at: string;
+			source_type: string;
+		}>;
 
-		const { error } = await this.client.from("external_citations").insert(rows);
+		// Insert citations one by one
+		// We can't use upsert because it requires SELECT permission on existing rows,
+		// which our RLS policy doesn't grant until citations are linked to messages
+		for (const row of rows) {
+			const { error } = await this.client
+				.from("external_citations")
+				.insert(row);
 
-		if (error) {
-			captureError(error);
-			console.error("Failed to save external citations:", error);
+			if (error) {
+				captureError(error);
+				console.error("Failed to save external citations:", error);
+			}
 		}
 	}
 

@@ -92,11 +92,6 @@ BEGIN
                 VALUES (msg.id, ARRAY[citation_element::text::integer])
                 RETURNING id INTO new_citation_id;
                 migrated_citations := migrated_citations + 1;
-            ELSIF jsonb_typeof(citation_element) = 'string' THEN
-                INSERT INTO public.chat_message_citations (message_id, external_citation_ids)
-                VALUES (msg.id, ARRAY[citation_element #>> '{}'])
-                RETURNING id INTO new_citation_id;
-                migrated_citations := migrated_citations + 1;
             ELSE
                 skipped_elements := skipped_elements + 1;
                 CONTINUE;
@@ -104,10 +99,6 @@ BEGIN
 
             new_citation_ids := array_append(new_citation_ids, new_citation_id);
         END LOOP;
-
-        UPDATE public.chat_messages
-        SET citations = to_jsonb(new_citation_ids)
-        WHERE id = msg.id;
 
         migrated_messages := migrated_messages + 1;
     END LOOP;
@@ -117,9 +108,47 @@ BEGIN
 END;
 $$;
 
--- 3. Replace get_citation_details to resolve both document chunks and external citations
-DROP FUNCTION IF EXISTS get_citation_details (INTEGER[]);
+-- 2.5 Create policies using the link via chat_message_citations
+CREATE POLICY select_external_citations_policy ON public.external_citations FOR
+SELECT
+    USING (
+        EXISTS (
+            SELECT
+                1
+            FROM
+                public.chat_message_citations cmc
+                JOIN public.chat_messages cm ON cm.id = cmc.message_id
+                JOIN public.chats c ON c.id = cm.chat_id
+            WHERE
+                public.external_citations.id = ANY (cmc.external_citation_ids)
+                AND c.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
+        )
+    );
 
+-- 2.6 Create trigger to cascade delete external citations when chat_message_citations are deleted
+CREATE OR REPLACE FUNCTION delete_referenced_external_citations () RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.external_citation_ids IS NOT NULL AND array_length(OLD.external_citation_ids, 1) > 0 THEN
+        DELETE FROM public.external_citations WHERE id = ANY(OLD.external_citation_ids);
+    END IF;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET
+    search_path = '';
+
+DROP TRIGGER IF EXISTS trigger_delete_external_citations ON chat_message_citations;
+
+CREATE TRIGGER trigger_delete_external_citations
+AFTER DELETE ON chat_message_citations FOR EACH ROW
+EXECUTE FUNCTION delete_referenced_external_citations ();
+
+-- 3. Create function to get citation details for given citation IDs
+-- This function accepts citation_ids from the chat_message_citations table
+-- and returns details by joining to either document_chunks or external_citations
 CREATE OR REPLACE FUNCTION get_citation_details (citation_ids BIGINT[]) RETURNS TABLE (
     citation_id BIGINT,
     file_name TEXT,

@@ -1068,7 +1068,6 @@ describe("Integration tests for DB", async () => {
 						.from("external_citations")
 						.insert({
 							id: givenExternalCitationId,
-							message_id: givenMessageId,
 							snippet: givenExternalSnippet,
 							page: givenExternalPage,
 							file_name: givenExternalFileName,
@@ -1115,7 +1114,6 @@ describe("Integration tests for DB", async () => {
 						.from("external_citations")
 						.insert({
 							id: givenExternalCitationId,
-							message_id: givenMessageId,
 							snippet: givenExternalSnippet,
 							page: givenExternalPage,
 							file_name: givenExternalFileName,
@@ -1168,7 +1166,6 @@ describe("Integration tests for DB", async () => {
 						.from("external_citations")
 						.insert({
 							id: givenExternalCitationId,
-							message_id: givenMessageId,
 							snippet: givenExternalSnippet,
 							page: givenExternalPage,
 							file_name: givenExternalFileName,
@@ -1215,7 +1212,7 @@ describe("Integration tests for DB", async () => {
 					expect(actualCitationDetails).toHaveLength(2);
 
 					const chunkCitation = actualCitationDetails?.find(
-						(c: { citation_id: number }) =>
+						(c: { citation_id?: number }) =>
 							c.citation_id === chunkCitationRow.id,
 					);
 					expect(chunkCitation).toMatchObject({
@@ -1226,7 +1223,7 @@ describe("Integration tests for DB", async () => {
 					});
 
 					const externalCitation = actualCitationDetails?.find(
-						(c: { citation_id: number }) =>
+						(c: { citation_id?: number }) =>
 							c.citation_id === externalCitationRow.id,
 					);
 					expect(externalCitation).toMatchObject({
@@ -1241,8 +1238,8 @@ describe("Integration tests for DB", async () => {
 				});
 			});
 
-			describe("invalid args", () => {
-				it("should return no citation details when given an empty array", async () => {
+			describe("when message has no citations", () => {
+				it("should return no citation details", async () => {
 					await supabaseAnonClient.auth.signInWithPassword({
 						email: givenUserEmail,
 						password: givenUserPassword,
@@ -1255,10 +1252,100 @@ describe("Integration tests for DB", async () => {
 						},
 					);
 
-					const expectedCitationDetails = [];
+					const expectedCitationDetails: unknown[] = [];
 
 					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
 				});
+			});
+		});
+
+		describe("chat_message_citations RLS policies", () => {
+			let userChatId: number;
+			let userMessageId: number;
+
+			beforeEach(async () => {
+				// Sign in as user
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: givenUserEmail,
+					password: givenUserPassword,
+				});
+
+				// Create a chat for the user
+				const { data: chatData, error: chatError } = await supabaseAnonClient
+					.from("chats")
+					.insert({
+						name: "Test Chat",
+						user_id: givenUserId,
+					})
+					.select("id")
+					.single();
+
+				if (chatError) {
+					throw chatError;
+				}
+				userChatId = chatData.id;
+
+				// Create a message for the user
+				const { data: messageData, error: messageError } =
+					await supabaseAnonClient
+						.from("chat_messages")
+						.insert({
+							chat_id: userChatId,
+							role: "user",
+							content: "Test message",
+							type: "text",
+						})
+						.select("id")
+						.single();
+
+				if (messageError) {
+					throw messageError;
+				}
+				userMessageId = messageData.id;
+			});
+
+			afterEach(async () => {
+				if (userChatId) {
+					await serviceRoleDbClient.from("chats").delete().eq("id", userChatId);
+				}
+			});
+
+			it("should allow a user to insert citations for their own message", async () => {
+				const { error } = await supabaseAnonClient
+					.from("chat_message_citations")
+					.insert({
+						message_id: userMessageId,
+						external_citation_ids: ["test-citation-1"],
+					});
+				expect(error).toBeNull();
+			});
+
+			it("should allow a user to delete citations for their own message", async () => {
+				const { data: citation, error: insertError } = await supabaseAnonClient
+					.from("chat_message_citations")
+					.insert({
+						message_id: userMessageId,
+						external_citation_ids: ["test-citation-2"],
+					})
+					.select("id")
+					.single();
+				expect(insertError).toBeNull();
+				if (!citation) {
+					throw new Error("Citation creation failed");
+				}
+
+				const { error: deleteError } = await supabaseAnonClient
+					.from("chat_message_citations")
+					.delete()
+					.eq("id", citation.id);
+				expect(deleteError).toBeNull();
+
+				// Verify deletion
+				const { count } = await serviceRoleDbClient
+					.from("chat_message_citations")
+					.select("*", { count: "exact", head: true })
+					.eq("id", citation.id);
+				expect(count).toBe(0);
 			});
 		});
 	});

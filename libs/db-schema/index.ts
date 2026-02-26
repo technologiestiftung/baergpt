@@ -409,7 +409,6 @@ export type Database = {
 					created_at: string;
 					file_name: string;
 					id: string;
-					message_id: number;
 					page: number;
 					snippet: string;
 					source_type: string;
@@ -419,7 +418,6 @@ export type Database = {
 					created_at: string;
 					file_name: string;
 					id: string;
-					message_id: number;
 					page: number;
 					snippet: string;
 					source_type?: string;
@@ -429,21 +427,12 @@ export type Database = {
 					created_at?: string;
 					file_name?: string;
 					id?: string;
-					message_id?: number;
 					page?: number;
 					snippet?: string;
 					source_type?: string;
 					source_url?: string;
 				};
-				Relationships: [
-					{
-						foreignKeyName: "external_citations_message_id_fkey";
-						columns: ["message_id"];
-						isOneToOne: false;
-						referencedRelation: "chat_messages";
-						referencedColumns: ["id"];
-					},
-				];
+				Relationships: [];
 			};
 			favorite_documents: {
 				Row: {
@@ -620,18 +609,31 @@ export type Database = {
 					tags: string[];
 				}[];
 			};
-			get_citation_details: {
-				Args: { citation_ids: number[] };
-				Returns: {
-					citation_id: number;
-					created_at: string;
-					file_name: string;
-					page: number;
-					snippet: string;
-					source_type: string;
-					source_url: string;
-				}[];
-			};
+			get_citation_details:
+				| {
+						Args: { chunk_ids: number[] };
+						Returns: {
+							chunk_id: number;
+							created_at: string;
+							file_name: string;
+							page: number;
+							snippet: string;
+							source_type: string;
+							source_url: string;
+						}[];
+				  }
+				| {
+						Args: { citation_ids: number[] };
+						Returns: {
+							citation_id: number;
+							created_at: string;
+							file_name: string;
+							page: number;
+							snippet: string;
+							source_type: string;
+							source_url: string;
+						}[];
+				  };
 			get_maintenance_mode_status: { Args: never; Returns: boolean };
 			get_users: {
 				Args: never;
