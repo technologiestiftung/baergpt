@@ -518,7 +518,6 @@ test.describe("Chat", () => {
 					.from("external_citations")
 					.insert({
 						id: externalCitationId,
-						message_id: messageId,
 						snippet: externalSnippet,
 						page: externalPage,
 						file_name: externalFileName,
