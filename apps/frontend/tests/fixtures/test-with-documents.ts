@@ -424,13 +424,6 @@ export async function deleteFileViaUI({
 }
 
 async function cleanup(userId: string) {
-	// Clean up personal documents owned by this user
-	const { error: deleteDocumentsError } = await supabaseAdminClient
-		.from("documents")
-		.delete()
-		.eq("owned_by_user_id", userId);
-	expect(deleteDocumentsError).toBeNull();
-
 	// Delete hidden default documents FIRST (before deleting the documents they reference)
 	const { error: deleteHiddenDefaultsError } = await supabaseAdminClient
 		.from("user_hidden_default_documents")
@@ -438,12 +431,20 @@ async function cleanup(userId: string) {
 		.eq("user_id", userId);
 	expect(deleteHiddenDefaultsError).toBeNull();
 
+	// Clean up personal documents owned by this user
+	const { error: deleteDocumentsError } = await supabaseAdminClient
+		.from("documents")
+		.delete()
+		.eq("owned_by_user_id", userId);
+	expect(deleteDocumentsError).toBeNull();
+
 	// Clean up default documents uploaded by this user (for access groups)
 	const { data: accessGroupDocuments, error: getAccessGroupDocsError } =
 		await supabaseAdminClient
 			.from("documents")
 			.select("id, source_url")
-			.eq("uploaded_by_user_id", userId);
+			.eq("uploaded_by_user_id", userId)
+			.eq("source_type", "default_document");
 	expect(getAccessGroupDocsError).toBeNull();
 
 	if (accessGroupDocuments && accessGroupDocuments.length > 0) {
@@ -466,7 +467,7 @@ async function cleanup(userId: string) {
 		const { error: deleteAccessGroupDocsError } = await supabaseAdminClient
 			.from("documents")
 			.delete()
-			.eq("uploaded_by_user_id", userId);
+			.in("id", accessGroupDocIds);
 		expect(deleteAccessGroupDocsError).toBeNull();
 
 		// Delete files from storage
