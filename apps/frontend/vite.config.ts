@@ -20,6 +20,9 @@ export default defineConfig({
 	base: "/",
 	define: {
 		"import.meta.env.VITE_VERCEL_ENV": JSON.stringify(process.env.VERCEL_ENV),
+		"import.meta.env.VITE_BUILD_TIMESTAMP": JSON.stringify(
+			Date.now().toString(),
+		),
 	},
 	server: {
 		port: parseInt(process.env.VITE_PORT || "5173", 10),

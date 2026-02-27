@@ -32,12 +32,11 @@ test.describe("Chat", () => {
 			// Wait for the AI response with a longer timeout since it involves backend API calls
 			await page.waitForLoadState("networkidle");
 
-			// Wait for the response to appear (2 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(2);
+			const question = page.getByTestId("user-message-markdown-container");
+			await expect(question).toBeVisible();
 
-			// Verify the answer is not empty
-			const markdownAnswer = page.locator("div.markdown-container").last();
-			await expect(markdownAnswer).not.toBeEmpty();
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
 
 			if (browserName === "webkit") {
 				return;
@@ -123,15 +122,11 @@ test.describe("Chat", () => {
 			.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 			.click();
 
-		// Wait for the response to appear (2 markdown containers: question + answer)
-		// Use longer timeout since it involves backend API calls
-		await expect(page.locator("div.markdown-container")).toHaveCount(2, {
-			timeout: 60_000,
-		});
+		const question = page.getByTestId("user-message-markdown-container");
+		await expect(question).toBeVisible();
 
-		// Verify the answer is not empty
-		const markdownAnswer = page.locator("div.markdown-container").last();
-		await expect(markdownAnswer).not.toBeEmpty();
+		const answer = page.getByTestId("assistant-message-markdown-container");
+		await expect(answer).not.toBeEmpty({ timeout: 60_000 });
 	});
 
 	testDesktopOnly(
@@ -485,15 +480,11 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
-			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle", { timeout: 60_000 });
+			const question = page.getByTestId("user-message-markdown-container");
+			await expect(question).toBeVisible();
 
-			// Wait for the response to appear (2 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(2);
-
-			// Verify the answer is not empty
-			const markdownAnswer = page.locator("div.markdown-container").last();
-			await expect(markdownAnswer).not.toBeEmpty();
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty({ timeout: 60_000 });
 
 			if (browserName === "webkit") {
 				return;
@@ -643,15 +634,15 @@ test.describe("Chat", () => {
 				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
 				.click();
 
-			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
+			const question1 = page
+				.getByTestId("user-message-markdown-container")
+				.first();
+			await expect(question1).toBeVisible();
 
-			// Wait for the response to appear (2 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(2);
-
-			// Verify the answer is not empty
-			const markdownAnswerOne = page.locator("div.markdown-container").last();
-			await expect(markdownAnswerOne).not.toBeEmpty();
+			const answer1 = page
+				.getByTestId("assistant-message-markdown-container")
+				.first();
+			await expect(answer1).not.toBeEmpty({ timeout: 60_000 });
 
 			// Click on the LLM model button
 			await page.getByRole("button", { name: "Schnell" }).click();
@@ -675,12 +666,15 @@ test.describe("Chat", () => {
 			// Wait for the AI response with a longer timeout since it involves backend API calls
 			await page.waitForLoadState("networkidle");
 
-			// Wait for the response to appear (4 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(4);
+			const question2 = page
+				.getByTestId("user-message-markdown-container")
+				.last();
+			await expect(question2).toBeVisible();
 
-			// Verify the answer is not empty
-			const markdownAnswerTwo = page.locator("div.markdown-container").last();
-			await expect(markdownAnswerTwo).not.toBeEmpty();
+			const answer2 = page
+				.getByTestId("assistant-message-markdown-container")
+				.last();
+			await expect(answer2).not.toBeEmpty({ timeout: 60_000 });
 
 			// Click on the LLM model button
 			await page.getByRole("button", { name: "Präzise" }).click();

@@ -26,7 +26,10 @@ export function UserMessage({ message, children }: UserMessageProps) {
 	const foundItems = [...foundFolders, ...foundDocuments];
 
 	return (
-		<div className={`flex flex-col self-end items-end w-full gap-y-1 group`}>
+		<div
+			className={`flex flex-col self-end items-end w-full gap-y-1 group`}
+			data-testid="user-message-markdown-container"
+		>
 			<ChatItemPills items={foundItems} />
 
 			<div className="bg-hellblau-30 px-2.5 rounded-3px w-fit  max-w-[85%] md:max-w-[80%]">
