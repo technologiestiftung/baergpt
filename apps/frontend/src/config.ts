@@ -61,6 +61,14 @@ function parseConfig(env: Record<string, string>) {
 			"Environment variable VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED is missing",
 		);
 	}
+	if (!env.VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED) {
+		throw new Error(
+			"Environment variable VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED is missing",
+		);
+	}
+	if (!env.VITE_SPLASH_CONTENT_URL) {
+		throw new Error("Environment variable VITE_SPLASH_CONTENT_URL is missing");
+	}
 
 	return {
 		env: env.VITE_VERCEL_ENV,
@@ -80,6 +88,9 @@ function parseConfig(env: Record<string, string>) {
 		defaultDocumentProcessingModel: env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
 		featureFlagMcpParlaAllowed:
 			env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
+		featureFlagSplashScreenAllowed:
+			env.VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED === "true",
+		splashContentUrl: env.VITE_SPLASH_CONTENT_URL,
 	};
 }
 export const config = parseConfig(import.meta.env);

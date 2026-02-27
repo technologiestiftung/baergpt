@@ -6,6 +6,7 @@ import {
 import { supabaseAdminClient } from "../supabase.ts";
 import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
+import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
 
 test.describe("Login", () => {
 	testWithRegisteredUser("User Login and Logout", async ({ page, account }) => {
@@ -284,7 +285,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 
 	const changedLastName = "ChangedLastName";
 
-	test.afterEach(async () => {
+	testWithoutSplashScreen.afterEach(async () => {
 		const { data: listUsersData, error: listUsersError } =
 			await supabaseAdminClient.auth.admin.listUsers();
 
@@ -307,7 +308,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		expect(deleteUserError).toBeNull();
 	});
 
-	test("Default Registration Flow", async ({ page }) => {
+	testWithoutSplashScreen("Default Registration Flow", async ({ page }) => {
 		// Go to the registration page
 		await page.goto("/register/");
 
@@ -388,47 +389,48 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		).toBeVisible();
 	});
 
-	test("User with invite link is forwarded to account activation", async ({
-		page,
-	}) => {
-		// invite user via mail
-		const { error: inviteLinkError } =
-			await supabaseAdminClient.auth.admin.inviteUserByEmail(givenUserEmail, {
-				data: {
-					first_name: givenUserFirstName,
-					last_name: givenUserLastName,
-				},
-			});
+	testWithoutSplashScreen(
+		"User with invite link is forwarded to account activation",
+		async ({ page }) => {
+			// invite user via mail
+			const { error: inviteLinkError } =
+				await supabaseAdminClient.auth.admin.inviteUserByEmail(givenUserEmail, {
+					data: {
+						first_name: givenUserFirstName,
+						last_name: givenUserLastName,
+					},
+				});
 
-		expect(inviteLinkError).toBeNull();
+			expect(inviteLinkError).toBeNull();
 
-		// Open the invite link in mail inbucket
-		await page.goto("http://localhost:54324/"); // Inbucket URL
-		await page
-			.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
-			.first()
-			.click();
+			// Open the invite link in mail inbucket
+			await page.goto("http://localhost:54324/"); // Inbucket URL
+			await page
+				.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
+				.first()
+				.click();
 
-		// Clicking on the link should open a new tab
-		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Jetzt registrieren" })
-			.click();
-		const page1 = await popupEvent;
+			// Clicking on the link should open a new tab
+			const popupEvent = page.waitForEvent("popup");
+			await page
+				.locator("#preview-html")
+				.contentFrame()
+				.getByRole("link", { name: "Jetzt registrieren" })
+				.click();
+			const page1 = await popupEvent;
 
-		// check that we are on the account activation page
-		await page1.waitForLoadState("networkidle");
-		await expect(page1).toHaveURL(/\/account-activated/);
+			// check that we are on the account activation page
+			await page1.waitForLoadState("networkidle");
+			await expect(page1).toHaveURL(/\/account-activated/);
 
-		// User E-Mail should be mentioned at the top
-		await expect(
-			page1.getByRole("heading", { name: givenUserEmail }),
-		).toBeVisible();
-	});
+			// User E-Mail should be mentioned at the top
+			await expect(
+				page1.getByRole("heading", { name: givenUserEmail }),
+			).toBeVisible();
+		},
+	);
 
-	test("Default Invite User Flow", async ({ page }) => {
+	testWithoutSplashScreen("Default Invite User Flow", async ({ page }) => {
 		// invite user via mail
 		const { error: inviteLinkError } =
 			await supabaseAdminClient.auth.admin.inviteUserByEmail(givenUserEmail, {

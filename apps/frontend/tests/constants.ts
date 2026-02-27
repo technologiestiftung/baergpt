@@ -107,3 +107,5 @@ export const msExcelDocumentType =
 export const longFileName =
 	"This_is_a_very_long_document_name_that_should_be_truncated.pdf";
 export const longFilePath = resolve(__dirname, `./fixtures/${longFileName}`);
+
+export const VERSION_STORAGE_KEY = "last-seen-version";

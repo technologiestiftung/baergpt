@@ -66,6 +66,15 @@
 		@apply text-[12px];
 	}
 
+	.markdown-container h1 img,
+	.markdown-container h2 img,
+	.markdown-container h3 img,
+	.markdown-container h4 img,
+	.markdown-container h5 img,
+	.markdown-container h6 img {
+		@apply inline-block align-middle mr-2;
+	}
+	
 	.markdown-container a {
 		@apply text-dunkelblau-100 underline hover:text-dunkelblau-200;
 	}

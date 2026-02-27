@@ -1369,6 +1369,9 @@ export const Content = {
 	"userEditModal.form.emailAlreadyInUseError":
 		"Diese E-Mail-Adresse ist bereits in Verwendung.",
 	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",
+	//Splash Modal
+	"splashModal.title": "Was ist neu?",
+	"splashModal.description": "Die wichtigsten Neuerungen im Überblick",
 } as const;
 
 export default Content;

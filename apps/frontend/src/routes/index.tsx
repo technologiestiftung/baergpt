@@ -10,6 +10,8 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
 import { LandingPage } from "../components/landing-page/landing-page.tsx";
+import { SplashModal } from "../components/splash-modal.tsx";
+import { config } from "../config.ts";
 
 export const IndexPage: React.FC = () => {
 	const { session } = useAuthStore();
@@ -32,6 +34,7 @@ export const IndexPage: React.FC = () => {
 						</div>
 					</DndProvider>
 				)}
+				{config.featureFlagSplashScreenAllowed && <SplashModal />}
 			</div>
 		</AppLayout>
 	);
