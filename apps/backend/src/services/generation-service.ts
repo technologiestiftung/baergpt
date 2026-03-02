@@ -335,20 +335,18 @@ export class GenerationService {
 			langfusePrompt,
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
-			isBaseKnowledgeActive,
-			isParlaMCPToolActive,
+			activeTools = [],
 		}: {
 			userId?: string;
 			sessionId?: string;
 			langfusePrompt?: TextPromptClient | ChatPromptClient;
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
-			isBaseKnowledgeActive?: boolean;
-			isParlaMCPToolActive?: boolean;
+			activeTools?: string[];
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
-		if (isBaseKnowledgeActive && userId) {
+		if (activeTools.includes("baseKnowledgeSearchTool") && userId) {
 			knowledgeBaseDocuments =
 				await this.dbService.getBaseKnowledgeDocuments(userId);
 		}
@@ -361,10 +359,9 @@ export class GenerationService {
 		} = await this.getRelevantTools({
 			allowedDocumentIds,
 			allowedFolderIds,
-			isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
+			activeTools,
 			userId,
 			knowledgeBaseDocuments,
-			isParlaMCPToolActive,
 		});
 
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
@@ -712,10 +709,9 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	private async getRelevantTools(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
-		isBaseKnowledgeActive: boolean;
+		activeTools: string[];
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-		isParlaMCPToolActive?: boolean;
 	}): Promise<RelevantTools> {
 		if (!config.featureFlagMcpParlaAllowed) {
 			return this.getRelevantToolsV1(options);
@@ -730,14 +726,14 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	private async getRelevantToolsV1(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
-		isBaseKnowledgeActive: boolean;
+		activeTools: string[];
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
 	}): Promise<RelevantTools> {
 		const {
 			allowedDocumentIds,
 			allowedFolderIds,
-			isBaseKnowledgeActive,
+			activeTools,
 			userId,
 			knowledgeBaseDocuments,
 		} = options;
@@ -763,7 +759,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		// Case 1: Both RAG and base knowledge are active
 		if (
 			hasAllowedDocumentsOrFolders &&
-			isBaseKnowledgeActive &&
+			activeTools.includes("baseKnowledgeSearchTool") &&
 			baseKnowledgeTool
 		) {
 			return {
@@ -796,7 +792,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		}
 
 		// Case 3: Only base knowledge is active
-		if (isBaseKnowledgeActive && baseKnowledgeTool) {
+		if (activeTools.includes("baseKnowledgeSearchTool") && baseKnowledgeTool) {
 			return {
 				tools: {
 					baseKnowledgeSearchTool: baseKnowledgeTool,
@@ -825,18 +821,16 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	private async getRelevantToolsV2(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
-		isBaseKnowledgeActive: boolean;
+		activeTools: string[];
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-		isParlaMCPToolActive?: boolean;
 	}): Promise<RelevantTools> {
 		const {
 			allowedDocumentIds,
 			allowedFolderIds,
-			isBaseKnowledgeActive,
+			activeTools,
 			userId,
 			knowledgeBaseDocuments,
-			isParlaMCPToolActive,
 		} = options;
 
 		const relevantTools: RelevantTools = {
@@ -847,7 +841,10 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			cleanup: async () => {},
 		};
 
-		if (isBaseKnowledgeActive && knowledgeBaseDocuments) {
+		if (
+			activeTools.includes("baseKnowledgeSearchTool") &&
+			knowledgeBaseDocuments
+		) {
 			relevantTools.tools.baseKnowledgeSearchTool = baseKnowledgeSearchTool({
 				knowledgeBaseDocuments,
 				userId,
@@ -871,7 +868,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		}
 
 		// Case 3: Parla MCP Tools are active
-		if (isParlaMCPToolActive) {
+		if (activeTools.includes("parlaMCPTools")) {
 			const parlaMCPToolsResponse = await parlaMCPTools();
 			if (parlaMCPToolsResponse) {
 				relevantTools.tools = {
