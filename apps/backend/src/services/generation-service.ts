@@ -28,6 +28,7 @@ import type { ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
+import { webSearchTool } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
 import { citationAnswerSchema } from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
@@ -867,7 +868,11 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			relevantTools.toolChoice = "auto";
 		}
 
-		// Case 3: Parla MCP Tools are active
+		if (activeTools.includes("webSearchTool")) {
+			relevantTools.tools.webSearchTool = webSearchTool;
+			relevantTools.toolChoice = "auto";
+		}
+
 		if (activeTools.includes("parlaMCPTools")) {
 			const parlaMCPToolsResponse = await parlaMCPTools();
 			if (parlaMCPToolsResponse) {
