@@ -13,6 +13,7 @@ export type WebCitationSource = {
 	url: string;
 	title: string;
 	snippet: string;
+	age?: string[] | null;
 };
 
 type StreamEvent =
