@@ -3,7 +3,7 @@ import { z } from "zod";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 
-type WebSearchResult = {
+export type WebSearchResult = {
 	grounding: {
 		generic: {
 			url: string;
@@ -34,7 +34,7 @@ export const webSearchTool = tool({
 			const res = await fetch(
 				`https://api.search.brave.com/res/v1/llm/context?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
 				{
-					headers: { "X-Subscription-Token": config.braveApiKey },
+					headers: { "X-Subscription-Token": config.braveSearchApiKey },
 					signal,
 				},
 			);
@@ -73,7 +73,9 @@ async function waitForRateLimitReset(headers: Headers): Promise<void> {
 	const rateLimitRemaining = headers.get("X-RateLimit-Remaining");
 	const rateLimitReset = headers.get("X-RateLimit-Reset");
 	if (rateLimitRemaining !== null && parseInt(rateLimitRemaining, 10) === 0 && rateLimitReset) {
-		const waitMs = Math.max(parseInt(rateLimitReset, 10) * 1000 - Date.now(), 0);
+		const firstToken = rateLimitReset.split(",").find((t) => t.trim() !== "")?.trim() ?? "";
+		const seconds = parseInt(firstToken, 10);
+		const waitMs = Math.max(seconds * 1000, 0);
 		await new Promise((resolve) => setTimeout(resolve, waitMs));
 	}
 }
