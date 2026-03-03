@@ -814,19 +814,21 @@ Wenn die Suche keine nützlichen Ergebnisse liefert, teile das transparent mit.
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
 	}): Promise<RelevantTools> {
-		if (!config.featureFlagMcpParlaAllowed) {
-			return this.getRelevantToolsV1(options);
-		}
+		const optionsCopy = { ...options, activeTools: [...options.activeTools] };
 
 		// TODO: Remove this default value once frontend functionality is implemented
 		if (
 			config.featureFlagWebSearchAllowed &&
-			!options.activeTools.includes("webSearchTool")
+			!optionsCopy.activeTools.includes("webSearchTool")
 		) {
-			options.activeTools.push("webSearchTool");
+			optionsCopy.activeTools.push("webSearchTool");
 		}
 
-		return this.getRelevantToolsV2(options);
+		if (!config.featureFlagMcpParlaAllowed) {
+			return this.getRelevantToolsV1(optionsCopy);
+		}
+
+		return this.getRelevantToolsV2(optionsCopy);
 	}
 
 	/**
