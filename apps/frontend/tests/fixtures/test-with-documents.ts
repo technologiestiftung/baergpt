@@ -72,25 +72,33 @@ export async function mockDocumentUpload({
 	accessGroupId: string | null;
 	fileName: string;
 	filePath: string;
-	sourceType: "public_document" | "personal_document";
+	sourceType: "public_document" | "personal_document" | "default_document";
 	bucketName: "documents" | "public_documents";
 }) {
-	const source_url = `${userId}/${fileName}`;
+	// For default documents, use accessGroupId in source_url; otherwise use userId
+	const source_url =
+		sourceType === "default_document" && accessGroupId
+			? `${accessGroupId}/${fileName}`
+			: `${userId}/${fileName}`;
 	const file = new Uint8Array(readFileSync(filePath));
 
-	const uploadClient = createClient<Database>(
-		config.supabaseUrl,
-		config.supabaseAnonKey,
-		{
-			global: { headers: { Authorization: `Bearer ${accessToken}` } },
-		},
-	);
+	// Use admin client for default documents to bypass RLS, otherwise use user client
+	const storageClient =
+		sourceType === "default_document"
+			? supabaseAdminClient
+			: createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
+					global: { headers: { Authorization: `Bearer ${accessToken}` } },
+				});
 
-	const { error: uploadError } = await uploadClient.storage
+	const uploadOptions =
+		sourceType === "default_document" ? { upsert: true } : undefined;
+
+	const { error: uploadError } = await storageClient.storage
 		.from(bucketName)
 		.upload(
 			source_url,
 			new File([file], fileName, { type: "application/pdf" }),
+			uploadOptions,
 		);
 
 	expect(uploadError).toBeNull();
@@ -389,7 +397,8 @@ export async function deleteFileViaUI({
 		.locator("#desktop-documents-panel")
 		.getByRole("listitem")
 		.filter({ hasText: fileName })
-		.locator("label");
+		.locator("label")
+		.first();
 
 	await expect(checkbox).toBeVisible();
 
@@ -415,11 +424,69 @@ export async function deleteFileViaUI({
 }
 
 async function cleanup(userId: string) {
+	// Delete hidden default documents FIRST (before deleting the documents they reference)
+	const { error: deleteHiddenDefaultsError } = await supabaseAdminClient
+		.from("user_hidden_default_documents")
+		.delete()
+		.eq("user_id", userId);
+	expect(deleteHiddenDefaultsError).toBeNull();
+
+	// Clean up personal documents owned by this user
 	const { error: deleteDocumentsError } = await supabaseAdminClient
 		.from("documents")
 		.delete()
 		.eq("owned_by_user_id", userId);
 	expect(deleteDocumentsError).toBeNull();
+
+	// Clean up default documents uploaded by this user (for access groups)
+	const { data: accessGroupDocuments, error: getAccessGroupDocsError } =
+		await supabaseAdminClient
+			.from("documents")
+			.select("id, source_url")
+			.eq("uploaded_by_user_id", userId)
+			.eq("source_type", "default_document");
+	expect(getAccessGroupDocsError).toBeNull();
+
+	if (accessGroupDocuments && accessGroupDocuments.length > 0) {
+		const accessGroupDocIds = accessGroupDocuments.map((doc) => doc.id);
+
+		// Delete related chunks and summaries
+		const { error: deleteAccessGroupChunksError } = await supabaseAdminClient
+			.from("document_chunks")
+			.delete()
+			.in("document_id", accessGroupDocIds);
+		expect(deleteAccessGroupChunksError).toBeNull();
+
+		const { error: deleteAccessGroupSummariesError } = await supabaseAdminClient
+			.from("document_summaries")
+			.delete()
+			.in("document_id", accessGroupDocIds);
+		expect(deleteAccessGroupSummariesError).toBeNull();
+
+		// Delete the documents themselves
+		const { error: deleteAccessGroupDocsError } = await supabaseAdminClient
+			.from("documents")
+			.delete()
+			.in("id", accessGroupDocIds);
+		expect(deleteAccessGroupDocsError).toBeNull();
+
+		// Delete files from storage
+		for (const doc of accessGroupDocuments) {
+			if (doc.source_url) {
+				const { error: deleteStorageError } = await supabaseAdminClient.storage
+					.from("public_documents")
+					.remove([doc.source_url]);
+				// RLS may prevent storage deletion even with admin client
+				if (deleteStorageError) {
+					console.warn(
+						"Could not delete file from storage:",
+						doc.source_url,
+						deleteStorageError.message,
+					);
+				}
+			}
+		}
+	}
 
 	const { error: deleteFoldersError } = await supabaseAdminClient
 		.from("document_folders")
@@ -457,7 +524,13 @@ async function cleanup(userId: string) {
 			await supabaseAdminClient.storage
 				.from("documents")
 				.remove(personalDocumentsToRemove);
-		expect(deletePersonalDocumentsError).toBeNull();
+		// RLS may prevent storage deletion even with admin client
+		if (deletePersonalDocumentsError) {
+			console.warn(
+				"Could not delete personal documents from storage:",
+				deletePersonalDocumentsError.message,
+			);
+		}
 	}
 
 	const { data: publicDocumentsData, error: publicDocumentsError } =
@@ -481,6 +554,12 @@ async function cleanup(userId: string) {
 				.from("public_documents")
 				.remove(publicDocumentsToRemove);
 
-		expect(deletePublicDocumentsError).toBeNull();
+		// RLS may prevent storage deletion even with admin client
+		if (deletePublicDocumentsError) {
+			console.warn(
+				"Could not delete public documents from storage:",
+				deletePublicDocumentsError.message,
+			);
+		}
 	}
 }

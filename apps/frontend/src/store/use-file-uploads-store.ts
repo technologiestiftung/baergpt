@@ -123,10 +123,14 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 	uploadFiles: async (files: File[]) => {
 		const { fileUploads, uploadFile, hideMaxParallelUploadWarning } = get();
-		const { documents } = useDocumentStore.getState();
+		const { documents, deletedDefaultDocumentIds } =
+			useDocumentStore.getState();
 
+		const numberOfUploads = documents.filter(
+			(doc) => !deletedDefaultDocumentIds.includes(doc.id),
+		).length;
 		const availableUploadSlots =
-			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) - documents.length;
+			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) - numberOfUploads;
 		const maxFileUploads = Math.min(
 			availableUploadSlots,
 			Number(import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS),
