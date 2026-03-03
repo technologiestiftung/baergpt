@@ -2,6 +2,7 @@ import React from "react";
 import { Content } from "../../../../content";
 import { DefaultDialog } from "../../../primitives/dialogs/default-dialog.tsx";
 import { CitationItem } from "./citation-item.tsx";
+import { useCitationsStore } from "../../../../store/use-citations-store.ts";
 
 interface CitationsDialogProps {
 	messageId: number | null;
@@ -32,9 +33,15 @@ export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 	messageId,
 	citations,
 }) => {
+	const { getCitations } = useCitationsStore();
+
 	if (!messageId || !citations) {
 		return null;
 	}
+
+	const allCitationDetails = citations.flatMap((citationId) =>
+		getCitations(citationId),
+	);
 
 	return (
 		<DefaultDialog id={`${citationsDialogId}-${messageId}`}>
@@ -55,8 +62,8 @@ export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 					</button>
 				</div>
 				<div className="flex flex-col px-4 pb-4 overflow-y-auto">
-					{citations.map((citationId, index) => (
-						<CitationItem citationId={citationId} key={index} />
+					{allCitationDetails.map((citation, index) => (
+						<CitationItem citation={citation} key={index} />
 					))}
 				</div>
 			</div>

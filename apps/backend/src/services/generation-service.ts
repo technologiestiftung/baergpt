@@ -424,13 +424,9 @@ export class GenerationService {
 		// Save external citations to database
 		if (messageId && allParlaCitations.length > 0) {
 			try {
-				await this.dbService.saveExternalCitations(
-					messageId,
-					allParlaCitations,
-				);
+				await this.dbService.saveExternalCitations(allParlaCitations);
 			} catch (error) {
 				captureError(error);
-				console.error("Failed to save external citations:", error);
 			}
 		}
 
@@ -457,7 +453,9 @@ export class GenerationService {
 									await toolsCleanup();
 								}
 
-								const allCitationIds: number[] = [];
+								let citationId: number | null = null;
+								let documentChunkIds: number[] = [];
+								let externalCitationIds: string[] = [];
 
 								if (allChunkMatches.length > 0) {
 									const availableSources = allChunkMatches.map(
@@ -493,17 +491,9 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 											},
 										});
 
-									if (messageId && object.citations.length > 0) {
-										const chunkCitationRows = object.citations.map(
-											(chunkId: number) => ({
-												documentChunkIds: [chunkId],
-											}),
-										);
-										const ids = await this.dbService.saveChatMessageCitations(
-											messageId,
-											chunkCitationRows,
-										);
-										allCitationIds.push(...ids);
+									// Extract documentChunkIds
+									if (object.citations.length > 0) {
+										documentChunkIds = object.citations;
 									}
 
 									try {
@@ -522,23 +512,38 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 									}
 								}
 
-								if (messageId && allParlaCitations.length > 0) {
-									const externalCitationRows = allParlaCitations
+								// Extract externalCitationIds from allParlaCitations
+								if (allParlaCitations.length > 0) {
+									externalCitationIds = allParlaCitations
 										.filter((c: { id?: string }) => c.id !== undefined)
-										.map((c: { id?: string }) => ({
-											externalCitationIds: [c.id as string],
-										}));
-									const ids = await this.dbService.saveChatMessageCitations(
-										messageId,
-										externalCitationRows,
-									);
-									allCitationIds.push(...ids);
+										.map((c: { id?: string }) => c.id as string);
 								}
 
-								if (allCitationIds.length > 0) {
+								// Save ALL citations in a SINGLE row
+								if (
+									messageId &&
+									(documentChunkIds.length > 0 ||
+										externalCitationIds.length > 0)
+								) {
+									citationId = await this.dbService.saveChatMessageCitations(
+										messageId,
+										{
+											documentChunkIds:
+												documentChunkIds.length > 0
+													? documentChunkIds
+													: undefined,
+											externalCitationIds:
+												externalCitationIds.length > 0
+													? externalCitationIds
+													: undefined,
+										},
+									);
+								}
+
+								if (citationId !== null) {
 									writer.write({
 										type: "data-citations",
-										data: allCitationIds,
+										data: [citationId],
 									});
 								}
 
@@ -548,6 +553,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 									userId,
 									sessionId,
 								});
+
 								// Handle token usage tracking after stream completes
 								if (userId && usage?.totalTokens) {
 									try {

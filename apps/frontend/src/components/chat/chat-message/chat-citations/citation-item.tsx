@@ -4,13 +4,9 @@ import { ParlaDocumentPill } from "./parla-document-pill.tsx";
 import { TruncatedSnippet } from "./truncated-snippet.tsx";
 import removeMarkdown from "remove-markdown";
 import Content from "../../../../content.ts";
-import { useCitationsStore } from "../../../../store/use-citations-store.ts";
+import type { CitationWithDetails } from "../../../../common.ts";
 
-export function CitationItem({ citationId }: { citationId: number }) {
-	const { getCitation } = useCitationsStore();
-
-	const citation = getCitation(citationId);
-
+export function CitationItem({ citation }: { citation: CitationWithDetails }) {
 	if (!citation) {
 		return null;
 	}

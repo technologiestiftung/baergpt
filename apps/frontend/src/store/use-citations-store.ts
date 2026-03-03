@@ -4,24 +4,24 @@ import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-s
 import type { CitationWithDetails } from "../common";
 
 type CitationsStore = {
-	citationById: Record<number, CitationWithDetails>;
+	citationsByRowId: Record<number, CitationWithDetails[]>;
 	ensureCached: (citationIds: number[]) => Promise<void>;
-	getCitation: (citationId: number) => CitationWithDetails | undefined;
+	getCitations: (citationId: number) => CitationWithDetails[];
 };
 
 export const useCitationsStore = create<CitationsStore>()((set, get) => ({
-	citationById: {},
+	citationsByRowId: {},
 
-	getCitation: (citationId) => {
-		return get().citationById[citationId];
+	getCitations: (citationId) => {
+		return get().citationsByRowId[citationId] || [];
 	},
 
 	async ensureCached(citationIds) {
-		const { citationById } = get();
+		const { citationsByRowId } = get();
 		const { setStatus } = useInferenceLoadingStatusStore.getState();
 
 		const unique = Array.from(new Set(citationIds));
-		const missing = unique.filter((id) => !citationById[id]);
+		const missing = unique.filter((id) => !citationsByRowId[id]);
 		if (missing.length === 0) {
 			return;
 		}
@@ -29,11 +29,17 @@ export const useCitationsStore = create<CitationsStore>()((set, get) => ({
 		setStatus("loading-citations");
 
 		const details = await getCitationDetails(missing);
-		const mergedCitations = { ...citationById };
+		const mergedCitations = { ...citationsByRowId };
+
+		// Group citation details by citation_id (row ID)
 		details.forEach((detail) => {
-			mergedCitations[detail.citationId] = detail;
+			if (!mergedCitations[detail.citationId]) {
+				mergedCitations[detail.citationId] = [];
+			}
+			mergedCitations[detail.citationId].push(detail);
 		});
-		set({ citationById: mergedCitations });
+
+		set({ citationsByRowId: mergedCitations });
 
 		setStatus("idle");
 	},

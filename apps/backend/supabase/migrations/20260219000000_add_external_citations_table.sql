@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS external_citations (
     file_name TEXT NOT NULL,
     source_url TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    source_type TEXT NOT NULL DEFAULT 'parla_document',
-    CONSTRAINT check_source_type CHECK (source_type IN ('parla_document'))
+    source_type TEXT NOT NULL DEFAULT 'parla_document'
 );
 
 -- Enable Row Level Security

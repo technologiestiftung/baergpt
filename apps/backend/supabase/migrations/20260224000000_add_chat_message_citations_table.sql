@@ -4,8 +4,7 @@ CREATE TABLE IF NOT EXISTS chat_message_citations (
     message_id BIGINT NOT NULL REFERENCES chat_messages (id) ON DELETE CASCADE,
     document_chunk_ids INTEGER[] NOT NULL DEFAULT '{}',
     external_citation_ids TEXT[] NOT NULL DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT check_single_citation_source CHECK (COALESCE(CARDINALITY(document_chunk_ids), 0) + COALESCE(CARDINALITY(external_citation_ids), 0) <= 1)
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_chat_message_citations_message_id ON chat_message_citations (message_id);

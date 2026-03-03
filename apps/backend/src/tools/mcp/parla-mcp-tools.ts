@@ -100,14 +100,6 @@ function extractParlaCitations(
 			}
 		} catch (error) {
 			captureError(error);
-			const docId = match?.registered_document?.id;
-			const fileName = (
-				match?.registered_document?.metadata?.Titel as string[]
-			)?.[0];
-			console.error(
-				`Failed to extract Parla citation for document ${docId ?? "unknown"}${fileName ? ` (${fileName})` : ""}:`,
-				error,
-			);
 		}
 	}
 
@@ -187,7 +179,7 @@ export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
 										JSON.parse(parsedText);
 									documentMatches = parsed.documentMatches || [];
 								} catch (parseError) {
-									console.error("Failed to parse Parla response:", parseError);
+									captureError(parseError);
 								}
 							}
 						}

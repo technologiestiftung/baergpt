@@ -63,9 +63,8 @@ export abstract class BaseContentDbService {
 	}
 
 	async saveExternalCitations(
-		_messageId: number,
 		citations: Array<{
-			id?: string;
+			id: string;
 			snippet: string;
 			page: number;
 			fileName: string;
@@ -91,58 +90,60 @@ export abstract class BaseContentDbService {
 			source_url: citation.sourceUrl,
 			created_at: citation.createdAt,
 			source_type: citation.sourceType,
-		})) as Array<{
-			id: string;
-			snippet: string;
-			page: number;
-			file_name: string;
-			source_url: string;
-			created_at: string;
-			source_type: string;
-		}>;
+		}));
 
-		// Insert citations one by one
-		// We can't use upsert because it requires SELECT permission on existing rows,
-		// which our RLS policy doesn't grant until citations are linked to messages
-		for (const row of rows) {
-			const { error } = await this.client
-				.from("external_citations")
-				.insert(row);
+		const { error } = await this.client.from("external_citations").insert(rows);
 
-			if (error) {
+		if (error) {
+			// If batch insert fails due to duplicates, insert one by one to save new citations
+			if (error.code === "23505") {
+				for (const row of rows) {
+					const { error: insertError } = await this.client
+						.from("external_citations")
+						.insert(row);
+
+					// Silently skip duplicates, log other errors
+					if (insertError && insertError.code !== "23505") {
+						captureError(insertError);
+					}
+				}
+			} else {
 				captureError(error);
-				console.error("Failed to save external citations:", error);
 			}
 		}
 	}
 
 	async saveChatMessageCitations(
 		messageId: number,
-		citations: Array<{
+		citations: {
 			documentChunkIds?: number[];
 			externalCitationIds?: string[];
-		}>,
-	): Promise<number[]> {
-		if (citations.length === 0) {
-			return [];
+		},
+	): Promise<number | null> {
+		if (
+			(!citations.documentChunkIds ||
+				citations.documentChunkIds.length === 0) &&
+			(!citations.externalCitationIds ||
+				citations.externalCitationIds.length === 0)
+		) {
+			return null;
 		}
-
-		const rows = citations.map((citation) => ({
-			message_id: messageId,
-			document_chunk_ids: citation.documentChunkIds ?? [],
-			external_citation_ids: citation.externalCitationIds ?? [],
-		}));
 
 		const { data, error } = await this.client
 			.from("chat_message_citations")
-			.insert(rows)
-			.select("id");
+			.insert({
+				message_id: messageId,
+				document_chunk_ids: citations.documentChunkIds ?? [],
+				external_citation_ids: citations.externalCitationIds ?? [],
+			})
+			.select("id")
+			.single();
 
 		if (error) {
 			throw error;
 		}
 
-		return (data ?? []).map((row) => row.id);
+		return data.id;
 	}
 
 	/**

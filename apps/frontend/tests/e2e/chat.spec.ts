@@ -100,11 +100,18 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
-		// Find the add-to-chat button for the specific document
-		const addButton = page
+		// Wait for the document list to load and find the document list item
+		const documentListItem = page
 			.getByRole("listitem")
-			.filter({ hasText: defaultDocumentName })
-			.getByLabel("In den Chat");
+			.filter({ hasText: defaultDocumentName });
+
+		await expect(documentListItem).toBeVisible();
+
+		// Hover over the document to reveal the add-to-chat button
+		await documentListItem.hover();
+
+		// Find and click the add-to-chat button
+		const addButton = documentListItem.getByLabel("In den Chat");
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -224,21 +231,23 @@ test.describe("Chat", () => {
 			).toBeVisible();
 
 			// Add the folder and documents to the chat
-			await page
+			const folderListItem = page
 				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("In den Chat")
-				.click();
-			await page
+				.filter({ hasText: givenFolderName });
+			await folderListItem.hover();
+			await folderListItem.getByLabel("In den Chat").click();
+
+			const doc1ListItem = page
 				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat")
-				.click();
-			await page
+				.filter({ hasText: defaultDocumentName });
+			await doc1ListItem.hover();
+			await doc1ListItem.getByLabel("In den Chat").click();
+
+			const doc2ListItem = page
 				.getByRole("listitem")
-				.filter({ hasText: secondaryDocumentName })
-				.getByLabel("In den Chat")
-				.click();
+				.filter({ hasText: secondaryDocumentName });
+			await doc2ListItem.hover();
+			await doc2ListItem.getByLabel("In den Chat").click();
 
 			await expect(
 				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
@@ -289,13 +298,19 @@ test.describe("Chat", () => {
 				});
 			});
 
-			// Find the add-to-chat button for the specific document
-			const addButton = page
+			// Wait for the document list to load and find the document list item
+			const documentListItem = page
 				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat");
+				.filter({ hasText: defaultDocumentName });
 
-			// Click the add-to-chat button
+			await expect(documentListItem).toBeVisible();
+
+			// Hover over the document to reveal the add-to-chat button
+			await documentListItem.hover();
+
+			// Find and click the add-to-chat button
+			const addButton = documentListItem.getByLabel("In den Chat");
+			await expect(addButton).toBeVisible();
 			await addButton.click();
 
 			// Fill in the chat question
@@ -439,14 +454,20 @@ test.describe("Chat", () => {
 				});
 			});
 
-			// Find the add-to-chat button
-			const addButton = page
+			// Wait for the document list to load and find the document list item
+			const documentListItem = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.first()
-				.getByLabel("In den Chat");
+				.first();
 
-			// Click the add-to-chat button
+			await expect(documentListItem).toBeVisible();
+
+			// Hover over the document to reveal the add-to-chat button
+			await documentListItem.hover();
+
+			// Find and click the add-to-chat button
+			const addButton = documentListItem.getByLabel("In den Chat");
+			await expect(addButton).toBeVisible();
 			await addButton.click();
 
 			// Fill in the chat question
