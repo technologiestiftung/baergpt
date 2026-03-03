@@ -4,8 +4,8 @@ import type { ModelMessage, Tool, ToolChoice } from "ai";
 import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
-	generateObject,
 	generateText,
+	Output,
 	stepCountIs,
 	streamText,
 } from "ai";
@@ -24,19 +24,23 @@ import {
 } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
-import type { ParsedPage } from "../types/common";
+import type { ActiveTools, ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import { webSearchTool } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
-import { citationAnswerSchema } from "../schemas/citation-answer-schema";
+import {
+	citationAnswerSchema,
+	webCitationAnswerSchema,
+} from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
+import type { WebSearchResult } from "../tools/web-search";
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
@@ -336,14 +340,14 @@ export class GenerationService {
 			langfusePrompt,
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
-			activeTools = [],
+			activeTools = [] as ActiveTools[],
 		}: {
 			userId?: string;
 			sessionId?: string;
 			langfusePrompt?: TextPromptClient | ChatPromptClient;
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
-			activeTools?: string[];
+			activeTools?: ActiveTools[];
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
@@ -413,6 +417,25 @@ export class GenerationService {
 		const allChunkMatches = generationResult.steps.flatMap((step) =>
 			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
 		);
+
+		const allWebSources = generationResult.steps.flatMap((step) =>
+			step.toolResults.flatMap((tr) => {
+				const generic = tr.output?.grounding
+					?.generic as WebSearchResult["grounding"]["generic"];
+				const sources = tr.output?.sources as WebSearchResult["sources"];
+				if (!generic?.length || !sources) {
+					return [];
+				}
+				return generic.map((item) => ({
+					url: item.url,
+					title: item.title,
+					hostname: sources[item.url].hostname,
+					snippet: item.snippets.find(
+						(s): s is string => typeof s === "string",
+					),
+				}));
+			}),
+		);
 		const newMessages = generationResult.response.messages;
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);
@@ -444,8 +467,8 @@ export class GenerationService {
 										}),
 									);
 
-									const { object, usage: generateObjectUsage } =
-										await generateObject({
+									const { output: citationObject, usage: generateObjectUsage } =
+										await generateText({
 											model: llmHandler.languageModel,
 											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
 											prompt: `Generierte Antwort:
@@ -454,11 +477,13 @@ ${text}
 """
 
 Verfügbare Quellen:
-${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n${s.snippet}`).join("\n\n")}
+${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`).join("\n\n")}
 
 Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
 											temperature: LLM_PARAMETERS.temperature,
-											schema: citationAnswerSchema,
+											output: Output.object({
+												schema: citationAnswerSchema,
+											}),
 											experimental_telemetry: {
 												isEnabled:
 													config.nodeEnv !== "test" &&
@@ -472,7 +497,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 
 									writer.write({
 										type: "data-citations",
-										data: object.citations,
+										data: citationObject.citations,
 									});
 
 									try {
@@ -480,6 +505,59 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 											userId,
 											"num_inference_tokens",
 											generateObjectUsage.totalTokens,
+										);
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inferences",
+											1,
+										);
+									} catch (error) {
+										captureError(error);
+									}
+								}
+								if (allWebSources.length > 0) {
+									const { output: webObject, usage: webCitationUsage } =
+										await generateText({
+											model: llmHandler.languageModel,
+											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Webquellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
+											prompt: `Generierte Antwort:
+"""
+${text}
+"""
+
+Verfügbare Webquellen:
+${allWebSources.map((s) => `[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`).join("\n\n")}
+
+Analysiere die Antwort und identifiziere, welche Webquellen-URLs für die Antwort verwendet wurden. Gib NUR diese URLs als Array zurück.`,
+											temperature: LLM_PARAMETERS.temperature,
+											output: Output.object({
+												schema: webCitationAnswerSchema,
+											}),
+											experimental_telemetry: {
+												isEnabled:
+													config.nodeEnv !== "test" &&
+													config.nodeEnv !== "production",
+												functionId: "web-citation-extraction",
+												metadata: {
+													sessionId: sessionId ? sessionId : "unknown",
+												},
+											},
+										});
+
+									const citedSources = allWebSources.filter((s) =>
+										webObject.citations.some((c) => c.url === s.url),
+									);
+
+									writer.write({
+										type: "data-web-citations",
+										data: citedSources,
+									});
+
+									try {
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inference_tokens",
+											webCitationUsage.totalTokens,
 										);
 										await this.dbService.updateUserColumnValue(
 											userId,
@@ -687,7 +765,30 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		});
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
+		if (config.nodeEnv === "development") {
+			const freeChatPrompt = `
+Du bist ein hilfreicher Assistent mit Zugang zu aktuellen Webinhalten über ein Websuch-Tool.
 
+Aktuelles Datum: ${currentDate}
+
+Antworte immer auf Deutsch. ${addressForm} die Nutzerin bzw. den Nutzer.
+
+Du hast Zugriff auf ein Websuch-Tool (webSearchTool). Nutze es aktiv, wenn:
+- die Frage aktuelle Informationen erfordert (Nachrichten, Preise, Ereignisse, Gesetze, etc.)
+- dein Trainingswissen möglicherweise veraltet ist
+- die Nutzerin / der Nutzer explizit nach aktuellen Informationen fragt
+
+Nenne keine URLs, Domains oder Quellnamen direkt in deiner Antwort. Quellen werden dem Nutzer separat angezeigt.
+Wenn die Suche keine nützlichen Ergebnisse liefert, teile das transparent mit.
+`;
+			return {
+				messages: [
+					{ role: "system", content: freeChatPrompt },
+					...previousMessages,
+				],
+				promptClient: undefined,
+			};
+		}
 		// Always use free-chat prompt
 		const freeChatPromptClient = await langfuse.prompt.get(
 			"free-chat",
@@ -716,6 +817,14 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	}): Promise<RelevantTools> {
 		if (!config.featureFlagMcpParlaAllowed) {
 			return this.getRelevantToolsV1(options);
+		}
+
+		// TODO: Remove this default value once frontend functionality is implemented
+		if (
+			config.featureFlagWebSearchAllowed &&
+			!options.activeTools.includes("webSearchTool")
+		) {
+			options.activeTools.push("webSearchTool");
 		}
 
 		return this.getRelevantToolsV2(options);

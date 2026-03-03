@@ -9,7 +9,12 @@ import { useInferenceLoadingStatusStore } from "../../store/use-inference-loadin
 import { useCitationsStore } from "../../store/use-citations-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 
-export type WebCitationSource = { url: string; title: string; hostname: string; snippet: string };
+export type WebCitationSource = {
+	url: string;
+	title: string;
+	hostname: string;
+	snippet: string;
+};
 
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
@@ -94,7 +99,9 @@ export async function getCompletion(
 					allowed_document_ids: allowedDocumentIds,
 					allowed_folder_ids: selectedFolderIds,
 					is_addressed_formal: user?.is_addressed_formal,
-					active_tools: selectedChatOptions.flatMap((option) => activeToolsDict[option] ?? []),
+					active_tools: selectedChatOptions.flatMap(
+						(option) => activeToolsDict[option] ?? [],
+					),
 					llm_model: selectedLlmModel,
 				}),
 			},
@@ -125,7 +132,7 @@ export async function getCompletion(
 
 		let currentText = "";
 		let citations: number[] = [];
-		let webCitations: WebCitationSource[] = [];
+
 		let hasReceivedText = false;
 
 		await parseStream(response.body, {
@@ -160,14 +167,13 @@ export async function getCompletion(
 					ensureCached(citations);
 				}
 			},
-			onWebCitations: (sources: WebCitationSource[]) => {
-				webCitations = sources;
+			onWebCitations: (webSources: WebCitationSource[]) => {
 				updateMessage({
 					chat: currentChat,
 					messageId,
 					content: currentText,
 					citations: citations.length ? citations : null,
-					web_citations: sources.length ? sources : null,
+					web_citations: webSources.length ? webSources : null,
 				});
 			},
 			onFinish: () => {

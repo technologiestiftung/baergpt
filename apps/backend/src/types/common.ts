@@ -73,11 +73,15 @@ export type ChatMessageBody = {
 	is_addressed_formal: boolean;
 	user_title: string;
 	user_name: string;
-	active_tools: ActiveTools[];	
+	active_tools: ActiveTools[];
 	llm_model: string;
 };
 
-export type ActiveTools = "baseKnowledgeSearchTool" | "ragSearchTool" | "webSearchTool" | "parlaMCPTools";
+export type ActiveTools =
+	| "baseKnowledgeSearchTool"
+	| "ragSearchTool"
+	| "webSearchTool"
+	| "parlaMCPTools";
 
 export type Embedding = {
 	content: string;

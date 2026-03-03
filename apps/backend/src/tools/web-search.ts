@@ -20,9 +20,11 @@ export type WebSearchResult = {
 	};
 };
 
-const EMPTY_RESULT: WebSearchResult = { grounding: { generic: [] }, sources: {} };
+const EMPTY_RESULT: WebSearchResult = {
+	grounding: { generic: [] },
+	sources: {},
+};
 const REQUEST_TIMEOUT_MS = 30_000;
-
 
 export const webSearchTool = tool({
 	description: "Search the web for up-to-date information",
@@ -40,7 +42,9 @@ export const webSearchTool = tool({
 			);
 
 			if (!res.ok) {
-				captureError(new Error(`Brave search failed with status ${res.status}`));
+				captureError(
+					new Error(`Brave search failed with status ${res.status}`),
+				);
 				return EMPTY_RESULT;
 			}
 
@@ -62,8 +66,10 @@ export const webSearchTool = tool({
 	},
 });
 
-
-function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cancel: () => void } {
+function createTimeoutSignal(timeoutMs: number): {
+	signal: AbortSignal;
+	cancel: () => void;
+} {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 	return { signal: controller.signal, cancel: () => clearTimeout(timeoutId) };
@@ -72,8 +78,16 @@ function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cancel: 
 async function waitForRateLimitReset(headers: Headers): Promise<void> {
 	const rateLimitRemaining = headers.get("X-RateLimit-Remaining");
 	const rateLimitReset = headers.get("X-RateLimit-Reset");
-	if (rateLimitRemaining !== null && parseInt(rateLimitRemaining, 10) === 0 && rateLimitReset) {
-		const firstToken = rateLimitReset.split(",").find((t) => t.trim() !== "")?.trim() ?? "";
+	if (
+		rateLimitRemaining !== null &&
+		parseInt(rateLimitRemaining, 10) === 0 &&
+		rateLimitReset
+	) {
+		const firstToken =
+			rateLimitReset
+				.split(",")
+				.find((t) => t.trim() !== "")
+				?.trim() ?? "";
 		const seconds = parseInt(firstToken, 10);
 		const waitMs = Math.max(seconds * 1000, 0);
 		await new Promise((resolve) => setTimeout(resolve, waitMs));
