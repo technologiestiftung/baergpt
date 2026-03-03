@@ -429,7 +429,6 @@ export class GenerationService {
 				return generic.map((item) => ({
 					url: item.url,
 					title: item.title,
-					hostname: sources[item.url].hostname,
 					snippet: item.snippets.find(
 						(s): s is string => typeof s === "string",
 					),

@@ -14,7 +14,6 @@ export type WebSearchResult = {
 	sources: {
 		[url: string]: {
 			title: string;
-			hostname: string;
 			age: string[];
 		};
 	};

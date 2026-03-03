@@ -12,7 +12,6 @@ import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 export type WebCitationSource = {
 	url: string;
 	title: string;
-	hostname: string;
 	snippet: string;
 };
 

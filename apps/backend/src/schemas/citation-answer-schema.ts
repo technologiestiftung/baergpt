@@ -14,7 +14,6 @@ export const webCitationAnswerSchema = z.object({
 			z.object({
 				url: z.string().describe("URL der Webquelle"),
 				title: z.string().describe("Titel der Webquelle"),
-				hostname: z.string().describe("Hostname der Webquelle"),
 				snippet: z.string().describe("Snippet der Webquelle"),
 			}),
 		)
