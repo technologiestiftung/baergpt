@@ -29,7 +29,8 @@ export interface Config {
 	frequencyPenalty: number;
 	featureFlagMcpParlaAllowed: boolean;
 	mcpParlaUrl: string;
-	braveApiKey: string;
+	braveSearchApiKey: string;
+	featureFlagWebSearchAllowed: boolean;
 }
 
 /* eslint-disable-next-line complexity */
@@ -146,5 +147,7 @@ export const config: Config = {
 	featureFlagMcpParlaAllowed:
 		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
-	braveApiKey: process.env.BRAVE_API_KEY,
+	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
+	featureFlagWebSearchAllowed:
+		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 };
