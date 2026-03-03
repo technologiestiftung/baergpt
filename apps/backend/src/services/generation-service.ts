@@ -426,13 +426,24 @@ export class GenerationService {
 				if (!generic?.length || !sources) {
 					return [];
 				}
-				return generic.map((item) => ({
-					url: item.url,
-					title: item.title,
-					snippet: item.snippets.find(
-						(s): s is string => typeof s === "string",
-					),
-				}));
+				return (
+					generic
+						// Filter out items with no snippets
+						.filter(
+							(item) =>
+								item.snippets.find(
+									(s): s is string => typeof s === "string",
+								) !== undefined,
+						)
+						.map((item) => ({
+							url: item.url,
+							title: item.title,
+							snippet: item.snippets.find(
+								(s): s is string => typeof s === "string",
+							) as string,
+							age: sources[item.url]?.age,
+						}))
+				);
 			}),
 		);
 		const newMessages = generationResult.response.messages;
@@ -552,19 +563,21 @@ Analysiere die Antwort und identifiziere, welche Webquellen für die Antwort ver
 										data: citedSources,
 									});
 
-									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											webCitationUsage.totalTokens,
-										);
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
-										);
-									} catch (error) {
-										captureError(error);
+									if (userId) {
+										try {
+											await this.dbService.updateUserColumnValue(
+												userId,
+												"num_inference_tokens",
+												webCitationUsage.totalTokens,
+											);
+											await this.dbService.updateUserColumnValue(
+												userId,
+												"num_inferences",
+												1,
+											);
+										} catch (error) {
+											captureError(error);
+										}
 									}
 								}
 
