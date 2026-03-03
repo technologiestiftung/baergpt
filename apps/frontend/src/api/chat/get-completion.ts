@@ -1,7 +1,7 @@
 import { useChatsStore } from "../../store/use-chats-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
-import type { ChatWithMessages } from "../../common.ts";
+import type { ChatOption, ChatWithMessages } from "../../common.ts";
 import { useDocumentStore } from "../../store/document-store.ts";
 import { useFolderStore } from "../../store/folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
@@ -9,9 +9,18 @@ import { useInferenceLoadingStatusStore } from "../../store/use-inference-loadin
 import { useCitationsStore } from "../../store/use-citations-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 
+export type WebCitationSource = { url: string; title: string; hostname: string; snippet: string };
+
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
-	| { type: "data-citations"; data: number[] };
+	| { type: "data-citations"; data: number[] }
+	| { type: "data-web-citations"; data: WebCitationSource[] };
+
+const activeToolsDict: Record<ChatOption, string[]> = {
+	baseKnowledge: ["baseKnowledgeSearchTool"],
+	parla: ["parlaMCPTools"],
+	webSearch: ["webSearchTool"],
+};
 
 export async function getCompletion(
 	currentChat: ChatWithMessages,
@@ -85,10 +94,8 @@ export async function getCompletion(
 					allowed_document_ids: allowedDocumentIds,
 					allowed_folder_ids: selectedFolderIds,
 					is_addressed_formal: user?.is_addressed_formal,
-					is_base_knowledge_active:
-						selectedChatOptions.includes("baseKnowledge"),
+					active_tools: selectedChatOptions.flatMap((option) => activeToolsDict[option] ?? []),
 					llm_model: selectedLlmModel,
-					is_parla_mcp_tool_active: selectedChatOptions.includes("parla"),
 				}),
 			},
 		);
@@ -113,10 +120,12 @@ export async function getCompletion(
 			allowed_document_ids: selectedDocumentIds, // Save selected document IDs
 			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
 			citations: null,
+			web_citations: null,
 		});
 
 		let currentText = "";
 		let citations: number[] = [];
+		let webCitations: WebCitationSource[] = [];
 		let hasReceivedText = false;
 
 		await parseStream(response.body, {
@@ -133,6 +142,7 @@ export async function getCompletion(
 					messageId,
 					content: currentText,
 					citations: citations.length ? citations : null,
+					web_citations: null,
 				});
 			},
 			onCitations: (chunkIds: number[]) => {
@@ -143,11 +153,22 @@ export async function getCompletion(
 					messageId,
 					content: currentText,
 					citations: citations.length ? citations : null,
+					web_citations: null,
 				});
 				// Cache the citations now
 				if (citations.length) {
 					ensureCached(citations);
 				}
+			},
+			onWebCitations: (sources: WebCitationSource[]) => {
+				webCitations = sources;
+				updateMessage({
+					chat: currentChat,
+					messageId,
+					content: currentText,
+					citations: citations.length ? citations : null,
+					web_citations: sources.length ? sources : null,
+				});
 			},
 			onFinish: () => {
 				setStatus("idle");
@@ -169,6 +190,7 @@ function processStreamLine(
 	callbacks: {
 		onTextDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
+		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -196,6 +218,11 @@ function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "data-web-citations") {
+			callbacks.onWebCitations(event.data);
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -210,6 +237,7 @@ async function parseStream(
 	callbacks: {
 		onTextDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
+		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ) {
