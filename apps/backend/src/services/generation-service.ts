@@ -527,7 +527,7 @@ ${text}
 Verfügbare Webquellen:
 ${allWebSources.map((s) => `[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`).join("\n\n")}
 
-Analysiere die Antwort und identifiziere, welche Webquellen-URLs für die Antwort verwendet wurden. Gib NUR diese URLs als Array zurück.`,
+Analysiere die Antwort und identifiziere, welche Webquellen für die Antwort verwendet wurden. Gib NUR diese Webquellen im Feld "citations" als Array von Objekten mit "url", "title" und "snippet" zurück.`,
 											temperature: LLM_PARAMETERS.temperature,
 											output: Output.object({
 												schema: webCitationAnswerSchema,
