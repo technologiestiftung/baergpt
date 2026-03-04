@@ -14,7 +14,7 @@ server {
     ssl_certificate /etc/letsencrypt/live/{{ domain }}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/{{ domain }}/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
-    add_header Content-Security-Policy "frame-ancestors 'self'" always;
+    add_header Content-Security-Policy "frame-ancestors 'none'" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Strict-Transport-Security "max-age=86400; includeSubDomains" always;
     client_max_body_size 50M;
