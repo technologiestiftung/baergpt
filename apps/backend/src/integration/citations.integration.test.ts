@@ -856,8 +856,8 @@ describe("Integration tests for Citations", () => {
 				.delete()
 				.eq("id", citation.id);
 
-			expect(deleteError).not.toBeNull();
-			expect(deleteError?.code).toBe("42501"); // Insufficient privileges
+			// RLS silently filters rows the user can't see — no error, 0 rows affected
+			expect(deleteError).toBeNull();
 
 			// Verify citation still exists
 			const { count } = await serviceRoleDbClient
@@ -892,7 +892,10 @@ describe("Integration tests for Citations", () => {
 				password: givenUserPassword,
 			});
 
-			const { data, error } = await supabaseAnonClient
+			// Insert without .select() — the SELECT policy scopes visibility
+			// to citations linked via chat_message_citations, so RETURNING
+			// would fail on an unlinked row.
+			const { error } = await supabaseAnonClient
 				.from("external_citations")
 				.insert({
 					id: testExternalCitationId,
@@ -902,11 +905,17 @@ describe("Integration tests for Citations", () => {
 					source_url: testExternalSourceUrl,
 					created_at: new Date().toISOString(),
 					source_type: "parla_document",
-				})
-				.select("id")
-				.single();
+				});
 
 			expect(error).toBeNull();
+
+			// Verify the row was actually created
+			const { data } = await serviceRoleDbClient
+				.from("external_citations")
+				.select("id")
+				.eq("id", testExternalCitationId)
+				.single();
+
 			expect(data?.id).toBe(testExternalCitationId);
 		});
 
@@ -957,8 +966,8 @@ describe("Integration tests for Citations", () => {
 				.delete()
 				.eq("id", testExternalCitationId);
 
-			expect(deleteError).not.toBeNull();
-			expect(deleteError?.code).toBe("42501"); // Insufficient privileges
+			// RLS silently filters rows the user can't see — no error, 0 rows affected
+			expect(deleteError).toBeNull();
 
 			// Verify citation still exists
 			const { count } = await serviceRoleDbClient
@@ -997,8 +1006,8 @@ describe("Integration tests for Citations", () => {
 				})
 				.eq("id", testExternalCitationId);
 
-			expect(updateError).not.toBeNull();
-			expect(updateError?.code).toBe("42501"); // Insufficient privileges
+			// RLS silently filters rows the user can't see — no error, 0 rows affected
+			expect(updateError).toBeNull();
 
 			// Verify citation was not updated
 			const { data } = await serviceRoleDbClient
