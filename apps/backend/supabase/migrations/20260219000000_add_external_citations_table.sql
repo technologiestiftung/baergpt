@@ -12,19 +12,15 @@ CREATE TABLE IF NOT EXISTS external_citations (
 -- Enable Row Level Security
 ALTER TABLE external_citations ENABLE ROW LEVEL SECURITY;
 
--- Grant table-level privileges to authenticated role
-GRANT
-SELECT
-,
-    INSERT ON public.external_citations TO authenticated;
-
 -- Add INSERT policy for external_citations
 -- This allows authenticated users to insert external citations.
 -- The SELECT policy ensures users can only see citations linked to their messages.
 -- Cleanup happens via the cascade delete trigger on chat_message_citations.
-CREATE POLICY insert_external_citations_policy ON external_citations FOR INSERT TO authenticated
+CREATE POLICY insert_external_citations_policy ON public.external_citations FOR INSERT
 WITH
     CHECK (
+        -- Allow authenticated users to insert external citations
+        -- The linkage to messages happens via chat_message_citations
         (
             SELECT
                 auth.uid ()
