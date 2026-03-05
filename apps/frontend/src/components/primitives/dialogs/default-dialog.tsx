@@ -51,6 +51,7 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 		<dialog
 			ref={dialogRef}
 			id={id}
+			onClose={closeDialog}
 			className={`${className} backdrop:bg-dunkelblau-100/30 backdrop:backdrop-blur-[2px] bg-white opacity-100 z-40 rounded-3px shadow-md`}
 		>
 			{children}

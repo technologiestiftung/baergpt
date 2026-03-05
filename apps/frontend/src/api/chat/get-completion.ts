@@ -8,6 +8,7 @@ import { useUserStore } from "../../store/user-store.ts";
 import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
 import { useCitationsStore } from "../../store/use-citations-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
+import type { Span } from "@sentry/react";
 
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
@@ -15,6 +16,7 @@ type StreamEvent =
 
 export async function getCompletion(
 	currentChat: ChatWithMessages,
+	span: Span,
 ): Promise<void> {
 	const { handleError } = useErrorStore.getState();
 	const {
@@ -96,13 +98,13 @@ export async function getCompletion(
 		if (!response.ok) {
 			const errorResponse = await response.json();
 			setStatus("error");
-			handleError(new Error(errorResponse.code));
+			handleError(new Error(errorResponse.code), span);
 			return;
 		}
 
 		if (!response.body) {
 			setStatus("error");
-			handleError(new Error("Response body from API is empty"));
+			handleError(new Error("Response body from API is empty"), span);
 			return;
 		}
 
@@ -158,7 +160,7 @@ export async function getCompletion(
 		setStatus("error");
 		// Only handle error if it's not an abort error
 		if (error instanceof Error && error.name !== "AbortError") {
-			handleError(error);
+			handleError(error, span);
 		}
 		setStreamingAbortController(null);
 	}
