@@ -6,7 +6,6 @@ import type {
 	Embedding,
 	EmbeddingResponse,
 	EmbeddingsResponse,
-	JinaSegmenterResponse,
 	JinaEmbeddingResponse,
 } from "../types/common";
 import { countTokens, trimToTokenLimitByWords } from "./token-utils";
@@ -18,39 +17,6 @@ export class EmbeddingService {
 	constructor(dbService: BaseContentDbService) {
 		this.dbService = dbService;
 	}
-	async chunkWithJinaSegmenter(
-		text: string,
-		tokenLimit: number = 2000,
-	): Promise<JinaSegmenterResponse> {
-		const chunkingResponse = await resilientCall(
-			async () => {
-				const response = await fetch("https://api.jina.ai/v1/segment", {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${config.jinaApiKey}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						content: text,
-						return_chunks: true,
-						max_chunk_length: tokenLimit,
-						tokenizer: "o200k_base",
-					}),
-				});
-				return response;
-			},
-			{ queueType: "embeddings" },
-		);
-
-		if (chunkingResponse.status !== 200) {
-			throw new Error("Failed to create chunks");
-		}
-
-		const responseData =
-			(await chunkingResponse.json()) as JinaSegmenterResponse;
-		return responseData;
-	}
-
 	async generateJinaEmbedding(
 		input: string,
 		task: string,
@@ -160,20 +126,6 @@ export class EmbeddingService {
 			embeddings: sortedData.map((item) => item.embedding),
 			tokenUsage: responseData.usage.total_tokens,
 		};
-	}
-
-	// Utility s for chunking and batch processing
-	fixedSizeChunking(content: string, wordsPerChunk: number = 100): string[] {
-		const words = content.split(/\s+/);
-		const chunks: string[] = [];
-
-		for (let i = 0; i < words.length; i += wordsPerChunk) {
-			const chunkWords = words.slice(i, i + wordsPerChunk);
-			const chunk = chunkWords.join(" ");
-			chunks.push(chunk);
-		}
-
-		return chunks;
 	}
 
 	/**
@@ -325,55 +277,9 @@ export class EmbeddingService {
 		return chunks.filter((c) => c.length > 0);
 	}
 
-	/**
-	 * Merges small chunks from the segmenter response into larger ones based on a minimum token threshold.
-	 * @param chunks Array of chunk strings from the segmenter.
-	 * @param minTokens Minimum number of tokens per chunk (default: 256).
-	 * @returns Array of merged chunk strings.
-	 */
-	mergeSmallChunks(chunks: string[], minTokens: number = 256): string[] {
-		const maxTokens = config.jinaMaxContextTokens;
-		const merged: string[] = [];
-		let buffer = "";
-
-		for (const chunk of chunks) {
-			const chunkTokenCount = countTokens(chunk);
-
-			if (chunkTokenCount >= minTokens) {
-				if (buffer) {
-					merged.push(buffer);
-					buffer = "";
-				}
-				merged.push(chunk);
-			} else {
-				const testBuffer = buffer ? `${buffer} ${chunk}` : chunk;
-				const testBufferTokens = countTokens(testBuffer);
-
-				// If adding this chunk would exceed maxTokens, flush buffer first
-				if (testBufferTokens > maxTokens && buffer) {
-					merged.push(buffer);
-					buffer = chunk;
-				} else {
-					buffer = testBuffer;
-					if (testBufferTokens >= minTokens) {
-						merged.push(buffer);
-						buffer = "";
-					}
-				}
-			}
-		}
-		if (buffer) {
-			merged.push(buffer);
-		}
-		return merged;
-	}
-
 	async batchEmbed(
 		parsedPages: ParsedPage[],
 		document: Document,
-		options: {
-			chunkingTechnique?: "fixed" | "segmenter" | "markdown";
-		} = { chunkingTechnique: "markdown" },
 	): Promise<Embedding[]> {
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
 		const maxChunksPerRequest = config.jinaMaxDocumentsPerRequest;
@@ -384,24 +290,8 @@ export class EmbeddingService {
 
 		for (const page of parsedPages) {
 			let chunkContents: string[] = [];
-			if (options.chunkingTechnique === "fixed") {
-				chunkContents = this.fixedSizeChunking(page.content);
-			} else if (options.chunkingTechnique === "markdown") {
-				chunkContents = this.markdownStructuralChunking(page.content);
-			} else if (options.chunkingTechnique === "segmenter") {
-				const SEGMENTER_INPUT_MAX = 64000;
-				const SEGMENTER_SAFETY_MARGIN = 2048;
-				const exceedsSegmenterLimit =
-					page.content.length > SEGMENTER_INPUT_MAX - SEGMENTER_SAFETY_MARGIN;
-				if (exceedsSegmenterLimit) {
-					chunkContents = this.fixedSizeChunking(page.content, 150);
-				} else {
-					const { chunks } = await this.chunkWithJinaSegmenter(page.content);
-					chunkContents = this.mergeSmallChunks(chunks);
-				}
-			} else {
-				chunkContents = this.markdownStructuralChunking(page.content);
-			}
+
+			chunkContents = this.markdownStructuralChunking(page.content);
 
 			for (let index = 0; index < chunkContents.length; index++) {
 				const chunkContent = chunkContents[index];
@@ -421,6 +311,7 @@ export class EmbeddingService {
 
 		for (const chunk of allChunks) {
 			if (chunk.tokenCount > maxTokensPerChunk) {
+				// TODO - why is this just a warning? Shouldn't we try to split the chunk up further instead of skipping it entirely?
 				console.warn(
 					`[WARNING] Chunk exceeds ${maxTokensPerChunk} tokens (${chunk.tokenCount}), skipping chunk from page ${chunk.page}`,
 				);
@@ -463,11 +354,12 @@ export class EmbeddingService {
 
 			allEmbeddings.push(...batchEmbeddings);
 
-			// Yield to event loop after each batch
-			// This allows Redis heartbeats and other I/O to proceed
-			if (i < batches.length - 1) {
-				await new Promise((resolve) => setImmediate(resolve));
-			}
+			//  todo why do we need this? generateJinaBatchEmbeddings is async, so it should yield to event loop naturally between batches
+			// // Yield to event loop after each batch
+			// // This allows Redis heartbeats and other I/O to proceed
+			// if (i < batches.length - 1) {
+			// 	await new Promise((resolve) => setImmediate(resolve));
+			// }
 		}
 
 		return allEmbeddings;
