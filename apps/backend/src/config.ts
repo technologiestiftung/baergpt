@@ -29,6 +29,8 @@ export interface Config {
 	frequencyPenalty: number;
 	featureFlagMcpParlaAllowed: boolean;
 	mcpParlaUrl: string;
+	braveSearchApiKey: string;
+	featureFlagWebSearchAllowed: boolean;
 }
 
 /* eslint-disable-next-line complexity */
@@ -110,6 +112,15 @@ export function verifyConfig(): void {
 			"MCP_PARLA_URL must be defined when FEATURE_FLAG_MCP_PARLA_ALLOWED is true",
 		);
 	}
+
+	if (
+		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
+		!process.env.BRAVE_SEARCH_API_KEY
+	) {
+		throw new Error(
+			"BRAVE_SEARCH_API_KEY must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
+		);
+	}
 }
 
 export const config: Config = {
@@ -145,4 +156,7 @@ export const config: Config = {
 	featureFlagMcpParlaAllowed:
 		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
+	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
+	featureFlagWebSearchAllowed:
+		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 };

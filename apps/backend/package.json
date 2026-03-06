@@ -21,8 +21,8 @@
 		"db:upload-default-documents": "tsx ./supabase/upload-default-documents.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/mistral": "2.0.17",
-		"@ai-sdk/mcp": "1.0.5",
+		"@ai-sdk/mcp": "1.0.23",
+		"@ai-sdk/mistral": "3.0.22",
 		"@dqbd/tiktoken": "1.0.17",
 		"@hono/node-server": "1.14.4",
 		"@langfuse/client": "4.2.0",
@@ -37,7 +37,7 @@
 		"@sentry/node": "10.38.0",
 		"@sergiiivzhenko/bottleneck": "2.19.7",
 		"@supabase/supabase-js": "2.81.1",
-		"ai": "5.0.60",
+		"ai": "6.0.108",
 		"dotenv": "16.4.7",
 		"hono": "4.11.9",
 		"ioredis": "5.8.2",
