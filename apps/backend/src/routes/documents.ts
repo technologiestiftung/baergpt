@@ -84,9 +84,7 @@ documents.post("/process", async (c: Context) => {
 				llmIdentifier,
 				documentForProcessing,
 			),
-			embeddingService.batchEmbed(parsedPages, documentForProcessing, {
-				chunkingTechnique: "markdown",
-			}),
+			embeddingService.batchEmbed(parsedPages, documentForProcessing),
 		]);
 
 		// Step 3: Create complete document record
@@ -113,11 +111,7 @@ documents.post("/process", async (c: Context) => {
 			try {
 				await userScopedDbService.deleteFileFromStorage(sourceUrl, bucket);
 			} catch (cleanupError) {
-				captureError(
-					new Error(
-						`Failed to cleanup document ${sourceUrl} after processing error: ${cleanupError}`,
-					),
-				);
+				captureError(cleanupError);
 			}
 		}
 		return c.json({ error: "Internal Server Error" }, 500);

@@ -56,57 +56,35 @@ export class GenerationService {
 		this.dbService = dbService;
 		this.embeddingService = new EmbeddingService(this.dbService);
 	}
+
 	/**
-	 * Select the first pages whose combined content fits within a safe token budget
-	 * for the summary prompt. Falls back to at least the first page if none fit.
+	 * Compress content to fit within a token limit by generating summaries iteratively.
+	 * 1) If content is already within token limit, return as is.
+	 * 2) Otherwise, generate a summary and check token count.
+	 * 		Repeat up to maxRounds times or until content fits within token limit.
+	 * 3) If still over token limit after maxRounds, trim content to fit.
 	 */
-	private async selectFirstPagesFittingBudget(
-		llmIdentifier: string,
-		parsedPages: ParsedPage[],
-	): Promise<ParsedPage[]> {
-		const contextSize = modelService.availableModels[llmIdentifier].contextSize;
-		const systemTokensForSummary =
-			await this.estimateSystemPromptTokens("summary");
-		const safeTokenLimit = computeSafePayload(
-			contextSize,
-			systemTokensForSummary,
-		);
+	async compressToTokenLimit(args: {
+		llmIdentifier: string;
+		content: string;
+		tokenLimit: number;
+		maxRounds: number;
+	}): Promise<string> {
+		const { llmIdentifier, content, tokenLimit, maxRounds } = args;
 
-		const selected: ParsedPage[] = [];
-		let accumulatedTokens = 0;
-
-		for (const page of parsedPages) {
-			const pageTokens = page.tokenCount ?? countTokens(page.content);
-			if (accumulatedTokens + pageTokens > safeTokenLimit) {
-				break;
-			}
-			accumulatedTokens += pageTokens;
-			selected.push(page);
+		if (countTokens(content) <= tokenLimit) {
+			return content;
 		}
 
-		return selected.length > 0 ? selected : parsedPages.slice(0, 1);
-	}
-
-	/**
-	 * Compress content to a target token limit by:
-	 * 1) attempting up to `maxRounds` model compressions, then
-	 * 2) hard-trimming with a binary search as a final safeguard.
-	 */
-	private async compressToTokenLimit(
-		llmIdentifier: string,
-		content: string,
-		options: { tokenLimit: number; maxRounds?: number } = { tokenLimit: 0 },
-	): Promise<string> {
-		const { tokenLimit, maxRounds = 3 } = options;
 		let current = content;
 		let tokens = countTokens(current);
 
 		for (let round = 0; round < maxRounds && tokens > tokenLimit; round++) {
-			const shorter = await this.generateSummary(llmIdentifier, current);
-			if (!shorter) {
-				break;
-			}
-			current = shorter;
+			current = await this.generateSummary({
+				llmIdentifier,
+				input: content,
+			});
+
 			tokens = countTokens(current);
 		}
 
@@ -142,52 +120,59 @@ export class GenerationService {
 		}
 	}
 
-	async generateSummary(
-		llmIdentifier: string,
-		docInput: string | ParsedPage[],
-		{
-			oneSentenceSummary = false,
-			userId,
-		}: {
-			oneSentenceSummary?: boolean;
-			userId?: string;
-		} = {},
-	): Promise<string | null> {
+	async generateSummary(args: {
+		llmIdentifier: string;
+		input: string;
+		userId?: string;
+	}): Promise<string> {
+		const { llmIdentifier, input, userId } = args;
+
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
-		let compiledSummaryPrompt: ModelMessage[];
-		let summaryPromptClient: ChatPromptClient;
-		const docContent =
-			typeof docInput === "string"
-				? docInput
-				: docInput.map((page) => page.content).join("\n");
 
-		if (oneSentenceSummary) {
-			summaryPromptClient = await langfuse.prompt.get("one-sentence-summary", {
+		const summaryPromptClient = await langfuse.prompt.get("summary", {
+			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+			type: "chat",
+		});
+
+		const compiledSummaryPrompt = summaryPromptClient.compile({
+			docContent: input,
+		}) as ModelMessage[];
+
+		return this.generateTextContent({
+			llmHandler,
+			messages: compiledSummaryPrompt,
+			userId,
+			langfusePrompt: summaryPromptClient,
+		});
+	}
+
+	async generateOneSentenceSummary(args: {
+		llmIdentifier: string;
+		input: string;
+		userId?: string;
+	}): Promise<string> {
+		const { llmIdentifier, input, userId } = args;
+
+		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
+
+		const summaryPromptClient = await langfuse.prompt.get(
+			"one-sentence-summary",
+			{
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 				type: "chat",
-			});
-			compiledSummaryPrompt = summaryPromptClient.compile({
-				docContent: docContent,
-			}) as ModelMessage[];
-		} else {
-			summaryPromptClient = await langfuse.prompt.get("summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
-			compiledSummaryPrompt = summaryPromptClient.compile({
-				docContent: docContent,
-			}) as ModelMessage[];
-		}
+			},
+		);
 
-		try {
-			return this.generateTextContent(llmHandler, compiledSummaryPrompt, {
-				userId,
-				langfusePrompt: summaryPromptClient,
-			});
-		} catch (error) {
-			captureError(error);
-			return null;
-		}
+		const compiledSummaryPrompt = summaryPromptClient.compile({
+			docContent: input,
+		}) as ModelMessage[];
+
+		return this.generateTextContent({
+			llmHandler,
+			messages: compiledSummaryPrompt,
+			userId,
+			langfusePrompt: summaryPromptClient,
+		});
 	}
 
 	async generateTags(
@@ -210,11 +195,12 @@ export class GenerationService {
 		}) as ModelMessage[];
 
 		try {
-			const response: string = await this.generateTextContent(
+			const response: string = await this.generateTextContent({
 				llmHandler,
-				compiledTaggingPrompt,
-				{ userId, langfusePrompt: taggingPromptClient },
-			);
+				messages: compiledTaggingPrompt,
+				userId,
+				langfusePrompt: taggingPromptClient,
+			});
 			// Extract JSON from potential code block artifacts
 			const jsonMatch = response.match(
 				/```(?:json)?\s*(\{.*?\})\s*```|(\{.*?\})/s,
@@ -223,6 +209,8 @@ export class GenerationService {
 			const parsed = JSON.parse(jsonString.trim());
 			return parsed.tags || [];
 		} catch (error) {
+			// todo are the tags even used / critical ? If yes, should we let the error bubble up instead of returning null?
+			//  If not, can we get rid of them all-together?
 			captureError(error);
 			return null;
 		}
@@ -238,66 +226,28 @@ export class GenerationService {
 		tags: string[];
 		summaryEmbedding: number[];
 	}> {
-		const numTokens = parsedPages.reduce(
-			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
-			0,
-		);
+		const summaryInput = await this.getSummaryInput(parsedPages, llmIdentifier);
 
-		let summary: string | null = null;
-		const MAX_TOKEN_COUNT_FOR_SUMMARY =
-			modelService.availableModels[llmIdentifier].contextSize;
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
 
-		const overContext = numTokens > MAX_TOKEN_COUNT_FOR_SUMMARY;
-		let summaryInput: string | ParsedPage[] = parsedPages;
-
-		if (overContext) {
-			const selectedPages = await this.selectFirstPagesFittingBudget(
-				llmIdentifier,
-				parsedPages,
-			);
-			summaryInput = selectedPages;
-		}
-
-		// Safety mechanism in case the first page is larger than MAX_TOKEN_COUNT_FOR_SUMMARY
-		const systemTokens = await this.estimateSystemPromptTokens("summary");
-		const safeLimit = computeSafePayload(
-			MAX_TOKEN_COUNT_FOR_SUMMARY,
-			systemTokens,
-		);
-
-		let joined;
-		if (typeof summaryInput === "string") {
-			joined = summaryInput;
-		} else {
-			joined = summaryInput.map((page) => page.content).join("\n");
-		}
-		if (countTokens(joined) > safeLimit) {
-			summaryInput = trimToTokenLimitByWords(joined, safeLimit);
-		}
-
-		summary = await this.generateSummary(llmIdentifier, summaryInput, {
-			userId,
-		});
-
-		if (!summary) {
-			throw new Error("Failed to generate document summary");
-		}
-
-		const shortSummary = await this.generateSummary(llmIdentifier, summary, {
-			oneSentenceSummary: true,
-			userId,
-		});
-
-		if (!shortSummary) {
-			throw new Error("Failed to generate short document summary");
-		}
-
-		const summaryForEmbedding = await this.compressToTokenLimit(
+		const summary = await this.generateSummary({
 			llmIdentifier,
-			summary,
-			{ tokenLimit: config.jinaMaxContextTokens, maxRounds: 3 },
-		);
+			input: summaryInput,
+			userId,
+		});
+
+		const shortSummary = await this.generateOneSentenceSummary({
+			llmIdentifier,
+			input: summaryInput,
+			userId,
+		});
+
+		const summaryForEmbedding = await this.compressToTokenLimit({
+			llmIdentifier,
+			content: summary,
+			tokenLimit: config.jinaMaxContextTokens,
+			maxRounds: 3,
+		});
 
 		const summaryEmbeddingResponse =
 			await this.embeddingService.generateJinaEmbedding(
@@ -306,17 +256,9 @@ export class GenerationService {
 				userId,
 			);
 
-		if (!summaryEmbeddingResponse || !summaryEmbeddingResponse.embedding) {
-			throw new Error("Failed to generate document embedding");
-		}
-
 		const tags = await this.generateTags(llmIdentifier, summary, {
 			userId,
 		});
-
-		if (!tags) {
-			throw new Error("Failed to generate document tags");
-		}
 
 		return {
 			summary,
@@ -324,6 +266,30 @@ export class GenerationService {
 			tags,
 			summaryEmbedding: summaryEmbeddingResponse.embedding,
 		};
+	}
+
+	async getSummaryInput(
+		parsedPages: ParsedPage[],
+		llmIdentifier: string,
+	): Promise<string> {
+		const { contextSize } = modelService.availableModels[llmIdentifier];
+		const systemPromptToken = await this.estimateSystemPromptTokens("summary");
+		const tokenLimit = computeSafePayload(contextSize, systemPromptToken);
+
+		const [firstPage] = parsedPages;
+
+		if (firstPage.tokenCount > tokenLimit) {
+			return trimToTokenLimitByWords(firstPage.content, tokenLimit);
+		}
+
+		const content = parsedPages.map((page) => page.content).join("\n");
+		const tokenCount = countTokens(content);
+
+		if (tokenCount <= tokenLimit) {
+			return content;
+		}
+
+		return trimToTokenLimitByWords(content, tokenLimit);
 	}
 
 	async generateTextStreamResponse(
@@ -540,19 +506,13 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		return createUIMessageStreamResponse({ stream });
 	}
 
-	async generateTextContent(
-		llmHandler: LLMHandler,
-		messages: ModelMessage[],
-		{
-			userId,
-			sessionId,
-			langfusePrompt,
-		}: {
-			userId?: string;
-			sessionId?: string;
-			langfusePrompt?: TextPromptClient | ChatPromptClient;
-		} = {},
-	): Promise<string> {
+	async generateTextContent(args: {
+		llmHandler: LLMHandler;
+		messages: ModelMessage[];
+		userId: string;
+		langfusePrompt: TextPromptClient | ChatPromptClient;
+	}): Promise<string> {
+		const { llmHandler, messages, userId, langfusePrompt } = args;
 		const { text, usage } = await resilientCall(
 			() =>
 				generateText({
@@ -569,10 +529,8 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 						isEnabled:
 							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
 						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
+							sessionId: "unknown",
+							langfusePrompt: langfusePrompt.toJSON(),
 						},
 					},
 				}),
@@ -585,88 +543,10 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_inference_tokens",
-				usage?.totalTokens ?? 0,
+				usage.totalTokens,
 			);
 		}
 		return text;
-	}
-
-	splitArrayEqually<T>(array: T[], chunkSize: number): T[][] {
-		const result: T[][] = [];
-		for (let i = 0; i < array.length; i += chunkSize) {
-			result.push(array.slice(i, i + chunkSize));
-		}
-		return result;
-	}
-
-	splitInChunksAccordingToTokenLimit(
-		input: string,
-		tokenLimit: number,
-		overlap: number = 128,
-	): string[] {
-		const finalChunks: string[] = [];
-
-		// Split input into smaller chunks with overlap
-		let currentChunk = "";
-		const words = input.split(/\s+/);
-		let currentOverlap = "";
-
-		for (let i = 0; i < words.length; i++) {
-			const currentWord = words[i];
-
-			// If we're starting a new chunk after the first one, add overlap with the previous chunk
-			if (currentChunk === "" && finalChunks.length > 0) {
-				const overlapStart = this.getOverlapStart(words, i, overlap);
-				currentOverlap = words.slice(overlapStart, i).join(" ");
-				currentChunk = currentOverlap;
-			}
-
-			if (
-				enc.encode(currentWord).length > tokenLimit ||
-				enc.encode(`${currentOverlap} ${currentWord}`).length > tokenLimit
-			) {
-				// If a single word or the current overlap + the current word exceed token limit, we skip them
-				continue;
-			}
-
-			const potentialChunk =
-				currentChunk + (currentChunk ? " " : "") + currentWord;
-			const tokenCountPotentialChunk = enc.encode(potentialChunk).length;
-
-			if (tokenCountPotentialChunk <= tokenLimit) {
-				currentChunk = potentialChunk;
-				continue;
-			}
-
-			finalChunks.push(currentChunk);
-			currentChunk = ""; // Reset current chunk
-		}
-
-		// Add final chunk if not empty
-		if (currentChunk) {
-			finalChunks.push(currentChunk);
-		}
-
-		return finalChunks;
-	}
-
-	getOverlapStart(words: string[], countStart: number, overlap: number) {
-		let overlapTokenCount = 0;
-		let overlapStart = countStart;
-
-		// Count backwards until we reach desired overlap token count
-		for (let j = countStart - 1; j >= 0; j--) {
-			const wordTokens = enc.encode(words[j]).length;
-
-			if (overlapTokenCount + wordTokens > overlap) {
-				break;
-			}
-
-			overlapTokenCount += wordTokens;
-			overlapStart = j;
-		}
-
-		return overlapStart;
 	}
 
 	/**
