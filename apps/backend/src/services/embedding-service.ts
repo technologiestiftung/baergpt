@@ -15,6 +15,7 @@ import { BaseContentDbService } from "./db-service/base-db-service";
 import { resilientCall } from "../utils";
 import { embed, embedMany } from "ai";
 import { mistral } from "@ai-sdk/mistral";
+import { captureError } from "../monitoring/capture-error";
 
 export class EmbeddingService {
 	private readonly dbService: BaseContentDbService;
@@ -366,8 +367,10 @@ export class EmbeddingService {
 
 		for (const chunk of allChunks) {
 			if (chunk.tokenCount > maxTokensPerChunk) {
-				console.warn(
-					`[WARNING] Chunk exceeds ${maxTokensPerChunk} tokens (${chunk.tokenCount}), truncating chunk from page ${chunk.page}`,
+				captureError(
+					new Error(
+						`[WARNING] Chunk exceeds ${maxTokensPerChunk} tokens (${chunk.tokenCount}), truncating chunk from page ${chunk.page}`,
+					),
 				);
 				chunk.content = trimToMistralTokenLimitByWords(
 					chunk.content,
@@ -410,12 +413,6 @@ export class EmbeddingService {
 			);
 
 			allEmbeddings.push(...batchEmbeddings);
-
-			// Yield to event loop after each batch
-			// This allows Redis heartbeats and other I/O to proceed
-			if (i < batches.length - 1) {
-				await new Promise((resolve) => setImmediate(resolve));
-			}
 		}
 
 		return allEmbeddings;
