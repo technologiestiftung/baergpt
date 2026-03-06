@@ -67,11 +67,21 @@ export async function getCompletion(
 			new Set([...selectedDocumentIds, ...folderDocumentIds]),
 		);
 
+		setStatus("waiting-for-response");
+
+		// Create the assistant message first, so we have the messageId for the backend
+		const messageId = await addMessageToChat(currentChat, {
+			content: "",
+			type: "text",
+			role: "assistant",
+			allowed_document_ids: selectedDocumentIds, // Save selected document IDs
+			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
+			citations: null,
+		});
+
 		const headers = new Headers();
 		headers.set("Content-Type", "application/json");
 		headers.set("Authorization", `Bearer ${session?.access_token}`);
-
-		setStatus("waiting-for-response");
 
 		const response: Response = await fetch(
 			`${import.meta.env.VITE_API_URL}/llm/just-chatting`,
@@ -81,6 +91,7 @@ export async function getCompletion(
 				signal: abortController.signal,
 				body: JSON.stringify({
 					messages,
+					message_id: messageId,
 					user_id: session?.user.id,
 					chat_id: currentChat.id ?? undefined,
 					search_type: "all_private",
@@ -108,15 +119,6 @@ export async function getCompletion(
 			return;
 		}
 
-		const messageId = await addMessageToChat(currentChat, {
-			content: "",
-			type: "text",
-			role: "assistant",
-			allowed_document_ids: selectedDocumentIds, // Save selected document IDs
-			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
-			citations: null,
-		});
-
 		let currentText = "";
 		let citations: number[] = [];
 		let hasReceivedText = false;
@@ -137,9 +139,9 @@ export async function getCompletion(
 					citations: citations.length ? citations : null,
 				});
 			},
-			onCitations: (chunkIds: number[]) => {
-				citations = chunkIds;
-				// Update message immediately when citations arrive
+			// Update message immediately when citations arrive
+			onCitations: (citationIds: number[]) => {
+				citations = [...citations, ...citationIds];
 				updateMessage({
 					chat: currentChat,
 					messageId,
@@ -147,8 +149,8 @@ export async function getCompletion(
 					citations: citations.length ? citations : null,
 				});
 				// Cache the citations now
-				if (citations.length) {
-					ensureCached(citations);
+				if (citationIds.length) {
+					ensureCached(citationIds);
 				}
 			},
 			onFinish: () => {
@@ -170,7 +172,7 @@ function processStreamLine(
 	line: string,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
+		onCitations: (citationIds: number[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -211,7 +213,7 @@ async function parseStream(
 	body: ReadableStream<Uint8Array>,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
+		onCitations: (citationIds: number[]) => void;
 		onFinish: () => void;
 	},
 ) {

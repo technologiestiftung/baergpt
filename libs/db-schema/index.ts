@@ -125,6 +125,38 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			chat_message_citations: {
+				Row: {
+					created_at: string;
+					document_chunk_ids: number[];
+					external_citation_ids: string[];
+					id: number;
+					message_id: number;
+				};
+				Insert: {
+					created_at?: string;
+					document_chunk_ids?: number[];
+					external_citation_ids?: string[];
+					id?: number;
+					message_id: number;
+				};
+				Update: {
+					created_at?: string;
+					document_chunk_ids?: number[];
+					external_citation_ids?: string[];
+					id?: number;
+					message_id?: number;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "chat_message_citations_message_id_fkey";
+						columns: ["message_id"];
+						isOneToOne: false;
+						referencedRelation: "chat_messages";
+						referencedColumns: ["id"];
+					},
+				];
+			};
 			chat_messages: {
 				Row: {
 					allowed_document_ids: number[] | null;
@@ -198,7 +230,7 @@ export type Database = {
 					content: string;
 					document_id: number | null;
 					folder_id: number | null;
-					full_text_search: unknown | null;
+					full_text_search: unknown;
 					id: number;
 					owned_by_user_id: string | null;
 					page: number;
@@ -210,7 +242,7 @@ export type Database = {
 					content: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown | null;
+					full_text_search?: unknown;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page: number;
@@ -222,7 +254,7 @@ export type Database = {
 					content?: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown | null;
+					full_text_search?: unknown;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page?: number;
@@ -372,6 +404,36 @@ export type Database = {
 					},
 				];
 			};
+			external_citations: {
+				Row: {
+					created_at: string;
+					file_name: string;
+					id: string;
+					page: number;
+					snippet: string;
+					source_type: string;
+					source_url: string;
+				};
+				Insert: {
+					created_at: string;
+					file_name: string;
+					id: string;
+					page: number;
+					snippet: string;
+					source_type?: string;
+					source_url: string;
+				};
+				Update: {
+					created_at?: string;
+					file_name?: string;
+					id?: string;
+					page?: number;
+					snippet?: string;
+					source_type?: string;
+					source_url?: string;
+				};
+				Relationships: [];
+			};
 			favorite_documents: {
 				Row: {
 					processed_document_id: number;
@@ -511,12 +573,9 @@ export type Database = {
 				};
 				Returns: undefined;
 			};
-			delete_user: {
-				Args: Record<PropertyKey, never>;
-				Returns: undefined;
-			};
+			delete_user: { Args: never; Returns: undefined };
 			find_unprocessed_documents: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					created_at: string;
 					file_checksum: string;
@@ -531,12 +590,9 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			get_account_activation_timestamp: {
-				Args: Record<PropertyKey, never>;
-				Returns: string;
-			};
+			get_account_activation_timestamp: { Args: never; Returns: string };
 			get_allowed_email_domains: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					domain: string;
 					id: number;
@@ -553,24 +609,34 @@ export type Database = {
 					tags: string[];
 				}[];
 			};
-			get_citation_details: {
-				Args: { chunk_ids: number[] };
-				Returns: {
-					chunk_id: number;
-					created_at: string;
-					file_name: string;
-					page: number;
-					snippet: string;
-					source_type: string;
-					source_url: string;
-				}[];
-			};
-			get_maintenance_mode_status: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
+			get_citation_details:
+				| {
+						Args: { chunk_ids: number[] };
+						Returns: {
+							chunk_id: number;
+							created_at: string;
+							file_name: string;
+							page: number;
+							snippet: string;
+							source_type: string;
+							source_url: string;
+						}[];
+				  }
+				| {
+						Args: { citation_ids: number[] };
+						Returns: {
+							citation_id: number;
+							created_at: string;
+							file_name: string;
+							page: number;
+							snippet: string;
+							source_type: string;
+							source_url: string;
+						}[];
+				  };
+			get_maintenance_mode_status: { Args: never; Returns: boolean };
 			get_users: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					academic_title: string;
 					deleted_at: string;
@@ -615,18 +681,9 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			is_application_admin: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
-			is_current_user_active: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
-			log_account_activation: {
-				Args: Record<PropertyKey, never>;
-				Returns: undefined;
-			};
+			is_application_admin: { Args: never; Returns: boolean };
+			is_current_user_active: { Args: never; Returns: boolean };
+			log_account_activation: { Args: never; Returns: undefined };
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];
@@ -687,11 +744,11 @@ export type Database = {
 				}[];
 			};
 			regenerate_embedding_indices_for_chunks: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: undefined;
 			};
 			regenerate_embedding_indices_for_summaries: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: undefined;
 			};
 			verify_own_password: {

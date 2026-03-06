@@ -332,6 +332,7 @@ export class GenerationService {
 		{
 			userId,
 			sessionId,
+			messageId,
 			langfusePrompt,
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
@@ -340,6 +341,7 @@ export class GenerationService {
 		}: {
 			userId?: string;
 			sessionId?: string;
+			messageId?: number;
 			langfusePrompt?: TextPromptClient | ChatPromptClient;
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
@@ -415,6 +417,19 @@ export class GenerationService {
 		const allChunkMatches = generationResult.steps.flatMap((step) =>
 			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
 		);
+		const allParlaCitations = generationResult.steps.flatMap((step) =>
+			step.toolResults.flatMap((tr) => tr.output?.parlaCitations || []),
+		);
+
+		// Save external citations to database
+		if (messageId && allParlaCitations.length > 0) {
+			try {
+				await this.dbService.saveExternalCitations(allParlaCitations);
+			} catch (error) {
+				captureError(error);
+			}
+		}
+
 		const newMessages = generationResult.response.messages;
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);
@@ -437,6 +452,10 @@ export class GenerationService {
 								if (typeof toolsCleanup === "function") {
 									await toolsCleanup();
 								}
+
+								let citationId: number | null = null;
+								let documentChunkIds: number[] = [];
+								let externalCitationIds: string[] = [];
 
 								if (allChunkMatches.length > 0) {
 									const availableSources = allChunkMatches.map(
@@ -464,7 +483,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 											experimental_telemetry: {
 												isEnabled:
 													config.nodeEnv !== "test" &&
-													config.nodeEnv !== "production", // Disable telemetry in CI and production
+													config.nodeEnv !== "production",
 												functionId: "citation-extraction",
 												metadata: {
 													sessionId: sessionId ? sessionId : "unknown",
@@ -472,10 +491,10 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 											},
 										});
 
-									writer.write({
-										type: "data-citations",
-										data: object.citations,
-									});
+									// Extract documentChunkIds
+									if (object.citations.length > 0) {
+										documentChunkIds = object.citations;
+									}
 
 									try {
 										await this.dbService.updateUserColumnValue(
@@ -493,12 +512,48 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 									}
 								}
 
+								// Extract externalCitationIds from allParlaCitations
+								if (allParlaCitations.length > 0) {
+									externalCitationIds = allParlaCitations
+										.filter((c: { id?: string }) => c.id !== undefined)
+										.map((c: { id?: string }) => c.id as string);
+								}
+
+								// Save ALL citations in a SINGLE row
+								if (
+									messageId &&
+									(documentChunkIds.length > 0 ||
+										externalCitationIds.length > 0)
+								) {
+									citationId = await this.dbService.saveChatMessageCitations(
+										messageId,
+										{
+											documentChunkIds:
+												documentChunkIds.length > 0
+													? documentChunkIds
+													: undefined,
+											externalCitationIds:
+												externalCitationIds.length > 0
+													? externalCitationIds
+													: undefined,
+										},
+									);
+								}
+
+								if (citationId !== null) {
+									writer.write({
+										type: "data-citations",
+										data: [citationId],
+									});
+								}
+
 								updateActiveTrace({
 									name: "streamed-text-generation",
 									output: text,
 									userId,
 									sessionId,
 								});
+
 								// Handle token usage tracking after stream completes
 								if (userId && usage?.totalTokens) {
 									try {

@@ -4,28 +4,24 @@ import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-s
 import type { CitationWithDetails } from "../common";
 
 type CitationsStore = {
-	citationByChunkId: Record<number, CitationWithDetails>;
-	ensureCached: (chunkIds: number[]) => Promise<void>;
-	getCitation: (chunkId: number) => CitationWithDetails | undefined;
+	citationsByRowId: Record<number, CitationWithDetails[]>;
+	ensureCached: (citationIds: number[]) => Promise<void>;
+	getCitations: (citationId: number) => CitationWithDetails[];
 };
 
 export const useCitationsStore = create<CitationsStore>()((set, get) => ({
-	citationByChunkId: {},
-	getCitation: (chunkId) => {
-		const state = get();
-		const cached = state.citationByChunkId[chunkId];
-		if (cached) {
-			return cached;
-		}
-		return undefined;
+	citationsByRowId: {},
+
+	getCitations: (citationId) => {
+		return get().citationsByRowId[citationId] || [];
 	},
 
-	async ensureCached(chunkIds) {
-		const { citationByChunkId } = get();
+	async ensureCached(citationIds) {
+		const { citationsByRowId } = get();
 		const { setStatus } = useInferenceLoadingStatusStore.getState();
 
-		const unique = Array.from(new Set(chunkIds));
-		const missing = unique.filter((id) => !citationByChunkId[id]);
+		const unique = Array.from(new Set(citationIds));
+		const missing = unique.filter((id) => !citationsByRowId[id]);
 		if (missing.length === 0) {
 			return;
 		}
@@ -33,11 +29,17 @@ export const useCitationsStore = create<CitationsStore>()((set, get) => ({
 		setStatus("loading-citations");
 
 		const details = await getCitationDetails(missing);
-		const merged = { ...citationByChunkId };
+		const mergedCitations = { ...citationsByRowId };
+
+		// Group citation details by citation_id (row ID)
 		details.forEach((detail) => {
-			merged[detail.chunkId] = detail;
+			if (!mergedCitations[detail.citationId]) {
+				mergedCitations[detail.citationId] = [];
+			}
+			mergedCitations[detail.citationId].push(detail);
 		});
-		set({ citationByChunkId: merged });
+
+		set({ citationsByRowId: mergedCitations });
 
 		setStatus("idle");
 	},

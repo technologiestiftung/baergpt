@@ -25,11 +25,11 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	const isLoadingCitations = status === "loading-citations";
 	const isLoadingLastCitations = isLastMessage && isLoadingCitations;
 
-	const { getCitation } = useCitationsStore();
+	const { getCitations } = useCitationsStore();
 	const hasCitations =
 		citations &&
 		citations.length > 0 &&
-		checkCitationsExists(citations, getCitation);
+		checkCitationsExists(citations, getCitations);
 
 	const isCitationsButtonVisible = hasCitations || isLoadingLastCitations;
 
@@ -76,12 +76,12 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 
 function checkCitationsExists(
 	citations: number[] | null,
-	getCitation: (id: number) => CitationWithDetails | undefined,
+	getCitations: (id: number) => CitationWithDetails[],
 ): boolean {
 	if (!citations) {
 		return false;
 	}
 
 	// Check if any of the citation IDs exist in the citation store.
-	return citations.some((id) => getCitation(id));
+	return citations.some((id) => getCitations(id).length > 0);
 }

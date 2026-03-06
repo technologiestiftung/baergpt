@@ -19,19 +19,20 @@ const resetPreviousChatState = () => {
 	selectedChatFolders.forEach((folder) => unselectChatFolder(folder.id));
 };
 
-const loadChatCitations = (chatId: number) => {
+const loadChatCitations = async (chatId: number) => {
 	const { ensureCached } = useCitationsStore.getState();
 	const chats = useChatsStore.getState().chats;
 	const selectedChat = chats.find((chatItem) => chatItem.id === chatId);
 	if (!selectedChat) {
 		return;
 	}
-	const allChunkIds = selectedChat.messages.flatMap(
+
+	const allCitationIds = selectedChat.messages.flatMap(
 		(message) => message.citations ?? [],
 	);
 
-	if (allChunkIds.length > 0) {
-		void ensureCached(allChunkIds);
+	if (allCitationIds.length > 0) {
+		void ensureCached(allCitationIds);
 	}
 };
 

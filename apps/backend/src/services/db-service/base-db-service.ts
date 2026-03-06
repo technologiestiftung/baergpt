@@ -62,6 +62,90 @@ export abstract class BaseContentDbService {
 		return new Map(summaries.map((s) => [s.document_id, s.summary]));
 	}
 
+	async saveExternalCitations(
+		citations: Array<{
+			id: string;
+			snippet: string;
+			page: number;
+			fileName: string;
+			sourceUrl: string;
+			createdAt: string;
+			sourceType: string;
+		}>,
+	): Promise<void> {
+		if (citations.length === 0) {
+			return;
+		}
+
+		// Deduplicate citations by ID to avoid duplicate key errors
+		const uniqueCitations = Array.from(
+			new Map(citations.map((c) => [c.id, c])).values(),
+		);
+
+		const rows = uniqueCitations.map((citation) => ({
+			id: citation.id,
+			snippet: citation.snippet,
+			page: citation.page,
+			file_name: citation.fileName,
+			source_url: citation.sourceUrl,
+			created_at: citation.createdAt,
+			source_type: citation.sourceType,
+		}));
+
+		const { error } = await this.client.from("external_citations").insert(rows);
+
+		if (error) {
+			// If batch insert fails due to duplicates, insert one by one to save new citations
+			if (error.code === "23505") {
+				for (const row of rows) {
+					const { error: insertError } = await this.client
+						.from("external_citations")
+						.insert(row);
+
+					// Silently skip duplicates, log other errors
+					if (insertError && insertError.code !== "23505") {
+						captureError(insertError);
+					}
+				}
+			} else {
+				captureError(error);
+			}
+		}
+	}
+
+	async saveChatMessageCitations(
+		messageId: number,
+		citations: {
+			documentChunkIds?: number[];
+			externalCitationIds?: string[];
+		},
+	): Promise<number | null> {
+		if (
+			(!citations.documentChunkIds ||
+				citations.documentChunkIds.length === 0) &&
+			(!citations.externalCitationIds ||
+				citations.externalCitationIds.length === 0)
+		) {
+			return null;
+		}
+
+		const { data, error } = await this.client
+			.from("chat_message_citations")
+			.insert({
+				message_id: messageId,
+				document_chunk_ids: citations.documentChunkIds ?? [],
+				external_citation_ids: citations.externalCitationIds ?? [],
+			})
+			.select("id")
+			.single();
+
+		if (error) {
+			throw error;
+		}
+
+		return data.id;
+	}
+
 	/**
 	 * Performs a hybrid search combining full-text and semantic vector search.
 	 */

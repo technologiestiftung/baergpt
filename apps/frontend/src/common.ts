@@ -45,7 +45,8 @@ export type DocumentFolder = {
 export type SourceType =
 	| "public_document"
 	| "personal_document"
-	| "default_document";
+	| "default_document"
+	| "parla_document";
 
 export type Document = {
 	created_at: string | null;
@@ -81,6 +82,7 @@ export type User = {
 };
 
 export type CitationWithDetails = {
+	citationId: number;
 	snippet: string;
 	page: number;
 	fileName: string;

@@ -99,11 +99,18 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
-		// Find the add-to-chat button for the specific document
-		const addButton = page
+		// Wait for the document list to load and find the document list item
+		const documentListItem = page
 			.getByRole("listitem")
-			.filter({ hasText: defaultDocumentName })
-			.getByLabel("In den Chat");
+			.filter({ hasText: defaultDocumentName });
+
+		await expect(documentListItem).toBeVisible();
+
+		// Hover over the document to reveal the add-to-chat button
+		await documentListItem.hover();
+
+		// Find and click the add-to-chat button
+		const addButton = documentListItem.getByLabel("In den Chat");
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -219,21 +226,23 @@ test.describe("Chat", () => {
 			).toBeVisible();
 
 			// Add the folder and documents to the chat
-			await page
+			const folderListItem = page
 				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("In den Chat")
-				.click();
-			await page
+				.filter({ hasText: givenFolderName });
+			await folderListItem.hover();
+			await folderListItem.getByLabel("In den Chat").click();
+
+			const doc1ListItem = page
 				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat")
-				.click();
-			await page
+				.filter({ hasText: defaultDocumentName });
+			await doc1ListItem.hover();
+			await doc1ListItem.getByLabel("In den Chat").click();
+
+			const doc2ListItem = page
 				.getByRole("listitem")
-				.filter({ hasText: secondaryDocumentName })
-				.getByLabel("In den Chat")
-				.click();
+				.filter({ hasText: secondaryDocumentName });
+			await doc2ListItem.hover();
+			await doc2ListItem.getByLabel("In den Chat").click();
 
 			await expect(
 				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
@@ -257,13 +266,23 @@ test.describe("Chat", () => {
 			await page.goto("/");
 
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
-			const citations = [documentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
-				// Format as Server-Sent Events (SSE) stream
+				const body = JSON.parse(route.request().postData() || "{}");
+				const messageId = body.message_id;
+
+				const { data: citationRow } = await supabaseAdminClient
+					.from("chat_message_citations")
+					.insert({
+						message_id: messageId,
+						document_chunk_ids: [documentChunkId],
+					})
+					.select("id")
+					.single();
+
 				const streamBody = [
 					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
-					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: [citationRow!.id] })}\n\n`,
 					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
 				].join("");
 
@@ -274,13 +293,19 @@ test.describe("Chat", () => {
 				});
 			});
 
-			// Find the add-to-chat button for the specific document
-			const addButton = page
+			// Wait for the document list to load and find the document list item
+			const documentListItem = page
 				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat");
+				.filter({ hasText: defaultDocumentName });
 
-			// Click the add-to-chat button
+			await expect(documentListItem).toBeVisible();
+
+			// Hover over the document to reveal the add-to-chat button
+			await documentListItem.hover();
+
+			// Find and click the add-to-chat button
+			const addButton = documentListItem.getByLabel("In den Chat");
+			await expect(addButton).toBeVisible();
 			await addButton.click();
 
 			// Fill in the chat question
@@ -394,13 +419,26 @@ test.describe("Chat", () => {
 			await page.goto("/");
 
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
-			const citations = [publicDocumentChunkId];
 
 			await page.route("**/llm/just-chatting", async (route) => {
-				// Format as Server-Sent Events (SSE) stream
+				const body = JSON.parse(route.request().postData() || "{}");
+				const messageId = body.message_id;
+
+				const { data: citationRow } = await supabaseAdminClient
+					.from("chat_message_citations")
+					.insert({
+						message_id: messageId,
+						document_chunk_ids: [publicDocumentChunkId],
+					})
+					.select("id")
+					.single();
+
+				if (!citationRow || !citationRow.id) {
+					throw new Error("Failed to retrieve citationRow or citationRow.id");
+				}
 				const streamBody = [
 					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
-					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: [citationRow.id] })}\n\n`,
 					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
 				].join("");
 
@@ -411,13 +449,20 @@ test.describe("Chat", () => {
 				});
 			});
 
-			// Find the add-to-chat button
-			const addButton = page
+			// Wait for the document list to load and find the document list item
+			const documentListItem = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat");
+				.first();
 
-			// Click the add-to-chat button
+			await expect(documentListItem).toBeVisible();
+
+			// Hover over the document to reveal the add-to-chat button
+			await documentListItem.hover();
+
+			// Find and click the add-to-chat button
+			const addButton = documentListItem.getByLabel("In den Chat");
+			await expect(addButton).toBeVisible();
 			await addButton.click();
 
 			// Fill in the chat question
@@ -463,6 +508,109 @@ test.describe("Chat", () => {
 			}
 		}
 	});
+
+	testWithLoggedInUser(
+		"Chat with external (Parla) citations",
+		async ({ page, isMobile }) => {
+			test.skip(isMobile === true, "Skipping desktop tests on mobile");
+
+			await page.goto("/");
+
+			const externalCitationId = `parla-e2e-${Date.now()}`;
+			const externalFileName = "Drucksache 19/12345";
+			const externalSourceUrl =
+				"https://pardok.parlament-berlin.de/starweb/adis/citat/VT/19/SchrAnique/S19-12345.pdf";
+			const externalSnippet =
+				"Der Senat beantwortet die Schriftliche Anfrage wie folgt.";
+			const externalPage = 1;
+
+			const content = `Laut Parlamentsdokumenten beantwortet der Senat die Anfrage.`;
+
+			await page.route("**/llm/just-chatting", async (route) => {
+				const body = JSON.parse(route.request().postData() || "{}");
+				const messageId = body.message_id;
+
+				const { error: extError } = await supabaseAdminClient
+					.from("external_citations")
+					.insert({
+						id: externalCitationId,
+						snippet: externalSnippet,
+						page: externalPage,
+						file_name: externalFileName,
+						source_url: externalSourceUrl,
+						created_at: new Date().toISOString(),
+						source_type: "parla_document",
+					});
+				if (extError) {
+					throw new Error(
+						`Failed to insert external citation: ${extError.message}`,
+					);
+				}
+
+				const { data: citationRow } = await supabaseAdminClient
+					.from("chat_message_citations")
+					.insert({
+						message_id: messageId,
+						external_citation_ids: [externalCitationId],
+					})
+					.select("id")
+					.single();
+
+				if (!citationRow || !citationRow.id) {
+					throw new Error("Failed to retrieve citationRow or citationRow.id");
+				}
+
+				const streamBody = [
+					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
+					`data: ${JSON.stringify({ type: "data-citations", data: [citationRow.id] })}\n\n`,
+					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
+				].join("");
+
+				await route.fulfill({
+					status: 200,
+					body: streamBody,
+					headers: {
+						"Content-Type": "text/event-stream; charset=utf-8",
+					},
+				});
+			});
+
+			await page
+				.getByPlaceholder("Stellen Sie eine Frage")
+				.fill("Was sagt der Senat?");
+
+			await page
+				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
+				.click();
+
+			const allCitationsButton = page.getByRole("button", {
+				name: "Quellen",
+			});
+			await expect(allCitationsButton).toBeVisible();
+
+			await allCitationsButton.click();
+
+			const citationsDialogHeader = page.getByRole("heading", {
+				name: "Quellen",
+			});
+			await expect(citationsDialogHeader).toBeVisible();
+
+			const citationDetail = page.getByRole("button", {
+				name: new RegExp(`${externalFileName}.*Seite ${externalPage}`),
+			});
+			await expect(citationDetail).toBeVisible();
+
+			const parlaDocumentPill = page.getByTestId("parla-document-pill").first();
+			await expect(parlaDocumentPill).toBeVisible();
+
+			const citationDialogClosingButton = page.getByTestId(
+				/(close-citations-dialog-button-).+/,
+			);
+			await citationDialogClosingButton.click();
+
+			await expect(citationsDialogHeader).not.toBeVisible();
+		},
+	);
 
 	testWithLoggedInUser(
 		"Export chat messages as Word and PDF document",

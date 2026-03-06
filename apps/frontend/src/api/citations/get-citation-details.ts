@@ -2,10 +2,8 @@ import { supabase } from "../../../supabase-client";
 import { useErrorStore } from "../../store/error-store.ts";
 import type { CitationWithDetails, SourceType } from "../../common";
 
-export type CitationWithChunkId = CitationWithDetails & { chunkId: number };
-
 type CitationDetailsFromDb = {
-	chunk_id: number;
+	citation_id: number;
 	file_name: string;
 	source_url: string;
 	page: number;
@@ -15,12 +13,12 @@ type CitationDetailsFromDb = {
 };
 
 export async function getCitationDetails(
-	chunkIds: number[],
-): Promise<CitationWithChunkId[]> {
+	citationIds: number[],
+): Promise<CitationWithDetails[]> {
 	const { handleError } = useErrorStore.getState();
 
 	const { data, error } = await supabase.rpc("get_citation_details", {
-		chunk_ids: chunkIds,
+		citation_ids: citationIds,
 	});
 
 	if (error) {
@@ -29,7 +27,7 @@ export async function getCitationDetails(
 	const dbCitations = data ?? [];
 
 	return dbCitations.map((dbCitation: CitationDetailsFromDb) => ({
-		chunkId: Number(dbCitation.chunk_id),
+		citationId: Number(dbCitation.citation_id),
 		fileName: dbCitation.file_name,
 		sourceUrl: dbCitation.source_url,
 		page: dbCitation.page,
