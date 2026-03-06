@@ -109,8 +109,8 @@ export abstract class BaseContentDbService {
 		bucket: string,
 	): Promise<void> {
 		const pathsToRemove = [source_url];
-		if (/\.(docx)$/i.test(source_url)) {
-			pathsToRemove.push(source_url.replace(/\.(docx)$/i, ".pdf"));
+		if (/\.(docx?)$/i.test(source_url)) {
+			pathsToRemove.push(source_url.replace(/\.(docx?)$/i, ".pdf"));
 		}
 		const { error: deletionError } = await this.client.storage
 			.from(bucket)
@@ -160,10 +160,6 @@ export abstract class BaseContentDbService {
 		},
 		embeddings: Embedding[],
 	): Promise<void> {
-		if (!document) {
-			throw new Error("Document is undefined");
-		}
-
 		// 1. Insert Document
 		const { data, error } = await this.client
 			.from("documents")
@@ -187,10 +183,6 @@ export abstract class BaseContentDbService {
 			throw error;
 		}
 
-		if (!data || data.length === 0) {
-			throw new Error("Document insert returned no data");
-		}
-
 		const newDocument = data[0];
 		const documentId = newDocument.id;
 
@@ -212,7 +204,6 @@ export abstract class BaseContentDbService {
 
 			return null;
 		} catch (innerError) {
-			// If saving aux data fails, we should cleanup the document to avoid partial state
 			await this.deleteDocumentById(documentId);
 			throw innerError;
 		}
@@ -223,27 +214,22 @@ export abstract class BaseContentDbService {
 	 * Deletes a document by its ID after a partial save failure.
 	 * Only logs errors rather than throwing them to avoid masking the original error.
 	 */
-	private async deleteDocumentById(documentId: number): Promise<void> {
-		try {
-			const { bucket, sourceUrl } =
-				await this.getStorageInformationForDocumentId(documentId);
-			await this.deleteFileFromStorage(sourceUrl, bucket);
-		} catch (cleanupError) {
-			console.error(
-				`Failed to cleanup storage for document ${documentId}:`,
-				cleanupError,
-			);
-		}
+	async deleteDocumentById(documentId: number): Promise<void> {
+		const { bucket, sourceUrl } =
+			await this.getStorageInformationForDocumentId(documentId);
+		await this.deleteFileFromStorage(sourceUrl, bucket);
+
 		const { error } = await this.client
 			.from("documents")
 			.delete()
 			.eq("id", documentId);
 
+		/**
+		 * We are intentionally not throwing errors from this cleanup function to avoid masking
+		 * the original error that caused the cleanup to be necessary.
+		 */
 		if (error) {
-			console.error(
-				`Failed to cleanup document ${documentId} after partial save failure:`,
-				error,
-			);
+			captureError(error);
 		}
 	}
 
@@ -270,42 +256,53 @@ export abstract class BaseContentDbService {
 	}
 
 	async extractDocument(document: Document): Promise<ExtractionResult> {
-		const fileName = document.source_url.split("/").pop();
 		const bucket = ["public_document", "default_document"].includes(
 			document.source_type,
 		)
 			? "public_documents"
 			: "documents";
-		try {
-			if (/\.(docx)$/i.test(fileName)) {
-				const wordBuffer = await this.getDocumentBufferFromSupabase(
-					bucket,
-					document.source_url,
-				);
-				const pdfBuffer = await wordExtractionService.convertDocxToPdf(
-					Buffer.from(wordBuffer),
-				);
-				await this.uploadFileToStorage(
-					document.source_url.replace(/\.(docx)$/i, ".pdf"),
-					new File([pdfBuffer], fileName.replace(/\.(docx)$/i, ".pdf"), {
-						type: "application/pdf",
-					}),
-					bucket,
-				);
-			}
-		} catch (error) {
-			captureError(error);
-		}
+
 		const fileBytes = await this.getDocumentBufferFromSupabase(
 			bucket,
 			document.source_url,
 		);
+
+		if (/\.(docx?)$/i.test(document.source_url)) {
+			await this.savePdfPreview({ fileBytes, bucket, document });
+		}
+
 		const extractionResult = await documentExtraction.extractDocument(
 			fileBytes,
 			document,
 		);
 
 		return extractionResult;
+	}
+
+	async savePdfPreview({
+		fileBytes,
+		bucket,
+		document,
+	}: {
+		fileBytes: Uint8Array;
+		bucket: string;
+		document: Document;
+	}) {
+		const pdfPreviewUrl = document.source_url.replace(/\.(docx?)$/i, ".pdf");
+		const fileName = document.source_url.split("/").pop();
+
+		const pdfBuffer = await wordExtractionService.convertDocxToPdf({
+			fileName,
+			wordDoc: Buffer.from(fileBytes),
+		});
+
+		await this.uploadFileToStorage(
+			pdfPreviewUrl,
+			new File([pdfBuffer], fileName, {
+				type: "application/pdf",
+			}),
+			bucket,
+		);
 	}
 
 	/**
