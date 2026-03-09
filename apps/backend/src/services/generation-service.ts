@@ -236,7 +236,6 @@ export class GenerationService {
 		summary: string;
 		shortSummary: string;
 		tags: string[];
-		summaryEmbedding: number[];
 	}> {
 		const numTokens = parsedPages.reduce(
 			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
@@ -293,22 +292,6 @@ export class GenerationService {
 			throw new Error("Failed to generate short document summary");
 		}
 
-		const summaryForEmbedding = await this.compressToTokenLimit(
-			llmIdentifier,
-			summary,
-			{ tokenLimit: config.mistralEmbedMaxContextTokens, maxRounds: 3 },
-		);
-
-		const summaryEmbeddingResponse =
-			await this.embeddingService.generateMistralEmbedding(
-				summaryForEmbedding,
-				userId,
-			);
-
-		if (!summaryEmbeddingResponse || !summaryEmbeddingResponse.embedding) {
-			throw new Error("Failed to generate document embedding");
-		}
-
 		const tags = await this.generateTags(llmIdentifier, summary, {
 			userId,
 		});
@@ -321,7 +304,6 @@ export class GenerationService {
 			summary,
 			shortSummary,
 			tags,
-			summaryEmbedding: summaryEmbeddingResponse.embedding,
 		};
 	}
 

@@ -8,7 +8,7 @@ import {
 	defaultDocumentName,
 	defaultDocumentPath,
 	chunk_index,
-	chunk_jina_embedding,
+	chunk_mistral_embedding,
 	content,
 	created_at,
 	file_checksum,
@@ -19,7 +19,6 @@ import {
 	processing_finished_at,
 	short_summary,
 	summary,
-	summary_jina_embedding,
 	tags,
 	defaultSourceType,
 	defaultBucketName,
@@ -139,7 +138,6 @@ export async function mockDocumentUpload({
 			summary,
 			tags,
 			short_summary,
-			summary_jina_embedding,
 		});
 
 	expect(documentSummariesInsertError).toBeNull();
@@ -155,7 +153,7 @@ export async function mockDocumentUpload({
 				content,
 				page: pageNumber,
 				chunk_index,
-				chunk_jina_embedding,
+				chunk_mistral_embedding,
 			})
 			.select()
 			.single();

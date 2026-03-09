@@ -164,19 +164,6 @@ describe("Base Knowledge Integration Tests", () => {
 
 		expect(summaryError).toBeNull();
 
-		// Create a deterministic test embedding for the summary (stable across runs)
-		const testEmbedding = createDeterministicEmbedding();
-
-		// Update summary with embedding
-		const { error: embeddingError } = await supabaseAdminClient
-			.from("document_summaries")
-			.update({
-				summary_jina_embedding: JSON.stringify(testEmbedding),
-			})
-			.eq("document_id", documentId);
-
-		expect(embeddingError).toBeNull();
-
 		// Create document chunks
 		const chunkEmbedding = createDeterministicEmbedding();
 
@@ -191,7 +178,7 @@ describe("Base Knowledge Integration Tests", () => {
 				owned_by_user_id: null,
 				folder_id: null,
 				access_group_id: accessGroupId,
-				chunk_jina_embedding: JSON.stringify(chunkEmbedding),
+				chunk_mistral_embedding: JSON.stringify(chunkEmbedding),
 			});
 
 		expect(chunkError).toBeNull();
@@ -548,7 +535,7 @@ describe("Base Knowledge Integration Tests", () => {
 						owned_by_user_id: null,
 						folder_id: null,
 						access_group_id: accessGroupId,
-						chunk_jina_embedding: JSON.stringify(testEmbedding),
+						chunk_mistral_embedding: JSON.stringify(testEmbedding),
 					});
 
 				expect(chunkError).toBeNull();
@@ -629,7 +616,7 @@ describe("Base Knowledge Integration Tests", () => {
 					owned_by_user_id: null, // Should be blocked
 					folder_id: null,
 					access_group_id: accessGroupId,
-					chunk_jina_embedding: JSON.stringify(testEmbedding),
+					chunk_mistral_embedding: JSON.stringify(testEmbedding),
 				});
 
 			expect(chunkError).not.toBeNull();
