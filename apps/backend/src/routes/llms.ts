@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { config } from "../config";
 import type { ActiveTools, ChatMessageBody } from "../types/common";
 import type { ModelMessage } from "ai";
 
@@ -11,9 +12,18 @@ const VALID_ACTIVE_TOOLS = new Set<ActiveTools>([
 ]);
 
 function isValidActiveTool(value: unknown): value is ActiveTools {
-	return (
-		typeof value === "string" && VALID_ACTIVE_TOOLS.has(value as ActiveTools)
-	);
+	if (
+		typeof value !== "string" ||
+		!VALID_ACTIVE_TOOLS.has(value as ActiveTools)
+	) {
+		return false;
+	}
+
+	if (value === "webSearchTool" && !config.featureFlagWebSearchAllowed) {
+		return false;
+	}
+
+	return true;
 }
 import { ModelService } from "../services/model-service";
 import { GenerationService } from "../services/generation-service";
