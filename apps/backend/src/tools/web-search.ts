@@ -29,7 +29,7 @@ export const webSearchTool = tool({
 	description: "Search the web for up-to-date information",
 	inputSchema: z.object({ query: z.string() }),
 	execute: async ({ query }) => {
-		const { signal, cancel } = createTimeoutSignal(REQUEST_TIMEOUT_MS);
+		const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
 		try {
 			const res = await fetch(
@@ -59,20 +59,9 @@ export const webSearchTool = tool({
 		} catch (error) {
 			captureError(error);
 			return EMPTY_RESULT;
-		} finally {
-			cancel();
 		}
 	},
 });
-
-function createTimeoutSignal(timeoutMs: number): {
-	signal: AbortSignal;
-	cancel: () => void;
-} {
-	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-	return { signal: controller.signal, cancel: () => clearTimeout(timeoutId) };
-}
 
 async function waitForRateLimitReset(headers: Headers): Promise<void> {
 	const rateLimitRemaining = headers.get("X-RateLimit-Remaining");
