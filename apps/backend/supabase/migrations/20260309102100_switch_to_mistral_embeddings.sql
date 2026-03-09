@@ -1,7 +1,7 @@
 ALTER TABLE document_chunks
 ADD COLUMN chunk_mistral_embedding vector (1024);
 
-CREATE INDEX ON public.document_chunks USING ivfflat (chunk_mistral_embedding vector_ip_ops);
+CREATE INDEX ON public.document_chunks USING ivfflat (chunk_mistral_embedding vector_cosine_ops);
 
 CREATE OR REPLACE FUNCTION public.hybrid_chunk_search (
     query_text TEXT,
