@@ -11,6 +11,7 @@ import { countTokens, trimToTokenLimitByWords } from "./token-utils";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { resilientCall } from "../utils";
 import { embed, embedMany } from "ai";
+import { mistral } from "@ai-sdk/mistral";
 
 export class EmbeddingService {
 	private readonly dbService: BaseContentDbService;
@@ -25,7 +26,7 @@ export class EmbeddingService {
 		const { embedding, usage } = await resilientCall(
 			async () => {
 				return await embed({
-					model: config.mistralEmbeddingModel,
+					model: mistral.embeddingModel(config.mistralEmbeddingModel),
 					value: input,
 				});
 			},
@@ -55,7 +56,7 @@ export class EmbeddingService {
 		const { embeddings, usage } = await resilientCall(
 			async () => {
 				return await embedMany({
-					model: config.mistralEmbeddingModel,
+					model: mistral.embeddingModel(config.mistralEmbeddingModel),
 					values: inputs,
 				});
 			},
