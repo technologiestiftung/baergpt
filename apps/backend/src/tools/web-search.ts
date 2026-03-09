@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
+import { resilientCall } from "../utils";
 
 export type WebSearchResult = {
 	grounding: {
@@ -29,15 +30,22 @@ export const webSearchTool = tool({
 	description: "Search the web for up-to-date information",
 	inputSchema: z.object({ query: z.string() }),
 	execute: async ({ query }) => {
-		const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-
 		try {
-			const res = await fetch(
-				`${config.braveSearchApiUrl}?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
-				{
-					headers: { "X-Subscription-Token": config.braveSearchApiKey },
-					signal,
+			const res = await resilientCall(
+				async () => {
+					const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+
+					return fetch(
+						`${config.braveSearchApiUrl}?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
+						{
+							headers: {
+								"X-Subscription-Token": config.braveSearchApiKey,
+							},
+							signal,
+						},
+					);
 				},
+				{ queueType: "webSearch" },
 			);
 
 			if (!res.ok) {
@@ -46,8 +54,6 @@ export const webSearchTool = tool({
 				);
 				return EMPTY_RESULT;
 			}
-
-			await waitForRateLimitReset(res.headers);
 
 			const data = (await res.json()) as WebSearchResult;
 
@@ -62,22 +68,3 @@ export const webSearchTool = tool({
 		}
 	},
 });
-
-async function waitForRateLimitReset(headers: Headers): Promise<void> {
-	const rateLimitRemaining = headers.get("X-RateLimit-Remaining");
-	const rateLimitReset = headers.get("X-RateLimit-Reset");
-	if (
-		rateLimitRemaining !== null &&
-		parseInt(rateLimitRemaining, 10) === 0 &&
-		rateLimitReset
-	) {
-		const firstToken =
-			rateLimitReset
-				.split(",")
-				.find((t) => t.trim() !== "")
-				?.trim() ?? "";
-		const seconds = parseInt(firstToken, 10);
-		const waitMs = Math.max(seconds * 1000, 0);
-		await new Promise((resolve) => setTimeout(resolve, waitMs));
-	}
-}

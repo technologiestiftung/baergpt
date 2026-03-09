@@ -7,6 +7,7 @@ export interface Config {
 	jinaApiKey: string;
 	jinaEmbeddingModel: string;
 	jinaMaxRPS: number;
+	braveSearchMaxRPS: number;
 	jinaMaxContextTokens: number;
 	jinaMaxDocumentsPerRequest: number;
 	jinaEmbeddingDimensions: number;
@@ -116,10 +117,12 @@ export function verifyConfig(): void {
 
 	if (
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
-		(!process.env.BRAVE_SEARCH_API_KEY || !process.env.BRAVE_SEARCH_API_URL)
+		(!process.env.BRAVE_SEARCH_API_KEY ||
+			!process.env.BRAVE_SEARCH_API_URL ||
+			!process.env.BRAVE_SEARCH_MAX_RPS)
 	) {
 		throw new Error(
-			"BRAVE_SEARCH_API_KEY and BRAVE_SEARCH_API_URL must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
+			"BRAVE_SEARCH_API_KEY, BRAVE_SEARCH_API_URL and BRAVE_SEARCH_MAX_RPS must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
 		);
 	}
 }
@@ -131,6 +134,7 @@ export const config: Config = {
 	jinaApiKey: process.env.JINA_API_KEY,
 	jinaEmbeddingModel: process.env.JINA_EMBEDDING_MODEL,
 	jinaMaxRPS: parseInt(process.env.JINA_MAX_RPS, 10),
+	braveSearchMaxRPS: parseInt(process.env.BRAVE_SEARCH_MAX_RPS, 10),
 	jinaMaxContextTokens: parseInt(process.env.JINA_MAX_CONTEXT_TOKENS, 10),
 	jinaMaxDocumentsPerRequest: parseInt(
 		process.env.JINA_MAX_DOCUMENTS_PER_REQUEST,

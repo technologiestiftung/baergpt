@@ -94,4 +94,25 @@ describe("resilientCall()", () => {
 			expect(mockOperation).toHaveBeenCalledTimes(amountOfCalls);
 		});
 	}, 20_000);
+
+	describe("Web search queue", () => {
+		it("should throttle web search operations according to rate limit", async () => {
+			const mockOperation = vi.fn(async () => "result");
+			const startTime = Date.now();
+			const amountOfCalls = config.braveSearchMaxRPS + 1;
+
+			const promises = Array.from({ length: amountOfCalls }, () =>
+				resilientCall(mockOperation, { queueType: "webSearch" }),
+			);
+
+			await Promise.all(promises);
+			const endTime = Date.now();
+			const duration = endTime - startTime;
+
+			const expectedDuration = 900; // 0.9 second for some margin
+
+			expect(duration).toBeGreaterThanOrEqual(expectedDuration);
+			expect(mockOperation).toHaveBeenCalledTimes(amountOfCalls);
+		});
+	}, 20_000);
 });
