@@ -116,8 +116,7 @@ export function verifyConfig(): void {
 
 	if (
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
-		!process.env.BRAVE_SEARCH_API_KEY ||
-		!process.env.BRAVE_SEARCH_API_URL
+		(!process.env.BRAVE_SEARCH_API_KEY || !process.env.BRAVE_SEARCH_API_URL)
 	) {
 		throw new Error(
 			"BRAVE_SEARCH_API_KEY and BRAVE_SEARCH_API_URL must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
