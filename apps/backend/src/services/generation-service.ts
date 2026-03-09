@@ -88,36 +88,6 @@ export class GenerationService {
 	}
 
 	/**
-	 * Compress content to a target token limit by:
-	 * 1) attempting up to `maxRounds` model compressions, then
-	 * 2) hard-trimming with a binary search as a final safeguard.
-	 */
-	private async compressToTokenLimit(
-		llmIdentifier: string,
-		content: string,
-		options: { tokenLimit: number; maxRounds?: number } = { tokenLimit: 0 },
-	): Promise<string> {
-		const { tokenLimit, maxRounds = 3 } = options;
-		let current = content;
-		let tokens = countTokens(current);
-
-		for (let round = 0; round < maxRounds && tokens > tokenLimit; round++) {
-			const shorter = await this.generateSummary(llmIdentifier, current);
-			if (!shorter) {
-				break;
-			}
-			current = shorter;
-			tokens = countTokens(current);
-		}
-
-		if (tokens <= tokenLimit) {
-			return current;
-		}
-
-		return trimToTokenLimitByWords(current, tokenLimit);
-	}
-
-	/**
 	 * Estimate system prompt token count for a given prompt name by compiling with empty content.
 	 */
 	private async estimateSystemPromptTokens(
