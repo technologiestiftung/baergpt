@@ -33,7 +33,7 @@ export const webSearchTool = tool({
 
 		try {
 			const res = await fetch(
-				`https://api.search.brave.com/res/v1/llm/context?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
+				`${config.braveSearchApiUrl}?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
 				{
 					headers: { "X-Subscription-Token": config.braveSearchApiKey },
 					signal,

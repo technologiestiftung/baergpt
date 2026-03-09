@@ -30,6 +30,7 @@ export interface Config {
 	featureFlagMcpParlaAllowed: boolean;
 	mcpParlaUrl: string;
 	braveSearchApiKey: string;
+	braveSearchApiUrl: string;
 	featureFlagWebSearchAllowed: boolean;
 }
 
@@ -115,10 +116,11 @@ export function verifyConfig(): void {
 
 	if (
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
-		!process.env.BRAVE_SEARCH_API_KEY
+		!process.env.BRAVE_SEARCH_API_KEY ||
+		!process.env.BRAVE_SEARCH_API_URL
 	) {
 		throw new Error(
-			"BRAVE_SEARCH_API_KEY must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
+			"BRAVE_SEARCH_API_KEY and BRAVE_SEARCH_API_URL must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
 		);
 	}
 }
@@ -157,6 +159,7 @@ export const config: Config = {
 		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
 	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
+	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,
 	featureFlagWebSearchAllowed:
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 };
