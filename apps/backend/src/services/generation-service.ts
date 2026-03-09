@@ -296,13 +296,12 @@ export class GenerationService {
 		const summaryForEmbedding = await this.compressToTokenLimit(
 			llmIdentifier,
 			summary,
-			{ tokenLimit: config.jinaMaxContextTokens, maxRounds: 3 },
+			{ tokenLimit: config.mistralEmbedMaxContextTokens, maxRounds: 3 },
 		);
 
 		const summaryEmbeddingResponse =
-			await this.embeddingService.generateJinaEmbedding(
+			await this.embeddingService.generateMistralEmbedding(
 				summaryForEmbedding,
-				"retrieval.passage",
 				userId,
 			);
 

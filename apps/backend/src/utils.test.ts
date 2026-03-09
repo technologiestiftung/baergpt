@@ -53,7 +53,7 @@ describe("resilientCall()", () => {
 		it("should throttle embeddings operations according to rate limit", async () => {
 			const mockOperation = vi.fn(async () => "result");
 			const startTime = Date.now();
-			const amountOfCalls = config.jinaMaxRPS + 1;
+			const amountOfCalls = config.mistralMaxRPS + 1;
 
 			// Create multiple operations that should be throttled
 			const promises = Array.from({ length: amountOfCalls }, () =>

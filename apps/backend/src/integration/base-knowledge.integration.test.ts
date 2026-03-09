@@ -22,7 +22,7 @@ const supabaseAnonClient = createClient<Database>(
 	config.supabaseAnonKey,
 );
 
-const EMBEDDING_LENGTH = config.jinaEmbeddingDimensions;
+const EMBEDDING_LENGTH = config.mistralEmbeddingDimensions;
 const PUBLIC_BUCKET = "public_documents";
 const SMALL_FILE_SIZE = 500;
 
@@ -262,7 +262,7 @@ describe("Base Knowledge Integration Tests", () => {
 	it("should perform hybrid search on base knowledge documents", async () => {
 		// Mock embedding generation to avoid external API dependency in tests
 		// override for test
-		embeddingService.generateJinaEmbedding = async () => ({
+		embeddingService.generateMistralEmbedding = async () => ({
 			embedding: Array.from(
 				{ length: EMBEDDING_LENGTH },
 				(_, i) => (i % 10) / 10,
@@ -283,9 +283,8 @@ describe("Base Knowledge Integration Tests", () => {
 
 		// Generate embedding for test query
 		const testQuery = "artificial intelligence";
-		const embeddingResponse = await embeddingService.generateJinaEmbedding(
+		const embeddingResponse = await embeddingService.generateMistralEmbedding(
 			testQuery,
-			"retrieval.query",
 			testUserId,
 		);
 

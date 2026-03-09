@@ -224,24 +224,9 @@ export interface DocumentBufferResponse {
 	filename: string;
 }
 
-export interface JinaEmbeddingData {
-	index: number;
-	embedding: number[];
-}
-
-export interface JinaEmbeddingUsage {
-	total_tokens: number;
-}
-
-export interface JinaEmbeddingResponse {
-	data: JinaEmbeddingData[];
-	usage: JinaEmbeddingUsage;
-}
-
-export interface JinaSegmenterResponse {
-	num_tokens: number;
-	num_chunks: number;
-	chunks: string[];
+export interface MistralEmbeddingResponse {
+	data: { embedding: number[]; index: number }[];
+	usage: { total_tokens: number };
 }
 
 export class LLMHandler {
