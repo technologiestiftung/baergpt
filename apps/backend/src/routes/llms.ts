@@ -52,7 +52,7 @@ llms.post("/just-chatting", async (c: Context) => {
 			);
 		}
 
-		const rawActiveTools = body.active_tools;
+		const rawActiveTools = body.active_tools ?? [];
 		if (
 			!Array.isArray(rawActiveTools) ||
 			!rawActiveTools.every(isValidActiveTool)
