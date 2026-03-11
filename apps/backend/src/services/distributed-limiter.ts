@@ -2,10 +2,11 @@ import Bottleneck from "@sergiiivzhenko/bottleneck";
 import Redis from "ioredis";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
-type QueueType = "embeddings" | "llm";
+type QueueType = "embeddings" | "llm" | "webSearch";
 
 let embeddingsLimiter: Bottleneck | undefined;
 let llmLimiter: Bottleneck | undefined;
+let webSearchLimiter: Bottleneck | undefined;
 let readyPromise: Promise<void> | undefined;
 
 function toClientOptions(url: string) {
@@ -55,7 +56,7 @@ export function initQueues(): Promise<void> {
 		return readyPromise;
 	}
 
-	if (embeddingsLimiter && llmLimiter) {
+	if (embeddingsLimiter && llmLimiter && webSearchLimiter) {
 		return Promise.resolve();
 	}
 
@@ -91,6 +92,19 @@ export function initQueues(): Promise<void> {
 		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
 	});
 
+	webSearchLimiter = new Bottleneck({
+		id: "baergpt:web-search",
+		datastore: "ioredis",
+		Redis,
+		clientOptions,
+		reservoir: config.braveSearchMaxRPS,
+		reservoirRefreshAmount: config.braveSearchMaxRPS,
+		reservoirRefreshInterval: 1000,
+		expiration: 600000,
+		heartbeatInterval: 1000,
+		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
+	});
+
 	llmLimiter.on("error", (error: Error) => {
 		console.error(`[Redis LLM Limiter] Error: ${error.message}`);
 		captureError(`Redis limiter failed: ${error.message}`);
@@ -101,10 +115,16 @@ export function initQueues(): Promise<void> {
 		captureError(`Redis limiter failed: ${error.message}`);
 	});
 
+	webSearchLimiter.on("error", (error: Error) => {
+		console.error(`[Redis Web Search Limiter] Error: ${error.message}`);
+		captureError(`Redis limiter failed: ${error.message}`);
+	});
+
 	// Ensure scripts are loaded and clients are ready before any schedule() calls.
 	readyPromise = Promise.all([
 		embeddingsLimiter.ready(),
 		llmLimiter.ready(),
+		webSearchLimiter.ready(),
 	]).then(() => {
 		/* eslint-disable-next-line no-console */
 		console.info("Queue system initialized");
@@ -128,6 +148,9 @@ export async function scheduleDistributed<T>(
 	}
 	if (queueType === "llm" && llmLimiter) {
 		return llmLimiter.schedule(task);
+	}
+	if (queueType === "webSearch" && webSearchLimiter) {
+		return webSearchLimiter.schedule(task);
 	}
 	throw new Error(`Distributed limiter for "${queueType}" not initialized.`);
 }
