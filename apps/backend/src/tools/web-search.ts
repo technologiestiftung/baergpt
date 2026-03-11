@@ -49,8 +49,16 @@ export const webSearchTool = tool({
 			);
 
 			if (!res.ok) {
+				const error = (await res.json()) as {
+					errors: {
+						code: string;
+						detail: string;
+					}[];
+				};
 				captureError(
-					new Error(`Brave search failed with status ${res.status}`),
+					new Error(
+						`Brave search failed with status ${res.status} ${error.errors[0].code}: ${error.errors[0].detail}`,
+					),
 				);
 				return EMPTY_RESULT;
 			}
