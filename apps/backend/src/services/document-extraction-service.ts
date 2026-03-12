@@ -8,6 +8,7 @@ import mammoth from "mammoth";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
 import { getDocumentProxy } from "unpdf";
+import { ocrTempFileName } from "../constants";
 
 export class DocumentExtractionService {
 	async extractDocument(
@@ -448,7 +449,7 @@ class MistralOCRService {
 			async () =>
 				await client.files.upload({
 					file: {
-						fileName: "uploaded_file.pdf",
+						fileName: ocrTempFileName,
 						content: buffer,
 					},
 					purpose: "ocr",
