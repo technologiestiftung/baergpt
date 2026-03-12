@@ -48,7 +48,7 @@ async function withRetries<T>(operation: () => Promise<T>): Promise<T> {
 export async function resilientCall<T>(
 	operation: () => Promise<T>,
 	options: {
-		queueType?: "embeddings" | "llm";
+		queueType?: "embeddings" | "llm" | "webSearch";
 	} = {},
 ): Promise<T> {
 	const { queueType } = options;
@@ -59,6 +59,10 @@ export async function resilientCall<T>(
 
 	if (queueType === "llm") {
 		return withRetries(() => scheduleDistributed("llm", operation));
+	}
+
+	if (queueType === "webSearch") {
+		return withRetries(() => scheduleDistributed("webSearch", operation));
 	}
 
 	return withRetries(operation);

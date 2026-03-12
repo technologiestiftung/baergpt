@@ -21,7 +21,7 @@
 		"db:upload-default-documents": "tsx ./supabase/upload-default-documents.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/mcp": "1.0.5",
+		"@ai-sdk/mcp": "1.0.23",
 		"@ai-sdk/mistral": "3.0.24",
 		"@dqbd/tiktoken": "1.0.17",
 		"@hono/node-server": "1.19.11",

@@ -27,6 +27,10 @@ export interface Config {
 	frequencyPenalty: number;
 	featureFlagMcpParlaAllowed: boolean;
 	mcpParlaUrl: string;
+	braveSearchApiKey: string;
+	braveSearchApiUrl: string;
+	braveSearchMaxRPS: number;
+	featureFlagWebSearchAllowed: boolean;
 }
 
 /* eslint-disable-next-line complexity */
@@ -102,6 +106,17 @@ export function verifyConfig(): void {
 			"MCP_PARLA_URL must be defined when FEATURE_FLAG_MCP_PARLA_ALLOWED is true",
 		);
 	}
+
+	if (
+		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
+		(!process.env.BRAVE_SEARCH_API_KEY ||
+			!process.env.BRAVE_SEARCH_API_URL ||
+			!process.env.BRAVE_SEARCH_MAX_RPS)
+	) {
+		throw new Error(
+			"BRAVE_SEARCH_API_KEY, BRAVE_SEARCH_API_URL and BRAVE_SEARCH_MAX_RPS must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
+		);
+	}
 }
 
 export const config: Config = {
@@ -141,4 +156,9 @@ export const config: Config = {
 	featureFlagMcpParlaAllowed:
 		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
+	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
+	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,
+	braveSearchMaxRPS: parseInt(process.env.BRAVE_SEARCH_MAX_RPS, 10),
+	featureFlagWebSearchAllowed:
+		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 };
