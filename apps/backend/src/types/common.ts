@@ -205,7 +205,7 @@ export interface HybridSearchResult {
 export interface ParsedPage {
 	content: string;
 	pageNumber: number;
-	tokenCount?: number;
+	tokenCount: number;
 }
 
 export class DocumentNotFoundError extends Error {

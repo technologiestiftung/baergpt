@@ -31,6 +31,10 @@ export function computeSafePayload(
 	return Math.max(targetFloor, Math.min(targetCap, raw));
 }
 
+/**
+ * Trim the input text to fit within the token limit
+ * through a binary search approach
+ */
 export function trimToTokenLimitByWords(
 	text: string,
 	tokenLimit: number,
@@ -38,24 +42,23 @@ export function trimToTokenLimitByWords(
 	if (countTokens(text) <= tokenLimit) {
 		return text;
 	}
+
 	const words = text.split(/\s+/);
-	let lo = 0;
-	let hi = words.length;
-	while (lo < hi) {
-		const mid = Math.floor((lo + hi + 1) / 2);
-		const candidate = words.slice(0, mid).join(" ");
+
+	let lowerBound = 0;
+	let upperBound = words.length;
+
+	while (lowerBound < upperBound) {
+		const middle = Math.floor((lowerBound + upperBound + 1) / 2);
+
+		const candidate = words.slice(0, middle).join(" ");
+
 		if (countTokens(candidate) <= tokenLimit) {
-			lo = mid;
+			lowerBound = middle;
 		} else {
-			hi = mid - 1;
+			upperBound = middle - 1;
 		}
 	}
-	return words.slice(0, lo).join(" ");
-}
 
-export function computeBatchTokenLimit(
-	totalLimit: number,
-	safetyMargin = 1000,
-): number {
-	return Math.max(0, totalLimit - safetyMargin);
+	return words.slice(0, lowerBound).join(" ");
 }

@@ -828,17 +828,6 @@ test.describe("Documents", () => {
 				throw new Error("Failed to get default access group");
 			}
 
-			// Create a mock default document
-			await mockDocumentUpload({
-				userId: account.id,
-				accessToken: session.access_token,
-				accessGroupId: accessGroup.id,
-				fileName: seedDefaultDocumentName,
-				filePath: defaultDocumentPath,
-				sourceType: "default_document" as const,
-				bucketName: "public_documents",
-			});
-
 			// Fixture has 1 personal doc; mock 28 more → 29 personal. With 1 default (created above) = 30 visible (at limit)
 			for (let i = 1; i < maxFiles - 1; i++) {
 				await mockDocumentUpload({
