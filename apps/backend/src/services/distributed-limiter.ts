@@ -56,7 +56,7 @@ export function initQueues(): Promise<void> {
 		return readyPromise;
 	}
 
-	if (embeddingsLimiter && llmLimiter && webSearchLimiter) {
+	if (embeddingsLimiter && llmLimiter) {
 		return Promise.resolve();
 	}
 
@@ -92,18 +92,28 @@ export function initQueues(): Promise<void> {
 		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
 	});
 
-	webSearchLimiter = new Bottleneck({
-		id: "baergpt:web-search",
-		datastore: "ioredis",
-		Redis,
-		clientOptions,
-		reservoir: config.braveSearchMaxRPS,
-		reservoirRefreshAmount: config.braveSearchMaxRPS,
-		reservoirRefreshInterval: 1000,
-		expiration: 600000,
-		heartbeatInterval: 1000,
-		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
-	});
+	if (
+		config.featureFlagWebSearchAllowed &&
+		config.braveSearchMaxRPS !== undefined
+	) {
+		webSearchLimiter = new Bottleneck({
+			id: "baergpt:web-search",
+			datastore: "ioredis",
+			Redis,
+			clientOptions,
+			reservoir: config.braveSearchMaxRPS,
+			reservoirRefreshAmount: config.braveSearchMaxRPS,
+			reservoirRefreshInterval: 1000,
+			expiration: 600000,
+			heartbeatInterval: 1000,
+			clientTimeout: 480000,
+		});
+
+		webSearchLimiter.on("error", (error: Error) => {
+			console.error(`[Redis Web Search Limiter] Error: ${error.message}`);
+			captureError(`Redis limiter failed: ${error.message}`);
+		});
+	}
 
 	llmLimiter.on("error", (error: Error) => {
 		console.error(`[Redis LLM Limiter] Error: ${error.message}`);
@@ -115,17 +125,11 @@ export function initQueues(): Promise<void> {
 		captureError(`Redis limiter failed: ${error.message}`);
 	});
 
-	webSearchLimiter.on("error", (error: Error) => {
-		console.error(`[Redis Web Search Limiter] Error: ${error.message}`);
-		captureError(`Redis limiter failed: ${error.message}`);
-	});
-
-	// Ensure scripts are loaded and clients are ready before any schedule() calls.
-	readyPromise = Promise.all([
-		embeddingsLimiter.ready(),
-		llmLimiter.ready(),
-		webSearchLimiter.ready(),
-	]).then(() => {
+	const limiters = [embeddingsLimiter.ready(), llmLimiter.ready()];
+	if (webSearchLimiter) {
+		limiters.push(webSearchLimiter.ready());
+	}
+	readyPromise = Promise.all(limiters).then(() => {
 		/* eslint-disable-next-line no-console */
 		console.info("Queue system initialized");
 	});
