@@ -28,7 +28,7 @@ async function run() {
 	const { total: initialTotal } = result;
 
 	if (initialTotal === 0) {
-		console.log("No orphans found.");
+		console.log("No orphan(s) found.");
 		return;
 	}
 

@@ -571,6 +571,14 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
+			get_documents_with_storage_objects: {
+				Args: { p_limit: number; p_offset: number };
+				Returns: {
+					bucket_id: string;
+					source_url: string;
+					version: string;
+				}[];
+			};
 			get_maintenance_mode_status: {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
