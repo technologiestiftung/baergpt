@@ -26,10 +26,10 @@ export interface Config {
 	presencePenalty: number;
 	frequencyPenalty: number;
 	featureFlagMcpParlaAllowed: boolean;
-	mcpParlaUrl: string;
-	braveSearchApiKey: string;
-	braveSearchApiUrl: string;
-	braveSearchMaxRPS: number;
+	mcpParlaUrl?: string;
+	braveSearchApiKey?: string;
+	braveSearchApiUrl?: string;
+	braveSearchMaxRPS?: number;
 	featureFlagWebSearchAllowed: boolean;
 }
 
@@ -158,7 +158,9 @@ export const config: Config = {
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
 	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
 	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,
-	braveSearchMaxRPS: parseInt(process.env.BRAVE_SEARCH_MAX_RPS, 10),
+	braveSearchMaxRPS: process.env.BRAVE_SEARCH_MAX_RPS
+		? parseInt(process.env.BRAVE_SEARCH_MAX_RPS, 10)
+		: undefined,
 	featureFlagWebSearchAllowed:
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 };
