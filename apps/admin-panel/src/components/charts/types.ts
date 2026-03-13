@@ -13,4 +13,9 @@ export type ProductDashboardStats = {
 		count: number;
 		domain: string;
 	}[];
+	total_chats: number;
+	total_user_documents: number;
+	average_inferences_per_user: number;
+	total_messages_with_documents: 0;
+	total_messages_without_documents: 0;
 };
