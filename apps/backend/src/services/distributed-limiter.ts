@@ -4,8 +4,7 @@ import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 type QueueType = "embeddings" | "llm" | "webSearch";
 
-let embeddingsLimiter: Bottleneck | undefined;
-let llmLimiter: Bottleneck | undefined;
+let mistralLimiter: Bottleneck | undefined;
 let webSearchLimiter: Bottleneck | undefined;
 let readyPromise: Promise<void> | undefined;
 
@@ -56,7 +55,7 @@ export function initQueues(): Promise<void> {
 		return readyPromise;
 	}
 
-	if (embeddingsLimiter && llmLimiter && webSearchLimiter) {
+	if (mistralLimiter) {
 		return Promise.resolve();
 	}
 
@@ -66,21 +65,8 @@ export function initQueues(): Promise<void> {
 
 	const clientOptions = toClientOptions(config.redisUrl);
 
-	embeddingsLimiter = new Bottleneck({
-		id: "baergpt:embeddings",
-		datastore: "ioredis",
-		Redis,
-		clientOptions,
-		reservoir: config.jinaMaxRPS,
-		reservoirRefreshAmount: config.jinaMaxRPS,
-		reservoirRefreshInterval: 1000,
-		expiration: 600000,
-		heartbeatInterval: 1000,
-		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
-	});
-
-	llmLimiter = new Bottleneck({
-		id: "baergpt:llm",
+	mistralLimiter = new Bottleneck({
+		id: "baergpt:mistral",
 		datastore: "ioredis",
 		Redis,
 		clientOptions,
@@ -92,40 +78,39 @@ export function initQueues(): Promise<void> {
 		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
 	});
 
-	webSearchLimiter = new Bottleneck({
-		id: "baergpt:web-search",
-		datastore: "ioredis",
-		Redis,
-		clientOptions,
-		reservoir: config.braveSearchMaxRPS,
-		reservoirRefreshAmount: config.braveSearchMaxRPS,
-		reservoirRefreshInterval: 1000,
-		expiration: 600000,
-		heartbeatInterval: 1000,
-		clientTimeout: 480000, // Wait 8 minutes before deregistering unresponsive clients
-	});
-
-	llmLimiter.on("error", (error: Error) => {
-		console.error(`[Redis LLM Limiter] Error: ${error.message}`);
+	mistralLimiter.on("error", (error: Error) => {
+		console.error(`[Redis Mistral Limiter] Error: ${error.message}`);
 		captureError(`Redis limiter failed: ${error.message}`);
 	});
 
-	embeddingsLimiter.on("error", (error: Error) => {
-		console.error(`[Redis Embeddings Limiter] Error: ${error.message}`);
-		captureError(`Redis limiter failed: ${error.message}`);
-	});
+	const limiters = [mistralLimiter.ready()];
 
-	webSearchLimiter.on("error", (error: Error) => {
-		console.error(`[Redis Web Search Limiter] Error: ${error.message}`);
-		captureError(`Redis limiter failed: ${error.message}`);
-	});
+	if (
+		config.featureFlagWebSearchAllowed &&
+		config.braveSearchMaxRPS !== undefined
+	) {
+		webSearchLimiter = new Bottleneck({
+			id: "baergpt:web-search",
+			datastore: "ioredis",
+			Redis,
+			clientOptions,
+			reservoir: config.braveSearchMaxRPS,
+			reservoirRefreshAmount: config.braveSearchMaxRPS,
+			reservoirRefreshInterval: 1000,
+			expiration: 600000,
+			heartbeatInterval: 1000,
+			clientTimeout: 480000,
+		});
 
-	// Ensure scripts are loaded and clients are ready before any schedule() calls.
-	readyPromise = Promise.all([
-		embeddingsLimiter.ready(),
-		llmLimiter.ready(),
-		webSearchLimiter.ready(),
-	]).then(() => {
+		webSearchLimiter.on("error", (error: Error) => {
+			console.error(`[Redis Web Search Limiter] Error: ${error.message}`);
+			captureError(`Redis limiter failed: ${error.message}`);
+		});
+
+		limiters.push(webSearchLimiter.ready());
+	}
+
+	readyPromise = Promise.all(limiters).then(() => {
 		/* eslint-disable-next-line no-console */
 		console.info("Queue system initialized");
 	});
@@ -143,11 +128,8 @@ export async function scheduleDistributed<T>(
 
 	await readyPromise;
 
-	if (queueType === "embeddings" && embeddingsLimiter) {
-		return embeddingsLimiter.schedule(task);
-	}
-	if (queueType === "llm" && llmLimiter) {
-		return llmLimiter.schedule(task);
+	if ((queueType === "embeddings" || queueType === "llm") && mistralLimiter) {
+		return mistralLimiter.schedule(task);
 	}
 	if (queueType === "webSearch" && webSearchLimiter) {
 		return webSearchLimiter.schedule(task);

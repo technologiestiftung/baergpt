@@ -21,8 +21,6 @@ export type DocumentSummary = {
 	owned_by_user_id?: string;
 	summary: string;
 	short_summary?: string;
-	summary_embedding?: string;
-	summary_jina_embedding?: string;
 	tags: string[];
 	folder_id?: number;
 };
@@ -33,7 +31,7 @@ export type DocumentChunk = {
 	owned_by_user_id?: string;
 	content: string;
 	embedding?: string;
-	chunk_jina_embedding?: string;
+	chunk_mistral_embedding?: string;
 	page: number;
 	chunk_index: number;
 	folder_id?: number;
@@ -95,11 +93,6 @@ export type Embedding = {
 export type EmbeddingResult = {
 	document: Document;
 	embeddings: Array<Embedding>;
-	tokenUsage: number;
-};
-
-export type SummaryEmbeddingResult = {
-	embedding: Array<number>;
 	tokenUsage: number;
 };
 
@@ -229,24 +222,9 @@ export interface DocumentBufferResponse {
 	filename: string;
 }
 
-export interface JinaEmbeddingData {
-	index: number;
-	embedding: number[];
-}
-
-export interface JinaEmbeddingUsage {
-	total_tokens: number;
-}
-
-export interface JinaEmbeddingResponse {
-	data: JinaEmbeddingData[];
-	usage: JinaEmbeddingUsage;
-}
-
-export interface JinaSegmenterResponse {
-	num_tokens: number;
-	num_chunks: number;
-	chunks: string[];
+export interface MistralEmbeddingResponse {
+	data: { embedding: number[]; index: number }[];
+	usage: { total_tokens: number };
 }
 
 export class LLMHandler {
