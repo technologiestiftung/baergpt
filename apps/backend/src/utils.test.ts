@@ -95,11 +95,11 @@ describe("resilientCall()", () => {
 		});
 	}, 20_000);
 
-	describe("Web search queue", () => {
+	describe.skipIf(!config.featureFlagWebSearchAllowed)("Web search queue", () => {
 		it("should throttle web search operations according to rate limit", async () => {
 			const mockOperation = vi.fn(async () => "result");
 			const startTime = Date.now();
-			const amountOfCalls = config.braveSearchMaxRPS + 1;
+			const amountOfCalls = (config.braveSearchMaxRPS ?? 10) + 1;
 
 			const promises = Array.from({ length: amountOfCalls }, () =>
 				resilientCall(mockOperation, { queueType: "webSearch" }),
