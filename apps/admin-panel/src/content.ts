@@ -232,6 +232,16 @@ export const Content = {
 	"productDashboard.metricCards.mau.label": "Monthly Active Users",
 	"productDashboard.metricCards.mau.details": "Letzte 30 Tage",
 
+	"productDashboard.metricCards.totalChats.label": "Anzahl an Chats",
+	"productDashboard.metricCards.totalUserDocuments.label":
+		"Hochgeladene Dokumente von Nutzer:innen",
+	"productDashboard.metricCards.averageInferencesPerUser.label":
+		"Durchschnittliche Inferenzen pro Nutzer:in",
+	"productDashboard.metricCards.totalMessagesWithDocuments.label":
+		"Nachrichten mit Dokumenten",
+	"productDashboard.metricCards.totalMessagesWithoutDocuments.label":
+		"Nachrichten ohne Dokumente",
+
 	"productDashboard.domainsTable.title": "Domains",
 	"productDashboard.domainsTable.description": "Registrierte User pro Domain.",
 	"productDashboard.domainsTable.head.domain": "Domain",

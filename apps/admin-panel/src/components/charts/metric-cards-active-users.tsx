@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ProductDashboardStats } from "@/components/charts/types.ts";
 import Content from "@/content.ts";
 
-export function MetricCards({
+export function MetricCardsActiveUsers({
 	dau,
 	wau,
 	mau,
