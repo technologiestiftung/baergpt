@@ -18,7 +18,11 @@
 		"db:reset": "supabase db reset && npm run db:typegen && npm run db:upload-default-documents && npm run db:localseed",
 		"db:typegen": "supabase gen types --lang typescript --local > ../../libs/db-schema/index.ts && prettier --write ../../libs/db-schema/index.ts && ESLINT_USE_FLAT_CONFIG=true eslint --fix ../../libs/db-schema/index.ts",
 		"db:localseed": "tsx ./supabase/local-seed.ts",
-		"db:upload-default-documents": "tsx ./supabase/upload-default-documents.ts"
+		"db:upload-default-documents": "tsx supabase/scripts/upload-default-documents.ts",
+		"s3:assess-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts -- --dry-run",
+		"s3:cleanup-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts -- --dry-run",
+		"mistral:assess-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts -- --dry-run",
+		"mistral:cleanup-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts -- --dry-run"
 	},
 	"dependencies": {
 		"@ai-sdk/mcp": "1.0.23",
@@ -51,6 +55,7 @@
 		"zod": "4.1.11"
 	},
 	"devDependencies": {
+		"@aws-sdk/client-s3": "3.1007.0",
 		"@repo/typescript-config": "file:../../libs/typescript-config",
 		"@types/node": "22.5.0",
 		"@types/pdf-parse": "1.1.4",
