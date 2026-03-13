@@ -25,7 +25,9 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: ".nvmrc"
-          npm-version: "11.x"
+
+      - name: Upgrade npm 🔧
+        run: npm install -g npm@11.x
 
       - name: Cache npm dependencies 💾
         id: cache-npm-deps
