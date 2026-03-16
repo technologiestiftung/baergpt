@@ -77,7 +77,9 @@ export class EmbeddingService {
 			current.push(input);
 			currentTokens += tokens;
 		}
-		if (current.length > 0) subBatches.push(current);
+		if (current.length > 0) {
+			subBatches.push(current);
+		}
 
 		const allEmbeddings: number[][] = [];
 		let totalTokenUsage = 0;
