@@ -432,7 +432,10 @@ export class GenerationService {
 										"document-citation-extraction",
 										{
 											type: "chat",
-											label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+											label:
+												config.nodeEnv === "test"
+													? "development"
+													: config.nodeEnv,
 										},
 									);
 
@@ -487,7 +490,10 @@ export class GenerationService {
 									const webCitationPromptClient = await langfuse.prompt.get(
 										"web-citation-extraction",
 										{
-											label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+											label:
+												config.nodeEnv === "test"
+													? "development"
+													: config.nodeEnv,
 											type: "chat",
 										},
 									);
