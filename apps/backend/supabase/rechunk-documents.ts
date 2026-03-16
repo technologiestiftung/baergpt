@@ -64,17 +64,21 @@ async function rechunkDocuments(targetDocIds: number[]) {
 		const docForStorage: Document = { ...baseDoc };
 
 		try {
-			// 2. Delete existing chunks
+			// 2. Fetch existing chunk IDs for the document
 			// eslint-disable-next-line no-console
-			console.log(`Deleting existing chunks for document ${docId}...`);
-			const { error: deleteError } = await serviceRoleDbClient
-				.from("document_chunks")
-				.delete()
-				.eq("document_id", docId);
+			console.log(`Fetching existing chunk IDs for document ${docId}...`);
+			const { data: oldChunks, error: fetchChunksError } =
+				await serviceRoleDbClient
+					.from("document_chunks")
+					.select("id")
+					.eq("document_id", docId);
 
-			if (deleteError) {
-				throw new Error(`Failed to delete chunks: ${deleteError.message}`);
+			if (fetchChunksError) {
+				throw new Error(
+					`Failed to fetch existing chunks: ${fetchChunksError.message}`,
+				);
 			}
+			const oldChunkIds = oldChunks?.map((c) => c.id) || [];
 
 			// 3. Re-extract document content from storage
 			// eslint-disable-next-line no-console
@@ -94,6 +98,22 @@ async function rechunkDocuments(targetDocIds: number[]) {
 			// eslint-disable-next-line no-console
 			console.log(`Inserting ${embeddings.length} new chunks...`);
 			await dbService.logEmbeddings(embeddings, docForStorage);
+
+			// 6. Delete old chunks by ID
+			if (oldChunkIds.length > 0) {
+				// eslint-disable-next-line no-console
+				console.log(
+					`Deleting ${oldChunkIds.length} old chunks for document ${docId}...`,
+				);
+				const { error: deleteError } = await serviceRoleDbClient
+					.from("document_chunks")
+					.delete()
+					.in("id", oldChunkIds);
+
+				if (deleteError) {
+					console.error(`Failed to delete old chunks: ${deleteError.message}`);
+				}
+			}
 
 			// eslint-disable-next-line no-console
 			console.log(`Successfully re-chunked document ${docId}.`);
