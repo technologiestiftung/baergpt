@@ -428,19 +428,25 @@ export class GenerationService {
 										}),
 									);
 
+									const citationPromptClient = await langfuse.prompt.get(
+										"document-citation-extraction",
+										{
+											type: "chat",
+										},
+									);
+
+									const compiledDocumentCitationExtractionPrompts =
+										citationPromptClient.compile({
+											generatedAnswer: text,
+											availableSources: availableSources
+												.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
+												.join("\n\n"),
+										}) as ModelMessage[];
+
 									const { output: citationObject, usage: generateObjectUsage } =
 										await generateText({
 											model: llmHandler.languageModel,
-											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
-											prompt: `Generierte Antwort:
-"""
-${text}
-"""
-
-Verfügbare Quellen:
-${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`).join("\n\n")}
-
-Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
+											messages: compiledDocumentCitationExtractionPrompts,
 											temperature: LLM_PARAMETERS.temperature,
 											output: Output.object({
 												schema: citationAnswerSchema,
@@ -477,19 +483,28 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 									}
 								}
 								if (allWebSources.length > 0) {
+									const webCitationPromptClient = await langfuse.prompt.get(
+										"web-citation-extraction",
+										{
+											type: "chat",
+										},
+									);
+
+									const compiledWebCitationExtractionPrompts =
+										webCitationPromptClient.compile({
+											generatedAnswer: text,
+											availableSources: allWebSources
+												.map(
+													(s) =>
+														`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+												)
+												.join("\n\n"),
+										}) as ModelMessage[];
+
 									const { output: webObject, usage: webCitationUsage } =
 										await generateText({
 											model: llmHandler.languageModel,
-											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Webquellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
-											prompt: `Generierte Antwort:
-"""
-${text}
-"""
-
-Verfügbare Webquellen:
-${allWebSources.map((s) => `[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`).join("\n\n")}
-
-Analysiere die Antwort und identifiziere, welche Webquellen für die Antwort verwendet wurden. Gib NUR diese Webquellen im Feld "citations" als Array von Objekten mit "url", "title" und "snippet" zurück.`,
+											messages: compiledWebCitationExtractionPrompts,
 											temperature: LLM_PARAMETERS.temperature,
 											output: Output.object({
 												schema: webCitationAnswerSchema,
@@ -764,7 +779,10 @@ Analysiere die Antwort und identifiziere, welche Webquellen für die Antwort ver
 			optionsCopy.activeTools.push("webSearchTool");
 		}
 
-		if (!config.featureFlagMcpParlaAllowed) {
+		if (
+			!config.featureFlagMcpParlaAllowed &&
+			!config.featureFlagWebSearchAllowed
+		) {
 			return this.getRelevantToolsV1(optionsCopy);
 		}
 
