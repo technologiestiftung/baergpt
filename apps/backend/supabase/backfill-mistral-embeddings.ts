@@ -20,13 +20,12 @@ async function backfillMistralEmbeddings() {
 
 	let totalProcessed = 0;
 	let hasMore = true;
-	const fetchBatchSize = 1000;
-	const embeddingBatchSize = config.mistralEmbedMaxDocumentsPerRequest;
+	const batchSize = config.mistralEmbedMaxDocumentsPerRequest;
 
 	while (hasMore) {
 		// eslint-disable-next-line no-console
 		console.log(
-			`Fetching next ${fetchBatchSize} chunks without Mistral embeddings...`,
+			`Fetching next ${batchSize} chunks without Mistral embeddings...`,
 		);
 
 		const { data: chunks, error } = await serviceRoleDbClient
@@ -34,7 +33,7 @@ async function backfillMistralEmbeddings() {
 			.select("id, content")
 			.is("chunk_mistral_embedding", null)
 			.order("id", { ascending: true })
-			.limit(fetchBatchSize);
+			.limit(batchSize);
 
 		if (error) {
 			console.error("Error fetching chunks:", error);
@@ -48,54 +47,45 @@ async function backfillMistralEmbeddings() {
 			break;
 		}
 
-		// eslint-disable-next-line no-console
-		console.log(
-			`Processing ${chunks.length} chunks in batches of ${embeddingBatchSize}...`,
-		);
+		const contents = chunks.map((c) => c.content);
 
-		for (let i = 0; i < chunks.length; i += embeddingBatchSize) {
-			const batch = chunks.slice(i, i + embeddingBatchSize);
-			const contents = batch.map((c) => c.content);
+		try {
+			// eslint-disable-next-line no-console
+			console.log(`Generating embeddings for batch of ${chunks.length}...`);
+			const { embeddings } =
+				await embeddingService.generateMistralBatchEmbeddings(contents);
 
-			try {
-				// eslint-disable-next-line no-console
-				console.log(`Generating embeddings for batch of ${batch.length}...`);
-				const { embeddings } =
-					await embeddingService.generateMistralBatchEmbeddings(contents);
-
-				if (embeddings.length !== batch.length) {
-					throw new Error(
-						`Expected ${batch.length} embeddings, got ${embeddings.length}`,
-					);
-				}
-
-				// Update chunks in DB
-				// eslint-disable-next-line no-console
-				console.log(`Updating ${batch.length} chunks in database...`);
-				const updatePromises = batch.map((chunk, index) => {
-					return serviceRoleDbClient
-						.from("document_chunks")
-						.update({
-							chunk_mistral_embedding: JSON.stringify(embeddings[index]),
-						})
-						.eq("id", chunk.id);
-				});
-
-				const results = await Promise.all(updatePromises);
-				const batchErrors = results.filter((r) => r.error).map((r) => r.error);
-
-				if (batchErrors.length > 0) {
-					console.error(`Errors updating chunks in batch:`, batchErrors);
-				}
-
-				totalProcessed += batch.length;
-				// eslint-disable-next-line no-console
-				console.log(`Successfully processed ${totalProcessed} chunks so far.`);
-			} catch (err) {
-				console.error("Error processing batch:", err);
-				// For embedding generation errors (API issues), we exit to avoid infinite loops or wasted credits
-				process.exit(1);
+			if (embeddings.length !== chunks.length) {
+				throw new Error(
+					`Expected ${chunks.length} embeddings, got ${embeddings.length}`,
+				);
 			}
+
+			// eslint-disable-next-line no-console
+			console.log(`Updating ${chunks.length} chunks in database...`);
+			const updatePromises = chunks.map((chunk, index) => {
+				return serviceRoleDbClient
+					.from("document_chunks")
+					.update({
+						chunk_mistral_embedding: JSON.stringify(embeddings[index]),
+					})
+					.eq("id", chunk.id);
+			});
+
+			const results = await Promise.all(updatePromises);
+			const batchErrors = results.filter((r) => r.error).map((r) => r.error);
+
+			if (batchErrors.length > 0) {
+				console.error(`Errors updating chunks in batch:`, batchErrors);
+			}
+
+			totalProcessed += chunks.length;
+			// eslint-disable-next-line no-console
+			console.log(`Successfully processed ${totalProcessed} chunks so far.`);
+		} catch (err) {
+			console.error("Error processing batch:", err);
+			// For embedding generation errors (API issues), we exit to avoid infinite loops or wasted credits
+			process.exit(1);
 		}
 	}
 
