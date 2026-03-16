@@ -4,8 +4,7 @@ import { getTokenizerForModel } from "mistral-tokenizer-ts";
 const mistralTokenizer = getTokenizerForModel("mistral-embed");
 
 export function countMistralTokens(text: string): number {
-	// Include the BOS token (shouldAddBosToken=true) to match what the Mistral API counts.
-	return mistralTokenizer.encode(text, true, false).length;
+	return mistralTokenizer.encode(text, true, true).length;
 }
 
 export function trimToMistralTokenLimitByWords(

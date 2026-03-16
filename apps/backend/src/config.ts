@@ -6,6 +6,7 @@ export interface Config {
 	mistralEmbeddingModel: string;
 	mistralEmbedMaxContextTokens: number;
 	mistralEmbedMaxDocumentsPerRequest: number;
+	mistralEmbedMaxTotalTokensPerRequest: number;
 	mistralEmbeddingDimensions: number;
 	mistralMaxRPS: number;
 	supabaseUrl: string;
@@ -129,6 +130,10 @@ export const config: Config = {
 	),
 	mistralEmbedMaxDocumentsPerRequest: parseInt(
 		process.env.MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST,
+		10,
+	),
+	mistralEmbedMaxTotalTokensPerRequest: parseInt(
+		process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST ?? "131072",
 		10,
 	),
 	mistralEmbeddingDimensions: parseInt(

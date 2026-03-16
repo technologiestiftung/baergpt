@@ -56,30 +56,60 @@ export class EmbeddingService {
 		inputs: string[],
 		userId?: string,
 	): Promise<EmbeddingsResponse> {
-		const { embeddings, usage } = await resilientCall(
-			async () => {
-				return await embedMany({
-					model: mistral.embeddingModel(config.mistralEmbeddingModel),
-					values: inputs,
-				});
-			},
-			{ queueType: "embeddings" },
-		);
+		const maxPerCall = config.mistralEmbedMaxDocumentsPerRequest;
+		const maxTotalTokens = config.mistralEmbedMaxTotalTokensPerRequest;
 
-		if (!embeddings) {
-			throw new Error("Failed to create embeddings");
+		const subBatches: string[][] = [];
+		let current: string[] = [];
+		let currentTokens = 0;
+
+		for (const input of inputs) {
+			const tokens = countMistralTokens(input);
+			if (
+				current.length > 0 &&
+				(current.length >= maxPerCall ||
+					currentTokens + tokens > maxTotalTokens)
+			) {
+				subBatches.push(current);
+				current = [];
+				currentTokens = 0;
+			}
+			current.push(input);
+			currentTokens += tokens;
+		}
+		if (current.length > 0) subBatches.push(current);
+
+		const allEmbeddings: number[][] = [];
+		let totalTokenUsage = 0;
+
+		for (const subBatch of subBatches) {
+			const { embeddings, usage } = await resilientCall(
+				async () => {
+					return await embedMany({
+						model: mistral.embeddingModel(config.mistralEmbeddingModel),
+						values: subBatch,
+					});
+				},
+				{ queueType: "embeddings" },
+			);
+
+			if (!embeddings) {
+				throw new Error("Failed to create embeddings");
+			}
+
+			allEmbeddings.push(...embeddings);
+			totalTokenUsage += usage.tokens;
 		}
 
-		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
 		if (userId) {
 			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_embedding_tokens",
-				usage.tokens,
+				totalTokenUsage,
 			);
 		}
 
-		return { embeddings: embeddings, tokenUsage: usage.tokens };
+		return { embeddings: allEmbeddings, tokenUsage: totalTokenUsage };
 	}
 
 	// Utility s for chunking and batch processing
@@ -331,7 +361,10 @@ export class EmbeddingService {
 				console.warn(
 					`[WARNING] Chunk exceeds ${maxTokensPerChunk} tokens (${chunk.tokenCount}), truncating chunk from page ${chunk.page}`,
 				);
-				chunk.content = trimToMistralTokenLimitByWords(chunk.content, maxTokensPerChunk);
+				chunk.content = trimToMistralTokenLimitByWords(
+					chunk.content,
+					maxTokensPerChunk,
+				);
 				chunk.tokenCount = maxTokensPerChunk;
 			}
 

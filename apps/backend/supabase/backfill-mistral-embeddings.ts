@@ -60,7 +60,10 @@ async function backfillMistralEmbeddings() {
 				console.warn(
 					`Chunk id=${c.id} has ${tokens} tokens, truncating to ${MISTRAL_EMBED_MAX_TOKENS}`,
 				);
-				return trimToMistralTokenLimitByWords(c.content, MISTRAL_EMBED_MAX_TOKENS);
+				return trimToMistralTokenLimitByWords(
+					c.content,
+					MISTRAL_EMBED_MAX_TOKENS,
+				);
 			}
 			return c.content;
 		});
