@@ -137,18 +137,31 @@ export class GenerationService {
 				: docInput.map((page) => page.content).join("\n");
 
 		if (oneSentenceSummary) {
-			summaryPromptClient = await langfuse.prompt.get("one-sentence-summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
+			try {
+				summaryPromptClient = await langfuse.prompt.get(
+					"one-sentence-summary",
+					{
+						label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+						type: "chat",
+					},
+				);
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
 			compiledSummaryPrompt = summaryPromptClient.compile({
 				docContent: docContent,
 			}) as ModelMessage[];
 		} else {
-			summaryPromptClient = await langfuse.prompt.get("summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
+			try {
+				summaryPromptClient = await langfuse.prompt.get("summary", {
+					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+					type: "chat",
+				});
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
 			compiledSummaryPrompt = summaryPromptClient.compile({
 				docContent: docContent,
 			}) as ModelMessage[];
@@ -176,10 +189,16 @@ export class GenerationService {
 				? docInput
 				: docInput.map((page) => page.content).join("\n");
 
-		const taggingPromptClient = await langfuse.prompt.get("tagging", {
-			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			type: "chat",
-		});
+		let taggingPromptClient: ChatPromptClient;
+		try {
+			taggingPromptClient = await langfuse.prompt.get("tagging", {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+				type: "chat",
+			});
+		} catch (error) {
+			captureError(error);
+			throw error;
+		}
 		const compiledTaggingPrompt = taggingPromptClient.compile({
 			docContent: docContent,
 		}) as ModelMessage[];
@@ -427,18 +446,22 @@ export class GenerationService {
 											snippet: match.snippet,
 										}),
 									);
-
-									const citationPromptClient = await langfuse.prompt.get(
-										"document-citation-extraction",
-										{
-											type: "chat",
-											label:
-												config.nodeEnv === "test"
-													? "development"
-													: config.nodeEnv,
-										},
-									);
-
+									let citationPromptClient: ChatPromptClient;
+									try {
+										citationPromptClient = await langfuse.prompt.get(
+											"document-citation-extraction",
+											{
+												type: "chat",
+												label:
+													config.nodeEnv === "test"
+														? "development"
+														: config.nodeEnv,
+											},
+										);
+									} catch (error) {
+										captureError(error);
+										throw error;
+									}
 									const compiledDocumentCitationExtractionPrompts =
 										citationPromptClient.compile({
 											generatedAnswer: text,
@@ -487,17 +510,22 @@ export class GenerationService {
 									}
 								}
 								if (allWebSources.length > 0) {
-									const webCitationPromptClient = await langfuse.prompt.get(
-										"web-citation-extraction",
-										{
-											label:
-												config.nodeEnv === "test"
-													? "development"
-													: config.nodeEnv,
-											type: "chat",
-										},
-									);
-
+									let webCitationPromptClient: ChatPromptClient;
+									try {
+										webCitationPromptClient = await langfuse.prompt.get(
+											"web-citation-extraction",
+											{
+												label:
+													config.nodeEnv === "test"
+														? "development"
+														: config.nodeEnv,
+												type: "chat",
+											},
+										);
+									} catch (error) {
+										captureError(error);
+										throw error;
+									}
 									const compiledWebCitationExtractionPrompts =
 										webCitationPromptClient.compile({
 											generatedAnswer: text,
@@ -752,10 +780,16 @@ export class GenerationService {
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
 		// Always use free-chat prompt
-		const freeChatPromptClient = await langfuse.prompt.get(
-			"free-chat",
-			{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
-		);
+		let freeChatPromptClient: TextPromptClient;
+		try {
+			freeChatPromptClient = await langfuse.prompt.get(
+				"free-chat",
+				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
+			);
+		} catch (error) {
+			captureError(error);
+			throw error;
+		}
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
