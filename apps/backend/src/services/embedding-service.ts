@@ -7,7 +7,10 @@ import type {
 	EmbeddingResponse,
 	EmbeddingsResponse,
 } from "../types/common";
-import { countTokens, trimToTokenLimitByWords } from "./token-utils";
+import {
+	countMistralTokens,
+	trimToMistralTokenLimitByWords,
+} from "./token-utils";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { resilientCall } from "../utils";
 import { embed, embedMany } from "ai";
@@ -103,7 +106,7 @@ export class EmbeddingService {
 	recursiveChunking(text: string): string[] {
 		const maxTokens = config.mistralEmbedMaxContextTokens;
 		// Base case: if text is small enough, return as single chunk
-		const textTokens = countTokens(text);
+		const textTokens = countMistralTokens(text);
 		if (textTokens <= maxTokens) {
 			return text.trim() ? [text.trim()] : [];
 		}
@@ -136,7 +139,7 @@ export class EmbeddingService {
 			if (name === "word") {
 				let remaining = text;
 				while (remaining.trim()) {
-					const trimmed = trimToTokenLimitByWords(remaining, maxTokens);
+					const trimmed = trimToMistralTokenLimitByWords(remaining, maxTokens);
 					if (!trimmed) {
 						break;
 					}
@@ -149,7 +152,7 @@ export class EmbeddingService {
 			for (const part of parts) {
 				// Reconstruct with separator
 				const testChunk = currentChunk ? currentChunk + pattern + part : part;
-				const testTokens = countTokens(testChunk);
+				const testTokens = countMistralTokens(testChunk);
 				if (testTokens <= maxTokens) {
 					currentChunk = testChunk;
 					continue;
@@ -166,7 +169,7 @@ export class EmbeddingService {
 			// Recursively process any chunks that are still too large
 			const finalChunks: string[] = [];
 			for (const chunk of chunks) {
-				const chunkTokens = countTokens(chunk);
+				const chunkTokens = countMistralTokens(chunk);
 				if (chunkTokens > maxTokens) {
 					finalChunks.push(...this.recursiveChunking(chunk));
 				} else if (chunk.trim()) {
@@ -208,7 +211,7 @@ export class EmbeddingService {
 					continue;
 				}
 
-				const paragraphTokens = countTokens(trimmed);
+				const paragraphTokens = countMistralTokens(trimmed);
 
 				// If single paragraph exceeds max, use recursive chunking
 				if (paragraphTokens > maxTokens) {
@@ -254,7 +257,7 @@ export class EmbeddingService {
 		let buffer = "";
 
 		for (const chunk of chunks) {
-			const chunkTokenCount = countTokens(chunk);
+			const chunkTokenCount = countMistralTokens(chunk);
 
 			if (chunkTokenCount >= minTokens) {
 				if (buffer) {
@@ -264,7 +267,7 @@ export class EmbeddingService {
 				merged.push(chunk);
 			} else {
 				const testBuffer = buffer ? `${buffer} ${chunk}` : chunk;
-				const testBufferTokens = countTokens(testBuffer);
+				const testBufferTokens = countMistralTokens(testBuffer);
 
 				// If adding this chunk would exceed maxTokens, flush buffer first
 				if (testBufferTokens > maxTokens && buffer) {
@@ -309,7 +312,7 @@ export class EmbeddingService {
 
 			for (let index = 0; index < chunkContents.length; index++) {
 				const chunkContent = chunkContents[index];
-				const tokenCount = countTokens(chunkContent);
+				const tokenCount = countMistralTokens(chunkContent);
 				allChunks.push({
 					content: chunkContent,
 					page: page.pageNumber,
@@ -326,9 +329,10 @@ export class EmbeddingService {
 		for (const chunk of allChunks) {
 			if (chunk.tokenCount > maxTokensPerChunk) {
 				console.warn(
-					`[WARNING] Chunk exceeds ${maxTokensPerChunk} tokens (${chunk.tokenCount}), skipping chunk from page ${chunk.page}`,
+					`[WARNING] Chunk exceeds ${maxTokensPerChunk} tokens (${chunk.tokenCount}), truncating chunk from page ${chunk.page}`,
 				);
-				continue;
+				chunk.content = trimToMistralTokenLimitByWords(chunk.content, maxTokensPerChunk);
+				chunk.tokenCount = maxTokensPerChunk;
 			}
 
 			if (currentBatch.length >= maxChunksPerRequest) {

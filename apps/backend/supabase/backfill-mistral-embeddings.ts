@@ -3,6 +3,12 @@ import { PrivilegedDbService } from "../src/services/db-service/privileged-db-se
 import { EmbeddingService } from "../src/services/embedding-service";
 import { config } from "../src/config";
 import { initQueues } from "../src/services/distributed-limiter";
+import {
+	trimToMistralTokenLimitByWords,
+	countMistralTokens,
+} from "../src/services/token-utils";
+
+const MISTRAL_EMBED_MAX_TOKENS = config.mistralEmbedMaxContextTokens;
 
 /**
  * Backfills missing Mistral embeddings for document chunks.
@@ -47,7 +53,17 @@ async function backfillMistralEmbeddings() {
 			break;
 		}
 
-		const contents = chunks.map((c) => c.content);
+		const contents = chunks.map((c) => {
+			const tokens = countMistralTokens(c.content);
+			if (tokens > MISTRAL_EMBED_MAX_TOKENS) {
+				// eslint-disable-next-line no-console
+				console.warn(
+					`Chunk id=${c.id} has ${tokens} tokens, truncating to ${MISTRAL_EMBED_MAX_TOKENS}`,
+				);
+				return trimToMistralTokenLimitByWords(c.content, MISTRAL_EMBED_MAX_TOKENS);
+			}
+			return c.content;
+		});
 
 		try {
 			// eslint-disable-next-line no-console

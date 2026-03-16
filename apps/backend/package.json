@@ -44,6 +44,7 @@
 		"ioredis": "5.8.2",
 		"jsonwebtoken": "9.0.2",
 		"mammoth": "1.11.0",
+		"mistral-tokenizer-ts": "2.2.1",
 		"pdf-lib": "1.17.1",
 		"throttled-queue": "3.0.0",
 		"unpdf": "1.4.0",
