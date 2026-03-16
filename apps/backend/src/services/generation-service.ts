@@ -728,30 +728,6 @@ Analysiere die Antwort und identifiziere, welche Webquellen für die Antwort ver
 		});
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
-		if (config.nodeEnv === "development") {
-			const freeChatPrompt = `
-Du bist ein hilfreicher Assistent mit Zugang zu aktuellen Webinhalten über ein Websuch-Tool.
-
-Aktuelles Datum: ${currentDate}
-
-Antworte immer auf Deutsch. ${addressForm} die Nutzerin bzw. den Nutzer.
-
-Du hast Zugriff auf ein Websuch-Tool (webSearchTool). Nutze es aktiv, wenn:
-- die Frage aktuelle Informationen erfordert (Nachrichten, Preise, Ereignisse, Gesetze, etc.)
-- dein Trainingswissen möglicherweise veraltet ist
-- die Nutzerin / der Nutzer explizit nach aktuellen Informationen fragt
-
-Nenne keine URLs, Domains oder Quellnamen direkt in deiner Antwort. Quellen werden dem Nutzer separat angezeigt.
-Wenn die Suche keine nützlichen Ergebnisse liefert, teile das transparent mit.
-`;
-			return {
-				messages: [
-					{ role: "system", content: freeChatPrompt },
-					...previousMessages,
-				],
-				promptClient: undefined,
-			};
-		}
 		// Always use free-chat prompt
 		const freeChatPromptClient = await langfuse.prompt.get(
 			"free-chat",
