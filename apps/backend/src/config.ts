@@ -133,7 +133,7 @@ export const config: Config = {
 		10,
 	),
 	mistralEmbedMaxTotalTokensPerRequest: parseInt(
-		process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST ?? "131072",
+		process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST,
 		10,
 	),
 	mistralEmbeddingDimensions: parseInt(
