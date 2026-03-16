@@ -121,12 +121,24 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		const { documents, deletedDefaultDocumentIds } =
 			useDocumentStore.getState();
 
-		const numberOfUploads = documents.filter(
+		const numberOfNewUploads = documents.filter(
 			(doc) => !deletedDefaultDocumentIds.includes(doc.id),
 		).length;
 
-		const availableUploadSlots =
-			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) - numberOfUploads;
+		const numberOfActiveAndQueuedUploads = fileUploads.filter(
+			(upload) =>
+				upload.status === "waiting" ||
+				upload.status === "uploading" ||
+				upload.status === "uploaded" ||
+				upload.status === "processing",
+		).length;
+
+		let availableUploadSlots =
+			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) -
+			numberOfNewUploads -
+			numberOfActiveAndQueuedUploads;
+
+		availableUploadSlots = Math.max(0, availableUploadSlots);
 
 		const filesToUpload = files.slice(0, availableUploadSlots);
 		const filesToCancel = files.slice(availableUploadSlots);

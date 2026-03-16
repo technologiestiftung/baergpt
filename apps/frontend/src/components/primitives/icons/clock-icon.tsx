@@ -9,7 +9,7 @@ export function ClockIcon({ size = "large" }: ClockIconProps) {
 			src="/icons/clock-icon.svg"
 			width={size === "small" ? 20 : 24}
 			height={size === "small" ? 20 : 24}
-			alt={Content["redErrorIcon.imgAlt"]}
+			alt={Content["clockIcon.imgAlt"]}
 		/>
 	);
 }

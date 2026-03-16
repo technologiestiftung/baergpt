@@ -743,6 +743,7 @@ export const Content = {
 	"previewIcon.imgAlt": "Preview-Icon",
 	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
 	"redErrorIcon.imgAlt": "Ein Error Icon mit weißem ! in rotem Kreis",
+	"clockIcon.imgAlt": "Ein Uhr-Icon",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
