@@ -446,131 +446,61 @@ export class GenerationService {
 											snippet: match.snippet,
 										}),
 									);
-									let citationPromptClient: ChatPromptClient;
 									try {
-										citationPromptClient = await langfuse.prompt.get(
-											"document-citation-extraction",
-											{
-												type: "chat",
-												label:
-													config.nodeEnv === "test"
-														? "development"
-														: config.nodeEnv,
-											},
+										const citationPromptClient = await resilientCall(
+											() =>
+												langfuse.prompt.get("document-citation-extraction", {
+													type: "chat",
+													label:
+														config.nodeEnv === "test"
+															? "development"
+															: config.nodeEnv,
+												}),
+											{ queueType: "llm" },
 										);
-									} catch (error) {
-										captureError(error);
-										throw error;
-									}
-									const compiledDocumentCitationExtractionPrompts =
-										citationPromptClient.compile({
-											generatedAnswer: text,
-											availableSources: availableSources
-												.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
-												.join("\n\n"),
-										}) as ModelMessage[];
+										const compiledDocumentCitationExtractionPrompts =
+											citationPromptClient.compile({
+												generatedAnswer: text,
+												availableSources: availableSources
+													.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
+													.join("\n\n"),
+											}) as ModelMessage[];
 
-									const { output: citationObject, usage: generateObjectUsage } =
-										await generateText({
-											model: llmHandler.languageModel,
-											messages: compiledDocumentCitationExtractionPrompts,
-											temperature: LLM_PARAMETERS.temperature,
-											output: Output.object({
-												schema: citationAnswerSchema,
-											}),
-											experimental_telemetry: {
-												isEnabled:
-													config.nodeEnv !== "test" &&
-													config.nodeEnv !== "production", // Disable telemetry in CI and production
-												functionId: "citation-extraction",
-												metadata: {
-													sessionId: sessionId ? sessionId : "unknown",
-												},
-											},
+										const {
+											output: citationObject,
+											usage: generateObjectUsage,
+										} = await resilientCall(
+											() =>
+												generateText({
+													model: llmHandler.languageModel,
+													messages: compiledDocumentCitationExtractionPrompts,
+													temperature: LLM_PARAMETERS.temperature,
+													output: Output.object({
+														schema: citationAnswerSchema,
+													}),
+													experimental_telemetry: {
+														isEnabled:
+															config.nodeEnv !== "test" &&
+															config.nodeEnv !== "production", // Disable telemetry in CI and production
+														functionId: "citation-extraction",
+														metadata: {
+															sessionId: sessionId ? sessionId : "unknown",
+														},
+													},
+												}),
+											{ queueType: "llm" },
+										);
+
+										writer.write({
+											type: "data-citations",
+											data: citationObject.citations,
 										});
 
-									writer.write({
-										type: "data-citations",
-										data: citationObject.citations,
-									});
-
-									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											generateObjectUsage.totalTokens,
-										);
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
-										);
-									} catch (error) {
-										captureError(error);
-									}
-								}
-								if (allWebSources.length > 0) {
-									let webCitationPromptClient: ChatPromptClient;
-									try {
-										webCitationPromptClient = await langfuse.prompt.get(
-											"web-citation-extraction",
-											{
-												label:
-													config.nodeEnv === "test"
-														? "development"
-														: config.nodeEnv,
-												type: "chat",
-											},
-										);
-									} catch (error) {
-										captureError(error);
-										throw error;
-									}
-									const compiledWebCitationExtractionPrompts =
-										webCitationPromptClient.compile({
-											generatedAnswer: text,
-											availableSources: allWebSources
-												.map(
-													(s) =>
-														`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
-												)
-												.join("\n\n"),
-										}) as ModelMessage[];
-
-									const { output: webObject, usage: webCitationUsage } =
-										await generateText({
-											model: llmHandler.languageModel,
-											messages: compiledWebCitationExtractionPrompts,
-											temperature: LLM_PARAMETERS.temperature,
-											output: Output.object({
-												schema: webCitationAnswerSchema,
-											}),
-											experimental_telemetry: {
-												isEnabled:
-													config.nodeEnv !== "test" &&
-													config.nodeEnv !== "production",
-												functionId: "web-citation-extraction",
-												metadata: {
-													sessionId: sessionId ? sessionId : "unknown",
-												},
-											},
-										});
-
-									const citedSources = allWebSources.filter((s) =>
-										webObject.citations.some((c) => c.url === s.url),
-									);
-
-									writer.write({
-										type: "data-web-citations",
-										data: citedSources,
-									});
-
-									if (userId) {
 										try {
 											await this.dbService.updateUserColumnValue(
 												userId,
 												"num_inference_tokens",
-												webCitationUsage.totalTokens,
+												generateObjectUsage.totalTokens,
 											);
 											await this.dbService.updateUserColumnValue(
 												userId,
@@ -580,6 +510,84 @@ export class GenerationService {
 										} catch (error) {
 											captureError(error);
 										}
+									} catch (error) {
+										captureError(error);
+									}
+								}
+								if (allWebSources.length > 0) {
+									try {
+										const webCitationPromptClient = await resilientCall(
+											() =>
+												langfuse.prompt.get("web-citation-extraction", {
+													label:
+														config.nodeEnv === "test"
+															? "development"
+															: config.nodeEnv,
+													type: "chat",
+												}),
+											{ queueType: "llm" },
+										);
+										const compiledWebCitationExtractionPrompts =
+											webCitationPromptClient.compile({
+												generatedAnswer: text,
+												availableSources: allWebSources
+													.map(
+														(s) =>
+															`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+													)
+													.join("\n\n"),
+											}) as ModelMessage[];
+
+										const { output: webObject, usage: webCitationUsage } =
+											await resilientCall(
+												() =>
+													generateText({
+														model: llmHandler.languageModel,
+														messages: compiledWebCitationExtractionPrompts,
+														temperature: LLM_PARAMETERS.temperature,
+														output: Output.object({
+															schema: webCitationAnswerSchema,
+														}),
+														experimental_telemetry: {
+															isEnabled:
+																config.nodeEnv !== "test" &&
+																config.nodeEnv !== "production",
+															functionId: "web-citation-extraction",
+															metadata: {
+																sessionId: sessionId ? sessionId : "unknown",
+															},
+														},
+													}),
+												{ queueType: "llm" },
+											);
+
+										const citedSources = allWebSources.filter((s) =>
+											webObject.citations.some((c) => c.url === s.url),
+										);
+
+										writer.write({
+											type: "data-web-citations",
+											data: citedSources,
+										});
+
+										if (userId) {
+											try {
+												await this.dbService.updateUserColumnValue(
+													userId,
+													"num_inference_tokens",
+													webCitationUsage.totalTokens,
+												);
+												await this.dbService.updateUserColumnValue(
+													userId,
+													"num_inferences",
+													1,
+												);
+											} catch (error) {
+												captureError(error);
+											}
+										}
+									} catch (error) {
+										captureError(error);
 									}
 								}
 
