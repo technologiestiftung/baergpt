@@ -96,6 +96,7 @@ async function backfillMistralEmbeddings() {
 
 			if (batchErrors.length > 0) {
 				console.error(`Errors updating chunks in batch:`, batchErrors);
+				process.exit(1);
 			}
 
 			totalProcessed += chunks.length;
@@ -103,7 +104,6 @@ async function backfillMistralEmbeddings() {
 			console.log(`Successfully processed ${totalProcessed} chunks so far.`);
 		} catch (err) {
 			console.error("Error processing batch:", err);
-			// For embedding generation errors (API issues), we exit to avoid infinite loops or wasted credits
 			process.exit(1);
 		}
 	}
