@@ -512,7 +512,7 @@ export const Content = {
 	"termsOfUsePage.section9.sub1.p1.start":
 		"BärGPT wurde nach dem Prinzip „Public Money, Public Code“ entwickelt. Der Quellcode ist Open Source und öffentlich auf ",
 	"termsOfUsePage.section9.sub1.p1.link":
-		"https://github.com/technologiestiftung/baergpt)",
+		"https://github.com/technologiestiftung/baergpt",
 	"termsOfUsePage.section9.sub1.p1.link.label": "GitHub",
 	"termsOfUsePage.section9.sub1.p1.end": " verfügbar.",
 	//9.2
