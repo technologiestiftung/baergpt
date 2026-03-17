@@ -776,6 +776,7 @@ export class GenerationService {
 	async createPrompt(
 		previousMessages: ModelMessage[],
 		isAddressedFormal: boolean,
+		activeTools: ActiveTools[],
 	): Promise<{
 		messages: ModelMessage[];
 		promptClient: TextPromptClient;
@@ -787,16 +788,27 @@ export class GenerationService {
 		});
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
-		// Always use free-chat prompt
 		let freeChatPromptClient: TextPromptClient;
-		try {
-			freeChatPromptClient = await langfuse.prompt.get(
-				"free-chat",
-				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
-			);
-		} catch (error) {
-			captureError(error);
-			throw error;
+		if (activeTools.includes("webSearchTool")) {
+			try {
+				freeChatPromptClient = await langfuse.prompt.get(
+					"free-chat-with-web-search-enabled",
+					{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
+				);
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
+		} else {
+			try {
+				freeChatPromptClient = await langfuse.prompt.get(
+					"free-chat",
+					{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
+				);
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
 		}
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
