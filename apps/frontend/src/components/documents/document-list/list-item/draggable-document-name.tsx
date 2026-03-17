@@ -14,7 +14,7 @@ type DragableProps = {
 const TOOLTIP_DELAY = 600;
 
 export function DraggableDocumentName({ item }: DragableProps) {
-	const { selectPreviewDocument } = useDocumentStore();
+	const { selectPreviewDocument, selectedPreviewDocument } = useDocumentStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const tooltipTimeoutRef = useRef<number | null>(null);
 	const spanRef = useRef<HTMLSpanElement>(null);
@@ -67,6 +67,8 @@ export function DraggableDocumentName({ item }: DragableProps) {
 		preview(getEmptyImage(), { captureDraggingState: true });
 	}, [preview]);
 
+	const isSelectedForPreview = selectedPreviewDocument?.id === item.id;
+
 	return (
 		<button
 			draggable="true"
@@ -83,7 +85,7 @@ export function DraggableDocumentName({ item }: DragableProps) {
 				<DocumentIcon variant="lightBlue" />
 				<span
 					ref={spanRef}
-					className={`truncate pointer-events-none text-sm leading-5 font-normal ${isDragging ? "text-hellblau-110" : "text-dunkelblau-100"}`}
+					className={`truncate pointer-events-none text-sm leading-5 ${isDragging ? "text-hellblau-110" : "text-dunkelblau-100"} ${isSelectedForPreview ? "font-bold" : "font-normal "}`}
 				>
 					{getListItemName(item)}
 				</span>
