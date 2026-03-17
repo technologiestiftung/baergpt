@@ -115,14 +115,21 @@ export class EmbeddingService {
 	}
 
 	// Utility s for chunking and batch processing
-	fixedSizeChunking(content: string, wordsPerChunk: number = 100): string[] {
-		const words = content.split(/\s+/);
+	fixedSizeChunking(
+		content: string,
+		size: number = 100,
+		splitBy: "words" | "characters" = "words",
+	): string[] {
+		const parts = splitBy === "words" ? content.split(/\s+/) : Array.from(content);
 		const chunks: string[] = [];
+		const joiner = splitBy === "words" ? " " : "";
 
-		for (let i = 0; i < words.length; i += wordsPerChunk) {
-			const chunkWords = words.slice(i, i + wordsPerChunk);
-			const chunk = chunkWords.join(" ");
-			chunks.push(chunk);
+		for (let i = 0; i < parts.length; i += size) {
+			const chunkParts = parts.slice(i, i + size);
+			const chunk = chunkParts.join(joiner);
+			if (chunk.trim()) {
+				chunks.push(chunk.trim());
+			}
 		}
 
 		return chunks;
@@ -143,12 +150,12 @@ export class EmbeddingService {
 			return text.trim() ? [text.trim()] : [];
 		}
 
-		// Early exit: if text has no word boundaries at all, it's unchunkable
+		// Early exit: if text has no word boundaries at all, use fixed character chunking
 		if (!text.includes(" ") && !text.includes("\n") && !text.includes(". ")) {
-			console.warn(
-				`[WARNING] Skipping unchunkable content with ${textTokens} tokens (no word boundaries found). Preview: ${text.slice(0, 100)}...`,
+			const charsPerChunk = Math.floor(
+				(text.length / textTokens) * (maxTokens / 2),
 			);
-			return [];
+			return this.fixedSizeChunking(text, charsPerChunk, "characters");
 		}
 
 		// Try separators in priority order
@@ -167,19 +174,10 @@ export class EmbeddingService {
 			const chunks: string[] = [];
 			let currentChunk = "";
 
-			// For word splitting, use binary search optimization to avoid O(n²) complexity
+			// For word splitting, use fixed-size chunking to avoid O(n log n) tokenization complexity
 			if (name === "word") {
-				let remaining = text;
-				while (remaining.trim()) {
-					const trimmed = trimToMistralTokenLimitByWords(remaining, maxTokens);
-					if (!trimmed) {
-						break;
-					}
-
-					chunks.push(trimmed.trim());
-					remaining = remaining.slice(trimmed.length).trim();
-				}
-				return chunks.filter((c) => c.trim().length > 0);
+				const wordsPerChunk = Math.floor(maxTokens / 2);
+				return this.fixedSizeChunking(text, wordsPerChunk, "words");
 			}
 			for (const part of parts) {
 				// Reconstruct with separator
