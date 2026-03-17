@@ -136,10 +136,19 @@ INTO v_total_user_documents
 FROM public.documents d
 WHERE d.source_type = 'personal_document';
 
--- Average Inferences per User
+-- Average Inferences per User (numerator and denominator use same filtered user set)
 SELECT COALESCE(
-            (SELECT COUNT(*) FROM public.chat_messages WHERE role = 'user')::numeric
-            /NULLIF((
+            (SELECT COUNT(*)
+             FROM public.chat_messages cm
+             JOIN public.chats c ON cm.chat_id = c.id
+             JOIN auth.users u ON c.user_id = u.id
+             JOIN public.user_active_status uas ON uas.id = u.id
+             WHERE cm.role = 'user'
+               AND u.email_confirmed_at IS NOT NULL
+               AND uas.is_active = true
+               AND uas.deleted_at IS NULL
+            )::numeric
+            / NULLIF((
                     SELECT COUNT(DISTINCT u.id)
                     FROM auth.users u
                     JOIN public.user_active_status uas ON uas.id = u.id

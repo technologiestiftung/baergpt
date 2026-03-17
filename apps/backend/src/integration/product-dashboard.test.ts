@@ -163,7 +163,7 @@ describe("get_product_dashboard_stats", () => {
 			}
 		});
 
-		it("should return correct total_chats", async () => {
+		it("total_chats is a non-negative number", async () => {
 			const { data, error } = await applicationAdminDbClient.rpc(
 				"get_product_dashboard_stats",
 			);
@@ -228,7 +228,7 @@ describe("get_product_dashboard_stats", () => {
 			expect(deleteChatsError).toBeNull();
 		}, TIMEOUT);
 
-		it("should return correct total_chats", async () => {
+		it("total_chats equals count of chats in database", async () => {
 			const { data: actual, error: rpcError } =
 				await applicationAdminDbClient.rpc("get_product_dashboard_stats");
 
