@@ -1,11 +1,12 @@
 import { Layout } from "@/components/layout/layout.tsx";
 import { AdminSidebar } from "@/components/admin-sidebar/admin-sidebar.tsx";
 import { LineChartUserEvolution } from "@/components/charts/line-chart-user-evolution.tsx";
-import { MetricCards } from "@/components/charts/metric-cards.tsx";
+import { MetricCardsActiveUsers } from "@/components/charts/metric-cards-active-users.tsx";
 import { DomainsTable } from "@/components/charts/domains-table.tsx";
 import { useProductDashboardData } from "@/hooks/use-product-dashboard-data.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import Content from "@/content.ts";
+import { MetricCardsChats } from "@/components/charts/metric-cards-chats.tsx";
 
 export const ProductDashboardPage = () => {
 	const { data, isLoading, error } = useProductDashboardData();
@@ -22,8 +23,13 @@ export const ProductDashboardPage = () => {
 					{data && (
 						<>
 							<LineChartUserEvolution data={data.daily_user_evolution} />
-							<MetricCards dau={data.dau} wau={data.wau} mau={data.mau} />
+							<MetricCardsActiveUsers
+								dau={data.dau}
+								wau={data.wau}
+								mau={data.mau}
+							/>
 							<DomainsTable domains={data.domains} />
+							<MetricCardsChats data={data} />
 						</>
 					)}
 				</div>
