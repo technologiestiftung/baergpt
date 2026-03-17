@@ -120,7 +120,8 @@ export class EmbeddingService {
 		size: number = 100,
 		splitBy: "words" | "characters" = "words",
 	): string[] {
-		const parts = splitBy === "words" ? content.split(/\s+/) : Array.from(content);
+		const parts =
+			splitBy === "words" ? content.split(/\s+/) : Array.from(content);
 		const chunks: string[] = [];
 		const joiner = splitBy === "words" ? " " : "";
 
