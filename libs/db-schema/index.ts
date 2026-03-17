@@ -562,7 +562,14 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			get_maintenance_mode_status: { Args: never; Returns: boolean };
+			get_maintenance_mode_status: {
+				Args: Record<PropertyKey, never>;
+				Returns: boolean;
+			};
+			get_product_dashboard_stats: {
+				Args: Record<PropertyKey, never>;
+				Returns: Json;
+			};
 			get_users: {
 				Args: never;
 				Returns: {
@@ -677,6 +684,14 @@ export type Database = {
 			};
 			regenerate_embedding_indices_for_summaries: {
 				Args: never;
+				Returns: undefined;
+			};
+			update_user_email_confirmed_at: {
+				Args: { new_email_confirmed_at: string; user_id: string };
+				Returns: undefined;
+			};
+			update_user_last_sign_in_at: {
+				Args: { new_last_sign_in_at: string; user_id: string };
 				Returns: undefined;
 			};
 			verify_own_password: {

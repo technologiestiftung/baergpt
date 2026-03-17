@@ -6,6 +6,7 @@ import "./index.css";
 import { IndexPage } from "./routes";
 import { BaseKnowledgePage } from "./routes/base-knowledge/index";
 import { LoginPage } from "./routes/login-page";
+import { ProductDashboardPage } from "@/routes/product-dashboard";
 
 const router = createBrowserRouter([
 	{
@@ -15,6 +16,10 @@ const router = createBrowserRouter([
 	{
 		path: "/base-knowledge/",
 		element: <BaseKnowledgePage />,
+	},
+	{
+		path: "/product-dashboard/",
+		element: <ProductDashboardPage />,
 	},
 	{
 		path: "/login/",
