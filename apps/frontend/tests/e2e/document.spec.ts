@@ -82,16 +82,22 @@ test.describe("Documents", () => {
 
 			const filePaths = allFiles.map((file) => file.path);
 
-			// Register response waits before triggering upload so we don't miss responses
-			const processResponsePromises = Array.from(
-				{ length: allFiles.length },
-				() =>
-					page.waitForResponse(
-						(givenResponse) =>
-							givenResponse.url().includes("/documents/process") &&
-							givenResponse.request().method() === "POST",
-						{ timeout: 60_000 },
-					),
+			// Register response wait before triggering upload so we don't miss responses.
+			// Use a single predicate that counts matching responses so each of the N
+			// POST /documents/process responses is required
+			let processResponseCount = 0;
+			const processResponsePromise = page.waitForResponse(
+				(givenResponse) => {
+					if (
+						givenResponse.url().includes("/documents/process") &&
+						givenResponse.request().method() === "POST"
+					) {
+						processResponseCount++;
+						return processResponseCount >= allFiles.length;
+					}
+					return false;
+				},
+				{ timeout: 60_000 },
 			);
 
 			if (browserName === "firefox") {
@@ -125,7 +131,7 @@ test.describe("Documents", () => {
 			}
 
 			// Wait for successful uploads to complete
-			await Promise.all(processResponsePromises);
+			await processResponsePromise;
 
 			// Close the file upload dialog
 			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
