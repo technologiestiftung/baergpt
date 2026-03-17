@@ -137,18 +137,31 @@ export class GenerationService {
 				: docInput.map((page) => page.content).join("\n");
 
 		if (oneSentenceSummary) {
-			summaryPromptClient = await langfuse.prompt.get("one-sentence-summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
+			try {
+				summaryPromptClient = await langfuse.prompt.get(
+					"one-sentence-summary",
+					{
+						label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+						type: "chat",
+					},
+				);
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
 			compiledSummaryPrompt = summaryPromptClient.compile({
 				docContent: docContent,
 			}) as ModelMessage[];
 		} else {
-			summaryPromptClient = await langfuse.prompt.get("summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
+			try {
+				summaryPromptClient = await langfuse.prompt.get("summary", {
+					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+					type: "chat",
+				});
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
 			compiledSummaryPrompt = summaryPromptClient.compile({
 				docContent: docContent,
 			}) as ModelMessage[];
@@ -176,10 +189,16 @@ export class GenerationService {
 				? docInput
 				: docInput.map((page) => page.content).join("\n");
 
-		const taggingPromptClient = await langfuse.prompt.get("tagging", {
-			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			type: "chat",
-		});
+		let taggingPromptClient: ChatPromptClient;
+		try {
+			taggingPromptClient = await langfuse.prompt.get("tagging", {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+				type: "chat",
+			});
+		} catch (error) {
+			captureError(error);
+			throw error;
+		}
 		const compiledTaggingPrompt = taggingPromptClient.compile({
 			docContent: docContent,
 		}) as ModelMessage[];
@@ -427,99 +446,61 @@ export class GenerationService {
 											snippet: match.snippet,
 										}),
 									);
-
-									const { output: citationObject, usage: generateObjectUsage } =
-										await generateText({
-											model: llmHandler.languageModel,
-											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
-											prompt: `Generierte Antwort:
-"""
-${text}
-"""
-
-Verfügbare Quellen:
-${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`).join("\n\n")}
-
-Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
-											temperature: LLM_PARAMETERS.temperature,
-											output: Output.object({
-												schema: citationAnswerSchema,
-											}),
-											experimental_telemetry: {
-												isEnabled:
-													config.nodeEnv !== "test" &&
-													config.nodeEnv !== "production", // Disable telemetry in CI and production
-												functionId: "citation-extraction",
-												metadata: {
-													sessionId: sessionId ? sessionId : "unknown",
-												},
-											},
-										});
-
-									writer.write({
-										type: "data-citations",
-										data: citationObject.citations,
-									});
-
 									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											generateObjectUsage.totalTokens,
+										const citationPromptClient = await resilientCall(
+											() =>
+												langfuse.prompt.get("document-citation-extraction", {
+													type: "chat",
+													label:
+														config.nodeEnv === "test"
+															? "development"
+															: config.nodeEnv,
+												}),
+											{ queueType: "llm" },
 										);
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
+										const compiledDocumentCitationExtractionPrompts =
+											citationPromptClient.compile({
+												generatedAnswer: text,
+												availableSources: availableSources
+													.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
+													.join("\n\n"),
+											}) as ModelMessage[];
+
+										const {
+											output: citationObject,
+											usage: generateObjectUsage,
+										} = await resilientCall(
+											() =>
+												generateText({
+													model: llmHandler.languageModel,
+													messages: compiledDocumentCitationExtractionPrompts,
+													temperature: LLM_PARAMETERS.temperature,
+													output: Output.object({
+														schema: citationAnswerSchema,
+													}),
+													experimental_telemetry: {
+														isEnabled:
+															config.nodeEnv !== "test" &&
+															config.nodeEnv !== "production", // Disable telemetry in CI and production
+														functionId: "citation-extraction",
+														metadata: {
+															sessionId: sessionId ? sessionId : "unknown",
+														},
+													},
+												}),
+											{ queueType: "llm" },
 										);
-									} catch (error) {
-										captureError(error);
-									}
-								}
-								if (allWebSources.length > 0) {
-									const { output: webObject, usage: webCitationUsage } =
-										await generateText({
-											model: llmHandler.languageModel,
-											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Webquellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
-											prompt: `Generierte Antwort:
-"""
-${text}
-"""
 
-Verfügbare Webquellen:
-${allWebSources.map((s) => `[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`).join("\n\n")}
-
-Analysiere die Antwort und identifiziere, welche Webquellen für die Antwort verwendet wurden. Gib NUR diese Webquellen im Feld "citations" als Array von Objekten mit "url", "title" und "snippet" zurück.`,
-											temperature: LLM_PARAMETERS.temperature,
-											output: Output.object({
-												schema: webCitationAnswerSchema,
-											}),
-											experimental_telemetry: {
-												isEnabled:
-													config.nodeEnv !== "test" &&
-													config.nodeEnv !== "production",
-												functionId: "web-citation-extraction",
-												metadata: {
-													sessionId: sessionId ? sessionId : "unknown",
-												},
-											},
+										writer.write({
+											type: "data-citations",
+											data: citationObject.citations,
 										});
 
-									const citedSources = allWebSources.filter((s) =>
-										webObject.citations.some((c) => c.url === s.url),
-									);
-
-									writer.write({
-										type: "data-web-citations",
-										data: citedSources,
-									});
-
-									if (userId) {
 										try {
 											await this.dbService.updateUserColumnValue(
 												userId,
 												"num_inference_tokens",
-												webCitationUsage.totalTokens,
+												generateObjectUsage.totalTokens,
 											);
 											await this.dbService.updateUserColumnValue(
 												userId,
@@ -529,6 +510,84 @@ Analysiere die Antwort und identifiziere, welche Webquellen für die Antwort ver
 										} catch (error) {
 											captureError(error);
 										}
+									} catch (error) {
+										captureError(error);
+									}
+								}
+								if (allWebSources.length > 0) {
+									try {
+										const webCitationPromptClient = await resilientCall(
+											() =>
+												langfuse.prompt.get("web-citation-extraction", {
+													label:
+														config.nodeEnv === "test"
+															? "development"
+															: config.nodeEnv,
+													type: "chat",
+												}),
+											{ queueType: "llm" },
+										);
+										const compiledWebCitationExtractionPrompts =
+											webCitationPromptClient.compile({
+												generatedAnswer: text,
+												availableSources: allWebSources
+													.map(
+														(s) =>
+															`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+													)
+													.join("\n\n"),
+											}) as ModelMessage[];
+
+										const { output: webObject, usage: webCitationUsage } =
+											await resilientCall(
+												() =>
+													generateText({
+														model: llmHandler.languageModel,
+														messages: compiledWebCitationExtractionPrompts,
+														temperature: LLM_PARAMETERS.temperature,
+														output: Output.object({
+															schema: webCitationAnswerSchema,
+														}),
+														experimental_telemetry: {
+															isEnabled:
+																config.nodeEnv !== "test" &&
+																config.nodeEnv !== "production",
+															functionId: "web-citation-extraction",
+															metadata: {
+																sessionId: sessionId ? sessionId : "unknown",
+															},
+														},
+													}),
+												{ queueType: "llm" },
+											);
+
+										const citedSources = allWebSources.filter((s) =>
+											webObject.citations.some((c) => c.url === s.url),
+										);
+
+										writer.write({
+											type: "data-web-citations",
+											data: citedSources,
+										});
+
+										if (userId) {
+											try {
+												await this.dbService.updateUserColumnValue(
+													userId,
+													"num_inference_tokens",
+													webCitationUsage.totalTokens,
+												);
+												await this.dbService.updateUserColumnValue(
+													userId,
+													"num_inferences",
+													1,
+												);
+											} catch (error) {
+												captureError(error);
+											}
+										}
+									} catch (error) {
+										captureError(error);
 									}
 								}
 
@@ -728,35 +787,17 @@ Analysiere die Antwort und identifiziere, welche Webquellen für die Antwort ver
 		});
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
-		if (config.nodeEnv === "development") {
-			const freeChatPrompt = `
-Du bist ein hilfreicher Assistent mit Zugang zu aktuellen Webinhalten über ein Websuch-Tool.
-
-Aktuelles Datum: ${currentDate}
-
-Antworte immer auf Deutsch. ${addressForm} die Nutzerin bzw. den Nutzer.
-
-Du hast Zugriff auf ein Websuch-Tool (webSearchTool). Nutze es aktiv, wenn:
-- die Frage aktuelle Informationen erfordert (Nachrichten, Preise, Ereignisse, Gesetze, etc.)
-- dein Trainingswissen möglicherweise veraltet ist
-- die Nutzerin / der Nutzer explizit nach aktuellen Informationen fragt
-
-Nenne keine URLs, Domains oder Quellnamen direkt in deiner Antwort. Quellen werden dem Nutzer separat angezeigt.
-Wenn die Suche keine nützlichen Ergebnisse liefert, teile das transparent mit.
-`;
-			return {
-				messages: [
-					{ role: "system", content: freeChatPrompt },
-					...previousMessages,
-				],
-				promptClient: undefined,
-			};
-		}
 		// Always use free-chat prompt
-		const freeChatPromptClient = await langfuse.prompt.get(
-			"free-chat",
-			{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
-		);
+		let freeChatPromptClient: TextPromptClient;
+		try {
+			freeChatPromptClient = await langfuse.prompt.get(
+				"free-chat",
+				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
+			);
+		} catch (error) {
+			captureError(error);
+			throw error;
+		}
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
@@ -788,7 +829,10 @@ Wenn die Suche keine nützlichen Ergebnisse liefert, teile das transparent mit.
 			optionsCopy.activeTools.push("webSearchTool");
 		}
 
-		if (!config.featureFlagMcpParlaAllowed) {
+		if (
+			!config.featureFlagMcpParlaAllowed &&
+			!config.featureFlagWebSearchAllowed
+		) {
 			return this.getRelevantToolsV1(optionsCopy);
 		}
 
