@@ -29,7 +29,6 @@ export abstract class BaseContentDbService {
 			summary: string;
 			shortSummary: string;
 			tags: string[];
-			summaryEmbedding: number[];
 		},
 		documentData: Document,
 	): Promise<void> {
@@ -37,7 +36,6 @@ export abstract class BaseContentDbService {
 			owned_by_user_id: documentData.owned_by_user_id || null,
 			summary: summaryData.summary,
 			short_summary: summaryData.shortSummary,
-			summary_jina_embedding: `[${summaryData.summaryEmbedding.join(",")}]`,
 			tags: summaryData.tags,
 			document_id: documentData.id,
 			folder_id: documentData.folder_id,
@@ -156,7 +154,6 @@ export abstract class BaseContentDbService {
 			summary: string;
 			shortSummary: string;
 			tags: string[];
-			summaryEmbedding: number[];
 		},
 		embeddings: Embedding[],
 	): Promise<void> {
@@ -255,7 +252,7 @@ export abstract class BaseContentDbService {
 			embeddings.map((e) => ({
 				owned_by_user_id: document.owned_by_user_id || null,
 				content: e.content,
-				chunk_jina_embedding: JSON.stringify(e.embedding),
+				chunk_mistral_embedding: JSON.stringify(e.embedding),
 				chunk_index: e.chunkIndex,
 				document_id: document.id,
 				folder_id: document.folder_id,

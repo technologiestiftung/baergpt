@@ -22,7 +22,7 @@ const supabaseAnonClient = createClient<Database>(
 	config.supabaseAnonKey,
 );
 
-const EMBEDDING_LENGTH = config.jinaEmbeddingDimensions;
+const EMBEDDING_LENGTH = config.mistralEmbeddingDimensions;
 const PUBLIC_BUCKET = "public_documents";
 const SMALL_FILE_SIZE = 500;
 
@@ -164,19 +164,6 @@ describe("Base Knowledge Integration Tests", () => {
 
 		expect(summaryError).toBeNull();
 
-		// Create a deterministic test embedding for the summary (stable across runs)
-		const testEmbedding = createDeterministicEmbedding();
-
-		// Update summary with embedding
-		const { error: embeddingError } = await supabaseAdminClient
-			.from("document_summaries")
-			.update({
-				summary_jina_embedding: JSON.stringify(testEmbedding),
-			})
-			.eq("document_id", documentId);
-
-		expect(embeddingError).toBeNull();
-
 		// Create document chunks
 		const chunkEmbedding = createDeterministicEmbedding();
 
@@ -191,7 +178,7 @@ describe("Base Knowledge Integration Tests", () => {
 				owned_by_user_id: null,
 				folder_id: null,
 				access_group_id: accessGroupId,
-				chunk_jina_embedding: JSON.stringify(chunkEmbedding),
+				chunk_mistral_embedding: JSON.stringify(chunkEmbedding),
 			});
 
 		expect(chunkError).toBeNull();
@@ -262,7 +249,7 @@ describe("Base Knowledge Integration Tests", () => {
 	it("should perform hybrid search on base knowledge documents", async () => {
 		// Mock embedding generation to avoid external API dependency in tests
 		// override for test
-		embeddingService.generateJinaEmbedding = async () => ({
+		embeddingService.generateMistralEmbedding = async () => ({
 			embedding: Array.from(
 				{ length: EMBEDDING_LENGTH },
 				(_, i) => (i % 10) / 10,
@@ -283,9 +270,8 @@ describe("Base Knowledge Integration Tests", () => {
 
 		// Generate embedding for test query
 		const testQuery = "artificial intelligence";
-		const embeddingResponse = await embeddingService.generateJinaEmbedding(
+		const embeddingResponse = await embeddingService.generateMistralEmbedding(
 			testQuery,
-			"retrieval.query",
 			testUserId,
 		);
 
@@ -549,7 +535,7 @@ describe("Base Knowledge Integration Tests", () => {
 						owned_by_user_id: null,
 						folder_id: null,
 						access_group_id: accessGroupId,
-						chunk_jina_embedding: JSON.stringify(testEmbedding),
+						chunk_mistral_embedding: JSON.stringify(testEmbedding),
 					});
 
 				expect(chunkError).toBeNull();
@@ -630,7 +616,7 @@ describe("Base Knowledge Integration Tests", () => {
 					owned_by_user_id: null, // Should be blocked
 					folder_id: null,
 					access_group_id: accessGroupId,
-					chunk_jina_embedding: JSON.stringify(testEmbedding),
+					chunk_mistral_embedding: JSON.stringify(testEmbedding),
 				});
 
 			expect(chunkError).not.toBeNull();

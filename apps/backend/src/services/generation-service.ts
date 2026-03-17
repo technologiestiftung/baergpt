@@ -93,36 +93,6 @@ export class GenerationService {
 	}
 
 	/**
-	 * Compress content to a target token limit by:
-	 * 1) attempting up to `maxRounds` model compressions, then
-	 * 2) hard-trimming with a binary search as a final safeguard.
-	 */
-	private async compressToTokenLimit(
-		llmIdentifier: string,
-		content: string,
-		options: { tokenLimit: number; maxRounds?: number } = { tokenLimit: 0 },
-	): Promise<string> {
-		const { tokenLimit, maxRounds = 3 } = options;
-		let current = content;
-		let tokens = countTokens(current);
-
-		for (let round = 0; round < maxRounds && tokens > tokenLimit; round++) {
-			const shorter = await this.generateSummary(llmIdentifier, current);
-			if (!shorter) {
-				break;
-			}
-			current = shorter;
-			tokens = countTokens(current);
-		}
-
-		if (tokens <= tokenLimit) {
-			return current;
-		}
-
-		return trimToTokenLimitByWords(current, tokenLimit);
-	}
-
-	/**
 	 * Estimate system prompt token count for a given prompt name by compiling with empty content.
 	 */
 	private async estimateSystemPromptTokens(
@@ -241,7 +211,6 @@ export class GenerationService {
 		summary: string;
 		shortSummary: string;
 		tags: string[];
-		summaryEmbedding: number[];
 	}> {
 		const numTokens = parsedPages.reduce(
 			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
@@ -298,23 +267,6 @@ export class GenerationService {
 			throw new Error("Failed to generate short document summary");
 		}
 
-		const summaryForEmbedding = await this.compressToTokenLimit(
-			llmIdentifier,
-			summary,
-			{ tokenLimit: config.jinaMaxContextTokens, maxRounds: 3 },
-		);
-
-		const summaryEmbeddingResponse =
-			await this.embeddingService.generateJinaEmbedding(
-				summaryForEmbedding,
-				"retrieval.passage",
-				userId,
-			);
-
-		if (!summaryEmbeddingResponse || !summaryEmbeddingResponse.embedding) {
-			throw new Error("Failed to generate document embedding");
-		}
-
 		const tags = await this.generateTags(llmIdentifier, summary, {
 			userId,
 		});
@@ -327,7 +279,6 @@ export class GenerationService {
 			summary,
 			shortSummary,
 			tags,
-			summaryEmbedding: summaryEmbeddingResponse.embedding,
 		};
 	}
 

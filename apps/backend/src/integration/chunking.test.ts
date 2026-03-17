@@ -5,12 +5,14 @@ import { countTokens } from "../services/token-utils";
 import { config } from "../config";
 
 // Mock the config and external dependencies
-vi.mock("../src/config", () => ({
+vi.mock("../config", () => ({
 	config: {
-		jinaApiKey: "test-key",
-		jinaEmbeddingModel: "embedding-model-1",
-		jinaMaxContextTokens: 8000,
-		jinaMaxDocumentsPerRequest: 512,
+		mistralApiKey: "test-key",
+		mistralEmbeddingModel: "embedding-model-1",
+		mistralEmbedMaxContextTokens: 8000,
+		mistralEmbedMaxDocumentsPerRequest: 512,
+		mistralEmbeddingDimensions: 1024,
+		mistralMaxRPS: 10,
 	},
 }));
 
@@ -49,7 +51,7 @@ describe("Chunking Methods", () => {
 			expect(chunks.length).toBeGreaterThan(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
-					config.jinaMaxContextTokens,
+					config.mistralEmbedMaxContextTokens,
 				);
 			});
 		});
@@ -62,7 +64,7 @@ describe("Chunking Methods", () => {
 			expect(chunks.length).toBeGreaterThan(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
-					config.jinaMaxContextTokens,
+					config.mistralEmbedMaxContextTokens,
 				);
 			});
 		});
@@ -75,7 +77,7 @@ describe("Chunking Methods", () => {
 			expect(chunks.length).toBeGreaterThan(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
-					config.jinaMaxContextTokens,
+					config.mistralEmbedMaxContextTokens,
 				);
 			});
 		});
@@ -92,7 +94,7 @@ describe("Chunking Methods", () => {
 			expect(chunks.length).toBeGreaterThan(0);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
-					config.jinaMaxContextTokens,
+					config.mistralEmbedMaxContextTokens,
 				);
 			});
 		});
@@ -107,7 +109,7 @@ describe("Chunking Methods", () => {
 			expect(chunks.length).toBeGreaterThan(0);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
-					config.jinaMaxContextTokens,
+					config.mistralEmbedMaxContextTokens,
 				);
 				expect(chunk.trim().length).toBeGreaterThan(0);
 			});
@@ -122,7 +124,7 @@ describe("Chunking Methods", () => {
 			expect(chunks.length).toBeGreaterThan(0);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
-					config.jinaMaxContextTokens,
+					config.mistralEmbedMaxContextTokens,
 				);
 			});
 		});
@@ -136,7 +138,7 @@ describe("Chunking Methods", () => {
 
 			const tokenCount = countTokens(minifiedJson);
 			// With 5000 items, this should exceed the limit
-			expect(tokenCount).toBeGreaterThan(config.jinaMaxContextTokens);
+			expect(tokenCount).toBeGreaterThan(config.mistralEmbedMaxContextTokens);
 
 			const chunks = service.recursiveChunking(minifiedJson);
 
@@ -171,7 +173,7 @@ ${"Content for section 3. ".repeat(1000)}
 			expect(chunks.length).toBeGreaterThan(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
-					config.jinaMaxContextTokens,
+					config.mistralEmbedMaxContextTokens,
 				);
 			});
 		});
@@ -191,7 +193,7 @@ More content after code block.
 			expect(chunks.length).toBeGreaterThan(0);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
-					config.jinaMaxContextTokens,
+					config.mistralEmbedMaxContextTokens,
 				);
 			});
 		});

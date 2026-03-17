@@ -54,7 +54,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 - **Database**: [PostgreSQL](https://github.com/postgres/postgres) via [Supabase](https://github.com/supabase/supabase)
 - **LLM Provider**: [Mistral AI](https://github.com/mistralai)
 - **AI SDK**: [Vercel AI SDK](https://github.com/vercel/ai) with multiple providers (@ai-sdk/azure, @ai-sdk/mistral, @ai-sdk/openai)
-- **Embeddings**: [Jina AI](https://github.com/jina-ai/jina)
+- **Embeddings**: [Mistral AI](https://github.com/mistralai)
 - **Document Processing**:
   - [Gotenberg](https://github.com/gotenberg/gotenberg) (PDF conversion)
   - [mammoth](https://github.com/mwilliamson/mammoth.js) (DOCX parsing)
@@ -120,7 +120,6 @@ You'll need accounts and API keys for:
 #### Required for Backend
 
 - **Mistral AI**: API key from https://console.mistral.ai/
-- **Jina AI**: API key from https://jina.ai/ (for embeddings)
 - **Gotenberg**: URL and credentials for Gotenberg service (PDF conversion)
 - **Sentry**: DSN from https://sentry.io/ (for error monitoring)
 - **Redis**: Connection string (for the API rate limiting queue)

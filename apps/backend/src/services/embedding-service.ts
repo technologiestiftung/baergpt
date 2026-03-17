@@ -6,89 +6,35 @@ import type {
 	Embedding,
 	EmbeddingResponse,
 	EmbeddingsResponse,
-	JinaSegmenterResponse,
-	JinaEmbeddingResponse,
 } from "../types/common";
 import { countTokens, trimToTokenLimitByWords } from "./token-utils";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { resilientCall } from "../utils";
+import { embed, embedMany } from "ai";
+import { mistral } from "@ai-sdk/mistral";
 
 export class EmbeddingService {
 	private readonly dbService: BaseContentDbService;
 	constructor(dbService: BaseContentDbService) {
 		this.dbService = dbService;
 	}
-	async chunkWithJinaSegmenter(
-		text: string,
-		tokenLimit: number = 2000,
-	): Promise<JinaSegmenterResponse> {
-		const chunkingResponse = await resilientCall(
+
+	async generateMistralEmbedding(
+		input: string,
+		userId?: string,
+	): Promise<EmbeddingResponse> {
+		const { embedding, usage } = await resilientCall(
 			async () => {
-				const response = await fetch("https://api.jina.ai/v1/segment", {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${config.jinaApiKey}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						content: text,
-						return_chunks: true,
-						max_chunk_length: tokenLimit,
-						tokenizer: "o200k_base",
-					}),
+				return await embed({
+					model: mistral.embeddingModel(config.mistralEmbeddingModel),
+					value: input,
 				});
-				return response;
 			},
 			{ queueType: "embeddings" },
 		);
 
-		if (chunkingResponse.status !== 200) {
-			throw new Error("Failed to create chunks");
-		}
-
-		const responseData =
-			(await chunkingResponse.json()) as JinaSegmenterResponse;
-		return responseData;
-	}
-
-	async generateJinaEmbedding(
-		input: string,
-		task: string,
-		userId?: string,
-	): Promise<EmbeddingResponse> {
-		const embeddingResponse = await resilientCall(
-			() =>
-				fetch("https://api.jina.ai/v1/embeddings", {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${config.jinaApiKey}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						model: config.jinaEmbeddingModel,
-						input: input,
-						task: task,
-						dimensions: config.jinaEmbeddingDimensions,
-						late_chunking: false,
-						embedding_type: "float",
-						truncate: true,
-					}),
-				}),
-			{ queueType: "embeddings" },
-		);
-
-		if (embeddingResponse.status !== 200) {
-			const errorBody = await embeddingResponse.text();
-			throw new Error(
-				`Failed to create embedding: Status ${embeddingResponse.status}, Body: ${errorBody}`,
-			);
-		}
-
-		const responseData =
-			(await embeddingResponse.json()) as JinaEmbeddingResponse;
-
-		if (!responseData.data || responseData.data.length === 0) {
-			throw new Error("Failed to create embedding: empty response");
+		if (!embedding) {
+			throw new Error("Failed to create embedding");
 		}
 
 		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
@@ -96,54 +42,29 @@ export class EmbeddingService {
 			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_embedding_tokens",
-				responseData.usage.total_tokens,
+				usage.tokens,
 			);
 		}
 
-		return {
-			embedding: responseData.data[0].embedding,
-			tokenUsage: responseData.usage.total_tokens,
-		};
+		return { embedding: embedding, tokenUsage: usage.tokens };
 	}
 
-	async generateJinaBatchEmbeddings(
-		inputs: { [key: string]: string }[],
-		task: string,
+	async generateMistralBatchEmbeddings(
+		inputs: string[],
 		userId?: string,
 	): Promise<EmbeddingsResponse> {
-		const embeddingResponse = await resilientCall(
-			async () =>
-				fetch("https://api.jina.ai/v1/embeddings", {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${config.jinaApiKey}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						model: config.jinaEmbeddingModel,
-						input: inputs,
-						task: task,
-						dimensions: config.jinaEmbeddingDimensions,
-						late_chunking: false,
-						embedding_type: "float",
-						truncate: true,
-					}),
-				}),
+		const { embeddings, usage } = await resilientCall(
+			async () => {
+				return await embedMany({
+					model: mistral.embeddingModel(config.mistralEmbeddingModel),
+					values: inputs,
+				});
+			},
 			{ queueType: "embeddings" },
 		);
 
-		if (embeddingResponse.status !== 200) {
-			const errorBody = await embeddingResponse.text();
-			throw new Error(
-				`Failed to create embedding: Status ${embeddingResponse.status}, Body: ${errorBody}`,
-			);
-		}
-
-		const responseData =
-			(await embeddingResponse.json()) as JinaEmbeddingResponse;
-
-		if (!responseData.data || responseData.data.length === 0) {
-			throw new Error("Failed to create embedding: empty response");
+		if (!embeddings) {
+			throw new Error("Failed to create embeddings");
 		}
 
 		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
@@ -151,15 +72,11 @@ export class EmbeddingService {
 			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_embedding_tokens",
-				responseData.usage.total_tokens,
+				usage.tokens,
 			);
 		}
 
-		const sortedData = responseData.data.sort((a, b) => a.index - b.index);
-		return {
-			embeddings: sortedData.map((item) => item.embedding),
-			tokenUsage: responseData.usage.total_tokens,
-		};
+		return { embeddings: embeddings, tokenUsage: usage.tokens };
 	}
 
 	// Utility s for chunking and batch processing
@@ -184,7 +101,7 @@ export class EmbeddingService {
 	 * @returns Array of text chunks, or empty array if content cannot be properly chunked
 	 */
 	recursiveChunking(text: string): string[] {
-		const maxTokens = config.jinaMaxContextTokens;
+		const maxTokens = config.mistralEmbedMaxContextTokens;
 		// Base case: if text is small enough, return as single chunk
 		const textTokens = countTokens(text);
 		if (textTokens <= maxTokens) {
@@ -273,7 +190,7 @@ export class EmbeddingService {
 	 */
 	markdownStructuralChunking(content: string): string[] {
 		const chunks: string[] = [];
-		const maxTokens = config.jinaMaxContextTokens;
+		const maxTokens = config.mistralEmbedMaxContextTokens;
 
 		// Split by markdown headers and major structural elements
 		const sections = content.split(/(?=^#{1,6}\s)/gm);
@@ -332,7 +249,7 @@ export class EmbeddingService {
 	 * @returns Array of merged chunk strings.
 	 */
 	mergeSmallChunks(chunks: string[], minTokens: number = 256): string[] {
-		const maxTokens = config.jinaMaxContextTokens;
+		const maxTokens = config.mistralEmbedMaxContextTokens;
 		const merged: string[] = [];
 		let buffer = "";
 
@@ -372,12 +289,12 @@ export class EmbeddingService {
 		parsedPages: ParsedPage[],
 		document: Document,
 		options: {
-			chunkingTechnique?: "fixed" | "segmenter" | "markdown";
+			chunkingTechnique?: "fixed" | "markdown";
 		} = { chunkingTechnique: "markdown" },
 	): Promise<Embedding[]> {
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
-		const maxChunksPerRequest = config.jinaMaxDocumentsPerRequest;
-		const maxTokensPerChunk = config.jinaMaxContextTokens;
+		const maxChunksPerRequest = config.mistralEmbedMaxDocumentsPerRequest;
+		const maxTokensPerChunk = config.mistralEmbedMaxContextTokens;
 
 		// First pass: chunk all pages and collect all chunks
 		const allChunks: Chunk[] = [];
@@ -387,19 +304,6 @@ export class EmbeddingService {
 			if (options.chunkingTechnique === "fixed") {
 				chunkContents = this.fixedSizeChunking(page.content);
 			} else if (options.chunkingTechnique === "markdown") {
-				chunkContents = this.markdownStructuralChunking(page.content);
-			} else if (options.chunkingTechnique === "segmenter") {
-				const SEGMENTER_INPUT_MAX = 64000;
-				const SEGMENTER_SAFETY_MARGIN = 2048;
-				const exceedsSegmenterLimit =
-					page.content.length > SEGMENTER_INPUT_MAX - SEGMENTER_SAFETY_MARGIN;
-				if (exceedsSegmenterLimit) {
-					chunkContents = this.fixedSizeChunking(page.content, 150);
-				} else {
-					const { chunks } = await this.chunkWithJinaSegmenter(page.content);
-					chunkContents = this.mergeSmallChunks(chunks);
-				}
-			} else {
 				chunkContents = this.markdownStructuralChunking(page.content);
 			}
 
@@ -445,9 +349,8 @@ export class EmbeddingService {
 		for (let i = 0; i < batches.length; i++) {
 			const batch = batches[i];
 
-			const response = await this.generateJinaBatchEmbeddings(
-				batch.map((c) => ({ text: c.content })),
-				"retrieval.passage",
+			const response = await this.generateMistralBatchEmbeddings(
+				batch.map((c) => c.content),
 				userId,
 			);
 
