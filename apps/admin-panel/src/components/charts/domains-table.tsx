@@ -59,8 +59,8 @@ export function DomainsTable({
 					</TableBody>
 				</Table>
 			</CardContent>
-			<CardFooter className="justify-center border-t pt-4">
-				{hasMoreThanFiveDomains && !isShowingAll && (
+			{hasMoreThanFiveDomains && !isShowingAll && (
+				<CardFooter className="justify-center border-t pt-4">
 					<Button
 						variant="ghost"
 						size="sm"
@@ -69,8 +69,8 @@ export function DomainsTable({
 						{Content["productDashboard.domainsTable.showAllButton"]} (
 						{domains.length})
 					</Button>
-				)}
-			</CardFooter>
+				</CardFooter>
+			)}
 		</Card>
 	);
 }
