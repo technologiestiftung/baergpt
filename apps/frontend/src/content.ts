@@ -16,17 +16,6 @@ export const Content = {
 	"header.navigation.landingPage.register.link": "/register/",
 
 	/* -------------------- Landing Page -------------------- */
-	"landingPage.banner.h2": "Sie haben noch mehr Fragen zu BärGPT?",
-	"landingPage.banner.p1":
-		"In der Online-Sprechstunde beantworten wir Ihre individuellen Fragen.",
-	"landingPage.banner.p2": "Donnerstags von 11-12 Uhr.",
-	"landingPage.banner.p.mobile":
-		"Online-Sprechstunde: Donnerstags von 11-12 Uhr.",
-	"landingPage.banner.link.label": "Termin im Intranet finden",
-	"landingPage.banner.link.ariaLabel": "Zur Intranet-Seite",
-	"landingPage.banner.link.href":
-		"https://b-intern.de/themen/kuenstliche-intelligenz-ki/",
-	"landingPage.banner.close.ariaLabel": "Banner schließen",
 	"landingPage.hero.h1": "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 	"landingPage.hero.h3": "Sicher. Datenschutzkonform. Open Source.",
 	"landingPage.hero.register.label": "Jetzt registrieren",

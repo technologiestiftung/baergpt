@@ -32,6 +32,10 @@ const pages = {
 					title: Content["admin.sidebar.navigation.baseKnowledge"],
 					url: "/base-knowledge/",
 				},
+				{
+					title: Content["admin.sidebar.navigation.productDashboard"],
+					url: "/product-dashboard/",
+				},
 			],
 		},
 	],

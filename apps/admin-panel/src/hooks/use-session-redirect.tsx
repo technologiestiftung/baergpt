@@ -61,7 +61,7 @@ function handleUnauthorized(
 }
 
 function handleAuthorized(pathname: string, navigate: (path: string) => void) {
-	const protectedPages = ["/", "/account-activated/", "/base-knowledge/"];
+	const protectedPages = ["/", "/product-dashboard/", "/base-knowledge/"];
 
 	// Allow access to protected pages
 	if (protectedPages.includes(pathname)) {
