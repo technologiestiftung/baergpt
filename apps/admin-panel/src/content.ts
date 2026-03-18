@@ -225,22 +225,22 @@ export const Content = {
 	"productDashboard.userEvolution.total.label": "Total Users",
 	"productDashboard.userEvolution.new.label": "Daily New Users",
 
-	"productDashboard.metricCards.dau.label": "Daily Active Users",
+	"productDashboard.metricCards.dau.label": "Täglich aktive Nutzer:innen",
 	"productDashboard.metricCards.dau.details": "Heute",
-	"productDashboard.metricCards.wau.label": "Weekly Active Users",
+	"productDashboard.metricCards.wau.label": "Wöchentlich aktive Nutzer:innen",
 	"productDashboard.metricCards.wau.details": "Letzte 7 Tage",
-	"productDashboard.metricCards.mau.label": "Monthly Active Users",
+	"productDashboard.metricCards.mau.label": "Monatlich aktive Nutzer:innen",
 	"productDashboard.metricCards.mau.details": "Letzte 30 Tage",
 
-	"productDashboard.metricCards.totalChats.label": "Anzahl an Chats",
+	"productDashboard.metricCards.totalChats.label": "Gesamtzahl der Chats",
 	"productDashboard.metricCards.totalUserDocuments.label":
-		"Hochgeladene Dokumente von Nutzer:innen",
+		"Gesamtzahl der Benutzerdokumente",
 	"productDashboard.metricCards.averageInferencesPerUser.label":
 		"Durchschnittliche Inferenzen pro Nutzer:in",
 	"productDashboard.metricCards.totalMessagesWithDocuments.label":
-		"Nachrichten mit Dokumenten",
+		"Gesamtzahl der Nachrichten mit eigenen Dokumenten",
 	"productDashboard.metricCards.totalMessagesWithoutDocuments.label":
-		"Nachrichten ohne Dokumente",
+		"Gesamtzahl der Nachrichten ohne eigene Dokumente",
 
 	"productDashboard.domainsTable.title": "Domains",
 	"productDashboard.domainsTable.description": "Registrierte User pro Domain.",
