@@ -136,6 +136,7 @@ export type Database = {
 					id: number;
 					role: string;
 					type: string;
+					web_citations: Json | null;
 				};
 				Insert: {
 					allowed_document_ids?: number[] | null;
@@ -147,6 +148,7 @@ export type Database = {
 					id?: number;
 					role: string;
 					type: string;
+					web_citations?: Json | null;
 				};
 				Update: {
 					allowed_document_ids?: number[] | null;
@@ -158,6 +160,7 @@ export type Database = {
 					id?: number;
 					role?: string;
 					type?: string;
+					web_citations?: Json | null;
 				};
 				Relationships: [
 					{
