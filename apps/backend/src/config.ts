@@ -6,6 +6,7 @@ export interface Config {
 	mistralEmbeddingModel: string;
 	mistralEmbedMaxContextTokens: number;
 	mistralEmbedMaxDocumentsPerRequest: number;
+	mistralEmbedMaxTotalTokensPerRequest: number;
 	mistralEmbeddingDimensions: number;
 	mistralMaxRPS: number;
 	supabaseUrl: string;
@@ -46,6 +47,11 @@ export function verifyConfig(): void {
 	}
 	if (!process.env.MISTRAL_EMBED_MAX_CONTEXT_TOKENS) {
 		throw new Error("MISTRAL_EMBED_MAX_CONTEXT_TOKENS must be defined");
+	}
+	if (!process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST) {
+		throw new Error(
+			"MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST must be defined",
+		);
 	}
 	if (!process.env.MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST) {
 		throw new Error("MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST must be defined");
@@ -129,6 +135,10 @@ export const config: Config = {
 	),
 	mistralEmbedMaxDocumentsPerRequest: parseInt(
 		process.env.MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST,
+		10,
+	),
+	mistralEmbedMaxTotalTokensPerRequest: parseInt(
+		process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST,
 		10,
 	),
 	mistralEmbeddingDimensions: parseInt(

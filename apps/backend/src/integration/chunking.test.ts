@@ -11,6 +11,7 @@ vi.mock("../config", () => ({
 		mistralEmbeddingModel: "embedding-model-1",
 		mistralEmbedMaxContextTokens: 8000,
 		mistralEmbedMaxDocumentsPerRequest: 512,
+		mistralEmbedMaxTotalTokensPerRequest: 8000,
 		mistralEmbeddingDimensions: 1024,
 		mistralMaxRPS: 10,
 	},
@@ -44,7 +45,7 @@ describe("Chunking Methods", () => {
 		});
 
 		it("should split by newlines when text exceeds limit", () => {
-			const longLine = "a ".repeat(40000);
+			const longLine = "a ".repeat(3000);
 			const text = `${longLine}\n${longLine}\n${longLine}`;
 			const chunks = service.recursiveChunking(text);
 
@@ -57,7 +58,7 @@ describe("Chunking Methods", () => {
 		});
 
 		it("should split by sentences when no newlines available", () => {
-			const longSentence = "word ".repeat(30000);
+			const longSentence = "word ".repeat(3000);
 			const text = `${longSentence}. ${longSentence}. ${longSentence}.`;
 			const chunks = service.recursiveChunking(text);
 
@@ -69,11 +70,10 @@ describe("Chunking Methods", () => {
 			});
 		});
 
-		it("should split by words when no sentence boundaries available", () => {
+		it("should use fixed-size word chunking when only word boundaries are available", () => {
 			// Create text that exceeds the token limit without new lines or sentence boundaries
-			const text = "word ".repeat(40000);
+			const text = "word ".repeat(8100);
 			const chunks = service.recursiveChunking(text);
-
 			expect(chunks.length).toBeGreaterThan(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
@@ -87,11 +87,10 @@ describe("Chunking Methods", () => {
 				.fill(0)
 				.map((_, i) => `item${i}`)
 				.join(";");
-			// Add some spaces to make it chunkable
 			const csvWithSpaces = csvItems.replace(/;/g, "; ");
 			const chunks = service.recursiveChunking(csvWithSpaces);
 
-			expect(chunks.length).toBeGreaterThan(0);
+			expect(chunks.length).toBe(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
 					config.mistralEmbedMaxContextTokens,
@@ -106,7 +105,7 @@ describe("Chunking Methods", () => {
 				);
 			const chunks = service.recursiveChunking(arabicText);
 
-			expect(chunks.length).toBeGreaterThan(0);
+			expect(chunks.length).toBeGreaterThan(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
 					config.mistralEmbedMaxContextTokens,
@@ -115,13 +114,13 @@ describe("Chunking Methods", () => {
 			});
 		});
 
-		it("should handle Chinese text with punctuation boundaries", () => {
+		it("should use fixed-size character chunking for Chinese text without word boundaries", () => {
 			const chineseText = "这是一个很长的中文文本，包含许多字符和句子。".repeat(
 				500,
 			);
 			const chunks = service.recursiveChunking(chineseText);
 
-			expect(chunks.length).toBeGreaterThan(0);
+			expect(chunks.length).toBeGreaterThan(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
 					config.mistralEmbedMaxContextTokens,
@@ -129,7 +128,7 @@ describe("Chunking Methods", () => {
 			});
 		});
 
-		it("should skip minified JSON without spaces", () => {
+		it("should use fixed-size character chunking for minified JSON without spaces", () => {
 			const minifiedJson = `{"key":"value","nested":{"deep":"data"}}${JSON.stringify(
 				Array(5000)
 					.fill(0)
@@ -137,12 +136,16 @@ describe("Chunking Methods", () => {
 			).replace(/\s/g, "")}`; // Remove all spaces
 
 			const tokenCount = countTokens(minifiedJson);
-			// With 5000 items, this should exceed the limit
 			expect(tokenCount).toBeGreaterThan(config.mistralEmbedMaxContextTokens);
 
 			const chunks = service.recursiveChunking(minifiedJson);
 
-			expect(chunks).toEqual([]);
+			expect(chunks.length).toBeGreaterThan(1);
+			chunks.forEach((chunk) => {
+				expect(countTokens(chunk)).toBeLessThanOrEqual(
+					config.mistralEmbedMaxContextTokens,
+				);
+			});
 		});
 
 		it("should handle edge case of empty string", () => {
@@ -190,7 +193,7 @@ More content after code block.
 `;
 			const chunks = service.markdownStructuralChunking(text);
 
-			expect(chunks.length).toBeGreaterThan(0);
+			expect(chunks.length).toBe(1);
 			chunks.forEach((chunk) => {
 				expect(countTokens(chunk)).toBeLessThanOrEqual(
 					config.mistralEmbedMaxContextTokens,
