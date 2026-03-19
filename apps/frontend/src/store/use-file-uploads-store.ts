@@ -11,6 +11,7 @@ import * as Sentry from "@sentry/react";
 import type { Span } from "@sentry/react";
 
 export const UPLOAD_STATUS_MAP = {
+	waiting: "Warte",
 	uploading: "Hochladen läuft",
 	uploaded: "Erfolgreich hochgeladen",
 	processing: "Hochladen läuft",
@@ -20,7 +21,7 @@ export const UPLOAD_STATUS_MAP = {
 	"failed.duplicate": "Datei existiert bereits",
 	"failed.format": "Falsches Format",
 	"failed.size": `Datei zu groß`,
-	"failed.tooMany": `Hochladen fehlgeschlagen`,
+	"failed.tooMany": `Uploadlimit erreicht`,
 } as const;
 
 export type UploadStatusKeys = keyof typeof UPLOAD_STATUS_MAP;
@@ -31,14 +32,9 @@ export type FileUpload = {
 };
 
 const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
-const WARNING_AUTO_DISMISS_DELAY_MS = 10_000;
-
-let maxParallelUploadWarningTimeout: ReturnType<typeof setTimeout> | null =
-	null;
 
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
-	isMaxParallelUploadWarningDismissed: boolean;
 	uploadFile: (args: { fileUpload: FileUpload; span: Span }) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
@@ -46,8 +42,6 @@ type UseFileUploadsStore = {
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
 	removeFileUpload: (fileName: string) => void;
 	clearFileUploads: () => void;
-	startMaxParallelUploadWarningTimer: () => void;
-	hideMaxParallelUploadWarning: () => void;
 };
 
 function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
@@ -56,7 +50,6 @@ function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
 
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
-	isMaxParallelUploadWarningDismissed: false,
 
 	async uploadFile({ fileUpload: { file }, span }) {
 		const { updateFileUploadStatus } = get();
@@ -124,26 +117,35 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	},
 
 	uploadFiles: async (files: File[]) => {
-		const { fileUploads, uploadFile, hideMaxParallelUploadWarning } = get();
+		const { fileUploads, uploadFile } = get();
 		const { documents, deletedDefaultDocumentIds } =
 			useDocumentStore.getState();
 
-		const numberOfUploads = documents.filter(
+		const numberOfNewUploads = documents.filter(
 			(doc) => !deletedDefaultDocumentIds.includes(doc.id),
 		).length;
-		const availableUploadSlots =
-			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) - numberOfUploads;
-		const maxFileUploads = Math.min(
-			availableUploadSlots,
-			Number(import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS),
-		);
 
-		const filesToUpload = files.slice(0, maxFileUploads);
-		const filesToCancel = files.slice(maxFileUploads);
+		const numberOfActiveAndQueuedUploads = fileUploads.filter(
+			(upload) =>
+				upload.status === "waiting" ||
+				upload.status === "uploading" ||
+				upload.status === "uploaded" ||
+				upload.status === "processing",
+		).length;
+
+		let availableUploadSlots =
+			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) -
+			numberOfNewUploads -
+			numberOfActiveAndQueuedUploads;
+
+		availableUploadSlots = Math.max(0, availableUploadSlots);
+
+		const filesToUpload = files.slice(0, availableUploadSlots);
+		const filesToCancel = files.slice(availableUploadSlots);
 
 		const newFileUploads = filesToUpload.map((file) => ({
 			file,
-			status: "uploading" as UploadStatusKeys,
+			status: "waiting" as UploadStatusKeys,
 		}));
 
 		const canceledFileUploads = filesToCancel.map((file) => ({
@@ -163,17 +165,39 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 		set({ fileUploads: updatedFileUploads });
 
-		hideMaxParallelUploadWarning();
+		const MAX_PARALLEL = Number(import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS);
+		const queueState = { index: 0, activeUploads: 0 };
 
-		const promises = newFileUploads.map(async (fileUpload) => {
-			await Sentry.startSpan(
-				{ name: "File Upload", op: "file.upload" },
-				async (span) => {
-					await uploadFile({ fileUpload, span });
-				},
-			);
+		await new Promise<void>((resolve) => {
+			const processUploadQueue = () => {
+				if (
+					queueState.index >= newFileUploads.length &&
+					queueState.activeUploads === 0
+				) {
+					resolve();
+					return;
+				}
+
+				while (
+					queueState.activeUploads < MAX_PARALLEL &&
+					queueState.index < newFileUploads.length
+				) {
+					const fileUpload = newFileUploads[queueState.index++];
+					queueState.activeUploads++;
+					Sentry.startSpan(
+						{ name: "File Upload", op: "file.upload" },
+						async (span) => {
+							await uploadFile({ fileUpload, span });
+						},
+					).finally(() => {
+						queueState.activeUploads--;
+						processUploadQueue();
+					});
+				}
+			};
+
+			processUploadQueue();
 		});
-		await Promise.all(promises);
 	},
 
 	isUploadingOver: () => {
@@ -201,11 +225,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	},
 
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {
-		const {
-			fileUploads,
-			isMaxParallelUploadWarningDismissed,
-			startMaxParallelUploadWarningTimer,
-		} = get();
+		const { fileUploads } = get();
 
 		const updatedFileUploads = fileUploads.map((fileUpload) => {
 			if (fileUpload.file.name === file.name) {
@@ -218,18 +238,6 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		});
 
 		set({ fileUploads: updatedFileUploads });
-
-		const shouldStartWarningTimer =
-			status === "successful" &&
-			updatedFileUploads.some(
-				(fileUpload) => fileUpload.status === "failed.tooMany",
-			) &&
-			!isMaxParallelUploadWarningDismissed &&
-			!maxParallelUploadWarningTimeout;
-
-		if (shouldStartWarningTimer) {
-			startMaxParallelUploadWarningTimer();
-		}
 	},
 
 	removeFileUpload: (fileName: string) => {
@@ -241,26 +249,5 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 	clearFileUploads: () => {
 		set({ fileUploads: [] });
-	},
-
-	startMaxParallelUploadWarningTimer: () => {
-		// Clear existing timer
-		if (maxParallelUploadWarningTimeout) {
-			clearTimeout(maxParallelUploadWarningTimeout);
-		}
-
-		// Start new timer
-		maxParallelUploadWarningTimeout = setTimeout(() => {
-			maxParallelUploadWarningTimeout = null;
-			set({ isMaxParallelUploadWarningDismissed: true });
-		}, WARNING_AUTO_DISMISS_DELAY_MS);
-	},
-
-	hideMaxParallelUploadWarning: () => {
-		if (maxParallelUploadWarningTimeout) {
-			clearTimeout(maxParallelUploadWarningTimeout);
-			maxParallelUploadWarningTimeout = null;
-		}
-		set({ isMaxParallelUploadWarningDismissed: false });
 	},
 }));

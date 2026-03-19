@@ -71,17 +71,34 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
-		"Attempt to upload more than 5 documents shows error for extras",
+		"Attempt to upload more than 5 documents shows 6th document in waiting state",
 		async ({ page, browserName }) => {
 			// Try to upload 6 documents (1 more than the max limit)
 			const allFiles = defaultDocuments.slice(0, 6);
-			const filesToUpload = allFiles.slice(0, 5);
-			const fileToReject = allFiles[5];
+			const filesToUploadFirst = allFiles.slice(0, 5);
 
 			await page.goto("/");
 			await page.waitForLoadState("networkidle");
 
 			const filePaths = allFiles.map((file) => file.path);
+
+			// Register response wait before triggering upload so we don't miss responses.
+			// Use a single predicate that counts matching responses so each of the N
+			// POST /documents/process responses is required
+			let processResponseCount = 0;
+			const processResponsePromise = page.waitForResponse(
+				(givenResponse) => {
+					if (
+						givenResponse.url().includes("/documents/process") &&
+						givenResponse.request().method() === "POST"
+					) {
+						processResponseCount++;
+						return processResponseCount >= allFiles.length;
+					}
+					return false;
+				},
+				{ timeout: 60_000 },
+			);
 
 			if (browserName === "firefox") {
 				page.on("filechooser", async (fileChooser) => {
@@ -97,40 +114,31 @@ test.describe("Documents", () => {
 				await fileChooser.setFiles(filePaths);
 			}
 
-			// Wait for the error message for the rejected file (scope to desktop panel)
+			// Verify the 6th file is shown with the state "Warte"
 			await expect(
 				page
 					.locator("#desktop-documents-panel")
-					.getByText("Max. 5 Dateien pro Upload."),
+					.getByText(`${allFiles[5].name}Warte`, { exact: true }),
 			).toBeVisible();
 
-			// Verify the first 5 files are being uploaded/uploaded successfully
-			for (const file of filesToUpload) {
+			// Verify the first 5 files are shown with the state "Hochladen läuft"
+			for (const file of filesToUploadFirst) {
 				await expect(
 					page
 						.locator("#desktop-documents-panel")
-						.getByText(file.name, { exact: true }),
+						.getByText(`${file.name}Hochladen läuft`, { exact: true }),
 				).toBeVisible();
 			}
 
 			// Wait for successful uploads to complete
-			for (let i = 0; i < 5; i++) {
-				await page.waitForResponse(
-					(givenResponse) =>
-						givenResponse.url().includes("/documents/process") &&
-						givenResponse.request().method() === "POST",
-					{
-						timeout: 60_000,
-					},
-				);
-			}
+			await processResponsePromise;
 
 			// Close the file upload dialog
 			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
 
-			// Verify only the first 5 files appear in the document list
+			// Verify all 6 files appear in the document list
 			const desktopPanel = page.locator("#desktop-documents-panel");
-			for (const file of filesToUpload) {
+			for (const file of allFiles) {
 				await expect(
 					desktopPanel.getByRole("button", {
 						name: `Dokumente-Icon ${file.name}`,
@@ -138,15 +146,8 @@ test.describe("Documents", () => {
 				).toBeVisible();
 			}
 
-			// Verify the 6th file is NOT in the document list
-			await expect(
-				desktopPanel.getByRole("button", {
-					name: `Dokumente-Icon ${fileToReject.name}`,
-				}),
-			).not.toBeVisible();
-
 			// Clean up: delete all successfully uploaded files
-			for (const file of filesToUpload) {
+			for (const file of allFiles) {
 				await deleteFileViaUI({ page, fileName: file.name });
 			}
 		},
@@ -770,7 +771,7 @@ test.describe("Documents", () => {
 	testDesktopOnly(
 		"Shows limit reached message and disables upload button when max files uploaded",
 		async ({ page, account, session }) => {
-			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 100;
 
 			// Mock multiple document uploads to reach the limit
 			// We already have 1 document from the fixture, so upload (maxFiles - 1) more
@@ -813,7 +814,7 @@ test.describe("Documents", () => {
 	testDesktopOnly(
 		"Hidden default documents do not count toward upload limit",
 		async ({ page, account, session }) => {
-			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 100;
 
 			// Get the "Alle" access group ID for creating default documents
 			const { data: accessGroup, error: accessGroupError } =
@@ -839,7 +840,7 @@ test.describe("Documents", () => {
 				bucketName: "public_documents",
 			});
 
-			// Fixture has 1 personal doc; mock 28 more → 29 personal. With 1 default (created above) = 30 visible (at limit)
+			// Fixture has 1 personal doc; mock 98 more → 99 personal. With 1 default (created above) = 100 visible (at limit)
 			for (let i = 1; i < maxFiles - 1; i++) {
 				await mockDocumentUpload({
 					userId: account.id,
@@ -857,7 +858,7 @@ test.describe("Documents", () => {
 
 			const desktopPanel = page.locator("#desktop-documents-panel");
 
-			// At 30 visible → limit reached
+			// At 100 visible → limit reached
 			await expect(
 				desktopPanel.getByText(
 					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
@@ -868,16 +869,16 @@ test.describe("Documents", () => {
 			});
 			await expect(uploadButton).toBeDisabled();
 
-			// Delete (hide) the seed default document via UI → 29 visible, one slot free
+			// Delete (hide) the seed default document via UI → 99 visible, one slot free
 			await deleteFileViaUI({ page, fileName: seedDefaultDocumentName });
 
-			// Wait for document list refetch and UI to reflect 29 visible (hidden default no longer counted)
+			// Wait for document list refetch and UI to reflect 99 visible (hidden default no longer counted)
 			await expect(
 				desktopPanel.getByText(`${maxFiles - 1} von ${maxFiles}`),
 			).toBeVisible({ timeout: 15_000 });
 			await expect(uploadButton).toBeEnabled();
 
-			// Upload the 30th visible file using setInputFiles to simulate user file selection
+			// Upload the 100th visible file using setInputFiles to simulate user file selection
 			const fileInput = page.locator('input[type="file"]').first();
 			await fileInput.setInputFiles(secondaryDocumentPath);
 
@@ -890,7 +891,7 @@ test.describe("Documents", () => {
 
 			await page.waitForLoadState("networkidle");
 
-			// Now at 30 visible → limit reached again
+			// Now at 100 visible → limit reached again
 			await expect(
 				desktopPanel.getByText(
 					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,

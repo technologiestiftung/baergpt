@@ -199,7 +199,7 @@ export type Database = {
 					content: string;
 					document_id: number | null;
 					folder_id: number | null;
-					full_text_search: unknown;
+					full_text_search: unknown | null;
 					id: number;
 					owned_by_user_id: string | null;
 					page: number;
@@ -212,7 +212,7 @@ export type Database = {
 					content: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown;
+					full_text_search?: unknown | null;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page: number;
@@ -225,7 +225,7 @@ export type Database = {
 					content?: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown;
+					full_text_search?: unknown | null;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page?: number;
@@ -514,9 +514,12 @@ export type Database = {
 				};
 				Returns: undefined;
 			};
-			delete_user: { Args: never; Returns: undefined };
+			delete_user: {
+				Args: Record<PropertyKey, never>;
+				Returns: undefined;
+			};
 			find_unprocessed_documents: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					created_at: string;
 					file_checksum: string;
@@ -531,9 +534,12 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			get_account_activation_timestamp: { Args: never; Returns: string };
+			get_account_activation_timestamp: {
+				Args: Record<PropertyKey, never>;
+				Returns: string;
+			};
 			get_allowed_email_domains: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					domain: string;
 					id: number;
@@ -571,7 +577,7 @@ export type Database = {
 				Returns: Json;
 			};
 			get_users: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					academic_title: string;
 					deleted_at: string;
@@ -616,9 +622,18 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			is_application_admin: { Args: never; Returns: boolean };
-			is_current_user_active: { Args: never; Returns: boolean };
-			log_account_activation: { Args: never; Returns: undefined };
+			is_application_admin: {
+				Args: Record<PropertyKey, never>;
+				Returns: boolean;
+			};
+			is_current_user_active: {
+				Args: Record<PropertyKey, never>;
+				Returns: boolean;
+			};
+			log_account_activation: {
+				Args: Record<PropertyKey, never>;
+				Returns: undefined;
+			};
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];
@@ -679,11 +694,11 @@ export type Database = {
 				}[];
 			};
 			regenerate_embedding_indices_for_chunks: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: undefined;
 			};
 			regenerate_embedding_indices_for_summaries: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: undefined;
 			};
 			update_user_email_confirmed_at: {
