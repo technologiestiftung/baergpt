@@ -65,6 +65,13 @@ export class EmbeddingService {
 
 		for (const input of inputs) {
 			const tokens = countMistralTokens(input);
+			if (tokens > maxTotalTokens) {
+				// Skip inputs that exceed the max token limit individually
+				console.warn(
+					`Skipping embedding input: ${tokens} tokens exceeds max ${maxTotalTokens}`,
+				);
+				continue;
+			}
 			if (
 				current.length > 0 &&
 				(current.length >= maxPerCall ||
