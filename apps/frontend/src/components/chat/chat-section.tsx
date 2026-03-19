@@ -11,8 +11,14 @@ export const ChatSection: React.FC = () => {
 	const { chats } = useChatsStore();
 	const { currentChatId } = useCurrentChatIdStore();
 
+	console.log(currentChatId);
+
 	const currentChat = chats.find((chat) => chat.id === currentChatId);
+	console.log(currentChat);
+
 	const currentMessages = currentChat?.messages || [];
+
+	console.log(currentMessages);
 
 	return (
 		<DropZoneWrapperChat className="text-dunkelblau-100 w-full max-w-full mx-auto flex h-[95%] md:h-full flex-col items-center justify-between py-5 md:pt-6 relative px-4 md:px-5">

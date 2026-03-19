@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 @layer base {
-
 	body {
 		@apply text-dunkelblau-100;
 	}
@@ -74,10 +73,10 @@
 	.markdown-container h6 img {
 		@apply inline-block align-middle mr-2;
 	}
-	
-	.markdown-container a {
-		@apply text-dunkelblau-100 underline hover:text-dunkelblau-200;
-	}
+
+	/*.markdown-container a {*/
+	/*	@apply text-dunkelblau-100 underline hover:text-dunkelblau-200;*/
+	/*}*/
 
 	.markdown-container code {
 		@apply font-arial;
@@ -140,11 +139,15 @@
 	}
 }
 
+.data-footnote-backref {
+    @apply hidden
+}
+
 @layer utilities {
 	.history-scrollbar {
 		/* Firefox */
 		scrollbar-width: auto;
-		scrollbar-color: theme('colors.dunkelblau-80') transparent;
+		scrollbar-color: theme("colors.dunkelblau-80") transparent;
 	}
 
 	/* WebKit browsers (Chrome, Edge, Safari) */
@@ -160,19 +163,19 @@
 	}
 
 	.history-scrollbar::-webkit-scrollbar-thumb {
-		background-color: theme('colors.dunkelblau-80');
+		background-color: theme("colors.dunkelblau-80");
 		border-radius: 100px;
 		border: none;
 	}
 
 	.history-scrollbar::-webkit-scrollbar-thumb:hover {
-		background-color: theme('colors.dunkelblau-70');
+		background-color: theme("colors.dunkelblau-70");
 	}
 
 	.filesection-scrollbar {
 		/* Firefox */
 		scrollbar-width: auto;
-		scrollbar-color: theme('colors.hellblau-110') transparent;
+		scrollbar-color: theme("colors.hellblau-110") transparent;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar {
@@ -188,14 +191,13 @@
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar-thumb {
-		background: theme('colors.hellblau-110');
+		background: theme("colors.hellblau-110");
 		border-radius: 100px;
 		border: none;
 		-webkit-appearance: none;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: theme('colors.hellblau-100');
+		background: theme("colors.hellblau-100");
 	}
-
 }
