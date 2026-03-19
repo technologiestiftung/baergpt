@@ -6,7 +6,6 @@ import { useDocumentStore } from "../../store/document-store.ts";
 import { useFolderStore } from "../../store/folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
 import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
-import { useCitationsStore } from "../../store/use-citations-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 import type { Span } from "@sentry/react";
 
@@ -17,9 +16,14 @@ export type WebCitationSource = {
 	age?: string[] | null;
 };
 
+type CitationData = {
+	content: string;
+	citations: number[];
+};
+
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
-	| { type: "data-citations"; data: number[] }
+	| { type: "data-citations"; data: CitationData }
 	| { type: "data-web-citations"; data: WebCitationSource[] };
 
 const activeToolsDict: Record<ChatOption, string[]> = {
@@ -38,11 +42,11 @@ export async function getCompletion(
 		addMessageToChat,
 		selectedLlmModel,
 		selectedChatOptions,
+		deleteEmptyAssistantMessages,
 	} = useChatsStore.getState();
 	const { getSelectedChatDocumentIds } = useDocumentStore.getState();
 	const { getSelectedChatFolderIds } = useFolderStore.getState();
 	const { setStatus } = useInferenceLoadingStatusStore.getState();
-	const { ensureCached } = useCitationsStore.getState();
 
 	const { session } = useAuthStore.getState();
 	const { user } = useUserStore.getState();
@@ -133,7 +137,7 @@ export async function getCompletion(
 		});
 
 		let currentText = "";
-		let citations: number[] = [];
+		const citations: number[] = [];
 
 		let hasReceivedText = false;
 
@@ -154,46 +158,32 @@ export async function getCompletion(
 					web_citations: null,
 				});
 			},
-			onCitations: (chunkIds: number[]) => {
-				citations = chunkIds;
-				// Update message immediately when citations arrive
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-					web_citations: null,
-				});
-				// Cache the citations now
-				if (citations.length) {
-					ensureCached(citations);
-				}
-			},
-			onWebCitations: (webSources: WebCitationSource[]) => {
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-					web_citations: webSources.length ? webSources : null,
-				});
-			},
 			onFinish: () => {
 				setStatus("idle");
 				setStreamingAbortController(null);
 			},
 		});
 	} catch (error) {
+		console.error("getCompletion error:", error);
+
 		// Only handle error if it's not an abort error
 		const isUserAbort = error instanceof Error && error.name === "AbortError";
 		if (isUserAbort) {
 			setStatus("idle");
 		} else {
 			setStatus("error");
+
 			if (error instanceof Error) {
 				handleError(error, span);
 			}
 		}
+
+		/**
+		 * Clean up the empty assistant message that
+		 * was created before the response errored out.
+		 */
+		await deleteEmptyAssistantMessages(currentChat);
+
 		setStreamingAbortController(null);
 	}
 }
@@ -202,8 +192,6 @@ function processStreamLine(
 	line: string,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
-		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -226,16 +214,6 @@ function processStreamLine(
 			return false;
 		}
 
-		if (event.type === "data-citations") {
-			callbacks.onCitations(event.data);
-			return false;
-		}
-
-		if (event.type === "data-web-citations") {
-			callbacks.onWebCitations(event.data);
-			return false;
-		}
-
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -249,8 +227,6 @@ async function parseStream(
 	body: ReadableStream<Uint8Array>,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
-		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ) {
