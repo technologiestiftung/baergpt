@@ -19,6 +19,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 		selectedDocumentsForAction,
 		selectedChatDocuments,
 		toggleChatDocument,
+		selectedPreviewDocument,
 	} = useDocumentStore();
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
 
@@ -29,6 +30,8 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 		(doc) => doc.id === item.id,
 	);
 
+	const isSelectedForPreview = selectedPreviewDocument?.id === item.id;
+
 	const handleCheckboxChange = (checked: boolean) => {
 		if (checked) {
 			selectDocumentForAction(item);
@@ -38,7 +41,9 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 	};
 
 	return (
-		<>
+		<div
+			className={`flex gap-x-2 items-center pl-5 md:pl-2.5 ${isSelectedForPreview && "bg-hellblau-55"} ${isSelectedForChat && "bg-hellblau-60"}`}
+		>
 			<div className={isMultiSelectForActionVisible ? "flex" : "hidden"}>
 				<Checkbox
 					id={`${item.id.toString()}-document`}
@@ -49,7 +54,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 			</div>
 
 			<div
-				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group ${isSelectedForChat && "bg-hellblau-60"}`}
+				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group`}
 			>
 				<DraggableDocumentName item={item} />
 
@@ -59,7 +64,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 				/>
 				<ItemDropdownButton item={item} />
 			</div>
-		</>
+		</div>
 	);
 };
 
