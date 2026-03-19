@@ -1,12 +1,10 @@
 import { enc } from "../constants";
 import { config } from "../config";
-import type { ModelMessage, Tool, ToolChoice } from "ai";
+import { isLoopFinished, ModelMessage, Tool, ToolChoice } from "ai";
 import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
 	generateText,
-	Output,
-	stepCountIs,
 	streamText,
 } from "ai";
 import { ModelService } from "./model-service";
@@ -26,22 +24,16 @@ import {
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
 import type { ActiveTools, ParsedPage } from "../types/common";
-import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import { webSearchTool } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
-import {
-	citationAnswerSchema,
-	webCitationAnswerSchema,
-} from "../schemas/citation-answer-schema";
-import { resilientCall, wait } from "../utils";
+import { resilientCall } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
-import type { WebSearchResult } from "../tools/web-search";
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
@@ -49,8 +41,6 @@ const modelService = new ModelService();
 type RelevantTools = {
 	tools: Record<string, Tool>;
 	toolChoice: ToolChoice<Record<string, Tool>>;
-	maxSteps: number;
-	useBaseKnowledgeAfterFirstStep: boolean;
 	cleanup?: () => Promise<void>;
 };
 
@@ -269,117 +259,31 @@ export class GenerationService {
 	): Promise<Response> {
 		const reqId = sessionId ? String(sessionId).slice(0, 8) : "no-session";
 		logMemory("chat:start", reqId);
-		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
-		if (activeTools.includes("baseKnowledgeSearchTool") && userId) {
-			knowledgeBaseDocuments =
-				await this.dbService.getBaseKnowledgeDocuments(userId);
-		}
+
 		const {
 			tools,
 			toolChoice,
-			maxSteps,
-			useBaseKnowledgeAfterFirstStep,
 			cleanup: toolsCleanup,
 		} = await this.getRelevantTools({
 			allowedDocumentIds,
 			allowedFolderIds,
 			activeTools,
 			userId,
-			knowledgeBaseDocuments,
 		});
 
-		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
+		/**
+		 * Sometimes the frontend might send empty assistant messages (e.g. as placeholders for streaming responses),
+		 * so we filter those out to avoid confusing the LLM.
+		 */
+		const isEmptyAssistantMessage = ({ role, content }: ModelMessage) =>
+			!(
+				role === "assistant" &&
+				typeof content === "string" &&
+				content.trim() === ""
+			);
+		const filteredMessages = messages.filter(isEmptyAssistantMessage);
 
 		updateActiveTrace({ input: messages[messages.length - 1].content });
-		const generationResult = await resilientCall(
-			() =>
-				generateText({
-					model: llmHandler.languageModel,
-					messages: messages,
-					maxOutputTokens: 8192,
-					temperature: LLM_PARAMETERS.temperature,
-					tools,
-					toolChoice,
-					stopWhen: stepCountIs(maxSteps),
-					prepareStep,
-					providerOptions: {
-						mistral: {
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
-					experimental_telemetry: {
-						isEnabled:
-							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
-						functionId: "text-toolCall-generation",
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
-						},
-					},
-				}),
-			{ queueType: "llm" },
-		);
-		logMemory(
-			`chat:after-generateText (steps=${generationResult.steps.length}, tokens=${generationResult.usage?.totalTokens ?? 0})`,
-			reqId,
-		);
-		if (userId && generationResult.usage?.totalTokens) {
-			try {
-				await this.dbService.updateUserColumnValue(
-					userId,
-					"num_inference_tokens",
-					generationResult.usage.totalTokens,
-				);
-				await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
-			} catch (error) {
-				captureError(error);
-			}
-		}
-		const allChunkMatches = generationResult.steps.flatMap((step) =>
-			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
-		);
-
-		const allWebSources = generationResult.steps.flatMap((step) =>
-			step.toolResults.flatMap((tr) => {
-				const generic = tr.output?.grounding
-					?.generic as WebSearchResult["grounding"]["generic"];
-				const sources = tr.output?.sources as WebSearchResult["sources"];
-				if (!generic?.length || !sources) {
-					return [];
-				}
-				return (
-					generic
-						// Filter out items with no snippets
-						.filter(
-							(item) =>
-								item.snippets.find(
-									(s): s is string => typeof s === "string",
-								) !== undefined,
-						)
-						.map((item) => ({
-							url: item.url,
-							title: item.title,
-							snippet: item.snippets.find(
-								(s): s is string => typeof s === "string",
-							) as string,
-							age: sources[item.url]?.age,
-						}))
-				);
-			}),
-		);
-		const newMessages = generationResult.response.messages;
-		if (newMessages.length > 0) {
-			messages.push(...newMessages);
-		}
-
-		/**
-		 * calling the Mistral API immediately after another LLM call can sometimes
-		 * lead to issues, so we add a short delay here as a workaround
-		 */
-		await wait(100);
 
 		const stream = createUIMessageStream({
 			execute: async ({ writer }) => {
@@ -387,9 +291,12 @@ export class GenerationService {
 					async () =>
 						streamText({
 							model: llmHandler.languageModel,
-							messages: messages,
+							messages: filteredMessages,
 							maxOutputTokens: 8192,
 							temperature: LLM_PARAMETERS.temperature,
+							tools,
+							toolChoice,
+							stopWhen: isLoopFinished(),
 							providerOptions: {
 								mistral: {
 									presencePenalty: LLM_PARAMETERS.presencePenalty,
@@ -405,166 +312,13 @@ export class GenerationService {
 									await toolsCleanup();
 								}
 
-								if (allChunkMatches.length > 0) {
-									const availableSources = allChunkMatches.map(
-										(match: { chunkId: number; snippet: string }) => ({
-											id: match.chunkId,
-											snippet: match.snippet,
-										}),
-									);
-									try {
-										const citationPromptClient = await resilientCall(
-											() =>
-												langfuse.prompt.get("document-citation-extraction", {
-													type: "chat",
-													label:
-														config.nodeEnv === "test"
-															? "development"
-															: config.nodeEnv,
-												}),
-											{ queueType: "llm" },
-										);
-										const compiledDocumentCitationExtractionPrompts =
-											citationPromptClient.compile({
-												generatedAnswer: text,
-												availableSources: availableSources
-													.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
-													.join("\n\n"),
-											}) as ModelMessage[];
-
-										const {
-											output: citationObject,
-											usage: generateObjectUsage,
-										} = await resilientCall(
-											() =>
-												generateText({
-													model: llmHandler.languageModel,
-													messages: compiledDocumentCitationExtractionPrompts,
-													temperature: LLM_PARAMETERS.temperature,
-													output: Output.object({
-														schema: citationAnswerSchema,
-													}),
-													experimental_telemetry: {
-														isEnabled:
-															config.nodeEnv !== "test" &&
-															config.nodeEnv !== "production", // Disable telemetry in CI and production
-														functionId: "citation-extraction",
-														metadata: {
-															sessionId: sessionId ? sessionId : "unknown",
-														},
-													},
-												}),
-											{ queueType: "llm" },
-										);
-
-										writer.write({
-											type: "data-citations",
-											data: citationObject.citations,
-										});
-
-										try {
-											await this.dbService.updateUserColumnValue(
-												userId,
-												"num_inference_tokens",
-												generateObjectUsage.totalTokens,
-											);
-											await this.dbService.updateUserColumnValue(
-												userId,
-												"num_inferences",
-												1,
-											);
-										} catch (error) {
-											captureError(error);
-										}
-									} catch (error) {
-										captureError(error);
-									}
-								}
-								if (allWebSources.length > 0) {
-									try {
-										const webCitationPromptClient = await resilientCall(
-											() =>
-												langfuse.prompt.get("web-citation-extraction", {
-													label:
-														config.nodeEnv === "test"
-															? "development"
-															: config.nodeEnv,
-													type: "chat",
-												}),
-											{ queueType: "llm" },
-										);
-										const compiledWebCitationExtractionPrompts =
-											webCitationPromptClient.compile({
-												generatedAnswer: text,
-												availableSources: allWebSources
-													.map(
-														(s) =>
-															`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
-													)
-													.join("\n\n"),
-											}) as ModelMessage[];
-
-										const { output: webObject, usage: webCitationUsage } =
-											await resilientCall(
-												() =>
-													generateText({
-														model: llmHandler.languageModel,
-														messages: compiledWebCitationExtractionPrompts,
-														temperature: LLM_PARAMETERS.temperature,
-														output: Output.object({
-															schema: webCitationAnswerSchema,
-														}),
-														experimental_telemetry: {
-															isEnabled:
-																config.nodeEnv !== "test" &&
-																config.nodeEnv !== "production",
-															functionId: "web-citation-extraction",
-															metadata: {
-																sessionId: sessionId ? sessionId : "unknown",
-															},
-														},
-													}),
-												{ queueType: "llm" },
-											);
-
-										const citedSources = allWebSources.filter((s) =>
-											webObject.citations.some((c) => c.url === s.url),
-										);
-
-										writer.write({
-											type: "data-web-citations",
-											data: citedSources,
-										});
-
-										if (userId) {
-											try {
-												await this.dbService.updateUserColumnValue(
-													userId,
-													"num_inference_tokens",
-													webCitationUsage.totalTokens,
-												);
-												await this.dbService.updateUserColumnValue(
-													userId,
-													"num_inferences",
-													1,
-												);
-											} catch (error) {
-												captureError(error);
-											}
-										}
-									} catch (error) {
-										captureError(error);
-									}
-								}
-
-								logMemory("chat:onFinish-complete", reqId);
 								updateActiveTrace({
 									name: "streamed-text-generation",
 									output: text,
 									userId,
 									sessionId,
 								});
-								// Handle token usage tracking after stream completes
+
 								if (userId && usage?.totalTokens) {
 									try {
 										await this.dbService.updateUserColumnValue(
@@ -572,20 +326,20 @@ export class GenerationService {
 											"num_inference_tokens",
 											usage.totalTokens,
 										);
-										// Increase num_inferences for user by one
 										await this.dbService.updateUserColumnValue(
 											userId,
 											"num_inferences",
 											1,
 										);
-									} catch (dbError) {
-										captureError(dbError);
+									} catch (error) {
+										captureError(error);
 									}
 								}
 							},
 							experimental_telemetry: {
 								isEnabled:
-									config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
+									config.nodeEnv !== "test" && config.nodeEnv !== "production",
+								functionId: "text-toolCall-generation",
 								metadata: {
 									sessionId: sessionId ? sessionId : "unknown",
 									langfusePrompt: langfusePrompt
@@ -658,7 +412,6 @@ export class GenerationService {
 	async createPrompt(
 		previousMessages: ModelMessage[],
 		isAddressedFormal: boolean,
-		activeTools: ActiveTools[],
 	): Promise<{
 		messages: ModelMessage[];
 		promptClient: TextPromptClient;
@@ -672,36 +425,16 @@ export class GenerationService {
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
 		let freeChatPromptClient: TextPromptClient;
 
-		const effectiveActiveTools = [...activeTools];
-		// TODO: Remove the check for feature flag once frontend functionality to add web search tool in chat is implemented
-		if (
-			config.featureFlagWebSearchAllowed &&
-			!effectiveActiveTools.includes("webSearchTool")
-		) {
-			effectiveActiveTools.push("webSearchTool");
+		try {
+			freeChatPromptClient = await langfuse.prompt.get(
+				"free-chat-with-web-search-enabled",
+				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
+			);
+		} catch (error) {
+			captureError(error);
+			throw error;
 		}
 
-		if (effectiveActiveTools.includes("webSearchTool")) {
-			try {
-				freeChatPromptClient = await langfuse.prompt.get(
-					"free-chat-with-web-search-enabled",
-					{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
-				);
-			} catch (error) {
-				captureError(error);
-				throw error;
-			}
-		} else {
-			try {
-				freeChatPromptClient = await langfuse.prompt.get(
-					"free-chat",
-					{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
-				);
-			} catch (error) {
-				captureError(error);
-				throw error;
-			}
-		}
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
@@ -710,8 +443,26 @@ export class GenerationService {
 			role: "system",
 			content: compiledFreeChatPrompt,
 		};
+
+		freeChatPrompt.content += `
+
+Du analysierst eine generierte Antwort und die verfügbaren Quellen.
+FÜGE ZITATE NUR HINZU, WENN DU ZITATE EINDEUTIG DOKUMENTEN ZUORDNEN KANNST.
+Füge die Zitate im Markdown Footnote Format ein, also so: [^1], [^2], [^3], etc. OHNE Sprünge.
+Platziere die Zitatverweise NACH dem Ende des jeweiligen Satzes.
+IMMER UND NUR AM ENDE der Antwort listest du die Quellen in der Reihenfolge ihrer Nummerierung auf, ebenfalls im Markdown Footnote Format, also so:
+\`\`\`
+Quellen:
+[^<FOOTNOTE_REFERENCE_NUMBER>]: [<documentTitle>,  Seite <page>](<sourceUrl>)
+\`\`\`
+	`;
+
+		const messages = [freeChatPrompt, ...previousMessages];
+
+		// console.log(messages);
+
 		return {
-			messages: [freeChatPrompt, ...previousMessages],
+			messages,
 			promptClient: freeChatPromptClient,
 		};
 	}
@@ -723,159 +474,14 @@ export class GenerationService {
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
 	}): Promise<RelevantTools> {
-		const optionsCopy = { ...options, activeTools: [...options.activeTools] };
-
-		// TODO: Remove this default value once frontend functionality is implemented
-		if (
-			config.featureFlagWebSearchAllowed &&
-			!optionsCopy.activeTools.includes("webSearchTool")
-		) {
-			optionsCopy.activeTools.push("webSearchTool");
-		}
-
-		if (
-			!config.featureFlagMcpParlaAllowed &&
-			!config.featureFlagWebSearchAllowed
-		) {
-			return this.getRelevantToolsV1(optionsCopy);
-		}
-
-		return this.getRelevantToolsV2(optionsCopy);
-	}
-
-	/**
-	 * Original implementation (pre-mcp addition)
-	 */
-	private async getRelevantToolsV1(options: {
-		allowedDocumentIds: number[];
-		allowedFolderIds: number[];
-		activeTools: string[];
-		userId?: string;
-		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-	}): Promise<RelevantTools> {
-		const {
-			allowedDocumentIds,
-			allowedFolderIds,
-			activeTools,
-			userId,
-			knowledgeBaseDocuments,
-		} = options;
-
-		const hasAllowedDocumentsOrFolders =
-			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
-		const ragTool = ragSearchTool({
-			allowedDocumentIds,
-			allowedFolderIds,
-			userId,
-			dbService: this.dbService,
-			embeddingService: this.embeddingService,
-		});
-		const baseKnowledgeTool = knowledgeBaseDocuments
-			? baseKnowledgeSearchTool({
-					knowledgeBaseDocuments,
-					userId,
-					dbService: this.dbService,
-					embeddingService: this.embeddingService,
-				})
-			: null;
-
-		// Case 1: Both RAG and base knowledge are active
-		if (
-			hasAllowedDocumentsOrFolders &&
-			activeTools.includes("baseKnowledgeSearchTool") &&
-			baseKnowledgeTool
-		) {
-			return {
-				tools: {
-					ragSearchTool: ragTool,
-					baseKnowledgeSearchTool: baseKnowledgeTool,
-				},
-				toolChoice: { type: "tool", toolName: "ragSearchTool" },
-				maxSteps: 2,
-				useBaseKnowledgeAfterFirstStep: true,
-			};
-		}
-
-		// Case 2: Only RAG is active
-		if (hasAllowedDocumentsOrFolders) {
-			return {
-				tools: {
-					ragSearchTool: ragSearchTool({
-						allowedDocumentIds,
-						allowedFolderIds,
-						userId,
-						dbService: this.dbService,
-						embeddingService: this.embeddingService,
-					}),
-				},
-				toolChoice: { type: "tool", toolName: "ragSearchTool" },
-				maxSteps: 1,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
-		}
-
-		// Case 3: Only base knowledge is active
-		if (activeTools.includes("baseKnowledgeSearchTool") && baseKnowledgeTool) {
-			return {
-				tools: {
-					baseKnowledgeSearchTool: baseKnowledgeTool,
-				},
-				toolChoice: {
-					type: "tool",
-					toolName: "baseKnowledgeSearchTool",
-				},
-				maxSteps: 1,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
-		}
-
-		// Case 4: No tools active
-		return {
-			tools: {},
-			toolChoice: "none",
-			maxSteps: 1,
-			useBaseKnowledgeAfterFirstStep: false,
-		};
-	}
-
-	/**
-	 * WIP implementation after MCP addition.
-	 */
-	private async getRelevantToolsV2(options: {
-		allowedDocumentIds: number[];
-		allowedFolderIds: number[];
-		activeTools: string[];
-		userId?: string;
-		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-	}): Promise<RelevantTools> {
-		const {
-			allowedDocumentIds,
-			allowedFolderIds,
-			activeTools,
-			userId,
-			knowledgeBaseDocuments,
-		} = options;
+		const { allowedDocumentIds, allowedFolderIds, activeTools, userId } =
+			options;
 
 		const relevantTools: RelevantTools = {
 			tools: {},
 			toolChoice: "none",
-			maxSteps: 1,
-			useBaseKnowledgeAfterFirstStep: false,
 			cleanup: async () => {},
 		};
-
-		if (
-			activeTools.includes("baseKnowledgeSearchTool") &&
-			knowledgeBaseDocuments
-		) {
-			relevantTools.tools.baseKnowledgeSearchTool = baseKnowledgeSearchTool({
-				knowledgeBaseDocuments,
-				userId,
-				dbService: this.dbService,
-				embeddingService: this.embeddingService,
-			});
-			relevantTools.toolChoice = "auto";
-		}
 
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
@@ -895,7 +501,10 @@ export class GenerationService {
 			relevantTools.toolChoice = "auto";
 		}
 
-		if (activeTools.includes("parlaMCPTools")) {
+		if (
+			config.featureFlagMcpParlaAllowed &&
+			activeTools.includes("parlaMCPTools")
+		) {
 			const parlaMCPToolsResponse = await parlaMCPTools();
 			if (parlaMCPToolsResponse) {
 				relevantTools.tools = {
@@ -907,38 +516,6 @@ export class GenerationService {
 			}
 		}
 
-		relevantTools.maxSteps = Math.max(
-			1,
-			Object.keys(relevantTools.tools).length,
-		);
-
 		return relevantTools;
-	}
-
-	private getPrepareStep(useBaseKnowledgeAfterFirstStep: boolean):
-		| (({ stepNumber }: { stepNumber: number }) => {
-				toolChoice?: {
-					type: "tool";
-					toolName: "baseKnowledgeSearchTool";
-				};
-				activeTools?: string[];
-		  })
-		| undefined {
-		if (!useBaseKnowledgeAfterFirstStep) {
-			return undefined;
-		}
-
-		return ({ stepNumber }: { stepNumber: number }) => {
-			if (stepNumber === 1) {
-				return {
-					toolChoice: {
-						type: "tool",
-						toolName: "baseKnowledgeSearchTool",
-					} as const,
-					activeTools: ["baseKnowledgeSearchTool"],
-				};
-			}
-			return {};
-		};
 	}
 }

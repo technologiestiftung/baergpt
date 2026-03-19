@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { useDocumentStore } from "./document-store.ts";
 import { useFolderStore } from "./folder-store.ts";
-import { useCitationsStore } from "./use-citations-store.ts";
+import { addChunkIdsToCache } from "./use-citations-store.ts";
 import { useChatsStore } from "./use-chats-store.ts";
 import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-store.ts";
 import { useChatStreamingStore } from "./use-chat-streaming-store.ts";
@@ -20,7 +20,6 @@ const resetPreviousChatState = () => {
 };
 
 const loadChatCitations = (chatId: number) => {
-	const { ensureCached } = useCitationsStore.getState();
 	const chats = useChatsStore.getState().chats;
 	const selectedChat = chats.find((chatItem) => chatItem.id === chatId);
 	if (!selectedChat) {
@@ -31,7 +30,7 @@ const loadChatCitations = (chatId: number) => {
 	);
 
 	if (allChunkIds.length > 0) {
-		void ensureCached(allChunkIds);
+		void addChunkIdsToCache(allChunkIds);
 	}
 };
 

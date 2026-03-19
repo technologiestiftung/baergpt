@@ -74,9 +74,9 @@
 		@apply inline-block align-middle mr-2;
 	}
 
-	.markdown-container a {
-		@apply text-dunkelblau-100 underline hover:text-dunkelblau-200;
-	}
+	/*.markdown-container a {*/
+	/*	@apply text-dunkelblau-100 underline hover:text-dunkelblau-200;*/
+	/*}*/
 
 	.markdown-container code {
 		@apply font-arial;
@@ -137,6 +137,10 @@
 			@apply min-w-10;
 		}
 	}
+}
+
+.data-footnote-backref {
+	@apply hidden;
 }
 
 @layer utilities {

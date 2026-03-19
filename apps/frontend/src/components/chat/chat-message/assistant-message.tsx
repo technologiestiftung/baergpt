@@ -3,7 +3,6 @@ import { BaerIcon } from "../../primitives/icons/baer-icon.tsx";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { CopyToClipboardButton } from "./copy-to-clipboard-button.tsx";
 import { ExportChatMessageButton } from "./export-chat-message/export-chat-message-button.tsx";
-import { CitationsButton } from "./citations-button.tsx";
 import type { ChatMessage } from "../../../common.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { Content } from "../../../content.ts";
@@ -18,7 +17,7 @@ export function AssistantMessage({
 }) {
 	const { status } = useInferenceLoadingStatusStore();
 	const { getCurrentChat } = useChatsStore();
-	const { content, citations, web_citations } = message;
+	const { content } = message;
 	const { getUIError } = useErrorStore();
 
 	const exportErrorMessage = getUIError("chat-export");
@@ -48,12 +47,6 @@ export function AssistantMessage({
 						<ExportChatMessageButton
 							generatedAnswer={content}
 							messageId={message.id}
-						/>
-						<CitationsButton
-							messageId={message.id}
-							citations={citations}
-							webCitations={web_citations}
-							isLastMessage={isLastMessage}
 						/>
 					</div>
 					{exportErrorMessage && (
