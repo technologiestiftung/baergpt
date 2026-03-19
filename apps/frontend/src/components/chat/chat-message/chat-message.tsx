@@ -5,26 +5,25 @@ import type { ChatMessage } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
 import { markdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
 import type { JSX } from "react";
+import { ReactMarkdownWithInlineCitations } from "./react-markdown-with-inline-citations.tsx";
 
 interface ChatMessageProps {
 	message: ChatMessage;
 }
 
 export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
-	const { role, content } = message;
+	const { role, content, citations } = message;
 
 	return (
 		<div className="flex flex-col">
 			{role === "assistant" && content !== "" && (
 				<div className="mb-8">
 					<AssistantMessage message={message}>
-						<ReactMarkdown
-							remarkPlugins={[remarkGfm]}
+						<ReactMarkdownWithInlineCitations
+							content={content}
+							citations={citations}
 							className="markdown-container"
-							components={markdownWrapperScrollableTable}
-						>
-							{content}
-						</ReactMarkdown>
+						/>
 					</AssistantMessage>
 				</div>
 			)}

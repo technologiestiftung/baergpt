@@ -56,7 +56,7 @@ export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 				</div>
 				<div className="flex flex-col px-4 pb-4 overflow-y-auto">
 					{citations.map((citationId, index) => (
-						<CitationItem citationId={citationId} key={index} />
+						<CitationItem citationId={citationId} index={index} key={index} />
 					))}
 				</div>
 			</div>

@@ -5,7 +5,13 @@ import removeMarkdown from "remove-markdown";
 import Content from "../../../../content.ts";
 import { useCitationsStore } from "../../../../store/use-citations-store.ts";
 
-export function CitationItem({ citationId }: { citationId: number }) {
+export function CitationItem({
+	citationId,
+	index,
+}: {
+	citationId: number;
+	index: number;
+}) {
 	const { getCitation } = useCitationsStore();
 
 	const citation = getCitation(citationId);
@@ -43,6 +49,9 @@ export function CitationItem({ citationId }: { citationId: number }) {
 					>
 						<PublicDocumentPill />
 					</div>
+				</div>
+				<div className="inline-flex items-center justify-center shrink-0 rounded-sm text-xs size-[18px] bg-hellblau-50 text-dunkelblau-80">
+					{index + 1}
 				</div>
 			</div>
 			<div className="flex flex-row items-center gap-2">

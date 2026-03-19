@@ -17,9 +17,14 @@ export type WebCitationSource = {
 	age?: string[] | null;
 };
 
+type CitationData = {
+	content: string;
+	citations: number[];
+};
+
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
-	| { type: "data-citations"; data: number[] }
+	| { type: "data-citations"; data: CitationData }
 	| { type: "data-web-citations"; data: WebCitationSource[] };
 
 const activeToolsDict: Record<ChatOption, string[]> = {
@@ -154,21 +159,20 @@ export async function getCompletion(
 					web_citations: null,
 				});
 			},
-			onCitations: (chunkIds: number[]) => {
-				citations = chunkIds;
-				// Update message immediately when citations arrive
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-					web_citations: null,
-				});
-				// Cache the citations now
-				if (citations.length) {
-					ensureCached(citations);
-				}
-			},
+		onCitations: (citationData: CitationData) => {
+			currentText = citationData.content;
+			citations = citationData.citations;
+			updateMessage({
+				chat: currentChat,
+				messageId,
+				content: currentText,
+				citations: citations.length ? citations : null,
+				web_citations: null,
+			});
+			if (citations.length) {
+				ensureCached(citations);
+			}
+		},
 			onWebCitations: (webSources: WebCitationSource[]) => {
 				updateMessage({
 					chat: currentChat,
@@ -197,7 +201,7 @@ function processStreamLine(
 	line: string,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
+		onCitations: (citationData: CitationData) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onFinish: () => void;
 	},
@@ -244,7 +248,7 @@ async function parseStream(
 	body: ReadableStream<Uint8Array>,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
-		onCitations: (chunkIds: number[]) => void;
+		onCitations: (citationData: CitationData) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onFinish: () => void;
 	},

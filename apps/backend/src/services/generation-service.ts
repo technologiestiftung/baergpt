@@ -447,24 +447,22 @@ export class GenerationService {
 										}),
 									);
 									try {
-										const citationPromptClient = await resilientCall(
-											() =>
-												langfuse.prompt.get("document-citation-extraction", {
-													type: "chat",
-													label:
-														config.nodeEnv === "test"
-															? "development"
-															: config.nodeEnv,
-												}),
-											{ queueType: "llm" },
-										);
-										const compiledDocumentCitationExtractionPrompts =
-											citationPromptClient.compile({
-												generatedAnswer: text,
-												availableSources: availableSources
-													.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
-													.join("\n\n"),
-											}) as ModelMessage[];
+										const availableSourcesText = availableSources
+											.map((s) => `[ID: ${s.id}]\nSnippet: ${s.snippet}`)
+											.join("\n\n");
+
+										const documentCitationExtractionMessages: ModelMessage[] = [
+											{
+												role: "system",
+												content: `Du analysierst eine generierte Antwort und die verfügbaren Quellen. Gib ein JSON-Objekt zurück mit:
+- content: Die Antwort mit Quellenverweisen. Setzte die Quellenverweise nur bei wichtigen Referenzen von Informationen. Nummeriere Zitate STRIKT aufsteigend [1], [2], [3] etc. OHNE Sprünge. Platziere die Zitatnummern NACH dem Ende des jeweiligen Satzes. Jede neue Quelle erhält die nächsthöhere Nummer. 
+- citations: Array der Quellen-IDs in der Reihenfolge ihrer Nummerierung im Text ([1] = Index 0, [2] = Index 1, etc.). Nur IDs von Quellen, die tatsächlich in der Antwort verwendet wurden.`,
+											},
+											{
+												role: "user",
+												content: `Generierte Antwort:\n${text}\n\nVerfügbare Quellen:\n${availableSourcesText}`,
+											},
+										];
 
 										const {
 											output: citationObject,
@@ -473,7 +471,7 @@ export class GenerationService {
 											() =>
 												generateText({
 													model: llmHandler.languageModel,
-													messages: compiledDocumentCitationExtractionPrompts,
+													messages: documentCitationExtractionMessages,
 													temperature: LLM_PARAMETERS.temperature,
 													output: Output.object({
 														schema: citationAnswerSchema,
@@ -493,7 +491,10 @@ export class GenerationService {
 
 										writer.write({
 											type: "data-citations",
-											data: citationObject.citations,
+											data: {
+												content: citationObject.content,
+												citations: citationObject.citations,
+											},
 										});
 
 										try {

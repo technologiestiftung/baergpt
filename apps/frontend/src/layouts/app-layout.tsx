@@ -4,6 +4,7 @@ import { Main } from "../components/main";
 import { Tooltip } from "../components/primitives/tooltip/tooltip.tsx";
 import { useSessionRedirect } from "../hooks/use-session-redirect.tsx";
 import { ToastContainer } from "../components/primitives/toasts/toast-container.tsx";
+import { TooltipCitation } from "../components/chat/chat-message/chat-citations/tooltip-citation.tsx";
 
 interface AppLayoutProps {
 	children: React.ReactNode;
@@ -19,6 +20,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 				<Main>{children}</Main>
 			</div>
 			<Tooltip />
+			<TooltipCitation />
 			<ToastContainer />
 		</div>
 	);
