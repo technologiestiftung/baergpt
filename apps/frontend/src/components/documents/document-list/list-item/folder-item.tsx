@@ -39,7 +39,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 	};
 
 	return (
-		<>
+		<div className="flex gap-x-2 items-center pl-5 md:pl-2.5">
 			<div className={isMultiSelectForActionVisible ? "flex" : "hidden"}>
 				<Checkbox
 					id={`${item.id.toString()}-folder`}
@@ -61,7 +61,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 
 				<ItemDropdownButton item={item} />
 			</div>
-		</>
+		</div>
 	);
 };
 

@@ -136,6 +136,7 @@ export type Database = {
 					id: number;
 					role: string;
 					type: string;
+					web_citations: Json | null;
 				};
 				Insert: {
 					allowed_document_ids?: number[] | null;
@@ -147,6 +148,7 @@ export type Database = {
 					id?: number;
 					role: string;
 					type: string;
+					web_citations?: Json | null;
 				};
 				Update: {
 					allowed_document_ids?: number[] | null;
@@ -158,6 +160,7 @@ export type Database = {
 					id?: number;
 					role?: string;
 					type?: string;
+					web_citations?: Json | null;
 				};
 				Relationships: [
 					{
@@ -195,6 +198,7 @@ export type Database = {
 					access_group_id: string | null;
 					chunk_index: number;
 					chunk_jina_embedding: string | null;
+					chunk_mistral_embedding: string | null;
 					content: string;
 					document_id: number | null;
 					folder_id: number | null;
@@ -207,6 +211,7 @@ export type Database = {
 					access_group_id?: string | null;
 					chunk_index: number;
 					chunk_jina_embedding?: string | null;
+					chunk_mistral_embedding?: string | null;
 					content: string;
 					document_id?: number | null;
 					folder_id?: number | null;
@@ -219,6 +224,7 @@ export type Database = {
 					access_group_id?: string | null;
 					chunk_index?: number;
 					chunk_jina_embedding?: string | null;
+					chunk_mistral_embedding?: string | null;
 					content?: string;
 					document_id?: number | null;
 					folder_id?: number | null;
@@ -569,6 +575,10 @@ export type Database = {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
 			};
+			get_product_dashboard_stats: {
+				Args: Record<PropertyKey, never>;
+				Returns: Json;
+			};
 			get_users: {
 				Args: Record<PropertyKey, never>;
 				Returns: {
@@ -692,6 +702,14 @@ export type Database = {
 			};
 			regenerate_embedding_indices_for_summaries: {
 				Args: Record<PropertyKey, never>;
+				Returns: undefined;
+			};
+			update_user_email_confirmed_at: {
+				Args: { new_email_confirmed_at: string; user_id: string };
+				Returns: undefined;
+			};
+			update_user_last_sign_in_at: {
+				Args: { new_last_sign_in_at: string; user_id: string };
 				Returns: undefined;
 			};
 			verify_own_password: {

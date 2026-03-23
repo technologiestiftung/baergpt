@@ -4,8 +4,8 @@ import type { ModelMessage, Tool, ToolChoice } from "ai";
 import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
-	generateObject,
 	generateText,
+	Output,
 	stepCountIs,
 	streamText,
 } from "ai";
@@ -24,18 +24,23 @@ import {
 } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
-import type { ParsedPage } from "../types/common";
+import type { ActiveTools, ParsedPage } from "../types/common";
 import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
+import { webSearchTool } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
-import { citationAnswerSchema } from "../schemas/citation-answer-schema";
+import {
+	citationAnswerSchema,
+	webCitationAnswerSchema,
+} from "../schemas/citation-answer-schema";
 import { resilientCall } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
+import type { WebSearchResult } from "../tools/web-search";
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
@@ -88,36 +93,6 @@ export class GenerationService {
 	}
 
 	/**
-	 * Compress content to a target token limit by:
-	 * 1) attempting up to `maxRounds` model compressions, then
-	 * 2) hard-trimming with a binary search as a final safeguard.
-	 */
-	private async compressToTokenLimit(
-		llmIdentifier: string,
-		content: string,
-		options: { tokenLimit: number; maxRounds?: number } = { tokenLimit: 0 },
-	): Promise<string> {
-		const { tokenLimit, maxRounds = 3 } = options;
-		let current = content;
-		let tokens = countTokens(current);
-
-		for (let round = 0; round < maxRounds && tokens > tokenLimit; round++) {
-			const shorter = await this.generateSummary(llmIdentifier, current);
-			if (!shorter) {
-				break;
-			}
-			current = shorter;
-			tokens = countTokens(current);
-		}
-
-		if (tokens <= tokenLimit) {
-			return current;
-		}
-
-		return trimToTokenLimitByWords(current, tokenLimit);
-	}
-
-	/**
 	 * Estimate system prompt token count for a given prompt name by compiling with empty content.
 	 */
 	private async estimateSystemPromptTokens(
@@ -162,18 +137,31 @@ export class GenerationService {
 				: docInput.map((page) => page.content).join("\n");
 
 		if (oneSentenceSummary) {
-			summaryPromptClient = await langfuse.prompt.get("one-sentence-summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
+			try {
+				summaryPromptClient = await langfuse.prompt.get(
+					"one-sentence-summary",
+					{
+						label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+						type: "chat",
+					},
+				);
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
 			compiledSummaryPrompt = summaryPromptClient.compile({
 				docContent: docContent,
 			}) as ModelMessage[];
 		} else {
-			summaryPromptClient = await langfuse.prompt.get("summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
+			try {
+				summaryPromptClient = await langfuse.prompt.get("summary", {
+					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+					type: "chat",
+				});
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
 			compiledSummaryPrompt = summaryPromptClient.compile({
 				docContent: docContent,
 			}) as ModelMessage[];
@@ -201,10 +189,16 @@ export class GenerationService {
 				? docInput
 				: docInput.map((page) => page.content).join("\n");
 
-		const taggingPromptClient = await langfuse.prompt.get("tagging", {
-			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			type: "chat",
-		});
+		let taggingPromptClient: ChatPromptClient;
+		try {
+			taggingPromptClient = await langfuse.prompt.get("tagging", {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+				type: "chat",
+			});
+		} catch (error) {
+			captureError(error);
+			throw error;
+		}
 		const compiledTaggingPrompt = taggingPromptClient.compile({
 			docContent: docContent,
 		}) as ModelMessage[];
@@ -236,7 +230,6 @@ export class GenerationService {
 		summary: string;
 		shortSummary: string;
 		tags: string[];
-		summaryEmbedding: number[];
 	}> {
 		const numTokens = parsedPages.reduce(
 			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
@@ -293,23 +286,6 @@ export class GenerationService {
 			throw new Error("Failed to generate short document summary");
 		}
 
-		const summaryForEmbedding = await this.compressToTokenLimit(
-			llmIdentifier,
-			summary,
-			{ tokenLimit: config.jinaMaxContextTokens, maxRounds: 3 },
-		);
-
-		const summaryEmbeddingResponse =
-			await this.embeddingService.generateJinaEmbedding(
-				summaryForEmbedding,
-				"retrieval.passage",
-				userId,
-			);
-
-		if (!summaryEmbeddingResponse || !summaryEmbeddingResponse.embedding) {
-			throw new Error("Failed to generate document embedding");
-		}
-
 		const tags = await this.generateTags(llmIdentifier, summary, {
 			userId,
 		});
@@ -322,7 +298,6 @@ export class GenerationService {
 			summary,
 			shortSummary,
 			tags,
-			summaryEmbedding: summaryEmbeddingResponse.embedding,
 		};
 	}
 
@@ -335,20 +310,18 @@ export class GenerationService {
 			langfusePrompt,
 			allowedDocumentIds = [],
 			allowedFolderIds = [],
-			isBaseKnowledgeActive,
-			isParlaMCPToolActive,
+			activeTools = [] as ActiveTools[],
 		}: {
 			userId?: string;
 			sessionId?: string;
 			langfusePrompt?: TextPromptClient | ChatPromptClient;
 			allowedDocumentIds?: number[];
 			allowedFolderIds?: number[];
-			isBaseKnowledgeActive?: boolean;
-			isParlaMCPToolActive?: boolean;
+			activeTools?: ActiveTools[];
 		} = {},
 	): Promise<Response> {
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
-		if (isBaseKnowledgeActive && userId) {
+		if (activeTools.includes("baseKnowledgeSearchTool") && userId) {
 			knowledgeBaseDocuments =
 				await this.dbService.getBaseKnowledgeDocuments(userId);
 		}
@@ -361,10 +334,9 @@ export class GenerationService {
 		} = await this.getRelevantTools({
 			allowedDocumentIds,
 			allowedFolderIds,
-			isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
+			activeTools,
 			userId,
 			knowledgeBaseDocuments,
-			isParlaMCPToolActive,
 		});
 
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
@@ -415,6 +387,35 @@ export class GenerationService {
 		const allChunkMatches = generationResult.steps.flatMap((step) =>
 			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
 		);
+
+		const allWebSources = generationResult.steps.flatMap((step) =>
+			step.toolResults.flatMap((tr) => {
+				const generic = tr.output?.grounding
+					?.generic as WebSearchResult["grounding"]["generic"];
+				const sources = tr.output?.sources as WebSearchResult["sources"];
+				if (!generic?.length || !sources) {
+					return [];
+				}
+				return (
+					generic
+						// Filter out items with no snippets
+						.filter(
+							(item) =>
+								item.snippets.find(
+									(s): s is string => typeof s === "string",
+								) !== undefined,
+						)
+						.map((item) => ({
+							url: item.url,
+							title: item.title,
+							snippet: item.snippets.find(
+								(s): s is string => typeof s === "string",
+							) as string,
+							age: sources[item.url]?.age,
+						}))
+				);
+			}),
+		);
 		const newMessages = generationResult.response.messages;
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);
@@ -445,49 +446,146 @@ export class GenerationService {
 											snippet: match.snippet,
 										}),
 									);
+									try {
+										const citationPromptClient = await resilientCall(
+											() =>
+												langfuse.prompt.get("document-citation-extraction", {
+													type: "chat",
+													label:
+														config.nodeEnv === "test"
+															? "development"
+															: config.nodeEnv,
+												}),
+											{ queueType: "llm" },
+										);
+										const compiledDocumentCitationExtractionPrompts =
+											citationPromptClient.compile({
+												generatedAnswer: text,
+												availableSources: availableSources
+													.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
+													.join("\n\n"),
+											}) as ModelMessage[];
 
-									const { object, usage: generateObjectUsage } =
-										await generateObject({
-											model: llmHandler.languageModel,
-											system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
-											prompt: `Generierte Antwort:
-"""
-${text}
-"""
+										const {
+											output: citationObject,
+											usage: generateObjectUsage,
+										} = await resilientCall(
+											() =>
+												generateText({
+													model: llmHandler.languageModel,
+													messages: compiledDocumentCitationExtractionPrompts,
+													temperature: LLM_PARAMETERS.temperature,
+													output: Output.object({
+														schema: citationAnswerSchema,
+													}),
+													experimental_telemetry: {
+														isEnabled:
+															config.nodeEnv !== "test" &&
+															config.nodeEnv !== "production", // Disable telemetry in CI and production
+														functionId: "citation-extraction",
+														metadata: {
+															sessionId: sessionId ? sessionId : "unknown",
+														},
+													},
+												}),
+											{ queueType: "llm" },
+										);
 
-Verfügbare Quellen:
-${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n${s.snippet}`).join("\n\n")}
-
-Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
-											temperature: LLM_PARAMETERS.temperature,
-											schema: citationAnswerSchema,
-											experimental_telemetry: {
-												isEnabled:
-													config.nodeEnv !== "test" &&
-													config.nodeEnv !== "production", // Disable telemetry in CI and production
-												functionId: "citation-extraction",
-												metadata: {
-													sessionId: sessionId ? sessionId : "unknown",
-												},
-											},
+										writer.write({
+											type: "data-citations",
+											data: citationObject.citations,
 										});
 
-									writer.write({
-										type: "data-citations",
-										data: object.citations,
-									});
-
+										try {
+											await this.dbService.updateUserColumnValue(
+												userId,
+												"num_inference_tokens",
+												generateObjectUsage.totalTokens,
+											);
+											await this.dbService.updateUserColumnValue(
+												userId,
+												"num_inferences",
+												1,
+											);
+										} catch (error) {
+											captureError(error);
+										}
+									} catch (error) {
+										captureError(error);
+									}
+								}
+								if (allWebSources.length > 0) {
 									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											generateObjectUsage.totalTokens,
+										const webCitationPromptClient = await resilientCall(
+											() =>
+												langfuse.prompt.get("web-citation-extraction", {
+													label:
+														config.nodeEnv === "test"
+															? "development"
+															: config.nodeEnv,
+													type: "chat",
+												}),
+											{ queueType: "llm" },
 										);
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
+										const compiledWebCitationExtractionPrompts =
+											webCitationPromptClient.compile({
+												generatedAnswer: text,
+												availableSources: allWebSources
+													.map(
+														(s) =>
+															`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+													)
+													.join("\n\n"),
+											}) as ModelMessage[];
+
+										const { output: webObject, usage: webCitationUsage } =
+											await resilientCall(
+												() =>
+													generateText({
+														model: llmHandler.languageModel,
+														messages: compiledWebCitationExtractionPrompts,
+														temperature: LLM_PARAMETERS.temperature,
+														output: Output.object({
+															schema: webCitationAnswerSchema,
+														}),
+														experimental_telemetry: {
+															isEnabled:
+																config.nodeEnv !== "test" &&
+																config.nodeEnv !== "production",
+															functionId: "web-citation-extraction",
+															metadata: {
+																sessionId: sessionId ? sessionId : "unknown",
+															},
+														},
+													}),
+												{ queueType: "llm" },
+											);
+
+										const citedSources = allWebSources.filter((s) =>
+											webObject.citations.some((c) => c.url === s.url),
 										);
+
+										writer.write({
+											type: "data-web-citations",
+											data: citedSources,
+										});
+
+										if (userId) {
+											try {
+												await this.dbService.updateUserColumnValue(
+													userId,
+													"num_inference_tokens",
+													webCitationUsage.totalTokens,
+												);
+												await this.dbService.updateUserColumnValue(
+													userId,
+													"num_inferences",
+													1,
+												);
+											} catch (error) {
+												captureError(error);
+											}
+										}
 									} catch (error) {
 										captureError(error);
 									}
@@ -678,6 +776,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	async createPrompt(
 		previousMessages: ModelMessage[],
 		isAddressedFormal: boolean,
+		activeTools: ActiveTools[],
 	): Promise<{
 		messages: ModelMessage[];
 		promptClient: TextPromptClient;
@@ -689,12 +788,38 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		});
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
+		let freeChatPromptClient: TextPromptClient;
 
-		// Always use free-chat prompt
-		const freeChatPromptClient = await langfuse.prompt.get(
-			"free-chat",
-			{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
-		);
+		const effectiveActiveTools = [...activeTools];
+		// TODO: Remove the check for feature flag once frontend functionality to add web search tool in chat is implemented
+		if (
+			config.featureFlagWebSearchAllowed &&
+			!effectiveActiveTools.includes("webSearchTool")
+		) {
+			effectiveActiveTools.push("webSearchTool");
+		}
+
+		if (effectiveActiveTools.includes("webSearchTool")) {
+			try {
+				freeChatPromptClient = await langfuse.prompt.get(
+					"free-chat-with-web-search-enabled",
+					{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
+				);
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
+		} else {
+			try {
+				freeChatPromptClient = await langfuse.prompt.get(
+					"free-chat",
+					{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
+				);
+			} catch (error) {
+				captureError(error);
+				throw error;
+			}
+		}
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
@@ -712,16 +837,28 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	private async getRelevantTools(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
-		isBaseKnowledgeActive: boolean;
+		activeTools: string[];
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-		isParlaMCPToolActive?: boolean;
 	}): Promise<RelevantTools> {
-		if (!config.featureFlagMcpParlaAllowed) {
-			return this.getRelevantToolsV1(options);
+		const optionsCopy = { ...options, activeTools: [...options.activeTools] };
+
+		// TODO: Remove this default value once frontend functionality is implemented
+		if (
+			config.featureFlagWebSearchAllowed &&
+			!optionsCopy.activeTools.includes("webSearchTool")
+		) {
+			optionsCopy.activeTools.push("webSearchTool");
 		}
 
-		return this.getRelevantToolsV2(options);
+		if (
+			!config.featureFlagMcpParlaAllowed &&
+			!config.featureFlagWebSearchAllowed
+		) {
+			return this.getRelevantToolsV1(optionsCopy);
+		}
+
+		return this.getRelevantToolsV2(optionsCopy);
 	}
 
 	/**
@@ -730,14 +867,14 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	private async getRelevantToolsV1(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
-		isBaseKnowledgeActive: boolean;
+		activeTools: string[];
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
 	}): Promise<RelevantTools> {
 		const {
 			allowedDocumentIds,
 			allowedFolderIds,
-			isBaseKnowledgeActive,
+			activeTools,
 			userId,
 			knowledgeBaseDocuments,
 		} = options;
@@ -763,7 +900,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		// Case 1: Both RAG and base knowledge are active
 		if (
 			hasAllowedDocumentsOrFolders &&
-			isBaseKnowledgeActive &&
+			activeTools.includes("baseKnowledgeSearchTool") &&
 			baseKnowledgeTool
 		) {
 			return {
@@ -796,7 +933,7 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		}
 
 		// Case 3: Only base knowledge is active
-		if (isBaseKnowledgeActive && baseKnowledgeTool) {
+		if (activeTools.includes("baseKnowledgeSearchTool") && baseKnowledgeTool) {
 			return {
 				tools: {
 					baseKnowledgeSearchTool: baseKnowledgeTool,
@@ -825,18 +962,16 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	private async getRelevantToolsV2(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
-		isBaseKnowledgeActive: boolean;
+		activeTools: string[];
 		userId?: string;
 		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-		isParlaMCPToolActive?: boolean;
 	}): Promise<RelevantTools> {
 		const {
 			allowedDocumentIds,
 			allowedFolderIds,
-			isBaseKnowledgeActive,
+			activeTools,
 			userId,
 			knowledgeBaseDocuments,
-			isParlaMCPToolActive,
 		} = options;
 
 		const relevantTools: RelevantTools = {
@@ -847,7 +982,10 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			cleanup: async () => {},
 		};
 
-		if (isBaseKnowledgeActive && knowledgeBaseDocuments) {
+		if (
+			activeTools.includes("baseKnowledgeSearchTool") &&
+			knowledgeBaseDocuments
+		) {
 			relevantTools.tools.baseKnowledgeSearchTool = baseKnowledgeSearchTool({
 				knowledgeBaseDocuments,
 				userId,
@@ -870,8 +1008,12 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 			relevantTools.toolChoice = "auto";
 		}
 
-		// Case 3: Parla MCP Tools are active
-		if (isParlaMCPToolActive) {
+		if (activeTools.includes("webSearchTool")) {
+			relevantTools.tools.webSearchTool = webSearchTool;
+			relevantTools.toolChoice = "auto";
+		}
+
+		if (activeTools.includes("parlaMCPTools")) {
 			const parlaMCPToolsResponse = await parlaMCPTools();
 			if (parlaMCPToolsResponse) {
 				relevantTools.tools = {

@@ -29,9 +29,8 @@ export const ragSearchTool = (options: RagSearchToolOptions) =>
 				allowedFolderIds,
 			} = options;
 
-			const embedding = await embeddingService.generateJinaEmbedding(
+			const embedding = await embeddingService.generateMistralEmbedding(
 				query,
-				"retrieval.query",
 				userId,
 			);
 			// do rag search over the base knowledge documents only
