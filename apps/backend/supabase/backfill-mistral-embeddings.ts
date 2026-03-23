@@ -36,7 +36,9 @@ async function backfillMistralEmbeddings() {
 
 		const { data: chunks, error } = await serviceRoleDbClient
 			.from("document_chunks")
-			.select("id, content, chunk_index, page, owned_by_user_id, access_group_id")
+			.select(
+				"id, content, chunk_index, page, owned_by_user_id, access_group_id",
+			)
 			.is("chunk_mistral_embedding", null)
 			.order("id", { ascending: true })
 			.limit(batchSize);
@@ -80,26 +82,26 @@ async function backfillMistralEmbeddings() {
 				);
 			}
 
-		// eslint-disable-next-line no-console
-		console.log(`Updating ${chunks.length} chunks in database...`);
-		const { error: upsertError } = await serviceRoleDbClient
-			.from("document_chunks")
-			.upsert(
-				chunks.map((chunk, index) => ({
-					id: chunk.id,
-					content: chunk.content,
-					chunk_index: chunk.chunk_index,
-					page: chunk.page,
-					owned_by_user_id: chunk.owned_by_user_id,
-					access_group_id: chunk.access_group_id,
-					chunk_mistral_embedding: JSON.stringify(embeddings[index]),
-				})),
-			);
+			// eslint-disable-next-line no-console
+			console.log(`Updating ${chunks.length} chunks in database...`);
+			const { error: upsertError } = await serviceRoleDbClient
+				.from("document_chunks")
+				.upsert(
+					chunks.map((chunk, index) => ({
+						id: chunk.id,
+						content: chunk.content,
+						chunk_index: chunk.chunk_index,
+						page: chunk.page,
+						owned_by_user_id: chunk.owned_by_user_id,
+						access_group_id: chunk.access_group_id,
+						chunk_mistral_embedding: JSON.stringify(embeddings[index]),
+					})),
+				);
 
-		if (upsertError) {
-			console.error(`Error upserting chunks in batch:`, upsertError);
-			process.exit(1);
-		}
+			if (upsertError) {
+				console.error(`Error upserting chunks in batch:`, upsertError);
+				process.exit(1);
+			}
 
 			totalProcessed += chunks.length;
 			// eslint-disable-next-line no-console
