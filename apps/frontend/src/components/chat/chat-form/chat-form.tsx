@@ -153,7 +153,7 @@ export const ChatForm: React.FC = () => {
 								type="button"
 								aria-label={Content["chat.stopGeneratingButton.ariaLabel"]}
 								onClick={() => abortStreaming()}
-								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-60 focus-visible:outline-2px"
+								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-110 focus-visible:outline-2px"
 							>
 								<ChatStopGeneratingIcon />
 							</button>

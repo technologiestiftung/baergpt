@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import {
 	mockDocumentUpload,
 	uploadFileViaDragAndDrop,
@@ -49,6 +50,54 @@ test.describe("Chat", () => {
 				navigator.clipboard.readText(),
 			);
 			expect(clipboardText).toBeDefined();
+		},
+	);
+
+	testWithLoggedInUser(
+		"Stop generating aborts stream without error banner",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Mock the LLM API to return a partial response
+			await page.route("**/llm/just-chatting", async (route) => {
+				const hangingStream = new Readable({
+					read() {},
+				});
+				hangingStream.push(
+					`data: ${JSON.stringify({
+						type: "text-delta",
+						id: "1",
+						delta: "Partial ",
+					})}\n\n`,
+				);
+
+				await route.fulfill({
+					status: 200,
+					headers: {
+						"Content-Type": "text/event-stream; charset=utf-8",
+					},
+					// @ts-expect-error Playwright Node accepts Readable for streaming bodies; public types omit it.
+					body: hangingStream,
+				});
+			});
+
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
+
+			const stopButton = page.getByRole("button", {
+				name: "Textgenerierung stoppen",
+			});
+			await expect(stopButton).toBeVisible();
+
+			await stopButton.click();
+
+			await expect(
+				page.getByText("Ihre Anfrage konnte gerade nicht bearbeitet werden."),
+			).not.toBeVisible();
+
+			await expect(
+				page.getByRole("button", { name: "Nachricht senden" }),
+			).toBeVisible();
 		},
 	);
 
