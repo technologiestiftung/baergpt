@@ -13,7 +13,9 @@ export const testWithoutSplashScreen = baseTest.extend({
 				body: JSON.stringify({ sha: MOCK_SPLASH_RELEASE_SHA }),
 			});
 		});
-		await page.addInitScript(
+		// Context-wide so popups (e.g. invite link → /account-activated/) also run this
+		// before load. page.addInitScript only applies to that Page, not window.open tabs.
+		await page.context().addInitScript(
 			({ key, sha }) => {
 				localStorage.setItem(key, sha);
 			},
