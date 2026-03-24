@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import {
 	mockDocumentUpload,
 	uploadFileViaDragAndDrop,
@@ -25,9 +26,7 @@ test.describe("Chat", () => {
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			// Wait for the AI response with a longer timeout since it involves backend API calls
 			await page.waitForLoadState("networkidle");
@@ -53,6 +52,60 @@ test.describe("Chat", () => {
 	);
 
 	testWithLoggedInUser(
+		"Stop generating aborts stream without error banner",
+		async ({ page }) => {
+			await page.goto("/");
+			let hangingStream: Readable | undefined;
+
+			// Mock the LLM API to return a partial response
+			await page.route("**/llm/just-chatting", async (route) => {
+				hangingStream = new Readable({
+					read() {},
+				});
+				hangingStream.push(
+					`data: ${JSON.stringify({
+						type: "text-delta",
+						id: "1",
+						delta: "Partial ",
+					})}\n\n`,
+				);
+
+				await route.fulfill({
+					status: 200,
+					headers: {
+						"Content-Type": "text/event-stream; charset=utf-8",
+					},
+					// @ts-expect-error Playwright Node accepts Readable for streaming bodies; public types omit it.
+					body: hangingStream,
+				});
+			});
+
+			try {
+				await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+				await page.getByRole("button", { name: "Nachricht senden" }).click();
+
+				const stopButton = page.getByRole("button", {
+					name: "Textgenerierung stoppen",
+				});
+				await expect(stopButton).toBeVisible();
+
+				await stopButton.click();
+
+				await expect(
+					page.getByText("Ihre Anfrage konnte gerade nicht bearbeitet werden."),
+				).not.toBeVisible();
+
+				await expect(
+					page.getByRole("button", { name: "Nachricht senden" }),
+				).toBeVisible();
+			} finally {
+				await page.unroute("**/llm/just-chatting");
+				hangingStream?.destroy();
+			}
+		},
+	);
+
+	testWithLoggedInUser(
 		"Copy text with markdown formatting as rich text and plain text",
 		async ({ page, browserName }) => {
 			await page.goto("/");
@@ -61,9 +114,7 @@ test.describe("Chat", () => {
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("**hallo**");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			if (browserName === "webkit") {
 				return;
@@ -118,9 +169,7 @@ test.describe("Chat", () => {
 			.fill("Worum geht es?");
 
 		// Click the send button
-		await page
-			.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-			.click();
+		await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 		const question = page.getByTestId("user-message-markdown-container");
 		await expect(question).toBeVisible();
@@ -289,9 +338,7 @@ test.describe("Chat", () => {
 				.fill("Worum geht es?");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
@@ -426,9 +473,7 @@ test.describe("Chat", () => {
 				.fill("Worum geht es?");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
@@ -476,9 +521,7 @@ test.describe("Chat", () => {
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			const question = page.getByTestId("user-message-markdown-container");
 			await expect(question).toBeVisible();
@@ -630,9 +673,7 @@ test.describe("Chat", () => {
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			const question1 = page
 				.getByTestId("user-message-markdown-container")
@@ -659,9 +700,7 @@ test.describe("Chat", () => {
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			// Wait for the AI response with a longer timeout since it involves backend API calls
 			await page.waitForLoadState("networkidle");
@@ -837,7 +876,7 @@ test.describe("Chat", () => {
 			await chatInput.fill("hallo");
 
 			const sendButton = page.getByRole("button", {
-				name: "Ein weißer Pfeil nach rechts",
+				name: "Nachricht senden",
 			});
 			await sendButton.click();
 
@@ -874,9 +913,7 @@ test.describe("Chat", () => {
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			await page.waitForLoadState("networkidle");
 

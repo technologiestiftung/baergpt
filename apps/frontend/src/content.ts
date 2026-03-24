@@ -874,6 +874,9 @@ export const Content = {
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
+	"chat.sendButton.ariaLabel": "Nachricht senden",
+	"chat.stopGeneratingButton.ariaLabel": "Textgenerierung stoppen",
+	"chatStopGeneratingIcon.imgAlt": "Generierung stoppen (Pause-Symbol)",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
