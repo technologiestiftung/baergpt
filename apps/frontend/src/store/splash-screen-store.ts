@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getSplashReleaseCommitSha } from "../api/splash-screen/get-splash-release-commit-sha.ts";
 import { getSplashScreenContent } from "../api/splash-screen/get-splash-screen-content.ts";
 import { captureError } from "../monitoring/capture-error.ts";
 import { config } from "../config.ts";
@@ -9,7 +10,8 @@ type SplashScreenStore = {
 };
 
 export const STORAGE_KEY = "last-seen-version";
-const CURRENT_VERSION = import.meta.env.VITE_BUILD_TIMESTAMP;
+
+let currentVersionIdentifier: string;
 
 export const useSplashScreenStore = create<SplashScreenStore>()(() => {
 	init().catch(captureError);
@@ -25,24 +27,24 @@ export async function init() {
 		return;
 	}
 
-	if (!isNewVersionAvailable()) {
+	const newVersionIdentifier = await getSplashReleaseCommitSha();
+
+	const lastSeenVersion = localStorage.getItem(STORAGE_KEY);
+	if (lastSeenVersion === newVersionIdentifier) {
 		return;
 	}
 
-	const content = await getSplashScreenContent();
-	useSplashScreenStore.setState({ content, isOpen: true });
-}
-
-export function isNewVersionAvailable(): boolean {
-	const lastSeenVersion = localStorage.getItem(STORAGE_KEY);
-
-	if (!lastSeenVersion) {
-		return true;
+	try {
+		const content = await getSplashScreenContent();
+		currentVersionIdentifier = newVersionIdentifier;
+		useSplashScreenStore.setState({ content, isOpen: true });
+	} catch (error) {
+		captureError(error);
 	}
-
-	return lastSeenVersion !== CURRENT_VERSION;
 }
 
 export function markVersionAsSeen() {
-	localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+	if (currentVersionIdentifier) {
+		localStorage.setItem(STORAGE_KEY, currentVersionIdentifier);
+	}
 }

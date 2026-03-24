@@ -69,6 +69,11 @@ function parseConfig(env: Record<string, string>) {
 	if (!env.VITE_SPLASH_CONTENT_URL) {
 		throw new Error("Environment variable VITE_SPLASH_CONTENT_URL is missing");
 	}
+	if (!env.VITE_SPLASH_API_COMMIT_URL) {
+		throw new Error(
+			"Environment variable VITE_SPLASH_API_COMMIT_URL is missing",
+		);
+	}
 
 	return {
 		env: env.VITE_VERCEL_ENV,
@@ -91,6 +96,7 @@ function parseConfig(env: Record<string, string>) {
 		featureFlagSplashScreenAllowed:
 			env.VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED === "true",
 		splashContentUrl: env.VITE_SPLASH_CONTENT_URL,
+		splashCommitApiUrl: env.VITE_SPLASH_API_COMMIT_URL,
 	};
 }
 export const config = parseConfig(import.meta.env);

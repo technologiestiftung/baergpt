@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { testWithMockedSplashScreenContent } from "../fixtures/test-with-mocked-splash-screen-content.ts";
-import { VERSION_STORAGE_KEY } from "../constants.ts";
+import { MOCK_SPLASH_RELEASE_SHA, VERSION_STORAGE_KEY } from "../constants.ts";
 
 testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 	testWithMockedSplashScreenContent(
@@ -47,13 +47,12 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 				VERSION_STORAGE_KEY,
 			);
 
-			// Verify that the build timestamp was stored in localStorage
-			const buildTimestamp = await page.evaluate((key) => {
+			// Verify that the release commit SHA was stored in localStorage
+			const lastSeenSha = await page.evaluate((key) => {
 				return localStorage.getItem(key);
 			}, VERSION_STORAGE_KEY);
 
-			expect(buildTimestamp).not.toBeNull();
-			expect(buildTimestamp).toBeTruthy();
+			expect(lastSeenSha).toBe(MOCK_SPLASH_RELEASE_SHA);
 		},
 	);
 
@@ -79,13 +78,12 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 				VERSION_STORAGE_KEY,
 			);
 
-			// Verify that the build timestamp was stored in localStorage
-			const buildTimestamp = await page.evaluate((key) => {
+			// Verify that the release commit SHA was stored in localStorage
+			const lastSeenSha = await page.evaluate((key) => {
 				return localStorage.getItem(key);
 			}, VERSION_STORAGE_KEY);
 
-			expect(buildTimestamp).not.toBeNull();
-			expect(buildTimestamp).toBeTruthy();
+			expect(lastSeenSha).toBe(MOCK_SPLASH_RELEASE_SHA);
 		},
 	);
 
@@ -128,20 +126,20 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 	);
 
 	testWithMockedSplashScreenContent(
-		"should display splash modal if stored timestamp differs from current",
+		"should display splash modal if stored release sha differs from current",
 		async ({ page }) => {
 			// Set a different timestamp value than what's current
 			await page.addInitScript(
 				({ key, value }) => {
 					window.localStorage.setItem(key, value);
 				},
-				{ key: VERSION_STORAGE_KEY, value: "old-version-timestamp" },
+				{ key: VERSION_STORAGE_KEY, value: "old-release-commit-sha" },
 			);
 
 			// Navigate to the main page
 			await page.goto("/");
 
-			// Modal SHOULD be visible because timestamps don't match
+			// Modal SHOULD be visible because stored SHA does not match the mocked current SHA
 			const modal = page.locator("#splash-modal");
 			await expect(modal).toBeVisible();
 		},
