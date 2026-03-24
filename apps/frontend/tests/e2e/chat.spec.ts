@@ -26,9 +26,7 @@ test.describe("Chat", () => {
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
 			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await page.getByRole("button", { name: "Nachricht senden" }).click();
 
 			// Wait for the AI response with a longer timeout since it involves backend API calls
 			await page.waitForLoadState("networkidle");
