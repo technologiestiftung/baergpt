@@ -16,24 +16,31 @@ import { config } from "../config.ts";
 export const IndexPage: React.FC = () => {
 	const { session } = useAuthStore();
 
-	if (!session) {
+	/**
+	 * On page load, the session will be undefined until the auth store checks for an existing session.
+	 * During this time, we don't want to render anything (not even the landing page) to avoid content flickering.
+	 * Once the session is determined (either null or a valid session), we can render the appropriate content.
+	 */
+	if (session === undefined) {
+		return null;
+	}
+
+	if (session === null) {
 		return <LandingPage />;
 	}
 
 	return (
 		<AppLayout>
 			<div className="relative flex flex-row h-full w-full">
-				{session && (
-					<DndProvider backend={HTML5Backend}>
-						<MobileHistoryDrawer />
-						<DocumentsSection />
-						<MobileProfileDrawer />
-						<div className="relative flex-1">
-							<ChatSection />
-							<DocumentPreviewSection />
-						</div>
-					</DndProvider>
-				)}
+				<DndProvider backend={HTML5Backend}>
+					<MobileHistoryDrawer />
+					<DocumentsSection />
+					<MobileProfileDrawer />
+					<div className="relative flex-1">
+						<ChatSection />
+						<DocumentPreviewSection />
+					</div>
+				</DndProvider>
 				{config.featureFlagSplashScreenAllowed && <SplashModal />}
 			</div>
 		</AppLayout>
