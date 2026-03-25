@@ -1,18 +1,11 @@
 import { testWithLoggedInUser } from "./test-with-logged-in-user.ts";
-import { MOCK_SPLASH_RELEASE_SHA, VERSION_STORAGE_KEY } from "../constants.ts";
+import { VERSION_STORAGE_KEY } from "../constants.ts";
 
 export const testWithMockedSplashScreenContent = testWithLoggedInUser.extend({
 	page: async ({ page }, use) => {
 		/**
 		 * This happens before each test that uses this fixture.
 		 */
-		await page.route("**/api.github.com/repos/**/commits/**", (route) => {
-			return route.fulfill({
-				status: 200,
-				contentType: "application/json",
-				body: JSON.stringify({ sha: MOCK_SPLASH_RELEASE_SHA }),
-			});
-		});
 		await page.route("**/release-update.md", (route) => {
 			return route.fulfill({
 				status: 200,
@@ -20,8 +13,12 @@ export const testWithMockedSplashScreenContent = testWithLoggedInUser.extend({
 				body: "Mock Content for Splash Screen",
 			});
 		});
-		await page.evaluate((key) => {
-			localStorage.removeItem(key);
+		/**
+		 * Runs after the splash-bypass init script on each navigation so
+		 * `last-seen-version` is cleared and the splash flow can run in these specs.
+		 */
+		await page.addInitScript((key) => {
+			window.localStorage.removeItem(key);
 		}, VERSION_STORAGE_KEY);
 
 		/**

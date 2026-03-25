@@ -3,29 +3,26 @@ import { test as baseTest } from "@playwright/test";
 
 export const testWithoutSplashScreen = baseTest.extend({
 	page: async ({ page }, use) => {
-		/**
-		 * This happens before each test that uses this fixture.
-		 */
-		await page.route("**/api.github.com/repos/**/commits/**", (route) => {
-			return route.fulfill({
-				status: 200,
-				contentType: "application/json",
-				body: JSON.stringify({ sha: MOCK_SPLASH_RELEASE_SHA }),
-			});
-		});
-		// Context-wide so popups (e.g. invite link → /account-activated/) also run this
-		// before load. page.addInitScript only applies to that Page, not window.open tabs.
-		await page.context().addInitScript(
-			({ key, sha }) => {
-				localStorage.setItem(key, sha);
-			},
-			{ key: VERSION_STORAGE_KEY, sha: MOCK_SPLASH_RELEASE_SHA },
+		await page.context().route(
+			(url) =>
+				url.hostname === "api.github.com" &&
+				/^\/repos\/[^/]+\/[^/]+\/commits\//.test(url.pathname),
+			(route) =>
+				route.fulfill({
+					status: 200,
+					contentType: "application/json",
+					body: JSON.stringify({ sha: MOCK_SPLASH_RELEASE_SHA }),
+				}),
 		);
-		await page.goto("/");
 
-		/**
-		 * This runs the test that uses this fixture (and injects the version).
-		 */
+		await page.addInitScript(
+			({ storageKey, sha }) => {
+				localStorage.setItem(storageKey, sha);
+			},
+			{ storageKey: VERSION_STORAGE_KEY, sha: MOCK_SPLASH_RELEASE_SHA },
+		);
+
+		await page.goto("/");
 		await use(page);
 	},
 });
