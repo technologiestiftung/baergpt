@@ -12,7 +12,6 @@ CREATE INDEX IF NOT EXISTS idx_chats_user_id ON public.chats (user_id);
 -- (WHERE source_type = 'personal_document').
 CREATE INDEX IF NOT EXISTS idx_documents_source_type ON public.documents (source_type);
 
-
 -- ============================================================
 -- FUNCTION REWRITE
 -- ============================================================
@@ -38,7 +37,6 @@ CREATE INDEX IF NOT EXISTS idx_documents_source_type ON public.documents (source
 --
 -- Complexity drops from O(users × 30) to O(users) + O(30).
 -- ============================================================
-
 CREATE OR REPLACE FUNCTION public.get_product_dashboard_stats () RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER
 SET
     search_path = '' AS $$
@@ -130,7 +128,7 @@ FROM (
 -- DAU / WAU / MAU — unchanged logic, but now benefit from the
 -- idx_auth_users_last_sign_in_at and idx_auth_users_email_confirmed_at
 -- indexes added above.
-SELECT COUNT(DISTINCT u.id)
+SELECT COUNT(*)
 INTO v_dau
 FROM auth.users u
          JOIN public.user_active_status uas ON uas.id = u.id
@@ -139,7 +137,7 @@ WHERE u.last_sign_in_at >= now() - interval '1 day'
   AND uas.is_active = true
   AND uas.deleted_at IS NULL;
 
-SELECT COUNT(DISTINCT u.id)
+SELECT COUNT(*)
 INTO v_wau
 FROM auth.users u
          JOIN public.user_active_status uas ON uas.id = u.id
@@ -148,7 +146,7 @@ WHERE u.last_sign_in_at >= now() - interval '7 days'
   AND uas.is_active = true
   AND uas.deleted_at IS NULL;
 
-SELECT COUNT(DISTINCT u.id)
+SELECT COUNT(*)
 INTO v_mau
 FROM auth.users u
          JOIN public.user_active_status uas ON uas.id = u.id
@@ -181,7 +179,7 @@ FROM (
      ) sub;
 
 -- Total Chats — unchanged.
-SELECT COUNT(DISTINCT id)
+SELECT COUNT(*)
 INTO v_total_chats
 FROM public.chats;
 
@@ -202,7 +200,7 @@ WHERE cardinality(cm.allowed_document_ids) = 0
 
 -- Total user documents — unchanged logic, now benefits from
 -- idx_documents_source_type.
-SELECT COUNT(DISTINCT d.id)
+SELECT COUNT(*)
 INTO v_total_user_documents
 FROM public.documents d
 WHERE d.source_type = 'personal_document';
@@ -224,7 +222,7 @@ SELECT COALESCE(
                AND uas.deleted_at IS NULL
             )::numeric
             / NULLIF((
-                    SELECT COUNT(DISTINCT u.id)
+                    SELECT COUNT(*)
                     FROM auth.users u
                     JOIN public.user_active_status uas ON uas.id = u.id
                     WHERE u.email_confirmed_at IS NOT NULL
