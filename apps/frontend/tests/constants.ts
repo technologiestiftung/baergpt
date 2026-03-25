@@ -109,3 +109,5 @@ export const longFileName =
 export const longFilePath = resolve(__dirname, `./fixtures/${longFileName}`);
 
 export const VERSION_STORAGE_KEY = "last-seen-version";
+
+export const MOCK_SPLASH_RELEASE_SHA = "e2e-mock-splash-release-sha";

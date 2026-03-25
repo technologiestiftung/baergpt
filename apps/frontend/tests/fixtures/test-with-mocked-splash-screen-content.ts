@@ -13,8 +13,12 @@ export const testWithMockedSplashScreenContent = testWithLoggedInUser.extend({
 				body: "Mock Content for Splash Screen",
 			});
 		});
-		await page.evaluate((key) => {
-			localStorage.removeItem(key);
+		/**
+		 * Runs after the splash-bypass init script on each navigation so
+		 * `last-seen-version` is cleared and the splash flow can run in these specs.
+		 */
+		await page.addInitScript((key) => {
+			window.localStorage.removeItem(key);
 		}, VERSION_STORAGE_KEY);
 
 		/**

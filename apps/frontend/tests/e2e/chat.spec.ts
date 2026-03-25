@@ -369,7 +369,6 @@ test.describe("Chat", () => {
 		// Create an admin user to upload the public document
 		const adminEmail = "admin.test@local.berlin.de";
 		const adminPassword = "TestPassword123!";
-		let adminUserId: string | undefined;
 
 		const { data: adminUserData, error: createAdminError } =
 			await supabaseAdminClient.auth.admin.createUser({
@@ -388,7 +387,7 @@ test.describe("Chat", () => {
 			throw createAdminError;
 		}
 
-		adminUserId = adminUserData.user.id;
+		const adminUserId = adminUserData.user.id;
 
 		try {
 			// Grant admin role by adding to application_admins table

@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { testWithMockedSplashScreenContent } from "../fixtures/test-with-mocked-splash-screen-content.ts";
-import { VERSION_STORAGE_KEY } from "../constants.ts";
+import { MOCK_SPLASH_RELEASE_SHA, VERSION_STORAGE_KEY } from "../constants.ts";
 
 testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 	testWithMockedSplashScreenContent(
@@ -47,13 +47,13 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 				VERSION_STORAGE_KEY,
 			);
 
-			// Verify that the build timestamp was stored in localStorage
-			const buildTimestamp = await page.evaluate((key) => {
+			// Verify that the last-seen version was stored in localStorage
+			const lastSeenVersion = await page.evaluate((key) => {
 				return localStorage.getItem(key);
 			}, VERSION_STORAGE_KEY);
 
-			expect(buildTimestamp).not.toBeNull();
-			expect(buildTimestamp).toBeTruthy();
+			expect(lastSeenVersion).not.toBeNull();
+			expect(lastSeenVersion).toBeTruthy();
 		},
 	);
 
@@ -79,13 +79,13 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 				VERSION_STORAGE_KEY,
 			);
 
-			// Verify that the build timestamp was stored in localStorage
-			const buildTimestamp = await page.evaluate((key) => {
+			// Verify that the last-seen version was stored in localStorage
+			const lastSeenVersion = await page.evaluate((key) => {
 				return localStorage.getItem(key);
 			}, VERSION_STORAGE_KEY);
 
-			expect(buildTimestamp).not.toBeNull();
-			expect(buildTimestamp).toBeTruthy();
+			expect(lastSeenVersion).not.toBeNull();
+			expect(lastSeenVersion).toBeTruthy();
 		},
 	);
 
@@ -119,10 +119,14 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 				VERSION_STORAGE_KEY,
 			);
 
-			// Refresh the page
+			// Fixture clears `last-seen-version` on reload; register before reload so this runs next navigation and restores the mock SHA.
+			await page.addInitScript(
+				({ key, value }) => {
+					window.localStorage.setItem(key, value);
+				},
+				{ key: VERSION_STORAGE_KEY, value: MOCK_SPLASH_RELEASE_SHA },
+			);
 			await page.reload();
-
-			// Modal should not appear again
 			await expect(modal).toBeHidden();
 		},
 	);
