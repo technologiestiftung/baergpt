@@ -58,6 +58,12 @@
       systemctl stop nginx
     mode: "0755"
 
+- name: Ensure certbot renewal post-hook dir exists
+  ansible.builtin.file:
+    path: /etc/letsencrypt/renewal-hooks/post
+    state: directory
+    mode: "0755"
+
 - name: Write certbot post-hook to start nginx
   ansible.builtin.copy:
     dest: /etc/letsencrypt/renewal-hooks/post/start-nginx.sh
@@ -68,7 +74,7 @@
 
 - name: Schedule certbot renewal
   ansible.builtin.cron:
-    name: "Certbot renewx"
+    name: "Certbot renew"
     minute: "0"
     hour: "2"
     job: "/opt/certbot/bin/certbot renew --quiet"

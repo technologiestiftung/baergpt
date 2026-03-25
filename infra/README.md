@@ -1,6 +1,15 @@
-# Supabase Self-Hosting
+# Infrastructure
 
-This directory contains the infrastructure setup for self-hosting Supabase on STACKIT using Ansible.
+This directory contains all infrastructure configuration for BärGPT — provisioning, deployment, backups, and future Terraform/Kubernetes work.
+
+## Structure
+
+```
+infra/
+  ansible/      Ansible playbooks and roles for server provisioning
+  backups/      Backup and restore scripts
+  supabase/     Supabase stack config (docker-compose.yml, .env.example)
+```
 
 ## Overview
 
@@ -43,12 +52,16 @@ The file contains references to secrets stored in 1Password:
 
 ```bash
 # Example structure (see .op.env.staging.example)
-STACKIT_PROJECT_ID=op://vault/item/field
-STACKIT_SERVICE_ACCOUNT_JSON=op://vault/item/field
-ENV_FILE_REF=vault/item/field   # no op:// prefix — resolved by op read internally
-ANSIBLE_SSH_KEY=op://vault/item/field
-DOMAIN=example.berlin
+ANSIBLE_HOST=op://vault/staging-server/hostname
+ANSIBLE_USER=op://vault/staging-server/username
+ANSIBLE_PORT=op://vault/staging-server/port
+STACKIT_PROJECT_ID=op://vault/staging-stackit/project-id
+STACKIT_SERVICE_ACCOUNT_JSON=op://vault/staging-stackit/service-account-json
+ENV_FILE_REF=vault/staging-supabase/env-file   # no op:// prefix — resolved by op read internally
+DOMAIN=staging.example.berlin
 LETSENCRYPT_EMAIL=example@example.berlin
+ANSIBLE_SSH_KEY=op://vault/staging-server/ssh-private-key-path
+MIGRATIONS_SSH_PUBLIC_KEY=op://vault/staging-migrations/public-key
 ```
 
 > **Note:** `ENV_FILE_REF` must **not** have the `op://` prefix. It is passed as a plain string and used internally by `op read` during the playbook run.
@@ -87,10 +100,10 @@ Per-environment inventory files live in `ansible/inventory/`:
 cd ansible
 
 # Staging
-op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml site.yml
+op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml supabase.yml
 
 # Production
-op run --env-file .op.env.production -- ansible-playbook -i inventory/production.yml site.yml
+op run --env-file .op.env.production -- ansible-playbook -i inventory/production.yml supabase.yml
 ```
 
 This will provision the server with:
@@ -107,7 +120,7 @@ This will provision the server with:
 To see what would change without making actual changes:
 
 ```bash
-op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml site.yml --check --diff
+op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml supabase.yml --check --diff
 ```
 
 ### Verbose Output
@@ -115,9 +128,45 @@ op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml s
 For debugging, add verbosity flags:
 
 ```bash
-op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml site.yml -vv
+op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml supabase.yml -vv
 ```
 
-## Custom Docker Compose
+## Supabase Stack
 
-The project uses a customized `docker-compose.yml` located at `../docker-compose.yml` which overrides the default Supabase configuration. This is deployed to `/opt/supabase-baergpt/` on the server.
+The project uses a customized `docker-compose.yml` located at `supabase/docker-compose.yml`, which overrides the default Supabase configuration. It is deployed to `/opt/supabase-baergpt/` on the server.
+
+During a playbook run, the `.env` is fetched from 1Password, written temporarily to `supabase/.env`, uploaded to the server, then deleted locally. The file is gitignored and never committed.
+
+## Backups & Restore
+
+### Configuration
+
+Each environment needs a config file in `backups/configs/`:
+
+```bash
+cp backups/configs/staging.env.example backups/configs/staging.env
+```
+
+See the example file for all required variables (rclone remotes, SSH credentials, GPG recipient, retention policy).
+
+### Running Backups
+
+```bash
+# All environments (prod + staging)
+./backups/backup_all.sh
+
+# Single environment
+./backups/backup_env.sh backups/configs/staging.env
+```
+
+### Restoring
+
+```bash
+# Restore a specific snapshot
+./backups/restore_env.sh backups/configs/staging.env 2026-01-26_1500
+
+# Restore latest snapshot
+./backups/restore_env.sh backups/configs/staging.env latest
+```
+
+The restore script will prompt for confirmation before overwriting data.

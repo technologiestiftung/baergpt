@@ -20,25 +20,34 @@
 
 - name: Overwrite docker-compose.yml with project version
   ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../docker-compose.yml"
+    src: "{{ playbook_dir }}/../supabase/docker-compose.yml"
     dest: "{{ supabase_dir }}/docker-compose.yml"
     mode: "0644"
     force: true
 
-- name: Render .env from 1Password (local)
-  ansible.builtin.command:
-    cmd: "op read 'op://{{ lookup('env', 'ENV_FILE_REF') }}' --out-file {{ playbook_dir }}/../staging/.env --force"
-  delegate_to: localhost
-  run_once: true
-  become: false
-  no_log: true
-  check_mode: false
+- block:
+    - name: Render .env from 1Password (local)
+      ansible.builtin.command:
+        cmd: "op read 'op://{{ lookup('env', 'ENV_FILE_REF') }}' --out-file {{ playbook_dir }}/../supabase/.env --force"
+      delegate_to: localhost
+      run_once: true
+      become: false
+      no_log: true
+      check_mode: false
 
-- name: Upload resolved .env
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../staging/.env"
-    dest: "{{ supabase_dir }}/.env"
-    mode: "0640"
+    - name: Upload resolved .env
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../supabase/.env"
+        dest: "{{ supabase_dir }}/.env"
+        mode: "0640"
+
+  always:
+    - name: Delete local .env after upload
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../supabase/.env"
+        state: absent
+      delegate_to: localhost
+      become: false
 
 - name: Pull images
   ansible.builtin.command:
