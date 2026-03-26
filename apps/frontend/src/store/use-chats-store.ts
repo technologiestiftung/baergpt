@@ -15,6 +15,7 @@ import { updateMessage as updateMessageInDb } from "../api/message/update-messag
 import { getTotalChatCount as getTotalChatCountFromDb } from "../api/chat/get-total-chat-count.ts";
 import { useErrorStore } from "./error-store.ts";
 import type { WebCitationSource } from "../api/chat/get-completion.ts";
+import { useDocumentStore } from "./document-store.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
@@ -77,7 +78,20 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				),
 			});
 		} else {
-			set({ selectedChatOptions: [...selectedChatOptions, option] });
+			if (option === "webSearch") {
+				const { selectedChatDocuments } = useDocumentStore.getState();
+				if (selectedChatDocuments.length > 0) {
+					selectedChatDocuments.forEach((document) => {
+						useDocumentStore.getState().unselectChatDocument(document.id);
+					});
+				}
+			}
+
+			/* 
+			/ simplified solution for now to kick out other ChatOptions
+			/ can be changed once baseKnowledge is part of files and testing of combining tools is done
+			*/
+			set({ selectedChatOptions: [option] });
 		}
 	},
 
