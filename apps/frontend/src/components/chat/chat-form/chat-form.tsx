@@ -30,6 +30,7 @@ export const ChatForm: React.FC = () => {
 	const { selectedChatDocuments } = useDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
 		useChatsStore();
+	const { setIsWebSearchRemovalInfoMessageShown } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -69,6 +70,8 @@ export const ChatForm: React.FC = () => {
 
 		// Clear any previous errors
 		clearError();
+
+		setIsWebSearchRemovalInfoMessageShown(false);
 
 		// Clear textarea on submit
 		if (textarea) {

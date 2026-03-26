@@ -15,6 +15,7 @@ export const ChatMessages: React.FC = () => {
 	const { currentChatId } = useCurrentChatIdStore();
 	const { chats } = useChatsStore();
 	const { handleScroll } = useChatScrollingStore();
+	const { isWebSearchRemovalInfoMessageShown } = useChatsStore();
 
 	const messageContainerRef = useRef<null | HTMLDivElement>(null);
 
@@ -48,7 +49,7 @@ export const ChatMessages: React.FC = () => {
 					</div>
 				)}
 				{hasError && <ChatErrorMessage />}
-				<ChatInfoMessage />
+				{isWebSearchRemovalInfoMessageShown && <ChatInfoMessage />}
 			</div>
 		</div>
 	);

@@ -51,6 +51,8 @@ interface ChatStore {
 		citations: number[] | null;
 		web_citations: WebCitationSource[] | null;
 	}): void;
+	isWebSearchRemovalInfoMessageShown: boolean;
+	setIsWebSearchRemovalInfoMessageShown(isShown: boolean): void;
 }
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
@@ -60,6 +62,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	totalChatCount: null,
 	selectedChatOptions: ["baseKnowledge"],
 	selectedLlmModel: "mistral-small",
+	isWebSearchRemovalInfoMessageShown: false,
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
@@ -266,5 +269,13 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		updateMessageDebounceTimeout = setTimeout(async () => {
 			await updateMessageInDb(messageId, { content, citations, web_citations });
 		}, 300);
+	},
+
+	setIsWebSearchRemovalInfoMessageShown(isShown: boolean) {
+		set({ isWebSearchRemovalInfoMessageShown: isShown });
+
+		setTimeout(() => {
+			set({ isWebSearchRemovalInfoMessageShown: false });
+		}, 12000);
 	},
 }));
