@@ -52,9 +52,9 @@ DECLARE
   v_total_messages_without_documents bigint;
   v_total_user_documents bigint;
   v_average_inferences_per_user numeric;
-  -- New variable: holds the count of active users confirmed before
-  -- the 30-day window so we can use it as a base for cumulative totals.
   v_base_user_count bigint;
+  v_window_start timestamptz := date_trunc('day', now()) - interval '29 days';
+  v_window_end   timestamptz := date_trunc('day', now()) + interval '1 day';
 BEGIN
 
 IF NOT public.is_application_admin() THEN
@@ -69,7 +69,7 @@ INTO v_base_user_count
 FROM auth.users u
 JOIN public.user_active_status uas ON uas.id = u.id
 WHERE u.email_confirmed_at IS NOT NULL
-  AND u.email_confirmed_at::date < (now() - interval '29 days')::date
+  AND u.email_confirmed_at < v_window_start
   AND uas.is_active = true
   AND uas.deleted_at IS NULL;
 
@@ -104,8 +104,8 @@ FROM (
     FROM (
         SELECT gs.day::date AS day
         FROM generate_series(
-                 (now() - interval '29 days')::date,
-                 now()::date,
+                 v_window_start::date,
+                 (v_window_end - interval '1 day')::date,
                  interval '1 day'
              ) AS gs(day)
     ) s
@@ -117,17 +117,15 @@ FROM (
         FROM auth.users u
         JOIN public.user_active_status uas ON uas.id = u.id
         WHERE u.email_confirmed_at IS NOT NULL
-          AND u.email_confirmed_at::date >= (now() - interval '29 days')::date
-          AND u.email_confirmed_at::date <= now()::date
+          AND u.email_confirmed_at >= v_window_start
+          AND u.email_confirmed_at < v_window_end
           AND uas.is_active = true
           AND uas.deleted_at IS NULL
         GROUP BY u.email_confirmed_at::date
     ) dn ON dn.day = s.day
 ) sub;
 
--- DAU / WAU / MAU — unchanged logic, but now benefit from the
--- idx_auth_users_last_sign_in_at and idx_auth_users_email_confirmed_at
--- indexes added above.
+-- DAU / WAU / MAU — unchanged logic.
 SELECT COUNT(*)
 INTO v_dau
 FROM auth.users u
@@ -155,8 +153,7 @@ WHERE u.last_sign_in_at >= now() - interval '30 days'
   AND uas.is_active = true
   AND uas.deleted_at IS NULL;
 
--- Domains — unchanged logic, now benefits from
--- idx_auth_users_email_confirmed_at.
+-- Domains — unchanged logic.
 SELECT jsonb_agg(
            jsonb_build_object(
                'domain', domain,
@@ -189,14 +186,14 @@ FROM public.chats;
 SELECT COUNT(*)
 INTO v_total_messages_with_documents
 FROM public.chat_messages cm
-WHERE cardinality(cm.allowed_document_ids) > 0
-   OR cardinality(cm.allowed_folder_ids) > 0;
+WHERE cardinality(COALESCE(cm.allowed_document_ids, '{}')) > 0
+   OR cardinality(COALESCE(cm.allowed_folder_ids, '{}')) > 0;
 
 SELECT COUNT(*)
 INTO v_total_messages_without_documents
 FROM public.chat_messages cm
-WHERE cardinality(cm.allowed_document_ids) = 0
-  AND cardinality(cm.allowed_folder_ids) = 0;
+WHERE cardinality(COALESCE(cm.allowed_document_ids, '{}')) = 0
+  AND cardinality(COALESCE(cm.allowed_folder_ids, '{}')) = 0;
 
 -- Total user documents — unchanged logic, now benefits from
 -- idx_documents_source_type.
