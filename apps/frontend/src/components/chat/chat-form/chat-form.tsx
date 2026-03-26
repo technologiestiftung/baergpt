@@ -20,6 +20,7 @@ import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
+import { WebSearchWarningBanner } from "./web-search-warning-banner.tsx";
 
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
@@ -108,13 +109,17 @@ export const ChatForm: React.FC = () => {
 
 	const hasError = status === "error";
 
+	const isWebSearchActive = selectedChatOptions.includes("webSearch");
+
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px]"
+			className={`flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
+				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
+			<WebSearchWarningBanner />
 
 			<div className="flex flex-col justify-between rounded-b-3px">
 				<div
@@ -131,7 +136,7 @@ export const ChatForm: React.FC = () => {
 								`}
 				>
 					<textarea
-						className="w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80"
+						className={`w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80 ${isWebSearchActive && "bg-hellblau-40"}`}
 						ref={textareaRef}
 						name="content"
 						rows={1}
