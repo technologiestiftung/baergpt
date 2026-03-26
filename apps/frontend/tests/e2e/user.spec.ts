@@ -2,17 +2,7 @@ import { defaultUserFirstName, defaultUserLastName } from "../constants";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user";
 import { expect } from "@playwright/test";
 import Content from "../../src/content";
-import { supabaseAdminClient } from "../supabase.ts";
-
 testWithLoggedInUser.describe("User Profile", () => {
-	testWithLoggedInUser.beforeEach(async () => {
-		await supabaseAdminClient
-			.from("maintenance_mode")
-			.upsert(
-				{ onerow_id: true, is_enabled: false },
-				{ onConflict: "onerow_id" },
-			);
-	});
 	testWithLoggedInUser.describe("greeting messages", () => {
 		const testGreeting = (hour: number, expectedContent: string) =>
 			testWithLoggedInUser(
