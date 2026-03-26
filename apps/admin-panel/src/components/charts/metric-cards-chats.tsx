@@ -52,7 +52,9 @@ export function MetricCardsChats({ data }: { data: ProductDashboardStats }) {
 					</CardHeader>
 					<CardContent>
 						<span className="text-4xl font-bold">
-							{currentValue?.toLocaleString("de-DE") ?? "—"}
+							{currentValue?.toLocaleString("de-DE", {
+								maximumFractionDigits: 1,
+							}) ?? "—"}
 						</span>
 					</CardContent>
 				</Card>
