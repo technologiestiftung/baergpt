@@ -5,5 +5,9 @@ export async function deleteUser(): Promise<{ error: Error | null }> {
 	if (!error) {
 		return { error: null };
 	}
-	return { error: new Error("account_deletion_failed") };
+	return {
+		error: new Error("account_deletion_failed", {
+			cause: error,
+		} as ErrorOptions),
+	};
 }
