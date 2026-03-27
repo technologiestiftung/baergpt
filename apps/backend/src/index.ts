@@ -10,6 +10,12 @@ import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
 import { captureError } from "./monitoring/capture-error";
 import { initQueues } from "./services/distributed-limiter";
+import v8 from "node:v8";
+
+const { heap_size_limit } = v8.getHeapStatistics();
+const heapSizeInGB = heap_size_limit / (1024 * 1024 * 1024);
+
+console.log(`${heapSizeInGB} GB`);
 
 verifyConfig();
 
