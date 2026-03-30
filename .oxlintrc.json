@@ -177,7 +177,12 @@
 		"**/cython_debug/",
 		"**/.idea/",
 		"**/.turbo",
-		"**/.op.env"
+		"**/.op.env",
+		"**/vite.config.*",
+		"**/vitest.config.*",
+		"**/playwright.config.*",
+		"**/tailwind.config.*",
+		"**/postcss.config.*"
 	],
 	"rules": {
 		"constructor-super": "error",
