@@ -47,6 +47,8 @@ const errorMessages: { [key: string]: string } = {
 	no_healthy_llm_available:
 		"Temporär keine Modelle verfügbar. Bitte versuchen Sie es später erneut.",
 	"Token has expired or is invalid": "Code ist abgelaufen oder ungültig.",
+	account_deletion_failed:
+		"Ihr Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
 	document_not_found: "Dokument konnte nicht gelöscht werden.",
 	document_download_failed:
 		Content["documentsPreviewSection.download.failed.error"],

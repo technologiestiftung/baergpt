@@ -2,7 +2,6 @@ import { defaultUserFirstName, defaultUserLastName } from "../constants";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user";
 import { expect } from "@playwright/test";
 import Content from "../../src/content";
-
 testWithLoggedInUser.describe("User Profile", () => {
 	testWithLoggedInUser.describe("greeting messages", () => {
 		const testGreeting = (hour: number, expectedContent: string) =>
@@ -116,6 +115,44 @@ testWithLoggedInUser.describe("User Profile", () => {
 					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
 				}),
 			).toBeVisible();
+		},
+	);
+
+	testWithLoggedInUser(
+		"should stay on profile page when account deletion fails",
+		async ({ page, account }) => {
+			await page.goto("/profile/");
+			await page.getByTestId("delete-account-button").click();
+
+			const dialog = page.locator("#delete-account-dialog");
+			await expect(dialog).toBeVisible();
+
+			await page.fill("#currentPasswordValidation", account.password);
+
+			// Set up route interceptor just before submitting — delete_user is
+			// only called on confirm, so setting it up here avoids interfering
+			// with session refresh requests made during page load.
+			await page.route("**/rest/v1/rpc/delete_user", (route) =>
+				route.fulfill({
+					status: 500,
+					contentType: "application/json",
+					body: JSON.stringify({
+						code: "57014",
+						message: "canceling statement due to statement timeout",
+						details: null,
+						hint: null,
+					}),
+				}),
+			);
+
+			// Wait for the delete_user RPC to complete before asserting URL,
+			// otherwise the assertion races with the async navigation.
+			await Promise.all([
+				page.waitForResponse("**/rest/v1/rpc/delete_user"),
+				page.getByTestId("confirm-delete-account-button").click(),
+			]);
+
+			await expect(page).toHaveURL("/profile/");
 		},
 	);
 

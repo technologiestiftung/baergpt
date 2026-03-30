@@ -17,7 +17,7 @@ interface UserStore {
 		academic_title: string;
 		personal_title: string;
 	}) => Promise<void>;
-	deleteAccount: () => Promise<void>;
+	deleteAccount: () => Promise<{ error: Error | null }>;
 	updateAddressedFormal: (isAddressedFormal: boolean) => Promise<void>;
 }
 
@@ -76,19 +76,19 @@ export const useUserStore = create<UserStore>((set, get) => ({
 	deleteAccount: async () => {
 		const session = useAuthStore.getState().session;
 		if (!session) {
-			useErrorStore
-				.getState()
-				.handleError(new Error("No active session found"));
-			return;
+			const error = new Error("account_deletion_failed");
+			useErrorStore.getState().handleError(error);
+			return { error };
 		}
 		const { error } = await deleteUser();
 		if (error) {
 			useErrorStore.getState().handleError(error);
-			return;
+			return { error };
 		}
 		// Clear user data
 		set({ user: null });
 		// Clear session
 		await useAuthStore.getState().logout();
+		return { error: null };
 	},
 }));
