@@ -1,11 +1,14 @@
 import React from "react";
 import { Content } from "../../../../content";
 import { DefaultDialog } from "../../../primitives/dialogs/default-dialog.tsx";
+import type { WebCitationSource } from "../../../../api/chat/get-completion.ts";
 import { CitationItem } from "./citation-item.tsx";
+import { WebCitationItem } from "./web-citation-item.tsx";
 
 interface CitationsDialogProps {
 	messageId: number | null;
 	citations: number[] | null;
+	webCitations: WebCitationSource[] | null;
 }
 
 export const citationsDialogId = "citations-dialog";
@@ -31,8 +34,14 @@ export function closeCitationsDialog(messageId: number) {
 export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 	messageId,
 	citations,
+	webCitations,
 }) => {
-	if (!messageId || !citations) {
+	const documentChunkIds = citations ?? [];
+	const webCitationSources = webCitations ?? [];
+	const hasDocumentCitations = documentChunkIds.length > 0;
+	const hasWebCitations = webCitationSources.length > 0;
+
+	if (!messageId || (!hasDocumentCitations && !hasWebCitations)) {
 		return null;
 	}
 
@@ -55,9 +64,14 @@ export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 					</button>
 				</div>
 				<div className="flex flex-col px-4 pb-4 overflow-y-auto">
-					{citations.map((citationId, index) => (
-						<CitationItem citationId={citationId} key={index} />
-					))}
+					{hasDocumentCitations &&
+						documentChunkIds.map((chunkId) => (
+							<CitationItem citationId={chunkId} key={chunkId} />
+						))}
+					{hasWebCitations &&
+						webCitationSources.map((source, index) => (
+							<WebCitationItem source={source} key={`${source.url}-${index}`} />
+						))}
 				</div>
 			</div>
 		</DefaultDialog>
