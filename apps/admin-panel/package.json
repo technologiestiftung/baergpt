@@ -1,7 +1,7 @@
 {
 	"name": "baergpt-admin-panel",
-	"private": true,
 	"version": "0.0.0",
+	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
@@ -10,8 +10,8 @@
 		"lint:check": "oxlint src",
 		"lint:write": "oxlint src --fix",
 		"playwright:install": "npx playwright install --with-deps",
-		"prettier:check": "prettier  --check .",
-		"prettier:write": "prettier --write .",
+		"format:check": "oxfmt --check .",
+		"format:write": "oxfmt --write .",
 		"preview": "vite preview",
 		"test:e2e": "npx playwright test"
 	},

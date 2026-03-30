@@ -13,10 +13,12 @@
 		"lint:check": "oxlint src",
 		"lint:write": "oxlint src --fix",
 		"lint:db": "./supabase/lint-database.sh",
-		"prettier:check": "prettier --check src supabase",
-		"prettier:write": "prettier --write src supabase",
+		"format:check": "oxfmt --check src supabase",
+		"format:write": "oxfmt --write src supabase",
+		"format:sql:check": "prettier --check \"**/*.sql\"",
+		"format:sql:write": "prettier --write \"**/*.sql\"",
 		"db:reset": "supabase db reset && npm run db:typegen && npm run db:upload-default-documents && npm run db:localseed",
-		"db:typegen": "supabase gen types --lang typescript --local > ../../libs/db-schema/index.ts && prettier --write ../../libs/db-schema/index.ts && oxlint --fix ../../libs/db-schema/index.ts",
+		"db:typegen": "supabase gen types --lang typescript --local > ../../libs/db-schema/index.ts && oxfmt --write ../../libs/db-schema/index.ts && oxlint --fix ../../libs/db-schema/index.ts",
 		"db:localseed": "tsx ./supabase/local-seed.ts",
 		"db:upload-default-documents": "tsx ./supabase/scripts/upload-default-documents.ts",
 		"db:backfill-mistral": "tsx ./supabase/backfill-mistral-embeddings.ts",
@@ -67,10 +69,10 @@
 		"typescript": "5.8.3",
 		"vitest": "3.1.1"
 	},
-	"overrides": {
-		"zod": "4.1.11"
-	},
 	"optionalDependencies": {
 		"@rollup/rollup-linux-x64-gnu": "*"
+	},
+	"overrides": {
+		"zod": "4.1.11"
 	}
 }

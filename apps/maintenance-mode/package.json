@@ -1,7 +1,7 @@
 {
 	"name": "baergpt-maintenance-mode",
-	"private": true,
 	"version": "0.0.0",
+	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
@@ -9,8 +9,8 @@
 		"check-types": "tsc --noEmit",
 		"lint:check": "oxlint src",
 		"lint:write": "oxlint src --fix",
-		"prettier:check": "prettier  --check .",
-		"prettier:write": "prettier --write .",
+		"format:check": "oxfmt --check .",
+		"format:write": "oxfmt --write .",
 		"test:a11y": "npx playwright test tests/a11y --config=playwright.config.ts",
 		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts",
 		"preview": "vite preview"

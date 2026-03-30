@@ -1,37 +1,40 @@
 {
-  "name": "baergpt",
-  "version": "0.0.0",
-  "description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
-  "scripts": {
-    "test": "turbo run test",
-    "test:e2e": "turbo run test:e2e",
-    "build": "turbo run build",
-    "check-types": "turbo run check-types",
-    "lint:check": "turbo run lint:check",
-    "lint:write": "turbo run lint:write",
-    "prettier:check": "prettier --check \"**/*.{ts,tsx,md,sql}\"",
-    "prettier:write": "prettier --write \"**/*.{ts,tsx,md,sql}\"",
-    "dev": "turbo run dev"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/technologiestiftung/baergpt.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/technologiestiftung/baergpt/issues"
-  },
-  "homepage": "https://github.com/technologiestiftung/baergpt#readme",
-  "workspaces": [
-    "apps/*",
-    "libs/*"
-  ],
-  "devDependencies": {
-    "@repo/prettier": "file:libs/prettier",
-    "oxlint": "1.57.0",
-    "turbo": "2.5.8"
-  },
-  "packageManager": "npm@11.4.2"
+	"name": "baergpt",
+	"version": "0.0.0",
+	"description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
+	"keywords": [],
+	"homepage": "https://github.com/technologiestiftung/baergpt#readme",
+	"bugs": {
+		"url": "https://github.com/technologiestiftung/baergpt/issues"
+	},
+	"license": "ISC",
+	"author": "",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/technologiestiftung/baergpt.git"
+	},
+	"workspaces": [
+		"apps/*",
+		"libs/*"
+	],
+	"scripts": {
+		"test": "turbo run test",
+		"test:e2e": "turbo run test:e2e",
+		"build": "turbo run build",
+		"check-types": "turbo run check-types",
+		"lint:check": "turbo run lint:check",
+		"lint:write": "turbo run lint:write",
+		"format:check": "oxfmt --check",
+		"format:write": "oxfmt --write",
+		"format:sql:check": "prettier --check \"**/*.sql\"",
+		"format:sql:write": "prettier --write \"**/*.sql\"",
+		"dev": "turbo run dev"
+	},
+	"devDependencies": {
+		"@repo/prettier": "file:libs/prettier",
+		"oxfmt": "0.42.0",
+		"oxlint": "1.57.0",
+		"turbo": "2.5.8"
+	},
+	"packageManager": "npm@11.4.2"
 }
