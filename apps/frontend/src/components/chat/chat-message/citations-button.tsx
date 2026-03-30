@@ -9,16 +9,19 @@ import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loa
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
 import { useCitationsStore } from "../../../store/use-citations-store.ts";
 import type { CitationWithDetails } from "../../../common.ts";
+import type { WebCitationSource } from "../../../api/chat/get-completion.ts";
 
 interface CitationsButtonProps {
 	messageId: number;
 	citations: number[] | null;
+	webCitations: WebCitationSource[] | null;
 	isLastMessage: boolean;
 }
 
 export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	messageId,
 	citations,
+	webCitations,
 	isLastMessage,
 }) => {
 	const { status } = useInferenceLoadingStatusStore();
@@ -26,12 +29,14 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	const isLoadingLastCitations = isLastMessage && isLoadingCitations;
 
 	const { getCitation } = useCitationsStore();
-	const hasCitations =
+	const hasWebCitations = Boolean(webCitations && webCitations.length > 0);
+	const hasChunkCitations =
 		citations &&
 		citations.length > 0 &&
 		checkCitationsExists(citations, getCitation);
 
-	const isCitationsButtonVisible = hasCitations || isLoadingLastCitations;
+	const isCitationsButtonVisible =
+		hasChunkCitations || hasWebCitations || isLoadingLastCitations;
 
 	if (!isCitationsButtonVisible) {
 		return null;
@@ -69,7 +74,11 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 					</>
 				)}
 			</ChatButton>
-			<CitationsDialog messageId={messageId} citations={citations} />
+			<CitationsDialog
+				messageId={messageId}
+				citations={citations}
+				webCitations={webCitations}
+			/>
 		</>
 	);
 };
