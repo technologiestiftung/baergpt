@@ -1,0 +1,70 @@
+receivers:
+  # Render metrics stream sends OTLP HTTP with Bearer token.
+  # This listens on the Render web service PORT (public URL).
+  # Bearer token is validated via the bearertokenauth extension.
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:${PORT}
+        auth:
+          authenticator: bearertokenauth/render
+
+  # Render log stream sends syslog over TCP/TLS (RFC5424).
+  # This listens on port 5514, reachable via Render private network.
+  # If Render's platform log streaming can't reach internal addresses,
+  # this receiver will simply sit idle.
+  syslog:
+    protocol: rfc5424
+    tcp:
+      listen_address: 0.0.0.0:5514
+
+extensions:
+  # Validates the Bearer token Render sends with each OTLP request.
+  # Use the same token value when configuring the Render metrics stream.
+  bearertokenauth/render:
+    token: ${RENDER_OTEL_BEARER_TOKEN}
+
+  basicauth/stackit:
+    client_auth:
+      username: ${STACKIT_OBSERVABILITY_USERNAME}
+      password: ${STACKIT_OBSERVABILITY_PASSWORD}
+
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+  attributes/render:
+    actions:
+      - key: source
+        value: render
+        action: upsert
+      - key: environment
+        value: production
+        action: upsert
+
+exporters:
+  prometheusremotewrite/stackit:
+    endpoint: ${STACKIT_OBSERVABILITY_METRICS_PUSH_URL}
+    auth:
+      authenticator: basicauth/stackit
+
+  loki/stackit:
+    endpoint: ${STACKIT_OBSERVABILITY_LOGS_PUSH_URL}
+    auth:
+      authenticator: basicauth/stackit
+
+service:
+  extensions: [bearertokenauth/render, basicauth/stackit, health_check]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch, attributes/render]
+      exporters: [prometheusremotewrite/stackit]
+    logs:
+      receivers: [syslog]
+      processors: [batch, attributes/render]
+      exporters: [loki/stackit]
