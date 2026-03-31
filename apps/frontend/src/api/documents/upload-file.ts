@@ -10,7 +10,6 @@ export async function uploadFileToDb(
 	file: File,
 	filePath: string,
 ): Promise<void> {
-	//const { session } = useAuthStore.getState();
 	try {
 		const { error: uploadError } = await supabase.storage
 			.from("documents")

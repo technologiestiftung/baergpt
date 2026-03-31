@@ -79,7 +79,7 @@ export const content = `# UI Test Doc
 export const page = 1;
 export const chunk_index = 0;
 
-export const chunk_mistral_embedding = Array(1024).fill(0.0001);
+export const chunk_mistral_embedding = `[${Array(1024).fill(0.0001)}]`;
 
 export const secondaryDocumentName = "secondary_document.pdf";
 export const secondaryDocumentPath = resolve(

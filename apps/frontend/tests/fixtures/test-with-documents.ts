@@ -1,7 +1,7 @@
 import { supabaseAdminClient } from "../supabase.ts";
 import { testWithLoggedInUser } from "./test-with-logged-in-user.ts";
 import { expect, Page } from "@playwright/test";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, Session } from "@supabase/supabase-js";
 import { config } from "../config.ts";
 import type { Database } from "@repo/db-schema";
 import {
@@ -22,6 +22,7 @@ import {
 	tags,
 	defaultSourceType,
 	defaultBucketName,
+	seedDefaultDocumentName,
 } from "../constants.ts";
 import { readFileSync } from "node:fs";
 
@@ -33,6 +34,10 @@ export const testWithDocuments = testWithLoggedInUser.extend<{
 			/**
 			 * This happens before each test that uses this fixture.
 			 */
+
+			await uploadDefaultDocumentIfNecessary({ account, session });
+
+			// upload a personal document for the user
 			const documentChunkId = await mockDocumentUpload({
 				userId: account.id,
 				accessToken: session.access_token,
@@ -57,6 +62,66 @@ export const testWithDocuments = testWithLoggedInUser.extend<{
 	],
 });
 
+async function uploadDefaultDocumentIfNecessary(args: {
+	account: { email: string; password: string; id: string };
+	session: Session;
+}) {
+	const { count: count1, error } = await supabaseAdminClient
+		.from("documents")
+		.select("id", { count: "exact", head: true })
+		.eq("source_type", "default_document")
+		.eq("file_name", seedDefaultDocumentName);
+
+	expect(error).toBeNull();
+
+	if (count1 && count1 > 0) {
+		// Default document already exists, no need to upload again
+		return;
+	}
+
+	const { account, session } = args;
+
+	// Get the "Alle" access group ID for creating default documents
+	const { data: accessGroup, error: accessGroupError } =
+		await supabaseAdminClient
+			.from("access_groups")
+			.select("id")
+			.eq("name", "Alle")
+			.single();
+
+	expect(accessGroupError).toBeNull();
+
+	if (!accessGroup) {
+		throw new Error("Default access group 'Alle' not found");
+	}
+
+	// Create a mock default document
+	await mockDocumentUpload({
+		userId: account.id,
+		accessToken: session.access_token,
+		accessGroupId: accessGroup.id,
+		fileName: seedDefaultDocumentName,
+		filePath: defaultDocumentPath,
+		sourceType: "default_document" as const,
+		bucketName: "public_documents",
+	});
+
+	const { count: count2, error: defaultDocumentsError } =
+		await supabaseAdminClient
+			.from("documents")
+			.select("source_type,file_name", { count: "exact", head: true })
+			.eq("source_type", "default_document")
+			.eq("file_name", seedDefaultDocumentName);
+
+	expect(defaultDocumentsError).toBeNull();
+	expect(count2).toBe(1);
+}
+
+/**
+ * Mocks a full document upload:
+ * - uploads file to storage
+ * - inserts mock values into the db tables
+ */
 export async function mockDocumentUpload({
 	userId,
 	accessToken,
@@ -102,6 +167,33 @@ export async function mockDocumentUpload({
 
 	expect(uploadError).toBeNull();
 
+	return mockDocumentProcessing({
+		userId,
+		sourceUrl: source_url,
+		accessGroupId,
+		fileName,
+		sourceType,
+	});
+}
+
+/**
+ * Mocks a partial document upload:
+ * only inserts mock values into the db tables
+ * for a given file that already exists in storage
+ */
+export async function mockDocumentProcessing({
+	userId,
+	sourceUrl,
+	accessGroupId,
+	fileName,
+	sourceType,
+}: {
+	userId: string;
+	sourceUrl: string;
+	accessGroupId: string | null;
+	fileName: string;
+	sourceType: "public_document" | "personal_document" | "default_document";
+}) {
 	const { data: documentData, error: documentsInsertError } =
 		await supabaseAdminClient
 			.from("documents")
@@ -110,7 +202,7 @@ export async function mockDocumentUpload({
 				access_group_id: accessGroupId,
 				uploaded_by_user_id: accessGroupId ? userId : null,
 				source_type: sourceType,
-				source_url,
+				source_url: sourceUrl,
 				file_name: fileName,
 				file_checksum,
 				file_size,
@@ -167,7 +259,11 @@ export async function mockDocumentUpload({
 	return chunkData.id;
 }
 
-export async function uploadFileViaFileChooser({
+/**
+ * Makes a real file upload of a single file via the file chooser and waits for
+ * the file to be fully processed and appear in the document list.
+ */
+export async function uploadFileViaFileChooserAndWait({
 	fileName,
 	filePath,
 	page,
@@ -235,7 +331,51 @@ export async function uploadFileViaFileChooser({
 	return uploadedFile;
 }
 
-export async function uploadMultipleFilesViaFileChooser({
+/**
+ * Makes a real file upload of a single file via the file chooser without waiting for
+ * the file to be fully processed and appear in the document list.
+ * It's used for testing scenarios where we want to check intermediate states
+ * during upload/processing, or when we want to trigger an upload without
+ * needing it to complete.
+ */
+export async function attemptFileUploadViaFileChooser({
+	filePath,
+	page,
+	browserName,
+	uploadButtonName,
+}: {
+	page: Page;
+	filePath: string;
+	browserName: string;
+	uploadButtonName: string;
+}) {
+	await page.goto("/");
+
+	await page.waitForLoadState("networkidle");
+
+	if (browserName === "firefox") {
+		// Firefox: setup file chooser handler and use input element directly
+		page.on("filechooser", async (fileChooser) => {
+			// Dismiss any file chooser dialogs that might appear
+			await fileChooser.setFiles([]);
+		});
+
+		const fileInput = page.locator('input[type="file"]').first();
+		await fileInput.setInputFiles(filePath);
+	} else {
+		// Other browsers: use file chooser event
+		const fileChooserPromise = page.waitForEvent("filechooser");
+		await page.getByRole("button", { name: uploadButtonName }).click();
+		const fileChooser = await fileChooserPromise;
+		await fileChooser.setFiles(filePath);
+	}
+}
+
+/**
+ * Makes a real file upload of multiple files via the file chooser and waits for
+ * the files to be fully processed and appear in the document list.
+ */
+export async function uploadMultipleFilesViaFileChooserAndWait({
 	files,
 	page,
 	browserName,
@@ -313,7 +453,53 @@ export async function uploadMultipleFilesViaFileChooser({
 	return uploadedFiles;
 }
 
-export async function uploadFileViaDragAndDrop({
+/**
+ * Makes a real file upload of multiple files via the file chooser without waiting for
+ * the files to be fully processed and appear in the document list.
+ * It's used for testing scenarios where we want to check intermediate states
+ * during upload/processing, or when we want to trigger an upload without
+ * needing it to complete.
+ */
+export async function attemptMultipleFilesViaFileChooser({
+	files,
+	page,
+	browserName,
+	uploadButtonName,
+}: {
+	files: Array<{ name: string; path: string }>;
+	page: Page;
+	browserName: string;
+	uploadButtonName: string;
+}) {
+	await page.goto("/");
+
+	await page.waitForLoadState("networkidle");
+
+	const filePaths = files.map((file) => file.path);
+
+	if (browserName === "firefox") {
+		// Firefox: setup file chooser handler and use input element directly
+		page.on("filechooser", async (fileChooser) => {
+			// Dismiss any file chooser dialogs that might appear
+			await fileChooser.setFiles([]);
+		});
+
+		const fileInput = page.locator('input[type="file"]').first();
+		await fileInput.setInputFiles(filePaths);
+	} else {
+		// Other browsers: use file chooser event
+		const fileChooserPromise = page.waitForEvent("filechooser");
+		await page.getByRole("button", { name: uploadButtonName }).click();
+		const fileChooser = await fileChooserPromise;
+		await fileChooser.setFiles(filePaths);
+	}
+}
+
+/**
+ * Makes a real file upload of multiple files via drag and drop and waits for
+ * the files to be fully processed and appear in the document list.
+ */
+export async function uploadFileViaDragAndDropAndWait({
 	page,
 	filePath,
 	fileName,
@@ -375,6 +561,9 @@ export async function uploadFileViaDragAndDrop({
 	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
 }
 
+/**
+ * Deletes a file via the UI
+ */
 export async function deleteFileViaUI({
 	page,
 	fileName,
@@ -421,6 +610,10 @@ export async function deleteFileViaUI({
 	await expect(deletedDocumentLocator).not.toBeVisible();
 }
 
+/**
+ * Deletes all storage files, documents and related
+ * entries from the database for a given user.
+ */
 async function cleanup(userId: string) {
 	// Delete hidden default documents FIRST (before deleting the documents they reference)
 	const { error: deleteHiddenDefaultsError } = await supabaseAdminClient
