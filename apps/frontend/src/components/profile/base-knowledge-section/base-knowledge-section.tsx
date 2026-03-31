@@ -6,20 +6,20 @@ import ProfilePageSkeleton from "../../primitives/skeletons/profile-page-skeleto
 import { ChevronIcon } from "../../primitives/icons/chevron-icon";
 
 export const BaseKnowledgeSection: React.FC = () => {
-	const { getPublicDocuments, publicDocuments, isPublicDocumentsLoading } =
-		useDocumentStore();
+	const { publicDocuments, isPublicDocumentsLoading } = useDocumentStore();
 	const [showAllDocuments, setShowAllDocuments] = useState(false);
 
 	useEffect(() => {
 		const abortController = new AbortController();
 		const signal = abortController.signal;
 
-		getPublicDocuments(signal);
+		// Get stable reference via getState() to avoid infinite loop
+		useDocumentStore.getState().getPublicDocuments(signal);
 
 		return () => {
 			abortController.abort();
 		};
-	}, [getPublicDocuments]);
+	}, []);
 	const sortedBaseKnowledgeDocuments = [...publicDocuments].sort((a, b) =>
 		(a.file_name || "").localeCompare(b.file_name || ""),
 	);

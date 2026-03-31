@@ -14,7 +14,7 @@ import { ChevronIcon } from "../../components/primitives/icons/chevron-icon.tsx"
 import * as Sentry from "@sentry/react";
 
 export function RegisterPage() {
-	const { register, getAllowedEmailDomains } = useAuthStore();
+	const { register } = useAuthStore();
 	const { error } = useAuthErrorStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
@@ -24,12 +24,13 @@ export function RegisterPage() {
 
 	useEffect(() => {
 		const controller = new AbortController();
-		getAllowedEmailDomains(controller.signal);
+		// Get stable reference via getState() to avoid infinite loop
+		useAuthStore.getState().getAllowedEmailDomains(controller.signal);
 
 		return () => {
 			controller.abort();
 		};
-	}, [getAllowedEmailDomains]);
+	}, []);
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
