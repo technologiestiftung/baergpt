@@ -3,8 +3,8 @@
 	"version": "0.0.0",
 	"scripts": {
 		"check-types": "tsgo -config ./tsconfig.json",
-		"build": "tsgo -config ./tsconfig.json",
-		"start": "tsgo -config ./tsconfig.json && node --env-file-if-exists=.env dist/src/index.js",
+		"build": "tsc",
+		"start": "tsc && node --env-file-if-exists=.env dist/src/index.js",
 		"dev": "tsx --watch ./src/index.ts",
 		"test": "vitest run src",
 		"test:watch": "vitest watch src",
