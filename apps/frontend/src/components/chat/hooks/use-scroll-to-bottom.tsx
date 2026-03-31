@@ -15,5 +15,5 @@ export function useScrollToBottom(
 		}, 1);
 
 		return () => clearTimeout(timer);
-	}, [chats]);
+	}, [chats, scrollToBottom, ref]);
 }

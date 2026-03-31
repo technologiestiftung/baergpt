@@ -1,4 +1,4 @@
-import React, { useRef, useState, useLayoutEffect } from "react";
+import React, { useRef, useState, useLayoutEffect, useCallback } from "react";
 
 const lineClampStyle: { [key: number]: string } = {
 	2: "line-clamp-2",
@@ -17,7 +17,7 @@ export const TruncatedSnippet: React.FC<TruncatedSnippetProps> = ({
 	const invisibleMeasurementSpanRef = useRef<HTMLSpanElement>(null); // hidden element used for measuring
 	const [displayText, setDisplayText] = useState(text);
 
-	const updateTextTruncation = () => {
+	const updateTextTruncation = useCallback(() => {
 		if (!invisibleMeasurementSpanRef.current) {
 			return;
 		}
@@ -55,7 +55,7 @@ export const TruncatedSnippet: React.FC<TruncatedSnippetProps> = ({
 		}
 
 		setDisplayText(text.slice(0, mostFittingEnd) + suffix);
-	};
+	}, [text, lines]);
 
 	useLayoutEffect(() => {
 		updateTextTruncation();
@@ -71,7 +71,7 @@ export const TruncatedSnippet: React.FC<TruncatedSnippetProps> = ({
 		return () => {
 			observer.disconnect();
 		};
-	}, [text, lines]);
+	}, [text, lines, updateTextTruncation]);
 
 	return (
 		<>

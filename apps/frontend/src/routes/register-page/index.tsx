@@ -29,7 +29,7 @@ export function RegisterPage() {
 		return () => {
 			controller.abort();
 		};
-	}, []);
+	}, [getAllowedEmailDomains]);
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();

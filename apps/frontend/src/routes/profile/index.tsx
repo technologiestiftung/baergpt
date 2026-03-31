@@ -23,7 +23,7 @@ export function ProfilePage() {
 		return () => {
 			controller.abort();
 		};
-	}, []);
+	}, [getAllowedEmailDomains]);
 
 	if (!session) {
 		return null;

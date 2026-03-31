@@ -18,7 +18,7 @@ export function useIsCollapsibleOpen() {
 		}
 
 		setIsCollapsibleOpen(true);
-	}, [selectedChatFolders, selectedChatDocuments]);
+	}, [selectedChatFolders, selectedChatDocuments, hasItems]);
 
 	return [isCollapsibleOpen, setIsCollapsibleOpen] as const;
 }

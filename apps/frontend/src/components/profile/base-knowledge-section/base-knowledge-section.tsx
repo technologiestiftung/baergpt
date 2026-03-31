@@ -19,7 +19,7 @@ export const BaseKnowledgeSection: React.FC = () => {
 		return () => {
 			abortController.abort();
 		};
-	}, []);
+	}, [getPublicDocuments]);
 	const sortedBaseKnowledgeDocuments = [...publicDocuments].sort((a, b) =>
 		(a.file_name || "").localeCompare(b.file_name || ""),
 	);

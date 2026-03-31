@@ -19,7 +19,7 @@ export function useSessionRedirect() {
 		if (!session) {
 			return;
 		}
-	}, [session]);
+	}, [session, location.pathname, navigate]);
 }
 
 function redirectBasedOnSession({

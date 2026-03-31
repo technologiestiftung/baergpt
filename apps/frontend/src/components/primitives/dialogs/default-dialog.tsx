@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 
 interface DefaultDialogProps {
 	children?: React.ReactNode;
@@ -16,15 +16,12 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 }) => {
 	const dialogRef = useRef<HTMLDialogElement | null>(null);
 
-	useEffect(() => {
-		document.addEventListener("mousedown", handleClickListener);
+	const closeDialog = useCallback(() => {
+		dialogRef.current?.close();
+		afterClose?.();
+	}, [afterClose]);
 
-		return () => {
-			document.removeEventListener("mousedown", handleClickListener);
-		};
-	}, []);
-
-	const handleClickListener = (event: MouseEvent) => {
+	const handleClickListener = useCallback((event: MouseEvent) => {
 		if (!dialogRef.current) {
 			return;
 		}
@@ -40,12 +37,15 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 		}
 
 		closeDialog();
-	};
+	}, [closeDialog]);
 
-	const closeDialog = () => {
-		dialogRef.current?.close();
-		afterClose?.();
-	};
+	useEffect(() => {
+		document.addEventListener("mousedown", handleClickListener);
+
+		return () => {
+			document.removeEventListener("mousedown", handleClickListener);
+		};
+	}, [handleClickListener]);
 
 	return (
 		<dialog
