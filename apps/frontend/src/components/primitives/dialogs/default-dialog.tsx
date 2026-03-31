@@ -21,23 +21,26 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 		afterClose?.();
 	}, [afterClose]);
 
-	const handleClickListener = useCallback((event: MouseEvent) => {
-		if (!dialogRef.current) {
-			return;
-		}
+	const handleClickListener = useCallback(
+		(event: MouseEvent) => {
+			if (!dialogRef.current) {
+				return;
+			}
 
-		/**
-		 * This is confusing, yet correct. The dialog element spreads over the whole screen.
-		 * If the user clicks on something inside the dialog, the event target won't be the dialog itself.
-		 */
-		const isClickOnDialogBackground = event.target === dialogRef.current;
+			/**
+			 * This is confusing, yet correct. The dialog element spreads over the whole screen.
+			 * If the user clicks on something inside the dialog, the event target won't be the dialog itself.
+			 */
+			const isClickOnDialogBackground = event.target === dialogRef.current;
 
-		if (!isClickOnDialogBackground) {
-			return;
-		}
+			if (!isClickOnDialogBackground) {
+				return;
+			}
 
-		closeDialog();
-	}, [closeDialog]);
+			closeDialog();
+		},
+		[closeDialog],
+	);
 
 	useEffect(() => {
 		document.addEventListener("mousedown", handleClickListener);
