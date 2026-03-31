@@ -82,7 +82,7 @@ export const Content = {
 
 	/* -------------------- Privacy Policy Page -------------------- */
 	"privacyPolicyPage.h1": "Datenschutzerklärung",
-	"privacyPolicyPage.date": "Stand Oktober 2025",
+	"privacyPolicyPage.date": "Stand März 2026",
 	"privacyPolicyPage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"privacyPolicyPage.section1.title": "Einleitung und Anwendungsbereich",
@@ -181,7 +181,7 @@ export const Content = {
 		"Löschung nach Abschluss der Auswertung",
 	"privacyPolicyPage.section6.li5.title": "Backups: ",
 	"privacyPolicyPage.section6.li5.description":
-		"Löschung nach festem Rotationsplan (derzeit sieben Tage)",
+		"Löschung nach festem Rotationsplan (derzeit 30 Tage)",
 	//Section 7
 	"privacyPolicyPage.section7.title": "Empfänger und Weitergabe von Daten",
 	"privacyPolicyPage.section7.p1":
