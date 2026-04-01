@@ -57,6 +57,10 @@ exporters:
     auth:
       authenticator: basicauth/stackit
 
+  telemetry:
+    logs:
+      level: debug
+
 service:
   telemetry:
     logs:
