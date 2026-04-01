@@ -58,6 +58,9 @@ exporters:
       authenticator: basicauth/stackit
 
 service:
+  telemetry:
+    logs:
+      level: debug
   extensions: [bearertokenauth/render, basicauth/stackit, health_check]
   pipelines:
     metrics:
