@@ -12,6 +12,7 @@ import {
 import { documentProcessSchema } from "../schemas/document-process-schema";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
+import { logMemory } from "../monitoring/memory-logger";
 
 const documents = new Hono();
 
@@ -24,10 +25,11 @@ documents.post("/process", async (c: Context) => {
 
 	let sourceUrl: string | null = null;
 	let bucket: string | null = null;
+	const authenticatedUserId = c.get("authenticatedUserId");
+	const reqId = (authenticatedUserId as string)?.slice(0, 8) ?? "no-user";
 
 	try {
-		// Get authenticated user ID from context (set by basicAuth middleware)
-		const authenticatedUserId = c.get("authenticatedUserId");
+		logMemory("doc:start", reqId);
 		// Parse and validate request body
 		const body = await c.req.json();
 		const parseResult = documentProcessSchema.parse(body);
@@ -54,6 +56,10 @@ documents.post("/process", async (c: Context) => {
 		};
 		const extractionResult = await userScopedDbService.extractDocument(
 			documentForExtraction,
+		);
+		logMemory(
+			`doc:after-extract (pages=${extractionResult.numPages}, size=${extractionResult.fileSize})`,
+			reqId,
 		);
 
 		// Step 2: Process document (embed and summarize)
@@ -87,6 +93,7 @@ documents.post("/process", async (c: Context) => {
 			embeddingService.batchEmbed(parsedPages, documentForProcessing),
 		]);
 
+		logMemory(`doc:after-embed+summarize (chunks=${embeddings.length})`, reqId);
 		// Step 3: Create complete document record
 		await userScopedDbService.logProcessedDocument(
 			documentForProcessing,
@@ -94,8 +101,10 @@ documents.post("/process", async (c: Context) => {
 			embeddings,
 		);
 
+		logMemory("doc:complete", reqId);
 		return c.body(null, 204);
 	} catch (error) {
+		logMemory("doc:error", reqId);
 		captureError(error);
 
 		// Handle Zod validation errors separately

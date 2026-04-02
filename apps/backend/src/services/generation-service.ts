@@ -10,6 +10,7 @@ import {
 	streamText,
 } from "ai";
 import { ModelService } from "./model-service";
+import { logMemory } from "../monitoring/memory-logger";
 import { EmbeddingService } from "./embedding-service";
 import {
 	LangfuseClient,
@@ -266,6 +267,8 @@ export class GenerationService {
 			activeTools?: ActiveTools[];
 		} = {},
 	): Promise<Response> {
+		const reqId = sessionId ? String(sessionId).slice(0, 8) : "no-session";
+		logMemory("chat:start", reqId);
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
 		if (activeTools.includes("baseKnowledgeSearchTool") && userId) {
 			knowledgeBaseDocuments =
@@ -317,6 +320,10 @@ export class GenerationService {
 					},
 				}),
 			{ queueType: "llm" },
+		);
+		logMemory(
+			`chat:after-generateText (steps=${generationResult.steps.length}, tokens=${generationResult.usage?.totalTokens ?? 0})`,
+			reqId,
 		);
 		if (userId && generationResult.usage?.totalTokens) {
 			try {
@@ -381,6 +388,10 @@ export class GenerationService {
 								},
 							},
 							onFinish: async ({ text, usage }) => {
+								logMemory(
+									`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
+									reqId,
+								);
 								if (typeof toolsCleanup === "function") {
 									await toolsCleanup();
 								}
@@ -537,6 +548,7 @@ export class GenerationService {
 									}
 								}
 
+								logMemory("chat:onFinish-complete", reqId);
 								updateActiveTrace({
 									name: "streamed-text-generation",
 									output: text,
@@ -573,6 +585,7 @@ export class GenerationService {
 								},
 							},
 							onError: (error) => {
+								logMemory("chat:onError", reqId);
 								captureError(error);
 							},
 						}),
