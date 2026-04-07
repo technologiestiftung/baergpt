@@ -265,7 +265,7 @@ async function cleanupIfNecessary(filePath: string, span: Span) {
 		await isDocumentInDatabase(filePath);
 
 	if (isDocumentInDbError) {
-		useErrorStore.getState().handleError(isFileInStorageError, span);
+		useErrorStore.getState().handleError(isDocumentInDbError, span);
 		return;
 	}
 
