@@ -3,6 +3,11 @@ import { testWithMockedSplashScreenContent } from "../fixtures/test-with-mocked-
 import { MOCK_SPLASH_RELEASE_SHA, VERSION_STORAGE_KEY } from "../constants.ts";
 
 testWithMockedSplashScreenContent.describe("Splash Modal", () => {
+	testWithMockedSplashScreenContent.skip(
+		process.env.VITE_SPLASH_SCREEN_ENABLED !== "true",
+		"Skipping splash modal tests because the feature is disabled",
+	);
+
 	testWithMockedSplashScreenContent(
 		"should display splash modal on first visit",
 		async ({ page }) => {
