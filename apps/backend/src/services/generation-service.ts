@@ -35,7 +35,7 @@ import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
 } from "../schemas/citation-answer-schema";
-import { resilientCall } from "../utils";
+import { resilientCall, wait } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
@@ -374,6 +374,13 @@ export class GenerationService {
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);
 		}
+
+		/**
+		 * calling the Mistral API immediately after another LLM call can sometimes
+		 * lead to issues, so we add a short delay here as a workaround
+		 */
+		await wait(100);
+
 		const stream = createUIMessageStream({
 			execute: async ({ writer }) => {
 				const streamResponse = await resilientCall(
