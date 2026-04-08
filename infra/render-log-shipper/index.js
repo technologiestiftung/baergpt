@@ -38,6 +38,15 @@ const RESOURCE_IDS = process.env.RENDER_RESOURCE_IDS.split(",").map((s) =>
 	s.trim(),
 );
 const LOKI_PUSH_URL = process.env.LOKI_PUSH_URL;
+if (
+	!LOKI_PUSH_URL.startsWith("https://") ||
+	!LOKI_PUSH_URL.includes("stackit.cloud")
+) {
+	console.error(
+		"LOKI_PUSH_URL must be an HTTPS endpoint on stackit.cloud",
+	);
+	process.exit(1);
+}
 const LOKI_USERNAME = process.env.LOKI_USERNAME;
 const LOKI_PASSWORD = process.env.LOKI_PASSWORD;
 const POLL_INTERVAL_MS =
@@ -83,7 +92,10 @@ async function fetchLogs() {
 	let nextStart = data.nextStartTime;
 	let nextEnd = data.nextEndTime;
 
-	while (hasMore) {
+	const MAX_PAGES = 10;
+	let page = 0;
+	while (hasMore && page < MAX_PAGES) {
+		page++;
 		const pageParams = new URLSearchParams();
 		pageParams.set("ownerId", RENDER_OWNER_ID);
 		pageParams.set("startTime", nextStart);
