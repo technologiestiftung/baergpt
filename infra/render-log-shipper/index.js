@@ -34,14 +34,12 @@ for (const key of requiredEnv) {
 
 const RENDER_API_KEY = process.env.RENDER_API_KEY;
 const RENDER_OWNER_ID = process.env.RENDER_OWNER_ID;
-const RESOURCE_IDS = process.env.RENDER_RESOURCE_IDS.split(",").map((s) =>
-	s.trim(),
-);
+const RESOURCE_IDS = process.env.RENDER_RESOURCE_IDS.split(",")
+	.map((s) => s.trim())
+	.filter(Boolean);
 const LOKI_PUSH_URL = process.env.LOKI_PUSH_URL;
-if (
-	!LOKI_PUSH_URL.startsWith("https://") ||
-	!LOKI_PUSH_URL.includes("stackit.cloud")
-) {
+const lokiHost = new URL(LOKI_PUSH_URL).hostname;
+if (!lokiHost.endsWith(".stackit.cloud")) {
 	console.error(
 		"LOKI_PUSH_URL must be an HTTPS endpoint on stackit.cloud",
 	);
@@ -86,7 +84,6 @@ async function fetchLogs() {
 	const data = await response.json();
 	const logs = data.logs || [];
 
-	// Paginate if there are more results
 	let allLogs = [...logs];
 	let hasMore = data.hasMore;
 	let nextStart = data.nextStartTime;
@@ -113,13 +110,22 @@ async function fetchLogs() {
 			},
 		);
 
-		if (!pageResponse.ok) break;
+		if (!pageResponse.ok) {
+			console.warn(
+				`Pagination request failed: ${pageResponse.status}, stopping pagination`,
+			);
+			break;
+		}
 
 		const pageData = await pageResponse.json();
 		allLogs = allLogs.concat(pageData.logs || []);
 		hasMore = pageData.hasMore;
 		nextStart = pageData.nextStartTime;
 		nextEnd = pageData.nextEndTime;
+	}
+
+	if (hasMore) {
+		console.warn(`Hit MAX_PAGES (${MAX_PAGES}), some logs may be deferred to next cycle`);
 	}
 
 	return allLogs;
@@ -134,7 +140,6 @@ function labelsFromLog(log) {
 }
 
 function toLokiPayload(logs) {
-	// Group logs by their label set (Loki requires one stream per unique label combo)
 	const streams = new Map();
 
 	for (const log of logs) {
@@ -145,8 +150,8 @@ function toLokiPayload(logs) {
 			streams.set(key, { stream: labels, values: [] });
 		}
 
-		// Loki expects [timestamp_ns_string, log_line]
-		const tsNanos = String(new Date(log.timestamp).getTime() * 1_000_000);
+		// String concatenation avoids Number overflow (ms * 1e6 > MAX_SAFE_INTEGER)
+		const tsNanos = String(new Date(log.timestamp).getTime()) + "000000";
 		streams.get(key).values.push([tsNanos, log.message]);
 	}
 
@@ -172,31 +177,36 @@ async function pushToLoki(logs) {
 
 	if (!response.ok) {
 		const body = await response.text();
-		console.error(`Loki push failed: ${response.status} ${body}`);
-	} else {
-		console.log(`Pushed ${logs.length} log entries to Loki`);
+		throw new Error(`Loki push failed: ${response.status} ${body}`);
 	}
+
+	console.log(`Pushed ${logs.length} log entries to Loki`);
 }
 
 async function poll() {
 	try {
 		const logs = await fetchLogs();
+		if (logs.length === 0) return;
+
 		await pushToLoki(logs);
 
-		if (logs.length > 0) {
-			// Advance the cursor to the latest log timestamp + 1ms to avoid duplicates
-			const latestTs = logs[logs.length - 1].timestamp;
-			lastPollTime = new Date(
-				new Date(latestTs).getTime() + 1,
-			).toISOString();
-		}
+		// Only advance cursor after successful push
+		const latestTs = logs.reduce(
+			(max, log) => Math.max(max, new Date(log.timestamp).getTime()),
+			0,
+		);
+		lastPollTime = new Date(latestTs + 1).toISOString();
 	} catch (err) {
 		console.error("Poll cycle failed:", err.message);
 	}
 }
 
+async function loop() {
+	await poll();
+	setTimeout(loop, POLL_INTERVAL_MS);
+}
+
 console.log(
 	`Starting log shipper: polling every ${POLL_INTERVAL_MS / 1000}s for ${RESOURCE_IDS.length} services`,
 );
-poll();
-setInterval(poll, POLL_INTERVAL_MS);
+loop();
