@@ -8,15 +8,15 @@ Polls Render's REST API for logs from specified services and pushes them to STAC
 2. Point it at this repo, set the root directory to `infra/render-log-shipper`.
 3. Set the following environment variables:
 
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `RENDER_API_KEY` | Render API key | Create at Account Settings → API Keys |
-| `RENDER_OWNER_ID` | Your workspace/owner ID | Found in workspace settings URL |
-| `RENDER_RESOURCE_IDS` | Comma-separated service IDs | e.g. `srv-abc123,srv-def456` |
-| `LOKI_PUSH_URL` | STACKIT Loki Ingest URL | The "Ingest" endpoint from your Observability instance |
-| `LOKI_USERNAME` | STACKIT Observability username | From Observability credentials |
-| `LOKI_PASSWORD` | STACKIT Observability password | From Observability credentials |
-| `POLL_INTERVAL_SECONDS` | `60` | How often to poll (default: 60) |
+| Variable                | Value                          | Notes                                                  |
+| ----------------------- | ------------------------------ | ------------------------------------------------------ |
+| `RENDER_API_KEY`        | Render API key                 | Create at Account Settings → API Keys                  |
+| `RENDER_OWNER_ID`       | Your workspace/owner ID        | Found in workspace settings URL                        |
+| `RENDER_RESOURCE_IDS`   | Comma-separated service IDs    | e.g. `srv-abc123,srv-def456`                           |
+| `LOKI_PUSH_URL`         | STACKIT Loki Ingest URL        | The "Ingest" endpoint from your Observability instance |
+| `LOKI_USERNAME`         | STACKIT Observability username | From Observability credentials                         |
+| `LOKI_PASSWORD`         | STACKIT Observability password | From Observability credentials                         |
+| `POLL_INTERVAL_SECONDS` | `60`                           | How often to poll (default: 60)                        |
 
 4. Deploy.
 
