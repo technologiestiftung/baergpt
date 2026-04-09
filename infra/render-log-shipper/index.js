@@ -4,19 +4,17 @@
  * Polls Render's REST API for logs from specified services
  * and pushes them to STACKIT Observability's Loki endpoint.
  *
- * Environment variables:
- *   RENDER_API_KEY          - Render API key (Bearer token)
- *   RENDER_OWNER_ID         - Render workspace/owner ID
- *   RENDER_RESOURCE_IDS     - Comma-separated list of Render service IDs to collect logs from
- *   LOKI_PUSH_URL           - STACKIT Loki push endpoint (e.g. https://logs.stackitXX.argus.eu01.stackit.cloud/instances/.../loki/api/v1/push)
- *   LOKI_USERNAME           - STACKIT Observability username
- *   LOKI_PASSWORD           - STACKIT Observability password
- *   POLL_INTERVAL_SECONDS   - How often to poll (default: 60)
+ * Env vars: RENDER_API_KEY, RENDER_OWNER_ID, RENDER_RESOURCE_IDS,
+ *           LOKI_PUSH_URL, LOKI_USERNAME, LOKI_PASSWORD, POLL_INTERVAL_SECONDS
  */
 
-const RENDER_API_BASE = "https://api.render.com/v1";
+const RENDER_LOGS_URL = "https://api.render.com/v1/logs";
+const MAX_PAGES = 10;
+const LOGS_PER_PAGE = "100";
+const NANOSECOND_SUFFIX = "000000";
+const CURSOR_ADVANCE_MS = 1;
 
-const requiredEnv = [
+const REQUIRED_ENV = [
 	"RENDER_API_KEY",
 	"RENDER_OWNER_ID",
 	"RENDER_RESOURCE_IDS",
@@ -25,154 +23,132 @@ const requiredEnv = [
 	"LOKI_PASSWORD",
 ];
 
-for (const key of requiredEnv) {
+for (const key of REQUIRED_ENV) {
 	if (!process.env[key]) {
-		console.error(`Missing required environment variable: ${key}`);
+		console.error(`Missing required env var: ${key}`);
 		process.exit(1);
 	}
 }
 
-const RENDER_API_KEY = process.env.RENDER_API_KEY;
-const RENDER_OWNER_ID = process.env.RENDER_OWNER_ID;
-const RESOURCE_IDS = process.env.RENDER_RESOURCE_IDS.split(",")
-	.map((s) => s.trim())
-	.filter(Boolean);
-const LOKI_PUSH_URL = process.env.LOKI_PUSH_URL;
-const lokiHost = new URL(LOKI_PUSH_URL).hostname;
-if (!lokiHost.endsWith(".stackit.cloud")) {
-	console.error(
-		"LOKI_PUSH_URL must be an HTTPS endpoint on stackit.cloud",
-	);
+const {
+	RENDER_API_KEY,
+	RENDER_OWNER_ID,
+	RENDER_RESOURCE_IDS,
+	LOKI_PUSH_URL,
+	LOKI_USERNAME,
+	LOKI_PASSWORD,
+} = process.env;
+
+if (!new URL(LOKI_PUSH_URL).hostname.endsWith(".stackit.cloud")) {
+	console.error("LOKI_PUSH_URL must be an HTTPS endpoint on stackit.cloud");
 	process.exit(1);
 }
-const LOKI_USERNAME = process.env.LOKI_USERNAME;
-const LOKI_PASSWORD = process.env.LOKI_PASSWORD;
-const POLL_INTERVAL_MS =
+
+const resourceIds = RENDER_RESOURCE_IDS.split(",")
+	.map((id) => id.trim())
+	.filter(Boolean); // remove empty strings
+
+const pollIntervalMs =
 	(parseInt(process.env.POLL_INTERVAL_SECONDS, 10) || 60) * 1000;
 
-let lastPollTime = new Date(Date.now() - POLL_INTERVAL_MS).toISOString();
+const lokiAuth =
+	"Basic " +
+	Buffer.from(`${LOKI_USERNAME}:${LOKI_PASSWORD}`).toString("base64");
 
-async function fetchLogs() {
-	const params = new URLSearchParams();
-	params.set("ownerId", RENDER_OWNER_ID);
-	params.set("startTime", lastPollTime);
-	params.set("endTime", new Date().toISOString());
-	params.set("direction", "forward");
-	params.set("limit", "100");
+let lastPollTime = new Date(Date.now() - pollIntervalMs).toISOString();
 
-	for (const id of RESOURCE_IDS) {
+function buildLogParams(startTime, endTime) {
+	const params = new URLSearchParams({
+		ownerId: RENDER_OWNER_ID,
+		startTime,
+		endTime,
+		direction: "forward",
+		limit: LOGS_PER_PAGE,
+	});
+	for (const id of resourceIds) {
 		params.append("resource", id);
 	}
+	return params;
+}
 
-	const url = `${RENDER_API_BASE}/logs?${params}`;
-	const response = await fetch(url, {
-		headers: { Authorization: `Bearer ${RENDER_API_KEY}` },
-	});
+async function fetchRenderLogs(startTime, endTime) {
+	const response = await fetch(
+		`${RENDER_LOGS_URL}?${buildLogParams(startTime, endTime)}`,
+		{ headers: { Authorization: `Bearer ${RENDER_API_KEY}` } },
+	);
 
 	if (response.status === 429) {
-		console.warn("Rate limited by Render API, will retry next cycle");
-		return [];
+		console.warn("Rate limited by Render API, retrying next cycle");
+		return { logs: [], hasMore: false };
 	}
 
 	if (!response.ok) {
 		console.error(
-			`Render API error: ${response.status} ${response.statusText}`,
+			`Render API error (${startTime}–${endTime}): ${response.status} ${response.statusText}`,
 		);
-		return [];
+		return { logs: [], hasMore: false };
 	}
 
-	const data = await response.json();
-	const logs = data.logs || [];
+	return await response.json();
+}
 
-	let allLogs = [...logs];
-	let hasMore = data.hasMore;
-	let nextStart = data.nextStartTime;
-	let nextEnd = data.nextEndTime;
+async function fetchAllLogs() {
+	const firstPage = await fetchRenderLogs(
+		lastPollTime,
+		new Date().toISOString(),
+	);
+	const allLogs = [...(firstPage.logs || [])];
 
-	const MAX_PAGES = 10;
-	let page = 0;
-	while (hasMore && page < MAX_PAGES) {
-		page++;
-		const pageParams = new URLSearchParams();
-		pageParams.set("ownerId", RENDER_OWNER_ID);
-		pageParams.set("startTime", nextStart);
-		pageParams.set("endTime", nextEnd);
-		pageParams.set("direction", "forward");
-		pageParams.set("limit", "100");
-		for (const id of RESOURCE_IDS) {
-			pageParams.append("resource", id);
-		}
+	let { hasMore, nextStartTime, nextEndTime } = firstPage;
 
-		const pageResponse = await fetch(
-			`${RENDER_API_BASE}/logs?${pageParams}`,
-			{
-				headers: { Authorization: `Bearer ${RENDER_API_KEY}` },
-			},
-		);
+	for (let page = 0; hasMore && page < MAX_PAGES; page++) {
+		const nextPage = await fetchRenderLogs(nextStartTime, nextEndTime);
 
-		if (!pageResponse.ok) {
-			console.warn(
-				`Pagination request failed: ${pageResponse.status}, stopping pagination`,
-			);
-			break;
-		}
-
-		const pageData = await pageResponse.json();
-		allLogs = allLogs.concat(pageData.logs || []);
-		hasMore = pageData.hasMore;
-		nextStart = pageData.nextStartTime;
-		nextEnd = pageData.nextEndTime;
+		allLogs.push(...(nextPage.logs || []));
+		hasMore = nextPage.hasMore;
+		nextStartTime = nextPage.nextStartTime;
+		nextEndTime = nextPage.nextEndTime;
 	}
 
 	if (hasMore) {
-		console.warn(`Hit MAX_PAGES (${MAX_PAGES}), some logs may be deferred to next cycle`);
+		console.warn(
+			`Hit MAX_PAGES (${MAX_PAGES}), remaining logs deferred to next cycle`,
+		);
 	}
 
 	return allLogs;
-}
-
-function labelsFromLog(log) {
-	const labels = { source: "render" };
-	for (const label of log.labels || []) {
-		labels[label.name] = label.value;
-	}
-	return labels;
 }
 
 function toLokiPayload(logs) {
 	const streams = new Map();
 
 	for (const log of logs) {
-		const labels = labelsFromLog(log);
-		const key = JSON.stringify(labels, Object.keys(labels).sort());
+		const labels = { source: "render" };
+		for (const label of log.labels || []) {
+			labels[label.name] = label.value;
+		}
 
+		const key = JSON.stringify(labels, Object.keys(labels).sort());
 		if (!streams.has(key)) {
 			streams.set(key, { stream: labels, values: [] });
 		}
 
-		// String concatenation avoids Number overflow (ms * 1e6 > MAX_SAFE_INTEGER)
-		const tsNanos = String(new Date(log.timestamp).getTime()) + "000000";
-		streams.get(key).values.push([tsNanos, log.message]);
+		const timestampNanos =
+			String(new Date(log.timestamp).getTime()) + NANOSECOND_SUFFIX;
+		streams.get(key).values.push([timestampNanos, log.message]);
 	}
 
 	return { streams: Array.from(streams.values()) };
 }
 
 async function pushToLoki(logs) {
-	if (logs.length === 0) return;
-
-	const payload = toLokiPayload(logs);
-	const auth = Buffer.from(`${LOKI_USERNAME}:${LOKI_PASSWORD}`).toString(
-		"base64",
-	);
-
 	const response = await fetch(LOKI_PUSH_URL, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Basic ${auth}`,
+			Authorization: lokiAuth,
 		},
-		body: JSON.stringify(payload),
+		body: JSON.stringify(toLokiPayload(logs)),
 	});
 
 	if (!response.ok) {
@@ -183,30 +159,34 @@ async function pushToLoki(logs) {
 	console.log(`Pushed ${logs.length} log entries to Loki`);
 }
 
+function getLatestTimestamp(logs) {
+	return logs.reduce(
+		(max, log) => Math.max(max, new Date(log.timestamp).getTime()),
+		0,
+	);
+}
+
 async function poll() {
 	try {
-		const logs = await fetchLogs();
+		const logs = await fetchAllLogs();
 		if (logs.length === 0) return;
 
 		await pushToLoki(logs);
 
-		// Only advance cursor after successful push
-		const latestTs = logs.reduce(
-			(max, log) => Math.max(max, new Date(log.timestamp).getTime()),
-			0,
-		);
-		lastPollTime = new Date(latestTs + 1).toISOString();
-	} catch (err) {
-		console.error("Poll cycle failed:", err.message);
+		lastPollTime = new Date(
+			getLatestTimestamp(logs) + CURSOR_ADVANCE_MS,
+		).toISOString();
+	} catch (error) {
+		console.error("Poll cycle failed:", error.message);
 	}
 }
 
-async function loop() {
+async function startPolling() {
 	await poll();
-	setTimeout(loop, POLL_INTERVAL_MS);
+	setTimeout(startPolling, pollIntervalMs);
 }
 
 console.log(
-	`Starting log shipper: polling every ${POLL_INTERVAL_MS / 1000}s for ${RESOURCE_IDS.length} services`,
+	`Log shipper: polling every ${pollIntervalMs / 1000}s for ${resourceIds.length} services`,
 );
-loop();
+startPolling();
