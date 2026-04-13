@@ -32,6 +32,7 @@ export interface Config {
 	braveSearchApiUrl?: string;
 	braveSearchMaxRPS?: number;
 	featureFlagWebSearchAllowed: boolean;
+	featureFlagMemoryLog: boolean;
 }
 
 /* eslint-disable-next-line complexity */
@@ -173,4 +174,5 @@ export const config: Config = {
 		: undefined,
 	featureFlagWebSearchAllowed:
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
+	featureFlagMemoryLog: process.env.FEATURE_FLAG_MEMORY_LOG === "true",
 };

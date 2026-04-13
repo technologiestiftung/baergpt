@@ -118,6 +118,23 @@ export function initQueues(): Promise<void> {
 	return readyPromise;
 }
 
+export function getQueueCounts(): {
+	mistral: { queued: number; running: number } | null;
+	webSearch: { queued: number; running: number } | null;
+} {
+	const getCounts = (limiter: Bottleneck | undefined) => {
+		if (!limiter) {
+			return null;
+		}
+		const c = limiter.counts();
+		return { queued: c.QUEUED + c.RECEIVED, running: c.RUNNING + c.EXECUTING };
+	};
+	return {
+		mistral: getCounts(mistralLimiter),
+		webSearch: getCounts(webSearchLimiter),
+	};
+}
+
 export async function scheduleDistributed<T>(
 	queueType: QueueType,
 	task: () => Promise<T>,

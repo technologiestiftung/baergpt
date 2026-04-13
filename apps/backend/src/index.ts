@@ -10,6 +10,7 @@ import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
 import { captureError } from "./monitoring/capture-error";
 import { initQueues } from "./services/distributed-limiter";
+import { logMemory } from "./monitoring/memory-logger";
 
 verifyConfig();
 
@@ -55,6 +56,11 @@ if (require.main === module) {
 			});
 			/* eslint-disable-next-line no-console */
 			console.info(`Server is running on port ${config.port}...`);
+			const memoryLogInterval = setInterval(
+				() => logMemory("periodic"),
+				30_000,
+			);
+			process.on("SIGTERM", () => clearInterval(memoryLogInterval));
 		} catch (error) {
 			captureError(error);
 
