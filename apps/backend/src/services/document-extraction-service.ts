@@ -8,6 +8,7 @@ import mammoth from "mammoth";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
 import { getDocumentProxy } from "unpdf";
+import { ocrTempFileName } from "../constants";
 
 export class DocumentExtractionService {
 	async extractDocument(
@@ -15,17 +16,17 @@ export class DocumentExtractionService {
 		document: Document,
 	): Promise<ExtractionResult> {
 		const fileName = document.source_url.split("/").pop();
+		const checksum = getHash(fileBytes);
+		const fileSize = fileBytes.byteLength;
+
 		if (
-			fileName?.toLowerCase().endsWith(".doc") ||
-			fileName?.toLowerCase().endsWith(".docx")
+			fileName.toLowerCase().endsWith(".doc") ||
+			fileName.toLowerCase().endsWith(".docx")
 		) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
 				createBufferView(fileBytes),
-				fileName,
 			);
-			const checksum = getHash(fileBytes);
-			const fileSize = fileBytes.byteLength;
 
 			return {
 				document: document,
@@ -34,18 +35,18 @@ export class DocumentExtractionService {
 				checksum: checksum,
 				parsedPages: [
 					{
-						content: wordContent ?? "",
+						content: wordContent,
 						pageNumber: 1,
-						tokenCount: countTokens(wordContent ?? ""),
+						tokenCount: countTokens(wordContent),
 					},
 				],
 			};
-		} else if (fileName?.toLowerCase().endsWith(".xlsx")) {
+		}
+
+		if (fileName.toLowerCase().endsWith(".xlsx")) {
 			const excelExtractor = new ExcelExtractionService();
 			const parsedExcelPages =
 				await excelExtractor.extractExcelDocument(fileBytes);
-			const checksum = getHash(fileBytes);
-			const fileSize = fileBytes.byteLength;
 
 			return {
 				document: document,
@@ -58,12 +59,7 @@ export class DocumentExtractionService {
 
 		// Use lightweight parsing to determine page count without leaving memory footprint
 		const numPages = await this.getPdfPageCount(fileBytes);
-		const parsedPages = await this.extractPdfAsMarkdownPages(fileBytes, {
-			numPages: numPages,
-			ocrProvider: "mistral",
-		});
-		const checksum = getHash(fileBytes);
-		const fileSize = fileBytes.byteLength;
+		const parsedPages = await this.extractPdfAsMarkdownPages(fileBytes);
 
 		return {
 			document: document,
@@ -76,129 +72,66 @@ export class DocumentExtractionService {
 
 	/**
 	 * Extracts markdown content from a PDF file without writing to disk and returns it as pages
-	 * @param pdfFilePath Path to the PDF file
-	 * @returns An array of parsed PDF pages, each containing its markdown content and page number
+	 * @returns An array of parsed PDF pages, each containing its markdown content, page number and tokenCount
 	 */
-	async extractPdfAsMarkdownPages(
-		pdfBytes: Uint8Array,
-		extractionOptions: {
-			numPages: number;
-			ocrProvider: string;
-		} = {
-			numPages: 0,
-			ocrProvider: "mistral",
-		},
-	): Promise<ParsedPage[]> {
-		const toParsedPage = (content: string, pageNumber: number): ParsedPage => ({
-			content,
-			pageNumber,
-			tokenCount: countTokens(content),
-		});
-
+	async extractPdfAsMarkdownPages(pdfBytes: Uint8Array): Promise<ParsedPage[]> {
 		const fileSizeMb = pdfBytes.byteLength / (1024 * 1024);
 		if (fileSizeMb > config.fileUploadLimitMb) {
-			const error = new Error(
+			throw new Error(
 				`PDF file size ${fileSizeMb.toFixed(2)} MB exceeds upload limit of ${config.fileUploadLimitMb} MB.`,
 			);
-			captureError(error);
-			throw error;
 		}
 
-		let ocrService: MistralOCRService;
-		if (extractionOptions.ocrProvider === "mistral") {
-			ocrService = new MistralOCRService();
-		} else {
-			throw new Error(
-				`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
-			);
-		}
+		const ocrService = new MistralOCRService();
 
-		try {
-			if (ocrService instanceof MistralOCRService) {
-				const pages = await ocrService.extractTextFromPdfWithMistral(pdfBytes);
-				return pages.map((page) =>
-					page.tokenCount !== undefined
-						? page
-						: toParsedPage(page.content, page.pageNumber),
-				);
-			}
-			throw new Error(
-				`Unsupported OCR provider: ${extractionOptions.ocrProvider}`,
-			);
-		} catch (error) {
-			captureError(error);
-			return [];
-		}
+		return ocrService.extractTextFromPdfWithMistral(pdfBytes);
 	}
 
 	/**
 	 * Lightweight PDF page counter using unpdf.
 	 */
-	private async getPdfPageCount(pdfBytes: Uint8Array): Promise<number> {
-		try {
-			// Create a copy to avoid detaching the original ArrayBuffer
-			const pdfBytesCopy = new Uint8Array(pdfBytes);
-			const pdf = await getDocumentProxy(pdfBytesCopy);
-			const numPages = pdf.numPages;
-			return numPages;
-		} catch (error) {
-			captureError(
-				new Error("Unable to determine PDF page count", { cause: error }),
-			);
-			return 0;
-		}
+	async getPdfPageCount(pdfBytes: Uint8Array): Promise<number> {
+		// Create a copy to avoid detaching the original ArrayBuffer
+		const pdfBytesCopy = new Uint8Array(pdfBytes);
+		const pdf = await getDocumentProxy(pdfBytesCopy);
+		const numPages = pdf.numPages;
+		return numPages;
 	}
 }
 
 export class WordDocumentExtractionService {
-	async extractWordDocument(
-		wordDoc: Buffer,
-		fileName: string,
-	): Promise<string> {
-		if (wordDoc.length === 0) {
-			captureError(new Error("Empty document buffer"));
-			return "";
-		}
-		if (fileName?.toLowerCase().endsWith(".docx")) {
-			try {
-				return await this.extractWithMammoth(wordDoc);
-			} catch (mammothError) {
-				captureError(mammothError);
-				try {
-					return await this.extractWithWordExtractor(wordDoc);
-				} catch (wordExtractorError) {
-					captureError(wordExtractorError);
-					return "";
-				}
-			}
-		} else if (fileName?.toLowerCase().endsWith(".doc")) {
-			try {
-				return await this.extractWithWordExtractor(wordDoc);
-			} catch (wordExtractorError) {
-				captureError(wordExtractorError);
-				try {
-					return await this.extractWithMammoth(wordDoc);
-				} catch (mammothError) {
-					captureError(mammothError);
-					return "";
-				}
-			}
-		} else {
-			throw new Error("Unsupported file type for Word document extraction");
+	async extractWordDocument(wordDoc: Buffer): Promise<string> {
+		try {
+			/**
+			 * We need to await the mammoth extraction to make sure any errors
+			 * are caught by the local try/catch. If we don't await here, and
+			 * it fails, the error will be caught further up the call stack,
+			 * and we won't be able to use the WordExtractor fallback.
+			 * (Typically, mammoth fails on older .doc files, while WordExtractor can handle them.)
+			 */
+			const text = await this.extractWithMammoth(wordDoc);
+			return text;
+		} catch (mammothError) {
+			captureError(mammothError);
+
+			return this.extractWithWordExtractor(wordDoc);
 		}
 	}
 
-	async convertDocxToPdf(wordDoc: Buffer): Promise<Uint8Array> {
+	async convertWordToPdf(args: {
+		fileName: string;
+		wordDoc: Buffer;
+	}): Promise<Uint8Array> {
+		const { fileName, wordDoc } = args;
+
 		const form = new FormData();
 		const bytes = new Uint8Array(
 			wordDoc.buffer,
 			wordDoc.byteOffset,
 			wordDoc.byteLength,
 		);
-		const blob = new Blob([bytes], {
-			type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-		});
-		form.append("files", blob, "document.docx");
+		const blob = new Blob([bytes]);
+		form.append("files", blob, fileName);
 
 		const endpoint = new URL(
 			"/forms/libreoffice/convert",
@@ -225,36 +158,19 @@ export class WordDocumentExtractionService {
 	private async extractWithMammoth(wordDoc: Buffer): Promise<string> {
 		const result = await mammoth.extractRawText({ buffer: wordDoc });
 
-		if (result.value && result.value.trim().length > 0) {
-			return result.value;
-		}
-		console.warn("Mammoth extraction returned empty content");
-		return "";
+		return result.value.trim();
 	}
 
 	private async extractWithWordExtractor(wordDoc: Buffer): Promise<string> {
 		const extractor = new WordExtractor();
 		const extracted = await extractor.extract(wordDoc);
+		const body = extracted.getBody();
 
-		if (extracted && typeof extracted.getBody === "function") {
-			const body = extracted.getBody();
-			if (body && body.trim().length > 0) {
-				return body;
-			}
-			console.warn("Word-extractor returned empty content");
-			return "";
-		}
-
-		captureError(
-			new Error(
-				"Failed to extract content from Word document - invalid extraction result",
-			),
-		);
-		return "";
+		return body.trim();
 	}
 }
 
-class ExcelExtractionService {
+export class ExcelExtractionService {
 	// Hard caps for work done per sheet to avoid pathological sizes
 	// MAX_ROWS / MAX_COLS cap the decoded !ref (0-based, inclusive) relative to the start
 	// CELL_MAX limits per-cell text (after trim) before we escape and render to Markdown
@@ -272,9 +188,9 @@ class ExcelExtractionService {
 		workbook.SheetNames.forEach((sheetName, index) => {
 			const worksheet = workbook.Sheets[sheetName];
 			if (!worksheet) {
-				console.warn(`Worksheet not found for sheet: ${sheetName}`);
 				return;
 			}
+
 			const markdownContent = this.sheetToMarkdown(worksheet);
 			const pageContent = `## ${sheetName}\n\n${markdownContent}`;
 
@@ -448,7 +364,7 @@ class MistralOCRService {
 			async () =>
 				await client.files.upload({
 					file: {
-						fileName: "uploaded_file.pdf",
+						fileName: ocrTempFileName,
 						content: buffer,
 					},
 					purpose: "ocr",
@@ -475,20 +391,13 @@ class MistralOCRService {
 			await client.files.delete({ fileId: uploaded_pdf.id }); // delete file from Mistral's cloud storage
 		} catch (error) {
 			if (error?.status !== 404 && error?.statusCode !== 404) {
-				// If the file is already gone, we don't care. Otherwise, log the error.
-				console.warn(
-					`Failed to delete temporary OCR file ${uploaded_pdf.id}:`,
-					error,
-				);
+				captureError(error);
 			}
 		}
-		return ocrResponse.pages.map(
-			(page, index) =>
-				({
-					content: page.markdown,
-					pageNumber: index + 1,
-					tokenCount: countTokens(page.markdown),
-				}) as ParsedPage,
-		);
+		return ocrResponse.pages.map((page, index) => ({
+			content: page.markdown,
+			pageNumber: index + 1,
+			tokenCount: countTokens(page.markdown),
+		}));
 	}
 }

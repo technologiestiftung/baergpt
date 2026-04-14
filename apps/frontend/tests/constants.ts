@@ -79,7 +79,7 @@ export const content = `# UI Test Doc
 export const page = 1;
 export const chunk_index = 0;
 
-export const chunk_mistral_embedding = Array(1024).fill(0.0001);
+export const chunk_mistral_embedding = `[${Array(1024).fill(0.0001)}]`;
 
 export const secondaryDocumentName = "secondary_document.pdf";
 export const secondaryDocumentPath = resolve(
@@ -109,3 +109,5 @@ export const longFileName =
 export const longFilePath = resolve(__dirname, `./fixtures/${longFileName}`);
 
 export const VERSION_STORAGE_KEY = "last-seen-version";
+
+export const MOCK_SPLASH_RELEASE_SHA = "e2e-mock-splash-release-sha";

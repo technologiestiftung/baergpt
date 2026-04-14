@@ -10,6 +10,7 @@ import {
 	streamText,
 } from "ai";
 import { ModelService } from "./model-service";
+import { logMemory } from "../monitoring/memory-logger";
 import { EmbeddingService } from "./embedding-service";
 import {
 	LangfuseClient,
@@ -61,36 +62,6 @@ export class GenerationService {
 		this.dbService = dbService;
 		this.embeddingService = new EmbeddingService(this.dbService);
 	}
-	/**
-	 * Select the first pages whose combined content fits within a safe token budget
-	 * for the summary prompt. Falls back to at least the first page if none fit.
-	 */
-	private async selectFirstPagesFittingBudget(
-		llmIdentifier: string,
-		parsedPages: ParsedPage[],
-	): Promise<ParsedPage[]> {
-		const contextSize = modelService.availableModels[llmIdentifier].contextSize;
-		const systemTokensForSummary =
-			await this.estimateSystemPromptTokens("summary");
-		const safeTokenLimit = computeSafePayload(
-			contextSize,
-			systemTokensForSummary,
-		);
-
-		const selected: ParsedPage[] = [];
-		let accumulatedTokens = 0;
-
-		for (const page of parsedPages) {
-			const pageTokens = page.tokenCount ?? countTokens(page.content);
-			if (accumulatedTokens + pageTokens > safeTokenLimit) {
-				break;
-			}
-			accumulatedTokens += pageTokens;
-			selected.push(page);
-		}
-
-		return selected.length > 0 ? selected : parsedPages.slice(0, 1);
-	}
 
 	/**
 	 * Estimate system prompt token count for a given prompt name by compiling with empty content.
@@ -117,109 +88,102 @@ export class GenerationService {
 		}
 	}
 
-	async generateSummary(
-		llmIdentifier: string,
-		docInput: string | ParsedPage[],
-		{
-			oneSentenceSummary = false,
-			userId,
-		}: {
-			oneSentenceSummary?: boolean;
-			userId?: string;
-		} = {},
-	): Promise<string | null> {
+	async generateSummary(args: {
+		llmIdentifier: string;
+		input: string;
+		userId: string;
+	}): Promise<string> {
+		const { llmIdentifier, input, userId } = args;
+
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
-		let compiledSummaryPrompt: ModelMessage[];
-		let summaryPromptClient: ChatPromptClient;
-		const docContent =
-			typeof docInput === "string"
-				? docInput
-				: docInput.map((page) => page.content).join("\n");
 
-		if (oneSentenceSummary) {
-			try {
-				summaryPromptClient = await langfuse.prompt.get(
-					"one-sentence-summary",
-					{
-						label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-						type: "chat",
-					},
-				);
-			} catch (error) {
-				captureError(error);
-				throw error;
-			}
-			compiledSummaryPrompt = summaryPromptClient.compile({
-				docContent: docContent,
-			}) as ModelMessage[];
-		} else {
-			try {
-				summaryPromptClient = await langfuse.prompt.get("summary", {
-					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-					type: "chat",
-				});
-			} catch (error) {
-				captureError(error);
-				throw error;
-			}
-			compiledSummaryPrompt = summaryPromptClient.compile({
-				docContent: docContent,
-			}) as ModelMessage[];
-		}
+		const summaryPromptClient = await langfuse.prompt.get("summary", {
+			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+			type: "chat",
+		});
 
-		try {
-			return this.generateTextContent(llmHandler, compiledSummaryPrompt, {
-				userId,
-				langfusePrompt: summaryPromptClient,
-			});
-		} catch (error) {
-			captureError(error);
-			return null;
-		}
+		const compiledSummaryPrompt = summaryPromptClient.compile({
+			docContent: input,
+		}) as ModelMessage[];
+
+		return this.generateTextContent({
+			llmHandler,
+			messages: compiledSummaryPrompt,
+			userId,
+			langfusePrompt: summaryPromptClient,
+		});
 	}
 
-	async generateTags(
-		llmIdentifier: string,
-		docInput: string | ParsedPage[],
-		{ userId }: { userId?: string } = {},
-	): Promise<string[] | null> {
-		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
-		const docContent =
-			typeof docInput === "string"
-				? docInput
-				: docInput.map((page) => page.content).join("\n");
+	async generateOneSentenceSummary(args: {
+		llmIdentifier: string;
+		input: string;
+		userId: string;
+	}): Promise<string> {
+		const { llmIdentifier, input, userId } = args;
 
-		let taggingPromptClient: ChatPromptClient;
-		try {
-			taggingPromptClient = await langfuse.prompt.get("tagging", {
+		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
+
+		const summaryPromptClient = await langfuse.prompt.get(
+			"one-sentence-summary",
+			{
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 				type: "chat",
-			});
-		} catch (error) {
-			captureError(error);
-			throw error;
-		}
+			},
+		);
+
+		const compiledSummaryPrompt = summaryPromptClient.compile({
+			docContent: input,
+		}) as ModelMessage[];
+
+		return this.generateTextContent({
+			llmHandler,
+			messages: compiledSummaryPrompt,
+			userId,
+			langfusePrompt: summaryPromptClient,
+		});
+	}
+
+	async generateTags(args: {
+		llmIdentifier: string;
+		input: string | ParsedPage[];
+		userId: string;
+	}): Promise<string[]> {
+		const { llmIdentifier, input, userId } = args;
+
+		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
+		const docContent =
+			typeof input === "string"
+				? input
+				: input.map((page) => page.content).join("\n");
+
+		const taggingPromptClient = await langfuse.prompt.get("tagging", {
+			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+			type: "chat",
+		});
 		const compiledTaggingPrompt = taggingPromptClient.compile({
 			docContent: docContent,
 		}) as ModelMessage[];
 
-		try {
-			const response: string = await this.generateTextContent(
-				llmHandler,
-				compiledTaggingPrompt,
-				{ userId, langfusePrompt: taggingPromptClient },
+		const response: string = await this.generateTextContent({
+			llmHandler,
+			messages: compiledTaggingPrompt,
+			userId,
+			langfusePrompt: taggingPromptClient,
+		});
+		// Extract JSON from potential code block artifacts
+		const jsonMatch = response.match(
+			/```(?:json)?\s*(\{.*?\})\s*```|(\{.*?\})/s,
+		);
+		const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[2] : response;
+		const parsed = JSON.parse(jsonString.trim());
+
+		if (!parsed.tags || !Array.isArray(parsed.tags)) {
+			throw new Error(
+				`Tags were invalid or not found in the LLM response: ${parsed}`,
 			);
-			// Extract JSON from potential code block artifacts
-			const jsonMatch = response.match(
-				/```(?:json)?\s*(\{.*?\})\s*```|(\{.*?\})/s,
-			);
-			const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[2] : response;
-			const parsed = JSON.parse(jsonString.trim());
-			return parsed.tags || [];
-		} catch (error) {
-			captureError(error);
-			return null;
 		}
+
+		return parsed.tags;
 	}
 
 	async summarize(
@@ -231,74 +195,57 @@ export class GenerationService {
 		shortSummary: string;
 		tags: string[];
 	}> {
-		const numTokens = parsedPages.reduce(
-			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
-			0,
-		);
+		const summaryInput = await this.getSummaryInput(parsedPages, llmIdentifier);
 
-		let summary: string | null = null;
-		const MAX_TOKEN_COUNT_FOR_SUMMARY =
-			modelService.availableModels[llmIdentifier].contextSize;
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
 
-		const overContext = numTokens > MAX_TOKEN_COUNT_FOR_SUMMARY;
-		let summaryInput: string | ParsedPage[] = parsedPages;
-
-		if (overContext) {
-			const selectedPages = await this.selectFirstPagesFittingBudget(
-				llmIdentifier,
-				parsedPages,
-			);
-			summaryInput = selectedPages;
-		}
-
-		// Safety mechanism in case the first page is larger than MAX_TOKEN_COUNT_FOR_SUMMARY
-		const systemTokens = await this.estimateSystemPromptTokens("summary");
-		const safeLimit = computeSafePayload(
-			MAX_TOKEN_COUNT_FOR_SUMMARY,
-			systemTokens,
-		);
-
-		let joined;
-		if (typeof summaryInput === "string") {
-			joined = summaryInput;
-		} else {
-			joined = summaryInput.map((page) => page.content).join("\n");
-		}
-		if (countTokens(joined) > safeLimit) {
-			summaryInput = trimToTokenLimitByWords(joined, safeLimit);
-		}
-
-		summary = await this.generateSummary(llmIdentifier, summaryInput, {
+		const summary = await this.generateSummary({
+			llmIdentifier,
+			input: summaryInput,
 			userId,
 		});
 
-		if (!summary) {
-			throw new Error("Failed to generate document summary");
-		}
-
-		const shortSummary = await this.generateSummary(llmIdentifier, summary, {
-			oneSentenceSummary: true,
+		const shortSummary = await this.generateOneSentenceSummary({
+			llmIdentifier,
+			input: summaryInput,
 			userId,
 		});
 
-		if (!shortSummary) {
-			throw new Error("Failed to generate short document summary");
-		}
-
-		const tags = await this.generateTags(llmIdentifier, summary, {
+		const tags = await this.generateTags({
+			llmIdentifier,
+			input: summary,
 			userId,
 		});
-
-		if (!tags) {
-			throw new Error("Failed to generate document tags");
-		}
 
 		return {
 			summary,
 			shortSummary,
 			tags,
 		};
+	}
+
+	async getSummaryInput(
+		parsedPages: ParsedPage[],
+		llmIdentifier: string,
+	): Promise<string> {
+		const { contextSize } = modelService.availableModels[llmIdentifier];
+		const systemPromptToken = await this.estimateSystemPromptTokens("summary");
+		const tokenLimit = computeSafePayload(contextSize, systemPromptToken);
+
+		const [firstPage] = parsedPages;
+
+		if (firstPage.tokenCount > tokenLimit) {
+			return trimToTokenLimitByWords(firstPage.content, tokenLimit);
+		}
+
+		const content = parsedPages.map((page) => page.content).join("\n");
+		const tokenCount = countTokens(content);
+
+		if (tokenCount <= tokenLimit) {
+			return content;
+		}
+
+		return trimToTokenLimitByWords(content, tokenLimit);
 	}
 
 	async generateTextStreamResponse(
@@ -320,6 +267,8 @@ export class GenerationService {
 			activeTools?: ActiveTools[];
 		} = {},
 	): Promise<Response> {
+		const reqId = sessionId ? String(sessionId).slice(0, 8) : "no-session";
+		logMemory("chat:start", reqId);
 		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
 		if (activeTools.includes("baseKnowledgeSearchTool") && userId) {
 			knowledgeBaseDocuments =
@@ -371,6 +320,10 @@ export class GenerationService {
 					},
 				}),
 			{ queueType: "llm" },
+		);
+		logMemory(
+			`chat:after-generateText (steps=${generationResult.steps.length}, tokens=${generationResult.usage?.totalTokens ?? 0})`,
+			reqId,
 		);
 		if (userId && generationResult.usage?.totalTokens) {
 			try {
@@ -435,6 +388,10 @@ export class GenerationService {
 								},
 							},
 							onFinish: async ({ text, usage }) => {
+								logMemory(
+									`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
+									reqId,
+								);
 								if (typeof toolsCleanup === "function") {
 									await toolsCleanup();
 								}
@@ -591,6 +548,7 @@ export class GenerationService {
 									}
 								}
 
+								logMemory("chat:onFinish-complete", reqId);
 								updateActiveTrace({
 									name: "streamed-text-generation",
 									output: text,
@@ -627,6 +585,7 @@ export class GenerationService {
 								},
 							},
 							onError: (error) => {
+								logMemory("chat:onError", reqId);
 								captureError(error);
 							},
 						}),
@@ -638,19 +597,13 @@ export class GenerationService {
 		return createUIMessageStreamResponse({ stream });
 	}
 
-	async generateTextContent(
-		llmHandler: LLMHandler,
-		messages: ModelMessage[],
-		{
-			userId,
-			sessionId,
-			langfusePrompt,
-		}: {
-			userId?: string;
-			sessionId?: string;
-			langfusePrompt?: TextPromptClient | ChatPromptClient;
-		} = {},
-	): Promise<string> {
+	async generateTextContent(args: {
+		llmHandler: LLMHandler;
+		messages: ModelMessage[];
+		userId: string;
+		langfusePrompt?: TextPromptClient | ChatPromptClient;
+	}): Promise<string> {
+		const { llmHandler, messages, userId, langfusePrompt } = args;
 		const { text, usage } = await resilientCall(
 			() =>
 				generateText({
@@ -667,10 +620,8 @@ export class GenerationService {
 						isEnabled:
 							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
 						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
+							sessionId: "unknown",
+							langfusePrompt: langfusePrompt.toJSON(),
 						},
 					},
 				}),
@@ -683,88 +634,10 @@ export class GenerationService {
 			await this.dbService.updateUserColumnValue(
 				userId,
 				"num_inference_tokens",
-				usage?.totalTokens ?? 0,
+				usage.totalTokens,
 			);
 		}
 		return text;
-	}
-
-	splitArrayEqually<T>(array: T[], chunkSize: number): T[][] {
-		const result: T[][] = [];
-		for (let i = 0; i < array.length; i += chunkSize) {
-			result.push(array.slice(i, i + chunkSize));
-		}
-		return result;
-	}
-
-	splitInChunksAccordingToTokenLimit(
-		input: string,
-		tokenLimit: number,
-		overlap: number = 128,
-	): string[] {
-		const finalChunks: string[] = [];
-
-		// Split input into smaller chunks with overlap
-		let currentChunk = "";
-		const words = input.split(/\s+/);
-		let currentOverlap = "";
-
-		for (let i = 0; i < words.length; i++) {
-			const currentWord = words[i];
-
-			// If we're starting a new chunk after the first one, add overlap with the previous chunk
-			if (currentChunk === "" && finalChunks.length > 0) {
-				const overlapStart = this.getOverlapStart(words, i, overlap);
-				currentOverlap = words.slice(overlapStart, i).join(" ");
-				currentChunk = currentOverlap;
-			}
-
-			if (
-				enc.encode(currentWord).length > tokenLimit ||
-				enc.encode(`${currentOverlap} ${currentWord}`).length > tokenLimit
-			) {
-				// If a single word or the current overlap + the current word exceed token limit, we skip them
-				continue;
-			}
-
-			const potentialChunk =
-				currentChunk + (currentChunk ? " " : "") + currentWord;
-			const tokenCountPotentialChunk = enc.encode(potentialChunk).length;
-
-			if (tokenCountPotentialChunk <= tokenLimit) {
-				currentChunk = potentialChunk;
-				continue;
-			}
-
-			finalChunks.push(currentChunk);
-			currentChunk = ""; // Reset current chunk
-		}
-
-		// Add final chunk if not empty
-		if (currentChunk) {
-			finalChunks.push(currentChunk);
-		}
-
-		return finalChunks;
-	}
-
-	getOverlapStart(words: string[], countStart: number, overlap: number) {
-		let overlapTokenCount = 0;
-		let overlapStart = countStart;
-
-		// Count backwards until we reach desired overlap token count
-		for (let j = countStart - 1; j >= 0; j--) {
-			const wordTokens = enc.encode(words[j]).length;
-
-			if (overlapTokenCount + wordTokens > overlap) {
-				break;
-			}
-
-			overlapTokenCount += wordTokens;
-			overlapStart = j;
-		}
-
-		return overlapStart;
 	}
 
 	/**

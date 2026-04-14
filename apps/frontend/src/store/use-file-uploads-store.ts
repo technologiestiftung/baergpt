@@ -9,6 +9,9 @@ import {
 import { useErrorStore } from "./error-store.ts";
 import * as Sentry from "@sentry/react";
 import type { Span } from "@sentry/react";
+import { isFileInStorage } from "../api/documents/is-file-in-storage.ts";
+import { deleteFileFromStorage } from "../api/documents/delete-file-from-storage.ts";
+import { isDocumentInDatabase } from "../api/documents/is-document-in-database.ts";
 
 export const UPLOAD_STATUS_MAP = {
 	waiting: "Warte",
@@ -44,18 +47,13 @@ type UseFileUploadsStore = {
 	clearFileUploads: () => void;
 };
 
-function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
-	return error instanceof Error && error.message in UPLOAD_STATUS_MAP;
-}
-
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
 
 	async uploadFile({ fileUpload: { file }, span }) {
 		const { updateFileUploadStatus } = get();
 		const { session } = useAuthStore.getState();
-		const { documents, getDocuments, deleteDocument } =
-			useDocumentStore.getState();
+		const { documents, getDocuments } = useDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
 		const slugifiedFilename = slugify(file.name, { lower: true });
@@ -99,20 +97,14 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		} catch (error) {
 			useErrorStore.getState().handleError(error, span);
 
+			await cleanupIfNecessary(filePath, span);
+
 			if (isKnownError(error)) {
 				updateFileUploadStatus(file, error.message);
 				return;
 			}
 
 			updateFileUploadStatus(file, "failed.generic");
-			// If the document processing fails, remove the document from the store
-			const documentToDelete = documents.find(
-				(doc) => doc.source_url === filePath,
-			);
-
-			if (documentToDelete) {
-				await deleteDocument(documentToDelete.id);
-			}
 		}
 	},
 
@@ -251,3 +243,90 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		set({ fileUploads: [] });
 	},
 }));
+
+function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
+	return error instanceof Error && error.message in UPLOAD_STATUS_MAP;
+}
+
+async function cleanupIfNecessary(filePath: string, span: Span) {
+	const { data: isFileInStorageData, error: isFileInStorageError } =
+		await isFileInStorage(filePath);
+
+	/**
+	 * If the file does not exist, supabase returns false + an error:
+	 * https://github.com/supabase/supabase-js/issues/1363
+	 * So we only log the error without returning early.
+	 */
+	if (isFileInStorageError) {
+		useErrorStore.getState().handleError(isFileInStorageError, span);
+	}
+
+	const { data: isDocumentInDbData, error: isDocumentInDbError } =
+		await isDocumentInDatabase(filePath);
+
+	if (isDocumentInDbError) {
+		useErrorStore.getState().handleError(isDocumentInDbError, span);
+		return;
+	}
+
+	/**
+	 * If the file exists in the storage AND in the db,
+	 * it means the upload was successful but something else failed
+	 * (e.g. user tried to upload a file twice)
+	 */
+	if (isFileInStorageData && isDocumentInDbData) {
+		return;
+	}
+
+	/**
+	 * If the file does NEITHER exist in the storage NOR in the db,
+	 * there is nothing to clean up.
+	 */
+	if (!isFileInStorageData && !isDocumentInDbData) {
+		return;
+	}
+
+	/**
+	 * If the file exists in the storage but does not exist in the db,
+	 * just remove the file from the storage.
+	 * This can happen e.g. when the API is unavailable.
+	 */
+	if (isFileInStorageData && !isDocumentInDbData) {
+		await cleanupStorage(filePath, span);
+		return;
+	}
+
+	/**
+	 * If the file does not exist in the storage but does exist in the db,
+	 * just remove the file from the store and the db.
+	 * This can happen e.g. when a DB deletion failed.
+	 */
+	await cleanupStoreAndDatabase(filePath, span);
+}
+async function cleanupStorage(filePath: string, span: Span) {
+	const { error: deleteFileError } = await deleteFileFromStorage(filePath);
+
+	if (!deleteFileError) {
+		return;
+	}
+
+	useErrorStore.getState().handleError(deleteFileError, span);
+}
+
+async function cleanupStoreAndDatabase(filePath: string, span: Span) {
+	const { documents, deleteDocument } = useDocumentStore.getState();
+
+	const documentToDelete = documents.find((doc) => doc.source_url === filePath);
+
+	if (!documentToDelete) {
+		return;
+	}
+
+	const deleteError = await deleteDocument(documentToDelete.id);
+
+	if (!deleteError) {
+		return;
+	}
+
+	useErrorStore.getState().handleError(deleteError, span);
+}

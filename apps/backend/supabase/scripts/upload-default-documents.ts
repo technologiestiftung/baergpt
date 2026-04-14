@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
-import { PrivilegedDbService } from "../src/services/db-service/privileged-db-service";
-import { serviceRoleDbClient } from "../src/supabase";
-import { GenerationService } from "../src/services/generation-service";
-import { EmbeddingService } from "../src/services/embedding-service";
-import type { Document } from "../src/types/common";
-import { initQueues } from "../src/services/distributed-limiter";
-import { config } from "../src/config";
+import { PrivilegedDbService } from "../../src/services/db-service/privileged-db-service";
+import { serviceRoleDbClient } from "../../src/supabase";
+import { GenerationService } from "../../src/services/generation-service";
+import { EmbeddingService } from "../../src/services/embedding-service";
+import type { Document } from "../../src/types/common";
+import { initQueues } from "../../src/services/distributed-limiter";
+import { config } from "../../src/config";
 
 const sourceType = "default_document";
 const bucketName = "public_documents";

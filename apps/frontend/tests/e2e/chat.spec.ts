@@ -1,8 +1,9 @@
+import { Readable } from "node:stream";
 import {
 	mockDocumentUpload,
-	uploadFileViaDragAndDrop,
+	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
-import { expect, test } from "@playwright/test";
+import { expect, Page, test } from "@playwright/test";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import {
 	defaultDocumentName,
@@ -21,16 +22,10 @@ test.describe("Chat", () => {
 		async ({ page, browserName }) => {
 			await page.goto("/");
 
-			// Fill in the chat question
-			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
-
-			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
+			await sendAndWaitForLLMResponse(page);
 
 			const question = page.getByTestId("user-message-markdown-container");
 			await expect(question).toBeVisible();
@@ -53,6 +48,60 @@ test.describe("Chat", () => {
 	);
 
 	testWithLoggedInUser(
+		"Stop generating aborts stream without error banner",
+		async ({ page }) => {
+			await page.goto("/");
+			let hangingStream: Readable | undefined;
+
+			// Mock the LLM API to return a partial response
+			await page.route("**/llm/just-chatting", async (route) => {
+				hangingStream = new Readable({
+					read() {},
+				});
+				hangingStream.push(
+					`data: ${JSON.stringify({
+						type: "text-delta",
+						id: "1",
+						delta: "Partial ",
+					})}\n\n`,
+				);
+
+				await route.fulfill({
+					status: 200,
+					headers: {
+						"Content-Type": "text/event-stream; charset=utf-8",
+					},
+					// @ts-expect-error Playwright Node accepts Readable for streaming bodies; public types omit it.
+					body: hangingStream,
+				});
+			});
+
+			try {
+				await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+				await page.getByRole("button", { name: "Nachricht senden" }).click();
+
+				const stopButton = page.getByRole("button", {
+					name: "Textgenerierung stoppen",
+				});
+				await expect(stopButton).toBeVisible();
+
+				await stopButton.click();
+
+				await expect(
+					page.getByText("Ihre Anfrage konnte gerade nicht bearbeitet werden."),
+				).not.toBeVisible();
+
+				await expect(
+					page.getByRole("button", { name: "Nachricht senden" }),
+				).toBeVisible();
+			} finally {
+				await page.unroute("**/llm/just-chatting");
+				hangingStream?.destroy();
+			}
+		},
+	);
+
+	testWithLoggedInUser(
 		"Copy text with markdown formatting as rich text and plain text",
 		async ({ page, browserName }) => {
 			await page.goto("/");
@@ -60,10 +109,7 @@ test.describe("Chat", () => {
 			// Fill in the chat question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("**hallo**");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
 			if (browserName === "webkit") {
 				return;
@@ -117,10 +163,7 @@ test.describe("Chat", () => {
 			.getByPlaceholder("Stellen Sie eine Frage")
 			.fill("Worum geht es?");
 
-		// Click the send button
-		await page
-			.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-			.click();
+		await sendAndWaitForLLMResponse(page);
 
 		const question = page.getByTestId("user-message-markdown-container");
 		await expect(question).toBeVisible();
@@ -195,7 +238,7 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
-			await uploadFileViaDragAndDrop({
+			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: secondaryDocumentName,
 				filePath: secondaryDocumentPath,
@@ -288,10 +331,7 @@ test.describe("Chat", () => {
 				.getByPlaceholder("Stellen Sie eine Frage")
 				.fill("Worum geht es?");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
 			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
@@ -322,7 +362,6 @@ test.describe("Chat", () => {
 		// Create an admin user to upload the public document
 		const adminEmail = "admin.test@local.berlin.de";
 		const adminPassword = "TestPassword123!";
-		let adminUserId: string | undefined;
 
 		const { data: adminUserData, error: createAdminError } =
 			await supabaseAdminClient.auth.admin.createUser({
@@ -341,7 +380,7 @@ test.describe("Chat", () => {
 			throw createAdminError;
 		}
 
-		adminUserId = adminUserData.user.id;
+		const adminUserId = adminUserData.user.id;
 
 		try {
 			// Grant admin role by adding to application_admins table
@@ -425,10 +464,7 @@ test.describe("Chat", () => {
 				.getByPlaceholder("Stellen Sie eine Frage")
 				.fill("Worum geht es?");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
 			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
@@ -475,10 +511,7 @@ test.describe("Chat", () => {
 			// Fill in the chat question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
 			const question = page.getByTestId("user-message-markdown-container");
 			await expect(question).toBeVisible();
@@ -629,10 +662,7 @@ test.describe("Chat", () => {
 			// Fill in the chat question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
 			const question1 = page
 				.getByTestId("user-message-markdown-container")
@@ -658,13 +688,7 @@ test.describe("Chat", () => {
 			// Fill in the chat question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
-
-			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
+			await sendAndWaitForLLMResponse(page);
 
 			const question2 = page
 				.getByTestId("user-message-markdown-container")
@@ -836,12 +860,7 @@ test.describe("Chat", () => {
 			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
 			await chatInput.fill("hallo");
 
-			const sendButton = page.getByRole("button", {
-				name: "Ein weißer Pfeil nach rechts",
-			});
-			await sendButton.click();
-
-			await page.waitForLoadState("networkidle");
+			await sendAndWaitForLLMResponse(page);
 
 			const baseKnowledgePill = page.getByRole("button", {
 				name: /Verwaltungswissen entfernen/,
@@ -871,16 +890,25 @@ test.describe("Chat", () => {
 			await baseKnowledgePill.click();
 
 			// Start a new chat by asking a question
-			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
-
-			await page.waitForLoadState("networkidle");
+			await sendAndWaitForLLMResponse(page);
 
 			await expect(baseKnowledgePill).not.toBeVisible();
 		},
 	);
 });
+
+async function sendAndWaitForLLMResponse(page: Page) {
+	const waitForLLMResponse = page.waitForResponse("**/llm/just-chatting", {
+		timeout: 60_000,
+	});
+
+	const sendButton = page.getByRole("button", {
+		name: "Nachricht senden",
+	});
+	await sendButton.click();
+
+	await waitForLLMResponse;
+}

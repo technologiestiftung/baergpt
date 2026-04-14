@@ -184,10 +184,15 @@ export async function getCompletion(
 			},
 		});
 	} catch (error) {
-		setStatus("error");
 		// Only handle error if it's not an abort error
-		if (error instanceof Error && error.name !== "AbortError") {
-			handleError(error, span);
+		const isUserAbort = error instanceof Error && error.name === "AbortError";
+		if (isUserAbort) {
+			setStatus("idle");
+		} else {
+			setStatus("error");
+			if (error instanceof Error) {
+				handleError(error, span);
+			}
 		}
 		setStreamingAbortController(null);
 	}
