@@ -44,14 +44,14 @@ The setup uses:
 Each environment has its own secrets file. Copy the example and fill in your 1Password references:
 
 ```bash
-cp ansible/.op.env.staging.example ansible/.op.env.staging
-cp ansible/.op.env.production.example ansible/.op.env.production
+cp ansible/.op.env.supabase-staging.example ansible/.op.env.supabase-staging
+cp ansible/.op.env.supabase-production.example ansible/.op.env.supabase-production
 ```
 
 The file contains references to secrets stored in 1Password:
 
 ```bash
-# Example structure (see .op.env.staging.example)
+# Example structure (see .op.env.supabase-staging.example)
 ANSIBLE_HOST=op://vault/staging-server/hostname
 ANSIBLE_USER=op://vault/staging-server/username
 ANSIBLE_PORT=op://vault/staging-server/port
@@ -89,8 +89,8 @@ Key variables are defined in `ansible/group_vars/all.yml`:
 
 Per-environment inventory files live in `ansible/inventory/`:
 
-- `staging.yml` — staging server
-- `production.yml` — production server
+- `supabase-staging.yml` — supabase staging server
+- `supabase-production.yml` — supabase production server
 
 ## Running the Deployment
 
@@ -100,10 +100,10 @@ Per-environment inventory files live in `ansible/inventory/`:
 cd ansible
 
 # Staging
-op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml supabase.yml
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase.yml
 
 # Production
-op run --env-file .op.env.production -- ansible-playbook -i inventory/production.yml supabase.yml
+op run --env-file .op.env.supabase-production -- ansible-playbook -i inventory/supabase-production.yml supabase.yml
 ```
 
 This will provision the server with:
@@ -120,7 +120,7 @@ This will provision the server with:
 To see what would change without making actual changes:
 
 ```bash
-op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml supabase.yml --check --diff
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase.yml --check --diff
 ```
 
 ### Verbose Output
@@ -128,7 +128,7 @@ op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml s
 For debugging, add verbosity flags:
 
 ```bash
-op run --env-file .op.env.staging -- ansible-playbook -i inventory/staging.yml supabase.yml -vv
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase.yml -vv
 ```
 
 ## Supabase Stack
