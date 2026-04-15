@@ -296,6 +296,7 @@ export class GenerationService {
 				generateText({
 					model: llmHandler.languageModel,
 					messages: messages,
+					maxOutputTokens: 8192,
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
 					toolChoice,
@@ -380,6 +381,7 @@ export class GenerationService {
 						streamText({
 							model: llmHandler.languageModel,
 							messages: messages,
+							maxOutputTokens: 8192,
 							temperature: LLM_PARAMETERS.temperature,
 							providerOptions: {
 								mistral: {
