@@ -14,6 +14,7 @@ import { insertMessage as insertMessageIntoDb } from "../api/message/insert-mess
 import { updateMessage as updateMessageInDb } from "../api/message/update-message.ts";
 import { getTotalChatCount as getTotalChatCountFromDb } from "../api/chat/get-total-chat-count.ts";
 import { useErrorStore } from "./error-store.ts";
+import type { WebCitationSource } from "../api/chat/get-completion.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
@@ -47,6 +48,7 @@ interface ChatStore {
 		messageId: number;
 		content: string;
 		citations: number[] | null;
+		web_citations: WebCitationSource[] | null;
 	}): void;
 }
 
@@ -232,7 +234,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	 * Updates the content of a message
 	 * and debounces updating the message in the database
 	 */
-	updateMessage: ({ chat, messageId, content, citations }) => {
+	updateMessage: ({ chat, messageId, content, citations, web_citations }) => {
 		clearTimeout(updateMessageDebounceTimeout);
 
 		const foundMessage = chat.messages.find(
@@ -244,11 +246,11 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		foundMessage.content = content;
 		foundMessage.citations = citations;
-
+		foundMessage.web_citations = web_citations;
 		get().updateChats(chat);
 
 		updateMessageDebounceTimeout = setTimeout(async () => {
-			await updateMessageInDb(messageId, { content, citations });
+			await updateMessageInDb(messageId, { content, citations, web_citations });
 		}, 300);
 	},
 }));

@@ -7,8 +7,14 @@ import {
 	processDocument,
 } from "../api/documents/upload-file.ts";
 import { useErrorStore } from "./error-store.ts";
+import * as Sentry from "@sentry/react";
+import type { Span } from "@sentry/react";
+import { isFileInStorage } from "../api/documents/is-file-in-storage.ts";
+import { deleteFileFromStorage } from "../api/documents/delete-file-from-storage.ts";
+import { isDocumentInDatabase } from "../api/documents/is-document-in-database.ts";
 
 export const UPLOAD_STATUS_MAP = {
+	waiting: "Warte",
 	uploading: "Hochladen läuft",
 	uploaded: "Erfolgreich hochgeladen",
 	processing: "Hochladen läuft",
@@ -18,7 +24,7 @@ export const UPLOAD_STATUS_MAP = {
 	"failed.duplicate": "Datei existiert bereits",
 	"failed.format": "Falsches Format",
 	"failed.size": `Datei zu groß`,
-	"failed.tooMany": `Hochladen fehlgeschlagen`,
+	"failed.tooMany": `Uploadlimit erreicht`,
 } as const;
 
 export type UploadStatusKeys = keyof typeof UPLOAD_STATUS_MAP;
@@ -29,38 +35,25 @@ export type FileUpload = {
 };
 
 const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
-const WARNING_AUTO_DISMISS_DELAY_MS = 10_000;
-
-let maxParallelUploadWarningTimeout: ReturnType<typeof setTimeout> | null =
-	null;
 
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
-	isMaxParallelUploadWarningDismissed: boolean;
-	uploadFile: (fileUpload: FileUpload) => Promise<void>;
+	uploadFile: (args: { fileUpload: FileUpload; span: Span }) => Promise<void>;
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
 	hasAvailableUploadSlots: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
 	removeFileUpload: (fileName: string) => void;
 	clearFileUploads: () => void;
-	startMaxParallelUploadWarningTimer: () => void;
-	hideMaxParallelUploadWarning: () => void;
 };
-
-function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
-	return error instanceof Error && error.message in UPLOAD_STATUS_MAP;
-}
 
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
-	isMaxParallelUploadWarningDismissed: false,
 
-	async uploadFile({ file }: FileUpload) {
+	async uploadFile({ fileUpload: { file }, span }) {
 		const { updateFileUploadStatus } = get();
 		const { session } = useAuthStore.getState();
-		const { documents, getDocuments, deleteDocument } =
-			useDocumentStore.getState();
+		const { documents, getDocuments } = useDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
 		const slugifiedFilename = slugify(file.name, { lower: true });
@@ -100,44 +93,51 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				get().removeFileUpload(file.name);
 			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 
-			getDocuments(new AbortController().signal).catch(
-				useErrorStore.getState().handleError,
-			);
+			await getDocuments(new AbortController().signal);
 		} catch (error) {
-			useErrorStore.getState().handleError(error);
+			useErrorStore.getState().handleError(error, span);
+
+			await cleanupIfNecessary(filePath, span);
+
 			if (isKnownError(error)) {
 				updateFileUploadStatus(file, error.message);
 				return;
 			}
-			console.error(error);
+
 			updateFileUploadStatus(file, "failed.generic");
-			// If the document processing fails, remove the document from the store
-			const documentToDelete = documents.find(
-				(doc) => doc.source_url === filePath,
-			);
-			if (documentToDelete) {
-				await deleteDocument(documentToDelete.id);
-			}
 		}
 	},
 
 	uploadFiles: async (files: File[]) => {
-		const { fileUploads, uploadFile, hideMaxParallelUploadWarning } = get();
-		const { documents } = useDocumentStore.getState();
+		const { fileUploads, uploadFile } = get();
+		const { documents, deletedDefaultDocumentIds } =
+			useDocumentStore.getState();
 
-		const availableUploadSlots =
-			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) - documents.length;
-		const maxFileUploads = Math.min(
-			availableUploadSlots,
-			Number(import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS),
-		);
+		const numberOfNewUploads = documents.filter(
+			(doc) => !deletedDefaultDocumentIds.includes(doc.id),
+		).length;
 
-		const filesToUpload = files.slice(0, maxFileUploads);
-		const filesToCancel = files.slice(maxFileUploads);
+		const numberOfActiveAndQueuedUploads = fileUploads.filter(
+			(upload) =>
+				upload.status === "waiting" ||
+				upload.status === "uploading" ||
+				upload.status === "uploaded" ||
+				upload.status === "processing",
+		).length;
+
+		let availableUploadSlots =
+			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) -
+			numberOfNewUploads -
+			numberOfActiveAndQueuedUploads;
+
+		availableUploadSlots = Math.max(0, availableUploadSlots);
+
+		const filesToUpload = files.slice(0, availableUploadSlots);
+		const filesToCancel = files.slice(availableUploadSlots);
 
 		const newFileUploads = filesToUpload.map((file) => ({
 			file,
-			status: "uploading" as UploadStatusKeys,
+			status: "waiting" as UploadStatusKeys,
 		}));
 
 		const canceledFileUploads = filesToCancel.map((file) => ({
@@ -157,10 +157,39 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 		set({ fileUploads: updatedFileUploads });
 
-		hideMaxParallelUploadWarning();
+		const MAX_PARALLEL = Number(import.meta.env.VITE_MAX_PARALLEL_FILE_UPLOADS);
+		const queueState = { index: 0, activeUploads: 0 };
 
-		const promises = newFileUploads.map((fileUpload) => uploadFile(fileUpload));
-		await Promise.all(promises);
+		await new Promise<void>((resolve) => {
+			const processUploadQueue = () => {
+				if (
+					queueState.index >= newFileUploads.length &&
+					queueState.activeUploads === 0
+				) {
+					resolve();
+					return;
+				}
+
+				while (
+					queueState.activeUploads < MAX_PARALLEL &&
+					queueState.index < newFileUploads.length
+				) {
+					const fileUpload = newFileUploads[queueState.index++];
+					queueState.activeUploads++;
+					Sentry.startSpan(
+						{ name: "File Upload", op: "file.upload" },
+						async (span) => {
+							await uploadFile({ fileUpload, span });
+						},
+					).finally(() => {
+						queueState.activeUploads--;
+						processUploadQueue();
+					});
+				}
+			};
+
+			processUploadQueue();
+		});
 	},
 
 	isUploadingOver: () => {
@@ -188,11 +217,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	},
 
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {
-		const {
-			fileUploads,
-			isMaxParallelUploadWarningDismissed,
-			startMaxParallelUploadWarningTimer,
-		} = get();
+		const { fileUploads } = get();
 
 		const updatedFileUploads = fileUploads.map((fileUpload) => {
 			if (fileUpload.file.name === file.name) {
@@ -205,18 +230,6 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		});
 
 		set({ fileUploads: updatedFileUploads });
-
-		const shouldStartWarningTimer =
-			status === "successful" &&
-			updatedFileUploads.some(
-				(fileUpload) => fileUpload.status === "failed.tooMany",
-			) &&
-			!isMaxParallelUploadWarningDismissed &&
-			!maxParallelUploadWarningTimeout;
-
-		if (shouldStartWarningTimer) {
-			startMaxParallelUploadWarningTimer();
-		}
 	},
 
 	removeFileUpload: (fileName: string) => {
@@ -229,25 +242,91 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	clearFileUploads: () => {
 		set({ fileUploads: [] });
 	},
-
-	startMaxParallelUploadWarningTimer: () => {
-		// Clear existing timer
-		if (maxParallelUploadWarningTimeout) {
-			clearTimeout(maxParallelUploadWarningTimeout);
-		}
-
-		// Start new timer
-		maxParallelUploadWarningTimeout = setTimeout(() => {
-			maxParallelUploadWarningTimeout = null;
-			set({ isMaxParallelUploadWarningDismissed: true });
-		}, WARNING_AUTO_DISMISS_DELAY_MS);
-	},
-
-	hideMaxParallelUploadWarning: () => {
-		if (maxParallelUploadWarningTimeout) {
-			clearTimeout(maxParallelUploadWarningTimeout);
-			maxParallelUploadWarningTimeout = null;
-		}
-		set({ isMaxParallelUploadWarningDismissed: false });
-	},
 }));
+
+function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
+	return error instanceof Error && error.message in UPLOAD_STATUS_MAP;
+}
+
+async function cleanupIfNecessary(filePath: string, span: Span) {
+	const { data: isFileInStorageData, error: isFileInStorageError } =
+		await isFileInStorage(filePath);
+
+	/**
+	 * If the file does not exist, supabase returns false + an error:
+	 * https://github.com/supabase/supabase-js/issues/1363
+	 * So we only log the error without returning early.
+	 */
+	if (isFileInStorageError) {
+		useErrorStore.getState().handleError(isFileInStorageError, span);
+	}
+
+	const { data: isDocumentInDbData, error: isDocumentInDbError } =
+		await isDocumentInDatabase(filePath);
+
+	if (isDocumentInDbError) {
+		useErrorStore.getState().handleError(isDocumentInDbError, span);
+		return;
+	}
+
+	/**
+	 * If the file exists in the storage AND in the db,
+	 * it means the upload was successful but something else failed
+	 * (e.g. user tried to upload a file twice)
+	 */
+	if (isFileInStorageData && isDocumentInDbData) {
+		return;
+	}
+
+	/**
+	 * If the file does NEITHER exist in the storage NOR in the db,
+	 * there is nothing to clean up.
+	 */
+	if (!isFileInStorageData && !isDocumentInDbData) {
+		return;
+	}
+
+	/**
+	 * If the file exists in the storage but does not exist in the db,
+	 * just remove the file from the storage.
+	 * This can happen e.g. when the API is unavailable.
+	 */
+	if (isFileInStorageData && !isDocumentInDbData) {
+		await cleanupStorage(filePath, span);
+		return;
+	}
+
+	/**
+	 * If the file does not exist in the storage but does exist in the db,
+	 * just remove the file from the store and the db.
+	 * This can happen e.g. when a DB deletion failed.
+	 */
+	await cleanupStoreAndDatabase(filePath, span);
+}
+async function cleanupStorage(filePath: string, span: Span) {
+	const { error: deleteFileError } = await deleteFileFromStorage(filePath);
+
+	if (!deleteFileError) {
+		return;
+	}
+
+	useErrorStore.getState().handleError(deleteFileError, span);
+}
+
+async function cleanupStoreAndDatabase(filePath: string, span: Span) {
+	const { documents, deleteDocument } = useDocumentStore.getState();
+
+	const documentToDelete = documents.find((doc) => doc.source_url === filePath);
+
+	if (!documentToDelete) {
+		return;
+	}
+
+	const deleteError = await deleteDocument(documentToDelete.id);
+
+	if (!deleteError) {
+		return;
+	}
+
+	useErrorStore.getState().handleError(deleteError, span);
+}

@@ -31,7 +31,10 @@ export function AssistantMessage({
 
 	return (
 		<>
-			<div className="flex gap-x-4 self-start">
+			<div
+				className="flex gap-x-4 self-start"
+				data-testid="assistant-message-markdown-container"
+			>
 				<div className="pt-3.5 min-w-5 min-h-5">
 					{isBaerIconVisible && <BaerIcon />}
 				</div>

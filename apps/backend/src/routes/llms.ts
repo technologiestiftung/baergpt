@@ -1,7 +1,30 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import type { ChatMessageBody } from "../types/common";
+import { config } from "../config";
+import type { ActiveTools, ChatMessageBody } from "../types/common";
 import type { ModelMessage } from "ai";
+
+const VALID_ACTIVE_TOOLS = new Set<ActiveTools>([
+	"baseKnowledgeSearchTool",
+	"ragSearchTool",
+	"webSearchTool",
+	"parlaMCPTools",
+]);
+
+function isValidActiveTool(value: unknown): value is ActiveTools {
+	if (
+		typeof value !== "string" ||
+		!VALID_ACTIVE_TOOLS.has(value as ActiveTools)
+	) {
+		return false;
+	}
+
+	if (value === "webSearchTool" && !config.featureFlagWebSearchAllowed) {
+		return false;
+	}
+
+	return true;
+}
 import { ModelService } from "../services/model-service";
 import { GenerationService } from "../services/generation-service";
 import { captureError } from "../monitoring/capture-error";
@@ -29,8 +52,6 @@ llms.post("/just-chatting", async (c: Context) => {
 		const allowedFolderIds = body.allowed_folder_ids || [];
 		const messages = body.messages as ModelMessage[];
 		const isAddressedFormal = body.is_addressed_formal;
-		const isBaseKnowledgeActive = body.is_base_knowledge_active;
-		const isParlaMCPToolActive = body.is_parla_mcp_tool_active;
 		if (messages.length === 0 || !messages.at(-1)?.content) {
 			return c.json(
 				{
@@ -41,8 +62,26 @@ llms.post("/just-chatting", async (c: Context) => {
 			);
 		}
 
+		const rawActiveTools = body.active_tools ?? [];
+		if (
+			!Array.isArray(rawActiveTools) ||
+			!rawActiveTools.every(isValidActiveTool)
+		) {
+			return c.json(
+				{
+					error: `Invalid request: active_tools must be an array of valid tool names (${[...VALID_ACTIVE_TOOLS].join(", ")})`,
+				},
+				400,
+			);
+		}
+		const activeTools: ActiveTools[] = rawActiveTools;
+
 		const { messages: promptMessages, promptClient: langfusePrompt } =
-			await generationService.createPrompt(messages, isAddressedFormal);
+			await generationService.createPrompt(
+				messages,
+				isAddressedFormal,
+				activeTools,
+			);
 		const response = await generationService.generateTextStreamResponse(
 			llmHandler,
 			promptMessages,
@@ -52,8 +91,7 @@ llms.post("/just-chatting", async (c: Context) => {
 				langfusePrompt: langfusePrompt,
 				allowedDocumentIds: allowedDocumentIds,
 				allowedFolderIds: allowedFolderIds,
-				isBaseKnowledgeActive: isBaseKnowledgeActive,
-				isParlaMCPToolActive: isParlaMCPToolActive,
+				activeTools,
 			},
 		);
 

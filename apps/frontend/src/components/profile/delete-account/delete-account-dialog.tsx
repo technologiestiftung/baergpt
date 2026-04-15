@@ -46,7 +46,10 @@ export const DeleteAccountDialog = () => {
 			return;
 		}
 
-		await deleteAccount();
+		const { error } = await deleteAccount();
+		if (error) {
+			return;
+		}
 
 		navigate("/account-deleted/", { replace: true });
 	};

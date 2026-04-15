@@ -64,6 +64,7 @@ export const Content = {
 	/* ---------------------- Admin ---------------------- */
 	"admin.sidebar.navigation.users": "Benutzerverwaltung",
 	"admin.sidebar.navigation.baseKnowledge": "Base Knowledge",
+	"admin.sidebar.navigation.productDashboard": "Product Dashboard",
 	"admin.sidebar.navigation.inviteCodes": "Invite Codes",
 	"admin.sidebar.close": "Schließen",
 	"admin.sidebar.title": "BÄRGPT Admin",
@@ -214,6 +215,38 @@ export const Content = {
 		"Folgendes Element wirklich aus der Base Knowledge löschen?",
 	"baseKnowledge.deleteDialog.deleteDocumentButton.label": "Dokument löschen",
 	"baseKnowledge.deleteDialog.cancelButton.label": "Abbrechen",
+
+	/* ---------------------- Product Dashboard ---------------------- */
+	"productDashboard.error": "Es gab einen Fehler beim Laden der Daten.",
+
+	"productDashboard.userEvolution.title": "Total Users & Daily New Users",
+	"productDashboard.userEvolution.description":
+		"Kumulierte Nutzer:innen (Linie) und neue Registrierungen pro Tag (Balken) in den letzten 30 Tagen.",
+	"productDashboard.userEvolution.total.label": "Total Users",
+	"productDashboard.userEvolution.new.label": "Daily New Users",
+
+	"productDashboard.metricCards.dau.label": "Täglich aktive Nutzer:innen",
+	"productDashboard.metricCards.dau.details": "Heute",
+	"productDashboard.metricCards.wau.label": "Wöchentlich aktive Nutzer:innen",
+	"productDashboard.metricCards.wau.details": "Letzte 7 Tage",
+	"productDashboard.metricCards.mau.label": "Monatlich aktive Nutzer:innen",
+	"productDashboard.metricCards.mau.details": "Letzte 30 Tage",
+
+	"productDashboard.metricCards.totalChats.label": "Gesamtzahl der Chats",
+	"productDashboard.metricCards.totalUserDocuments.label":
+		"Gesamtzahl der Benutzerdokumente",
+	"productDashboard.metricCards.averageInferencesPerUser.label":
+		"Durchschnittliche Inferenzen pro Nutzer:in",
+	"productDashboard.metricCards.totalMessagesWithDocuments.label":
+		"Gesamtzahl der Nachrichten mit eigenen Dokumenten",
+	"productDashboard.metricCards.totalMessagesWithoutDocuments.label":
+		"Gesamtzahl der Nachrichten ohne eigene Dokumente",
+
+	"productDashboard.domainsTable.title": "Domains",
+	"productDashboard.domainsTable.description": "Registrierte User pro Domain.",
+	"productDashboard.domainsTable.head.domain": "Domain",
+	"productDashboard.domainsTable.head.users": "Users",
+	"productDashboard.domainsTable.showAllButton": "Alle anzeigen",
 } as const;
 
 export default Content;

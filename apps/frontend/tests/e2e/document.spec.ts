@@ -2,10 +2,12 @@ import { expect, test } from "@playwright/test";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import {
 	deleteFileViaUI,
+	mockDocumentProcessing,
 	mockDocumentUpload,
-	uploadFileViaDragAndDrop,
-	uploadFileViaFileChooser,
-	uploadMultipleFilesViaFileChooser,
+	attemptFileUploadViaFileChooser,
+	attemptMultipleFilesViaFileChooser,
+	uploadFileViaDragAndDropAndWait,
+	uploadFileViaFileChooserAndWait,
 } from "../fixtures/test-with-documents.ts";
 import {
 	defaultBucketName,
@@ -24,13 +26,15 @@ import {
 	secondaryDocumentName,
 	secondaryDocumentPath,
 	secondaryDocumentType,
+	seedDefaultDocumentName,
 } from "../constants.ts";
+import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 
 test.describe("Documents", () => {
 	testDesktopOnly(
 		"Upload via file chooser & delete via UI",
 		async ({ page, browserName }) => {
-			await uploadFileViaFileChooser({
+			await uploadFileViaFileChooserAndWait({
 				page,
 				fileName: secondaryDocumentName,
 				filePath: secondaryDocumentPath,
@@ -42,93 +46,91 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
-		"Upload max of 5 documents at once via file chooser",
-		async ({ page, browserName }) => {
-			// Test uploading exactly 5 documents (the max limit)
-			const filesToUpload = defaultDocuments.slice(0, 5);
+		"Attempt to upload more than 5 documents shows 6th document in waiting state",
+		async ({ page, browserName, account }) => {
+			// Try to upload 6 documents (1 more than the max limit)
+			const allFiles = defaultDocuments.slice(0, 6);
+			const filesToUploadFirst = allFiles.slice(0, 5);
 
-			await uploadMultipleFilesViaFileChooser({
-				files: filesToUpload,
+			// Track which requests have been received and resolvers to control them
+			const requestResolvers: Array<() => void> = [];
+
+			// Mock the /documents/process route to control upload completion
+			await page.route("**/documents/process", async (route) => {
+				// Hold each request until we manually resolve it
+				await new Promise<void>((resolve) => {
+					requestResolvers.push(resolve);
+				});
+				return route.fulfill({ status: 204 });
+			});
+
+			attemptMultipleFilesViaFileChooser({
+				files: allFiles,
 				page,
 				browserName,
 				uploadButtonName: "Datei hochladen",
 			});
 
-			// Verify all 5 files are visible in the document list
-			for (const file of filesToUpload) {
-				await expect(
-					page.getByRole("button", { name: `Dokumente-Icon ${file.name}` }),
-				).toBeVisible();
-			}
+			await expect.poll(() => requestResolvers.length).toBe(5);
 
-			// Clean up: delete all uploaded files
-			for (const file of filesToUpload) {
-				await deleteFileViaUI({ page, fileName: file.name });
-			}
-		},
-	);
-
-	testDesktopOnly(
-		"Attempt to upload more than 5 documents shows error for extras",
-		async ({ page, browserName }) => {
-			// Try to upload 6 documents (1 more than the max limit)
-			const allFiles = defaultDocuments.slice(0, 6);
-			const filesToUpload = allFiles.slice(0, 5);
-			const fileToReject = allFiles[5];
-
-			await page.goto("/");
-			await page.waitForLoadState("networkidle");
-
-			const filePaths = allFiles.map((file) => file.path);
-
-			if (browserName === "firefox") {
-				page.on("filechooser", async (fileChooser) => {
-					await fileChooser.setFiles([]);
-				});
-
-				const fileInput = page.locator('input[type="file"]').first();
-				await fileInput.setInputFiles(filePaths);
-			} else {
-				const fileChooserPromise = page.waitForEvent("filechooser");
-				await page.getByRole("button", { name: "Datei hochladen" }).click();
-				const fileChooser = await fileChooserPromise;
-				await fileChooser.setFiles(filePaths);
-			}
-
-			// Wait for the error message for the rejected file (scope to desktop panel)
-			await expect(
-				page
-					.locator("#desktop-documents-panel")
-					.getByText("Max. 5 Dateien pro Upload."),
-			).toBeVisible();
-
-			// Verify the first 5 files are being uploaded/uploaded successfully
-			for (const file of filesToUpload) {
+			// Verify the first 5 files are shown with the state "Hochladen läuft"
+			for (const file of filesToUploadFirst) {
 				await expect(
 					page
 						.locator("#desktop-documents-panel")
-						.getByText(file.name, { exact: true }),
+						.getByText(`${file.name}Hochladen läuft`, { exact: true }),
 				).toBeVisible();
 			}
 
-			// Wait for successful uploads to complete
-			for (let i = 0; i < 5; i++) {
-				await page.waitForResponse(
-					(givenResponse) =>
-						givenResponse.url().includes("/documents/process") &&
-						givenResponse.request().method() === "POST",
-					{
-						timeout: 60_000,
-					},
-				);
+			// Verify the 6th file is shown with the state "Warte"
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText(`${allFiles[5].name}Warte`, { exact: true }),
+			).toBeVisible();
+
+			// Mock the processing of the first file
+			await mockDocumentProcessing({
+				userId: account.id,
+				sourceUrl: `${account.id}/${allFiles[0].name}`,
+				accessGroupId: null,
+				fileName: allFiles[0].name,
+				sourceType: defaultSourceType,
+			});
+
+			// Resolve the first upload → 6th should transition from "Warte" to "Hochladen läuft"
+			requestResolvers[0]();
+
+			// Wait until the 6th request is intercepted (6th upload starts)
+			await expect
+				.poll(() => requestResolvers.length, { timeout: 30_000 })
+				.toBe(6);
+
+			// Verify the 6th file transitions to "Hochladen läuft"
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText(`${allFiles[5].name}Hochladen läuft`, { exact: true }),
+			).toBeVisible();
+
+			// Resolve all remaining requests
+			for (let i = 1; i < requestResolvers.length; i++) {
+				await mockDocumentProcessing({
+					userId: account.id,
+					sourceUrl: `${account.id}/${allFiles[i].name}`,
+					accessGroupId: null,
+					fileName: allFiles[i].name,
+					sourceType: defaultSourceType,
+				});
+				requestResolvers[i]();
 			}
 
 			// Close the file upload dialog
 			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
 
-			// Verify only the first 5 files appear in the document list
+			// Verify all 6 files appear in the document list
 			const desktopPanel = page.locator("#desktop-documents-panel");
-			for (const file of filesToUpload) {
+			for (const file of allFiles) {
 				await expect(
 					desktopPanel.getByRole("button", {
 						name: `Dokumente-Icon ${file.name}`,
@@ -136,17 +138,74 @@ test.describe("Documents", () => {
 				).toBeVisible();
 			}
 
-			// Verify the 6th file is NOT in the document list
-			await expect(
-				desktopPanel.getByRole("button", {
-					name: `Dokumente-Icon ${fileToReject.name}`,
-				}),
-			).not.toBeVisible();
-
 			// Clean up: delete all successfully uploaded files
-			for (const file of filesToUpload) {
+			for (const file of allFiles) {
 				await deleteFileViaUI({ page, fileName: file.name });
 			}
+		},
+	);
+
+	testDesktopOnly(
+		"Should delete the file from storage when the processing fails",
+		async ({ page, account, browserName, session }) => {
+			const givenStoragePath = `${account.id}/${secondaryDocumentName}`;
+
+			const givenFile = new File(["test content"], secondaryDocumentName, {
+				type: secondaryDocumentType,
+			});
+
+			// Set the session for the anon client to have access to the user's storage
+			const { error: sessionError } = await supabaseAnonClient.auth.setSession({
+				access_token: session.access_token,
+				refresh_token: session.refresh_token,
+			});
+
+			expect(sessionError).toBeNull();
+
+			const { error: uploadError } = await supabaseAnonClient.storage
+				.from("documents")
+				.upload(givenStoragePath, givenFile);
+
+			// Remove the session from the anon client to avoid side effects on other tests
+			await supabaseAnonClient.auth.signOut();
+
+			expect(uploadError).toBeNull();
+
+			const { data: exists1, error: existsError1 } =
+				await supabaseAdminClient.storage
+					.from(defaultBucketName)
+					.exists(givenStoragePath);
+
+			expect(existsError1).toBeNull();
+			expect(exists1).toBe(true);
+
+			const waitForDeletion = page.waitForResponse(
+				(response) =>
+					response.url().includes("/storage/v1/object/documents") &&
+					response.request().method() === "DELETE",
+			);
+
+			await attemptFileUploadViaFileChooser({
+				page,
+				filePath: secondaryDocumentPath,
+				browserName,
+				uploadButtonName: "Datei hochladen",
+			});
+
+			await waitForDeletion;
+
+			const { data: exists2, error: existsError2 } =
+				await supabaseAdminClient.storage
+					.from(defaultBucketName)
+					.exists(givenStoragePath);
+
+			/**
+			 * If the file does not exist, supabase returns false + an error:
+			 * https://github.com/supabase/supabase-js/issues/1363
+			 * So we expect an error to be defined, but we also expect exists to be false.
+			 */
+			expect(existsError2).toBeDefined();
+			expect(exists2).toBe(false);
 		},
 	);
 
@@ -433,7 +492,7 @@ test.describe("Documents", () => {
 				.click();
 
 			// Ensure second doc exists (upload if necessary)
-			await uploadFileViaDragAndDrop({
+			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: secondaryDocumentName,
 				filePath: secondaryDocumentPath,
@@ -573,7 +632,7 @@ test.describe("Documents", () => {
 	testDesktopOnly("Drag & drop document to upload", async ({ page }) => {
 		await page.goto("/");
 
-		await uploadFileViaDragAndDrop({
+		await uploadFileViaDragAndDropAndWait({
 			page,
 			fileName: secondaryDocumentName,
 			filePath: secondaryDocumentPath,
@@ -694,7 +753,7 @@ test.describe("Documents", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
-			await uploadFileViaDragAndDrop({
+			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: msWordDocumentName,
 				filePath: msWordDocumentPath,
@@ -732,7 +791,7 @@ test.describe("Documents", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
-			await uploadFileViaDragAndDrop({
+			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: msExcelDocumentName,
 				filePath: msExcelDocumentPath,
@@ -768,7 +827,7 @@ test.describe("Documents", () => {
 	testDesktopOnly(
 		"Shows limit reached message and disables upload button when max files uploaded",
 		async ({ page, account, session }) => {
-			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 100;
 
 			// Mock multiple document uploads to reach the limit
 			// We already have 1 document from the fixture, so upload (maxFiles - 1) more
@@ -804,6 +863,72 @@ test.describe("Documents", () => {
 			const uploadButton = desktopPanel.getByRole("button", {
 				name: "Datei hochladen",
 			});
+			await expect(uploadButton).toBeDisabled();
+		},
+	);
+
+	testDesktopOnly(
+		"Hidden default documents do not count toward upload limit",
+		async ({ page, account, session }) => {
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 100;
+
+			// Fixture has 1 personal doc; mock 98 more → 99 personal. With 1 default (created above) = 100 visible (at limit)
+			for (let i = 1; i < maxFiles - 1; i++) {
+				await mockDocumentUpload({
+					userId: account.id,
+					accessToken: session.access_token,
+					accessGroupId: null,
+					fileName: `test-document-edge-${i}.pdf`,
+					filePath: defaultDocumentPath,
+					sourceType: defaultSourceType,
+					bucketName: defaultBucketName,
+				});
+			}
+
+			await page.goto("/");
+			await page.waitForLoadState("networkidle");
+
+			const desktopPanel = page.locator("#desktop-documents-panel");
+
+			// At 100 visible → limit reached
+			await expect(
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
+			).toBeVisible();
+			const uploadButton = desktopPanel.getByRole("button", {
+				name: "Datei hochladen",
+			});
+			await expect(uploadButton).toBeDisabled();
+
+			// Delete (hide) the seed default document via UI → 99 visible, one slot free
+			await deleteFileViaUI({ page, fileName: seedDefaultDocumentName });
+
+			// Wait for document list refetch and UI to reflect 99 visible (hidden default no longer counted)
+			await expect(
+				desktopPanel.getByText(`${maxFiles - 1} von ${maxFiles}`),
+			).toBeVisible({ timeout: 15_000 });
+			await expect(uploadButton).toBeEnabled();
+
+			// Upload the 100th visible file using setInputFiles to simulate user file selection
+			const fileInput = page.locator('input[type="file"]').first();
+			await fileInput.setInputFiles(secondaryDocumentPath);
+
+			await page.waitForResponse(
+				(res) =>
+					res.url().includes("/documents/process") &&
+					res.request().method() === "POST",
+				{ timeout: 60_000 },
+			);
+
+			await page.waitForLoadState("networkidle");
+
+			// Now at 100 visible → limit reached again
+			await expect(
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
+			).toBeVisible();
 			await expect(uploadButton).toBeDisabled();
 		},
 	);

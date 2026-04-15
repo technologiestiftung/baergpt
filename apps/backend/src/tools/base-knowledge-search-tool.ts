@@ -49,9 +49,8 @@ export const baseKnowledgeSearchTool = (
 			const allowedFolderIds = Array.from(
 				new Set(knowledgeBaseDocuments.map((doc) => doc.folder_id)),
 			);
-			const embedding = await embeddingService.generateJinaEmbedding(
+			const embedding = await embeddingService.generateMistralEmbedding(
 				query,
-				"retrieval.query",
 				userId,
 			);
 			// do rag search over the base knowledge documents only

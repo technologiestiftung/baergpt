@@ -29,7 +29,9 @@
     "libs/*"
   ],
   "devDependencies": {
-    "turbo": "2.5.8"
+    "turbo": "2.5.8",
+    "@repo/eslint": "file:libs/eslint",
+    "@repo/prettier": "file:libs/prettier"
   },
   "packageManager": "npm@11.4.2"
 }

@@ -13,6 +13,7 @@ import { getAllowedEmailDomains } from "../api/auth/get-allowed-email-domains.ts
 import { registerUser } from "../api/auth/register-user.ts";
 import { resendEmailConfirmation } from "../api/auth/resend-email-confirmation.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
+import type { Span } from "@sentry/react";
 
 let resendTime: number | null = null;
 
@@ -35,6 +36,7 @@ interface AuthStore {
 		lastName: string;
 		email: string;
 		password: string;
+		span: Span;
 	}) => Promise<void>;
 	updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
 	updatePassword: (newPassword: string) => Promise<void>;
@@ -45,7 +47,11 @@ interface AuthStore {
 	}) => Promise<void>;
 	requestPasswordReset: (email: string) => Promise<void>;
 	resetPassword: (newPassword: string) => Promise<void>;
-	login: (args: { email: string; password: string }) => Promise<void>;
+	login: (args: {
+		email: string;
+		password: string;
+		span: Span;
+	}) => Promise<void>;
 	logout: () => Promise<void>;
 	checkIsUserAdmin: (signal: AbortSignal) => Promise<void>;
 	getAllowedEmailDomains: (signal: AbortSignal) => Promise<void>;
@@ -150,7 +156,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isUserAdmin: false,
 		isAdminStatusLoaded: false,
 
-		async register({ firstName, lastName, email, password }) {
+		async register({ firstName, lastName, email, password, span }) {
 			const { data, error } = await registerUser({
 				email,
 				password,
@@ -159,7 +165,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			});
 
 			if (error) {
-				useAuthErrorStore.getState().handleError(error);
+				useAuthErrorStore.getState().handleError(error, span);
 				return;
 			}
 
@@ -277,26 +283,25 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			set({ isPasswordResetSuccessful: true });
 		},
 
-		async login({ email, password }) {
+		async login({ email, password, span }) {
 			const { error } = await supabase.auth.signInWithPassword({
 				email,
 				password,
 			});
 
-			if (error) {
-				console.error("Login error:", error);
-
-				if (error.message === "Email not confirmed") {
-					set({
-						unconfirmedEmail: email,
-						emailConfirmationStatus: "unconfirmed",
-					});
-					return;
-				}
-
-				useAuthErrorStore.getState().handleError(error);
+			if (!error) {
 				return;
 			}
+
+			if (error.message === "Email not confirmed") {
+				set({
+					unconfirmedEmail: email,
+					emailConfirmationStatus: "unconfirmed",
+				});
+				return;
+			}
+
+			useAuthErrorStore.getState().handleError(error, span);
 		},
 
 		async logout() {

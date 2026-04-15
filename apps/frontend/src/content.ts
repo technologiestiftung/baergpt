@@ -16,17 +16,6 @@ export const Content = {
 	"header.navigation.landingPage.register.link": "/register/",
 
 	/* -------------------- Landing Page -------------------- */
-	"landingPage.banner.h2": "Sie haben noch mehr Fragen zu BärGPT?",
-	"landingPage.banner.p1":
-		"In der Online-Sprechstunde beantworten wir Ihre individuellen Fragen.",
-	"landingPage.banner.p2": "Donnerstags von 11-12 Uhr.",
-	"landingPage.banner.p.mobile":
-		"Online-Sprechstunde: Donnerstags von 11-12 Uhr.",
-	"landingPage.banner.link.label": "Termin im Intranet finden",
-	"landingPage.banner.link.ariaLabel": "Zur Intranet-Seite",
-	"landingPage.banner.link.href":
-		"https://b-intern.de/themen/kuenstliche-intelligenz-ki/",
-	"landingPage.banner.close.ariaLabel": "Banner schließen",
 	"landingPage.hero.h1": "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 	"landingPage.hero.h3": "Sicher. Datenschutzkonform. Open Source.",
 	"landingPage.hero.register.label": "Jetzt registrieren",
@@ -93,7 +82,7 @@ export const Content = {
 
 	/* -------------------- Privacy Policy Page -------------------- */
 	"privacyPolicyPage.h1": "Datenschutzerklärung",
-	"privacyPolicyPage.date": "Stand Oktober 2025",
+	"privacyPolicyPage.date": "Stand März 2026",
 	"privacyPolicyPage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"privacyPolicyPage.section1.title": "Einleitung und Anwendungsbereich",
@@ -192,7 +181,7 @@ export const Content = {
 		"Löschung nach Abschluss der Auswertung",
 	"privacyPolicyPage.section6.li5.title": "Backups: ",
 	"privacyPolicyPage.section6.li5.description":
-		"Löschung nach festem Rotationsplan (derzeit sieben Tage)",
+		"Löschung nach festem Rotationsplan (derzeit 30 Tage)",
 	//Section 7
 	"privacyPolicyPage.section7.title": "Empfänger und Weitergabe von Daten",
 	"privacyPolicyPage.section7.p1":
@@ -523,7 +512,7 @@ export const Content = {
 	"termsOfUsePage.section9.sub1.p1.start":
 		"BärGPT wurde nach dem Prinzip „Public Money, Public Code“ entwickelt. Der Quellcode ist Open Source und öffentlich auf ",
 	"termsOfUsePage.section9.sub1.p1.link":
-		"https://github.com/technologiestiftung/baergpt)",
+		"https://github.com/technologiestiftung/baergpt",
 	"termsOfUsePage.section9.sub1.p1.link.label": "GitHub",
 	"termsOfUsePage.section9.sub1.p1.end": " verfügbar.",
 	//9.2
@@ -743,6 +732,7 @@ export const Content = {
 	"previewIcon.imgAlt": "Preview-Icon",
 	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
 	"redErrorIcon.imgAlt": "Ein Error Icon mit weißem ! in rotem Kreis",
+	"clockIcon.imgAlt": "Ein Uhr-Icon",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
@@ -803,15 +793,11 @@ export const Content = {
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
 	// file upload counter message
-	"fileUpload.infoMessage.maxUpload.p1": `Pro Upload-Vorgang sind max.`,
-	"fileUpload.infoMessage.maxUpload.p2": `Dateien möglich.`,
 	"fileUpload.infoMessage.counter.p1": `von`,
 	"fileUpload.infoMessage.counter.p2": `möglichen Dateien hochgeladen.`,
 	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von`,
 	"fileUpload.infoMessage.limitReached.p2": `Dateien erreicht.`,
 	"fileUpload.infoMessage.limitReached.p3": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
-	"fileUpload.maxFilesWarning.p1": `Max.`,
-	"fileUpload.maxFilesWarning.p2": `Dateien pro Upload.`,
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
@@ -888,6 +874,9 @@ export const Content = {
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
+	"chat.sendButton.ariaLabel": "Nachricht senden",
+	"chat.stopGeneratingButton.ariaLabel": "Textgenerierung stoppen",
+	"chatStopGeneratingIcon.imgAlt": "Generierung stoppen (Pause-Symbol)",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
@@ -1369,6 +1358,9 @@ export const Content = {
 	"userEditModal.form.emailAlreadyInUseError":
 		"Diese E-Mail-Adresse ist bereits in Verwendung.",
 	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",
+	//Splash Modal
+	"splashModal.title": "Was ist neu?",
+	"splashModal.description": "Die wichtigsten Neuerungen im Überblick",
 } as const;
 
 export default Content;

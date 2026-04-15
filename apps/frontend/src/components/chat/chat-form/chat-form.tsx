@@ -8,6 +8,8 @@ import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.t
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
 import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
+import { ChatStopGeneratingIcon } from "../../primitives/icons/chat-stop-generating-icon.tsx";
+import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
 import { useFolderStore } from "../../../store/folder-store.ts";
 import { useDocumentStore } from "../../../store/document-store.ts";
 import Content from "../../../content.ts";
@@ -17,6 +19,7 @@ import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
+import * as Sentry from "@sentry/react";
 
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
@@ -26,6 +29,7 @@ export const ChatForm: React.FC = () => {
 	const { selectedChatDocuments } = useDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
 		useChatsStore();
+	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
@@ -75,12 +79,18 @@ export const ChatForm: React.FC = () => {
 			role: "user",
 			content: messageText,
 			citations: null,
+			web_citations: null,
 			allowed_document_ids: selectedChatDocuments.map((doc) => doc.id),
 			allowed_folder_ids: selectedChatFolders.map((folder) => folder.id),
 		};
 
-		const chat = await getCurrentOrCreateChat(userMessage);
-		await getCompletion(chat);
+		Sentry.startSpan(
+			{ name: "Stream Chat Message Response", op: "chat.message.stream" },
+			async (span) => {
+				const chat = await getCurrentOrCreateChat(userMessage);
+				await getCompletion(chat, span);
+			},
+		);
 	};
 
 	const isInferenceLoading = [
@@ -138,15 +148,25 @@ export const ChatForm: React.FC = () => {
 					</div>
 					<div className="flex items-center gap-3">
 						<LlmModelToggleButton />
-						<button
-							type="submit"
-							disabled={
-								(isInferenceLoading && !hasError) || !textareaContent.trim()
-							}
-							className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
-						>
-							<ArrowWhiteRightIcon />
-						</button>
+						{isInferenceLoading && !hasError ? (
+							<button
+								type="button"
+								aria-label={Content["chat.stopGeneratingButton.ariaLabel"]}
+								onClick={() => abortStreaming()}
+								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-110 focus-visible:outline-2px"
+							>
+								<ChatStopGeneratingIcon />
+							</button>
+						) : (
+							<button
+								type="submit"
+								disabled={!textareaContent.trim()}
+								aria-label={Content["chat.sendButton.ariaLabel"]}
+								className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
+							>
+								<ArrowWhiteRightIcon />
+							</button>
+						)}
 					</div>
 				</div>
 			</div>
