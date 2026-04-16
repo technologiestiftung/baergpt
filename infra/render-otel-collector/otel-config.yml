@@ -47,7 +47,7 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
-    sending_queue:
+    remote_write_queue:
       enabled: true
       num_consumers: 2
       queue_size: 1000
