@@ -15,32 +15,52 @@ const NANOSECOND_SUFFIX = "000000";
 const CURSOR_ADVANCE_MS = 1;
 const REQUEST_TIMEOUT_MS = 30_000;
 
-const REQUIRED_ENV = [
-	"RENDER_API_KEY",
-	"RENDER_OWNER_ID",
-	"RENDER_RESOURCE_IDS",
-	"LOKI_PUSH_URL",
-	"LOKI_USERNAME",
-	"LOKI_PASSWORD",
-];
+interface RenderLogLabel {
+	name: string;
+	value: string;
+}
 
-for (const key of REQUIRED_ENV) {
-	if (!process.env[key]) {
+interface RenderLogEntry {
+	timestamp: string;
+	message: string;
+	labels?: RenderLogLabel[];
+}
+
+interface RenderLogsResponse {
+	logs?: RenderLogEntry[];
+	hasMore?: boolean;
+	nextStartTime?: string;
+	nextEndTime?: string;
+}
+
+type LokiLabels = Record<string, string>;
+
+interface LokiStream {
+	stream: LokiLabels;
+	values: [string, string][];
+}
+
+interface LokiPayload {
+	streams: LokiStream[];
+}
+
+function requireEnv(key: string): string {
+	const value = process.env[key];
+	if (!value) {
 		console.error(`Missing required env var: ${key}`);
 		process.exit(1);
 	}
+	return value;
 }
 
-const {
-	RENDER_API_KEY,
-	RENDER_OWNER_ID,
-	RENDER_RESOURCE_IDS,
-	LOKI_PUSH_URL,
-	LOKI_USERNAME,
-	LOKI_PASSWORD,
-} = process.env;
+const RENDER_API_KEY = requireEnv("RENDER_API_KEY");
+const RENDER_OWNER_ID = requireEnv("RENDER_OWNER_ID");
+const RENDER_RESOURCE_IDS = requireEnv("RENDER_RESOURCE_IDS");
+const LOKI_PUSH_URL = requireEnv("LOKI_PUSH_URL");
+const LOKI_USERNAME = requireEnv("LOKI_USERNAME");
+const LOKI_PASSWORD = requireEnv("LOKI_PASSWORD");
 
-let lokiUrl;
+let lokiUrl: URL;
 try {
 	lokiUrl = new URL(LOKI_PUSH_URL);
 } catch {
@@ -58,7 +78,7 @@ if (
 
 const resourceIds = RENDER_RESOURCE_IDS.split(",")
 	.map((id) => id.trim())
-	.filter(Boolean); // remove empty strings
+	.filter(Boolean);
 
 if (resourceIds.length === 0) {
 	console.error(
@@ -68,7 +88,7 @@ if (resourceIds.length === 0) {
 }
 
 const pollIntervalMs =
-	(parseInt(process.env.POLL_INTERVAL_SECONDS, 10) || 60) * 1000;
+	(parseInt(process.env.POLL_INTERVAL_SECONDS ?? "", 10) || 60) * 1000;
 
 const lokiAuth =
 	"Basic " +
@@ -76,7 +96,7 @@ const lokiAuth =
 
 let lastPollTime = new Date(Date.now() - pollIntervalMs).toISOString();
 
-function buildLogParams(startTime, endTime) {
+function buildLogParams(startTime: string, endTime: string): URLSearchParams {
 	const params = new URLSearchParams({
 		ownerId: RENDER_OWNER_ID,
 		startTime,
@@ -90,7 +110,10 @@ function buildLogParams(startTime, endTime) {
 	return params;
 }
 
-async function fetchRenderLogs(startTime, endTime) {
+async function fetchRenderLogs(
+	startTime: string,
+	endTime: string,
+): Promise<RenderLogsResponse> {
 	const response = await fetch(
 		`${RENDER_LOGS_URL}?${buildLogParams(startTime, endTime)}`,
 		{
@@ -111,22 +134,22 @@ async function fetchRenderLogs(startTime, endTime) {
 		return { logs: [], hasMore: false };
 	}
 
-	return await response.json();
+	return (await response.json()) as RenderLogsResponse;
 }
 
-async function fetchAllLogs() {
+async function fetchAllLogs(): Promise<RenderLogEntry[]> {
 	const firstPage = await fetchRenderLogs(
 		lastPollTime,
 		new Date().toISOString(),
 	);
-	const allLogs = [...(firstPage.logs || [])];
+	const allLogs: RenderLogEntry[] = [...(firstPage.logs ?? [])];
 
 	let { hasMore, nextStartTime, nextEndTime } = firstPage;
 
-	for (let page = 0; hasMore && page < MAX_PAGES; page++) {
+	for (let page = 0; hasMore && nextStartTime && nextEndTime && page < MAX_PAGES; page++) {
 		const nextPage = await fetchRenderLogs(nextStartTime, nextEndTime);
 
-		allLogs.push(...(nextPage.logs || []));
+		allLogs.push(...(nextPage.logs ?? []));
 		hasMore = nextPage.hasMore;
 		nextStartTime = nextPage.nextStartTime;
 		nextEndTime = nextPage.nextEndTime;
@@ -141,29 +164,31 @@ async function fetchAllLogs() {
 	return allLogs;
 }
 
-function toLokiPayload(logs) {
-	const streams = new Map();
+function toLokiPayload(logs: RenderLogEntry[]): LokiPayload {
+	const streams = new Map<string, LokiStream>();
 
 	for (const log of logs) {
-		const labels = { source: "render" };
-		for (const label of log.labels || []) {
+		const labels: LokiLabels = { source: "render" };
+		for (const label of log.labels ?? []) {
 			labels[label.name] = label.value;
 		}
 
 		const key = JSON.stringify(labels, Object.keys(labels).sort());
-		if (!streams.has(key)) {
-			streams.set(key, { stream: labels, values: [] });
+		let stream = streams.get(key);
+		if (!stream) {
+			stream = { stream: labels, values: [] };
+			streams.set(key, stream);
 		}
 
 		const timestampNanos =
 			String(new Date(log.timestamp).getTime()) + NANOSECOND_SUFFIX;
-		streams.get(key).values.push([timestampNanos, log.message]);
+		stream.values.push([timestampNanos, log.message]);
 	}
 
 	return { streams: Array.from(streams.values()) };
 }
 
-async function pushToLoki(logs) {
+async function pushToLoki(logs: RenderLogEntry[]): Promise<void> {
 	const response = await fetch(LOKI_PUSH_URL, {
 		method: "POST",
 		headers: {
@@ -182,14 +207,14 @@ async function pushToLoki(logs) {
 	console.log(`Pushed ${logs.length} log entries to Loki`);
 }
 
-function getLatestTimestamp(logs) {
+function getLatestTimestamp(logs: RenderLogEntry[]): number {
 	return logs.reduce(
 		(max, log) => Math.max(max, new Date(log.timestamp).getTime()),
 		0,
 	);
 }
 
-async function poll() {
+async function poll(): Promise<void> {
 	try {
 		const logs = await fetchAllLogs();
 		if (logs.length === 0) return;
@@ -200,11 +225,12 @@ async function poll() {
 			getLatestTimestamp(logs) + CURSOR_ADVANCE_MS,
 		).toISOString();
 	} catch (error) {
-		console.error("Poll cycle failed:", error.message);
+		const message = error instanceof Error ? error.message : String(error);
+		console.error("Poll cycle failed:", message);
 	}
 }
 
-async function startPolling() {
+async function startPolling(): Promise<void> {
 	await poll();
 	setTimeout(startPolling, pollIntervalMs);
 }

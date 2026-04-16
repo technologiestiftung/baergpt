@@ -4,6 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "tsx": "4.19.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.5.0",
+    "typescript": "5.8.3"
   }
 }
