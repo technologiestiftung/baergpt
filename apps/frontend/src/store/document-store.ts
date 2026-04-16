@@ -9,6 +9,7 @@ import { downloadDocument } from "../api/documents/download-document.ts";
 import { useErrorStore } from "./error-store";
 import { hideDefaultDocument } from "../api/documents/hide-default-document";
 import { getHiddenDefaultDocumentIds } from "../api/documents/get-hidden-default-document-ids";
+import { useChatsStore } from "./use-chats-store.ts";
 
 interface DocumentStore {
 	documents: Document[];
@@ -215,6 +216,12 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 		}
 
 		const updatedSelectedChatDocuments = [...selectedChatDocuments, document];
+
+		const { selectedChatOptions } = useChatsStore.getState();
+		if (selectedChatOptions.includes("webSearch")) {
+			useChatsStore.getState().toggleChatOption("webSearch");
+			useChatsStore.getState().setIsWebSearchRemovalInfoMessageShown(true);
+		}
 
 		set(() => ({
 			selectedChatDocuments: updatedSelectedChatDocuments,

@@ -7,12 +7,15 @@ import { BlueSquareIcon } from "../primitives/icons/blue-square-icon.tsx";
 import { useScrollToBottom } from "./hooks/use-scroll-to-bottom.tsx";
 import { useChatScrollingStore } from "../../store/use-chat-scrolling-store.ts";
 import Content from "../../content.ts";
+import { ChatErrorMessage } from "./chat-message/chat-error-message.tsx";
+import { ChatInfoMessage } from "./chat-message/chat-info-message.tsx";
 
 export const ChatMessages: React.FC = () => {
 	const { status } = useInferenceLoadingStatusStore();
 	const { currentChatId } = useCurrentChatIdStore();
 	const { chats } = useChatsStore();
 	const { handleScroll } = useChatScrollingStore();
+	const { isWebSearchRemovalInfoMessageShown } = useChatsStore();
 
 	const messageContainerRef = useRef<null | HTMLDivElement>(null);
 
@@ -45,37 +48,8 @@ export const ChatMessages: React.FC = () => {
 						<span>{Content["chat.loadingText"]}</span>
 					</div>
 				)}
-				{hasError && (
-					<div className="flex flex-col gap-2 w-full px-3 py-[18px] text-warning-100 rounded-[3px] bg-warning-10">
-						<p>
-							<span className="flex gap-1">
-								<img
-									src="/icons/error-icon.svg"
-									alt={Content["chat.errorIcon.imgAlt"]}
-									className="w-4 h-4"
-								/>
-								<span className="text-sm leading-5 font-semibold">
-									{Content["chat.errorText.title"]}
-								</span>
-							</span>
-							<span className="text-sm leading-5 font-normal pl-5">
-								{" "}
-								{Content["chat.errorText.p1"]}
-							</span>
-						</p>
-						<span className="text-sm leading-5 font-normal pl-5">
-							{Content["chat.errorText.p2"]}
-							<a
-								href={Content["chat.errorText.helpPage.link"]}
-								className="text-sm leading-5 font-normal underline cursor-pointer text-dunkelblau-100"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								{Content["chat.errorText.helpPage.linkText"]}
-							</a>
-						</span>
-					</div>
-				)}
+				{hasError && <ChatErrorMessage />}
+				{isWebSearchRemovalInfoMessageShown && <ChatInfoMessage />}
 			</div>
 		</div>
 	);
