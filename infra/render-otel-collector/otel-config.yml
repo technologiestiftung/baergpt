@@ -24,7 +24,7 @@ processors:
       include:
         match_type: regexp
         resource_attributes:
-          - key: job
+          - key: service.name
             value: "baergpt.*|bottleneck.*|gotenberg"
 
   batch:
