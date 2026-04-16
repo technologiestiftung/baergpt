@@ -42,6 +42,15 @@ exporters:
     endpoint: ${STACKIT_OBSERVABILITY_METRICS_PUSH_URL}
     auth:
       authenticator: basicauth/stackit
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 1000
 
 service:
   extensions: [bearertokenauth/render, basicauth/stackit, health_check]

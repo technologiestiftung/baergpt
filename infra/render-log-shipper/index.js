@@ -13,6 +13,7 @@ const MAX_PAGES = 10;
 const LOGS_PER_PAGE = "100";
 const NANOSECOND_SUFFIX = "000000";
 const CURSOR_ADVANCE_MS = 1;
+const REQUEST_TIMEOUT_MS = 30_000;
 
 const REQUIRED_ENV = [
 	"RENDER_API_KEY",
@@ -39,7 +40,18 @@ const {
 	LOKI_PASSWORD,
 } = process.env;
 
-if (!new URL(LOKI_PUSH_URL).hostname.endsWith(".stackit.cloud")) {
+let lokiUrl;
+try {
+	lokiUrl = new URL(LOKI_PUSH_URL);
+} catch {
+	console.error("LOKI_PUSH_URL must be a valid URL");
+	process.exit(1);
+}
+
+if (
+	lokiUrl.protocol !== "https:" ||
+	!lokiUrl.hostname.endsWith(".stackit.cloud")
+) {
 	console.error("LOKI_PUSH_URL must be an HTTPS endpoint on stackit.cloud");
 	process.exit(1);
 }
@@ -47,6 +59,13 @@ if (!new URL(LOKI_PUSH_URL).hostname.endsWith(".stackit.cloud")) {
 const resourceIds = RENDER_RESOURCE_IDS.split(",")
 	.map((id) => id.trim())
 	.filter(Boolean); // remove empty strings
+
+if (resourceIds.length === 0) {
+	console.error(
+		"RENDER_RESOURCE_IDS must contain at least one non-empty service ID",
+	);
+	process.exit(1);
+}
 
 const pollIntervalMs =
 	(parseInt(process.env.POLL_INTERVAL_SECONDS, 10) || 60) * 1000;
@@ -74,7 +93,10 @@ function buildLogParams(startTime, endTime) {
 async function fetchRenderLogs(startTime, endTime) {
 	const response = await fetch(
 		`${RENDER_LOGS_URL}?${buildLogParams(startTime, endTime)}`,
-		{ headers: { Authorization: `Bearer ${RENDER_API_KEY}` } },
+		{
+			headers: { Authorization: `Bearer ${RENDER_API_KEY}` },
+			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+		},
 	);
 
 	if (response.status === 429) {
@@ -149,6 +171,7 @@ async function pushToLoki(logs) {
 			Authorization: lokiAuth,
 		},
 		body: JSON.stringify(toLokiPayload(logs)),
+		signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
 	});
 
 	if (!response.ok) {
