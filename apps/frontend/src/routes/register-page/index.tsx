@@ -90,7 +90,7 @@ export function RegisterPage() {
 							alt="info-icon"
 						/>
 
-						<div className="flex flex-col gap-3 min-w-0">
+						<div className="flex flex-col gap-3 min-w-0" id="notice">
 							<p className="text-sm leading-5 md:text-base md:leading-6 font-semibold">
 								{Content["registerPage.notice.heading"]}
 							</p>
@@ -116,6 +116,8 @@ export function RegisterPage() {
 										? Content["registerPage.notice.showLess.button.ariaLabel"]
 										: Content["registerPage.notice.showMore.button.ariaLabel"]
 								}
+								aria-expanded={isNoticeExpanded}
+								aria-controls="notice"
 								onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
 							>
 								{isNoticeExpanded
@@ -175,33 +177,31 @@ export function RegisterPage() {
 							/>
 						</label>
 
-						<label
-							htmlFor="password"
-							className="flex flex-col mt-4 md:mt-5 gap-y-1 text-sm md:text-base"
-						>
-							<span className="flex gap-x-1 items-center">
+						<div className="flex mt-4 md:mt-5 mb-1 text-sm md:text-base gap-x-1 items-center">
+							<label htmlFor="password">
 								{Content["registerPage.passwordLabel"]}
-								<button
-									type="button"
-									className="rounded-3px focus-visible:outline-default"
-									onMouseEnter={handleShowPasswordTooltip}
-									onMouseLeave={hideTooltip}
-									onFocus={handleShowPasswordTooltip}
-									onBlur={hideTooltip}
-								>
-									<QuestionMarkIcon />
-								</button>
-							</span>
-							<PasswordInput id="password" minLength={10} />
-						</label>
+							</label>
+							<button
+								type="button"
+								aria-label={Content["registerPage.passwordTooltip.ariaLabel"]}
+								className="rounded-3px focus-visible:outline-default"
+								onMouseEnter={handleShowPasswordTooltip}
+								onMouseLeave={hideTooltip}
+								onFocus={handleShowPasswordTooltip}
+								onBlur={hideTooltip}
+							>
+								<QuestionMarkIcon />
+							</button>
+						</div>
+						<PasswordInput id="password" minLength={10} />
 
 						<label
 							htmlFor="repeatPassword"
-							className="flex flex-col mt-4 md:mt-5 gap-y-1 text-sm md:text-base"
+							className="flex flex-col mt-4 md:mt-5 mb-1 text-sm md:text-base"
 						>
 							{Content["registerPage.repeatPasswordLabel"]}
-							<PasswordInput id="repeatPassword" />
 						</label>
+						<PasswordInput id="repeatPassword" />
 
 						<div className="mt-6">
 							<Checkbox

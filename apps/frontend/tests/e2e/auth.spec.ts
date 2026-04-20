@@ -48,9 +48,7 @@ test.describe("Login", () => {
 		await page.goto("/login/");
 
 		// Try to log in with empty fields
-		await page
-			.getByRole("button", { name: "Anmelden Ein weißer Pfeil" })
-			.click();
+		await page.getByRole("button", { name: "Anmelden" }).click();
 
 		// Email and Password fields should show validation errors
 		await expect(
@@ -70,7 +68,7 @@ test.describe("Login", () => {
 
 		// Fill the password field with a too short password
 		await page
-			.getByRole("textbox", { name: "Passwort Password anzeigen" })
+			.getByRole("textbox", { name: "Passwort Passwort anzeigen" })
 			.fill("1");
 
 		// Password field should show validation error
@@ -83,13 +81,11 @@ test.describe("Login", () => {
 
 		// Fill in the password field with a valid password, but not existing user
 		await page
-			.getByRole("textbox", { name: "Passwort Password anzeigen" })
+			.getByRole("textbox", { name: "Passwort Passwort anzeigen" })
 			.fill("123456789!");
 
 		// Logging in with valid email and password format, but non-existing user
-		await page
-			.getByRole("button", { name: "Anmelden Ein weißer Pfeil" })
-			.click();
+		await page.getByRole("button", { name: "Anmelden" }).click();
 		await expect(page.getByText("Benutzername oder Passwort")).toBeVisible();
 	});
 });
@@ -171,7 +167,7 @@ test.describe("Password Reset", () => {
 
 		// Fill in the new password field
 		await page1
-			.getByRole("textbox", { name: "Neues Passwort Ein Fragezeichen-" })
+			.getByRole("textbox", { name: "Neues Passwort Passwort" })
 			.fill(givenNewPassword);
 		await page1
 			.getByRole("textbox", { name: "Neues Passwort wiederholen" })
@@ -200,9 +196,7 @@ test.describe("Password Reset", () => {
 		await page.goto("/request-password-reset/");
 
 		// Try to submit the form with empty fields
-		await page
-			.getByRole("button", { name: "Zurücksetzen Ein weißer Pfeil" })
-			.click();
+		await page.getByRole("button", { name: "Zurücksetzen" }).click();
 
 		// Check for the validation errors
 		await expect(page.getByText("Bitte füllen Sie dieses Feld")).toBeVisible();
@@ -213,9 +207,7 @@ test.describe("Password Reset", () => {
 			.fill("invalid-email");
 
 		// Try to submit the form
-		await page
-			.getByRole("button", { name: "Zurücksetzen Ein weißer Pfeil" })
-			.click();
+		await page.getByRole("button", { name: "Zurücksetzen" }).click();
 
 		// Check for the validation error
 		await expect(page.getByText("Das E-Mail-Format ist falsch.")).toBeVisible();
@@ -225,9 +217,7 @@ test.describe("Password Reset", () => {
 		await page.goto("/reset-password/");
 
 		// Try to submit the form with empty fields
-		await page
-			.getByRole("button", { name: "Passwort ändern Ein weißer" })
-			.click();
+		await page.getByRole("button", { name: "Passwort ändern" }).click();
 
 		// Check for the validation errors
 		await expect(
@@ -238,7 +228,9 @@ test.describe("Password Reset", () => {
 		).toBeVisible();
 
 		// Fill in the new password field with a too short password
-		await page.getByRole("textbox", { name: "Neues Passwort Ein" }).fill("1");
+		await page
+			.getByRole("textbox", { name: "Neues Passwort Passwort" })
+			.fill("1");
 
 		// Fill in the password repeat field with a too short password
 		await page
@@ -246,9 +238,7 @@ test.describe("Password Reset", () => {
 			.fill("1");
 
 		// Try to submit the form
-		await page
-			.getByRole("button", { name: "Passwort ändern Ein weißer" })
-			.click();
+		await page.getByRole("button", { name: "Passwort ändern" }).click();
 
 		// Check for the validation errors
 		await expect(
@@ -260,7 +250,7 @@ test.describe("Password Reset", () => {
 
 		// Fill in the new password field with a valid password
 		await page
-			.getByRole("textbox", { name: "Neues Passwort Ein" })
+			.getByRole("textbox", { name: "Neues Passwort Passwort" })
 			.fill("123456789!");
 		// Fill in the password reset field with a valid but different password
 		await page
@@ -268,9 +258,7 @@ test.describe("Password Reset", () => {
 			.fill("123456789!0");
 
 		// Try to submit the form
-		await page
-			.getByRole("button", { name: "Passwort ändern Ein weißer" })
-			.click();
+		await page.getByRole("button", { name: "Passwort ändern" }).click();
 
 		// Check for the validation error
 		await expect(page.getByText("Die Passwörter stimmen nicht")).toBeVisible();
@@ -336,12 +324,13 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await emailInput.fill(givenUserEmail);
 
 		const passwordInput = page.getByRole("textbox", {
-			name: "Passwort Ein Fragezeichen-",
+			name: "Passwort",
+			exact: true,
 		});
 		await passwordInput.fill(givenUserPassword);
 
 		const passwordRepeatInput = page.getByRole("textbox", {
-			name: "Passwort wiederholen Password",
+			name: "Passwort wiederholen",
 		});
 		await passwordRepeatInput.fill(givenUserPassword);
 
@@ -361,9 +350,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 				(resp) =>
 					resp.url().includes("/auth/v1/signup") && resp.status() === 200,
 			),
-			page
-				.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
-				.click(),
+			page.getByRole("button", { name: "Registrieren" }).click(),
 		]);
 
 		// Info message about confirmation mail should be visible
@@ -477,10 +464,10 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			.getByRole("textbox", { name: "Nachname" })
 			.fill(changedLastName);
 		await page1
-			.getByRole("textbox", { name: "Passwort Ein Fragezeichen-" })
+			.getByRole("textbox", { name: "Passwort Passwort anzeigen" })
 			.fill(givenUserPassword);
 		await page1
-			.getByRole("textbox", { name: "Passwort wiederholen Password" })
+			.getByRole("textbox", { name: "Passwort wiederholen Passwort" })
 			.fill(givenUserPassword);
 		// Check the checkbox
 		await page1.getByTestId("label-has-accepted-privacy-checkbox").click();
@@ -489,9 +476,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			.click();
 
 		// Submit the invite completion form and wait for navigation to main page
-		await page1
-			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
-			.click();
+		await page1.getByRole("button", { name: "Registrieren" }).click();
 		await page1.waitForURL("/");
 
 		// After clicking on the link, we should be redirected to the main page
@@ -673,7 +658,7 @@ testWithLoggedInUser(
 		await expect(emailChangeSuccessfulPage).toBeVisible();
 
 		const linkToBaerGPTHomePage = page1.getByRole("link", {
-			name: "Zu BärGPT Ein weißer Pfeil",
+			name: "Zu BärGPT",
 		});
 		await linkToBaerGPTHomePage.click();
 
