@@ -63,18 +63,16 @@ testWithoutSplashScreen.describe("Accessibility - Auth Flow", () => {
 
 			// 5. Fill invite completion form
 			await page1
-				.getByRole("textbox", { name: "Passwort Ein Fragezeichen-" })
+				.getByRole("textbox", { name: "Passwort Passwort Anzeigen" })
 				.fill(defaultUserPassword);
 			await page1
-				.getByRole("textbox", { name: "Passwort wiederholen Password" })
+				.getByRole("textbox", { name: "Passwort wiederholen Passwort" })
 				.fill(defaultUserPassword);
 			await page1.getByTestId("label-has-accepted-privacy-checkbox").click();
 			await page1
 				.getByTestId("label-has-accepted-personal-data-checkbox")
 				.click();
-			await page1
-				.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
-				.click();
+			await page1.getByRole("button", { name: "Registrieren" }).click();
 
 			// 6. Wait for main page after login
 			await expect(

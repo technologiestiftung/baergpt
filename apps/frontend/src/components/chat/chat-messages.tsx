@@ -7,6 +7,7 @@ import { BlueSquareIcon } from "../primitives/icons/blue-square-icon.tsx";
 import { useScrollToBottom } from "./hooks/use-scroll-to-bottom.tsx";
 import { useChatScrollingStore } from "../../store/use-chat-scrolling-store.ts";
 import Content from "../../content.ts";
+import { chatFormId } from "./chat-form/chat-form.tsx";
 
 export const ChatMessages: React.FC = () => {
 	const { status } = useInferenceLoadingStatusStore();
@@ -14,7 +15,7 @@ export const ChatMessages: React.FC = () => {
 	const { chats } = useChatsStore();
 	const { handleScroll } = useChatScrollingStore();
 
-	const messageContainerRef = useRef<null | HTMLDivElement>(null);
+	const messageContainerRef = useRef<null | HTMLOutputElement>(null);
 
 	useScrollToBottom(messageContainerRef);
 
@@ -28,13 +29,16 @@ export const ChatMessages: React.FC = () => {
 	const hasError = status === "error";
 
 	return (
-		<div
+		<output
 			ref={messageContainerRef}
 			onScroll={() => handleScroll(messageContainerRef)}
 			className={`relative h-full text-dunkelblau-200 flex w-full max-w-[640px] justify-center overflow-y-auto mb-2 ${
 				isSafari ? "scroll-auto" : "scroll-smooth"
 			}`}
+			form={chatFormId}
+			role="log"
 		>
+			<h2 className="sr-only">{Content["chat.messages.heading"]}</h2>
 			<div className="w-full h-full flex flex-col gap-y-4">
 				{currentChat?.messages.map((message) => (
 					<ChatMessage key={message.id} message={message} />
@@ -77,6 +81,6 @@ export const ChatMessages: React.FC = () => {
 					</div>
 				)}
 			</div>
-		</div>
+		</output>
 	);
 };

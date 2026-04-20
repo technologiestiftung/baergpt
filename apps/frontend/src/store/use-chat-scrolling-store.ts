@@ -8,8 +8,8 @@ interface ChatScrollingStore {
 	previousScrollTop: number;
 	setPreviousScrollTop: (previousScrollTop: number) => void;
 
-	scrollToBottom: (ref: MutableRefObject<HTMLDivElement | null>) => void;
-	handleScroll: (ref: MutableRefObject<HTMLDivElement | null>) => void;
+	scrollToBottom: (ref: MutableRefObject<HTMLOutputElement | null>) => void;
+	handleScroll: (ref: MutableRefObject<HTMLOutputElement | null>) => void;
 }
 
 export const useChatScrollingStore = create<ChatScrollingStore>()(
@@ -38,7 +38,7 @@ export const useChatScrollingStore = create<ChatScrollingStore>()(
 				messagesContainer.scrollHeight - messagesContainer.clientHeight;
 		},
 
-		handleScroll: (ref: MutableRefObject<HTMLDivElement | null>) => {
+		handleScroll: (ref: MutableRefObject<HTMLOutputElement | null>) => {
 			const messagesContainer = ref.current;
 
 			if (!messagesContainer) {

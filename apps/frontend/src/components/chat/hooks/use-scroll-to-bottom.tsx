@@ -3,7 +3,7 @@ import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.t
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 
 export function useScrollToBottom(
-	ref: MutableRefObject<HTMLDivElement | null>,
+	ref: MutableRefObject<HTMLOutputElement | null>,
 ) {
 	const { chats } = useChatsStore();
 	const { scrollToBottom } = useChatScrollingStore();

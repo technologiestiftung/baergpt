@@ -736,11 +736,9 @@ export const Content = {
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
-	"arrowWhiteRightIcon.imgAlt": "Ein weißer Pfeil nach rechts",
 	"arrowWhiteTopRightIcon.imgAlt": "Ein weißer Pfeil nach oben rechts",
 	"eyeIcon.imgAlt": "Ein Augen-Icon",
 	"eyeStruckThroughIcon.imgAlt": "Ein durchgestrichenes Augen-Icon",
-	"questionMarkIcon.imgAlt": "Ein Fragezeichen-Icon",
 
 	/* -------------------- DocumentsSection -------------------- */
 	"documentsSection.title": "Dateien",
@@ -863,6 +861,8 @@ export const Content = {
 	"chat.getStarted.li3.link.href": "https://hilfe.baergpt.berlin/",
 	"chat.getStarted.li3.link.label": "Hilfecenter.",
 	"chat.getStarted.li3.link.ariaLabel": "Zum Hilfecenter von BärGPT",
+
+	"chat.messages.heading": "Chat-Nachrichten",
 
 	"chat.loadingText": "BärGPT überlegt...",
 	//Chat error text
@@ -1122,8 +1122,12 @@ export const Content = {
 	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
 	"registerPage.passwordLabel": "Passwort",
 	"registerPage.passwordPlaceholder": "Passwort",
+	"registerPage.showPassword": "Passwort anzeigen",
+	"registerPage.hidePassword": "Passwort verstecken",
 	"registerPage.repeatPasswordLabel": "Passwort wiederholen",
 	"registerPage.repeatPasswordPlaceholder": "Passwort",
+	"registerPage.passwordTooltip.ariaLabel":
+		"Hinweis: Sichere Passwörter verwenden mindestens: 10 Zeichen, 1 Buchstabe, 1 Zahl, 1 Sonderzeichen",
 	"registerPage.passwordTooltip": `Sichere Passwörter verwenden mindestens:
 <ul class="list-disc pl-5">
 	<li>10 Zeichen</li>
