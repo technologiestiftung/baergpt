@@ -1,0 +1,68 @@
+- name: Create migrations system user
+  ansible.builtin.user:
+    name: migrations
+    system: true
+    create_home: true
+    shell: /bin/bash
+
+- name: Create ~/bin directory
+  ansible.builtin.file:
+    path: /home/migrations/bin
+    state: directory
+    owner: migrations
+    group: migrations
+    mode: "0755"
+
+- name: Deploy docker-inspect-db-ip wrapper
+  ansible.builtin.template:
+    src: docker-inspect-db-ip.j2
+    dest: /home/migrations/bin/docker-inspect-db-ip
+    owner: root
+    group: migrations
+    mode: "0750"
+
+- name: Deploy docker-restart-auth wrapper
+  ansible.builtin.template:
+    src: docker-restart-auth.j2
+    dest: /home/migrations/bin/docker-restart-auth
+    owner: root
+    group: migrations
+    mode: "0750"
+
+- name: Configure sudoers for migrations user
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/migrations
+    content: |
+      migrations ALL=(root) NOPASSWD: /home/migrations/bin/docker-inspect-db-ip
+      migrations ALL=(root) NOPASSWD: /home/migrations/bin/docker-restart-auth
+    mode: "0440"
+    validate: visudo -cf %s
+
+- name: Configure sshd for migrations user
+  ansible.builtin.blockinfile:
+    path: /etc/ssh/sshd_config
+    marker: "# {mark} ANSIBLE MANAGED - migrations user"
+    block: |
+      Match User migrations
+          AllowTcpForwarding yes
+          PermitTTY no
+          X11Forwarding no
+          AllowAgentForwarding no
+  notify: Reload sshd
+
+- name: Create ~/.ssh directory for migrations user
+  ansible.builtin.file:
+    path: /home/migrations/.ssh
+    state: directory
+    owner: migrations
+    group: migrations
+    mode: "0700"
+
+- name: Install migrations SSH public key
+  ansible.builtin.copy:
+    dest: /home/migrations/.ssh/authorized_keys
+    content: "{{ lookup('env', 'MIGRATIONS_SSH_PUBLIC_KEY') }}\n"
+    owner: migrations
+    group: migrations
+    mode: "0600"
+  no_log: true

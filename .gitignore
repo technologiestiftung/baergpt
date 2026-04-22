@@ -274,3 +274,5 @@ cython_debug/
 .turbo
 # Selfhosting
 .op.env
+.op.env.*
+!.op.env.*.example

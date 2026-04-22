@@ -342,7 +342,7 @@ supabase db reset
 
 For production deployments with self-hosted Supabase, see:
 
-- **Guide**: [`apps/backend/supabase/selfhosting/README.md`](./apps/backend/supabase/selfhosting/README.md)
+- **Guide**: [`infra/README.md`](./infra/README.md)
 - **Uses**: Ansible, 1Password CLI, Docker Compose
 - **Cloud Provider**: STACKIT (configurable)
 
