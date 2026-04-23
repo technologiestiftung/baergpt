@@ -86,8 +86,13 @@ export const ChatForm: React.FC = () => {
 			allowed_folder_ids: selectedChatFolders.map((folder) => folder.id),
 		};
 
+		const model = useChatsStore.getState().selectedLlmModel;
+
 		Sentry.startSpan(
-			{ name: "Stream Chat Message Response", op: "chat.message.stream" },
+			{
+				name: "Stream Chat Message Response",
+				op: `chat.message.stream.${model}`,
+			},
 			async (span) => {
 				const chat = await getCurrentOrCreateChat(userMessage);
 				await getCompletion(chat, span);
