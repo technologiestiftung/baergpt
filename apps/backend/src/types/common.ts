@@ -227,15 +227,19 @@ export interface MistralEmbeddingResponse {
 	usage: { total_tokens: number };
 }
 
+export type LLMProvider = "mistral" | "openai-compatible";
+
 export class LLMHandler {
 	model: string;
 	languageModel: LanguageModel;
 	endpoint: string;
+	provider: LLMProvider;
 
-	constructor(model: string, languageModel: LanguageModel, endpoint: string) {
+	constructor(model: string, languageModel: LanguageModel, endpoint: string, provider: LLMProvider = "mistral") {
 		this.model = model;
 		this.languageModel = languageModel;
 		this.endpoint = endpoint;
+		this.provider = provider;
 	}
 }
 

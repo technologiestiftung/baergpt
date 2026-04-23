@@ -33,6 +33,7 @@ export interface Config {
 	braveSearchMaxRPS?: number;
 	featureFlagWebSearchAllowed: boolean;
 	featureFlagMemoryLog: boolean;
+	akiApiKey?: string;
 }
 
 /* eslint-disable-next-line complexity */
@@ -175,4 +176,5 @@ export const config: Config = {
 	featureFlagWebSearchAllowed:
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 	featureFlagMemoryLog: process.env.FEATURE_FLAG_MEMORY_LOG === "true",
+	akiApiKey: process.env.AKI_API_KEY,
 };

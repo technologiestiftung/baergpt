@@ -1,6 +1,12 @@
 import { config } from "../config";
 import { LLMHandler } from "../types/common";
 import { mistral } from "@ai-sdk/mistral";
+import { createOpenAI } from "@ai-sdk/openai";
+
+const aki = createOpenAI({
+	baseURL: "https://aki.io/v1",
+	apiKey: config.akiApiKey,
+});
 
 type ModelProvider = "Mistral";
 
@@ -78,8 +84,9 @@ export class ModelService {
 		),
 		"mistral-large": new LLMHandler(
 			"mistral-large",
-			mistral(config.largeModelIdentifier),
-			"https://api.mistral.ai/v1",
+			aki.chat("minimax_m2_chat"),
+			"https://aki.io/v1",
+			"openai-compatible",
 		),
 	};
 

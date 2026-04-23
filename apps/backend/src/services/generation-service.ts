@@ -42,6 +42,24 @@ import {
 	trimToTokenLimitByWords,
 } from "./token-utils";
 import type { WebSearchResult } from "../tools/web-search";
+import type { LLMProvider } from "../types/common";
+
+function penaltyOptions(provider: LLMProvider) {
+	if (provider === "mistral") {
+		return {
+			providerOptions: {
+				mistral: {
+					presencePenalty: LLM_PARAMETERS.presencePenalty,
+					frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+				},
+			},
+		};
+	}
+	return {
+		presencePenalty: LLM_PARAMETERS.presencePenalty,
+		frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+	};
+}
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
@@ -302,12 +320,7 @@ export class GenerationService {
 					toolChoice,
 					stopWhen: stepCountIs(maxSteps),
 					prepareStep,
-					providerOptions: {
-						mistral: {
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
+					...penaltyOptions(llmHandler.provider),
 					experimental_telemetry: {
 						isEnabled:
 							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
@@ -383,12 +396,7 @@ export class GenerationService {
 							messages: messages,
 							maxOutputTokens: 8192,
 							temperature: LLM_PARAMETERS.temperature,
-							providerOptions: {
-								mistral: {
-									presencePenalty: LLM_PARAMETERS.presencePenalty,
-									frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-								},
-							},
+							...penaltyOptions(llmHandler.provider),
 							onFinish: async ({ text, usage }) => {
 								logMemory(
 									`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
@@ -612,12 +620,7 @@ export class GenerationService {
 					model: llmHandler.languageModel,
 					messages: messages,
 					temperature: LLM_PARAMETERS.temperature,
-					providerOptions: {
-						mistral: {
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
+					...penaltyOptions(llmHandler.provider),
 					experimental_telemetry: {
 						isEnabled:
 							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
@@ -880,12 +883,15 @@ export class GenerationService {
 				dbService: this.dbService,
 				embeddingService: this.embeddingService,
 			});
-			relevantTools.toolChoice = "auto";
+			// Force RAG tool call on first step so the model always searches documents
+			relevantTools.toolChoice = { type: "tool", toolName: "ragSearchTool" };
 		}
 
 		if (activeTools.includes("webSearchTool")) {
 			relevantTools.tools.webSearchTool = webSearchTool;
-			relevantTools.toolChoice = "auto";
+			if (typeof relevantTools.toolChoice === "string") {
+				relevantTools.toolChoice = "auto";
+			}
 		}
 
 		if (activeTools.includes("parlaMCPTools")) {
@@ -895,7 +901,9 @@ export class GenerationService {
 					...relevantTools.tools,
 					...parlaMCPToolsResponse.tools,
 				};
-				relevantTools.toolChoice = "auto";
+				if (typeof relevantTools.toolChoice === "string") {
+					relevantTools.toolChoice = "auto";
+				}
 				relevantTools.cleanup = parlaMCPToolsResponse.cleanup;
 			}
 		}
