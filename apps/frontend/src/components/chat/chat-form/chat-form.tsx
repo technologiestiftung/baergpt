@@ -23,6 +23,8 @@ import * as Sentry from "@sentry/react";
 
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
+export const chatFormId = "chat-form";
+
 export const ChatForm: React.FC = () => {
 	const { status, clearError } = useInferenceLoadingStatusStore();
 	const { selectedChatFolders } = useFolderStore();
@@ -84,8 +86,13 @@ export const ChatForm: React.FC = () => {
 			allowed_folder_ids: selectedChatFolders.map((folder) => folder.id),
 		};
 
+		const model = useChatsStore.getState().selectedLlmModel;
+
 		Sentry.startSpan(
-			{ name: "Stream Chat Message Response", op: "chat.message.stream" },
+			{
+				name: "Stream Chat Message Response",
+				op: `chat.message.stream.${model}`,
+			},
 			async (span) => {
 				const chat = await getCurrentOrCreateChat(userMessage);
 				await getCompletion(chat, span);
@@ -105,6 +112,7 @@ export const ChatForm: React.FC = () => {
 		<form
 			onSubmit={handleSubmit}
 			className="flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px]"
+			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
 

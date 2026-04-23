@@ -63,7 +63,11 @@ export function PasswordInput({
 					<button
 						type="button"
 						onClick={togglePasswordVisibility}
-						aria-label="Password anzeigen"
+						aria-label={
+							isPasswordVisible
+								? Content["registerPage.hidePassword"]
+								: Content["registerPage.showPassword"]
+						}
 						className="focus-visible:outline-default rounded-3px cursor-pointer"
 					>
 						<EyeIcon
