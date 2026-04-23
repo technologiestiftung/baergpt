@@ -14,7 +14,7 @@ type RagSearchToolOptions = {
 export const ragSearchTool = (options: RagSearchToolOptions) =>
 	tool({
 		description:
-			"Use this tool ONLY to answer questions based on documents that the user has explicitly uploaded or added to this chat. It performs a RAG search over the user's uploaded documents and returns structured, cite-ready matches.",
+			"Searches the documents the user has attached to this chat (PDF, Word, Excel). Call this tool whenever the user asks about document content — even for vague questions like 'Was steht im Dokument?', 'Worum geht es?', 'Fasse das zusammen', 'Erkläre mir das'. Always call this tool BEFORE asking the user to clarify or before saying you don't have information. Use the user's question verbatim as the query if unsure.",
 		inputSchema: z.object({
 			query: z
 				.string()

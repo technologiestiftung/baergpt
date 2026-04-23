@@ -76,11 +76,14 @@ llms.post("/just-chatting", async (c: Context) => {
 		}
 		const activeTools: ActiveTools[] = rawActiveTools;
 
+		const hasAttachedDocuments =
+			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
 		const { messages: promptMessages, promptClient: langfusePrompt } =
 			await generationService.createPrompt(
 				messages,
 				isAddressedFormal,
 				activeTools,
+				hasAttachedDocuments,
 			);
 		const response = await generationService.generateTextStreamResponse(
 			llmHandler,
