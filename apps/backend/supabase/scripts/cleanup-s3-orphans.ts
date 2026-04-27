@@ -60,74 +60,53 @@ async function run() {
 
 	console.log("Fetching documents table...");
 	const sourceUrls = await getDocumentSourceUrlsWithStorageObjects();
-	console.log(`Found ${sourceUrls.length} documents in the documents table.`);
+	console.log(
+		`Found ${sourceUrls.length} documents in the documents table (including joined storage objects, e.g. for docx preview pdfs).`,
+	);
 
 	console.log("Fetching storage table...");
 	const storageObjects = await getAllStorageObjects();
 	console.log(`Found ${storageObjects.length} objects in the storage table.`);
 
+	/**
+	 * Exists in the storage table but not in the documents table
+	 */
 	const isStorageTableOrphan = (object: FileObject) =>
-		!sourceUrls.some(({ source_url, bucket_id }) => {
+		!sourceUrls.some(({ storage_name, bucket_id }) => {
 			if (bucket_id !== object.bucketId) {
 				return false;
 			}
 
-			const isWordFileRegex = /\.(docx?)$/i;
-
-			if (source_url.match(isWordFileRegex)) {
-				// .doc and .docx files have a .pdf file generated for preview, so we need to check for both the .doc/.docx and the .pdf version in the source URLs.
-				const sourceUrlWithoutExtension = source_url.replace(
-					isWordFileRegex,
-					"",
-				);
-				return (
-					`${source_url}` === object.name ||
-					`${sourceUrlWithoutExtension}.pdf` === object.name
-				);
-			}
-
-			return source_url === object.name;
+			return storage_name === object.name;
 		});
 
 	const storageTableOrphans = storageObjects.filter(isStorageTableOrphan);
 
-	console.log(
-		`Found ${storageTableOrphans.length} orphan(s) in the storage table.`,
-	);
-
-	console.log(
-		`Starting deletion of ${storageTableOrphans.length} orphan(s) from storage...`,
-	);
-	await deleteFilesFromStorage(storageTableOrphans);
-	console.log(`Deleted ${storageTableOrphans.length} orphan(s) from storage.`);
+	/**
+	 * Exists in the documents table but not in the storage table
+	 */
+	const missingInStorage = sourceUrls.filter(({ source_url, bucket_id }) => {
+		return !storageObjects.some(
+			(object) => object.bucketId === bucket_id && object.name === source_url,
+		);
+	});
 
 	console.log("Fetching S3 objects...");
 	const s3Keys = await getAllS3Objects();
 	console.log(`Found ${s3Keys.length} objects in S3.`);
 
+	/**
+	 * Exists in S3 but not in the documents table
+	 */
 	const isS3ObjectOrphan = (key: string) => {
 		const bucket = extractBucketIdFromS3Key(key);
-		return !sourceUrls.some(({ source_url, bucket_id, version }) => {
+		return !sourceUrls.some(({ storage_name, bucket_id, storage_version }) => {
 			if (bucket_id !== bucket) {
 				return false;
 			}
 
-			const databaseObjectName = `${source_url}/${version}`;
+			const databaseObjectName = `${storage_name}/${storage_version}`;
 			const s3ObjectName = toSourceUrlWithVersion(key);
-
-			const isWordFileRegex = /\.(docx?)$/i;
-
-			if (source_url.match(isWordFileRegex)) {
-				// .doc and .docx files have a .pdf file generated for preview, so we need to check for both the .doc/.docx and the .pdf version in the source URLs.
-				const sourceUrlWithoutExtension = source_url.replace(
-					isWordFileRegex,
-					"",
-				);
-				return (
-					databaseObjectName === s3ObjectName ||
-					`${sourceUrlWithoutExtension}.pdf/${version}` === s3ObjectName
-				);
-			}
 
 			return databaseObjectName === s3ObjectName;
 		});
@@ -135,23 +114,74 @@ async function run() {
 
 	const orphanKeys = s3Keys.filter(isS3ObjectOrphan);
 
-	if (orphanKeys.length === 0) {
+	/**
+	 * Exists in the documents table but not in S3
+	 */
+	const missingInS3 = sourceUrls.filter(
+		({ bucket_id, storage_name, storage_version }) => {
+			return !s3Keys.some((key) => {
+				const bucket = extractBucketIdFromS3Key(key);
+
+				if (bucket !== bucket_id) {
+					return false;
+				}
+
+				const s3ObjectName = `${storage_name}/${storage_version}`;
+
+				return toSourceUrlWithVersion(key) === s3ObjectName;
+			});
+		},
+	);
+
+	if (
+		orphanKeys.length === 0 &&
+		storageTableOrphans.length === 0 &&
+		missingInStorage.length === 0 &&
+		missingInS3.length === 0
+	) {
 		console.log("No orphan(s) found.");
 		return;
 	}
 
-	console.log(`Found ${orphanKeys.length} orphan(s) in S3.`);
+	if (storageTableOrphans.length > 0) {
+		console.log(
+			`Found ${storageTableOrphans.length} orphan(s) in the storage table.`,
+		);
 
-	console.log(`Starting deletion of ${orphanKeys.length} orphan(s) from S3...`);
-	await deleteS3Objects(orphanKeys);
-	console.log(`Deleted ${orphanKeys.length} orphan(s) from S3.`);
+		console.log(
+			`Starting deletion of ${storageTableOrphans.length} orphan(s) from storage...`,
+		);
+		await deleteFilesFromStorage(storageTableOrphans);
+	}
+
+	if (missingInStorage.length > 0) {
+		console.warn(
+			`Warning: Found ${missingInStorage.length} document(s) in the documents table that are missing in the storage table.`,
+		);
+	}
+
+	if (orphanKeys.length > 0) {
+		console.log(`Found ${orphanKeys.length} orphan(s) in S3.`);
+
+		console.log(
+			`Starting deletion of ${orphanKeys.length} orphan(s) from S3...`,
+		);
+		await deleteS3Objects(orphanKeys);
+	}
+
+	if (missingInS3.length > 0) {
+		console.warn(
+			`Warning: Found ${missingInS3.length} document(s) in the documents table that are missing in S3.`,
+		);
+	}
 }
 
 async function getDocumentSourceUrlsWithStorageObjects() {
 	const sourceUrls: {
 		source_url: string;
 		bucket_id: string;
-		version: string;
+		storage_name: string;
+		storage_version: string;
 	}[] = [];
 	const limit = 1000;
 
