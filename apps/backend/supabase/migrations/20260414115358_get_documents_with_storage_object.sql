@@ -1,11 +1,12 @@
-CREATE OR REPLACE FUNCTION get_documents_with_storage_objects (p_limit int4, p_offset int4) RETURNS TABLE (source_url TEXT, bucket_id TEXT, version TEXT) LANGUAGE plpgsql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION get_documents_with_storage_objects (p_limit int4, p_offset int4) RETURNS TABLE (source_url TEXT, bucket_id TEXT, storage_name TEXT, storage_version TEXT) LANGUAGE plpgsql SECURITY DEFINER
 SET
     search_path = '' AS $$
 BEGIN
 RETURN QUERY
-SELECT d.source_url, o.bucket_id, o.version
+SELECT d.source_url, o.bucket_id, o.name as storage_name, o.version as storage_version
 FROM public.documents d
 JOIN storage.objects o ON d.source_url = o.name
+    OR (d.source_url ~* '\.docx?$' AND o.name = regexp_replace(d.source_url, '\.docx?$', '.pdf', 'i'))
 ORDER BY d.id
 LIMIT p_limit
 OFFSET p_offset;

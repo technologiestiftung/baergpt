@@ -576,7 +576,8 @@ export type Database = {
 				Returns: {
 					bucket_id: string;
 					source_url: string;
-					version: string;
+					storage_name: string;
+					storage_version: string;
 				}[];
 			};
 			get_maintenance_mode_status: {
