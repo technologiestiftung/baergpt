@@ -316,11 +316,11 @@ async function deleteFilesFromStorage(storageObjectsOrphans: FileObject[]) {
 			.remove([file.name]);
 
 		if (error) {
-			console.error(`Failed to delete ${file.bucketId}/${file.name}:`, error);
-		} else {
-			console.log(
-				`Deleted ${file.bucketId}/${file.name} (${count} / ${storageObjectsOrphans.length})`,
+			console.error(
+				`Failed to delete file ${count} / ${storageObjectsOrphans.length}`,
 			);
+		} else {
+			console.log(`Deleted ${count} / ${storageObjectsOrphans.length}`);
 		}
 
 		count += 1;
