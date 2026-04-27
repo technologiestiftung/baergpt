@@ -146,7 +146,11 @@ async function fetchAllLogs(): Promise<RenderLogEntry[]> {
 
 	let { hasMore, nextStartTime, nextEndTime } = firstPage;
 
-	for (let page = 0; hasMore && nextStartTime && nextEndTime && page < MAX_PAGES; page++) {
+	for (
+		let page = 0;
+		hasMore && nextStartTime && nextEndTime && page < MAX_PAGES;
+		page++
+	) {
 		const nextPage = await fetchRenderLogs(nextStartTime, nextEndTime);
 
 		allLogs.push(...(nextPage.logs ?? []));
