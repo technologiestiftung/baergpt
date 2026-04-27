@@ -9,5 +9,5 @@ export function useFocusOnOpen(
 			// set focus on first item when dropdown opens
 			optionButtonRefs.current.get(0)?.focus();
 		}
-	}, [isOpen]);
+	}, [isOpen, optionButtonRefs]);
 }

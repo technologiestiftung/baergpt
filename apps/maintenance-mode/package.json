@@ -1,16 +1,16 @@
 {
 	"name": "baergpt-maintenance-mode",
-	"private": true,
 	"version": "0.0.0",
+	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-		"check-types": "tsc --noEmit",
-		"lint:check": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\"",
-		"lint:write": "ESLINT_USE_FLAT_CONFIG=true eslint \"src/**/*\" --fix",
-		"prettier:check": "prettier  --check .",
-		"prettier:write": "prettier --write .",
+		"check-types": "tsgo -config ./tsconfig.json",
+		"lint:check": "oxlint --config ../../.oxlintrc.json src",
+		"lint:write": "oxlint --config ../../.oxlintrc.json src --fix",
+		"format:check": "oxfmt --check .",
+		"format:write": "oxfmt --write .",
 		"test:a11y": "npx playwright test tests/a11y --config=playwright.config.ts",
 		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts",
 		"preview": "vite preview"
@@ -26,12 +26,12 @@
 		"@types/node": "22.14.0",
 		"@types/react": "18.3.3",
 		"@types/react-dom": "18.3.0",
-		"@vitejs/plugin-react": "5.0.3",
+		"@vitejs/plugin-react": "6.0.1",
 		"autoprefixer": "10.4.19",
 		"globals": "15.8.0",
 		"postcss": "8.4.40",
 		"tailwindcss": "3.4.7",
 		"typescript": "5.8.3",
-		"vite": "7.1.12"
+		"vite": "8.0.3"
 	}
 }

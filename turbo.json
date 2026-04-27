@@ -21,6 +21,12 @@
 		"lint:write": {
 			"dependsOn": ["^build", "^lint:write"]
 		},
+		"format:check": {
+			"dependsOn": []
+		},
+		"format:write": {
+			"dependsOn": []
+		},
 		"playwright:install": {
 			"dependsOn": []
 		},

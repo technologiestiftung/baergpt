@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 
 interface DefaultDialogProps {
 	children?: React.ReactNode;
@@ -16,42 +16,48 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 }) => {
 	const dialogRef = useRef<HTMLDialogElement | null>(null);
 
+	const closeDialog = useCallback(() => {
+		dialogRef.current?.close();
+	}, []);
+
+	const handleNativeClose = useCallback(() => {
+		afterClose?.();
+	}, [afterClose]);
+
+	const handleClickListener = useCallback(
+		(event: MouseEvent) => {
+			if (!dialogRef.current) {
+				return;
+			}
+
+			/**
+			 * This is confusing, yet correct. The dialog element spreads over the whole screen.
+			 * If the user clicks on something inside the dialog, the event target won't be the dialog itself.
+			 */
+			const isClickOnDialogBackground = event.target === dialogRef.current;
+
+			if (!isClickOnDialogBackground) {
+				return;
+			}
+
+			closeDialog();
+		},
+		[closeDialog],
+	);
+
 	useEffect(() => {
 		document.addEventListener("mousedown", handleClickListener);
 
 		return () => {
 			document.removeEventListener("mousedown", handleClickListener);
 		};
-	}, []);
-
-	const handleClickListener = (event: MouseEvent) => {
-		if (!dialogRef.current) {
-			return;
-		}
-
-		/**
-		 * This is confusing, yet correct. The dialog element spreads over the whole screen.
-		 * If the user clicks on something inside the dialog, the event target won't be the dialog itself.
-		 */
-		const isClickOnDialogBackground = event.target === dialogRef.current;
-
-		if (!isClickOnDialogBackground) {
-			return;
-		}
-
-		closeDialog();
-	};
-
-	const closeDialog = () => {
-		dialogRef.current?.close();
-		afterClose?.();
-	};
+	}, [handleClickListener]);
 
 	return (
 		<dialog
 			ref={dialogRef}
 			id={id}
-			onClose={closeDialog}
+			onClose={handleNativeClose}
 			className={`${className} backdrop:bg-dunkelblau-100/30 backdrop:backdrop-blur-[2px] bg-white opacity-100 z-40 rounded-3px shadow-md`}
 		>
 			{children}

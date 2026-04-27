@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
 import { useDocumentStore } from "../../../../../store/document-store";
 import type { Document, DocumentFolder } from "../../../../../common";
@@ -35,7 +35,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const isSelectedForChat = isItemSelectedForChat(item);
 	const isMobile = useIsMobile();
 
-	const calculatePosition = () => {
+	const calculatePosition = useCallback(() => {
 		if (triggerRef.current) {
 			const rect = triggerRef.current.getBoundingClientRect();
 			return {
@@ -44,7 +44,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 			};
 		}
 		return { top: 0, right: 0 };
-	};
+	}, [triggerRef]);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -66,7 +66,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 			};
 		}
 		return undefined;
-	}, [isOpen, triggerRef]);
+	}, [isOpen, triggerRef, calculatePosition]);
 
 	const handleAddToChat = () => {
 		onClose();

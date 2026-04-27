@@ -3,9 +3,8 @@ import { useErrorStore } from "../../../../store/error-store.ts";
 
 export const exportToDocx = async (markdown: string, fileName: string) => {
 	try {
-		const { convertMarkdownToDocx, downloadDocx } = await import(
-			"@mohtasham/md-to-docx"
-		);
+		const { convertMarkdownToDocx, downloadDocx } =
+			await import("@mohtasham/md-to-docx");
 
 		const exportOptions = {
 			documentType: "document" as const,

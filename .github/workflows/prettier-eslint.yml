@@ -1,10 +1,10 @@
-name: prettier-eslint.yml
+name: format-lint.yml
 on:
   pull_request:
     branches: [main, staging]
 
 jobs:
-  prettier-eslint:
+  format-lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,8 +31,8 @@ jobs:
         if: steps.cache-npm-deps.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: Check Prettier 🧹
-        run: npm run prettier:check
+      - name: Check Formatting 🧹
+        run: npm run format:check
 
-      - name: Check ESLint 🔎
+      - name: Check Lint 🔎
         run: npm run lint:check

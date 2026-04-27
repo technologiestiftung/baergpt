@@ -23,7 +23,7 @@ export const History: React.FC = () => {
 				(chat) =>
 					new Date(chat.created_at).toDateString() === today.toDateString(),
 			),
-		[chats, today],
+		[chats],
 	);
 
 	const chatsLastSevenDays = useMemo(
@@ -33,7 +33,7 @@ export const History: React.FC = () => {
 					new Date(chat.created_at) >= sevenDaysAgo &&
 					!chatsToday.includes(chat),
 			),
-		[chats, sevenDaysAgo, chatsToday],
+		[chats, chatsToday],
 	);
 
 	const chatsByMonth = useMemo(() => {
@@ -56,7 +56,7 @@ export const History: React.FC = () => {
 			label: month,
 			chats: monthChats,
 		}));
-	}, [chats, sevenDaysAgo]);
+	}, [chats]);
 
 	const chatGroups = useMemo(() => {
 		const groups = [];
