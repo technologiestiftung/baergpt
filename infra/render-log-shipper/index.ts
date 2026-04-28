@@ -14,6 +14,7 @@ const LOGS_PER_PAGE = "100";
 const NANOSECOND_SUFFIX = "000000";
 const CURSOR_ADVANCE_MS = 1;
 const REQUEST_TIMEOUT_MS = 30_000;
+const INDEXING_LAG_BUFFER_MS = 5_000;
 
 interface RenderLogLabel {
 	name: string;
@@ -123,25 +124,20 @@ async function fetchRenderLogs(
 	);
 
 	if (response.status === 429) {
-		console.warn("Rate limited by Render API, retrying next cycle");
-		return { logs: [], hasMore: false };
+		throw new Error("Rate limited by Render API");
 	}
 
 	if (!response.ok) {
-		console.error(
+		throw new Error(
 			`Render API error (${startTime}–${endTime}): ${response.status} ${response.statusText}`,
 		);
-		return { logs: [], hasMore: false };
 	}
 
 	return (await response.json()) as RenderLogsResponse;
 }
 
-async function fetchAllLogs(): Promise<RenderLogEntry[]> {
-	const firstPage = await fetchRenderLogs(
-		lastPollTime,
-		new Date().toISOString(),
-	);
+async function fetchAllLogs(endTime: string): Promise<RenderLogEntry[]> {
+	const firstPage = await fetchRenderLogs(lastPollTime, endTime);
 	const allLogs: RenderLogEntry[] = [...(firstPage.logs ?? [])];
 
 	let { hasMore, nextStartTime, nextEndTime } = firstPage;
@@ -218,16 +214,27 @@ function getLatestTimestamp(logs: RenderLogEntry[]): number {
 	);
 }
 
+function advanceCursor(targetMs: number): void {
+	if (targetMs > Date.parse(lastPollTime)) {
+		lastPollTime = new Date(targetMs).toISOString();
+	}
+}
+
 async function poll(): Promise<void> {
 	try {
-		const logs = await fetchAllLogs();
-		if (logs.length === 0) return;
+		const endTime = new Date().toISOString();
+		const logs = await fetchAllLogs(endTime);
+		const safeCeilingMs = Date.parse(endTime) - INDEXING_LAG_BUFFER_MS;
+
+		if (logs.length === 0) {
+			advanceCursor(safeCeilingMs);
+			return;
+		}
 
 		await pushToLoki(logs);
 
-		lastPollTime = new Date(
-			getLatestTimestamp(logs) + CURSOR_ADVANCE_MS,
-		).toISOString();
+		const latestPlusOneMs = getLatestTimestamp(logs) + CURSOR_ADVANCE_MS;
+		advanceCursor(latestPlusOneMs);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		console.error("Poll cycle failed:", message);
