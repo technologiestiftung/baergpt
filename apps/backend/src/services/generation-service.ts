@@ -5,7 +5,7 @@ import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
 	generateText,
-	Output,
+	// Output,
 	stepCountIs,
 	streamText,
 } from "ai";
@@ -31,17 +31,17 @@ import { ragSearchTool } from "../tools/rag-search-tool";
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import { webSearchTool } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
-import {
-	citationAnswerSchema,
-	webCitationAnswerSchema,
-} from "../schemas/citation-answer-schema";
+// import {
+// 	citationAnswerSchema,
+// 	webCitationAnswerSchema,
+// } from "../schemas/citation-answer-schema";
 import { resilientCall, wait } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
-import type { WebSearchResult } from "../tools/web-search";
+// import type { WebSearchResult } from "../tools/web-search";
 
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
@@ -288,6 +288,18 @@ export class GenerationService {
 			knowledgeBaseDocuments,
 		});
 
+		/**
+		 * Sometimes the frontend might send empty assistant messages (e.g. as placeholders for streaming responses),
+		 * so we filter those out to avoid confusing the LLM.
+		 */
+		const isEmptyAssistantMessage = ({ role, content }: ModelMessage) =>
+			!(
+				role === "assistant" &&
+				typeof content === "string" &&
+				content.trim() === ""
+			);
+		const filteredMessages = messages.filter(isEmptyAssistantMessage);
+
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
 
 		updateActiveTrace({ input: messages[messages.length - 1].content });
@@ -295,7 +307,7 @@ export class GenerationService {
 			() =>
 				generateText({
 					model: llmHandler.languageModel,
-					messages: messages,
+					messages: filteredMessages,
 					maxOutputTokens: 8192,
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
@@ -306,6 +318,7 @@ export class GenerationService {
 						mistral: {
 							presencePenalty: LLM_PARAMETERS.presencePenalty,
 							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+							reasoningEffort: "none",
 						},
 					},
 					experimental_telemetry: {
@@ -338,38 +351,40 @@ export class GenerationService {
 				captureError(error);
 			}
 		}
-		const allChunkMatches = generationResult.steps.flatMap((step) =>
-			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
-		);
 
-		const allWebSources = generationResult.steps.flatMap((step) =>
-			step.toolResults.flatMap((tr) => {
-				const generic = tr.output?.grounding
-					?.generic as WebSearchResult["grounding"]["generic"];
-				const sources = tr.output?.sources as WebSearchResult["sources"];
-				if (!generic?.length || !sources) {
-					return [];
-				}
-				return (
-					generic
-						// Filter out items with no snippets
-						.filter(
-							(item) =>
-								item.snippets.find(
-									(s): s is string => typeof s === "string",
-								) !== undefined,
-						)
-						.map((item) => ({
-							url: item.url,
-							title: item.title,
-							snippet: item.snippets.find(
-								(s): s is string => typeof s === "string",
-							) as string,
-							age: sources[item.url]?.age,
-						}))
-				);
-			}),
-		);
+		// const allChunkMatches = generationResult.steps.flatMap((step) =>
+		// 	step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
+		// );
+		//
+		// const allWebSources = generationResult.steps.flatMap((step) =>
+		// 	step.toolResults.flatMap((tr) => {
+		// 		const generic = tr.output?.grounding
+		// 			?.generic as WebSearchResult["grounding"]["generic"];
+		// 		const sources = tr.output?.sources as WebSearchResult["sources"];
+		// 		if (!generic?.length || !sources) {
+		// 			return [];
+		// 		}
+		// 		return (
+		// 			generic
+		// 				// Filter out items with no snippets
+		// 				.filter(
+		// 					(item) =>
+		// 						item.snippets.find(
+		// 							(s): s is string => typeof s === "string",
+		// 						) !== undefined,
+		// 				)
+		// 				.map((item) => ({
+		// 					url: item.url,
+		// 					title: item.title,
+		// 					snippet: item.snippets.find(
+		// 						(s): s is string => typeof s === "string",
+		// 					) as string,
+		// 					age: sources[item.url]?.age,
+		// 				}))
+		// 		);
+		// 	}),
+		// );
+
 		const newMessages = generationResult.response.messages;
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);
@@ -405,183 +420,202 @@ export class GenerationService {
 									await toolsCleanup();
 								}
 
-								if (allChunkMatches.length > 0) {
-									const availableSources = allChunkMatches.map(
-										(match: { chunkId: number; snippet: string }) => ({
-											id: match.chunkId,
-											snippet: match.snippet,
-										}),
-									);
-									try {
-										const citationPromptClient = await resilientCall(
-											() =>
-												langfuse.prompt.get("document-citation-extraction", {
-													type: "chat",
-													label:
-														config.nodeEnv === "test"
-															? "development"
-															: config.nodeEnv,
-												}),
-											{ queueType: "llm" },
-										);
-										const compiledDocumentCitationExtractionPrompts =
-											citationPromptClient.compile({
-												generatedAnswer: text,
-												availableSources: availableSources
-													.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
-													.join("\n\n"),
-											}) as ModelMessage[];
+								console.log("streamText onFinish called with text:", text);
 
-										const {
-											output: citationObject,
-											usage: generateObjectUsage,
-										} = await resilientCall(
-											() =>
-												generateText({
-													model: llmHandler.languageModel,
-													messages: compiledDocumentCitationExtractionPrompts,
-													temperature: LLM_PARAMETERS.temperature,
-													output: Output.object({
-														schema: citationAnswerSchema,
-													}),
-													experimental_telemetry: {
-														isEnabled:
-															config.nodeEnv !== "test" &&
-															config.nodeEnv !== "production", // Disable telemetry in CI and production
-														functionId: "citation-extraction",
-														metadata: {
-															sessionId: sessionId ? sessionId : "unknown",
-														},
-													},
-												}),
-											{ queueType: "llm" },
-										);
-
-										writer.write({
-											type: "data-citations",
-											data: citationObject.citations,
-										});
-
-										try {
-											await this.dbService.updateUserColumnValue(
-												userId,
-												"num_inference_tokens",
-												generateObjectUsage.totalTokens,
-											);
-											await this.dbService.updateUserColumnValue(
-												userId,
-												"num_inferences",
-												1,
-											);
-										} catch (error) {
-											captureError(error);
-										}
-									} catch (error) {
-										captureError(error);
-									}
-								}
-								if (allWebSources.length > 0) {
-									try {
-										const webCitationPromptClient = await resilientCall(
-											() =>
-												langfuse.prompt.get("web-citation-extraction", {
-													label:
-														config.nodeEnv === "test"
-															? "development"
-															: config.nodeEnv,
-													type: "chat",
-												}),
-											{ queueType: "llm" },
-										);
-										const compiledWebCitationExtractionPrompts =
-											webCitationPromptClient.compile({
-												generatedAnswer: text,
-												availableSources: allWebSources
-													.map(
-														(s) =>
-															`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
-													)
-													.join("\n\n"),
-											}) as ModelMessage[];
-
-										const { output: webObject, usage: webCitationUsage } =
-											await resilientCall(
-												() =>
-													generateText({
-														model: llmHandler.languageModel,
-														messages: compiledWebCitationExtractionPrompts,
-														temperature: LLM_PARAMETERS.temperature,
-														output: Output.object({
-															schema: webCitationAnswerSchema,
-														}),
-														experimental_telemetry: {
-															isEnabled:
-																config.nodeEnv !== "test" &&
-																config.nodeEnv !== "production",
-															functionId: "web-citation-extraction",
-															metadata: {
-																sessionId: sessionId ? sessionId : "unknown",
-															},
-														},
-													}),
-												{ queueType: "llm" },
-											);
-
-										const citedSources = allWebSources.filter((s) =>
-											webObject.citations.some((c) => c.url === s.url),
-										);
-
-										writer.write({
-											type: "data-web-citations",
-											data: citedSources,
-										});
-
-										if (userId) {
-											try {
-												await this.dbService.updateUserColumnValue(
-													userId,
-													"num_inference_tokens",
-													webCitationUsage.totalTokens,
-												);
-												await this.dbService.updateUserColumnValue(
-													userId,
-													"num_inferences",
-													1,
-												);
-											} catch (error) {
-												captureError(error);
-											}
-										}
-									} catch (error) {
-										captureError(error);
-									}
-								}
-
-								logMemory("chat:onFinish-complete", reqId);
-								updateActiveTrace({
-									name: "streamed-text-generation",
-									output: text,
-									userId,
-									sessionId,
-								});
-								// Handle token usage tracking after stream completes
-								if (userId && usage?.totalTokens) {
-									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											usage.totalTokens,
-										);
-										// Increase num_inferences for user by one
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
-										);
-									} catch (dbError) {
-										captureError(dbError);
-									}
-								}
+								// 								if (allChunkMatches.length > 0) {
+								// 									const availableSources = allChunkMatches.map(
+								// 										(match: {
+								// 											chunkId: number;
+								// 											snippet: string;
+								// 											page: string;
+								// 											documentTitle: string;
+								// 											sourceUrl: string;
+								// 										}) => ({
+								// 											id: match.chunkId,
+								// 											snippet: match.snippet,
+								// 											page: match.page,
+								// 											documentTitle: match.documentTitle,
+								// 											sourceUrl: match.sourceUrl,
+								// 										}),
+								// 									);
+								// 									try {
+								// 										const availableSourcesText = availableSources
+								// 											.map((s) => `[ID: ${s.id}]\nSnippet: ${s.snippet}`)
+								// 											.join("\n\n");
+								//
+								// 										const documentCitationExtractionMessages: ModelMessage[] = [
+								// 											{
+								// 												role: "system",
+								// 												// 												content: `Du analysierst eine generierte Antwort und die verfügbaren Quellen. Gib ein JSON-Objekt zurück mit:
+								// 												// - content: Die Antwort mit Quellenverweisen. Setzte die Quellenverweise nur bei wichtigen Referenzen von Informationen. Nummeriere Zitate STRIKT aufsteigend [1], [2], [3] etc. OHNE Sprünge. Platziere die Zitatnummern NACH dem Ende des jeweiligen Satzes. Jede neue Quelle erhält die nächsthöhere Nummer.
+								// 												// - citations: Array der Quellen-IDs in der Reihenfolge ihrer Nummerierung im Text ([1] = Index 0, [2] = Index 1, etc.). Nur IDs von Quellen, die tatsächlich in der Antwort verwendet wurden.`,
+								// 												content: `Du analysierst eine generierte Antwort und die verfügbaren Quellen.
+								// Füge die Zitate im Markdown Footnote Format ein, also so: [^1], [^2], [^3], etc. OHNE Sprünge.
+								// Platziere die Zitatverweise NACH dem Ende des jeweiligen Satzes.
+								// Am Ende der Antwort listest du die Quellen in der Reihenfolge ihrer Nummerierung auf, ebenfalls im Markdown Footnote Format, also so:
+								// \`\`\`
+								// Quellen:
+								// [^1]: [<documentTitle>,  Seite <page>](<sourceUrl>)
+								// \`\`\``,
+								// 											},
+								// 											{
+								// 												role: "user",
+								// 												content: `Generierte Antwort:\n${text}\n\nVerfügbare Quellen:\n${availableSourcesText}`,
+								// 											},
+								// 										];
+								//
+								// 										const {
+								// 											output: citationObject,
+								// 											usage: generateObjectUsage,
+								// 										} = await resilientCall(
+								// 											() =>
+								// 												generateText({
+								// 													model: llmHandler.languageModel,
+								// 													messages: documentCitationExtractionMessages,
+								// 													temperature: LLM_PARAMETERS.temperature,
+								// 													output: Output.object({
+								// 														schema: citationAnswerSchema,
+								// 													}),
+								// 													experimental_telemetry: {
+								// 														isEnabled:
+								// 															config.nodeEnv !== "test" &&
+								// 															config.nodeEnv !== "production", // Disable telemetry in CI and production
+								// 														functionId: "citation-extraction",
+								// 														metadata: {
+								// 															sessionId: sessionId ? sessionId : "unknown",
+								// 														},
+								// 													},
+								// 												}),
+								// 											{ queueType: "llm" },
+								// 										);
+								//
+								// 										writer.write({
+								// 											type: "data-citations",
+								// 											data: {
+								// 												content: citationObject.content,
+								// 												citations: citationObject.citations,
+								// 											},
+								// 										});
+								//
+								// 										try {
+								// 											await this.dbService.updateUserColumnValue(
+								// 												userId,
+								// 												"num_inference_tokens",
+								// 												generateObjectUsage.totalTokens,
+								// 											);
+								// 											await this.dbService.updateUserColumnValue(
+								// 												userId,
+								// 												"num_inferences",
+								// 												1,
+								// 											);
+								// 										} catch (error) {
+								// 											captureError(error);
+								// 										}
+								// 									} catch (error) {
+								// 										captureError(error);
+								// 									}
+								// 								}
+								// 								if (allWebSources.length > 0) {
+								// 									try {
+								// 										const webCitationPromptClient = await resilientCall(
+								// 											() =>
+								// 												langfuse.prompt.get("web-citation-extraction", {
+								// 													label:
+								// 														config.nodeEnv === "test"
+								// 															? "development"
+								// 															: config.nodeEnv,
+								// 													type: "chat",
+								// 												}),
+								// 											{ queueType: "llm" },
+								// 										);
+								// 										const compiledWebCitationExtractionPrompts =
+								// 											webCitationPromptClient.compile({
+								// 												generatedAnswer: text,
+								// 												availableSources: allWebSources
+								// 													.map(
+								// 														(s) =>
+								// 															`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+								// 													)
+								// 													.join("\n\n"),
+								// 											}) as ModelMessage[];
+								//
+								// 										const { output: webObject, usage: webCitationUsage } =
+								// 											await resilientCall(
+								// 												() =>
+								// 													generateText({
+								// 														model: llmHandler.languageModel,
+								// 														messages: compiledWebCitationExtractionPrompts,
+								// 														temperature: LLM_PARAMETERS.temperature,
+								// 														output: Output.object({
+								// 															schema: webCitationAnswerSchema,
+								// 														}),
+								// 														experimental_telemetry: {
+								// 															isEnabled:
+								// 																config.nodeEnv !== "test" &&
+								// 																config.nodeEnv !== "production",
+								// 															functionId: "web-citation-extraction",
+								// 															metadata: {
+								// 																sessionId: sessionId ? sessionId : "unknown",
+								// 															},
+								// 														},
+								// 													}),
+								// 												{ queueType: "llm" },
+								// 											);
+								//
+								// 										const citedSources = allWebSources.filter((s) =>
+								// 											webObject.citations.some((c) => c.url === s.url),
+								// 										);
+								//
+								// 										writer.write({
+								// 											type: "data-web-citations",
+								// 											data: citedSources,
+								// 										});
+								//
+								// 										if (userId) {
+								// 											try {
+								// 												await this.dbService.updateUserColumnValue(
+								// 													userId,
+								// 													"num_inference_tokens",
+								// 													webCitationUsage.totalTokens,
+								// 												);
+								// 												await this.dbService.updateUserColumnValue(
+								// 													userId,
+								// 													"num_inferences",
+								// 													1,
+								// 												);
+								// 											} catch (error) {
+								// 												captureError(error);
+								// 											}
+								// 										}
+								// 									} catch (error) {
+								// 										captureError(error);
+								// 									}
+								// 								}
+								//
+								// 								updateActiveTrace({
+								// 									name: "streamed-text-generation",
+								// 									output: text,
+								// 									userId,
+								// 									sessionId,
+								// 								});
+								// 								// Handle token usage tracking after stream completes
+								// 								if (userId && usage?.totalTokens) {
+								// 									try {
+								// 										await this.dbService.updateUserColumnValue(
+								// 											userId,
+								// 											"num_inference_tokens",
+								// 											usage.totalTokens,
+								// 										);
+								// 										// Increase num_inferences for user by one
+								// 										await this.dbService.updateUserColumnValue(
+								// 											userId,
+								// 											"num_inferences",
+								// 											1,
+								// 										);
+								// 									} catch (dbError) {
+								// 										captureError(dbError);
+								// 									}
+								// 								}
 							},
 							experimental_telemetry: {
 								isEnabled:
@@ -623,6 +657,7 @@ export class GenerationService {
 						mistral: {
 							presencePenalty: LLM_PARAMETERS.presencePenalty,
 							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+							reasoningEffort: "none",
 						},
 					},
 					experimental_telemetry: {
@@ -710,8 +745,26 @@ export class GenerationService {
 			role: "system",
 			content: compiledFreeChatPrompt,
 		};
+
+		freeChatPrompt.content += `
+
+Du analysierst eine generierte Antwort und die verfügbaren Quellen.
+FÜGE ZITATE NUR HINZU, WENN DU ZITATE EINDEUTIG DOKUMENTEN ZUORDNEN KANNST.
+Füge die Zitate im Markdown Footnote Format ein, also so: [^1], [^2], [^3], etc. OHNE Sprünge.
+Platziere die Zitatverweise NACH dem Ende des jeweiligen Satzes.
+IMMER UND NUR AM ENDE der Antwort listest du die Quellen in der Reihenfolge ihrer Nummerierung auf, ebenfalls im Markdown Footnote Format, also so:
+\`\`\`
+Quellen:
+[^<FOOTNOTE_REFERENCE_NUMBER>]: [<documentTitle>,  Seite <page>](<sourceUrl>)
+\`\`\`
+	`;
+
+		const messages = [freeChatPrompt, ...previousMessages];
+
+		// console.log(messages);
+
 		return {
-			messages: [freeChatPrompt, ...previousMessages],
+			messages,
 			promptClient: freeChatPromptClient,
 		};
 	}

@@ -4,41 +4,52 @@ import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-s
 import type { CitationWithDetails } from "../common";
 
 type CitationsStore = {
-	citationByChunkId: Record<number, CitationWithDetails>;
-	ensureCached: (chunkIds: number[]) => Promise<void>;
-	getCitation: (chunkId: number) => CitationWithDetails | undefined;
+	citationByChunkId: Record<number, CitationWithDetails | null | undefined>;
 };
 
-export const useCitationsStore = create<CitationsStore>()((set, get) => ({
+let debounceTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
+const queue: Set<number> = new Set();
+
+export const useCitationsStore = create<CitationsStore>()(() => ({
 	citationByChunkId: {},
-	getCitation: (chunkId) => {
-		const state = get();
-		const cached = state.citationByChunkId[chunkId];
-		if (cached) {
-			return cached;
-		}
-		return undefined;
-	},
-
-	async ensureCached(chunkIds) {
-		const { citationByChunkId } = get();
-		const { setStatus } = useInferenceLoadingStatusStore.getState();
-
-		const unique = Array.from(new Set(chunkIds));
-		const missing = unique.filter((id) => !citationByChunkId[id]);
-		if (missing.length === 0) {
-			return;
-		}
-
-		setStatus("loading-citations");
-
-		const details = await getCitationDetails(missing);
-		const merged = { ...citationByChunkId };
-		details.forEach((detail) => {
-			merged[detail.chunkId] = detail;
-		});
-		set({ citationByChunkId: merged });
-
-		setStatus("idle");
-	},
 }));
+
+export function addChunkIdsToCache(chunkIds: number[]) {
+	chunkIds.forEach((chunkId) => addChunkIdToCache(chunkId));
+}
+
+export function addChunkIdToCache(chunkId: number) {
+	const { citationByChunkId } = useCitationsStore.getState();
+
+	const isCached =
+		citationByChunkId[chunkId] !== undefined || queue.has(chunkId);
+
+	if (isCached) {
+		return;
+	}
+
+	queue.add(chunkId);
+
+	clearTimeout(debounceTimeout);
+
+	debounceTimeout = setTimeout(async () => {
+		await loadCitations();
+		queue.clear();
+	}, 300);
+}
+
+async function loadCitations() {
+	const chunkIds = Array.from(queue);
+
+	const { setStatus } = useInferenceLoadingStatusStore.getState();
+	setStatus("loading-citations");
+
+	const details = await getCitationDetails(chunkIds);
+	const merged = { ...useCitationsStore.getState().citationByChunkId };
+	details.forEach((detail) => {
+		merged[detail.chunkId] = detail;
+	});
+	useCitationsStore.setState({ citationByChunkId: merged });
+
+	setStatus("idle");
+}
