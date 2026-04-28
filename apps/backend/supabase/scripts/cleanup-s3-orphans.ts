@@ -302,9 +302,8 @@ async function getStorageObjectsByBucketAndFolder(
 async function deleteFilesFromStorage(storageObjectsOrphans: FileObject[]) {
 	if (isDryRun) {
 		console.log(
-			"Dry-run mode: skipping actual deletion of storage table orphan(s), would have deleted the following objects:",
+			`Dry-run mode: skipping actual deletion of storage table orphan(s), would have deleted ${storageObjectsOrphans.length} objects.`,
 		);
-		console.table(storageObjectsOrphans);
 		return;
 	}
 
@@ -379,9 +378,8 @@ function toSourceUrlWithVersion(key: string) {
 async function deleteS3Objects(keys: string[]): Promise<void> {
 	if (isDryRun) {
 		console.log(
-			"Dry-run mode: skipping actual deletion of S3 objects, would have deleted the following keys",
+			`Dry-run mode: skipping actual deletion of S3 objects, would have deleted ${keys.length} keys.`,
 		);
-		console.table(keys);
 		return;
 	}
 
@@ -403,10 +401,7 @@ async function deleteS3Objects(keys: string[]): Promise<void> {
 		const response = await s3Client.send(deleteCommand);
 
 		if (response.Errors && response.Errors.length > 0) {
-			console.error(
-				"Errors occurred while deleting S3 objects:",
-				response.Errors,
-			);
+			console.error("Errors occurred while deleting S3 objects");
 		} else {
 			console.log(
 				`Deleted ${batch.length} objects ✅ ${Math.min(i + maxS3BatchSize, keys.length)} / ${keys.length}`,
