@@ -7,6 +7,7 @@
  * Env vars: RENDER_API_KEY, RENDER_OWNER_ID, RENDER_RESOURCE_IDS,
  *           LOKI_PUSH_URL, LOKI_USERNAME, LOKI_PASSWORD, POLL_INTERVAL_SECONDS
  */
+/* eslint-disable no-console */
 
 const RENDER_LOGS_URL = "https://api.render.com/v1/logs";
 const MAX_PAGES = 10;
@@ -91,9 +92,7 @@ if (resourceIds.length === 0) {
 const pollIntervalMs =
 	(parseInt(process.env.POLL_INTERVAL_SECONDS ?? "", 10) || 60) * 1000;
 
-const lokiAuth =
-	"Basic " +
-	Buffer.from(`${LOKI_USERNAME}:${LOKI_PASSWORD}`).toString("base64");
+const lokiAuth = `Basic ${Buffer.from(`${LOKI_USERNAME}:${LOKI_PASSWORD}`).toString("base64")}`;
 
 let lastPollTime = new Date(Date.now() - pollIntervalMs).toISOString();
 
