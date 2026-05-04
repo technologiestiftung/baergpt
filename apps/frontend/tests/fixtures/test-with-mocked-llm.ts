@@ -10,18 +10,20 @@ type MockedLlmFixtures = {
 	_autoMockLlm: undefined;
 };
 
-export const testWithMockedLlm = testWithLoggedInUser.extend<MockedLlmFixtures>({
-	_autoMockLlm: [
-		async ({ page }, use) => {
-			await mockLlmCompletion(page, {});
-			await use(undefined);
-			await page.unroute("**/llm/just-chatting");
+export const testWithMockedLlm = testWithLoggedInUser.extend<MockedLlmFixtures>(
+	{
+		_autoMockLlm: [
+			async ({ page }, use) => {
+				await mockLlmCompletion(page, {});
+				await use(undefined);
+				await page.unroute("**/llm/just-chatting");
+			},
+			{ auto: true },
+		],
+		mockLlm: async ({ page }, use) => {
+			await use(async (options?: MockLlmCompletionOptions) => {
+				await mockLlmCompletion(page, options ?? {});
+			});
 		},
-		{ auto: true },
-	],
-	mockLlm: async ({ page }, use) => {
-		await use(async (options?: MockLlmCompletionOptions) => {
-			await mockLlmCompletion(page, options ?? {});
-		});
 	},
-});
+);
