@@ -28,15 +28,15 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	const isLoadingCitations = status === "loading-citations";
 	const isLoadingLastCitations = isLastMessage && isLoadingCitations;
 
-	const { getCitation } = useCitationsStore();
 	const hasWebCitations = Boolean(webCitations && webCitations.length > 0);
-	const hasChunkCitations =
+	const { getCitation } = useCitationsStore();
+	const hasDocumentCitations =
 		citations &&
 		citations.length > 0 &&
 		checkCitationsExists(citations, getCitation);
 
 	const isCitationsButtonVisible =
-		hasChunkCitations || hasWebCitations || isLoadingLastCitations;
+		hasDocumentCitations || hasWebCitations || isLoadingLastCitations;
 
 	if (!isCitationsButtonVisible) {
 		return null;
@@ -74,11 +74,13 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 					</>
 				)}
 			</ChatButton>
-			<CitationsDialog
-				messageId={messageId}
-				citations={citations}
-				webCitations={webCitations}
-			/>
+			{(hasDocumentCitations || hasWebCitations) && (
+				<CitationsDialog
+					messageId={messageId}
+					citations={citations}
+					webCitations={webCitations}
+				/>
+			)}
 		</>
 	);
 };

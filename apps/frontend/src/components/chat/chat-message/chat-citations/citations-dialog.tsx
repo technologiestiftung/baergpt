@@ -6,7 +6,7 @@ import { CitationItem } from "./citation-item.tsx";
 import { WebCitationItem } from "./web-citation-item.tsx";
 
 interface CitationsDialogProps {
-	messageId: number | null;
+	messageId: number;
 	citations: number[] | null;
 	webCitations: WebCitationSource[] | null;
 }
@@ -38,12 +38,6 @@ export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 }) => {
 	const documentChunkIds = citations ?? [];
 	const webCitationSources = webCitations ?? [];
-	const hasDocumentCitations = documentChunkIds.length > 0;
-	const hasWebCitations = webCitationSources.length > 0;
-
-	if (!messageId || (!hasDocumentCitations && !hasWebCitations)) {
-		return null;
-	}
 
 	return (
 		<DefaultDialog id={`${citationsDialogId}-${messageId}`}>
@@ -64,11 +58,11 @@ export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 					</button>
 				</div>
 				<div className="flex flex-col px-4 pb-4 overflow-y-auto">
-					{hasDocumentCitations &&
+					{documentChunkIds.length > 0 &&
 						documentChunkIds.map((chunkId) => (
 							<CitationItem citationId={chunkId} key={chunkId} />
 						))}
-					{hasWebCitations &&
+					{webCitationSources.length > 0 &&
 						webCitationSources.map((source, index) => (
 							<WebCitationItem source={source} key={`${source.url}-${index}`} />
 						))}
