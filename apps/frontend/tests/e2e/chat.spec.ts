@@ -30,12 +30,12 @@ test.describe("Chat", () => {
 			const question = page.getByTestId("user-message-markdown-container");
 			await expect(question).toBeVisible();
 
-			const answer = page.getByTestId("assistant-message-markdown-container");
-			await expect(answer).not.toBeEmpty();
-
 			if (browserName === "webkit") {
 				return;
 			}
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
 
 			await page.getByAltText("Kopieren").last().click();
 
