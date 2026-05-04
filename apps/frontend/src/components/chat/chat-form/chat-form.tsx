@@ -121,7 +121,7 @@ export const ChatForm: React.FC = () => {
 		<form
 			onSubmit={handleSubmit}
 			className={`flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
-				${isWebSearchActive && "border-[2px] focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
+				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
