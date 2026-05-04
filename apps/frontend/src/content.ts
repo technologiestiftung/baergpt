@@ -879,6 +879,7 @@ export const Content = {
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
+	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
 	"chat.sendButton.ariaLabel": "Nachricht senden",
 	"chat.stopGeneratingButton.ariaLabel": "Textgenerierung stoppen",
 	"chatStopGeneratingIcon.imgAlt": "Generierung stoppen (Pause-Symbol)",

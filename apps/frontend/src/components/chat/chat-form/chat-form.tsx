@@ -113,6 +113,9 @@ export const ChatForm: React.FC = () => {
 	const hasError = status === "error";
 
 	const isWebSearchActive = selectedChatOptions.includes("webSearch");
+	const textAreaPlaceholder = isWebSearchActive
+		? Content["chat.textarea.placeholder.webSearch"]
+		: Content["chat.textarea.placeholder"];
 
 	return (
 		<form
@@ -144,7 +147,7 @@ export const ChatForm: React.FC = () => {
 						name="content"
 						rows={1}
 						required={true}
-						placeholder={Content["chat.textarea.placeholder"]}
+						placeholder={textAreaPlaceholder}
 						onKeyDown={handleTextAreaKeyDown}
 						onInput={handleTextAreaInput}
 					/>
