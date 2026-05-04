@@ -131,6 +131,39 @@ For debugging, add verbosity flags:
 op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase.yml -vv
 ```
 
+### Kernel hardening (tag: `kernel-hardening`)
+
+Hardening tasks in the `common` role (e.g. blacklisting unused kernel modules like `algif_aead`) are tagged `kernel-hardening`. Use this to apply only those tasks without running the rest of the playbook — useful when a host's full state is not yet reconciled with Ansible.
+
+```bash
+# Staging — dry run, then apply
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase.yml --tags kernel-hardening --check --diff
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase.yml --tags kernel-hardening
+
+# Production — dry run, then apply
+op run --env-file .op.env.supabase-production -- ansible-playbook -i inventory/supabase-production.yml supabase.yml --tags kernel-hardening --check --diff
+op run --env-file .op.env.supabase-production -- ansible-playbook -i inventory/supabase-production.yml supabase.yml --tags kernel-hardening
+```
+
+### Kernel patches and reboots
+
+The standalone `kernel-patch.yml` playbook upgrades the cloud-VM kernel meta-packages (`linux-image-virtual`, `linux-headers-virtual`) to the latest available version and reboots the host if `/var/run/reboot-required` exists after the upgrade. Hosts are patched one at a time (`serial: 1`). If you ever migrate to bare-metal hosts, the package list will need `linux-image-generic` / `linux-headers-generic` added.
+
+Caveats:
+
+- The reboot fires whenever `/var/run/reboot-required` is present — including from earlier package activity that predates this run.
+- Expect a few minutes of service downtime per host during the reboot. Take a backup before running on production.
+
+```bash
+# Staging — dry run, then apply
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml kernel-patch.yml --check --diff
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml kernel-patch.yml
+
+# Production — dry run, then apply
+op run --env-file .op.env.supabase-production -- ansible-playbook -i inventory/supabase-production.yml kernel-patch.yml --check --diff
+op run --env-file .op.env.supabase-production -- ansible-playbook -i inventory/supabase-production.yml kernel-patch.yml
+```
+
 ## Supabase Stack
 
 The project uses a customized `docker-compose.yml` located at `supabase/docker-compose.yml`, which overrides the default Supabase configuration. It is deployed to `/opt/supabase-baergpt/` on the server.
