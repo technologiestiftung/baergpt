@@ -62,6 +62,9 @@ export const ragSearchTool = (options: RagSearchToolOptions) =>
 					chunkId: match.chunk_id,
 					snippet: match.chunk_content,
 					createdAt: match.created_at,
+					page: match.page,
+					documentTitle: match.file_name,
+					sourceUrl: match.chunk_id,
 				})),
 			};
 		},

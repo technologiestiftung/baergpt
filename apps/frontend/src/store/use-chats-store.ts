@@ -13,9 +13,11 @@ import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
 import { updateMessage as updateMessageInDb } from "../api/message/update-message.ts";
 import { getTotalChatCount as getTotalChatCountFromDb } from "../api/chat/get-total-chat-count.ts";
+import { deleteMessages as deleteChatMessagesFromDb } from "../api/message/delete-messages.ts";
 import { useErrorStore } from "./error-store.ts";
 import type { WebCitationSource } from "../api/chat/get-completion.ts";
 import { useDocumentStore } from "./document-store.ts";
+import { captureError } from "../monitoring/capture-error.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
@@ -53,6 +55,7 @@ interface ChatStore {
 	}): void;
 	isWebSearchRemovalInfoMessageShown: boolean;
 	setIsWebSearchRemovalInfoMessageShown(isShown: boolean): void;
+	deleteEmptyAssistantMessages(chat: ChatWithMessages): Promise<void>;
 }
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
@@ -90,7 +93,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				}
 			}
 
-			/* 
+			/*
 			/ simplified solution for now to kick out other ChatOptions
 			/ can be changed once baseKnowledge is part of files and testing of combining tools is done
 			*/
@@ -267,7 +270,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		get().updateChats(chat);
 
 		updateMessageDebounceTimeout = setTimeout(async () => {
-			await updateMessageInDb(messageId, { content, citations, web_citations });
+			await updateMessageInDb(messageId, { content, citations });
 		}, 300);
 	},
 
@@ -277,5 +280,34 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		setTimeout(() => {
 			set({ isWebSearchRemovalInfoMessageShown: false });
 		}, 12000);
+	},
+
+	async deleteEmptyAssistantMessages(chat: ChatWithMessages) {
+		const emptyAssistantMessages = chat.messages.filter(
+			(message) => message.role === "assistant" && message.content === "",
+		);
+
+		if (emptyAssistantMessages.length === 0) {
+			return;
+		}
+
+		get().updateChats({
+			...chat,
+			messages: chat.messages.filter((message) =>
+				emptyAssistantMessages.includes(message),
+			),
+		});
+
+		const messageIdsToDelete = emptyAssistantMessages.map(
+			(message) => message.id,
+		);
+
+		const { error } = await deleteChatMessagesFromDb(messageIdsToDelete);
+
+		if (!error) {
+			return;
+		}
+
+		captureError(error);
 	},
 }));
