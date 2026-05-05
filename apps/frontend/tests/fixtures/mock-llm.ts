@@ -45,6 +45,8 @@ export async function mockLlmCompletion(
 		webCitations,
 	} = options;
 
+	await page.unroute("**/llm/just-chatting");
+
 	await page.route("**/llm/just-chatting", async (route) => {
 		if (delayMs > 0) {
 			await new Promise((resolve) => setTimeout(resolve, delayMs));

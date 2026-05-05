@@ -4,7 +4,10 @@ import {
 	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
 import { expect, test } from "@playwright/test";
-import { sendAndWaitForLLMResponse } from "../fixtures/mock-llm.ts";
+import {
+	mockLlmCompletion,
+	sendAndWaitForLLMResponse,
+} from "../fixtures/mock-llm.ts";
 import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
 import {
 	defaultDocumentName,
@@ -296,13 +299,13 @@ test.describe("Chat", () => {
 
 	testDesktopOnly(
 		"Chat with personal document citations",
-		async ({ page, documentChunkId, mockLlm }) => {
+		async ({ page, documentChunkId }) => {
 			await page.goto("/");
 
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [documentChunkId];
 
-			await mockLlm({ textDelta: content, citations });
+			await mockLlmCompletion(page, { textDelta: content, citations });
 
 			// Find the add-to-chat button for the specific document
 			const addButton = page
@@ -345,139 +348,136 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testDesktopOnly(
-		"Chat with public document citations",
-		async ({ page, mockLlm }) => {
-			// Create an admin user to upload the public document
-			const adminEmail = "admin.test@local.berlin.de";
-			const adminPassword = "TestPassword123!";
+	testDesktopOnly("Chat with public document citations", async ({ page }) => {
+		// Create an admin user to upload the public document
+		const adminEmail = "admin.test@local.berlin.de";
+		const adminPassword = "TestPassword123!";
 
-			const { data: adminUserData, error: createAdminError } =
-				await supabaseAdminClient.auth.admin.createUser({
+		const { data: adminUserData, error: createAdminError } =
+			await supabaseAdminClient.auth.admin.createUser({
+				email: adminEmail,
+				password: adminPassword,
+				email_confirm: true,
+				user_metadata: {
+					first_name: "Admin",
+					last_name: "Test",
+				},
+			});
+
+		expect(createAdminError).toBeNull();
+
+		if (createAdminError !== null) {
+			throw createAdminError;
+		}
+
+		const adminUserId = adminUserData.user.id;
+
+		try {
+			// Grant admin role by adding to application_admins table
+			const { error: adminRoleError } = await supabaseAdminClient
+				.from("application_admins")
+				.insert({ user_id: adminUserId });
+
+			expect(adminRoleError).toBeNull();
+
+			// Sign in the admin user to get their access token
+			const { data: adminSessionData, error: adminSignInError } =
+				await supabaseAnonClient.auth.signInWithPassword({
 					email: adminEmail,
 					password: adminPassword,
-					email_confirm: true,
-					user_metadata: {
-						first_name: "Admin",
-						last_name: "Test",
-					},
 				});
 
-			expect(createAdminError).toBeNull();
+			expect(adminSignInError).toBeNull();
 
-			if (createAdminError !== null) {
-				throw createAdminError;
+			if (adminSignInError !== null) {
+				throw adminSignInError;
 			}
 
-			const adminUserId = adminUserData.user.id;
+			const adminAccessToken = adminSessionData.session.access_token;
 
-			try {
-				// Grant admin role by adding to application_admins table
-				const { error: adminRoleError } = await supabaseAdminClient
-					.from("application_admins")
-					.insert({ user_id: adminUserId });
+			const { data: accessGroupData, error: accessGroupError } =
+				await supabaseAdminClient
+					.from("access_groups")
+					.select()
+					.eq("name", "Alle")
+					.single();
 
-				expect(adminRoleError).toBeNull();
+			expect(accessGroupError).toBeNull();
 
-				// Sign in the admin user to get their access token
-				const { data: adminSessionData, error: adminSignInError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: adminEmail,
-						password: adminPassword,
-					});
-
-				expect(adminSignInError).toBeNull();
-
-				if (adminSignInError !== null) {
-					throw adminSignInError;
-				}
-
-				const adminAccessToken = adminSessionData.session.access_token;
-
-				const { data: accessGroupData, error: accessGroupError } =
-					await supabaseAdminClient
-						.from("access_groups")
-						.select()
-						.eq("name", "Alle")
-						.single();
-
-				expect(accessGroupError).toBeNull();
-
-				if (accessGroupError !== null) {
-					throw accessGroupError;
-				}
-
-				const defaultAccessGroupId = accessGroupData.id;
-
-				const publicDocumentChunkId = await mockDocumentUpload({
-					userId: adminUserId,
-					accessToken: adminAccessToken,
-					accessGroupId: defaultAccessGroupId,
-					fileName: defaultDocumentName,
-					filePath: defaultDocumentPath,
-					sourceType: "public_document",
-					bucketName: "public_documents",
-				});
-
-				await page.goto("/");
-
-				const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
-				const citations = [publicDocumentChunkId];
-
-				await mockLlm({ textDelta: content, citations });
-
-				// Find the add-to-chat button
-				const addButton = page
-					.getByRole("listitem")
-					.filter({ hasText: defaultDocumentName })
-					.getByLabel("In den Chat");
-
-				// Click the add-to-chat button
-				await addButton.click();
-
-				// Fill in the chat question
-				await page
-					.getByPlaceholder("Stellen Sie eine Frage")
-					.fill("Worum geht es?");
-
-				await sendAndWaitForLLMResponse(page);
-
-				// Wait for the citations button to appear (after stream finishes and citations are loaded)
-				const allCitationsButton = page.getByRole("button", {
-					name: "Quellen",
-				});
-				await expect(allCitationsButton).toBeVisible();
-
-				await allCitationsButton.click();
-
-				const citationsDialogHeader = page.getByRole("heading", {
-					name: "Quellen",
-				});
-				await expect(citationsDialogHeader).toBeVisible();
-
-				const citationDetail = page.getByRole("button", {
-					name: "default_document.pdf baer-",
-				});
-				await expect(citationDetail).toBeVisible();
-
-				const publicDocumentPill = page
-					.getByTestId("public-document-pill")
-					.first();
-				await expect(publicDocumentPill).toBeVisible();
-
-				const citationDialogClosingButton = page.getByTestId(
-					/(close-citations-dialog-button-).+/,
-				);
-				await citationDialogClosingButton.click();
-
-				await expect(citationsDialogHeader).not.toBeVisible();
-			} finally {
-				if (adminUserId) {
-					await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
-				}
+			if (accessGroupError !== null) {
+				throw accessGroupError;
 			}
-		},
-	);
+
+			const defaultAccessGroupId = accessGroupData.id;
+
+			const publicDocumentChunkId = await mockDocumentUpload({
+				userId: adminUserId,
+				accessToken: adminAccessToken,
+				accessGroupId: defaultAccessGroupId,
+				fileName: defaultDocumentName,
+				filePath: defaultDocumentPath,
+				sourceType: "public_document",
+				bucketName: "public_documents",
+			});
+
+			await page.goto("/");
+
+			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
+			const citations = [publicDocumentChunkId];
+
+			await mockLlmCompletion(page, { textDelta: content, citations });
+
+			// Find the add-to-chat button
+			const addButton = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("In den Chat");
+
+			// Click the add-to-chat button
+			await addButton.click();
+
+			// Fill in the chat question
+			await page
+				.getByPlaceholder("Stellen Sie eine Frage")
+				.fill("Worum geht es?");
+
+			await sendAndWaitForLLMResponse(page);
+
+			// Wait for the citations button to appear (after stream finishes and citations are loaded)
+			const allCitationsButton = page.getByRole("button", {
+				name: "Quellen",
+			});
+			await expect(allCitationsButton).toBeVisible();
+
+			await allCitationsButton.click();
+
+			const citationsDialogHeader = page.getByRole("heading", {
+				name: "Quellen",
+			});
+			await expect(citationsDialogHeader).toBeVisible();
+
+			const citationDetail = page.getByRole("button", {
+				name: "default_document.pdf baer-",
+			});
+			await expect(citationDetail).toBeVisible();
+
+			const publicDocumentPill = page
+				.getByTestId("public-document-pill")
+				.first();
+			await expect(publicDocumentPill).toBeVisible();
+
+			const citationDialogClosingButton = page.getByTestId(
+				/(close-citations-dialog-button-).+/,
+			);
+			await citationDialogClosingButton.click();
+
+			await expect(citationsDialogHeader).not.toBeVisible();
+		} finally {
+			if (adminUserId) {
+				await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
+			}
+		}
+	});
 
 	testDesktopOnly(
 		"Export chat messages as Word and PDF document",
