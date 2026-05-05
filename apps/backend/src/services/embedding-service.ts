@@ -32,6 +32,9 @@ export class EmbeddingService {
 				return await embed({
 					model: mistral.embeddingModel(config.mistralEmbeddingModel),
 					value: input,
+					experimental_telemetry: {
+						isEnabled: config.isTracingEnabled,
+					},
 				});
 			},
 			{ queueType: "embeddings" },
