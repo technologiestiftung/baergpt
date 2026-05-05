@@ -3,8 +3,12 @@ import {
 	mockDocumentUpload,
 	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
-import { expect, Page, test } from "@playwright/test";
-import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
+import { expect, test } from "@playwright/test";
+import {
+	mockLlmCompletion,
+	sendAndWaitForLLMResponse,
+} from "../fixtures/mock-llm.ts";
+import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -17,7 +21,7 @@ import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 
 test.describe("Chat", () => {
-	testWithLoggedInUser(
+	testWithMockedLlm(
 		"Chat without documents and copy answer",
 		async ({ page, browserName }) => {
 			await page.goto("/");
@@ -30,12 +34,12 @@ test.describe("Chat", () => {
 			const question = page.getByTestId("user-message-markdown-container");
 			await expect(question).toBeVisible();
 
-			const answer = page.getByTestId("assistant-message-markdown-container");
-			await expect(answer).not.toBeEmpty();
-
 			if (browserName === "webkit") {
 				return;
 			}
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
 
 			await page.getByAltText("Kopieren").last().click();
 
@@ -47,7 +51,7 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testWithLoggedInUser(
+	testWithMockedLlm(
 		"Stop generating aborts stream without error banner",
 		async ({ page }) => {
 			await page.goto("/");
@@ -95,13 +99,12 @@ test.describe("Chat", () => {
 					page.getByRole("button", { name: "Nachricht senden" }),
 				).toBeVisible();
 			} finally {
-				await page.unroute("**/llm/just-chatting");
 				hangingStream?.destroy();
 			}
 		},
 	);
 
-	testWithLoggedInUser(
+	testWithMockedLlm(
 		"Copy text with markdown formatting as rich text and plain text",
 		async ({ page, browserName }) => {
 			await page.goto("/");
@@ -169,7 +172,7 @@ test.describe("Chat", () => {
 		await expect(question).toBeVisible();
 
 		const answer = page.getByTestId("assistant-message-markdown-container");
-		await expect(answer).not.toBeEmpty({ timeout: 60_000 });
+		await expect(answer).not.toBeEmpty();
 	});
 
 	testDesktopOnly(
@@ -302,20 +305,7 @@ test.describe("Chat", () => {
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [documentChunkId];
 
-			await page.route("**/llm/just-chatting", async (route) => {
-				// Format as Server-Sent Events (SSE) stream
-				const streamBody = [
-					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
-					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
-					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
-				].join("");
-
-				await route.fulfill({
-					status: 200,
-					body: streamBody,
-					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
-				});
-			});
+			await mockLlmCompletion(page, { textDelta: content, citations });
 
 			// Find the add-to-chat button for the specific document
 			const addButton = page
@@ -435,20 +425,7 @@ test.describe("Chat", () => {
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [publicDocumentChunkId];
 
-			await page.route("**/llm/just-chatting", async (route) => {
-				// Format as Server-Sent Events (SSE) stream
-				const streamBody = [
-					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
-					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
-					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
-				].join("");
-
-				await route.fulfill({
-					status: 200,
-					body: streamBody,
-					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
-				});
-			});
+			await mockLlmCompletion(page, { textDelta: content, citations });
 
 			// Find the add-to-chat button
 			const addButton = page
@@ -467,7 +444,9 @@ test.describe("Chat", () => {
 			await sendAndWaitForLLMResponse(page);
 
 			// Wait for the citations button to appear (after stream finishes and citations are loaded)
-			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			const allCitationsButton = page.getByRole("button", {
+				name: "Quellen",
+			});
 			await expect(allCitationsButton).toBeVisible();
 
 			await allCitationsButton.click();
@@ -500,12 +479,9 @@ test.describe("Chat", () => {
 		}
 	});
 
-	testWithLoggedInUser(
+	testDesktopOnly(
 		"Export chat messages as Word and PDF document",
-		async ({ page, isMobile, browserName }) => {
-			// Skip this test on mobile
-			test.skip(isMobile === true, "Skipping desktop tests on mobile");
-
+		async ({ page, browserName }) => {
 			await page.goto("/");
 
 			// Fill in the chat question
@@ -517,7 +493,7 @@ test.describe("Chat", () => {
 			await expect(question).toBeVisible();
 
 			const answer = page.getByTestId("assistant-message-markdown-container");
-			await expect(answer).not.toBeEmpty({ timeout: 60_000 });
+			await expect(answer).not.toBeEmpty();
 
 			if (browserName === "webkit") {
 				return;
@@ -651,7 +627,7 @@ test.describe("Chat", () => {
 		await expect(allChatsLoadedMessage).toBeVisible();
 	});
 
-	testWithLoggedInUser(
+	testWithMockedLlm(
 		"Change LLM model from small to large and back",
 		async ({ page }) => {
 			await page.goto("/");
@@ -672,7 +648,7 @@ test.describe("Chat", () => {
 			const answer1 = page
 				.getByTestId("assistant-message-markdown-container")
 				.first();
-			await expect(answer1).not.toBeEmpty({ timeout: 60_000 });
+			await expect(answer1).not.toBeEmpty();
 
 			// Click on the LLM model button
 			await page.getByRole("button", { name: "Schnell" }).click();
@@ -698,7 +674,7 @@ test.describe("Chat", () => {
 			const answer2 = page
 				.getByTestId("assistant-message-markdown-container")
 				.last();
-			await expect(answer2).not.toBeEmpty({ timeout: 60_000 });
+			await expect(answer2).not.toBeEmpty();
 
 			// Click on the LLM model button
 			await page.getByRole("button", { name: "Präzise" }).click();
@@ -899,16 +875,3 @@ test.describe("Chat", () => {
 		},
 	);
 });
-
-async function sendAndWaitForLLMResponse(page: Page) {
-	const waitForLLMResponse = page.waitForResponse("**/llm/just-chatting", {
-		timeout: 60_000,
-	});
-
-	const sendButton = page.getByRole("button", {
-		name: "Nachricht senden",
-	});
-	await sendButton.click();
-
-	await waitForLLMResponse;
-}

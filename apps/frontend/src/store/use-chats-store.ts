@@ -15,6 +15,7 @@ import { updateMessage as updateMessageInDb } from "../api/message/update-messag
 import { getTotalChatCount as getTotalChatCountFromDb } from "../api/chat/get-total-chat-count.ts";
 import { useErrorStore } from "./error-store.ts";
 import type { WebCitationSource } from "../api/chat/get-completion.ts";
+import { useDocumentStore } from "./document-store.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
@@ -50,6 +51,8 @@ interface ChatStore {
 		citations: number[] | null;
 		web_citations: WebCitationSource[] | null;
 	}): void;
+	isWebSearchRemovalInfoMessageShown: boolean;
+	setIsWebSearchRemovalInfoMessageShown(isShown: boolean): void;
 }
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
@@ -59,6 +62,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	totalChatCount: null,
 	selectedChatOptions: ["baseKnowledge"],
 	selectedLlmModel: "mistral-small",
+	isWebSearchRemovalInfoMessageShown: false,
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
@@ -77,7 +81,20 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				),
 			});
 		} else {
-			set({ selectedChatOptions: [...selectedChatOptions, option] });
+			if (option === "webSearch") {
+				const { selectedChatDocuments } = useDocumentStore.getState();
+				if (selectedChatDocuments.length > 0) {
+					selectedChatDocuments.forEach((document) => {
+						useDocumentStore.getState().unselectChatDocument(document.id);
+					});
+				}
+			}
+
+			/* 
+			/ simplified solution for now to kick out other ChatOptions
+			/ can be changed once baseKnowledge is part of files and testing of combining tools is done
+			*/
+			set({ selectedChatOptions: [option] });
 		}
 	},
 
@@ -252,5 +269,13 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		updateMessageDebounceTimeout = setTimeout(async () => {
 			await updateMessageInDb(messageId, { content, citations, web_citations });
 		}, 300);
+	},
+
+	setIsWebSearchRemovalInfoMessageShown(isShown: boolean) {
+		set({ isWebSearchRemovalInfoMessageShown: isShown });
+
+		setTimeout(() => {
+			set({ isWebSearchRemovalInfoMessageShown: false });
+		}, 12000);
 	},
 }));
