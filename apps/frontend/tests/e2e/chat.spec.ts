@@ -898,6 +898,70 @@ test.describe("Chat", () => {
 			await expect(baseKnowledgePill).not.toBeVisible();
 		},
 	);
+
+	testWithLoggedInUser(
+		"Should not be able to send another message with enter while waiting for a response",
+		async ({ page }) => {
+			await page.goto("/");
+			let hangingStream: Readable | undefined;
+
+			// Mock the LLM API to return a partial response
+			await page.route("**/llm/just-chatting", async (route) => {
+				hangingStream = new Readable({
+					read() {},
+				});
+				hangingStream.push(
+					`data: ${JSON.stringify({
+						type: "text-delta",
+						id: "1",
+						delta: "Partial ",
+					})}\n\n`,
+				);
+
+				await route.fulfill({
+					status: 200,
+					headers: {
+						"Content-Type": "text/event-stream; charset=utf-8",
+					},
+					// @ts-expect-error Playwright Node accepts Readable for streaming bodies; public types omit it.
+					body: hangingStream,
+				});
+			});
+
+			try {
+				const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+				await chatInput.fill("hallo123");
+
+				const submitButton = page.getByRole("button", {
+					name: "Nachricht senden",
+				});
+				await submitButton.click();
+
+				const question = page.getByTestId("user-message-markdown-container");
+				await expect(question).toBeVisible();
+
+				const stopButton = page.getByRole("button", {
+					name: "Textgenerierung stoppen",
+				});
+				await expect(stopButton).toBeVisible();
+
+				const userMessages = page.getByTestId(
+					"user-message-markdown-container",
+				);
+				const userMessageCountBefore = await userMessages.count();
+
+				await chatInput.fill("hallo456");
+				await chatInput.focus();
+
+				await page.keyboard.press("Enter");
+
+				await expect(userMessages).toHaveCount(userMessageCountBefore);
+			} finally {
+				await page.unroute("**/llm/just-chatting");
+				hangingStream?.destroy();
+			}
+		},
+	);
 });
 
 async function sendAndWaitForLLMResponse(page: Page) {

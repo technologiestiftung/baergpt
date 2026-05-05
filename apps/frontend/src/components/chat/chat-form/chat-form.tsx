@@ -1,6 +1,7 @@
 import React, {
 	type FormEvent,
 	type KeyboardEvent,
+	type MouseEvent,
 	useRef,
 	useState,
 } from "react";
@@ -26,7 +27,7 @@ const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 export const chatFormId = "chat-form";
 
 export const ChatForm: React.FC = () => {
-	const { status, clearError } = useInferenceLoadingStatusStore();
+	const { status, clearError, isLoading } = useInferenceLoadingStatusStore();
 	const { selectedChatFolders } = useFolderStore();
 	const { selectedChatDocuments } = useDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
@@ -48,9 +49,14 @@ export const ChatForm: React.FC = () => {
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
 	const handleTextAreaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-		const isSubmit = event.key === "Enter" && !event.shiftKey;
-		if (isSubmit) {
+		const isEnterWithoutShiftPressed = event.key === "Enter" && !event.shiftKey;
+		if (isEnterWithoutShiftPressed) {
 			event.preventDefault();
+		}
+
+		const isSubmitEnabled =
+			!isLoading() && event.currentTarget.value.trim().length > 0;
+		if (isEnterWithoutShiftPressed && isSubmitEnabled) {
 			event.currentTarget.form?.requestSubmit();
 		}
 	};
@@ -100,11 +106,10 @@ export const ChatForm: React.FC = () => {
 		);
 	};
 
-	const isInferenceLoading = [
-		"waiting-for-response",
-		"loading-text",
-		"loading-citations",
-	].includes(status);
+	const handleStop = (event: MouseEvent<HTMLButtonElement>) => {
+		event.preventDefault();
+		abortStreaming();
+	};
 
 	const hasError = status === "error";
 
@@ -156,11 +161,11 @@ export const ChatForm: React.FC = () => {
 					</div>
 					<div className="flex items-center gap-3">
 						<LlmModelToggleButton />
-						{isInferenceLoading && !hasError ? (
+						{isLoading() && !hasError ? (
 							<button
 								type="button"
 								aria-label={Content["chat.stopGeneratingButton.ariaLabel"]}
-								onClick={() => abortStreaming()}
+								onClick={handleStop}
 								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-110 focus-visible:outline-2px"
 							>
 								<ChatStopGeneratingIcon />
