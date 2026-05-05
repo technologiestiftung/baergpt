@@ -1,6 +1,7 @@
 import React, {
 	type FormEvent,
 	type KeyboardEvent,
+	type MouseEvent,
 	useRef,
 	useState,
 } from "react";
@@ -109,6 +110,11 @@ export const ChatForm: React.FC = () => {
 		);
 	};
 
+	const handleStop = (event: MouseEvent<HTMLButtonElement>) => {
+		event.preventDefault();
+		abortStreaming();
+	};
+
 	const hasError = status === "error";
 
 	const isWebSearchActive = selectedChatOptions.includes("webSearch");
@@ -170,7 +176,7 @@ export const ChatForm: React.FC = () => {
 							<button
 								type="button"
 								aria-label={Content["chat.stopGeneratingButton.ariaLabel"]}
-								onClick={() => abortStreaming()}
+								onClick={handleStop}
 								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-110 focus-visible:outline-2px"
 							>
 								<ChatStopGeneratingIcon />
