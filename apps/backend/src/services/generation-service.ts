@@ -309,8 +309,7 @@ export class GenerationService {
 						},
 					},
 					experimental_telemetry: {
-						isEnabled:
-							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
+						isEnabled: config.isTracingEnabled,
 						functionId: "text-toolCall-generation",
 						metadata: {
 							sessionId: sessionId ? sessionId : "unknown",
@@ -445,9 +444,7 @@ export class GenerationService {
 														schema: citationAnswerSchema,
 													}),
 													experimental_telemetry: {
-														isEnabled:
-															config.nodeEnv !== "test" &&
-															config.nodeEnv !== "production", // Disable telemetry in CI and production
+														isEnabled: config.isTracingEnabled,
 														functionId: "citation-extraction",
 														metadata: {
 															sessionId: sessionId ? sessionId : "unknown",
@@ -515,9 +512,7 @@ export class GenerationService {
 															schema: webCitationAnswerSchema,
 														}),
 														experimental_telemetry: {
-															isEnabled:
-																config.nodeEnv !== "test" &&
-																config.nodeEnv !== "production",
+															isEnabled: config.isTracingEnabled,
 															functionId: "web-citation-extraction",
 															metadata: {
 																sessionId: sessionId ? sessionId : "unknown",
@@ -584,8 +579,8 @@ export class GenerationService {
 								}
 							},
 							experimental_telemetry: {
-								isEnabled:
-									config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
+								isEnabled: config.isTracingEnabled,
+								functionId: "streamed-text-generation",
 								metadata: {
 									sessionId: sessionId ? sessionId : "unknown",
 									langfusePrompt: langfusePrompt
@@ -626,8 +621,7 @@ export class GenerationService {
 						},
 					},
 					experimental_telemetry: {
-						isEnabled:
-							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
+						isEnabled: config.isTracingEnabled,
 						metadata: {
 							sessionId: "unknown",
 							langfusePrompt: langfusePrompt.toJSON(),
