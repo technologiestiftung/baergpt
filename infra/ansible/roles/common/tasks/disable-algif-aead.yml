@@ -1,0 +1,21 @@
+- name: Block algif_aead module from loading
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/disable-algif.conf
+    content: |
+      # Disable algif_aead — unused by this stack and reduces attack surface.
+      # Originally added in response to CVE-2026-31431 (AF_ALG/splice container escape).
+      # Safe to remove only if a future workload genuinely needs AF_ALG AEAD sockets
+      install algif_aead /bin/false
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Check whether algif_aead is currently loaded
+  ansible.builtin.command: lsmod
+  register: cve_2026_31431_lsmod
+  changed_when: false
+  check_mode: false
+
+- name: Unload algif_aead if loaded
+  ansible.builtin.command: rmmod algif_aead
+  when: "'algif_aead' in cve_2026_31431_lsmod.stdout"

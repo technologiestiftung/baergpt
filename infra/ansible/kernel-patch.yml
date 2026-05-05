@@ -1,0 +1,23 @@
+- name: Apply pending kernel upgrades and reboot if required
+  hosts: supabase
+  become: true
+  serial: 1
+  gather_facts: true
+  tasks:
+    - name: Upgrade kernel packages
+      ansible.builtin.apt:
+        name:
+          - linux-image-virtual
+          - linux-headers-virtual
+        state: latest
+        update_cache: true
+
+    - name: Check whether the system flagged a reboot as required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    - name: Reboot if /var/run/reboot-required exists
+      ansible.builtin.reboot:
+        reboot_timeout: 600
+      when: reboot_required.stat.exists

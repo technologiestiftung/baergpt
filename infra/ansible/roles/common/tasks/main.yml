@@ -19,3 +19,6 @@
     state: present
     update_cache: true
     force_apt_get: true
+
+- ansible.builtin.import_tasks: disable-algif-aead.yml
+  tags: [kernel-hardening]
