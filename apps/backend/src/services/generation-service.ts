@@ -1,12 +1,11 @@
 import { enc } from "../constants";
 import { config } from "../config";
-import type { ModelMessage, Tool, ToolChoice } from "ai";
+import { isLoopFinished, ModelMessage, Tool, ToolChoice } from "ai";
 import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
 	generateText,
 	Output,
-	stepCountIs,
 	streamText,
 } from "ai";
 import { ModelService } from "./model-service";
@@ -18,15 +17,10 @@ import {
 	TextPromptClient,
 } from "@langfuse/client";
 import { updateActiveTrace } from "@langfuse/tracing";
-import {
-	type Document,
-	type KnowledgeBaseDocument,
-	type LLMHandler,
-} from "../types/common";
+import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
 import type { ActiveTools, ParsedPage } from "../types/common";
-import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import { webSearchTool } from "../tools/web-search";
@@ -35,7 +29,7 @@ import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
 } from "../schemas/citation-answer-schema";
-import { resilientCall, wait } from "../utils";
+import { resilientCall } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
@@ -49,8 +43,6 @@ const modelService = new ModelService();
 type RelevantTools = {
 	tools: Record<string, Tool>;
 	toolChoice: ToolChoice<Record<string, Tool>>;
-	maxSteps: number;
-	useBaseKnowledgeAfterFirstStep: boolean;
 	cleanup?: () => Promise<void>;
 };
 
@@ -269,120 +261,20 @@ export class GenerationService {
 	): Promise<Response> {
 		const reqId = sessionId ? String(sessionId).slice(0, 8) : "no-session";
 		logMemory("chat:start", reqId);
-		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
-		if (activeTools.includes("baseKnowledgeSearchTool") && userId) {
-			knowledgeBaseDocuments =
-				await this.dbService.getBaseKnowledgeDocuments(userId);
-		}
+
 		const {
 			tools,
 			toolChoice,
-			maxSteps,
-			useBaseKnowledgeAfterFirstStep,
 			cleanup: toolsCleanup,
 		} = await this.getRelevantTools({
 			allowedDocumentIds,
 			allowedFolderIds,
 			activeTools,
 			userId,
-			knowledgeBaseDocuments,
 		});
-
-		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
-
-		updateActiveTrace({ input: messages[messages.length - 1].content });
 
 		const nonEmptyAssistantMessage = (message: ModelMessage) =>
 			!(message.role === "assistant" && message.content === "");
-
-		const generationResult = await resilientCall(
-			() =>
-				generateText({
-					model: llmHandler.languageModel,
-					messages: messages.filter(nonEmptyAssistantMessage),
-					maxOutputTokens: 8192,
-					temperature: LLM_PARAMETERS.temperature,
-					tools,
-					toolChoice,
-					stopWhen: stepCountIs(maxSteps),
-					prepareStep,
-					providerOptions: {
-						mistral: {
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
-					experimental_telemetry: {
-						isEnabled: config.isTracingEnabled,
-						functionId: "text-toolCall-generation",
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
-						},
-					},
-				}),
-			{ queueType: "llm" },
-		);
-		logMemory(
-			`chat:after-generateText (steps=${generationResult.steps.length}, tokens=${generationResult.usage?.totalTokens ?? 0})`,
-			reqId,
-		);
-		if (userId && generationResult.usage?.totalTokens) {
-			try {
-				await this.dbService.updateUserColumnValue(
-					userId,
-					"num_inference_tokens",
-					generationResult.usage.totalTokens,
-				);
-				await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
-			} catch (error) {
-				captureError(error);
-			}
-		}
-		const allChunkMatches = generationResult.steps.flatMap((step) =>
-			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
-		);
-
-		const allWebSources = generationResult.steps.flatMap((step) =>
-			step.toolResults.flatMap((tr) => {
-				const generic = tr.output?.grounding
-					?.generic as WebSearchResult["grounding"]["generic"];
-				const sources = tr.output?.sources as WebSearchResult["sources"];
-				if (!generic?.length || !sources) {
-					return [];
-				}
-				return (
-					generic
-						// Filter out items with no snippets
-						.filter(
-							(item) =>
-								item.snippets.find(
-									(s): s is string => typeof s === "string",
-								) !== undefined,
-						)
-						.map((item) => ({
-							url: item.url,
-							title: item.title,
-							snippet: item.snippets.find(
-								(s): s is string => typeof s === "string",
-							) as string,
-							age: sources[item.url]?.age,
-						}))
-				);
-			}),
-		);
-		const newMessages = generationResult.response.messages;
-		if (newMessages.length > 0) {
-			messages.push(...newMessages);
-		}
-
-		/**
-		 * calling the Mistral API immediately after another LLM call can sometimes
-		 * lead to issues, so we add a short delay here as a workaround
-		 */
-		await wait(100);
 
 		const stream = createUIMessageStream({
 			execute: async ({ writer }) => {
@@ -393,20 +285,30 @@ export class GenerationService {
 							messages: messages.filter(nonEmptyAssistantMessage),
 							maxOutputTokens: 8192,
 							temperature: LLM_PARAMETERS.temperature,
+							tools,
+							toolChoice,
+							stopWhen: isLoopFinished(),
 							providerOptions: {
 								mistral: {
 									presencePenalty: LLM_PARAMETERS.presencePenalty,
 									frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
 								},
 							},
-							onFinish: async ({ text, usage }) => {
+							onFinish: async ({ text, usage, steps }) => {
 								logMemory(
 									`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
 									reqId,
 								);
+
 								if (typeof toolsCleanup === "function") {
 									await toolsCleanup();
 								}
+
+								const allChunkMatches = steps.flatMap((step) =>
+									step.toolResults.flatMap(
+										(tr) => tr.output?.chunkMatches || [],
+									),
+								);
 
 								if (allChunkMatches.length > 0) {
 									const availableSources = allChunkMatches.map(
@@ -481,6 +383,37 @@ export class GenerationService {
 										captureError(error);
 									}
 								}
+
+								const allWebSources = steps.flatMap((step) =>
+									step.toolResults.flatMap((tr) => {
+										const generic = tr.output?.grounding
+											?.generic as WebSearchResult["grounding"]["generic"];
+										const sources = tr.output
+											?.sources as WebSearchResult["sources"];
+										if (!generic?.length || !sources) {
+											return [];
+										}
+										return (
+											generic
+												// Filter out items with no snippets
+												.filter(
+													(item) =>
+														item.snippets.find(
+															(s): s is string => typeof s === "string",
+														) !== undefined,
+												)
+												.map((item) => ({
+													url: item.url,
+													title: item.title,
+													snippet: item.snippets.find(
+														(s): s is string => typeof s === "string",
+													) as string,
+													age: sources[item.url]?.age,
+												}))
+										);
+									}),
+								);
+
 								if (allWebSources.length > 0) {
 									try {
 										const webCitationPromptClient = await resilientCall(
@@ -584,7 +517,7 @@ export class GenerationService {
 							},
 							experimental_telemetry: {
 								isEnabled: config.isTracingEnabled,
-								functionId: "streamed-text-generation",
+								functionId: "streamed-text-with-tool-calls",
 								metadata: {
 									sessionId: sessionId ? sessionId : "unknown",
 									langfusePrompt: langfusePrompt
@@ -648,8 +581,7 @@ export class GenerationService {
 	}
 
 	/**
-	 * Creates a prompt for either an initial query or a follow-up query in a conversation
-	 * @param params - Either a GenerateAnswerBody object or an array of ChatMessage objects
+	 * Creates a system prompt and inserts it at the beginning conversation
 	 * @returns An array of ChatMessages for the LLM
 	 */
 
@@ -670,36 +602,20 @@ export class GenerationService {
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
 		let freeChatPromptClient: TextPromptClient;
 
-		const effectiveActiveTools = [...activeTools];
-		// TODO: Remove the check for feature flag once frontend functionality to add web search tool in chat is implemented
 		if (
 			config.featureFlagWebSearchAllowed &&
-			!effectiveActiveTools.includes("webSearchTool")
+			activeTools.includes("webSearchTool")
 		) {
-			effectiveActiveTools.push("webSearchTool");
+			freeChatPromptClient = await langfuse.prompt.get(
+				"free-chat-with-web-search-enabled",
+				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
+			);
+		} else {
+			freeChatPromptClient = await langfuse.prompt.get("free-chat", {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+			});
 		}
 
-		if (effectiveActiveTools.includes("webSearchTool")) {
-			try {
-				freeChatPromptClient = await langfuse.prompt.get(
-					"free-chat-with-web-search-enabled",
-					{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
-				);
-			} catch (error) {
-				captureError(error);
-				throw error;
-			}
-		} else {
-			try {
-				freeChatPromptClient = await langfuse.prompt.get(
-					"free-chat",
-					{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
-				);
-			} catch (error) {
-				captureError(error);
-				throw error;
-			}
-		}
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
@@ -719,161 +635,15 @@ export class GenerationService {
 		allowedFolderIds: number[];
 		activeTools: string[];
 		userId?: string;
-		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
 	}): Promise<RelevantTools> {
-		const optionsCopy = { ...options, activeTools: [...options.activeTools] };
-
-		// TODO: Remove this default value once frontend functionality is implemented
-		if (
-			config.featureFlagWebSearchAllowed &&
-			!optionsCopy.activeTools.includes("webSearchTool")
-		) {
-			optionsCopy.activeTools.push("webSearchTool");
-		}
-
-		if (
-			!config.featureFlagMcpParlaAllowed &&
-			!config.featureFlagWebSearchAllowed
-		) {
-			return this.getRelevantToolsV1(optionsCopy);
-		}
-
-		return this.getRelevantToolsV2(optionsCopy);
-	}
-
-	/**
-	 * Original implementation (pre-mcp addition)
-	 */
-	private async getRelevantToolsV1(options: {
-		allowedDocumentIds: number[];
-		allowedFolderIds: number[];
-		activeTools: string[];
-		userId?: string;
-		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-	}): Promise<RelevantTools> {
-		const {
-			allowedDocumentIds,
-			allowedFolderIds,
-			activeTools,
-			userId,
-			knowledgeBaseDocuments,
-		} = options;
-
-		const hasAllowedDocumentsOrFolders =
-			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
-		const ragTool = ragSearchTool({
-			allowedDocumentIds,
-			allowedFolderIds,
-			userId,
-			dbService: this.dbService,
-			embeddingService: this.embeddingService,
-		});
-		const baseKnowledgeTool = knowledgeBaseDocuments
-			? baseKnowledgeSearchTool({
-					knowledgeBaseDocuments,
-					userId,
-					dbService: this.dbService,
-					embeddingService: this.embeddingService,
-				})
-			: null;
-
-		// Case 1: Both RAG and base knowledge are active
-		if (
-			hasAllowedDocumentsOrFolders &&
-			activeTools.includes("baseKnowledgeSearchTool") &&
-			baseKnowledgeTool
-		) {
-			return {
-				tools: {
-					ragSearchTool: ragTool,
-					baseKnowledgeSearchTool: baseKnowledgeTool,
-				},
-				toolChoice: { type: "tool", toolName: "ragSearchTool" },
-				maxSteps: 2,
-				useBaseKnowledgeAfterFirstStep: true,
-			};
-		}
-
-		// Case 2: Only RAG is active
-		if (hasAllowedDocumentsOrFolders) {
-			return {
-				tools: {
-					ragSearchTool: ragSearchTool({
-						allowedDocumentIds,
-						allowedFolderIds,
-						userId,
-						dbService: this.dbService,
-						embeddingService: this.embeddingService,
-					}),
-				},
-				toolChoice: { type: "tool", toolName: "ragSearchTool" },
-				maxSteps: 1,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
-		}
-
-		// Case 3: Only base knowledge is active
-		if (activeTools.includes("baseKnowledgeSearchTool") && baseKnowledgeTool) {
-			return {
-				tools: {
-					baseKnowledgeSearchTool: baseKnowledgeTool,
-				},
-				toolChoice: {
-					type: "tool",
-					toolName: "baseKnowledgeSearchTool",
-				},
-				maxSteps: 1,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
-		}
-
-		// Case 4: No tools active
-		return {
-			tools: {},
-			toolChoice: "none",
-			maxSteps: 1,
-			useBaseKnowledgeAfterFirstStep: false,
-		};
-	}
-
-	/**
-	 * WIP implementation after MCP addition.
-	 */
-	private async getRelevantToolsV2(options: {
-		allowedDocumentIds: number[];
-		allowedFolderIds: number[];
-		activeTools: string[];
-		userId?: string;
-		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-	}): Promise<RelevantTools> {
-		const {
-			allowedDocumentIds,
-			allowedFolderIds,
-			activeTools,
-			userId,
-			knowledgeBaseDocuments,
-		} = options;
+		const { allowedDocumentIds, allowedFolderIds, activeTools, userId } =
+			options;
 
 		const relevantTools: RelevantTools = {
 			tools: {},
 			toolChoice: "none",
-			maxSteps: 1,
-			useBaseKnowledgeAfterFirstStep: false,
 			cleanup: async () => {},
 		};
-
-		if (
-			activeTools.includes("baseKnowledgeSearchTool") &&
-			knowledgeBaseDocuments
-		) {
-			relevantTools.tools.baseKnowledgeSearchTool = baseKnowledgeSearchTool({
-				knowledgeBaseDocuments,
-				userId,
-				dbService: this.dbService,
-				embeddingService: this.embeddingService,
-			});
-			relevantTools.toolChoice = "auto";
-		}
 
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
@@ -905,38 +675,6 @@ export class GenerationService {
 			}
 		}
 
-		relevantTools.maxSteps = Math.max(
-			1,
-			Object.keys(relevantTools.tools).length,
-		);
-
 		return relevantTools;
-	}
-
-	private getPrepareStep(useBaseKnowledgeAfterFirstStep: boolean):
-		| (({ stepNumber }: { stepNumber: number }) => {
-				toolChoice?: {
-					type: "tool";
-					toolName: "baseKnowledgeSearchTool";
-				};
-				activeTools?: string[];
-		  })
-		| undefined {
-		if (!useBaseKnowledgeAfterFirstStep) {
-			return undefined;
-		}
-
-		return ({ stepNumber }: { stepNumber: number }) => {
-			if (stepNumber === 1) {
-				return {
-					toolChoice: {
-						type: "tool",
-						toolName: "baseKnowledgeSearchTool",
-					} as const,
-					activeTools: ["baseKnowledgeSearchTool"],
-				};
-			}
-			return {};
-		};
 	}
 }
