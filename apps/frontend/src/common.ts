@@ -14,7 +14,7 @@ export type NewChatMessage = Pick<
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
 export type McpOptions = "parla";
-export type ChatOption = "baseKnowledge" | "webSearch" | McpOptions;
+export type ChatOption = "webSearch" | McpOptions;
 
 export type ChatOptionsDropdownValue = ChatOption | "mcpServer";
 
