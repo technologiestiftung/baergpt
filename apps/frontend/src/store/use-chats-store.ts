@@ -60,7 +60,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isLoading: false,
 	chats: [],
 	totalChatCount: null,
-	selectedChatOptions: ["baseKnowledge"],
+	selectedChatOptions: [],
 	selectedLlmModel: "mistral-small",
 	isWebSearchRemovalInfoMessageShown: false,
 
@@ -69,7 +69,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	resetToDefaultChatOptions() {
-		set({ selectedChatOptions: ["baseKnowledge"] });
+		set({ selectedChatOptions: [] });
 	},
 
 	toggleChatOption(option: ChatOption) {

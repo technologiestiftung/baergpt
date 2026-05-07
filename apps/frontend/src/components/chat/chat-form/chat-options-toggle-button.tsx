@@ -27,13 +27,6 @@ export const ChatOptionsToggleButton: React.FC = () => {
 		isEnabled: boolean;
 	}[] = [
 		{
-			label: Content["chat.options.li1.label"],
-			value: "baseKnowledge",
-			description: Content["chat.options.li1.description"],
-			ariaLabel: Content["chat.options.li1.ariaLabel"],
-			isEnabled: true,
-		},
-		{
 			label: Content["chat.options.li2.label"],
 			value: "mcpServer",
 			description: Content["chat.options.li2.description"],
