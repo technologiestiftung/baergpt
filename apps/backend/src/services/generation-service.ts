@@ -291,11 +291,15 @@ export class GenerationService {
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
 
 		updateActiveTrace({ input: messages[messages.length - 1].content });
+
+		const nonEmptyAssistantMessage = (message: ModelMessage) =>
+			!(message.role === "assistant" && message.content === "");
+
 		const generationResult = await resilientCall(
 			() =>
 				generateText({
 					model: llmHandler.languageModel,
-					messages: messages,
+					messages: messages.filter(nonEmptyAssistantMessage),
 					maxOutputTokens: 8192,
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
@@ -386,7 +390,7 @@ export class GenerationService {
 					async () =>
 						streamText({
 							model: llmHandler.languageModel,
-							messages: messages,
+							messages: messages.filter(nonEmptyAssistantMessage),
 							maxOutputTokens: 8192,
 							temperature: LLM_PARAMETERS.temperature,
 							providerOptions: {
