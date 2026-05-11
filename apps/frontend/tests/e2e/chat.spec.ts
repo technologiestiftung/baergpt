@@ -19,6 +19,7 @@ import {
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
+import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 
 test.describe("Chat", () => {
 	testWithMockedLlm(
