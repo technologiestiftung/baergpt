@@ -911,17 +911,16 @@ test.describe("Documents", () => {
 			await expect(uploadButton).toBeEnabled();
 
 			// Upload the 100th visible file using setInputFiles to simulate user file selection
-			const fileInput = page.locator('input[type="file"]').first();
-			await fileInput.setInputFiles(secondaryDocumentPath);
-
-			await page.waitForResponse(
-				(res) =>
-					res.url().includes("/documents/process") &&
-					res.request().method() === "POST",
-				{ timeout: 60_000 },
-			);
-
-			await page.waitForLoadState("networkidle");
+			await mockDocumentUpload({
+				userId: account.id,
+				accessToken: session.access_token,
+				accessGroupId: null,
+				fileName: secondaryDocumentName,
+				filePath: secondaryDocumentPath,
+				sourceType: "personal_document",
+				bucketName: defaultBucketName,
+			});
+			await page.goto("/");
 
 			// Now at 100 visible → limit reached again
 			await expect(
