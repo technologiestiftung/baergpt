@@ -35,7 +35,7 @@ import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
 } from "../schemas/citation-answer-schema";
-import { resilientCall } from "../utils";
+import { resilientCall, wait } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
@@ -291,11 +291,15 @@ export class GenerationService {
 		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
 
 		updateActiveTrace({ input: messages[messages.length - 1].content });
+
+		const nonEmptyAssistantMessage = (message: ModelMessage) =>
+			!(message.role === "assistant" && message.content === "");
+
 		const generationResult = await resilientCall(
 			() =>
 				generateText({
 					model: llmHandler.languageModel,
-					messages: messages,
+					messages: messages.filter(nonEmptyAssistantMessage),
 					maxOutputTokens: 8192,
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
@@ -309,8 +313,7 @@ export class GenerationService {
 						},
 					},
 					experimental_telemetry: {
-						isEnabled:
-							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
+						isEnabled: config.isTracingEnabled,
 						functionId: "text-toolCall-generation",
 						metadata: {
 							sessionId: sessionId ? sessionId : "unknown",
@@ -374,13 +377,20 @@ export class GenerationService {
 		if (newMessages.length > 0) {
 			messages.push(...newMessages);
 		}
+
+		/**
+		 * calling the Mistral API immediately after another LLM call can sometimes
+		 * lead to issues, so we add a short delay here as a workaround
+		 */
+		await wait(100);
+
 		const stream = createUIMessageStream({
 			execute: async ({ writer }) => {
 				const streamResponse = await resilientCall(
 					async () =>
 						streamText({
 							model: llmHandler.languageModel,
-							messages: messages,
+							messages: messages.filter(nonEmptyAssistantMessage),
 							maxOutputTokens: 8192,
 							temperature: LLM_PARAMETERS.temperature,
 							providerOptions: {
@@ -438,9 +448,7 @@ export class GenerationService {
 														schema: citationAnswerSchema,
 													}),
 													experimental_telemetry: {
-														isEnabled:
-															config.nodeEnv !== "test" &&
-															config.nodeEnv !== "production", // Disable telemetry in CI and production
+														isEnabled: config.isTracingEnabled,
 														functionId: "citation-extraction",
 														metadata: {
 															sessionId: sessionId ? sessionId : "unknown",
@@ -508,9 +516,7 @@ export class GenerationService {
 															schema: webCitationAnswerSchema,
 														}),
 														experimental_telemetry: {
-															isEnabled:
-																config.nodeEnv !== "test" &&
-																config.nodeEnv !== "production",
+															isEnabled: config.isTracingEnabled,
 															functionId: "web-citation-extraction",
 															metadata: {
 																sessionId: sessionId ? sessionId : "unknown",
@@ -577,8 +583,8 @@ export class GenerationService {
 								}
 							},
 							experimental_telemetry: {
-								isEnabled:
-									config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
+								isEnabled: config.isTracingEnabled,
+								functionId: "streamed-text-generation",
 								metadata: {
 									sessionId: sessionId ? sessionId : "unknown",
 									langfusePrompt: langfusePrompt
@@ -619,8 +625,7 @@ export class GenerationService {
 						},
 					},
 					experimental_telemetry: {
-						isEnabled:
-							config.nodeEnv !== "test" && config.nodeEnv !== "production", // Disable telemetry in CI and production
+						isEnabled: config.isTracingEnabled,
 						metadata: {
 							sessionId: "unknown",
 							langfusePrompt: langfusePrompt.toJSON(),

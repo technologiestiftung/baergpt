@@ -38,6 +38,13 @@ export const ChatOptionsToggleButton: React.FC = () => {
 			ariaLabel: Content["chat.options.li2.ariaLabel"],
 			isEnabled: isMcpParlaAllowed,
 		},
+		{
+			label: Content["chat.options.li3.label"],
+			value: "webSearch",
+			description: Content["chat.options.li3.description"],
+			ariaLabel: Content["chat.options.li3.ariaLabel"],
+			isEnabled: true,
+		},
 	];
 
 	const handleShowTooltip = (

@@ -35,6 +35,7 @@ import {
 	WordDocumentExtractionService,
 } from "../../services/document-extraction-service";
 import { ExtractionResult } from "../../types/common";
+import { config } from "../../config";
 
 const BASE_URL = "http://localhost/documents/process";
 
@@ -44,7 +45,7 @@ const VALID_PDF_BODY = {
 		source_type: "personal_document",
 		folder_id: null,
 	},
-	llm_model: "mistral-small-latest",
+	llm_model: config.smallModelIdentifier,
 };
 
 const VALID_WORD_BODY = {
@@ -53,7 +54,7 @@ const VALID_WORD_BODY = {
 		source_type: "personal_document",
 		folder_id: null,
 	},
-	llm_model: "mistral-small-latest",
+	llm_model: config.smallModelIdentifier,
 };
 
 const VALID_EXCEL_BODY = {
@@ -62,7 +63,7 @@ const VALID_EXCEL_BODY = {
 		source_type: "personal_document",
 		folder_id: null,
 	},
-	llm_model: "mistral-small-latest",
+	llm_model: config.smallModelIdentifier,
 };
 
 function createRequest(body: unknown): Request {

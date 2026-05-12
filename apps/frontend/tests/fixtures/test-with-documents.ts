@@ -1,5 +1,5 @@
 import { supabaseAdminClient } from "../supabase.ts";
-import { testWithLoggedInUser } from "./test-with-logged-in-user.ts";
+import { testWithMockedLlm } from "./test-with-mocked-llm.ts";
 import { expect, Page } from "@playwright/test";
 import { createClient, Session } from "@supabase/supabase-js";
 import { config } from "../config.ts";
@@ -26,7 +26,7 @@ import {
 } from "../constants.ts";
 import { readFileSync } from "node:fs";
 
-export const testWithDocuments = testWithLoggedInUser.extend<{
+export const testWithDocuments = testWithMockedLlm.extend<{
 	documentChunkId: number;
 }>({
 	documentChunkId: [

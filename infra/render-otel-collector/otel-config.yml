@@ -1,0 +1,61 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:${PORT}
+        auth:
+          authenticator: bearertokenauth/render
+
+extensions:
+  bearertokenauth/render:
+    token: ${RENDER_OTEL_BEARER_TOKEN}
+
+  basicauth/stackit:
+    client_auth:
+      username: ${STACKIT_OBSERVABILITY_USERNAME}
+      password: ${STACKIT_OBSERVABILITY_PASSWORD}
+
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+processors:
+  filter/baergpt:
+    metrics:
+      include:
+        match_type: regexp
+        resource_attributes:
+          - key: service.name
+            value: "baergpt.*|bottleneck.*|gotenberg"
+
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+  attributes/render:
+    actions:
+      - key: source
+        value: render
+        action: upsert
+
+exporters:
+  prometheusremotewrite/stackit:
+    endpoint: ${STACKIT_OBSERVABILITY_METRICS_PUSH_URL}
+    auth:
+      authenticator: basicauth/stackit
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    remote_write_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 1000
+
+service:
+  extensions: [bearertokenauth/render, basicauth/stackit, health_check]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [filter/baergpt, batch, attributes/render]
+      exporters: [prometheusremotewrite/stackit]

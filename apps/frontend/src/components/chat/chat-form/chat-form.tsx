@@ -1,6 +1,7 @@
 import React, {
 	type FormEvent,
 	type KeyboardEvent,
+	type MouseEvent,
 	useRef,
 	useState,
 } from "react";
@@ -20,17 +21,19 @@ import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
+import { WebSearchWarningBanner } from "./web-search-warning-banner.tsx";
 
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const chatFormId = "chat-form";
 
 export const ChatForm: React.FC = () => {
-	const { status, clearError } = useInferenceLoadingStatusStore();
+	const { status, clearError, isLoading } = useInferenceLoadingStatusStore();
 	const { selectedChatFolders } = useFolderStore();
 	const { selectedChatDocuments } = useDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
 		useChatsStore();
+	const { setIsWebSearchRemovalInfoMessageShown } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -48,9 +51,14 @@ export const ChatForm: React.FC = () => {
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
 	const handleTextAreaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-		const isSubmit = event.key === "Enter" && !event.shiftKey;
-		if (isSubmit) {
+		const isEnterWithoutShiftPressed = event.key === "Enter" && !event.shiftKey;
+		if (isEnterWithoutShiftPressed) {
 			event.preventDefault();
+		}
+
+		const isSubmitEnabled =
+			!isLoading() && event.currentTarget.value.trim().length > 0;
+		if (isEnterWithoutShiftPressed && isSubmitEnabled) {
 			event.currentTarget.form?.requestSubmit();
 		}
 	};
@@ -71,6 +79,8 @@ export const ChatForm: React.FC = () => {
 		// Clear any previous errors
 		clearError();
 
+		setIsWebSearchRemovalInfoMessageShown(false);
+
 		// Clear textarea on submit
 		if (textarea) {
 			textarea.value = "";
@@ -86,8 +96,13 @@ export const ChatForm: React.FC = () => {
 			allowed_folder_ids: selectedChatFolders.map((folder) => folder.id),
 		};
 
+		const model = useChatsStore.getState().selectedLlmModel;
+
 		Sentry.startSpan(
-			{ name: "Stream Chat Message Response", op: "chat.message.stream" },
+			{
+				name: "Stream Chat Message Response",
+				op: `chat.message.stream.${model}`,
+			},
 			async (span) => {
 				const chat = await getCurrentOrCreateChat(userMessage);
 				await getCompletion(chat, span);
@@ -95,21 +110,27 @@ export const ChatForm: React.FC = () => {
 		);
 	};
 
-	const isInferenceLoading = [
-		"waiting-for-response",
-		"loading-text",
-		"loading-citations",
-	].includes(status);
+	const handleStop = (event: MouseEvent<HTMLButtonElement>) => {
+		event.preventDefault();
+		abortStreaming();
+	};
 
 	const hasError = status === "error";
+
+	const isWebSearchActive = selectedChatOptions.includes("webSearch");
+	const textAreaPlaceholder = isWebSearchActive
+		? Content["chat.textarea.placeholder.webSearch"]
+		: Content["chat.textarea.placeholder"];
 
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px]"
+			className={`flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
+				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
+			<WebSearchWarningBanner />
 
 			<div className="flex flex-col justify-between rounded-b-3px">
 				<div
@@ -126,12 +147,12 @@ export const ChatForm: React.FC = () => {
 								`}
 				>
 					<textarea
-						className="w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80"
+						className={`w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
 						ref={textareaRef}
 						name="content"
 						rows={1}
 						required={true}
-						placeholder={Content["chat.textarea.placeholder"]}
+						placeholder={textAreaPlaceholder}
 						onKeyDown={handleTextAreaKeyDown}
 						onInput={handleTextAreaInput}
 					/>
@@ -151,11 +172,11 @@ export const ChatForm: React.FC = () => {
 					</div>
 					<div className="flex items-center gap-3">
 						<LlmModelToggleButton />
-						{isInferenceLoading && !hasError ? (
+						{isLoading() && !hasError ? (
 							<button
 								type="button"
 								aria-label={Content["chat.stopGeneratingButton.ariaLabel"]}
-								onClick={() => abortStreaming()}
+								onClick={handleStop}
 								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-110 focus-visible:outline-2px"
 							>
 								<ChatStopGeneratingIcon />

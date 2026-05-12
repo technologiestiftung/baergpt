@@ -21,18 +21,20 @@
 		"db:upload-default-documents": "tsx ./supabase/scripts/upload-default-documents.ts",
 		"db:backfill-mistral": "tsx ./supabase/backfill-mistral-embeddings.ts",
 		"mistral:assess-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts -- --dry-run",
-		"mistral:cleanup-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts"
+		"mistral:cleanup-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts",
+		"s3:assess-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts -- --dry-run",
+		"s3:cleanup-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/mcp": "1.0.23",
-		"@ai-sdk/mistral": "3.0.24",
+		"@ai-sdk/mcp": "1.0.36",
+		"@ai-sdk/mistral": "3.0.30",
 		"@dqbd/tiktoken": "1.0.17",
 		"@hono/node-server": "1.19.11",
 		"@langfuse/client": "4.2.0",
 		"@langfuse/core": "4.2.0",
 		"@langfuse/otel": "4.2.0",
 		"@langfuse/tracing": "4.2.0",
-		"@mistralai/mistralai": "1.9.18",
+		"@mistralai/mistralai": "1.15.1",
 		"@opentelemetry/auto-instrumentations-node": "0.65.0",
 		"@opentelemetry/sdk-node": "0.206.0",
 		"@opentelemetry/sdk-trace-node": "2.1.0",
@@ -40,7 +42,7 @@
 		"@sentry/node": "10.38.0",
 		"@sergiiivzhenko/bottleneck": "2.19.7",
 		"@supabase/supabase-js": "2.81.1",
-		"ai": "6.0.116",
+		"ai": "6.0.168",
 		"dotenv": "16.4.7",
 		"hono": "4.12.7",
 		"ioredis": "5.8.2",
@@ -55,6 +57,7 @@
 		"zod": "4.1.11"
 	},
 	"devDependencies": {
+		"@aws-sdk/client-s3": "3.1007.0",
 		"@repo/typescript-config": "file:../../libs/typescript-config",
 		"@types/node": "22.5.0",
 		"@types/pdf-parse": "1.1.4",

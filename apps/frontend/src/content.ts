@@ -873,7 +873,13 @@ export const Content = {
 	"chat.errorText.helpPage.linkText": "Hilfecenter.",
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
+	"chat.infoText.title": "Websuche wurde automatisch deaktiviert.",
+	"chat.infoText.p1":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Websuche deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Websuche wieder zu aktivieren, klicken Sie auf +.",
+	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
+
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
+	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
 	"chat.sendButton.ariaLabel": "Nachricht senden",
 	"chat.stopGeneratingButton.ariaLabel": "Textgenerierung stoppen",
 	"chatStopGeneratingIcon.imgAlt": "Generierung stoppen (Pause-Symbol)",
@@ -892,6 +898,9 @@ export const Content = {
 	"chat.options.li2.label": "MCP Server",
 	"chat.options.li2.description": "Externe Datenquellen verbinden",
 	"chat.options.li2.ariaLabel": "MCP Server auswählen",
+	"chat.options.li3.label": "Websuche",
+	"chat.options.li3.description": "Aktuelle Informationen aus dem Web",
+	"chat.options.li3.ariaLabel": "Websuche auswählen",
 	// MCP Options Dialog
 	"mcp.options.dialog.title": "MCP Server auswählen",
 	"mcp.options.dialog.confirmButton.label": "Bestätigen",
@@ -950,6 +959,9 @@ export const Content = {
 	"chat.contextPill.parla.label": "Parla Berlin",
 	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
+
+	"chat.webSearchWarningBanner.label":
+		"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",

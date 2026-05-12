@@ -5,7 +5,7 @@ echo "Running Supabase Database Linting..."
 
 # Download latest splinter.sql
 echo "Downloading Splinter linter..."
-curl -s -o splinter.sql https://raw.githubusercontent.com/supabase/splinter/main/splinter.sql
+curl -s -o splinter.sql https://raw.githubusercontent.com/supabase/splinter/63e51b7000feb7e493574f9baf2a88204e62aa17/splinter.sql
 
 # Try to find Docker container first (local development)
 DB_CONTAINER=$(docker ps --format "{{.Names}}" 2>/dev/null | grep "supabase.*db" | head -1 || true)
