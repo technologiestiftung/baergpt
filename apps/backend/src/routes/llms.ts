@@ -63,6 +63,7 @@ llms.post("/just-chatting", async (c: Context) => {
 		}
 
 		const rawActiveTools = body.active_tools ?? [];
+
 		if (
 			!Array.isArray(rawActiveTools) ||
 			!rawActiveTools.every(isValidActiveTool)
@@ -76,12 +77,16 @@ llms.post("/just-chatting", async (c: Context) => {
 		}
 		const activeTools: ActiveTools[] = rawActiveTools;
 
+		if (allowedDocumentIds.length > 0 || allowedFolderIds.length > 0) {
+			activeTools.push("ragSearchTool");
+		}
+
 		const { messages: promptMessages, promptClient: langfusePrompt } =
-			await generationService.createPrompt(
-				messages,
+			await generationService.createPrompt({
+				previousMessages: messages,
 				isAddressedFormal,
 				activeTools,
-			);
+			});
 		const response = await generationService.generateTextStreamResponse(
 			llmHandler,
 			promptMessages,
