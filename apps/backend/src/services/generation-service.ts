@@ -585,14 +585,13 @@ export class GenerationService {
 	 * @returns An array of ChatMessages for the LLM
 	 */
 
-	async createPrompt(
-		previousMessages: ModelMessage[],
-		isAddressedFormal: boolean,
-		activeTools: ActiveTools[],
-	): Promise<{
-		messages: ModelMessage[];
-		promptClient: TextPromptClient;
-	}> {
+	async createPrompt(args: {
+		previousMessages: ModelMessage[];
+		isAddressedFormal: boolean;
+		activeTools: ActiveTools[];
+	}) {
+		const { previousMessages, isAddressedFormal, activeTools } = args;
+
 		const currentDate = new Date().toLocaleDateString("de-DE", {
 			year: "numeric",
 			month: "long",
@@ -610,6 +609,11 @@ export class GenerationService {
 				"free-chat-with-web-search-enabled",
 				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
 			);
+		} else if (activeTools.includes("ragSearchTool")) {
+			freeChatPromptClient = await langfuse.prompt.get(
+				"free-chat-with-documents",
+				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
+			);
 		} else {
 			freeChatPromptClient = await langfuse.prompt.get("free-chat", {
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
@@ -620,10 +624,12 @@ export class GenerationService {
 			currentDate: currentDate,
 			addressForm: addressForm,
 		});
+
 		const freeChatPrompt: ModelMessage = {
 			role: "system",
 			content: compiledFreeChatPrompt,
 		};
+
 		return {
 			messages: [freeChatPrompt, ...previousMessages],
 			promptClient: freeChatPromptClient,
@@ -648,7 +654,7 @@ export class GenerationService {
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
 		if (hasAllowedDocumentsOrFolders) {
-			relevantTools.tools.ragSearchTool = ragSearchTool({
+			relevantTools.tools.ragSearchTool = await ragSearchTool({
 				allowedDocumentIds,
 				allowedFolderIds,
 				userId,
