@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { useDocumentStore } from "../../../../store/document-store.ts";
+import { usePreviewDocumentStore } from "../../../../store/use-preview-document-store.ts";
 import { useDrag } from "react-dnd";
 import type { Document } from "../../../../common.ts";
 import { DocumentIcon } from "../../../primitives/icons/document-icon.tsx";
@@ -14,7 +14,8 @@ type DragableProps = {
 const TOOLTIP_DELAY = 600;
 
 export function DraggableDocumentName({ item }: DragableProps) {
-	const { selectPreviewDocument, selectedPreviewDocument } = useDocumentStore();
+	const { selectPreviewDocument, selectedPreviewDocument } =
+		usePreviewDocumentStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const tooltipTimeoutRef = useRef<number | null>(null);
 	const spanRef = useRef<HTMLSpanElement>(null);

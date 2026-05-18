@@ -54,7 +54,7 @@ export abstract class BaseContentDbService {
 		);
 
 		if (summariesError) {
-			throw new Error("Failed to find summaries");
+			throw summariesError;
 		}
 
 		return summaries;

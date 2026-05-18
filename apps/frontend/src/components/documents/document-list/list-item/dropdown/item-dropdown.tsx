@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
-import { useDocumentStore } from "../../../../../store/document-store";
+import { usePreviewDocumentStore } from "../../../../../store/use-preview-document-store.ts";
 import type { Document, DocumentFolder } from "../../../../../common";
 import Content from "../../../../../content";
 import { isDocument } from "../utils/is-document";
@@ -24,7 +24,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	onClose,
 	triggerRef,
 }) => {
-	const { selectPreviewDocument } = useDocumentStore();
+	const { selectPreviewDocument } = usePreviewDocumentStore();
 	const { setSingleItemSelectedForAction } = useDocumentsListStore();
 	const [position, setPosition] = useState<{
 		top: number;

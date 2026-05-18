@@ -1,5 +1,5 @@
 import React from "react";
-import { useDocumentStore } from "../../store/document-store";
+import { usePreviewDocumentStore } from "../../store/use-preview-document-store.ts";
 import { useErrorStore } from "../../store/error-store";
 import { CloseIcon } from "../primitives/icons/close-icon";
 import Content from "../../content";
@@ -10,7 +10,7 @@ export const DocumentPreviewSection: React.FC = () => {
 		selectedPreviewDocumentPreviewUrl,
 		selectedPreviewDocumentDownloadUrl,
 		unselectPreviewDocument,
-	} = useDocumentStore();
+	} = usePreviewDocumentStore();
 
 	const { getUIError } = useErrorStore();
 	const errorMessage = getUIError("document-download");
