@@ -7,6 +7,7 @@ import { DraggableDocumentName } from "./draggable-document-name.tsx";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
 import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
+import { usePreviewDocumentStore } from "../../../../store/use-preview-document-store.ts";
 
 interface DocumentItemProps {
 	item: Document;
@@ -19,8 +20,8 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 		selectedDocumentsForAction,
 		selectedChatDocuments,
 		toggleChatDocument,
-		selectedPreviewDocument,
 	} = useDocumentStore();
+	const { selectedPreviewDocument } = usePreviewDocumentStore();
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
 
 	const isSelectedForAction = selectedDocumentsForAction.some(

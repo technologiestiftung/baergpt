@@ -5,8 +5,6 @@ import { getPublicDocuments } from "../api/documents/get-public-documents";
 import { deleteDocument } from "../api/documents/delete-document";
 import { updateDocumentFolder } from "../api/documents/update-document-folder";
 import { getDocumentObjectUrl } from "../api/documents/get-document-object-url.ts";
-import { downloadDocument } from "../api/documents/download-document.ts";
-import { useErrorStore } from "./error-store";
 import { hideDefaultDocument } from "../api/documents/hide-default-document";
 import { getHiddenDefaultDocumentIds } from "../api/documents/get-hidden-default-document-ids";
 import { useChatsStore } from "./use-chats-store.ts";
@@ -24,12 +22,6 @@ interface DocumentStore {
 	deleteDocument: (documentId: number) => Promise<Error | null>;
 	removeItemFromFolder: (documentId: number) => Promise<void>;
 	moveItemToFolder: (documentId: number, folderId: number) => Promise<void>;
-
-	selectedPreviewDocument: Document | null;
-	selectedPreviewDocumentPreviewUrl: string | null;
-	selectedPreviewDocumentDownloadUrl: string | null;
-	selectPreviewDocument: (document: Document | null) => void;
-	unselectPreviewDocument: () => void;
 
 	selectedChatDocuments: Document[];
 	selectChatDocument: (document: Document) => void;
@@ -156,45 +148,6 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 				doc.id === documentId ? { ...doc, folder_id: folderId } : doc,
 			),
 		}));
-	},
-
-	selectedPreviewDocument: null,
-	selectedPreviewDocumentPreviewUrl: null,
-	selectedPreviewDocumentDownloadUrl: null,
-	selectPreviewDocument: async (document: Document | null) => {
-		set({ selectedPreviewDocument: document });
-
-		if (!document) {
-			return;
-		}
-
-		const previewUrl = await getDocumentObjectUrl({
-			sourceUrl: document.source_url,
-			sourceType: document.source_type,
-		});
-
-		set({ selectedPreviewDocumentPreviewUrl: previewUrl });
-
-		const blob = await downloadDocument({
-			sourceUrl: document.source_url,
-			sourceType: document.source_type,
-		});
-
-		if (!blob) {
-			return;
-		}
-
-		const downloadUrl = URL.createObjectURL(blob);
-
-		set({ selectedPreviewDocumentDownloadUrl: downloadUrl });
-	},
-	unselectPreviewDocument: () => {
-		useErrorStore.getState().clearUIError("document-download");
-		set({
-			selectedPreviewDocument: null,
-			selectedPreviewDocumentPreviewUrl: null,
-			selectedPreviewDocumentDownloadUrl: null,
-		});
 	},
 
 	selectedChatDocuments: [],
