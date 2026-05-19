@@ -20,8 +20,6 @@ jobs:
 
       - name: Setup environment ⚙️
         uses: ./.github/actions/setup
-        with:
-          install-asdf-tools: 'true'
 
       - name: Install Playwright Browser 🧭
         run: |

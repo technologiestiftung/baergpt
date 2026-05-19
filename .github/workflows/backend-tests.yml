@@ -15,7 +15,6 @@ jobs:
       - name: Setup environment ⚙️
         uses: ./.github/actions/setup
         with:
-          install-asdf-tools: 'true'
           start-supabase: 'true'
           install-1password: 'true'
 

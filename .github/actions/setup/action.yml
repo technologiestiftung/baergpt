@@ -1,12 +1,9 @@
-name: Setup Node.js environment
-description: Installs tools via asdf, Node.js, upgrades npm, caches and installs npm dependencies, and optionally installs 1Password CLI
+name: Setup BaerGPT environment
+description: Installs Node.js, upgrades npm, caches and installs npm dependencies, and optionally installs the Supabase CLI and 1Password CLI
 
 inputs:
-  install-asdf-tools:
-    description: Install tools defined in .tool-versions via asdf (e.g. supabase CLI)
-    default: 'false'
   start-supabase:
-    description: Start local Supabase in the background immediately after asdf install
+    description: Install the Supabase CLI via asdf and start it in the background
     default: 'false'
   install-1password:
     description: Install 1Password CLI
@@ -15,11 +12,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install tools via asdf ⚙️
-      if: inputs.install-asdf-tools == 'true'
+    # Install Supabase CLI via asdf and start it right away so it boots in the
+    # background during Node setup and npm install.
+    - name: Install Supabase CLI via asdf ⚙️
+      if: inputs.start-supabase == 'true'
       uses: asdf-vm/actions/install@v4
 
-    # Start supabase right after asdf so it boots in the background during Node setup and npm install.
     - name: Start supabase ⚡️
       if: inputs.start-supabase == 'true'
       shell: bash
