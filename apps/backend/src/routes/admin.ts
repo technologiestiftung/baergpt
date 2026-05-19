@@ -2,8 +2,10 @@ import { Hono } from "hono";
 import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import { captureError } from "../monitoring/capture-error";
 import { serviceRoleDbClient } from "../supabase";
+import { adminAuth } from "../middleware/admin-auth";
 
 const admin = new Hono();
+admin.use(adminAuth);
 
 const serviceRoleAdminService = new PrivilegedDbService(serviceRoleDbClient);
 

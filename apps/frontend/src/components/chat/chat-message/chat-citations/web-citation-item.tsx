@@ -12,22 +12,24 @@ export function WebCitationItem({ source }: { source: WebCitationSource }) {
 
 	useEffect(() => {
 		const token = useAuthStore.getState().session?.access_token;
-		if (!token) return;
-
 		let objectUrl: string | null = null;
 
-		fetch(`${import.meta.env.VITE_API_URL}/favicon?domain=${encodeURIComponent(hostname)}`, {
-			headers: { Authorization: `Bearer ${token}` },
-		})
-			.then((res) => (res.ok ? res.blob() : Promise.reject()))
-			.then((blob) => {
-				objectUrl = URL.createObjectURL(blob);
-				setIconSrc(objectUrl);
+		if (token) {
+			fetch(`${import.meta.env.VITE_API_URL}/favicon?domain=${encodeURIComponent(hostname)}`, {
+				headers: { Authorization: `Bearer ${token}` },
 			})
-			.catch(() => setIconSrc(GLOBE_ICON_SRC));
+				.then((res) => (res.ok ? res.blob() : Promise.reject()))
+				.then((blob) => {
+					objectUrl = URL.createObjectURL(blob);
+					setIconSrc(objectUrl);
+				})
+				.catch(() => setIconSrc(GLOBE_ICON_SRC));
+		}
 
 		return () => {
-			if (objectUrl) URL.revokeObjectURL(objectUrl);
+			if (objectUrl) {
+				URL.revokeObjectURL(objectUrl);
+			}
 		};
 	}, [hostname]);
 
