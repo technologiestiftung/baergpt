@@ -12,7 +12,7 @@ import { ChangePasswordForm } from "../../components/profile/edit-profile-forms/
 import { BaseKnowledgeSection } from "../../components/profile/base-knowledge-section/base-knowledge-section.tsx";
 
 export function ProfilePage() {
-	const { getAllowedEmailDomains } = useAuthStore();
+	const getAllowedEmailDomains = useAuthStore(state => state.getAllowedEmailDomains);
 	const { session } = useAuthStore();
 	useSessionRedirect();
 
@@ -23,7 +23,7 @@ export function ProfilePage() {
 		return () => {
 			controller.abort();
 		};
-	}, [getAllowedEmailDomains]);
+	}, []);
 
 	if (!session) {
 		return null;
