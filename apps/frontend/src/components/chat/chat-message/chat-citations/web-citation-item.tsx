@@ -15,9 +15,12 @@ export function WebCitationItem({ source }: { source: WebCitationSource }) {
 		let objectUrl: string | null = null;
 
 		if (token) {
-			fetch(`${import.meta.env.VITE_API_URL}/favicon?domain=${encodeURIComponent(hostname)}`, {
-				headers: { Authorization: `Bearer ${token}` },
-			})
+			fetch(
+				`${import.meta.env.VITE_API_URL}/favicon?domain=${encodeURIComponent(hostname)}`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				},
+			)
 				.then((res) => (res.ok ? res.blob() : Promise.reject()))
 				.then((blob) => {
 					objectUrl = URL.createObjectURL(blob);
