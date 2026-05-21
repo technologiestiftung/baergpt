@@ -56,7 +56,9 @@ export type SourceType =
 	| "personal_document"
 	| "default_document";
 
-export type Document = {
+export type Document = UserDocument | PublicDocument;
+
+export type UserDocument = {
 	created_at: string | null;
 	file_checksum: string | null;
 	file_name: string | null;
@@ -66,7 +68,21 @@ export type Document = {
 	num_pages: number | null;
 	owned_by_user_id: string | null;
 	processing_finished_at: string | null;
-	source_type: SourceType;
+	source_type: "personal_document" | "default_document";
+	source_url: string;
+};
+
+export type PublicDocument = {
+	created_at: string | null;
+	file_checksum: string | null;
+	file_name: string | null;
+	file_size: number | null;
+	folder_id: number | null;
+	id: number;
+	num_pages: number | null;
+	owned_by_user_id: string | null;
+	processing_finished_at: string | null;
+	source_type: "public_document";
 	source_url: string;
 };
 

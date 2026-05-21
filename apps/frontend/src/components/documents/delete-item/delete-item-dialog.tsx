@@ -36,7 +36,7 @@ export const DeleteItemDialog: React.FC = () => {
 	} = useUserDocumentStore();
 	const { unselectPreviewDocument } = usePreviewDocumentStore();
 	const {
-		selectedFoldersForAction,
+		selectedUserFoldersForAction,
 		deleteUserFolder,
 		unselectFolderForAction,
 	} = useUserFolderStore();
@@ -46,7 +46,7 @@ export const DeleteItemDialog: React.FC = () => {
 	const itemsToDelete: (Document | UserFolder)[] =
 		singleItemSelectedForAction !== null
 			? [singleItemSelectedForAction]
-			: [...selectedUserDocumentsForAction, ...selectedFoldersForAction];
+			: [...selectedUserDocumentsForAction, ...selectedUserFoldersForAction];
 
 	const isMultipleItemsToDelete = itemsToDelete.length > 1;
 

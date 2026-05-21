@@ -15,12 +15,12 @@ export const DocumentsSection: React.FC = () => {
 		(doc) => !deletedDefaultDocumentIds.includes(doc.id),
 	);
 
-	const hasItems = filteredDocuments.length > 0 || userFolders.length > 0;
+	const hasUserItems = filteredDocuments.length > 0 || userFolders.length > 0;
 
 	return (
 		<>
-			<DesktopDocuments hasItems={hasItems} />
-			<MobileDocuments hasItems={hasItems} />
+			<DesktopDocuments hasUserItems={hasUserItems} />
+			<MobileDocuments hasUserItems={hasUserItems} />
 			<DeleteItemDialog />
 			<CreateFolderDialog />
 		</>

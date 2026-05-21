@@ -12,7 +12,7 @@ import { PublicFolders } from "./document-list/public-folders.tsx";
 import { isUserFolder } from "./document-list/list-item/utils/is-user-folder.ts";
 import { isPublicFolder } from "./document-list/list-item/utils/is-public-folder.ts";
 
-export function MobileDocuments({ hasItems }: { hasItems: boolean }) {
+export function MobileDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 	const { openDrawerId, setOpenDrawer } = useDrawerStore();
 	const { currentFolder } = useCurrentFolderStore();
 
@@ -53,13 +53,15 @@ export function MobileDocuments({ hasItems }: { hasItems: boolean }) {
 			)}
 
 			<div className="flex flex-col h-full px-5">
-				{hasItems && (
+				{hasUserItems && (
 					<>
 						<DocumentsList />
 						<DocumentDragPreview />
 					</>
 				)}
-				{!isPublicFolder(currentFolder) && <FileUpload hasItems={hasItems} />}
+				{!isPublicFolder(currentFolder) && (
+					<FileUpload hasItems={hasUserItems} />
+				)}
 			</div>
 		</BottomDrawer>
 	);

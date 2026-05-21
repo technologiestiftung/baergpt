@@ -9,7 +9,8 @@ export function isItemSelectedForChat(
 ): boolean {
 	const selectedChatDocuments =
 		useUserDocumentStore.getState().selectedUserChatDocuments;
-	const selectedChatFolders = useUserFolderStore.getState().selectedChatFolders;
+	const selectedChatFolders =
+		useUserFolderStore.getState().selectedUserChatFolders;
 	const { selectedPublicChatDocuments, selectedPublicChatFolders } =
 		usePublicDocumentsStore.getState();
 

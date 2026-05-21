@@ -1,16 +1,16 @@
 import { create } from "zustand";
-import type { Document, PublicFolder } from "../common";
+import type { PublicDocument, PublicFolder } from "../common";
 import { getPublicDocuments as getPublicDocumentsFromDb } from "../api/documents/get-public-documents";
 import Content from "../content.ts";
 
 type PublicDocumentsStore = {
-	publicDocuments: Document[];
+	publicDocuments: PublicDocument[];
 	getPublicDocuments: (signal: AbortSignal) => Promise<void>;
 
-	selectedPublicChatDocuments: Document[];
-	selectPublicChatDocument: (publicDocument: Document) => void;
+	selectedPublicChatDocuments: PublicDocument[];
+	selectPublicChatDocument: (publicDocument: PublicDocument) => void;
 	unselectPublicChatDocument: (publicDocumentId: number) => void;
-	togglePublicChatDocument: (publicDocument: Document) => void;
+	togglePublicChatDocument: (publicDocument: PublicDocument) => void;
 
 	publicFolders: PublicFolder[];
 

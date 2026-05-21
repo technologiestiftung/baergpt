@@ -21,7 +21,7 @@ export function toggleItemInChat(
 	}
 
 	if (isUserFolder(item)) {
-		useUserFolderStore.getState().toggleChatFolder(item);
+		useUserFolderStore.getState().toggleUserChatFolder(item);
 		return;
 	}
 

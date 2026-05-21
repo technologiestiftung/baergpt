@@ -90,9 +90,11 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 					unselectUserChatDocument(document.id),
 				);
 
-				const { selectedChatFolders, unselectChatFolder } =
+				const { selectedUserChatFolders, unselectUserChatFolder } =
 					useUserFolderStore.getState();
-				selectedChatFolders.forEach((folder) => unselectChatFolder(folder.id));
+				selectedUserChatFolders.forEach((folder) =>
+					unselectUserChatFolder(folder.id),
+				);
 
 				const {
 					selectedPublicChatDocuments,

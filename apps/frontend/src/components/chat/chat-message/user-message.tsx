@@ -33,6 +33,7 @@ export function UserMessage({ message, children }: UserMessageProps) {
 	 * we show the (fake) folder instead of individual documents
 	 */
 	const foundPublicItems =
+		publicDocuments.length > 0 &&
 		foundPublicDocuments.length === publicDocuments.length
 			? publicFolders
 			: foundPublicDocuments;
