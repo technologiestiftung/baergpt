@@ -30,8 +30,10 @@ export const DocumentsList: React.FC = () => {
 		(item) => !isDocument(item) || !deletedDefaultDocumentIds.includes(item.id),
 	);
 
+	const height = currentFolder || filteredItems.length > 0 ? "h-full" : "h-fit";
+
 	return (
-		<div className="flex flex-col w-full h-full">
+		<div className={`flex flex-col w-full ${height}`}>
 			<DocumentListHeader />
 
 			<div className="flex flex-col w-full h-full">
