@@ -11,8 +11,8 @@ import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-ch
 import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
 import { ChatStopGeneratingIcon } from "../../primitives/icons/chat-stop-generating-icon.tsx";
 import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
-import { useFolderStore } from "../../../store/folder-store.ts";
-import { useDocumentStore } from "../../../store/document-store.ts";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
 import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
@@ -22,6 +22,7 @@ import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
 import { WebSearchWarningBanner } from "./web-search-warning-banner.tsx";
+import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
@@ -29,8 +30,9 @@ export const chatFormId = "chat-form";
 
 export const ChatForm: React.FC = () => {
 	const { status, clearError, isLoading } = useInferenceLoadingStatusStore();
-	const { selectedChatFolders } = useFolderStore();
-	const { selectedChatDocuments } = useDocumentStore();
+	const { selectedChatFolders: selectedUserChatFolders } = useUserFolderStore();
+	const { getSelectedPublicChatDocumentIds } = usePublicDocumentsStore();
+	const { selectedUserChatDocuments } = useUserDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
 		useChatsStore();
 	const { setIsWebSearchRemovalInfoMessageShown } = useChatsStore.getState();
@@ -86,14 +88,20 @@ export const ChatForm: React.FC = () => {
 			textarea.value = "";
 			handleTextAreaInput(); // Reset height
 		}
+
+		const allowed_document_ids = [
+			...selectedUserChatDocuments.map(({ id }) => id),
+			...getSelectedPublicChatDocumentIds(),
+		];
+
 		const userMessage: NewChatMessage = {
 			type: "text",
 			role: "user",
 			content: messageText,
 			citations: null,
 			web_citations: null,
-			allowed_document_ids: selectedChatDocuments.map((doc) => doc.id),
-			allowed_folder_ids: selectedChatFolders.map((folder) => folder.id),
+			allowed_document_ids,
+			allowed_folder_ids: selectedUserChatFolders.map((folder) => folder.id),
 		};
 
 		const model = useChatsStore.getState().selectedLlmModel;

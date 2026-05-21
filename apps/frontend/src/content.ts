@@ -740,6 +740,8 @@ export const Content = {
 
 	/* -------------------- DocumentsSection -------------------- */
 	"documentsSection.title": "Dateien",
+	"documentSection.publicFolders.label": "Bibliothek",
+	"documentSection.publicFolders.baseKnowledge.label": "Verwaltungswissen",
 	"documentsSection.mainFolder.label": "Meine Dateien",
 	"documentsSection.selectFiles": "Dateien auswählen",
 	"documentsSection.showFiles.ariaLabel": "Anzeigen der Dateien",
@@ -748,7 +750,6 @@ export const Content = {
 	"documentsSection.fetchRetry.button.label": "Erneut versuchen",
 	"documentsSection.fetchRetry.button.ariaLabel":
 		"Erneut versuchen Dokumente zu laden",
-	//documentsList
 	"documentsList.document.checkbox.ariaLabel":
 		"Dokument auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.folder.checkbox.ariaLabel":
@@ -890,15 +891,12 @@ export const Content = {
 		"Weitere Funktionen aktivieren",
 	"chat.options.dropdown.title": "Wissen erweitern",
 	"chat.options.selected.icon.imgAlt": "Ein blaues Häkchen-Icon",
-	"chat.options.li1.label": "Verwaltungswissen",
-	"chat.options.li1.description": "Zugriff auf Verwaltungsdokumente",
-	"chat.options.li1.ariaLabel": "Verwaltungswissen auswählen",
-	"chat.options.li2.label": "MCP Server",
-	"chat.options.li2.description": "Externe Datenquellen verbinden",
-	"chat.options.li2.ariaLabel": "MCP Server auswählen",
-	"chat.options.li3.label": "Websuche",
-	"chat.options.li3.description": "Aktuelle Informationen aus dem Web",
-	"chat.options.li3.ariaLabel": "Websuche auswählen",
+	"chat.options.li1.label": "MCP Server",
+	"chat.options.li1.description": "Externe Datenquellen verbinden",
+	"chat.options.li1.ariaLabel": "MCP Server auswählen",
+	"chat.options.li2.label": "Websuche",
+	"chat.options.li2.description": "Aktuelle Informationen aus dem Web",
+	"chat.options.li2.ariaLabel": "Websuche auswählen",
 	// MCP Options Dialog
 	"mcp.options.dialog.title": "MCP Server auswählen",
 	"mcp.options.dialog.confirmButton.label": "Bestätigen",
@@ -937,7 +935,6 @@ export const Content = {
 	"chat.citationsDialog.title": "Quellen",
 	"chat.citationsDialog.page": "Seite",
 	"chat.tooltipCitation.page": "Seite",
-	"chat.publicDocumentPill.label": "Verwaltungswissen",
 
 	"chat.exportChatTextButton.label": "Exportieren",
 	"chat.exportChatTextButton.ariaLabel": "Chat exportieren",
@@ -951,9 +948,6 @@ export const Content = {
 	"chat.contextPill.webSearch.label": "Websuche",
 	"chat.contextPill.webSearch.ariaLabel": "Websuche entfernen",
 	"chat.contextPill.webSearch.icon.alt": "Websuche icon",
-	"chat.contextPill.baseKnowledge.label": "Verwaltungswissen",
-	"chat.contextPill.baseKnowledge.ariaLabel": "Verwaltungswissen entfernen",
-	"chat.contextPill.baseKnowledge.icon.alt": "Verwaltungswissen icon",
 	"chat.contextPill.parla.label": "Parla Berlin",
 	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
@@ -1029,22 +1023,6 @@ export const Content = {
 	"profile.chatSettings.formal": "Siezen",
 	"profile.chatSettings.informal": "Duzen",
 
-	//Base knowledge documents
-	"profile.baseKnowledge.title": "Verwaltungswissen",
-	"profile.baseKnowledge.description":
-		"BärGPT greift für seine Antworten auf diese Dokumente zu.",
-	"profile.baseKnowledge.usage": "So nutzt BärGPT die Quellen. ",
-	"profile.baseKnowledge.link.label": "Mehr erfahren",
-	"profile.baseKnowledge.link.ariaLabel":
-		"Mehr erfahren über das Verwaltungswissen von BärGPT",
-	"profile.baseKnowledge.link.url":
-		"https://hilfe.baergpt.berlin//faq#wie-funktioniert-verwaltungswissen",
-	"profile.baseKnowledge.viewAll.label.start": "alle ",
-	"profile.baseKnowledge.viewAll.label.end": " Dokumente ansehen",
-	"profile.baseKnowledge.viewAll.ariaLabel":
-		"Alle Verwaltungswissen-Dokumente ansehen",
-	"profile.baseKnowledge.collapseList.label": "Liste einklappen",
-	"profile.baseKnowledge.collapseList.ariaLabel": "Liste einklappen",
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 	"emailChanged.buttonLink": "Zu BärGPT",

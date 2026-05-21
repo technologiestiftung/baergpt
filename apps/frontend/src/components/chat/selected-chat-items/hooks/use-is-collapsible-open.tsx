@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
-import { useFolderStore } from "../../../../store/folder-store.ts";
-import { useDocumentStore } from "../../../../store/document-store.ts";
+import { useUserFolderStore } from "../../../../store/use-user-folder-store.ts";
+import { useUserDocumentStore } from "../../../../store/use-user-document-store.ts";
+import { usePublicDocumentsStore } from "../../../../store/use-public-documents-store.ts";
 
 export function useIsCollapsibleOpen() {
-	const { selectedChatFolders } = useFolderStore();
-	const { selectedChatDocuments } = useDocumentStore();
+	const { selectedChatFolders: selectedUserChatFolders } = useUserFolderStore();
+	const { selectedUserChatDocuments } = useUserDocumentStore();
+	const { selectedPublicChatFolders, selectedPublicChatDocuments } =
+		usePublicDocumentsStore();
 
 	const hasItems =
-		selectedChatFolders.length > 0 || selectedChatDocuments.length > 0;
+		selectedUserChatDocuments.length > 0 ||
+		selectedPublicChatDocuments.length > 0 ||
+		selectedUserChatFolders.length > 0 ||
+		selectedPublicChatFolders.length > 0;
 
 	const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
 
@@ -18,7 +24,12 @@ export function useIsCollapsibleOpen() {
 		}
 
 		setIsCollapsibleOpen(true);
-	}, [selectedChatFolders, selectedChatDocuments]);
+	}, [
+		selectedUserChatDocuments,
+		selectedPublicChatDocuments,
+		selectedUserChatFolders,
+		selectedPublicChatFolders,
+	]);
 
 	return [isCollapsibleOpen, setIsCollapsibleOpen] as const;
 }

@@ -177,7 +177,7 @@ test.describe("Chat", () => {
 	});
 
 	testDesktopOnly(
-		"Add document and folder to chat via dropdown",
+		"Add document and user folder to chat via dropdown",
 		async ({ page }) => {
 			const givenFolderName = "test-folder";
 
@@ -696,59 +696,22 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testDesktopOnly("Toggle base knowledge on and off", async ({ page }) => {
-		await page.goto("/");
+	testDesktopOnly(
+		"Toggle base knowledge folder on and off",
+		async ({ page }) => {
+			await page.goto("/");
 
-		// Find and click the chat options toggle button
-		const chatOptionsButton = page.getByRole("button", {
-			name: "Weitere Funktionen aktivieren",
-		});
-		await expect(chatOptionsButton).toBeVisible();
+			await page.getByRole("button", { name: "In den Chat" }).first().click();
 
-		// Verify the baseKnowledge Pill is visible by default
-		const baseKnowledgePill = page.getByRole("button", {
-			name: /Verwaltungswissen entfernen/,
-		});
-		await expect(baseKnowledgePill).toBeVisible();
+			const baseKnowledgeFolderInChat = page.getByTestId(
+				"remove-item-Verwaltungswissen",
+			);
+			await expect(baseKnowledgeFolderInChat).toBeVisible();
 
-		// Verify the baseKnowledge Pill is not visible after clicking to remove
-		await baseKnowledgePill.click();
-		await expect(baseKnowledgePill).not.toBeVisible();
-
-		// Click to open the dropdown
-		await chatOptionsButton.click();
-
-		// Verify the dropdown is open with the title "Wissen erweitern"
-		await expect(page.getByText("Wissen erweitern")).toBeVisible();
-
-		// Click on "Verwaltungswissen" option to toggle it on
-		const baseKnowledgeOption = page.getByRole("option", {
-			name: "Verwaltungswissen auswählen",
-		});
-
-		await expect(baseKnowledgeOption).toBeVisible();
-		await baseKnowledgeOption.click();
-
-		// Verify the dropdown closes after selection
-		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
-
-		// Verify the context pill appears with "Verwaltungswissen" label
-		const contextPill = page.getByRole("button", {
-			name: /Verwaltungswissen entfernen/,
-		});
-		await expect(contextPill).toBeVisible();
-
-		// Deselect base knowledge through the dropdown
-		await chatOptionsButton.click();
-		await expect(page.getByText("Wissen erweitern")).toBeVisible();
-
-		// Click on "Verwaltungswissen" again to deselect it
-		await baseKnowledgeOption.click();
-		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
-
-		// Verify the context pill disappears after deselecting through dropdown
-		await expect(contextPill).not.toBeVisible();
-	});
+			await baseKnowledgeFolderInChat.click();
+			await expect(baseKnowledgeFolderInChat).not.toBeVisible();
+		},
+	);
 
 	testDesktopOnly("Toggle Parla Berlin MCP", async ({ page }) => {
 		await page.goto("/");
@@ -828,53 +791,6 @@ test.describe("Chat", () => {
 		await expect(page.getByText("Parla Berlin")).not.toBeVisible();
 		await expect(contextPill).not.toBeVisible();
 	});
-
-	testDesktopOnly(
-		"Disabling base knowledge should re-activate it when swapping between two chats",
-		async ({ page }) => {
-			await page.goto("/");
-
-			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
-			await chatInput.fill("hallo");
-
-			await sendAndWaitForLLMResponse(page);
-
-			const baseKnowledgePill = page.getByRole("button", {
-				name: /Verwaltungswissen entfernen/,
-			});
-			await baseKnowledgePill.click();
-
-			await expect(baseKnowledgePill).not.toBeVisible();
-
-			const startNewChatButton = page.getByRole("button", {
-				name: "Neuen Chat erstellen",
-			});
-			await startNewChatButton.click();
-
-			await expect(baseKnowledgePill).toBeVisible();
-		},
-	);
-
-	testDesktopOnly(
-		"Disabling base knowledge should not re-activate it when starting the first chat",
-		async ({ page }) => {
-			await page.goto("/");
-
-			// Disable the base knowledge feature
-			const baseKnowledgePill = page.getByRole("button", {
-				name: /Verwaltungswissen entfernen/,
-			});
-			await baseKnowledgePill.click();
-
-			// Start a new chat by asking a question
-			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
-			await chatInput.fill("hallo");
-
-			await sendAndWaitForLLMResponse(page);
-
-			await expect(baseKnowledgePill).not.toBeVisible();
-		},
-	);
 
 	testWithLoggedInUser(
 		"Should not be able to send another message with enter while waiting for a response",

@@ -2,19 +2,19 @@ import React, { useRef } from "react";
 import { FolderIcon } from "../../../primitives/icons/folder-icon.tsx";
 import { getListItemName } from "./utils/get-list-item-name.ts";
 import { getDragAndDropId } from "./utils/get-drag-and-drop-id.ts";
-import type { DocumentFolder } from "../../../../common.ts";
-import { useFolderStore } from "../../../../store/folder-store.ts";
+import type { UserFolder } from "../../../../common.ts";
+import { useCurrentFolderStore } from "../../../../store/use-current-folder-store.ts";
 import { useDragAndDropStore } from "../../../../store/drag-and-drop-store.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
 
 type DroppableFolderNameProps = {
-	item: DocumentFolder;
+	item: UserFolder;
 };
 
 const TOOLTIP_DELAY = 600;
 
 export function DroppableFolderName({ item }: DroppableFolderNameProps) {
-	const { setCurrentFolder } = useFolderStore();
+	const { setCurrentFolder } = useCurrentFolderStore();
 	const { hoveredFolderId } = useDragAndDropStore();
 
 	const isHoveredForDrop = getDragAndDropId(item) === hoveredFolderId;

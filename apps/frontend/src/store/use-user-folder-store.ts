@@ -1,55 +1,54 @@
 import { create } from "zustand";
-import type { Document, DocumentFolder } from "../common";
+import type { Document, UserFolder } from "../common";
 import { getFolders } from "../api/folders/get-folders";
 import { deleteFolder } from "../api/folders/delete-folder";
-import { useDocumentStore } from "./document-store.ts";
+import { useUserDocumentStore } from "./use-user-document-store.ts";
 import { createFolder } from "../api/folders/create-folder.ts";
 import { isDocument } from "../components/documents/document-list/list-item/utils/is-document.ts";
+import { useCurrentFolderStore } from "./use-current-folder-store.ts";
 
-interface FolderStore {
-	folders: DocumentFolder[];
-	isFolderFirstLoad: boolean;
-	getFolders: (signal: AbortSignal) => Promise<void>;
-	createFolder: (folderName: string) => Promise<void>;
-	deleteFolder: (folderId: number) => Promise<void>;
+interface UserFolderStore {
+	userFolders: UserFolder[];
+	isUserFolderFirstLoad: boolean;
+	getUserFolders: (signal: AbortSignal) => Promise<void>;
+	createUserFolder: (folderName: string) => Promise<void>;
+	deleteUserFolder: (folderId: number) => Promise<void>;
 
-	currentFolder: DocumentFolder | null;
-	setCurrentFolder: (folder: DocumentFolder | null) => void;
-
-	selectedChatFolders: DocumentFolder[];
-	selectChatFolder: (folder: DocumentFolder) => void;
+	selectedChatFolders: UserFolder[];
+	selectChatFolder: (folder: UserFolder) => void;
 	unselectChatFolder: (folderId: number) => void;
-	toggleChatFolder: (folder: DocumentFolder) => void;
+	toggleChatFolder: (folder: UserFolder) => void;
 	getSelectedChatFolderIds: () => number[];
 
-	selectedFoldersForAction: DocumentFolder[];
-	selectFolderForAction: (folder: DocumentFolder) => void;
+	selectedFoldersForAction: UserFolder[];
+	selectFolderForAction: (folder: UserFolder) => void;
+	selectAllItemsInCurrentFolder: () => void;
 	unselectFolderForAction: (folderId: number) => void;
 	unselectAllItemsInCurrentFolder: () => void;
 
 	getDocumentsInFolder: (folderId: number) => Document[];
-	getItemsInCurrentFolder: () => (DocumentFolder | Document)[];
+	getItemsInCurrentFolder: () => (UserFolder | Document)[];
 }
 
-export const useFolderStore = create<FolderStore>((set, get) => ({
-	folders: [],
-	isFolderFirstLoad: true,
-	getFolders: async (signal: AbortSignal) => {
+export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
+	userFolders: [],
+	isUserFolderFirstLoad: true,
+	getUserFolders: async (signal: AbortSignal) => {
 		try {
 			const folders = await getFolders(signal);
-			set({ folders });
+			set({ userFolders: folders });
 		} finally {
-			if (get().isFolderFirstLoad) {
-				set({ isFolderFirstLoad: false });
+			if (get().isUserFolderFirstLoad) {
+				set({ isUserFolderFirstLoad: false });
 			}
 		}
 	},
-	createFolder: async (folderName: string) => {
+	createUserFolder: async (folderName: string) => {
 		await createFolder(folderName);
-		await get().getFolders(new AbortController().signal);
+		await get().getUserFolders(new AbortController().signal);
 	},
 
-	deleteFolder: async (folderId: number) => {
+	deleteUserFolder: async (folderId: number) => {
 		const documents = get().getDocumentsInFolder(folderId);
 
 		let hasDocumentDeleteError = false;
@@ -57,9 +56,9 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 		// Delete each document in the folder
 		if (documents.length > 0) {
 			for (const document of documents) {
-				const error = await useDocumentStore
+				const error = await useUserDocumentStore
 					.getState()
-					.deleteDocument(document.id);
+					.deleteUserDocument(document.id);
 				if (error) {
 					hasDocumentDeleteError = true;
 				}
@@ -72,9 +71,10 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 
 		await deleteFolder(folderId);
 
-		const { folders, selectedChatFolders, selectedFoldersForAction } = get();
+		const { userFolders, selectedChatFolders, selectedFoldersForAction } =
+			get();
 
-		const updatedFolders = folders.filter(({ id }) => id !== folderId);
+		const updatedFolders = userFolders.filter(({ id }) => id !== folderId);
 		const updatedSelectedChatFolders = selectedChatFolders.filter(
 			({ id }) => id !== folderId,
 		);
@@ -83,27 +83,10 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 		);
 
 		set(() => ({
-			folders: updatedFolders,
+			userFolders: updatedFolders,
 			selectedChatFolders: updatedSelectedChatFolders,
 			selectedFoldersForAction: updatedSelectedFoldersForAction,
 		}));
-	},
-
-	currentFolder: null,
-	setCurrentFolder: (folder: DocumentFolder | null) => {
-		set({ currentFolder: folder });
-
-		/**
-		 * Reset selected folders and documents for action when changing the folder
-		 */
-		const { selectedFoldersForAction, unselectFolderForAction } = get();
-		selectedFoldersForAction.forEach(({ id }) => unselectFolderForAction(id));
-
-		const { selectedDocumentsForAction, unselectDocumentForAction } =
-			useDocumentStore.getState();
-		selectedDocumentsForAction.forEach(({ id }) =>
-			unselectDocumentForAction(id),
-		);
 	},
 
 	selectedChatFolders: [],
@@ -160,7 +143,7 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 
 		for (const item of items) {
 			if (isDocument(item)) {
-				useDocumentStore.getState().selectDocumentForAction(item);
+				useUserDocumentStore.getState().selectUserDocumentForAction(item);
 			} else {
 				selectFolderForAction(item);
 			}
@@ -181,7 +164,7 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 
 		for (const item of items) {
 			if (isDocument(item)) {
-				useDocumentStore.getState().unselectDocumentForAction(item.id);
+				useUserDocumentStore.getState().unselectUserDocumentForAction(item.id);
 			} else {
 				unselectFolderForAction(item.id);
 			}
@@ -189,25 +172,26 @@ export const useFolderStore = create<FolderStore>((set, get) => ({
 	},
 
 	getDocumentsInFolder: (folderId: number) => {
-		const { documents } = useDocumentStore.getState();
-		return documents.filter((doc) => doc.folder_id === folderId);
+		const { userDocuments } = useUserDocumentStore.getState();
+		return userDocuments.filter((doc) => doc.folder_id === folderId);
 	},
 
 	getItemsInCurrentFolder: () => {
-		const { folders, currentFolder } = get();
-		const { documents, deletedDefaultDocumentIds } =
-			useDocumentStore.getState();
+		const { userFolders } = get();
+		const { currentFolder } = useCurrentFolderStore.getState();
+		const { userDocuments, deletedDefaultDocumentIds } =
+			useUserDocumentStore.getState();
 		const isNotDeletedDefault = (doc: Document) =>
 			!deletedDefaultDocumentIds.includes(doc.id);
 
 		if (!currentFolder) {
-			const documentsInCurrentFolder = documents
+			const documentsInCurrentFolder = userDocuments
 				.filter(({ folder_id }) => folder_id === null)
 				.filter(isNotDeletedDefault);
-			return [...folders, ...documentsInCurrentFolder];
+			return [...userFolders, ...documentsInCurrentFolder];
 		}
 
-		return documents
+		return userDocuments
 			.filter(({ folder_id }) => folder_id === currentFolder.id)
 			.filter(isNotDeletedDefault);
 	},

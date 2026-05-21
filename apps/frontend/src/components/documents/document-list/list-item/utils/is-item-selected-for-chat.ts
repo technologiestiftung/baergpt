@@ -1,16 +1,21 @@
-import type { Document, DocumentFolder } from "../../../../../common";
+import type { Document, UserFolder, PublicFolder } from "../../../../../common";
 import { isDocument } from "./is-document";
-import { useDocumentStore } from "../../../../../store/document-store";
-import { useFolderStore } from "../../../../../store/folder-store";
+import { useUserDocumentStore } from "../../../../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../../../../store/use-user-folder-store.ts";
+import { usePublicDocumentsStore } from "../../../../../store/use-public-documents-store.ts";
 
 export function isItemSelectedForChat(
-	item: Document | DocumentFolder,
+	item: Document | UserFolder | PublicFolder,
 ): boolean {
 	const selectedChatDocuments =
-		useDocumentStore.getState().selectedChatDocuments;
-	const selectedChatFolders = useFolderStore.getState().selectedChatFolders;
+		useUserDocumentStore.getState().selectedUserChatDocuments;
+	const selectedChatFolders = useUserFolderStore.getState().selectedChatFolders;
+	const { selectedPublicChatDocuments, selectedPublicChatFolders } =
+		usePublicDocumentsStore.getState();
 
 	return isDocument(item)
-		? selectedChatDocuments.some((doc) => doc.id === item.id)
-		: selectedChatFolders.some((fol) => fol.id === item.id);
+		? selectedChatDocuments.some(({ id }) => id === item.id) ||
+				selectedPublicChatDocuments.some(({ id }) => id === item.id)
+		: selectedChatFolders.some(({ id }) => id === item.id) ||
+				selectedPublicChatFolders.some(({ id }) => id === item.id);
 }

@@ -635,7 +635,7 @@ async function cleanup(userId: string) {
 			.from("documents")
 			.select("id, source_url")
 			.eq("uploaded_by_user_id", userId)
-			.eq("source_type", "default_document");
+			.or("source_type.eq.default_document,source_type.eq.public_document");
 	expect(getAccessGroupDocsError).toBeNull();
 
 	if (accessGroupDocuments && accessGroupDocuments.length > 0) {

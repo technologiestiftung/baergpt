@@ -11,9 +11,14 @@ import { Resizer } from "./resizer.tsx";
 import { useTooltipStore } from "../../store/tooltip-store.ts";
 import { DropZoneWrapperDocuments } from "./document-list/drop-zone-wrapper-documents.tsx";
 import { useErrorStore } from "../../store/error-store.ts";
-import { useDocumentStore } from "../../store/document-store.ts";
+import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
 import { useFileUploadsStore } from "../../store/use-file-uploads-store.ts";
 import { MultiSelectForActionButton } from "./document-list/multi-select-for-action/multi-select-for-action-button.tsx";
+import { useCurrentFolderStore } from "../../store/use-current-folder-store.ts";
+import { isPublicFolder } from "./document-list/list-item/utils/is-public-folder.ts";
+import { isUserFolder } from "./document-list/list-item/utils/is-user-folder.ts";
+import type { Document, PublicFolder, UserFolder } from "../../common.ts";
+import { PublicFolders } from "./document-list/public-folders.tsx";
 
 const MIN_WIDTH = 350;
 const MAX_WIDTH = 700;
@@ -27,8 +32,13 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const documentButtonRef = useRef<HTMLButtonElement>(null);
 	const { getUIError } = useErrorStore();
-	const { getDocuments, isLoading, documents, deletedDefaultDocumentIds } =
-		useDocumentStore();
+	const {
+		getUserDocuments,
+		isLoading,
+		userDocuments,
+		deletedDefaultDocumentIds,
+	} = useUserDocumentStore();
+	const { currentFolder } = useCurrentFolderStore();
 	const { hasAvailableUploadSlots } = useFileUploadsStore();
 
 	const errorMessage = getUIError("documents-fetch");
@@ -55,17 +65,15 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 
 	const handleRetry = () => {
 		const abortController = new AbortController();
-		getDocuments(abortController.signal);
+		getUserDocuments(abortController.signal);
 	};
 
-	const numberOfUploads =
-		documents?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id))
-			.length || 0;
-	const hasReachedTotalUploadLimit =
-		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
-
-	const isDropZoneDisabled =
-		hasReachedTotalUploadLimit || !hasAvailableUploadSlots();
+	const isDropZoneDisabled = isUploadDisabled({
+		userDocuments,
+		deletedDefaultDocumentIds,
+		hasAvailableUploadSlots,
+		currentFolder,
+	});
 
 	return (
 		<>
@@ -154,14 +162,28 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 
 				{!isCollapsed && (
 					<>
-						<div className="mt-8">
-							<DocumentBreadcrumbs />
-						</div>
+						{currentFolder && (
+							<div className="mt-8">
+								<DocumentBreadcrumbs />
+							</div>
+						)}
 
-						<div className="hidden md:flex gap-4 items-center my-4">
-							<CreateFolderButton />
-							<MultiSelectForActionButton />
-						</div>
+						{!currentFolder && (
+							<>
+								<PublicFolders />
+
+								<h2 className="mt-8 leading-6 text-dunkelblau-100">
+									{Content["documentsSection.mainFolder.label"]}
+								</h2>
+							</>
+						)}
+
+						{(currentFolder === null || isUserFolder(currentFolder)) && (
+							<div className="hidden md:flex gap-4 items-center mt-4 mb-2">
+								<CreateFolderButton />
+								<MultiSelectForActionButton />
+							</div>
+						)}
 
 						{hasItems && (
 							<>
@@ -173,6 +195,7 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 								<span className="block mt-8 w-[calc(100%+48px)] ml-[-24px] h-[2px] dunkelblau-40" />
 							</>
 						)}
+
 						{!hasItems && errorMessage && !isLoading && (
 							<div className="flex flex-col gap-3 text-sm leading-5 font-normal text-center items-center justify-center h-full w-40 mx-auto">
 								<p>{errorMessage}</p>
@@ -193,9 +216,13 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 							</div>
 						)}
 
-						<div className={`hidden md:flex w-full  ${!hasItems && "h-full"}`}>
-							<FileUpload hasItems={hasItems} />
-						</div>
+						{!isPublicFolder(currentFolder) && (
+							<div
+								className={`hidden md:flex w-full  ${!hasItems && "h-full"}`}
+							>
+								<FileUpload hasItems={hasItems} />
+							</div>
+						)}
 					</>
 				)}
 			</DropZoneWrapperDocuments>
@@ -209,5 +236,31 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 				/>
 			)}
 		</>
+	);
+}
+
+function isUploadDisabled(args: {
+	userDocuments: Document[];
+	deletedDefaultDocumentIds: number[];
+	hasAvailableUploadSlots: () => boolean;
+	currentFolder: UserFolder | PublicFolder | null;
+}) {
+	const {
+		userDocuments,
+		deletedDefaultDocumentIds,
+		hasAvailableUploadSlots,
+		currentFolder,
+	} = args;
+
+	const numberOfUploads =
+		userDocuments.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id))
+			.length || 0;
+	const hasReachedTotalUploadLimit =
+		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
+
+	return (
+		hasReachedTotalUploadLimit ||
+		!hasAvailableUploadSlots() ||
+		isPublicFolder(currentFolder)
 	);
 }

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { useDocumentStore } from "./document-store.ts";
+import { useUserDocumentStore } from "./use-user-document-store.ts";
 import { useAuthStore } from "./auth-store.ts";
 import slugify from "slugify";
 import {
@@ -53,7 +53,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	async uploadFile({ fileUpload: { file }, span }) {
 		const { updateFileUploadStatus } = get();
 		const { session } = useAuthStore.getState();
-		const { documents, getDocuments } = useDocumentStore.getState();
+		const { userDocuments, getUserDocuments } = useUserDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
 		const slugifiedFilename = slugify(file.name, { lower: true });
@@ -63,7 +63,9 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				throw new Error("failed.size");
 			}
 
-			const fileExists = documents.some((doc) => doc.source_url === filePath);
+			const fileExists = userDocuments.some(
+				(doc) => doc.source_url === filePath,
+			);
 			if (fileExists) {
 				throw new Error("failed.duplicate");
 			}
@@ -93,7 +95,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				get().removeFileUpload(file.name);
 			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 
-			await getDocuments(new AbortController().signal);
+			await getUserDocuments(new AbortController().signal);
 		} catch (error) {
 			useErrorStore.getState().handleError(error, span);
 
@@ -110,10 +112,10 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 	uploadFiles: async (files: File[]) => {
 		const { fileUploads, uploadFile } = get();
-		const { documents, deletedDefaultDocumentIds } =
-			useDocumentStore.getState();
+		const { userDocuments, deletedDefaultDocumentIds } =
+			useUserDocumentStore.getState();
 
-		const numberOfNewUploads = documents.filter(
+		const numberOfNewUploads = userDocuments.filter(
 			(doc) => !deletedDefaultDocumentIds.includes(doc.id),
 		).length;
 
@@ -314,15 +316,17 @@ async function cleanupStorage(filePath: string, span: Span) {
 }
 
 async function cleanupStoreAndDatabase(filePath: string, span: Span) {
-	const { documents, deleteDocument } = useDocumentStore.getState();
+	const { userDocuments, deleteUserDocument } = useUserDocumentStore.getState();
 
-	const documentToDelete = documents.find((doc) => doc.source_url === filePath);
+	const documentToDelete = userDocuments.find(
+		(doc) => doc.source_url === filePath,
+	);
 
 	if (!documentToDelete) {
 		return;
 	}
 
-	const deleteError = await deleteDocument(documentToDelete.id);
+	const deleteError = await deleteUserDocument(documentToDelete.id);
 
 	if (!deleteError) {
 		return;

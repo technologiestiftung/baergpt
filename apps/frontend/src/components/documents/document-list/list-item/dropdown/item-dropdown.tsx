@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
 import { usePreviewDocumentStore } from "../../../../../store/use-preview-document-store.ts";
-import type { Document, DocumentFolder } from "../../../../../common";
+import type { Document, PublicFolder, UserFolder } from "../../../../../common";
 import Content from "../../../../../content";
 import { isDocument } from "../utils/is-document";
 import { toggleItemInChat } from "../utils/toggle-item-in-chat";
@@ -10,9 +10,10 @@ import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
 import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
 import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
 import { useIsMobile } from "../../../../../hooks/use-mobile";
+import { isPublicFolder } from "../utils/is-public-folder.ts";
 
 interface ItemDropdownProps {
-	item: Document | DocumentFolder;
+	item: Document | UserFolder | PublicFolder;
 	isOpen: boolean;
 	onClose: () => void;
 	triggerRef: React.RefObject<HTMLButtonElement>;
@@ -34,6 +35,8 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
 	const isMobile = useIsMobile();
+	const isReadOnly =
+		isPublicFolder(item) || (isDoc && item.source_type === "public_document");
 
 	const calculatePosition = () => {
 		if (triggerRef.current) {
@@ -73,7 +76,13 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		toggleItemInChat(item);
 	};
 
-	const handleDeleteItem = (itemToDelete: Document | DocumentFolder) => {
+	const handleDeleteItem = (
+		itemToDelete: Document | UserFolder | PublicFolder,
+	) => {
+		if (isPublicFolder(itemToDelete)) {
+			return;
+		}
+
 		onClose();
 		setSingleItemSelectedForAction(itemToDelete);
 		showDeleteDialog();
@@ -134,7 +143,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const dropdownItems = [
 		addToChatItem,
 		...(isDoc ? [viewItem] : []),
-		deleteItem,
+		...(isReadOnly ? [] : [deleteItem]),
 	];
 
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({

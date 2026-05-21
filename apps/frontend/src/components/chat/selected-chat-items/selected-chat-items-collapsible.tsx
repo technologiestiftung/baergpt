@@ -1,17 +1,27 @@
 import React from "react";
-import { useFolderStore } from "../../../store/folder-store";
-import { useDocumentStore } from "../../../store/document-store";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
 import { SelectedItemPill } from "./selected-item-pill";
 import { SelectedChatItemsLabel } from "./selected-chat-items-label.tsx";
 import { useIsCollapsibleOpen } from "./hooks/use-is-collapsible-open.tsx";
 import { getListItemName } from "../../documents/document-list/list-item/utils/get-list-item-name.ts";
+import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
 export const SelectedChatItemsCollapsible: React.FC = () => {
-	const { selectedChatFolders, unselectChatFolder } = useFolderStore();
-	const { selectedChatDocuments, unselectChatDocument } = useDocumentStore();
+	const {
+		selectedChatFolders: selectedUserChatFolders,
+		unselectChatFolder: unselectUserChatFolder,
+	} = useUserFolderStore();
+	const { selectedPublicChatFolders, unselectPublicChatFolder } =
+		usePublicDocumentsStore();
+
+	const { selectedUserChatDocuments, unselectUserChatDocument } =
+		useUserDocumentStore();
 
 	const hasSelectedChatItems =
-		selectedChatFolders.length > 0 || selectedChatDocuments.length > 0;
+		selectedUserChatFolders.length > 0 ||
+		selectedUserChatDocuments.length > 0 ||
+		selectedPublicChatFolders.length > 0;
 
 	const [isCollapsibleOpen, setIsCollapsibleOpen] = useIsCollapsibleOpen();
 
@@ -33,23 +43,33 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 
 			{isCollapsibleOpen && (
 				<div className="flex flex-wrap gap-2">
-					{selectedChatFolders.map((item) => (
+					{selectedPublicChatFolders.map((item) => (
+						<SelectedItemPill
+							key={`${item.id}-${item.name}`}
+							id={item.id}
+							name={item.name}
+							isFolder={true}
+							onRemove={unselectPublicChatFolder}
+						/>
+					))}
+
+					{selectedUserChatFolders.map((item) => (
 						<SelectedItemPill
 							key={`${item.id}-${item.name}`}
 							id={item.id}
 							name={getListItemName(item)}
 							isFolder={true}
-							onRemove={unselectChatFolder}
+							onRemove={unselectUserChatFolder}
 						/>
 					))}
 
-					{selectedChatDocuments.map((item) => (
+					{selectedUserChatDocuments.map((item) => (
 						<SelectedItemPill
 							key={`${item.id}-${item.file_name}`}
 							id={item.id}
 							name={getListItemName(item)}
 							isFolder={false}
-							onRemove={unselectChatDocument}
+							onRemove={unselectUserChatDocument}
 						/>
 					))}
 				</div>
