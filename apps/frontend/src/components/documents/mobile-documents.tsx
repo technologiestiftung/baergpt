@@ -53,12 +53,10 @@ export function MobileDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 			)}
 
 			<div className="flex flex-col h-full px-5">
-				{hasUserItems && (
-					<>
-						<DocumentsList />
-						<DocumentDragPreview />
-					</>
-				)}
+				<DocumentsList />
+
+				{hasUserItems && <DocumentDragPreview />}
+
 				{!isPublicFolder(currentFolder) && (
 					<FileUpload hasItems={hasUserItems} />
 				)}

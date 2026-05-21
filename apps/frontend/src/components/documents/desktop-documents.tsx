@@ -185,16 +185,11 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 							</div>
 						)}
 
-						{hasUserItems && (
-							<>
-								<DocumentDragPreview />
-								<div className="flex h-full">
-									<DocumentsList />
-								</div>
-								{/* Full-width border */}
-								<span className="block mt-8 w-[calc(100%+48px)] ml-[-24px] h-[2px] dunkelblau-40" />
-							</>
-						)}
+						{hasUserItems && <DocumentDragPreview />}
+						<DocumentsList />
+
+						{/* Full-width border */}
+						<span className="block mt-8 w-[calc(100%+48px)] ml-[-24px] h-[2px] dunkelblau-40" />
 
 						{!hasUserItems && errorMessage && !isLoading && (
 							<div className="flex flex-col gap-3 text-sm leading-5 font-normal text-center items-center justify-center h-full w-40 mx-auto">
