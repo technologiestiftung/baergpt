@@ -41,7 +41,7 @@ export async function getCompletion(
 		selectedChatOptions,
 	} = useChatsStore.getState();
 	const { getSelectedUserChatDocumentIds } = useUserDocumentStore.getState();
-	const { getSelectedChatFolderIds } = useUserFolderStore.getState();
+	const { getSelectedUserChatFolderIds } = useUserFolderStore.getState();
 	const { getSelectedPublicChatDocumentIds } =
 		usePublicDocumentsStore.getState();
 
@@ -67,7 +67,7 @@ export async function getCompletion(
 		}));
 
 		const selectedDocumentIds = getSelectedUserChatDocumentIds();
-		const selectedFolderIds = getSelectedChatFolderIds();
+		const selectedFolderIds = getSelectedUserChatFolderIds();
 		const publicDocumentIds = getSelectedPublicChatDocumentIds();
 
 		// merge document IDs from selected documents and folders
@@ -120,7 +120,7 @@ export async function getCompletion(
 			content: "",
 			type: "text",
 			role: "assistant",
-			allowed_document_ids: selectedDocumentIds, // Save selected document IDs
+			allowed_document_ids: allowedDocumentIds, // Save selected document IDs
 			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
 			citations: null,
 			web_citations: null,

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Document } from "../common";
+import type { UserDocument } from "../common";
 import { getDocuments } from "../api/documents/get-documents";
 import { deleteDocument } from "../api/documents/delete-document";
 import { updateDocumentFolder } from "../api/documents/update-document-folder";
@@ -8,7 +8,7 @@ import { getHiddenDefaultDocumentIds } from "../api/documents/get-hidden-default
 import { useChatsStore } from "./use-chats-store.ts";
 
 interface UserDocumentStore {
-	userDocuments: Document[];
+	userDocuments: UserDocument[];
 	isDocumentFirstLoad: boolean;
 	isLoading: boolean;
 	deletedDefaultDocumentIds: number[];
@@ -18,14 +18,14 @@ interface UserDocumentStore {
 	removeItemFromFolder: (documentId: number) => Promise<void>;
 	moveItemToFolder: (documentId: number, folderId: number) => Promise<void>;
 
-	selectedUserChatDocuments: Document[];
-	selectUserChatDocument: (document: Document) => void;
+	selectedUserChatDocuments: UserDocument[];
+	selectUserChatDocument: (document: UserDocument) => void;
 	unselectUserChatDocument: (documentId: number) => void;
-	toggleUserChatDocument: (document: Document) => void;
+	toggleUserChatDocument: (document: UserDocument) => void;
 	getSelectedUserChatDocumentIds: () => number[];
 
-	selectedUserDocumentsForAction: Document[];
-	selectUserDocumentForAction: (document: Document) => void;
+	selectedUserDocumentsForAction: UserDocument[];
+	selectUserDocumentForAction: (document: UserDocument) => void;
 	unselectUserDocumentForAction: (documentId: number) => void;
 }
 

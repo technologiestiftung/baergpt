@@ -4,7 +4,8 @@ import { useUserDocumentStore } from "../../../../store/use-user-document-store.
 import { usePublicDocumentsStore } from "../../../../store/use-public-documents-store.ts";
 
 export function useIsCollapsibleOpen() {
-	const { selectedChatFolders: selectedUserChatFolders } = useUserFolderStore();
+	const { selectedUserChatFolders: selectedUserChatFolders } =
+		useUserFolderStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
 	const { selectedPublicChatFolders, selectedPublicChatDocuments } =
 		usePublicDocumentsStore();

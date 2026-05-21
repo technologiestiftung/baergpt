@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Document, UserFolder } from "../common";
+import type { Document, UserDocument, UserFolder } from "../common";
 import { getFolders } from "../api/folders/get-folders";
 import { deleteFolder } from "../api/folders/delete-folder";
 import { useUserDocumentStore } from "./use-user-document-store.ts";
@@ -14,20 +14,20 @@ interface UserFolderStore {
 	createUserFolder: (folderName: string) => Promise<void>;
 	deleteUserFolder: (folderId: number) => Promise<void>;
 
-	selectedChatFolders: UserFolder[];
-	selectChatFolder: (folder: UserFolder) => void;
-	unselectChatFolder: (folderId: number) => void;
-	toggleChatFolder: (folder: UserFolder) => void;
-	getSelectedChatFolderIds: () => number[];
+	selectedUserChatFolders: UserFolder[];
+	selectUserChatFolder: (folder: UserFolder) => void;
+	unselectUserChatFolder: (folderId: number) => void;
+	toggleUserChatFolder: (folder: UserFolder) => void;
+	getSelectedUserChatFolderIds: () => number[];
 
-	selectedFoldersForAction: UserFolder[];
-	selectFolderForAction: (folder: UserFolder) => void;
-	selectAllItemsInCurrentFolder: () => void;
+	selectedUserFoldersForAction: UserFolder[];
+	selectUserFolderForAction: (folder: UserFolder) => void;
+	selectAllItemsForActionInCurrentFolder: () => void;
 	unselectFolderForAction: (folderId: number) => void;
-	unselectAllItemsInCurrentFolder: () => void;
+	unselectAllItemsForActionInCurrentFolder: () => void;
 
-	getDocumentsInFolder: (folderId: number) => Document[];
-	getItemsInCurrentFolder: () => (UserFolder | Document)[];
+	getUserDocumentsInUserFolder: (folderId: number) => UserDocument[];
+	getUserItemsInCurrentFolder: () => (UserFolder | UserDocument)[];
 }
 
 export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
@@ -49,7 +49,7 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 	},
 
 	deleteUserFolder: async (folderId: number) => {
-		const documents = get().getDocumentsInFolder(folderId);
+		const documents = get().getUserDocumentsInUserFolder(folderId);
 
 		let hasDocumentDeleteError = false;
 
@@ -71,53 +71,63 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 
 		await deleteFolder(folderId);
 
-		const { userFolders, selectedChatFolders, selectedFoldersForAction } =
-			get();
+		const {
+			userFolders,
+			selectedUserChatFolders,
+			selectedUserFoldersForAction,
+		} = get();
 
 		const updatedFolders = userFolders.filter(({ id }) => id !== folderId);
-		const updatedSelectedChatFolders = selectedChatFolders.filter(
+		const updatedSelectedChatFolders = selectedUserChatFolders.filter(
 			({ id }) => id !== folderId,
 		);
-		const updatedSelectedFoldersForAction = selectedFoldersForAction.filter(
+		const updatedSelectedFoldersForAction = selectedUserFoldersForAction.filter(
 			({ id }) => id !== folderId,
 		);
 
 		set(() => ({
 			userFolders: updatedFolders,
-			selectedChatFolders: updatedSelectedChatFolders,
-			selectedFoldersForAction: updatedSelectedFoldersForAction,
+			selectedUserChatFolders: updatedSelectedChatFolders,
+			selectedUserFoldersForAction: updatedSelectedFoldersForAction,
 		}));
 	},
 
-	selectedChatFolders: [],
-	selectChatFolder: (folder) => {
-		set(({ selectedChatFolders }) => ({
-			selectedChatFolders: [...selectedChatFolders, folder],
+	selectedUserChatFolders: [],
+	selectUserChatFolder: (folder) => {
+		set(({ selectedUserChatFolders }) => ({
+			selectedUserChatFolders: [...selectedUserChatFolders, folder],
 		}));
 	},
-	unselectChatFolder: (folderId) => {
-		set(({ selectedChatFolders }) => ({
-			selectedChatFolders: selectedChatFolders.filter(
+	unselectUserChatFolder: (folderId) => {
+		set(({ selectedUserChatFolders }) => ({
+			selectedUserChatFolders: selectedUserChatFolders.filter(
 				({ id }) => id !== folderId,
 			),
 		}));
 	},
-	toggleChatFolder: (folder) => {
-		const { selectedChatFolders, selectChatFolder, unselectChatFolder } = get();
-		const isSelected = selectedChatFolders.some((fol) => fol.id === folder.id);
+	toggleUserChatFolder: (folder) => {
+		const {
+			selectedUserChatFolders,
+			selectUserChatFolder,
+			unselectUserChatFolder,
+		} = get();
+		const isSelected = selectedUserChatFolders.some(
+			(fol) => fol.id === folder.id,
+		);
 
 		if (isSelected) {
-			unselectChatFolder(folder.id);
+			unselectUserChatFolder(folder.id);
 			return;
 		}
 
-		selectChatFolder(folder);
+		selectUserChatFolder(folder);
 	},
-	getSelectedChatFolderIds: () => get().selectedChatFolders.map(({ id }) => id),
+	getSelectedUserChatFolderIds: () =>
+		get().selectedUserChatFolders.map(({ id }) => id),
 
-	selectedFoldersForAction: [],
-	selectFolderForAction: (folder) => {
-		const { selectedFoldersForAction } = get();
+	selectedUserFoldersForAction: [],
+	selectUserFolderForAction: (folder) => {
+		const { selectedUserFoldersForAction } = get();
 
 		/**
 		 * Folders can be selected by two ways:
@@ -125,7 +135,7 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 		 * - by clicking on the select all checkbox
 		 * Therefore we need to prevent multi selections
 		 */
-		const isFolderAlreadySelected = selectedFoldersForAction.some(
+		const isFolderAlreadySelected = selectedUserFoldersForAction.some(
 			({ id }) => id === folder.id,
 		);
 		if (isFolderAlreadySelected) {
@@ -133,34 +143,34 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 		}
 
 		set(() => ({
-			selectedFoldersForAction: [...selectedFoldersForAction, folder],
+			selectedUserFoldersForAction: [...selectedUserFoldersForAction, folder],
 		}));
 	},
-	selectAllItemsInCurrentFolder: () => {
-		const { getItemsInCurrentFolder, selectFolderForAction } = get();
+	selectAllItemsForActionInCurrentFolder: () => {
+		const { getUserItemsInCurrentFolder, selectUserFolderForAction } = get();
 
-		const items = getItemsInCurrentFolder();
+		const items = getUserItemsInCurrentFolder();
 
 		for (const item of items) {
 			if (isDocument(item)) {
 				useUserDocumentStore.getState().selectUserDocumentForAction(item);
 			} else {
-				selectFolderForAction(item);
+				selectUserFolderForAction(item);
 			}
 		}
 	},
 
 	unselectFolderForAction: (folderId) => {
-		set(({ selectedFoldersForAction }) => ({
-			selectedFoldersForAction: selectedFoldersForAction.filter(
+		set(({ selectedUserFoldersForAction }) => ({
+			selectedUserFoldersForAction: selectedUserFoldersForAction.filter(
 				({ id }) => id !== folderId,
 			),
 		}));
 	},
-	unselectAllItemsInCurrentFolder: () => {
-		const { getItemsInCurrentFolder, unselectFolderForAction } = get();
+	unselectAllItemsForActionInCurrentFolder: () => {
+		const { getUserItemsInCurrentFolder, unselectFolderForAction } = get();
 
-		const items = getItemsInCurrentFolder();
+		const items = getUserItemsInCurrentFolder();
 
 		for (const item of items) {
 			if (isDocument(item)) {
@@ -171,12 +181,12 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 		}
 	},
 
-	getDocumentsInFolder: (folderId: number) => {
+	getUserDocumentsInUserFolder: (folderId: number) => {
 		const { userDocuments } = useUserDocumentStore.getState();
 		return userDocuments.filter((doc) => doc.folder_id === folderId);
 	},
 
-	getItemsInCurrentFolder: () => {
+	getUserItemsInCurrentFolder: () => {
 		const { userFolders } = get();
 		const { currentFolder } = useCurrentFolderStore.getState();
 		const { userDocuments, deletedDefaultDocumentIds } =

@@ -8,12 +8,12 @@ import Content from "../../../content";
 
 export const DeleteItemButton: React.FC = () => {
 	const { selectedUserDocumentsForAction } = useUserDocumentStore();
-	const { selectedFoldersForAction } = useUserFolderStore();
+	const { selectedUserFoldersForAction } = useUserFolderStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 
 	const itemsToDelete = [
 		...selectedUserDocumentsForAction,
-		...selectedFoldersForAction,
+		...selectedUserFoldersForAction,
 	];
 
 	const handleShowTooltip = (

@@ -18,8 +18,8 @@ const resetPreviousChatState = () => {
 	const { selectedUserChatDocuments, unselectUserChatDocument } =
 		useUserDocumentStore.getState();
 	const {
-		selectedChatFolders: selectedUserChatFolders,
-		unselectChatFolder: unselectUserChatFolder,
+		selectedUserChatFolders: selectedUserChatFolders,
+		unselectUserChatFolder: unselectUserChatFolder,
 	} = useUserFolderStore.getState();
 	const {
 		selectedPublicChatFolders,

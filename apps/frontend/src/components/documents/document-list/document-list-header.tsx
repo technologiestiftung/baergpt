@@ -7,12 +7,12 @@ import Content from "../../../content";
 import { MultiSelectAllForAction } from "./multi-select-for-action/multi-select-all-for-action.tsx";
 
 export const DocumentListHeader: React.FC = () => {
-	const { selectedFoldersForAction } = useUserFolderStore();
+	const { selectedUserFoldersForAction } = useUserFolderStore();
 	const { selectedUserDocumentsForAction } = useUserDocumentStore();
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
 
 	const selectedItemsForAction = [
-		...selectedFoldersForAction,
+		...selectedUserFoldersForAction,
 		...selectedUserDocumentsForAction,
 	];
 

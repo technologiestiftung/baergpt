@@ -9,19 +9,23 @@ import { usePublicDocumentsStore } from "../../../store/use-public-documents-sto
 
 export const SelectedChatItemsCollapsible: React.FC = () => {
 	const {
-		selectedChatFolders: selectedUserChatFolders,
-		unselectChatFolder: unselectUserChatFolder,
+		selectedUserChatFolders: selectedUserChatFolders,
+		unselectUserChatFolder: unselectUserChatFolder,
 	} = useUserFolderStore();
-	const { selectedPublicChatFolders, unselectPublicChatFolder } =
-		usePublicDocumentsStore();
-
+	const {
+		selectedPublicChatDocuments,
+		unselectPublicChatDocument,
+		selectedPublicChatFolders,
+		unselectPublicChatFolder,
+	} = usePublicDocumentsStore();
 	const { selectedUserChatDocuments, unselectUserChatDocument } =
 		useUserDocumentStore();
 
 	const hasSelectedChatItems =
 		selectedUserChatFolders.length > 0 ||
 		selectedUserChatDocuments.length > 0 ||
-		selectedPublicChatFolders.length > 0;
+		selectedPublicChatFolders.length > 0 ||
+		selectedPublicChatDocuments.length > 0;
 
 	const [isCollapsibleOpen, setIsCollapsibleOpen] = useIsCollapsibleOpen();
 
@@ -50,6 +54,16 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 							name={item.name}
 							isFolder={true}
 							onRemove={unselectPublicChatFolder}
+						/>
+					))}
+
+					{selectedPublicChatDocuments.map((item) => (
+						<SelectedItemPill
+							key={`${item.id}-${item.file_name}`}
+							id={item.id}
+							name={getListItemName(item)}
+							isFolder={false}
+							onRemove={unselectPublicChatDocument}
 						/>
 					))}
 

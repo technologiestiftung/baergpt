@@ -16,9 +16,11 @@ export const useCurrentFolderStore = create<CurrentFolderStore>((set) => ({
 		/**
 		 * Reset selected folders and documents for action when changing the folder
 		 */
-		const { selectedFoldersForAction, unselectFolderForAction } =
+		const { selectedUserFoldersForAction, unselectFolderForAction } =
 			useUserFolderStore.getState();
-		selectedFoldersForAction.forEach(({ id }) => unselectFolderForAction(id));
+		selectedUserFoldersForAction.forEach(({ id }) =>
+			unselectFolderForAction(id),
+		);
 
 		const { selectedUserDocumentsForAction, unselectUserDocumentForAction } =
 			useUserDocumentStore.getState();

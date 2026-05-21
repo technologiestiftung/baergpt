@@ -8,30 +8,30 @@ import type { CheckboxState } from "../../../primitives/icons/checkbox-icon.tsx"
 
 export const MultiSelectAllForAction: React.FC = () => {
 	const {
-		selectedFoldersForAction,
-		getItemsInCurrentFolder,
-		unselectAllItemsInCurrentFolder,
-		selectAllItemsInCurrentFolder,
+		selectedUserFoldersForAction,
+		getUserItemsInCurrentFolder,
+		unselectAllItemsForActionInCurrentFolder,
+		selectAllItemsForActionInCurrentFolder,
 	} = useUserFolderStore();
 	const { selectedUserDocumentsForAction } = useUserDocumentStore();
 
 	const selectedItemsForAction = [
-		...selectedFoldersForAction,
+		...selectedUserFoldersForAction,
 		...selectedUserDocumentsForAction,
 	];
-	const itemsInCurrentFolder = getItemsInCurrentFolder();
+	const userItemsInCurrentFolder = getUserItemsInCurrentFolder();
 
 	const checkboxState = useMultiSelectCheckboxState(
 		selectedItemsForAction,
-		itemsInCurrentFolder,
+		userItemsInCurrentFolder,
 	);
 
 	const handleChange = (newState: CheckboxState) => {
 		if (newState === "checked") {
-			selectAllItemsInCurrentFolder();
+			selectAllItemsForActionInCurrentFolder();
 		}
 		if (newState === "unchecked") {
-			unselectAllItemsInCurrentFolder();
+			unselectAllItemsForActionInCurrentFolder();
 		}
 	};
 

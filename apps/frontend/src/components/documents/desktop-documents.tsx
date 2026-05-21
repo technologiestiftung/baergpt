@@ -25,7 +25,7 @@ const MAX_WIDTH = 700;
 const DEFAULT_WIDTH = 400;
 const COLLAPSED_WIDTH = 64;
 
-export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
+export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	const [width, setWidth] = useState(DEFAULT_WIDTH);
 	const [isResizing, setIsResizing] = useState(false);
@@ -185,7 +185,7 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 							</div>
 						)}
 
-						{hasItems && (
+						{hasUserItems && (
 							<>
 								<DocumentDragPreview />
 								<div className="flex h-full">
@@ -196,7 +196,7 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 							</>
 						)}
 
-						{!hasItems && errorMessage && !isLoading && (
+						{!hasUserItems && errorMessage && !isLoading && (
 							<div className="flex flex-col gap-3 text-sm leading-5 font-normal text-center items-center justify-center h-full w-40 mx-auto">
 								<p>{errorMessage}</p>
 								<button
@@ -218,9 +218,9 @@ export function DesktopDocuments({ hasItems }: { hasItems: boolean }) {
 
 						{!isPublicFolder(currentFolder) && (
 							<div
-								className={`hidden md:flex w-full  ${!hasItems && "h-full"}`}
+								className={`hidden md:flex w-full  ${!hasUserItems && "h-full"}`}
 							>
-								<FileUpload hasItems={hasItems} />
+								<FileUpload hasItems={hasUserItems} />
 							</div>
 						)}
 					</>

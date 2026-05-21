@@ -6,7 +6,8 @@ import type { ListItem } from "../../documents/document-list/list-item/utils/typ
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
 export function SelectedChatItemsLabel() {
-	const { selectedChatFolders: selectedUserChatFolders } = useUserFolderStore();
+	const { selectedUserChatFolders: selectedUserChatFolders } =
+		useUserFolderStore();
 	const { selectedPublicChatFolders } = usePublicDocumentsStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
 

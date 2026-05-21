@@ -36,7 +36,7 @@ export function PublicFolders() {
 							togglePublicChatFolder(baseKnowledgeFolder)
 						}
 						isSelectedForChat={selectedPublicChatFolders.some(
-							(folder) => folder.name === baseKnowledgeFolder.name,
+							(folder) => folder.id === baseKnowledgeFolder.id,
 						)}
 					/>
 

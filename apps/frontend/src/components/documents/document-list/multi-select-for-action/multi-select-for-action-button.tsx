@@ -9,7 +9,7 @@ import { CloseIcon } from "../../../primitives/icons/close-icon.tsx";
 import { CheckboxIcon } from "../../../primitives/icons/checkbox-icon.tsx";
 
 export const MultiSelectForActionButton: React.FC = () => {
-	const { unselectAllItemsInCurrentFolder } = useUserFolderStore();
+	const { unselectAllItemsForActionInCurrentFolder } = useUserFolderStore();
 	const {
 		showMultiSelectForAction,
 		hideMultiSelectForAction,
@@ -21,7 +21,7 @@ export const MultiSelectForActionButton: React.FC = () => {
 			{isMultiSelectForActionVisible ? (
 				<PrimaryButton
 					onClick={() => {
-						unselectAllItemsInCurrentFolder();
+						unselectAllItemsForActionInCurrentFolder();
 						hideMultiSelectForAction();
 					}}
 					hasIcon="right"

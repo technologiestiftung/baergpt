@@ -1,9 +1,11 @@
 import { supabase } from "../../../supabase-client";
-import type { Document } from "../../common";
+import type { UserDocument } from "../../common";
 import { useAuthStore } from "../../store/auth-store";
 import { useErrorStore } from "../../store/error-store.ts";
 
-export async function getDocuments(signal: AbortSignal): Promise<Document[]> {
+export async function getDocuments(
+	signal: AbortSignal,
+): Promise<UserDocument[]> {
 	const { session } = useAuthStore.getState();
 
 	if (!session?.user.id) {
@@ -41,5 +43,5 @@ export async function getDocuments(signal: AbortSignal): Promise<Document[]> {
 	 * but it is actually `"public_document" | "personal_document" | "default_document"`.
 	 * So we cast it.
 	 */
-	return (data as Document[]) ?? [];
+	return (data as UserDocument[]) ?? [];
 }

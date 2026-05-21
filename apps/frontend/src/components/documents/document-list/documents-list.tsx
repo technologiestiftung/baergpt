@@ -14,16 +14,16 @@ import { isPublicFolder } from "./list-item/utils/is-public-folder.ts";
 export const DocumentsList: React.FC = () => {
 	const { currentFolder } = useCurrentFolderStore();
 	const { publicDocuments } = usePublicDocumentsStore();
-	const { isUserFolderFirstLoad, getItemsInCurrentFolder } =
+	const { isUserFolderFirstLoad, getUserItemsInCurrentFolder } =
 		useUserFolderStore();
 	const { isDocumentFirstLoad, isLoading, deletedDefaultDocumentIds } =
 		useUserDocumentStore();
 
 	const isFirstLoad = isDocumentFirstLoad || isUserFolderFirstLoad;
 
-	const itemsInCurrentFolder = getItemsInCurrentFolder();
+	const userItemsInCurrentFolder = getUserItemsInCurrentFolder();
 
-	const sortedItems = getSortedItems(itemsInCurrentFolder);
+	const sortedItems = getSortedItems(userItemsInCurrentFolder);
 
 	// Filter out deleted default documents by ID
 	const filteredItems = sortedItems.filter(

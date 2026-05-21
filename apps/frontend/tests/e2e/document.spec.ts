@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Request } from "@playwright/test";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import {
 	deleteFileViaUI,
@@ -1020,6 +1020,17 @@ test.describe("Documents", () => {
 				},
 			);
 
+			let uploadRequestTriggered = false;
+			const onRequest = (request: Request) => {
+				if (
+					request.method() === "POST" &&
+					request.url().includes("/documents/process")
+				) {
+					uploadRequestTriggered = true;
+				}
+			};
+			page.on("request", onRequest);
+
 			// Attempt drag & drop on the documents panel
 			const desktopPanel = page.locator("#desktop-documents-panel");
 			await desktopPanel.dispatchEvent("dragenter", { dataTransfer });
@@ -1028,6 +1039,9 @@ test.describe("Documents", () => {
 
 			const documentUpload = desktopPanel.getByText(secondaryDocumentName);
 			await expect(documentUpload).not.toBeVisible({ timeout: 1_000 });
+			expect(uploadRequestTriggered).toBe(false);
+
+			page.off("request", onRequest);
 		},
 	);
 });
