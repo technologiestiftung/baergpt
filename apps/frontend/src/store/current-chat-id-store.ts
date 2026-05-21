@@ -3,7 +3,6 @@ import { useDocumentStore } from "./document-store.ts";
 import { useFolderStore } from "./folder-store.ts";
 import { useCitationsStore } from "./use-citations-store.ts";
 import { useFaviconStore } from "./favicon-store.ts";
-import { captureError } from "../monitoring/capture-error.ts";
 import { useChatsStore } from "./use-chats-store.ts";
 import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-store.ts";
 import { useChatStreamingStore } from "./use-chat-streaming-store.ts";
@@ -48,7 +47,7 @@ const loadChatFavicons = (chatId: number) => {
 		.flatMap((message) => message.web_citations ?? [])
 		.map((wc) => new URL(wc.url).hostname);
 	if (hostnames.length > 0) {
-		ensureFaviconsCached(hostnames).catch(captureError);
+		void ensureFaviconsCached(hostnames);
 	}
 };
 

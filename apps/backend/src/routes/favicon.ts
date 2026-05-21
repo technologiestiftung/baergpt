@@ -7,13 +7,13 @@ const favicon = new Hono();
 favicon.get("/", async (c: Context) => {
 	const domain = c.req.query("domain");
 
-	if (!domain) {
+	if (!domain || domain.includes("://") || domain.includes("/")) {
 		return c.json({ error: "Invalid domain" }, 400);
 	}
 
 	try {
 		const response = await fetch(
-			`https://www.google.com/s2/favicons?domain=${domain}&sz=32`,
+			`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`,
 		);
 
 		if (!response.ok) {
