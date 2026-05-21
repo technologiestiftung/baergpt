@@ -8,13 +8,15 @@ import { usePublicDocumentsStore } from "../../../store/use-public-documents-sto
 export function SelectedChatItemsLabel() {
 	const { selectedUserChatFolders: selectedUserChatFolders } =
 		useUserFolderStore();
-	const { selectedPublicChatFolders } = usePublicDocumentsStore();
+	const { selectedPublicChatFolders, selectedPublicChatDocuments } =
+		usePublicDocumentsStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
 
 	const selectedChatItems = [
 		...selectedUserChatFolders,
 		...selectedUserChatDocuments,
 		...selectedPublicChatFolders,
+		...selectedPublicChatDocuments,
 	];
 	const selectedChatItemsAmount = selectedChatItems.length;
 
