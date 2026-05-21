@@ -4,7 +4,7 @@ import { useUserDocumentStore } from "../../../store/use-user-document-store.ts"
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { useDocumentsListStore } from "../../../store/use-documents-list-store";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
-import type { Document, UserFolder } from "../../../common.ts";
+import type { UserDocument, UserFolder } from "../../../common.ts";
 import { isDocument } from "../document-list/list-item/utils/is-document.ts";
 import { getListItemName } from "../document-list/list-item/utils/get-list-item-name.ts";
 import { useTooltipStore } from "../../../store/tooltip-store.ts";
@@ -43,7 +43,7 @@ export const DeleteItemDialog: React.FC = () => {
 	const { singleItemSelectedForAction, setSingleItemSelectedForAction } =
 		useDocumentsListStore();
 
-	const itemsToDelete: (Document | UserFolder)[] =
+	const itemsToDelete: (UserDocument | UserFolder)[] =
 		singleItemSelectedForAction !== null
 			? [singleItemSelectedForAction]
 			: [...selectedUserDocumentsForAction, ...selectedUserFoldersForAction];
@@ -120,7 +120,7 @@ export const DeleteItemDialog: React.FC = () => {
 	);
 };
 
-function getDialogTitle(itemsToDelete: (Document | UserFolder)[]) {
+function getDialogTitle(itemsToDelete: (UserDocument | UserFolder)[]) {
 	if (itemsToDelete.length > 1) {
 		return `${itemsToDelete.length} ${Content["deleteItemDialog.deleteFiles"]}`;
 	}
@@ -133,7 +133,7 @@ function getDialogTitle(itemsToDelete: (Document | UserFolder)[]) {
 	return Content["deleteItemDialog.deleteFolder"];
 }
 
-function getDialogParagraph(itemsToDelete: (Document | UserFolder)[]) {
+function getDialogParagraph(itemsToDelete: (UserDocument | UserFolder)[]) {
 	if (itemsToDelete.length > 1) {
 		return `${Content["deleteItemDialog.confirmation.multipleItems"]}`;
 	}
@@ -147,7 +147,9 @@ function getDialogParagraph(itemsToDelete: (Document | UserFolder)[]) {
 	);
 }
 
-function getUserFriendlyItemNames(itemsToDelete: (UserFolder | Document)[]) {
+function getUserFriendlyItemNames(
+	itemsToDelete: (UserDocument | UserFolder)[],
+) {
 	return itemsToDelete.map((item) => {
 		return (
 			<li
