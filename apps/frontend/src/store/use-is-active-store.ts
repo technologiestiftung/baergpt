@@ -8,7 +8,7 @@ interface IsActiveStore {
 	registrationFinishedAt: string | null | undefined;
 	getIsActive: (signal: AbortSignal) => Promise<void>;
 	resetIsActive: () => void;
-	getAccountActivationTimestamp: () => Promise<void>;
+	getAccountActivationTimestamp: (signal: AbortSignal) => Promise<void>;
 }
 
 export const useIsActiveStore = create<IsActiveStore>((set) => ({
@@ -23,9 +23,9 @@ export const useIsActiveStore = create<IsActiveStore>((set) => ({
 			set({ isActive: false });
 		}
 	},
-	getAccountActivationTimestamp: async () => {
+	getAccountActivationTimestamp: async (signal) => {
 		try {
-			const timestamp = await getAccountActivationTimestamp();
+			const timestamp = await getAccountActivationTimestamp(signal);
 			set({ registrationFinishedAt: timestamp });
 		} catch (error) {
 			useErrorStore.getState().handleError(error);

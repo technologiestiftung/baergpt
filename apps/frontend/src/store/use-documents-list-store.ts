@@ -1,15 +1,13 @@
 import { create } from "zustand";
-import type { Document, DocumentFolder } from "../common";
+import type { Document, UserFolder } from "../common";
 
 interface DocumentsListStore {
 	isMultiSelectForActionVisible: boolean;
 	showMultiSelectForAction: () => void;
 	hideMultiSelectForAction: () => void;
 
-	singleItemSelectedForAction: Document | DocumentFolder | null;
-	setSingleItemSelectedForAction: (
-		item: Document | DocumentFolder | null,
-	) => void;
+	singleItemSelectedForAction: Document | UserFolder | null;
+	setSingleItemSelectedForAction: (item: Document | UserFolder | null) => void;
 }
 
 export const useDocumentsListStore = create<DocumentsListStore>((set) => ({

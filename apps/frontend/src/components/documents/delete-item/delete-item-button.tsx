@@ -1,18 +1,18 @@
 import React from "react";
 import { showDeleteDialog } from "./delete-item-dialog";
-import { useDocumentStore } from "../../../store/document-store";
-import { useFolderStore } from "../../../store/folder-store";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { BucketIcon } from "../../primitives/icons/bucket-icon.tsx";
 import { useTooltipStore } from "../../../store/tooltip-store";
 import Content from "../../../content";
 
 export const DeleteItemButton: React.FC = () => {
-	const { selectedDocumentsForAction } = useDocumentStore();
-	const { selectedFoldersForAction } = useFolderStore();
+	const { selectedUserDocumentsForAction } = useUserDocumentStore();
+	const { selectedFoldersForAction } = useUserFolderStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 
 	const itemsToDelete = [
-		...selectedDocumentsForAction,
+		...selectedUserDocumentsForAction,
 		...selectedFoldersForAction,
 	];
 

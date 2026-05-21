@@ -27,17 +27,17 @@ export const ChatOptionsToggleButton: React.FC = () => {
 		isEnabled: boolean;
 	}[] = [
 		{
-			label: Content["chat.options.li2.label"],
+			label: Content["chat.options.li1.label"],
 			value: "mcpServer",
-			description: Content["chat.options.li2.description"],
-			ariaLabel: Content["chat.options.li2.ariaLabel"],
+			description: Content["chat.options.li1.description"],
+			ariaLabel: Content["chat.options.li1.ariaLabel"],
 			isEnabled: isMcpParlaAllowed,
 		},
 		{
-			label: Content["chat.options.li3.label"],
+			label: Content["chat.options.li2.label"],
 			value: "webSearch",
-			description: Content["chat.options.li3.description"],
-			ariaLabel: Content["chat.options.li3.ariaLabel"],
+			description: Content["chat.options.li2.description"],
+			ariaLabel: Content["chat.options.li2.ariaLabel"],
 			isEnabled: isWebSearchAllowed,
 		},
 	];

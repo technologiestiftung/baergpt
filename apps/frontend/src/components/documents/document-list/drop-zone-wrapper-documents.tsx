@@ -2,7 +2,7 @@ import React, { type ReactNode } from "react";
 import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 import { useDropzone } from "react-dropzone";
 import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
-import { useFolderStore } from "../../../store/folder-store.ts";
+import { useCurrentFolderStore } from "../../../store/use-current-folder-store.ts";
 import Content from "../../../content.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
 
@@ -18,7 +18,7 @@ export function DropZoneWrapperDocuments({
 	style?: React.CSSProperties;
 	isDropZoneDisabled?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>) {
-	const { currentFolder } = useFolderStore();
+	const { currentFolder } = useCurrentFolderStore();
 	const { uploadFiles } = useFileUploadsStore();
 
 	const onDrop = (acceptedFiles: File[]) => {

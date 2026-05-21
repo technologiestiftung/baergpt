@@ -39,11 +39,16 @@ export type ChatMessage = {
 	type: string;
 };
 
-export type DocumentFolder = {
+export type UserFolder = {
 	created_at: string;
 	id: number;
 	name: string;
 	user_id: string;
+};
+
+export type PublicFolder = {
+	id: number;
+	name: string;
 };
 
 export type SourceType =
@@ -63,10 +68,6 @@ export type Document = {
 	processing_finished_at: string | null;
 	source_type: SourceType;
 	source_url: string;
-};
-
-export type DocumentWithUrl = Document & {
-	previewUrl?: string;
 };
 
 export type User = {

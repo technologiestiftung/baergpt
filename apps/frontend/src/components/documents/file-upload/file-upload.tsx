@@ -2,8 +2,8 @@ import React, { useRef } from "react";
 import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
 import { FileUploadStatusCollapsible } from "./file-upload-status-collapsible.tsx";
 import { NoFilesUploadZone } from "./no-files-upload-zone.tsx";
-import { useDocumentStore } from "../../../store/document-store.ts";
-import { useFolderStore } from "../../../store/folder-store.ts";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import Content from "../../../content.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
 
@@ -17,16 +17,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 	const {
 		isDocumentFirstLoad,
 		isLoading,
-		documents,
+		userDocuments,
 		deletedDefaultDocumentIds,
-	} = useDocumentStore();
-	const { isFolderFirstLoad } = useFolderStore();
-	const isFirstLoading = isDocumentFirstLoad || isFolderFirstLoad;
+	} = useUserDocumentStore();
+	const { isUserFolderFirstLoad } = useUserFolderStore();
+	const isFirstLoading = isDocumentFirstLoad || isUserFolderFirstLoad;
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { error } = useErrorStore.getState();
 
 	const numberOfUploads =
-		documents?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id))
+		userDocuments?.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id))
 			.length || 0;
 	const hasReachedTotalUploadLimit =
 		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);

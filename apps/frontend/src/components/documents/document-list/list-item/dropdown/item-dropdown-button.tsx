@@ -2,10 +2,10 @@ import React, { useState, useRef } from "react";
 import { useClickOutside } from "../../../../../hooks/use-click-outside";
 import { ItemDropdown } from "./item-dropdown";
 import Content from "../../../../../content";
-import type { Document, DocumentFolder } from "../../../../../common";
+import type { Document, PublicFolder, UserFolder } from "../../../../../common";
 
 interface ItemDropdownButtonProps {
-	item: Document | DocumentFolder;
+	item: Document | UserFolder | PublicFolder;
 }
 
 export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({

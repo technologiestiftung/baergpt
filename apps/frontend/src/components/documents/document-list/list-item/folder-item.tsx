@@ -1,6 +1,6 @@
 import React from "react";
-import type { DocumentFolder } from "../../../../common";
-import { useFolderStore } from "../../../../store/folder-store";
+import type { UserFolder } from "../../../../common";
+import { useUserFolderStore } from "../../../../store/use-user-folder-store.ts";
 import { useDocumentsListStore } from "../../../../store/use-documents-list-store.ts";
 import Checkbox from "../../../primitives/checkboxes/checkbox.tsx";
 import { DroppableFolderName } from "./droppable-folder-name.tsx";
@@ -9,7 +9,7 @@ import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
 import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
 
 interface FolderItemProps {
-	item: DocumentFolder;
+	item: UserFolder;
 }
 
 const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
@@ -19,7 +19,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 		selectFolderForAction,
 		unselectFolderForAction,
 		toggleChatFolder,
-	} = useFolderStore();
+	} = useUserFolderStore();
 
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
 

@@ -1,12 +1,32 @@
-import type { Document, DocumentFolder } from "../../../../../common";
-import { isDocument } from "./is-document";
-import { useDocumentStore } from "../../../../../store/document-store";
-import { useFolderStore } from "../../../../../store/folder-store";
+import type { Document, PublicFolder, UserFolder } from "../../../../../common";
+import { useUserDocumentStore } from "../../../../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../../../../store/use-user-folder-store.ts";
+import { usePublicDocumentsStore } from "../../../../../store/use-public-documents-store.ts";
+import { isUserFolder } from "./is-user-folder.ts";
+import { isPublicFolder } from "./is-public-folder.ts";
+import { isUserDocument } from "./is-user-document.ts";
+import { isPublicDocument } from "./is-public-document.ts";
 
-export function toggleItemInChat(item: Document | DocumentFolder): void {
-	if (isDocument(item)) {
-		useDocumentStore.getState().toggleChatDocument(item);
-	} else {
-		useFolderStore.getState().toggleChatFolder(item);
+export function toggleItemInChat(
+	item: Document | UserFolder | PublicFolder,
+): void {
+	if (isUserDocument(item)) {
+		useUserDocumentStore.getState().toggleUserChatDocument(item);
+		return;
+	}
+
+	if (isPublicDocument(item)) {
+		usePublicDocumentsStore.getState().togglePublicChatDocument(item);
+		return;
+	}
+
+	if (isUserFolder(item)) {
+		useUserFolderStore.getState().toggleChatFolder(item);
+		return;
+	}
+
+	if (isPublicFolder(item)) {
+		usePublicDocumentsStore.getState().togglePublicChatFolder(item);
+		return;
 	}
 }
