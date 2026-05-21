@@ -1,40 +1,15 @@
-import { useState, useEffect } from "react";
 import removeMarkdown from "remove-markdown";
 import type { WebCitationSource } from "../../../../api/chat/get-completion.ts";
 import { TruncatedSnippet } from "./truncated-snippet.tsx";
-import { useAuthStore } from "../../../../store/auth-store.ts";
+import { useFaviconStore } from "../../../../store/favicon-store.ts";
 
 const GLOBE_ICON_SRC = "/icons/web-search-icon.svg";
 
 export function WebCitationItem({ source }: { source: WebCitationSource }) {
 	const hostname = new URL(source.url).hostname;
-	const [iconSrc, setIconSrc] = useState(GLOBE_ICON_SRC);
-
-	useEffect(() => {
-		const token = useAuthStore.getState().session?.access_token;
-		let objectUrl: string | null = null;
-
-		if (token) {
-			fetch(
-				`${import.meta.env.VITE_API_URL}/favicon?domain=${encodeURIComponent(hostname)}`,
-				{
-					headers: { Authorization: `Bearer ${token}` },
-				},
-			)
-				.then((res) => (res.ok ? res.blob() : Promise.reject()))
-				.then((blob) => {
-					objectUrl = URL.createObjectURL(blob);
-					setIconSrc(objectUrl);
-				})
-				.catch(() => setIconSrc(GLOBE_ICON_SRC));
-		}
-
-		return () => {
-			if (objectUrl) {
-				URL.revokeObjectURL(objectUrl);
-			}
-		};
-	}, [hostname]);
+	const iconSrc =
+		useFaviconStore((state) => state.faviconByHostname[hostname]) ??
+		GLOBE_ICON_SRC;
 
 	const handleClick = () => {
 		window.open(source.url, "_blank", "noopener,noreferrer");

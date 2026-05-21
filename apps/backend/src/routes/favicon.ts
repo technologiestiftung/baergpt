@@ -17,6 +17,7 @@ favicon.get("/", async (c: Context) => {
 		);
 
 		if (!response.ok) {
+			captureError(new Error(`Failed to fetch favicon for domain: ${domain}`));
 			return c.json({ error: "Failed to fetch favicon" }, 502);
 		}
 

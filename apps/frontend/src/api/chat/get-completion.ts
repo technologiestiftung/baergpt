@@ -7,6 +7,7 @@ import { useFolderStore } from "../../store/folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
 import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
 import { useCitationsStore } from "../../store/use-citations-store.ts";
+import { useFaviconStore } from "../../store/favicon-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 import type { Span } from "@sentry/react";
 
@@ -43,6 +44,7 @@ export async function getCompletion(
 	const { getSelectedChatFolderIds } = useFolderStore.getState();
 	const { setStatus } = useInferenceLoadingStatusStore.getState();
 	const { ensureCached } = useCitationsStore.getState();
+	const { ensureFaviconsCached } = useFaviconStore.getState();
 
 	const { session } = useAuthStore.getState();
 	const { user } = useUserStore.getState();
@@ -177,6 +179,9 @@ export async function getCompletion(
 					citations: citations.length ? citations : null,
 					web_citations: webSources.length ? webSources : null,
 				});
+				if (webSources.length) {
+					ensureFaviconsCached(webSources.map((s) => new URL(s.url).hostname));
+				}
 			},
 			onFinish: () => {
 				setStatus("idle");
