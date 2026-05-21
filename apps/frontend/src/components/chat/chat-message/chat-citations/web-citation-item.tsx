@@ -11,18 +11,15 @@ export function WebCitationItem({ source }: { source: WebCitationSource }) {
 		useFaviconStore((state) => state.faviconByHostname[hostname]) ??
 		GLOBE_ICON_SRC;
 
-	const handleClick = () => {
-		window.open(source.url, "_blank", "noopener,noreferrer");
-	};
-
 	const date = source.age?.[1] ? `${source.age?.[1]} –` : "";
 	const textWithDate = `${date} ${source.snippet}`;
 
 	return (
-		<button
-			type="button"
+		<a
+			href={source.url}
+			target="_blank"
+			rel="noopener noreferrer"
 			className="group flex flex-col items-start p-3.5 hover:bg-hellblau-30 text-dunkelblau-200 cursor-pointer gap-2.5"
-			onClick={handleClick}
 		>
 			<div className="flex items-center gap-1 text-xs">
 				<img
@@ -40,6 +37,6 @@ export function WebCitationItem({ source }: { source: WebCitationSource }) {
 			<div className="relative flex text-sm leading-5 group-hover:underline h-10">
 				<TruncatedSnippet text={removeMarkdown(textWithDate)} lines={2} />
 			</div>
-		</button>
+		</a>
 	);
 }
