@@ -43,11 +43,11 @@ const loadChatFavicons = (chatId: number) => {
 	if (!selectedChat) {
 		return;
 	}
-	const hostnames = selectedChat.messages
+	const webCitationUrls = selectedChat.messages
 		.flatMap((message) => message.web_citations ?? [])
-		.map((wc) => new URL(wc.url).hostname);
-	if (hostnames.length > 0) {
-		void ensureFaviconsCached(hostnames);
+		.map(({ url }) => url);
+	if (webCitationUrls.length > 0) {
+		void ensureFaviconsCached(webCitationUrls);
 	}
 };
 

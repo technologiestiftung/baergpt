@@ -180,7 +180,7 @@ export async function getCompletion(
 					web_citations: webSources.length ? webSources : null,
 				});
 				if (webSources.length) {
-					ensureFaviconsCached(webSources.map((s) => new URL(s.url).hostname));
+					ensureFaviconsCached(webSources.map(({ url }) => url));
 				}
 			},
 			onFinish: () => {

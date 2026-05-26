@@ -1,24 +1,35 @@
 import { create } from "zustand";
 import { useAuthStore } from "./auth-store";
+import { captureError } from "../monitoring/capture-error";
 
 type FaviconStore = {
 	faviconByHostname: Record<string, string>;
-	ensureFaviconsCached: (hostnames: string[]) => Promise<void>;
+	ensureFaviconsCached: (urls: string[]) => Promise<void>;
 };
 
 export const useFaviconStore = create<FaviconStore>()((set, get) => ({
 	faviconByHostname: {},
 
-	async ensureFaviconsCached(hostnames) {
+	async ensureFaviconsCached(urls) {
 		const { faviconByHostname } = get();
 		const token = useAuthStore.getState().session?.access_token;
 		if (!token) {
 			return;
 		}
 
-		const missing = [...new Set(hostnames)].filter(
-			(h) => !faviconByHostname[h],
-		);
+		const missing = [
+			...new Set(
+				urls.flatMap((url) => {
+					try {
+						return [new URL(url).hostname];
+					} catch (error) {
+						captureError(error);
+						return [];
+					}
+				}),
+			),
+		].filter((h) => !faviconByHostname[h]);
+
 		if (missing.length === 0) {
 			return;
 		}
