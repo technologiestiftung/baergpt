@@ -183,29 +183,15 @@ export const TermsOfUsePage: React.FC = () => {
 			title: Content["termsOfUsePage.section5.sub2.title"],
 			content: (
 				<div className="flex flex-col gap-1">
-					<p>
-						<span className="font-semibold">
-							{Content["termsOfUsePage.section5.sub2.p1.title"]}
-						</span>
-						<span>{Content["termsOfUsePage.section5.sub2.p1"]}</span>
-					</p>
+					<p>{Content["termsOfUsePage.section5.sub2.p1"]}</p>
 					<p>{Content["termsOfUsePage.section5.sub2.p2"]}</p>
 					<ul className="list-disc pl-5">
-						<li>
-							<span className="font-semibold">
-								{Content["termsOfUsePage.section5.sub2.li1.start"]}
-							</span>
-							<span>{Content["termsOfUsePage.section5.sub2.li1.end"]}</span>
-						</li>
-						<li>
-							<span className="font-semibold">
-								{Content["termsOfUsePage.section5.sub2.li2.start"]}
-							</span>
-							<span>{Content["termsOfUsePage.section5.sub2.li2.end"]}</span>
-						</li>
+						<li>{Content["termsOfUsePage.section5.sub2.li1"]}</li>
+						<li>{Content["termsOfUsePage.section5.sub2.li2"]}</li>
 						<li>{Content["termsOfUsePage.section5.sub2.li3"]}</li>
+						<li>{Content["termsOfUsePage.section5.sub2.li4"]}</li>
+						<li>{Content["termsOfUsePage.section5.sub2.li5"]}</li>
 					</ul>
-					<p>{Content["termsOfUsePage.section5.sub2.p3"]}</p>
 				</div>
 			),
 		},
