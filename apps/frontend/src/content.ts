@@ -1151,8 +1151,6 @@ export const Content = {
 	"registerPage.privacyText.p1": "und",
 	"registerPage.termsOfUse.label": "Nutzungsbedingungen",
 	"registerPage.privacyText.p2": "zustimmen",
-	"registerPage.personalData.label":
-		"Ich versichere, keine personenbezogenen Daten zu bearbeiten.",
 	"registerPage.submitButton": "Registrieren",
 	"registerPage.loginPrompt": "Sie haben bereits einen Account?",
 	"registerPage.loginLink": "Jetzt einloggen",
@@ -1228,8 +1226,6 @@ export const Content = {
 	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.privacy.required.error":
 		"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
-	"form.validation.personalData.required.error":
-		"Bitte stimmen Sie zu, keine personenbezogenen Daten zu bearbeiten.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
 	"form.validation.userAlreadyRegistered.error":
