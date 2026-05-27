@@ -935,7 +935,7 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
-		"Move a document into the public folder Verwaltungswissen",
+		"Move a document into the public folder Verwaltungswissen should not be possible",
 		async ({ page }) => {
 			await page.goto("/");
 
@@ -1042,6 +1042,30 @@ test.describe("Documents", () => {
 			expect(uploadRequestTriggered).toBe(false);
 
 			page.off("request", onRequest);
+		},
+	);
+
+	testDesktopOnly(
+		"Navigating into a public folder should disable the multi-select",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const activateMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Löschen",
+			});
+			await activateMultiSelectButton.click();
+
+			const firstSelectItemCheckbox = page
+				.getByRole("img", { name: "Checkbox-icon (nicht ausgewä" })
+				.first();
+			await expect(firstSelectItemCheckbox).toBeVisible();
+
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await publicFolder.click();
+
+			await expect(firstSelectItemCheckbox).not.toBeVisible();
 		},
 	);
 });

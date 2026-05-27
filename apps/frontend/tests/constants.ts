@@ -13,6 +13,7 @@ export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@
 
 export const defaultDocumentName = "default_document.pdf";
 export const seedDefaultDocumentName = "BaerGPT-Handbuch.pdf";
+export const seedPublicDocumentName = "BaerGPT-Public.pdf";
 export const defaultDocumentPath = resolve(
 	__dirname,
 	`./fixtures/${defaultDocumentName}`,
