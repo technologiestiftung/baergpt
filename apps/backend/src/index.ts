@@ -8,6 +8,7 @@ import documents from "./routes/documents";
 import llms from "./routes/llms";
 import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
+import favicon from "./routes/favicon";
 import { captureError } from "./monitoring/capture-error";
 import { initQueues } from "./services/distributed-limiter";
 import { logMemory } from "./monitoring/memory-logger";
@@ -37,6 +38,7 @@ app.use("*", sentryTracing);
 
 // Route modules
 app.route("/documents", documents);
+app.route("/favicon", favicon);
 app.route("/llm", llms);
 app.route("/admin", admin);
 
