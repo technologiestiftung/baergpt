@@ -52,12 +52,14 @@ export const useFaviconStore = create<FaviconStore>()((set, get) => ({
 			}),
 		);
 
-		const merged = { ...faviconByHostname };
-		for (const result of results) {
-			if (result) {
-				merged[result.hostname] = result.url;
+		set((state) => {
+			const merged = { ...state.faviconByHostname };
+			for (const result of results) {
+				if (result) {
+					merged[result.hostname] = result.url;
+				}
 			}
-		}
-		set({ faviconByHostname: merged });
+			return { faviconByHostname: merged };
+		});
 	},
 }));
