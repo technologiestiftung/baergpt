@@ -222,9 +222,9 @@ export const Content = {
 	/* -------------------- Terms of use Page -------------------- */
 	"termsOfUsePage.h1": "Nutzungsbedingungen für BärGPT",
 	"termsOfUsePage.date.label": "Stand ",
-	"termsOfUsePage.date": "November 2025",
+	"termsOfUsePage.date": "Mai 2026",
 	"termsOfUsePage.version.label": "Version ",
-	"termsOfUsePage.version": "1.0",
+	"termsOfUsePage.version": "1.1",
 	"termsOfUsePage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"termsOfUsePage.section1.title": "Begriffsbestimmungen",
