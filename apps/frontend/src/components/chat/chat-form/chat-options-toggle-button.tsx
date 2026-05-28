@@ -19,6 +19,10 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	const isWebSearchAllowed =
 		import.meta.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true";
 
+	if (!isWebSearchAllowed && !isMcpParlaAllowed) {
+		return null;
+	}
+
 	const chatOptionsItems: {
 		label: string;
 		value: ChatOptionsDropdownValue;
