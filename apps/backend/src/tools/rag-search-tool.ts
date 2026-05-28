@@ -65,7 +65,7 @@ ${JSON.stringify(
 			}
 
 			const documentSummariesForContext =
-				allowedDocumentIds.length <= MAX_DOCUMENT_SUMMARIES_TO_INCLUDE
+				documentsSummaries.length <= MAX_DOCUMENT_SUMMARIES_TO_INCLUDE
 					? documentsSummaries
 					: [];
 
