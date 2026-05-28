@@ -24,7 +24,7 @@ type PublicDocumentsStore = {
 
 const baseKnowledgeFolder = {
 	id: -1,
-	name: Content["documentSection.publicFolders.baseKnowledge.label"],
+	name: Content["documentSection.publicFolder.baseKnowledge.label"],
 };
 
 export const usePublicDocumentsStore = create<PublicDocumentsStore>(

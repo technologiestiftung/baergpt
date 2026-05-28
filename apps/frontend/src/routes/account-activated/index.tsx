@@ -53,7 +53,7 @@ export function AccountActivated() {
 			try {
 				await logAccountActivation();
 				// Refresh the account activation timestamp in the store
-				await getAccountActivationTimestamp();
+				await getAccountActivationTimestamp(new AbortSignal());
 			} catch (activationError) {
 				useErrorStore.getState().handleError(activationError);
 			}

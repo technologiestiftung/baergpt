@@ -1,6 +1,6 @@
 import React, { type ReactNode, useState } from "react";
 import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
-import type { Document } from "../../common.ts";
+import type { UserDocument } from "../../common.ts";
 import { useDrop } from "react-dnd";
 import { AddToChatIcon } from "../primitives/icons/add-to-chat-icon.tsx";
 
@@ -19,7 +19,7 @@ export function DropZoneWrapperChat({
 		selectedUserChatDocuments,
 	} = useUserDocumentStore();
 
-	const handleAddDocumentToChat = (itemToAddToChat: Document) => {
+	const handleAddDocumentToChat = (itemToAddToChat: UserDocument) => {
 		if (
 			selectedUserChatDocuments.some((doc) => doc.id === itemToAddToChat.id)
 		) {
@@ -33,7 +33,7 @@ export function DropZoneWrapperChat({
 
 	const [, dropRef] = useDrop({
 		accept: "ITEM",
-		drop: async (draggedItem: Document) => {
+		drop: async (draggedItem: UserDocument) => {
 			handleAddDocumentToChat(draggedItem);
 			setIsHoveringOverChat(false);
 		},

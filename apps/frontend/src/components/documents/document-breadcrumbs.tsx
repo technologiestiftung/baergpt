@@ -45,7 +45,7 @@ export function DocumentBreadcrumbs() {
 					ref={drop}
 				>
 					{currentFolder && isPublicFolder(currentFolder)
-						? Content["documentSection.publicFolders.label"]
+						? Content["documentSection.publicFolder.label"]
 						: Content["documentsSection.mainFolder.label"]}
 				</button>
 				{currentFolder && (
