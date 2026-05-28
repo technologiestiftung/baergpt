@@ -222,9 +222,9 @@ export const Content = {
 	/* -------------------- Terms of use Page -------------------- */
 	"termsOfUsePage.h1": "Nutzungsbedingungen für BärGPT",
 	"termsOfUsePage.date.label": "Stand ",
-	"termsOfUsePage.date": "November 2025",
+	"termsOfUsePage.date": "Mai 2026",
 	"termsOfUsePage.version.label": "Version ",
-	"termsOfUsePage.version": "1.0",
+	"termsOfUsePage.version": "1.1",
 	"termsOfUsePage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"termsOfUsePage.section1.title": "Begriffsbestimmungen",
@@ -258,7 +258,7 @@ export const Content = {
 	"termsOfUsePage.section1.li9.title":
 		"„Personenbezogene Daten“ / „Daten mit hohem Schutzbedarf“",
 	"termsOfUsePage.section1.li9.description":
-		" — die in den Datenschutzhinweisen näher beschriebenen Kategorien; derzeit ist die Verarbeitung personenbezogener Daten in BärGPT nicht gestattet.",
+		" — die in den Datenschutzhinweisen näher beschriebenen Kategorien.",
 	//Section 2
 	"termsOfUsePage.section2.title": "Geltungsbereich und Vertragsgegenstand",
 	//2.1
@@ -369,26 +369,26 @@ export const Content = {
 	"termsOfUsePage.section5.sub1.title": "Datenverarbeitung",
 	"termsOfUsePage.section5.sub1.p1.start":
 		"Für die Verarbeitung personenbezogener Daten gelten die separaten Datenschutzhinweise von BärGPT, die unter ",
-	"termsOfUsePage.section5.sub1.p1.link": "https://www.baergpt.berlin",
+	"termsOfUsePage.section5.sub1.p1.link":
+		"https://www.baergpt.berlin/privacy-policy/",
 	"termsOfUsePage.section5.sub1.p1.end":
 		" abrufbar sind. Diese sind Bestandteil dieser Nutzungsbedingungen.",
 	//5.2
 	"termsOfUsePage.section5.sub2.number": "5.2",
-	"termsOfUsePage.section5.sub2.title": "Verbot personenbezogener Daten",
-	"termsOfUsePage.section5.sub2.p1.title": "Wichtiger Hinweis: ",
+	"termsOfUsePage.section5.sub2.title": "Verarbeitung personenbezogener Daten",
 	"termsOfUsePage.section5.sub2.p1":
-		"Zum aktuellen Zeitpunkt (Stand: November 2025) ist die Verarbeitung von personenbezogenen Daten mit BärGPT noch nicht gestattet, da die Rechtsgrundlage hierfür noch nicht vorliegt.",
-	"termsOfUsePage.section5.sub2.p2": "Die Nutzenden verpflichten sich: ",
-	"termsOfUsePage.section5.sub2.li1.start": "Keine personenbezogenen Daten ",
-	"termsOfUsePage.section5.sub2.li1.end":
-		"in BärGPT einzugeben oder hochzuladen.",
-	"termsOfUsePage.section5.sub2.li2.start":
-		"Keine Daten mit hohem Schutzbedarf ",
-	"termsOfUsePage.section5.sub2.li2.end": "zu verarbeiten",
+		"Mit dem Inkrafttreten des §16a EGovG Berlin ist die Verarbeitung personenbezogener Daten in BärGPT nun unter bestimmten Voraussetzungen gestattet.",
+	"termsOfUsePage.section5.sub2.p2": "Die Nutzenden verpflichten sich:",
+	"termsOfUsePage.section5.sub2.li1":
+		"Personenbezogene Daten nur im Rahmen der eigenen Verwaltungsaufgabe und soweit erforderlich einzugeben.",
+	"termsOfUsePage.section5.sub2.li2":
+		"Keine personenbezogenen Daten zu verarbeiten, für die keine bestehende Verarbeitungsbefugnis vorliegen. §16a schafft keine neuen Befugnisse.",
 	"termsOfUsePage.section5.sub2.li3":
-		"Bei Unklarheit über die Klassifizierung von Daten vorab Rücksprache mit der zuständigen Datenschutzstelle zu halten",
-	"termsOfUsePage.section5.sub2.p3":
-		"Eine Aktualisierung des eGov-Gesetzes für Berlin, die die Verarbeitung personenbezogener Daten erlauben wird, ist derzeit in rechtlicher Prüfung und soll voraussichtlich Anfang 2026 in Kraft treten.",
+		"Sicherzustellen, dass die eingegebenen Daten nicht über das zur Aufgabenerfüllung notwendige Maß hinausgehen (Datensparsamkeit).",
+	"termsOfUsePage.section5.sub2.li4":
+		"Die Ausgaben von BärGPT eigenständig auf ihre Richtigkeit zu überprüfen.",
+	"termsOfUsePage.section5.sub2.li5":
+		"Bei Unklarheit über die Zulässigkeit der Verarbeitung bestimmter Daten vorab Rücksprache mit der zuständigen Datenschutzstelle zu halten.",
 	//5.3
 	"termsOfUsePage.section5.sub3.number": "5.3",
 	"termsOfUsePage.section5.sub3.title": "Löschpflichten",
@@ -611,12 +611,10 @@ export const Content = {
 	"termsOfUsePage.consent.li3":
 		"Dass Sie zur Nutzung von BärGPT berechtigt sind (Beschäftigte/r der Berliner Verwaltung)",
 	"termsOfUsePage.consent.li4":
-		"Dass Sie sich verpflichten, keine personenbezogenen Daten oder Daten mit hohem Schutzbedarf zu verarbeiten (bis zur Inkraftsetzung der entsprechenden Rechtsgrundlage)",
-	"termsOfUsePage.consent.li5":
 		"Dass Sie die Datenschutzhinweise zur Kenntnis genommen haben",
-	"termsOfUsePage.consent.li6":
+	"termsOfUsePage.consent.li5":
 		"Dass Sie Ihre Zugangsdaten nicht an Dritte weitergeben werden",
-	"termsOfUsePage.consent.li7":
+	"termsOfUsePage.consent.li6":
 		"Dass Sie die Anwendung ausschließlich im Rahmen Ihrer beruflichen Tätigkeit nutzen werden",
 	"termsOfUsePage.contact.organisation": "Technologiestiftung Berlin",
 	"termsOfUsePage.contact.organisation.1": "CityLAB Berlin",
@@ -1151,8 +1149,6 @@ export const Content = {
 	"registerPage.privacyText.p1": "und",
 	"registerPage.termsOfUse.label": "Nutzungsbedingungen",
 	"registerPage.privacyText.p2": "zustimmen",
-	"registerPage.personalData.label":
-		"Ich versichere, keine personenbezogenen Daten zu bearbeiten.",
 	"registerPage.submitButton": "Registrieren",
 	"registerPage.loginPrompt": "Sie haben bereits einen Account?",
 	"registerPage.loginLink": "Jetzt einloggen",
@@ -1228,8 +1224,6 @@ export const Content = {
 	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.privacy.required.error":
 		"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
-	"form.validation.personalData.required.error":
-		"Bitte stimmen Sie zu, keine personenbezogenen Daten zu bearbeiten.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
 	"form.validation.userAlreadyRegistered.error":

@@ -314,7 +314,4 @@ export const consentListItems = [
 	{
 		item: Content["termsOfUsePage.consent.li6"],
 	},
-	{
-		item: Content["termsOfUsePage.consent.li7"],
-	},
 ];
