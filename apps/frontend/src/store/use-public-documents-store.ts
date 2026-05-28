@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import type { PublicDocument, PublicFolder } from "../common";
+import { EXTERNAL_TOOL_PRIVACY_CONFIG } from "../common.ts";
 import { getPublicDocuments as getPublicDocumentsFromDb } from "../api/documents/get-public-documents";
 import Content from "../content.ts";
+import { useChatsStore } from "./use-chats-store.ts";
 
 type PublicDocumentsStore = {
 	publicDocuments: PublicDocument[];
@@ -41,6 +43,15 @@ export const usePublicDocumentsStore = create<PublicDocumentsStore>(
 		selectedPublicChatDocuments: [],
 
 		selectPublicChatDocument: (publicDocument) => {
+			const { selectedChatOptions } = useChatsStore.getState();
+			const activeExternalTool = selectedChatOptions.find(
+				(option) => EXTERNAL_TOOL_PRIVACY_CONFIG[option],
+			);
+			if (activeExternalTool) {
+				useChatsStore.getState().toggleChatOption(activeExternalTool);
+				useChatsStore.getState().setExternalToolInfoMessage(activeExternalTool);
+			}
+
 			set(({ selectedPublicChatDocuments }) => ({
 				selectedPublicChatDocuments: [
 					...selectedPublicChatDocuments,

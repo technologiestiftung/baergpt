@@ -1,7 +1,24 @@
 import React from "react";
 import Content from "../../../content.ts";
+import type { ChatOption } from "../../../common.ts";
+import { EXTERNAL_TOOL_PRIVACY_CONFIG } from "../../../common.ts";
 
-export const ChatInfoMessage: React.FC = () => {
+export const ChatInfoMessage: React.FC<{ tool: ChatOption }> = ({ tool }) => {
+	const config = EXTERNAL_TOOL_PRIVACY_CONFIG[tool];
+	if (!config) {
+		return null;
+	}
+
+	const { displayName } = config;
+	const title = Content["chat.infoText.deactivated.title"].replace(
+		"{name}",
+		displayName,
+	);
+	const body = Content["chat.infoText.deactivated.body"].replace(
+		/\{name\}/g,
+		displayName,
+	);
+
 	return (
 		<div
 			role="alert"
@@ -13,13 +30,9 @@ export const ChatInfoMessage: React.FC = () => {
 					alt={Content["chat.infoText.imgAlt"]}
 					className="w-4 h-4"
 				/>
-				<h3 className="text-sm leading-5 font-semibold">
-					{Content["chat.infoText.title"]}
-				</h3>
+				<h3 className="text-sm leading-5 font-semibold">{title}</h3>
 			</span>
-			<p className="text-sm leading-5 font-normal">
-				{Content["chat.infoText.p1"]}
-			</p>
+			<p className="text-sm leading-5 font-normal">{body}</p>
 		</div>
 	);
 };

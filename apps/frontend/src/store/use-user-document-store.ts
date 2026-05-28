@@ -6,6 +6,7 @@ import { updateDocumentFolder } from "../api/documents/update-document-folder";
 import { hideDefaultDocument } from "../api/documents/hide-default-document";
 import { getHiddenDefaultDocumentIds } from "../api/documents/get-hidden-default-document-ids";
 import { useChatsStore } from "./use-chats-store.ts";
+import { EXTERNAL_TOOL_PRIVACY_CONFIG } from "../common.ts";
 
 interface UserDocumentStore {
 	userDocuments: UserDocument[];
@@ -145,9 +146,12 @@ export const useUserDocumentStore = create<UserDocumentStore>((set, get) => ({
 		];
 
 		const { selectedChatOptions } = useChatsStore.getState();
-		if (selectedChatOptions.includes("webSearch")) {
-			useChatsStore.getState().toggleChatOption("webSearch");
-			useChatsStore.getState().setIsWebSearchRemovalInfoMessageShown(true);
+		const activeExternalTool = selectedChatOptions.find(
+			(option) => EXTERNAL_TOOL_PRIVACY_CONFIG[option],
+		);
+		if (activeExternalTool) {
+			useChatsStore.getState().toggleChatOption(activeExternalTool);
+			useChatsStore.getState().setExternalToolInfoMessage(activeExternalTool);
 		}
 
 		set(() => ({

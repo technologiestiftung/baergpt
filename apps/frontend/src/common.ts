@@ -16,6 +16,18 @@ export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 export type McpOptions = "parla";
 export type ChatOption = "webSearch" | McpOptions;
 
+export const EXTERNAL_TOOL_PRIVACY_CONFIG: Partial<
+	Record<
+		ChatOption,
+		{
+			displayName: string;
+		}
+	>
+> = {
+	webSearch: { displayName: "Websuche" },
+	parla: { displayName: "Parla" },
+};
+
 export type ChatOptionsDropdownValue = ChatOption | "mcpServer";
 
 export type LlmModel = "mistral-small" | "mistral-large";

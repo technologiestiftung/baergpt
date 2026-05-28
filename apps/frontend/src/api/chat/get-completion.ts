@@ -2,6 +2,7 @@ import { useChatsStore } from "../../store/use-chats-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import type { ChatOption, ChatWithMessages } from "../../common.ts";
+import { EXTERNAL_TOOL_PRIVACY_CONFIG } from "../../common.ts";
 import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
 import { useUserFolderStore } from "../../store/use-user-folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
@@ -81,6 +82,10 @@ export async function getCompletion(
 
 		setStatus("waiting-for-response");
 
+		const hasActiveExternalTool = selectedChatOptions.some(
+			(option) => EXTERNAL_TOOL_PRIVACY_CONFIG[option],
+		);
+
 		const response: Response = await fetch(
 			`${import.meta.env.VITE_API_URL}/llm/just-chatting`,
 			{
@@ -92,8 +97,8 @@ export async function getCompletion(
 					user_id: session?.user.id,
 					chat_id: currentChat.id ?? undefined,
 					search_type: "all_private",
-					allowed_document_ids: allowedDocumentIds,
-					allowed_folder_ids: selectedFolderIds,
+					allowed_document_ids: hasActiveExternalTool ? [] : allowedDocumentIds,
+					allowed_folder_ids: hasActiveExternalTool ? [] : selectedFolderIds,
 					is_addressed_formal: user?.is_addressed_formal,
 					active_tools: selectedChatOptions.flatMap(
 						(option) => activeToolsDict[option] ?? [],

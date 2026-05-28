@@ -872,10 +872,10 @@ export const Content = {
 	"chat.errorText.helpPage.linkText": "Hilfecenter.",
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
-	"chat.infoText.title": "Websuche wurde automatisch deaktiviert.",
-	"chat.infoText.p1":
-		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Websuche deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Websuche wieder zu aktivieren, klicken Sie auf +.",
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
+	"chat.infoText.deactivated.title": "{name} wurde automatisch deaktiviert.",
+	"chat.infoText.deactivated.body":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Funktion {name} deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Funktion {name} wieder zu aktivieren, klicken Sie auf +.",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
 	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
@@ -954,8 +954,8 @@ export const Content = {
 	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
 
-	"chat.webSearchWarningBanner.label":
-		"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+	"chat.externalToolWarningBanner.label":
+		"{name} aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",

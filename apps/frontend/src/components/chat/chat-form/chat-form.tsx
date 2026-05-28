@@ -21,7 +21,7 @@ import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
-import { WebSearchWarningBanner } from "./web-search-warning-banner.tsx";
+import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
 const { setHasUserScrolledUp } = useChatScrollingStore.getState();
@@ -36,7 +36,7 @@ export const ChatForm: React.FC = () => {
 	const { selectedUserChatDocuments } = useUserDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
 		useChatsStore();
-	const { setIsWebSearchRemovalInfoMessageShown } = useChatsStore.getState();
+	const { setExternalToolInfoMessage } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -82,7 +82,7 @@ export const ChatForm: React.FC = () => {
 		// Clear any previous errors
 		clearError();
 
-		setIsWebSearchRemovalInfoMessageShown(false);
+		setExternalToolInfoMessage(null);
 
 		// Clear textarea on submit
 		if (textarea) {
@@ -139,7 +139,7 @@ export const ChatForm: React.FC = () => {
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
-			<WebSearchWarningBanner />
+			<ExternalToolWarningBanner />
 
 			<div className="flex flex-col justify-between rounded-b-3px">
 				<div

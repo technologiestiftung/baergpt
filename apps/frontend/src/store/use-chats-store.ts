@@ -5,6 +5,7 @@ import type {
 	ChatOption,
 	LlmModel,
 } from "../common";
+import { EXTERNAL_TOOL_PRIVACY_CONFIG } from "../common.ts";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
 import { getChats as getChatsFromDb } from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";
@@ -53,8 +54,8 @@ interface ChatStore {
 		citations: number[] | null;
 		web_citations: WebCitationSource[] | null;
 	}): void;
-	isWebSearchRemovalInfoMessageShown: boolean;
-	setIsWebSearchRemovalInfoMessageShown(isShown: boolean): void;
+	externalToolInfoMessage: ChatOption | null;
+	setExternalToolInfoMessage(tool: ChatOption | null): void;
 }
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
@@ -64,7 +65,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	totalChatCount: null,
 	selectedChatOptions: [],
 	selectedLlmModel: "mistral-small",
-	isWebSearchRemovalInfoMessageShown: false,
+	externalToolInfoMessage: null,
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
@@ -83,7 +84,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				),
 			});
 		} else {
-			if (option === "webSearch") {
+			if (EXTERNAL_TOOL_PRIVACY_CONFIG[option]) {
 				const { selectedUserChatDocuments, unselectUserChatDocument } =
 					useUserDocumentStore.getState();
 				selectedUserChatDocuments.forEach((document) =>
@@ -291,11 +292,12 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		}, 300);
 	},
 
-	setIsWebSearchRemovalInfoMessageShown(isShown: boolean) {
-		set({ isWebSearchRemovalInfoMessageShown: isShown });
-
-		setTimeout(() => {
-			set({ isWebSearchRemovalInfoMessageShown: false });
-		}, 20_000);
+	setExternalToolInfoMessage(tool: ChatOption | null) {
+		set({ externalToolInfoMessage: tool });
+		if (tool !== null) {
+			setTimeout(() => {
+				set({ externalToolInfoMessage: null });
+			}, 20_000);
+		}
 	},
 }));
