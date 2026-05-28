@@ -16,6 +16,8 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const isMcpParlaAllowed =
 		import.meta.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true";
+	const isWebSearchAllowed =
+		import.meta.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true";
 
 	const chatOptionsItems: {
 		label: string;
@@ -43,7 +45,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 			value: "webSearch",
 			description: Content["chat.options.li3.description"],
 			ariaLabel: Content["chat.options.li3.ariaLabel"],
-			isEnabled: true,
+			isEnabled: isWebSearchAllowed,
 		},
 	];
 
