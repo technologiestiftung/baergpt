@@ -18,7 +18,22 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 	selectedPreviewDocumentDownloadUrl: null,
 
 	selectPreviewDocument: async (document: Document | null) => {
-		set({ selectedPreviewDocument: document });
+		const {
+			selectedPreviewDocumentDownloadUrl,
+			selectedPreviewDocumentPreviewUrl,
+		} = usePreviewDocumentStore.getState();
+		if (selectedPreviewDocumentDownloadUrl) {
+			URL.revokeObjectURL(selectedPreviewDocumentDownloadUrl);
+		}
+		if (selectedPreviewDocumentPreviewUrl) {
+			URL.revokeObjectURL(selectedPreviewDocumentPreviewUrl);
+		}
+
+		set({
+			selectedPreviewDocument: document,
+			selectedPreviewDocumentPreviewUrl: null,
+			selectedPreviewDocumentDownloadUrl: null,
+		});
 
 		if (!document) {
 			return;
