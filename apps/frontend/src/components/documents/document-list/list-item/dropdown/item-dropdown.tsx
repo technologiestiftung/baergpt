@@ -11,6 +11,7 @@ import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-i
 import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
 import { useIsMobile } from "../../../../../hooks/use-mobile";
 import { isPublicFolder } from "../utils/is-public-folder.ts";
+import { isPublicDocument } from "../utils/is-public-document.ts";
 
 interface ItemDropdownProps {
 	item: Document | UserFolder | PublicFolder;
@@ -79,7 +80,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const handleDeleteItem = (
 		itemToDelete: Document | UserFolder | PublicFolder,
 	) => {
-		if (isPublicFolder(itemToDelete)) {
+		if (isPublicFolder(itemToDelete) || isPublicDocument(itemToDelete)) {
 			return;
 		}
 

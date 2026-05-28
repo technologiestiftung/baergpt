@@ -1,7 +1,6 @@
 import type { JSX } from "react";
 import type { ChatOption } from "../../../common";
 import Content from "../../../content";
-import { BaseKnowledgeIcon } from "../icons/base-knowledge-icon.tsx";
 import { WebSearchIcon } from "../icons/web-search-icon.tsx";
 import { ParlaIcon } from "../icons/parla-icon.tsx";
 
@@ -11,7 +10,6 @@ interface ContextPillProps {
 }
 
 const icons: Record<ChatOption, JSX.Element> = {
-	baseKnowledge: <BaseKnowledgeIcon />,
 	webSearch: <WebSearchIcon />,
 	parla: <ParlaIcon />,
 };

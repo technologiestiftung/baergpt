@@ -16,7 +16,7 @@ export function PublicFolders() {
 	return (
 		<>
 			<h2 className="md:mt-9 pl-0.5 leading-6 text-dunkelblau-100">
-				{Content["documentSection.publicFolders.label"]}
+				{Content["documentSection.publicFolder.label"]}
 			</h2>
 			<ul
 				className={`mt-2 flex items-center w-full hover:bg-hellblau-55 group`}

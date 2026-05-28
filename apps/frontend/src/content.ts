@@ -740,8 +740,8 @@ export const Content = {
 
 	/* -------------------- DocumentsSection -------------------- */
 	"documentsSection.title": "Dateien",
-	"documentSection.publicFolders.label": "Bibliothek",
-	"documentSection.publicFolders.baseKnowledge.label": "Verwaltungswissen",
+	"documentSection.publicFolder.label": "Bibliothek",
+	"documentSection.publicFolder.baseKnowledge.label": "Verwaltungswissen",
 	"documentsSection.mainFolder.label": "Meine Dateien",
 	"documentsSection.selectFiles": "Dateien auswählen",
 	"documentsSection.showFiles.ariaLabel": "Anzeigen der Dateien",
