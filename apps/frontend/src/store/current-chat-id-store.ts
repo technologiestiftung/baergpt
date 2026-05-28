@@ -6,6 +6,7 @@ import { useFaviconStore } from "./favicon-store.ts";
 import { useChatsStore } from "./use-chats-store.ts";
 import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-store.ts";
 import { useChatStreamingStore } from "./use-chat-streaming-store.ts";
+import { usePreviewDocumentStore } from "./use-preview-document-store.ts";
 
 interface CurrentChatIdStore {
 	currentChatId: number | null;
@@ -52,7 +53,7 @@ const loadChatFavicons = (chatId: number) => {
 };
 
 const clearPreviewDocument = () => {
-	const { unselectPreviewDocument } = useDocumentStore.getState();
+	const { unselectPreviewDocument } = usePreviewDocumentStore.getState();
 	unselectPreviewDocument();
 };
 
