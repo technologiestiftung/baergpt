@@ -913,14 +913,15 @@ export const Content = {
 	// Chat llm model dropdown
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
 	"chat.llmModel.dropdown.li1.label": "Schnell",
-	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small (schnell)",
+	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small 4 (schnell)",
 	"chat.llmModel.dropdown.li1.description": "Gut für alltägliche Aufgaben",
-	"chat.llmModel.dropdown.li1.ariaLabel": "Mistral Small (schnell) auswählen",
+	"chat.llmModel.dropdown.li1.ariaLabel": "Mistral Small 4 (schnell) auswählen",
 	"chat.llmModel.dropdown.li2.label": "Präzise",
-	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Large (präzise)",
+	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Medium 3.5 (präzise)",
 	"chat.llmModel.dropdown.li2.description":
 		"Leistungsstark für komplexe Aufgaben",
-	"chat.llmModel.dropdown.li2.ariaLabel": "Mistral Large (präzise) auswählen",
+	"chat.llmModel.dropdown.li2.ariaLabel":
+		"Mistral Medium 3.5 (präzise) auswählen",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
