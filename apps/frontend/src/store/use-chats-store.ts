@@ -276,6 +276,6 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		setTimeout(() => {
 			set({ isWebSearchRemovalInfoMessageShown: false });
-		}, 12000);
+		}, 20_000);
 	},
 }));
