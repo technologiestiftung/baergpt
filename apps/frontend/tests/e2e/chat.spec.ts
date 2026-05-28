@@ -714,6 +714,13 @@ test.describe("Chat", () => {
 	);
 
 	testDesktopOnly("Toggle Parla Berlin MCP", async ({ page }) => {
+		const isMcpParlaAllowed =
+			process.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true";
+
+		if (!isMcpParlaAllowed) {
+			testDesktopOnly.skip();
+		}
+
 		await page.goto("/");
 
 		// Open the chat options dropdown ("Wissen erweitern")
@@ -725,16 +732,6 @@ test.describe("Chat", () => {
 
 		const mcpServerOption = page.getByRole("option", {
 			name: "MCP Server auswählen",
-		});
-
-		// Skip when MCP is disabled via VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED
-		await test.step("Skip when MCP Server option is not available (feature flag off)", async () => {
-			if (!(await mcpServerOption.isVisible())) {
-				test.skip(
-					true,
-					"MCP Server option not available (VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED is not enabled)",
-				);
-			}
 		});
 
 		// Open the MCP server selection dialog
