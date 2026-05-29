@@ -5,7 +5,6 @@ import { config } from "../../config";
 import { sign } from "hono/jwt";
 import { PDFDocument } from "pdf-lib";
 import { serviceRoleDbClient } from "../../supabase";
-import { initQueues } from "../../services/distributed-limiter";
 
 let validToken: string;
 
@@ -212,9 +211,6 @@ const deleteTestUser = async () => {
 
 describe("Integration Tests for Routes", () => {
 	beforeAll(async () => {
-		// Initialize queues for the test process
-		await initQueues();
-
 		const email = "test@local.berlin.de";
 		await createTestUser(OWNER_USER_ID, email);
 		// Generate JWT token

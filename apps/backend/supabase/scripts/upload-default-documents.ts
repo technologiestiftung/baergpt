@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -6,13 +7,13 @@ import { serviceRoleDbClient } from "../../src/supabase";
 import { GenerationService } from "../../src/services/generation-service";
 import { EmbeddingService } from "../../src/services/embedding-service";
 import type { Document } from "../../src/types/common";
-import { initQueues } from "../../src/services/distributed-limiter";
 import { config } from "../../src/config";
 
 const sourceType = "default_document";
 const bucketName = "public_documents";
 const defaultDocumentsDir = resolve(process.cwd(), "./src/default_documents");
 
+// eslint-disable-next-line consistent-return
 async function getPdfFiles(): Promise<string[]> {
 	try {
 		const files = await readdir(defaultDocumentsDir);
@@ -86,7 +87,7 @@ async function processDocument(
 
 	// Store in access group folder
 	const sourceUrl = `${accessGroupId}/${fileName}`;
-	// eslint-disable-next-line no-console
+
 	console.log(`Uploading ${fileName} to ${bucketName}/${sourceUrl}...`);
 	const { error: uploadError } = await serviceRoleDbClient.storage
 		.from(bucketName)
@@ -97,7 +98,6 @@ async function processDocument(
 		process.exit(1);
 	}
 
-	// eslint-disable-next-line no-console
 	console.log(`File uploaded successfully to ${bucketName}/${sourceUrl}`);
 
 	const dbService = new PrivilegedDbService(serviceRoleDbClient);
@@ -155,7 +155,7 @@ async function processDocument(
 		}
 		process.exit(1);
 	}
-	// eslint-disable-next-line no-console
+
 	console.log(
 		`Default document ${fileName} uploaded and processed successfully!`,
 	);
@@ -166,14 +166,12 @@ async function uploadDefaultDocument() {
 		const pdfFiles = await getPdfFiles();
 
 		if (pdfFiles.length === 0) {
-			// eslint-disable-next-line no-console
 			console.log(
 				"No PDF files found in src/default_documents/ directory. Exiting.",
 			);
 			return;
 		}
 
-		// eslint-disable-next-line no-console
 		console.log(
 			`Found ${pdfFiles.length} PDF file(s) to process: ${pdfFiles.join(", ")}`,
 		);
@@ -181,16 +179,13 @@ async function uploadDefaultDocument() {
 		// Get access group ID once for all documents
 		const accessGroupId = await getDefaultAccessGroupId();
 
-		await initQueues();
 		// Process each PDF file
 		for (const fileName of pdfFiles) {
-			// eslint-disable-next-line no-console
 			console.log(`\n=== Processing ${fileName} ===`);
 
 			// Check if already processed
 			const isProcessed = await checkExistingDocument(fileName, accessGroupId);
 			if (isProcessed) {
-				// eslint-disable-next-line no-console
 				console.log(
 					`Default document ${fileName} already exists and is processed. Skipping.`,
 				);
@@ -201,7 +196,6 @@ async function uploadDefaultDocument() {
 			await processDocument(fileName, accessGroupId);
 		}
 
-		// eslint-disable-next-line no-console
 		console.log("\n=== All default documents processed successfully! ===");
 		process.exit(0);
 	} catch (error) {
