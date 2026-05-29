@@ -10,7 +10,6 @@ import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
 import favicon from "./routes/favicon";
 import { captureError } from "./monitoring/capture-error";
-import { initQueues } from "./services/distributed-limiter";
 import { logMemory } from "./monitoring/memory-logger";
 
 verifyConfig();
@@ -51,7 +50,6 @@ app.onError((error, c) => {
 if (require.main === module) {
 	(async () => {
 		try {
-			await initQueues();
 			serve({
 				fetch: app.fetch,
 				port: config.port,
@@ -65,8 +63,6 @@ if (require.main === module) {
 			process.on("SIGTERM", () => clearInterval(memoryLogInterval));
 		} catch (error) {
 			captureError(error);
-
-			console.error("Failed to initialize queue system:", error);
 			process.exit(1);
 		}
 	})();

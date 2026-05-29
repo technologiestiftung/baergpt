@@ -5,7 +5,6 @@ import { config } from "../config";
 import { GenerationService } from "../services/generation-service";
 import { EmbeddingService } from "../services/embedding-service";
 import type { Document } from "../types/common";
-import { initQueues } from "../services/distributed-limiter";
 import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import { serviceRoleDbClient } from "../supabase";
 
@@ -90,8 +89,6 @@ describe("Default Document Integration Tests", () => {
 
 		// Run cleanup before all tests
 		await cleanupDefaultDocuments(accessGroupId);
-
-		await initQueues();
 	});
 
 	afterAll(async () => {

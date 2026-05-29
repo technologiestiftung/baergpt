@@ -1,7 +1,7 @@
 import type { Document, ExtractionResult, ParsedPage } from "../types/common";
 import { config } from "../config";
 import { Mistral } from "@mistralai/mistralai";
-import { createBufferView, getHash, resilientCall } from "../utils";
+import { createBufferView, getHash } from "../utils";
 import { countTokens } from "./token-utils";
 import WordExtractor from "word-extractor";
 import mammoth from "mammoth";
@@ -360,29 +360,21 @@ class MistralOCRService {
 
 		const buffer = createBufferView(pdfBytes);
 
-		const uploaded_pdf = await resilientCall(
-			async () =>
-				await client.files.upload({
-					file: {
-						fileName: ocrTempFileName,
-						content: buffer,
-					},
-					purpose: "ocr",
-				}),
-			{ queueType: "llm" },
-		);
+		const uploaded_pdf = await client.files.upload({
+			file: {
+				fileName: ocrTempFileName,
+				content: buffer,
+			},
+			purpose: "ocr",
+		});
 
-		const ocrResponse = await resilientCall(
-			async () =>
-				await client.ocr.process({
-					model: "mistral-ocr-latest",
-					document: {
-						type: "file",
-						fileId: uploaded_pdf.id,
-					},
-				}),
-			{ queueType: "llm" },
-		);
+		const ocrResponse = await client.ocr.process({
+			model: "mistral-ocr-latest",
+			document: {
+				type: "file",
+				fileId: uploaded_pdf.id,
+			},
+		});
 
 		if (!ocrResponse.pages) {
 			throw new Error("No pages found in OCR response");

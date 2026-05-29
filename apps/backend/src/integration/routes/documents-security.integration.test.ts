@@ -4,7 +4,6 @@ import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
 import { serviceRoleDbClient } from "../../supabase";
-import { initQueues } from "../../services/distributed-limiter";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -55,8 +54,6 @@ describe("Document Process Security Tests", () => {
 
 		userAToken = userASession.data.session?.access_token || "";
 		userBToken = userBSession.data.session?.access_token || "";
-
-		await initQueues();
 	}, 30_000);
 
 	afterAll(async () => {

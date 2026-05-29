@@ -18,7 +18,6 @@ import {
 	defaultDocumentPath,
 } from "../fixtures/constants";
 import { readFileSync } from "node:fs";
-import { initQueues } from "../../services/distributed-limiter";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -42,8 +41,6 @@ describe("Documents Route Integration", () => {
 			password: givenUserPassword,
 			email_confirm: true,
 		});
-
-		await initQueues();
 	}, 20_000);
 
 	afterAll(async () => {

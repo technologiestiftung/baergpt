@@ -2,7 +2,6 @@ import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
-import { resilientCall } from "../utils";
 
 export type WebSearchResult = {
 	grounding: {
@@ -31,21 +30,16 @@ export const webSearchTool = tool({
 	inputSchema: z.object({ query: z.string() }),
 	execute: async ({ query }) => {
 		try {
-			const res = await resilientCall(
-				async () => {
-					const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+			const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
-					return fetch(
-						`${config.braveSearchApiUrl}?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
-						{
-							headers: {
-								"X-Subscription-Token": config.braveSearchApiKey,
-							},
-							signal,
-						},
-					);
+			const res = await fetch(
+				`${config.braveSearchApiUrl}?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
+				{
+					headers: {
+						"X-Subscription-Token": config.braveSearchApiKey,
+					},
+					signal,
 				},
-				{ queueType: "webSearch" },
 			);
 
 			if (!res.ok) {
