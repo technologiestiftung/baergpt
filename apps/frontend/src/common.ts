@@ -14,7 +14,7 @@ export type NewChatMessage = Pick<
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
 export type McpOptions = "parla";
-export type ChatOption = "baseKnowledge" | "webSearch" | McpOptions;
+export type ChatOption = "webSearch" | McpOptions;
 
 export type ChatOptionsDropdownValue = ChatOption | "mcpServer";
 
@@ -39,11 +39,16 @@ export type ChatMessage = {
 	type: string;
 };
 
-export type DocumentFolder = {
+export type UserFolder = {
 	created_at: string;
 	id: number;
 	name: string;
 	user_id: string;
+};
+
+export type PublicFolder = {
+	id: number;
+	name: string;
 };
 
 export type SourceType =
@@ -51,7 +56,9 @@ export type SourceType =
 	| "personal_document"
 	| "default_document";
 
-export type Document = {
+export type Document = UserDocument | PublicDocument;
+
+export type UserDocument = {
 	created_at: string | null;
 	file_checksum: string | null;
 	file_name: string | null;
@@ -61,12 +68,22 @@ export type Document = {
 	num_pages: number | null;
 	owned_by_user_id: string | null;
 	processing_finished_at: string | null;
-	source_type: SourceType;
+	source_type: "personal_document" | "default_document";
 	source_url: string;
 };
 
-export type DocumentWithUrl = Document & {
-	previewUrl?: string;
+export type PublicDocument = {
+	created_at: string | null;
+	file_checksum: string | null;
+	file_name: string | null;
+	file_size: number | null;
+	folder_id: number | null;
+	id: number;
+	num_pages: number | null;
+	owned_by_user_id: string | null;
+	processing_finished_at: string | null;
+	source_type: "public_document";
+	source_url: string;
 };
 
 export type User = {

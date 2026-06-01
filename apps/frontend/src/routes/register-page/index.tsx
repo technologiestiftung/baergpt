@@ -18,7 +18,6 @@ export function RegisterPage() {
 	const { error } = useAuthErrorStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
-	const [hasAcceptedPersonalData, setHasAcceptedPersonalData] = useState(false);
 	const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -229,22 +228,6 @@ export function RegisterPage() {
 									<span data-testid={`label-has-accepted-privacy-checkbox`}>
 										{Content["registerPage.privacyText.p2"]}
 									</span>
-								</span>
-							</Checkbox>
-						</div>
-
-						<div className="mt-3">
-							<Checkbox
-								id="has-accepted-personal-data"
-								checked={hasAcceptedPersonalData}
-								onChange={setHasAcceptedPersonalData}
-								required={true}
-							>
-								<span
-									className="text-sm md:text-base"
-									data-testid={`label-has-accepted-personal-data-checkbox`}
-								>
-									{Content["registerPage.personalData.label"]}
 								</span>
 							</Checkbox>
 						</div>

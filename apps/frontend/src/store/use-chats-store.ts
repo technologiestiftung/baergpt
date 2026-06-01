@@ -15,7 +15,9 @@ import { updateMessage as updateMessageInDb } from "../api/message/update-messag
 import { getTotalChatCount as getTotalChatCountFromDb } from "../api/chat/get-total-chat-count.ts";
 import { useErrorStore } from "./error-store.ts";
 import type { WebCitationSource } from "../api/chat/get-completion.ts";
-import { useDocumentStore } from "./document-store.ts";
+import { useUserDocumentStore } from "./use-user-document-store.ts";
+import { useUserFolderStore } from "./use-user-folder-store.ts";
+import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
@@ -60,7 +62,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isLoading: false,
 	chats: [],
 	totalChatCount: null,
-	selectedChatOptions: ["baseKnowledge"],
+	selectedChatOptions: [],
 	selectedLlmModel: "mistral-small",
 	isWebSearchRemovalInfoMessageShown: false,
 
@@ -69,7 +71,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	resetToDefaultChatOptions() {
-		set({ selectedChatOptions: ["baseKnowledge"] });
+		set({ selectedChatOptions: [] });
 	},
 
 	toggleChatOption(option: ChatOption) {
@@ -82,12 +84,30 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 			});
 		} else {
 			if (option === "webSearch") {
-				const { selectedChatDocuments } = useDocumentStore.getState();
-				if (selectedChatDocuments.length > 0) {
-					selectedChatDocuments.forEach((document) => {
-						useDocumentStore.getState().unselectChatDocument(document.id);
-					});
-				}
+				const { selectedUserChatDocuments, unselectUserChatDocument } =
+					useUserDocumentStore.getState();
+				selectedUserChatDocuments.forEach((document) =>
+					unselectUserChatDocument(document.id),
+				);
+
+				const { selectedUserChatFolders, unselectUserChatFolder } =
+					useUserFolderStore.getState();
+				selectedUserChatFolders.forEach((folder) =>
+					unselectUserChatFolder(folder.id),
+				);
+
+				const {
+					selectedPublicChatDocuments,
+					selectedPublicChatFolders,
+					unselectPublicChatDocument,
+					unselectPublicChatFolder,
+				} = usePublicDocumentsStore.getState();
+				selectedPublicChatDocuments.forEach((document) =>
+					unselectPublicChatDocument(document.id),
+				);
+				selectedPublicChatFolders.forEach((folder) =>
+					unselectPublicChatFolder(folder.id),
+				);
 			}
 
 			/* 
@@ -276,6 +296,6 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		setTimeout(() => {
 			set({ isWebSearchRemovalInfoMessageShown: false });
-		}, 12000);
+		}, 20_000);
 	},
 }));

@@ -1,6 +1,6 @@
 import React from "react";
 import { DefaultDialog } from "../../primitives/dialogs/default-dialog";
-import { useFolderStore } from "../../../store/folder-store.ts";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
 import { PrimaryButton } from "../../primitives/buttons/primary-button.tsx";
 import Content from "../../../content.ts";
@@ -25,7 +25,7 @@ export const CreateFolderDialog: React.FC = () => {
 			return;
 		}
 
-		useFolderStore.getState().createFolder(folderName);
+		useUserFolderStore.getState().createUserFolder(folderName);
 		hideCreateFolderDialog();
 	};
 

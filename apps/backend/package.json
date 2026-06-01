@@ -20,6 +20,7 @@
 		"db:localseed": "tsx ./supabase/local-seed.ts",
 		"db:upload-default-documents": "tsx ./supabase/scripts/upload-default-documents.ts",
 		"db:backfill-mistral": "tsx ./supabase/backfill-mistral-embeddings.ts",
+		"db:up": "supabase migration up --local && npm run db:typegen",
 		"mistral:assess-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts -- --dry-run",
 		"mistral:cleanup-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts",
 		"s3:assess-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts -- --dry-run",

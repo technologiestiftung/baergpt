@@ -1,0 +1,50 @@
+name: Setup BaerGPT environment
+description: Installs Node.js, upgrades npm, caches and installs npm dependencies, and optionally installs the Supabase CLI and 1Password CLI
+
+inputs:
+  start-supabase:
+    description: Install the Supabase CLI via asdf and start it in the background
+    default: 'false'
+  install-1password:
+    description: Install 1Password CLI
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    # Install Supabase CLI via asdf and start it right away so it boots in the
+    # background during Node setup and npm install.
+    - name: Install Supabase CLI via asdf ⚙️
+      if: inputs.start-supabase == 'true'
+      uses: asdf-vm/actions/install@v4
+
+    - name: Start supabase ⚡️
+      if: inputs.start-supabase == 'true'
+      shell: bash
+      run: cd apps/backend && supabase start --exclude studio,realtime,imgproxy,edge-runtime,logflare,supavisor,postgres-meta &
+
+    - name: Setup Node.js using .nvmrc ⚙️
+      uses: actions/setup-node@v5
+      with:
+        node-version-file: ".nvmrc"
+
+    - name: Upgrade npm 🔧
+      shell: bash
+      run: npm install -g npm@11.x
+
+    - name: Cache npm dependencies 💾
+      id: cache-npm-deps
+      uses: actions/cache@v4
+      with:
+        path: |
+          **/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+    - name: Install dependencies 📦
+      if: steps.cache-npm-deps.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm ci
+
+    - name: Install 1Password CLI 🔐
+      if: inputs.install-1password == 'true'
+      uses: 1password/install-cli-action@v2

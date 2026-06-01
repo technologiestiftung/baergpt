@@ -339,11 +339,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		);
 		await privacyCheckboxInput.check();
 
-		const personalDataCheckboxInput = page.locator(
-			'[data-testid="label-has-accepted-personal-data-checkbox"]',
-		);
-		await personalDataCheckboxInput.check();
-
 		// Wait for the registration request to complete
 		await Promise.all([
 			page.waitForResponse(
@@ -471,9 +466,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			.fill(givenUserPassword);
 		// Check the checkbox
 		await page1.getByTestId("label-has-accepted-privacy-checkbox").click();
-		await page1
-			.getByTestId("label-has-accepted-personal-data-checkbox")
-			.click();
 
 		// Submit the invite completion form and wait for navigation to main page
 		await page1.getByRole("button", { name: "Registrieren" }).click();

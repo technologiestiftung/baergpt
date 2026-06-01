@@ -1,0 +1,21 @@
+name: Wait for backend server to be ready
+description: Polls until the backend server at localhost:3000 is accepting connections
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for Backend to be ready ⏳
+      shell: bash
+      run: |
+        timeout=600
+        counter=0
+        until curl -s http://localhost:3000/ >/dev/null; do
+          if [ $counter -gt $timeout ]; then
+            echo "Timed out waiting for Backend"
+            exit 1
+          fi
+          echo "Waiting for Backend to be ready..."
+          sleep 1
+          counter=$((counter + 1))
+        done
+        echo "Backend is ready!"

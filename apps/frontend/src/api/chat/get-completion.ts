@@ -2,13 +2,15 @@ import { useChatsStore } from "../../store/use-chats-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import type { ChatOption, ChatWithMessages } from "../../common.ts";
-import { useDocumentStore } from "../../store/document-store.ts";
-import { useFolderStore } from "../../store/folder-store.ts";
+import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../store/use-user-folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
 import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
 import { useCitationsStore } from "../../store/use-citations-store.ts";
+import { useFaviconStore } from "../../store/favicon-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 import type { Span } from "@sentry/react";
+import { usePublicDocumentsStore } from "../../store/use-public-documents-store.ts";
 
 export type WebCitationSource = {
 	url: string;
@@ -23,7 +25,6 @@ type StreamEvent =
 	| { type: "data-web-citations"; data: WebCitationSource[] };
 
 const activeToolsDict: Record<ChatOption, string[]> = {
-	baseKnowledge: ["baseKnowledgeSearchTool"],
 	parla: ["parlaMCPTools"],
 	webSearch: ["webSearchTool"],
 };
@@ -39,10 +40,14 @@ export async function getCompletion(
 		selectedLlmModel,
 		selectedChatOptions,
 	} = useChatsStore.getState();
-	const { getSelectedChatDocumentIds } = useDocumentStore.getState();
-	const { getSelectedChatFolderIds } = useFolderStore.getState();
+	const { getSelectedUserChatDocumentIds } = useUserDocumentStore.getState();
+	const { getSelectedUserChatFolderIds } = useUserFolderStore.getState();
+	const { getSelectedPublicChatDocumentIds } =
+		usePublicDocumentsStore.getState();
+
 	const { setStatus } = useInferenceLoadingStatusStore.getState();
 	const { ensureCached } = useCitationsStore.getState();
+	const { ensureFaviconsCached } = useFaviconStore.getState();
 
 	const { session } = useAuthStore.getState();
 	const { user } = useUserStore.getState();
@@ -61,24 +66,13 @@ export async function getCompletion(
 			content,
 		}));
 
-		// fetch selected document and folder IDs
-		const selectedDocumentIds = getSelectedChatDocumentIds();
-		const selectedFolderIds = getSelectedChatFolderIds();
-		const documents = useDocumentStore.getState().documents;
-
-		// fetch documents within the selected folders
-		const folderDocumentIds = documents
-			.filter(
-				(doc) =>
-					doc.folder_id !== undefined &&
-					doc.folder_id !== null &&
-					selectedFolderIds.includes(doc.folder_id),
-			)
-			.map((doc) => doc.id);
+		const selectedDocumentIds = getSelectedUserChatDocumentIds();
+		const selectedFolderIds = getSelectedUserChatFolderIds();
+		const publicDocumentIds = getSelectedPublicChatDocumentIds();
 
 		// merge document IDs from selected documents and folders
 		const allowedDocumentIds = Array.from(
-			new Set([...selectedDocumentIds, ...folderDocumentIds]),
+			new Set([...selectedDocumentIds, ...publicDocumentIds]),
 		);
 
 		const headers = new Headers();
@@ -126,7 +120,7 @@ export async function getCompletion(
 			content: "",
 			type: "text",
 			role: "assistant",
-			allowed_document_ids: selectedDocumentIds, // Save selected document IDs
+			allowed_document_ids: allowedDocumentIds, // Save selected document IDs
 			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
 			citations: null,
 			web_citations: null,
@@ -177,6 +171,9 @@ export async function getCompletion(
 					citations: citations.length ? citations : null,
 					web_citations: webSources.length ? webSources : null,
 				});
+				if (webSources.length) {
+					ensureFaviconsCached(webSources.map(({ url }) => url));
+				}
 			},
 			onFinish: () => {
 				setStatus("idle");

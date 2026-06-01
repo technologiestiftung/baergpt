@@ -1,6 +1,6 @@
 import React from "react";
-import { useFolderStore } from "../../../../store/folder-store.ts";
-import { useDocumentStore } from "../../../../store/document-store.ts";
+import { useUserFolderStore } from "../../../../store/use-user-folder-store.ts";
+import { useUserDocumentStore } from "../../../../store/use-user-document-store.ts";
 import Content from "../../../../content.ts";
 import { IndeterminateCheckbox } from "../../../primitives/checkboxes/indeterminate-checkbox.tsx";
 import { useMultiSelectCheckboxState } from "./use-multi-select-checkbox-state.tsx";
@@ -8,30 +8,30 @@ import type { CheckboxState } from "../../../primitives/icons/checkbox-icon.tsx"
 
 export const MultiSelectAllForAction: React.FC = () => {
 	const {
-		selectedFoldersForAction,
-		getItemsInCurrentFolder,
-		unselectAllItemsInCurrentFolder,
-		selectAllItemsInCurrentFolder,
-	} = useFolderStore();
-	const { selectedDocumentsForAction } = useDocumentStore();
+		selectedUserFoldersForAction,
+		getUserItemsInCurrentFolder,
+		unselectAllItemsForActionInCurrentFolder,
+		selectAllItemsForActionInCurrentFolder,
+	} = useUserFolderStore();
+	const { selectedUserDocumentsForAction } = useUserDocumentStore();
 
 	const selectedItemsForAction = [
-		...selectedFoldersForAction,
-		...selectedDocumentsForAction,
+		...selectedUserFoldersForAction,
+		...selectedUserDocumentsForAction,
 	];
-	const itemsInCurrentFolder = getItemsInCurrentFolder();
+	const userItemsInCurrentFolder = getUserItemsInCurrentFolder();
 
 	const checkboxState = useMultiSelectCheckboxState(
 		selectedItemsForAction,
-		itemsInCurrentFolder,
+		userItemsInCurrentFolder,
 	);
 
 	const handleChange = (newState: CheckboxState) => {
 		if (newState === "checked") {
-			selectAllItemsInCurrentFolder();
+			selectAllItemsForActionInCurrentFolder();
 		}
 		if (newState === "unchecked") {
-			unselectAllItemsInCurrentFolder();
+			unselectAllItemsForActionInCurrentFolder();
 		}
 	};
 

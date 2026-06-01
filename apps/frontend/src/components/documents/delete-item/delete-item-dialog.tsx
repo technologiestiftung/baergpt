@@ -1,10 +1,10 @@
 import React, { type FormEvent } from "react";
 import { DefaultDialog } from "../../primitives/dialogs/default-dialog";
-import { useDocumentStore } from "../../../store/document-store";
-import { useFolderStore } from "../../../store/folder-store";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { useDocumentsListStore } from "../../../store/use-documents-list-store";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
-import type { Document, DocumentFolder } from "../../../common.ts";
+import type { UserDocument, UserFolder } from "../../../common.ts";
 import { isDocument } from "../document-list/list-item/utils/is-document.ts";
 import { getListItemName } from "../document-list/list-item/utils/get-list-item-name.ts";
 import { useTooltipStore } from "../../../store/tooltip-store.ts";
@@ -13,6 +13,7 @@ import { WarningButton } from "../../primitives/buttons/warning-button.tsx";
 import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { getUniqueId } from "../document-list/list-item/utils/get-unique-id.ts";
+import { usePreviewDocumentStore } from "../../../store/use-preview-document-store.ts";
 
 const deleteDialogId = "delete-dialog";
 
@@ -29,20 +30,23 @@ export function hideDeleteDialog() {
 export const DeleteItemDialog: React.FC = () => {
 	const { hideTooltip } = useTooltipStore();
 	const {
-		selectedDocumentsForAction,
-		deleteDocument,
-		unselectPreviewDocument,
-		unselectDocumentForAction,
-	} = useDocumentStore();
-	const { selectedFoldersForAction, deleteFolder, unselectFolderForAction } =
-		useFolderStore();
+		selectedUserDocumentsForAction,
+		deleteUserDocument,
+		unselectUserDocumentForAction,
+	} = useUserDocumentStore();
+	const { unselectPreviewDocument } = usePreviewDocumentStore();
+	const {
+		selectedUserFoldersForAction,
+		deleteUserFolder,
+		unselectFolderForAction,
+	} = useUserFolderStore();
 	const { singleItemSelectedForAction, setSingleItemSelectedForAction } =
 		useDocumentsListStore();
 
-	const itemsToDelete: (Document | DocumentFolder)[] =
+	const itemsToDelete: (UserDocument | UserFolder)[] =
 		singleItemSelectedForAction !== null
 			? [singleItemSelectedForAction]
-			: [...selectedDocumentsForAction, ...selectedFoldersForAction];
+			: [...selectedUserDocumentsForAction, ...selectedUserFoldersForAction];
 
 	const isMultipleItemsToDelete = itemsToDelete.length > 1;
 
@@ -52,7 +56,7 @@ export const DeleteItemDialog: React.FC = () => {
 		} else {
 			for (const item of itemsToDelete) {
 				if (isDocument(item)) {
-					unselectDocumentForAction(item.id);
+					unselectUserDocumentForAction(item.id);
 				} else {
 					unselectFolderForAction(item.id);
 				}
@@ -68,9 +72,9 @@ export const DeleteItemDialog: React.FC = () => {
 
 		for (const item of itemsToDelete) {
 			if (isDocument(item)) {
-				await deleteDocument(item.id);
+				await deleteUserDocument(item.id);
 			} else {
-				await deleteFolder(item.id);
+				await deleteUserFolder(item.id);
 			}
 		}
 		clearSelectionAfterDelete();
@@ -116,7 +120,7 @@ export const DeleteItemDialog: React.FC = () => {
 	);
 };
 
-function getDialogTitle(itemsToDelete: (Document | DocumentFolder)[]) {
+function getDialogTitle(itemsToDelete: (UserDocument | UserFolder)[]) {
 	if (itemsToDelete.length > 1) {
 		return `${itemsToDelete.length} ${Content["deleteItemDialog.deleteFiles"]}`;
 	}
@@ -129,7 +133,7 @@ function getDialogTitle(itemsToDelete: (Document | DocumentFolder)[]) {
 	return Content["deleteItemDialog.deleteFolder"];
 }
 
-function getDialogParagraph(itemsToDelete: (Document | DocumentFolder)[]) {
+function getDialogParagraph(itemsToDelete: (UserDocument | UserFolder)[]) {
 	if (itemsToDelete.length > 1) {
 		return `${Content["deleteItemDialog.confirmation.multipleItems"]}`;
 	}
@@ -144,7 +148,7 @@ function getDialogParagraph(itemsToDelete: (Document | DocumentFolder)[]) {
 }
 
 function getUserFriendlyItemNames(
-	itemsToDelete: (DocumentFolder | Document)[],
+	itemsToDelete: (UserDocument | UserFolder)[],
 ) {
 	return itemsToDelete.map((item) => {
 		return (

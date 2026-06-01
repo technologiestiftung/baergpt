@@ -571,6 +571,15 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
+			get_document_summaries: {
+				Args: { input_document_ids: number[]; input_folder_ids: number[] };
+				Returns: {
+					created_at: string;
+					file_name: string;
+					id: number;
+					short_summary: string;
+				}[];
+			};
 			get_documents_with_storage_objects: {
 				Args: { p_limit: number; p_offset: number };
 				Returns: {

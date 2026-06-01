@@ -1,14 +1,23 @@
-import { useFolderStore } from "../../../store/folder-store.ts";
-import { useDocumentStore } from "../../../store/document-store.ts";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
 import Content from "../../../content.ts";
 import { isDocument } from "../../documents/document-list/list-item/utils/is-document.ts";
 import type { ListItem } from "../../documents/document-list/list-item/utils/types.ts";
+import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
 export function SelectedChatItemsLabel() {
-	const { selectedChatFolders } = useFolderStore();
-	const { selectedChatDocuments } = useDocumentStore();
+	const { selectedUserChatFolders: selectedUserChatFolders } =
+		useUserFolderStore();
+	const { selectedPublicChatFolders, selectedPublicChatDocuments } =
+		usePublicDocumentsStore();
+	const { selectedUserChatDocuments } = useUserDocumentStore();
 
-	const selectedChatItems = [...selectedChatFolders, ...selectedChatDocuments];
+	const selectedChatItems = [
+		...selectedUserChatFolders,
+		...selectedUserChatDocuments,
+		...selectedPublicChatFolders,
+		...selectedPublicChatDocuments,
+	];
 	const selectedChatItemsAmount = selectedChatItems.length;
 
 	return (

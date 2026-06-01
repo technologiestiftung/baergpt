@@ -1,19 +1,19 @@
 import React from "react";
-import { useFolderStore } from "../../../store/folder-store";
-import { useDocumentStore } from "../../../store/document-store";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
 import { useDocumentsListStore } from "../../../store/use-documents-list-store.ts";
 import { DeleteItemButton } from "../delete-item/delete-item-button.tsx";
 import Content from "../../../content";
 import { MultiSelectAllForAction } from "./multi-select-for-action/multi-select-all-for-action.tsx";
 
 export const DocumentListHeader: React.FC = () => {
-	const { selectedFoldersForAction } = useFolderStore();
-	const { selectedDocumentsForAction } = useDocumentStore();
+	const { selectedUserFoldersForAction } = useUserFolderStore();
+	const { selectedUserDocumentsForAction } = useUserDocumentStore();
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
 
 	const selectedItemsForAction = [
-		...selectedFoldersForAction,
-		...selectedDocumentsForAction,
+		...selectedUserFoldersForAction,
+		...selectedUserDocumentsForAction,
 	];
 
 	return (

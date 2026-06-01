@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
-import { useDocumentStore } from "../../../../../store/document-store";
-import type { Document, DocumentFolder } from "../../../../../common";
+import { usePreviewDocumentStore } from "../../../../../store/use-preview-document-store.ts";
+import type { Document, PublicFolder, UserFolder } from "../../../../../common";
 import Content from "../../../../../content";
 import { isDocument } from "../utils/is-document";
 import { toggleItemInChat } from "../utils/toggle-item-in-chat";
@@ -10,9 +10,11 @@ import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
 import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
 import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
 import { useIsMobile } from "../../../../../hooks/use-mobile";
+import { isPublicFolder } from "../utils/is-public-folder.ts";
+import { isPublicDocument } from "../utils/is-public-document.ts";
 
 interface ItemDropdownProps {
-	item: Document | DocumentFolder;
+	item: Document | UserFolder | PublicFolder;
 	isOpen: boolean;
 	onClose: () => void;
 	triggerRef: React.RefObject<HTMLButtonElement>;
@@ -24,7 +26,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	onClose,
 	triggerRef,
 }) => {
-	const { selectPreviewDocument } = useDocumentStore();
+	const { selectPreviewDocument } = usePreviewDocumentStore();
 	const { setSingleItemSelectedForAction } = useDocumentsListStore();
 	const [position, setPosition] = useState<{
 		top: number;
@@ -34,6 +36,8 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
 	const isMobile = useIsMobile();
+	const isReadOnly =
+		isPublicFolder(item) || (isDoc && item.source_type === "public_document");
 
 	const calculatePosition = () => {
 		if (triggerRef.current) {
@@ -73,7 +77,13 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		toggleItemInChat(item);
 	};
 
-	const handleDeleteItem = (itemToDelete: Document | DocumentFolder) => {
+	const handleDeleteItem = (
+		itemToDelete: Document | UserFolder | PublicFolder,
+	) => {
+		if (isPublicFolder(itemToDelete) || isPublicDocument(itemToDelete)) {
+			return;
+		}
+
 		onClose();
 		setSingleItemSelectedForAction(itemToDelete);
 		showDeleteDialog();
@@ -134,7 +144,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const dropdownItems = [
 		addToChatItem,
 		...(isDoc ? [viewItem] : []),
-		deleteItem,
+		...(isReadOnly ? [] : [deleteItem]),
 	];
 
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({

@@ -1,6 +1,6 @@
 import React from "react";
 
-import { useFolderStore } from "../../../../store/folder-store";
+import { useUserFolderStore } from "../../../../store/use-user-folder-store.ts";
 import { useDocumentsListStore } from "../../../../store/use-documents-list-store.ts";
 import { SecondaryButton } from "../../../primitives/buttons/secondary-button.tsx";
 import Content from "../../../../content.ts";
@@ -9,7 +9,7 @@ import { CloseIcon } from "../../../primitives/icons/close-icon.tsx";
 import { CheckboxIcon } from "../../../primitives/icons/checkbox-icon.tsx";
 
 export const MultiSelectForActionButton: React.FC = () => {
-	const { unselectAllItemsInCurrentFolder } = useFolderStore();
+	const { unselectAllItemsForActionInCurrentFolder } = useUserFolderStore();
 	const {
 		showMultiSelectForAction,
 		hideMultiSelectForAction,
@@ -21,7 +21,7 @@ export const MultiSelectForActionButton: React.FC = () => {
 			{isMultiSelectForActionVisible ? (
 				<PrimaryButton
 					onClick={() => {
-						unselectAllItemsInCurrentFolder();
+						unselectAllItemsForActionInCurrentFolder();
 						hideMultiSelectForAction();
 					}}
 					hasIcon="right"

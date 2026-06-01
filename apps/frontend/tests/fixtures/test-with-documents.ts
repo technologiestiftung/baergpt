@@ -23,6 +23,7 @@ import {
 	defaultSourceType,
 	defaultBucketName,
 	seedDefaultDocumentName,
+	seedPublicDocumentName,
 } from "../constants.ts";
 import { readFileSync } from "node:fs";
 
@@ -36,6 +37,7 @@ export const testWithDocuments = testWithMockedLlm.extend<{
 			 */
 
 			await uploadDefaultDocumentIfNecessary({ account, session });
+			await uploadPublicDocumentIfNecessary({ account, session });
 
 			// upload a personal document for the user
 			const documentChunkId = await mockDocumentUpload({
@@ -117,6 +119,58 @@ async function uploadDefaultDocumentIfNecessary(args: {
 	expect(count2).toBe(1);
 }
 
+export async function uploadPublicDocumentIfNecessary(args: {
+	account: { email: string; password: string; id: string };
+	session: Session;
+}) {
+	const { count: count1, error } = await supabaseAdminClient
+		.from("documents")
+		.select("id", { count: "exact", head: true })
+		.eq("source_type", "public_document")
+		.eq("file_name", seedPublicDocumentName);
+
+	expect(error).toBeNull();
+
+	if (count1 && count1 > 0) {
+		return;
+	}
+
+	const { account, session } = args;
+
+	const { data: accessGroup, error: accessGroupError } =
+		await supabaseAdminClient
+			.from("access_groups")
+			.select("id")
+			.eq("name", "Alle")
+			.single();
+
+	expect(accessGroupError).toBeNull();
+
+	if (!accessGroup) {
+		throw new Error("Default access group 'Alle' not found");
+	}
+
+	await mockDocumentUpload({
+		userId: account.id,
+		accessToken: session.access_token,
+		accessGroupId: accessGroup.id,
+		fileName: seedPublicDocumentName,
+		filePath: defaultDocumentPath,
+		sourceType: "public_document" as const,
+		bucketName: "public_documents",
+	});
+
+	const { count: count2, error: publicDocumentsError } =
+		await supabaseAdminClient
+			.from("documents")
+			.select("source_type,file_name", { count: "exact", head: true })
+			.eq("source_type", "public_document")
+			.eq("file_name", seedPublicDocumentName);
+
+	expect(publicDocumentsError).toBeNull();
+	expect(count2).toBe(1);
+}
+
 /**
  * Mocks a full document upload:
  * - uploads file to storage
@@ -139,20 +193,20 @@ export async function mockDocumentUpload({
 	sourceType: "public_document" | "personal_document" | "default_document";
 	bucketName: "documents" | "public_documents";
 }) {
+	const nonUserDocuments = ["public_document", "default_document"];
 	// For default documents, use accessGroupId in source_url; otherwise use userId
 	const source_url =
-		sourceType === "default_document" && accessGroupId
+		nonUserDocuments.includes(sourceType) && accessGroupId
 			? `${accessGroupId}/${fileName}`
 			: `${userId}/${fileName}`;
 	const file = new Uint8Array(readFileSync(filePath));
 
 	// Use admin client for default documents to bypass RLS, otherwise use user client
-	const storageClient =
-		sourceType === "default_document"
-			? supabaseAdminClient
-			: createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
-					global: { headers: { Authorization: `Bearer ${accessToken}` } },
-				});
+	const storageClient = nonUserDocuments.includes(sourceType)
+		? supabaseAdminClient
+		: createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
+				global: { headers: { Authorization: `Bearer ${accessToken}` } },
+			});
 
 	const uploadOptions =
 		sourceType === "default_document" ? { upsert: true } : undefined;
@@ -635,7 +689,7 @@ async function cleanup(userId: string) {
 			.from("documents")
 			.select("id, source_url")
 			.eq("uploaded_by_user_id", userId)
-			.eq("source_type", "default_document");
+			.or("source_type.eq.default_document,source_type.eq.public_document");
 	expect(getAccessGroupDocsError).toBeNull();
 
 	if (accessGroupDocuments && accessGroupDocuments.length > 0) {

@@ -1,41 +1,57 @@
 import React from "react";
-import type { DocumentFolder } from "../../../../common";
-import { useFolderStore } from "../../../../store/folder-store";
+import type { UserFolder } from "../../../../common";
+import { useUserFolderStore } from "../../../../store/use-user-folder-store.ts";
 import { useDocumentsListStore } from "../../../../store/use-documents-list-store.ts";
 import Checkbox from "../../../primitives/checkboxes/checkbox.tsx";
 import { DroppableFolderName } from "./droppable-folder-name.tsx";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
 import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
+import { usePublicDocumentsStore } from "../../../../store/use-public-documents-store.ts";
+import { isUserFolder } from "./utils/is-user-folder.ts";
+import { isPublicFolder } from "./utils/is-public-folder.ts";
 
 interface FolderItemProps {
-	item: DocumentFolder;
+	item: UserFolder;
 }
 
 const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 	const {
-		selectedChatFolders,
-		selectedFoldersForAction,
-		selectFolderForAction,
+		selectedUserChatFolders,
+		selectedUserFoldersForAction,
+		selectUserFolderForAction,
 		unselectFolderForAction,
-		toggleChatFolder,
-	} = useFolderStore();
+		toggleUserChatFolder,
+	} = useUserFolderStore();
+	const { togglePublicChatFolder } = usePublicDocumentsStore();
 
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
 
-	const isSelectedForAction = selectedFoldersForAction.some(
+	const isSelectedForAction = selectedUserFoldersForAction.some(
 		(folder) => folder.id === item.id,
 	);
-	const isSelectedForChat = selectedChatFolders.some(
+	const isSelectedForChat = selectedUserChatFolders.some(
 		(folder) => folder.id === item.id,
 	);
 
 	const handleCheckboxChange = (checked: boolean) => {
 		if (checked) {
-			selectFolderForAction(item);
+			selectUserFolderForAction(item);
 			return;
 		}
 		unselectFolderForAction(item.id);
+	};
+
+	const handleToggleChatItem = () => {
+		if (isUserFolder(item)) {
+			toggleUserChatFolder(item);
+			return;
+		}
+
+		if (isPublicFolder(item)) {
+			togglePublicChatFolder(item);
+			return;
+		}
 	};
 
 	return (
@@ -55,7 +71,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 				<DroppableFolderName item={item} />
 
 				<ToggleChatItemButton
-					handleToggleChatItem={() => toggleChatFolder(item)}
+					handleToggleChatItem={handleToggleChatItem}
 					isSelectedForChat={isSelectedForChat}
 				/>
 

@@ -47,17 +47,17 @@ export abstract class BaseContentDbService {
 		}
 		return;
 	}
-	async retrieveSummaries(documentIds: number[]): Promise<Map<number, string>> {
-		const { error: summariesError, data: summaries } = await this.client
-			.from("document_summaries")
-			.select("document_id, summary")
-			.in("document_id", documentIds);
+	async retrieveSummaries(documentIds: number[], folderIds: number[]) {
+		const { data: summaries, error: summariesError } = await this.client.rpc(
+			"get_document_summaries",
+			{ input_document_ids: documentIds, input_folder_ids: folderIds },
+		);
 
 		if (summariesError) {
-			throw new Error("Failed to find summaries");
+			throw summariesError;
 		}
 
-		return new Map(summaries.map((s) => [s.document_id, s.summary]));
+		return summaries;
 	}
 
 	/**

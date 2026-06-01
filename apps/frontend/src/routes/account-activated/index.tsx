@@ -25,7 +25,6 @@ export function AccountActivated() {
 
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
-	const [hasAcceptedPersonalData, setHasAcceptedPersonalData] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
 
 	const { first_name, last_name } = session?.user?.user_metadata || {};
@@ -54,7 +53,7 @@ export function AccountActivated() {
 			try {
 				await logAccountActivation();
 				// Refresh the account activation timestamp in the store
-				await getAccountActivationTimestamp();
+				await getAccountActivationTimestamp(new AbortSignal());
 			} catch (activationError) {
 				useErrorStore.getState().handleError(activationError);
 			}
@@ -208,22 +207,6 @@ export function AccountActivated() {
 									<span data-testid={`label-has-accepted-privacy-checkbox`}>
 										{Content["registerPage.privacyText.p2"]}
 									</span>
-								</span>
-							</Checkbox>
-						</div>
-
-						<div className="mt-3">
-							<Checkbox
-								id="has-accepted-personal-data"
-								checked={hasAcceptedPersonalData}
-								onChange={setHasAcceptedPersonalData}
-								required={true}
-							>
-								<span
-									className="text-sm md:text-base"
-									data-testid={`label-has-accepted-personal-data-checkbox`}
-								>
-									{Content["registerPage.personalData.label"]}
 								</span>
 							</Checkbox>
 						</div>

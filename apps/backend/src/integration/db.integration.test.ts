@@ -150,9 +150,9 @@ describe("Integration tests for DB", async () => {
 						password: givenUserPassword,
 						email_confirm: true,
 					});
+				expect(signupError).toBeNull();
 				userId = data.user?.id ?? "";
 				expect(userId).not.toBe("");
-				expect(signupError).toBeNull();
 			});
 
 			it("should reject registration with invalid email domain", async () => {

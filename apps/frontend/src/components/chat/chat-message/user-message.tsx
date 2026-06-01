@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import type { ChatMessage } from "../../../common.ts";
-import { useDocumentStore } from "../../../store/document-store.ts";
-import { useFolderStore } from "../../../store/folder-store.ts";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { ChatItemPills } from "./chat-item-pills.tsx";
 import { CopyToClipboardButton } from "./copy-to-clipboard-button.tsx";
+import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
 type UserMessageProps = {
 	message: ChatMessage;
@@ -11,19 +12,37 @@ type UserMessageProps = {
 };
 
 export function UserMessage({ message, children }: UserMessageProps) {
-	const { folders } = useFolderStore();
-	const { documents } = useDocumentStore();
+	const { userFolders } = useUserFolderStore();
+	const { userDocuments } = useUserDocumentStore();
+	const { publicDocuments, publicFolders } = usePublicDocumentsStore();
 
 	const { allowed_folder_ids, allowed_document_ids, content } = message;
 
-	const foundFolders = folders.filter((folder) =>
+	const foundUserFolders = userFolders.filter((folder) =>
 		allowed_folder_ids?.includes(folder.id),
 	);
-	const foundDocuments = documents.filter((document) =>
+	const foundUserDocuments = userDocuments.filter((document) =>
+		allowed_document_ids?.includes(document.id),
+	);
+	const foundPublicDocuments = publicDocuments.filter((document) =>
 		allowed_document_ids?.includes(document.id),
 	);
 
-	const foundItems = [...foundFolders, ...foundDocuments];
+	/**
+	 * if all public documents have been added to the message,
+	 * we show the (fake) folder instead of individual documents
+	 */
+	const foundPublicItems =
+		publicDocuments.length > 0 &&
+		foundPublicDocuments.length === publicDocuments.length
+			? publicFolders
+			: foundPublicDocuments;
+
+	const foundItems = [
+		...foundUserFolders,
+		...foundUserDocuments,
+		...foundPublicItems,
+	];
 
 	return (
 		<div

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Request } from "@playwright/test";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import {
 	deleteFileViaUI,
@@ -646,7 +646,11 @@ test.describe("Documents", () => {
 		await page.goto("/");
 
 		// The panel should be open by default
-		await expect(page.getByRole("heading", { name: "Dateien" })).toBeVisible();
+		const documentPanelHeading = page.getByRole("heading", {
+			name: "Dateien",
+			exact: true,
+		});
+		await expect(documentPanelHeading).toBeVisible();
 
 		const oldPanelWidth = await page.evaluate(
 			() => document.getElementById("desktop-documents-panel")?.clientWidth,
@@ -684,15 +688,13 @@ test.describe("Documents", () => {
 		await page.getByRole("button", { name: "Ausblenden der Dateien" }).click();
 
 		// The panel should be closed
-		await expect(
-			page.getByRole("heading", { name: "Dateien" }),
-		).not.toBeVisible();
+		await expect(documentPanelHeading).not.toBeVisible();
 
 		// Reopen the documents panel
 		await page.getByRole("button", { name: "Anzeigen der Dateien" }).click();
 
 		// The panel should be open again
-		await expect(page.getByRole("heading", { name: "Dateien" })).toBeVisible();
+		await expect(documentPanelHeading).toBeVisible();
 	});
 
 	testDesktopOnly(
@@ -929,6 +931,141 @@ test.describe("Documents", () => {
 				),
 			).toBeVisible();
 			await expect(uploadButton).toBeDisabled();
+		},
+	);
+
+	testDesktopOnly(
+		"Move a document into the public folder Verwaltungswissen should not be possible",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Verify the Verwaltungswissen folder exists
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await expect(publicFolder).toBeVisible();
+
+			// Attempt to drag a document onto the Verwaltungswissen folder
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await publicFolder.hover();
+			await page.mouse.up();
+
+			// Verify the document is still visible in the root folder (move was rejected)
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"File upload is not visible when inside the public folder Verwaltungswissen",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const desktopPanel = page.locator("#desktop-documents-panel");
+
+			// Navigate into the Verwaltungswissen folder
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await expect(publicFolder).toBeVisible();
+			await publicFolder.click();
+
+			// Verify the upload button is not visible
+			await expect(
+				desktopPanel.getByRole("button", { name: "Datei hochladen" }),
+			).not.toBeVisible();
+
+			// Verify the drag & drop overlay is not rendered (drop zone is disabled)
+			await expect(
+				desktopPanel.locator("input[type='file']"),
+			).not.toBeAttached();
+		},
+	);
+
+	testDesktopOnly(
+		"Cannot drag & drop a file to upload when inside the public folder Verwaltungswissen",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Navigate into the Verwaltungswissen folder
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await expect(publicFolder).toBeVisible();
+			await publicFolder.click();
+
+			// Prepare a file for drag and drop
+			const buffer = (await import("node:fs"))
+				.readFileSync(secondaryDocumentPath)
+				.toString("base64");
+
+			const dataTransfer = await page.evaluateHandle(
+				async ({ bufferData, localFileName, localFileType }) => {
+					const dt = new DataTransfer();
+					const blob = await fetch(bufferData).then((res) => res.blob());
+					const file = new File([blob], localFileName, { type: localFileType });
+					dt.items.add(file);
+					return dt;
+				},
+				{
+					bufferData: `data:application/octet-stream;base64,${buffer}`,
+					localFileName: secondaryDocumentName,
+					localFileType: secondaryDocumentType,
+				},
+			);
+
+			let uploadRequestTriggered = false;
+			const onRequest = (request: Request) => {
+				if (
+					request.method() === "POST" &&
+					request.url().includes("/documents/process")
+				) {
+					uploadRequestTriggered = true;
+				}
+			};
+			page.on("request", onRequest);
+
+			// Attempt drag & drop on the documents panel
+			const desktopPanel = page.locator("#desktop-documents-panel");
+			await desktopPanel.dispatchEvent("dragenter", { dataTransfer });
+			await desktopPanel.dispatchEvent("dragover", { dataTransfer });
+			await desktopPanel.dispatchEvent("drop", { dataTransfer });
+
+			const documentUpload = desktopPanel.getByText(secondaryDocumentName);
+			await expect(documentUpload).not.toBeVisible({ timeout: 1_000 });
+			expect(uploadRequestTriggered).toBe(false);
+
+			page.off("request", onRequest);
+		},
+	);
+
+	testDesktopOnly(
+		"Navigating into a public folder should disable the multi-select",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const activateMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Löschen",
+			});
+			await activateMultiSelectButton.click();
+
+			const firstSelectItemCheckbox = page
+				.getByRole("img", { name: "Checkbox-icon (nicht ausgewä" })
+				.first();
+			await expect(firstSelectItemCheckbox).toBeVisible();
+
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await publicFolder.click();
+
+			await expect(firstSelectItemCheckbox).not.toBeVisible();
 		},
 	);
 });

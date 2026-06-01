@@ -11,29 +11,46 @@ type RagSearchToolOptions = {
 	allowedFolderIds: number[];
 };
 
-export const ragSearchTool = (options: RagSearchToolOptions) =>
-	tool({
-		description:
-			"Use this tool ONLY to answer questions based on documents that the user has explicitly uploaded or added to this chat. It performs a RAG search over the user's uploaded documents and returns structured, cite-ready matches.",
+const MAX_DOCUMENT_SUMMARIES_TO_INCLUDE = 3;
+
+export const ragSearchTool = async (options: RagSearchToolOptions) => {
+	const {
+		dbService,
+		allowedDocumentIds,
+		allowedFolderIds,
+		embeddingService,
+		userId,
+	} = options;
+
+	const documentsSummaries = await dbService.retrieveSummaries(
+		allowedDocumentIds,
+		allowedFolderIds,
+	);
+
+	return tool({
+		description: `Use this tool to answer any question about the documents the user has added to this chat.
+ALWAYS call this tool before answering — do NOT rely on prior knowledge when documents are present.
+
+These are the documents available in this chat:
+${JSON.stringify(
+	documentsSummaries.map((doc) => ({
+		file_name: doc.file_name,
+		short_summary: doc.short_summary,
+	})),
+	null,
+	2,
+)}.`,
 		inputSchema: z.object({
 			query: z
 				.string()
 				.describe("The question to answer using the given documents."),
 		}),
 		execute: async ({ query }) => {
-			const {
-				dbService,
-				embeddingService,
-				userId,
-				allowedDocumentIds,
-				allowedFolderIds,
-			} = options;
-
 			const embedding = await embeddingService.generateMistralEmbedding(
 				query,
 				userId,
 			);
-			// do rag search over the base knowledge documents only
+
 			const chunkMatches = await dbService.performHybridChunkSearch(
 				embedding.embedding,
 				{
@@ -42,22 +59,18 @@ export const ragSearchTool = (options: RagSearchToolOptions) =>
 					allowed_folder_ids: allowedFolderIds,
 				},
 			);
+
 			if (chunkMatches.length === 0) {
-				console.warn(`RAG search found no matches for query: ${query}`);
 				return {};
 			}
 
-			// For 3 or less documents, we just take their summaries into context
-			// For more documents, we leave out any summaries
-			let summaries: string[] = [];
-			if (allowedDocumentIds.length <= 3) {
-				const summariesMap =
-					await dbService.retrieveSummaries(allowedDocumentIds);
-				summaries = Array.from(summariesMap.values());
-			}
+			const documentSummariesForContext =
+				documentsSummaries.length <= MAX_DOCUMENT_SUMMARIES_TO_INCLUDE
+					? documentsSummaries
+					: [];
 
 			return {
-				documentSummaries: summaries,
+				documentSummaries: documentSummariesForContext,
 				chunkMatches: chunkMatches.map((match) => ({
 					chunkId: match.chunk_id,
 					snippet: match.chunk_content,
@@ -66,3 +79,4 @@ export const ragSearchTool = (options: RagSearchToolOptions) =>
 			};
 		},
 	});
+};

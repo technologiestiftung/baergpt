@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import type { Document, DocumentFolder } from "../../../../common.ts";
+import type { Document, UserFolder } from "../../../../common.ts";
 import type { CheckboxState } from "../../../primitives/icons/checkbox-icon.tsx";
 
 export function useMultiSelectCheckboxState(
-	selectedItemsForAction: (DocumentFolder | Document)[],
-	itemsInCurrentFolder: (DocumentFolder | Document)[],
+	selectedItemsForAction: (UserFolder | Document)[],
+	itemsInCurrentFolder: (UserFolder | Document)[],
 ) {
 	const [state, setState] = useState<CheckboxState>("unchecked");
 

@@ -3,7 +3,10 @@ import Content from "../../../content.ts";
 
 export const ChatInfoMessage: React.FC = () => {
 	return (
-		<div className="flex flex-col gap-1 w-full px-3 py-[18px] text-dunkelblau-100 rounded-[3px] bg-hellblau-50">
+		<div
+			role="alert"
+			className="flex flex-col gap-1 w-full px-3 py-[18px] text-dunkelblau-100 rounded-[3px] bg-hellblau-50"
+		>
 			<span className="flex gap-1 items-center">
 				<img
 					src="/icons/info-icon-blue.svg"

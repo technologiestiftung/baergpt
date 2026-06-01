@@ -19,6 +19,10 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	const isWebSearchAllowed =
 		import.meta.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true";
 
+	if (!isWebSearchAllowed && !isMcpParlaAllowed) {
+		return null;
+	}
+
 	const chatOptionsItems: {
 		label: string;
 		value: ChatOptionsDropdownValue;
@@ -28,23 +32,16 @@ export const ChatOptionsToggleButton: React.FC = () => {
 	}[] = [
 		{
 			label: Content["chat.options.li1.label"],
-			value: "baseKnowledge",
+			value: "mcpServer",
 			description: Content["chat.options.li1.description"],
 			ariaLabel: Content["chat.options.li1.ariaLabel"],
-			isEnabled: true,
-		},
-		{
-			label: Content["chat.options.li2.label"],
-			value: "mcpServer",
-			description: Content["chat.options.li2.description"],
-			ariaLabel: Content["chat.options.li2.ariaLabel"],
 			isEnabled: isMcpParlaAllowed,
 		},
 		{
-			label: Content["chat.options.li3.label"],
+			label: Content["chat.options.li2.label"],
 			value: "webSearch",
-			description: Content["chat.options.li3.description"],
-			ariaLabel: Content["chat.options.li3.ariaLabel"],
+			description: Content["chat.options.li2.description"],
+			ariaLabel: Content["chat.options.li2.ariaLabel"],
 			isEnabled: isWebSearchAllowed,
 		},
 	];

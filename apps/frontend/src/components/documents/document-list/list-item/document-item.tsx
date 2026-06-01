@@ -1,12 +1,16 @@
 import React from "react";
 import type { Document } from "../../../../common";
-import { useDocumentStore } from "../../../../store/document-store";
+import { useUserDocumentStore } from "../../../../store/use-user-document-store.ts";
 import { useDocumentsListStore } from "../../../../store/use-documents-list-store.ts";
 import Checkbox from "../../../primitives/checkboxes/checkbox";
 import { DraggableDocumentName } from "./draggable-document-name.tsx";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
 import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
+import { usePreviewDocumentStore } from "../../../../store/use-preview-document-store.ts";
+import { usePublicDocumentsStore } from "../../../../store/use-public-documents-store.ts";
+import { isUserDocument } from "./utils/is-user-document.ts";
+import { isPublicDocument } from "./utils/is-public-document.ts";
 
 interface DocumentItemProps {
 	item: Document;
@@ -14,30 +18,49 @@ interface DocumentItemProps {
 
 const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 	const {
-		selectDocumentForAction,
-		unselectDocumentForAction,
-		selectedDocumentsForAction,
-		selectedChatDocuments,
-		toggleChatDocument,
-		selectedPreviewDocument,
-	} = useDocumentStore();
+		selectUserDocumentForAction,
+		unselectUserDocumentForAction,
+		selectedUserDocumentsForAction,
+		selectedUserChatDocuments,
+		toggleUserChatDocument,
+	} = useUserDocumentStore();
+	const { selectedPreviewDocument } = usePreviewDocumentStore();
 	const { isMultiSelectForActionVisible } = useDocumentsListStore();
+	const { togglePublicChatDocument, selectedPublicChatDocuments } =
+		usePublicDocumentsStore();
 
-	const isSelectedForAction = selectedDocumentsForAction.some(
+	const isSelectedForAction = selectedUserDocumentsForAction.some(
 		(doc) => doc.id === item.id,
 	);
-	const isSelectedForChat = selectedChatDocuments.some(
-		(doc) => doc.id === item.id,
-	);
+	const isSelectedForChat =
+		selectedUserChatDocuments.some((doc) => doc.id === item.id) ||
+		selectedPublicChatDocuments.some((doc) => doc.id === item.id);
 
 	const isSelectedForPreview = selectedPreviewDocument?.id === item.id;
 
 	const handleCheckboxChange = (checked: boolean) => {
-		if (checked) {
-			selectDocumentForAction(item);
+		if (isPublicDocument(item)) {
 			return;
 		}
-		unselectDocumentForAction(item.id);
+
+		if (checked) {
+			selectUserDocumentForAction(item);
+			return;
+		}
+
+		unselectUserDocumentForAction(item.id);
+	};
+
+	const handleToggleChatItem = () => {
+		if (isUserDocument(item)) {
+			toggleUserChatDocument(item);
+			return;
+		}
+
+		if (isPublicDocument(item)) {
+			togglePublicChatDocument(item);
+			return;
+		}
 	};
 
 	return (
@@ -59,7 +82,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 				<DraggableDocumentName item={item} />
 
 				<ToggleChatItemButton
-					handleToggleChatItem={() => toggleChatDocument(item)}
+					handleToggleChatItem={handleToggleChatItem}
 					isSelectedForChat={isSelectedForChat}
 				/>
 				<ItemDropdownButton item={item} />

@@ -1,14 +1,14 @@
 import { create } from "zustand";
-import type { Document, DocumentFolder } from "../common";
+import type { UserDocument, UserFolder } from "../common";
 
 interface DocumentsListStore {
 	isMultiSelectForActionVisible: boolean;
 	showMultiSelectForAction: () => void;
 	hideMultiSelectForAction: () => void;
 
-	singleItemSelectedForAction: Document | DocumentFolder | null;
+	singleItemSelectedForAction: UserDocument | UserFolder | null;
 	setSingleItemSelectedForAction: (
-		item: Document | DocumentFolder | null,
+		item: UserDocument | UserFolder | null,
 	) => void;
 }
 
