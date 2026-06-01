@@ -936,6 +936,7 @@ export const Content = {
 	"chat.citationsDialog.title": "Quellen",
 	"chat.citationsDialog.page": "Seite",
 	"chat.tooltipCitation.page": "Seite",
+	"chat.citationsDialog.publicDocumentPill.label": "Verwaltungswissen",
 
 	"chat.exportChatTextButton.label": "Exportieren",
 	"chat.exportChatTextButton.ariaLabel": "Chat exportieren",
