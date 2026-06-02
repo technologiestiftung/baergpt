@@ -20,12 +20,22 @@ export const EXTERNAL_TOOL_PRIVACY_CONFIG: Partial<
 	Record<
 		ChatOption,
 		{
-			displayName: string;
+			warningBannerKey: string;
+			deactivationTitleKey: string;
+			deactivationBodyKey: string;
 		}
 	>
 > = {
-	webSearch: { displayName: "Websuche" },
-	parla: { displayName: "Parla" },
+	webSearch: {
+		warningBannerKey: "chat.webSearch.warningBanner.label",
+		deactivationTitleKey: "chat.webSearch.infoText.deactivated.title",
+		deactivationBodyKey: "chat.webSearch.infoText.deactivated.body",
+	},
+	parla: {
+		warningBannerKey: "chat.parla.warningBanner.label",
+		deactivationTitleKey: "chat.parla.infoText.deactivated.title",
+		deactivationBodyKey: "chat.parla.infoText.deactivated.body",
+	},
 };
 
 export type ChatOptionsDropdownValue = ChatOption | "mcpServer";

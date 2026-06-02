@@ -21,7 +21,7 @@ export const ChatSection: React.FC = () => {
 				<div className="flex flex-col w-full max-w-[640px] mb-5 overflow-y-auto gap-y-4">
 					<GetStarted />
 					{externalToolInfoMessage && (
-						<ChatInfoMessage tool={externalToolInfoMessage} />
+						<ChatInfoMessage />
 					)}
 				</div>
 			)}

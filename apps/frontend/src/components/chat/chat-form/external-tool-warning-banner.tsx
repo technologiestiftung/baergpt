@@ -16,11 +16,7 @@ export const ExternalToolWarningBanner: React.FC = () => {
 		return null;
 	}
 
-	const { displayName } = activeToolConfig;
-	const text = Content["chat.externalToolWarningBanner.label"].replace(
-		"{name}",
-		displayName,
-	);
+	const text = Content[activeToolConfig.warningBannerKey as keyof typeof Content];
 
 	return (
 		<div

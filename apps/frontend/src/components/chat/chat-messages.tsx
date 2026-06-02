@@ -54,7 +54,7 @@ export const ChatMessages: React.FC = () => {
 				)}
 				{hasError && <ChatErrorMessage />}
 				{externalToolInfoMessage && (
-					<ChatInfoMessage tool={externalToolInfoMessage} />
+					<ChatInfoMessage />
 				)}
 			</div>
 		</output>

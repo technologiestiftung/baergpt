@@ -1,23 +1,19 @@
 import React from "react";
 import Content from "../../../content.ts";
-import type { ChatOption } from "../../../common.ts";
 import { EXTERNAL_TOOL_PRIVACY_CONFIG } from "../../../common.ts";
+import { useChatsStore } from "../../../store/use-chats-store.ts";
 
-export const ChatInfoMessage: React.FC<{ tool: ChatOption }> = ({ tool }) => {
-	const config = EXTERNAL_TOOL_PRIVACY_CONFIG[tool];
+export const ChatInfoMessage: React.FC = () => {
+	const { externalToolInfoMessage } = useChatsStore();
+	const config = externalToolInfoMessage
+		? EXTERNAL_TOOL_PRIVACY_CONFIG[externalToolInfoMessage]
+		: null;
 	if (!config) {
 		return null;
 	}
 
-	const { displayName } = config;
-	const title = Content["chat.infoText.deactivated.title"].replace(
-		"{name}",
-		displayName,
-	);
-	const body = Content["chat.infoText.deactivated.body"].replace(
-		/\{name\}/g,
-		displayName,
-	);
+	const title = Content[config.deactivationTitleKey as keyof typeof Content];
+	const body = Content[config.deactivationBodyKey as keyof typeof Content];
 
 	return (
 		<div

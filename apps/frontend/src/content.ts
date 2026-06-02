@@ -873,9 +873,12 @@ export const Content = {
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
-	"chat.infoText.deactivated.title": "{name} wurde automatisch deaktiviert.",
-	"chat.infoText.deactivated.body":
-		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Funktion {name} deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Funktion {name} wieder zu aktivieren, klicken Sie auf +.",
+	"chat.webSearch.infoText.deactivated.title": "Websuche wurde automatisch deaktiviert.",
+	"chat.webSearch.infoText.deactivated.body":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Websuche deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Websuche wieder zu aktivieren, klicken Sie auf +.",
+	"chat.parla.infoText.deactivated.title": "Parla wurde automatisch deaktiviert.",
+	"chat.parla.infoText.deactivated.body":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Parla deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Parla wieder zu aktivieren, klicken Sie auf +.",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
 	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
@@ -954,8 +957,10 @@ export const Content = {
 	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
 
-	"chat.externalToolWarningBanner.label":
-		"{name} aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+	"chat.webSearch.warningBanner.label":
+		"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+	"chat.parla.warningBanner.label":
+		"Parla aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
