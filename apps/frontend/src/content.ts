@@ -873,10 +873,12 @@ export const Content = {
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
-	"chat.webSearch.infoText.deactivated.title": "Websuche wurde automatisch deaktiviert.",
+	"chat.webSearch.infoText.deactivated.title":
+		"Websuche wurde automatisch deaktiviert.",
 	"chat.webSearch.infoText.deactivated.body":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Websuche deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Websuche wieder zu aktivieren, klicken Sie auf +.",
-	"chat.parla.infoText.deactivated.title": "Parla wurde automatisch deaktiviert.",
+	"chat.parla.infoText.deactivated.title":
+		"Parla wurde automatisch deaktiviert.",
 	"chat.parla.infoText.deactivated.body":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Parla deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Parla wieder zu aktivieren, klicken Sie auf +.",
 

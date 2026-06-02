@@ -16,7 +16,8 @@ export const ExternalToolWarningBanner: React.FC = () => {
 		return null;
 	}
 
-	const text = Content[activeToolConfig.warningBannerKey as keyof typeof Content];
+	const text =
+		Content[activeToolConfig.warningBannerKey as keyof typeof Content];
 
 	return (
 		<div
