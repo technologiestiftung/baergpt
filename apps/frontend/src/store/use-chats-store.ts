@@ -53,9 +53,12 @@ interface ChatStore {
 		citations: number[] | null;
 		web_citations: WebCitationSource[] | null;
 	}): void;
-	isWebSearchRemovalInfoMessageShown: boolean;
-	setIsWebSearchRemovalInfoMessageShown(isShown: boolean): void;
+	autoDeactivatedExternalTool: ChatOption | null;
+	setAutoDeactivatedExternalTool(tool: ChatOption | null): void;
+	deactivateExternalTools(): void;
 }
+
+const externalToolOptions: ChatOption[] = ["webSearch", "parla"];
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
@@ -64,7 +67,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	totalChatCount: null,
 	selectedChatOptions: [],
 	selectedLlmModel: "mistral-small",
-	isWebSearchRemovalInfoMessageShown: false,
+	autoDeactivatedExternalTool: null,
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
@@ -291,11 +294,23 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		}, 300);
 	},
 
-	setIsWebSearchRemovalInfoMessageShown(isShown: boolean) {
-		set({ isWebSearchRemovalInfoMessageShown: isShown });
+	setAutoDeactivatedExternalTool(tool) {
+		set({ autoDeactivatedExternalTool: tool });
 
 		setTimeout(() => {
-			set({ isWebSearchRemovalInfoMessageShown: false });
+			set({ autoDeactivatedExternalTool: null });
 		}, 20_000);
+	},
+
+	deactivateExternalTools() {
+		const { selectedChatOptions } = get();
+		const activeExternalTool = selectedChatOptions.find((opt) =>
+			externalToolOptions.includes(opt),
+		);
+		if (!activeExternalTool) {
+			return;
+		}
+		get().toggleChatOption(activeExternalTool);
+		get().setAutoDeactivatedExternalTool(activeExternalTool);
 	},
 }));
