@@ -789,6 +789,114 @@ test.describe("Chat", () => {
 		await expect(contextPill).not.toBeVisible();
 	});
 
+	testDesktopOnly(
+		"Activating web search shows privacy warning banner",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+
+			await expect(
+				page.getByText(
+					"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+				),
+			).toBeVisible();
+
+			await page.getByRole("button", { name: "Websuche entfernen" }).click();
+
+			await expect(
+				page.getByText(
+					"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+				),
+			).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Adding document while web search active deactivates web search",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+
+			const webSearchPill = page.getByRole("button", {
+				name: "Websuche entfernen",
+			});
+			await expect(webSearchPill).toBeVisible();
+
+			await page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("In den Chat")
+				.click();
+
+			await expect(webSearchPill).not.toBeVisible();
+
+			await expect(
+				page.getByText("Websuche wurde automatisch deaktiviert."),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Adding folder while web search active deactivates web search",
+		async ({ page }) => {
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+
+			const webSearchPill = page.getByRole("button", {
+				name: "Websuche entfernen",
+			});
+			await expect(webSearchPill).toBeVisible();
+
+			await page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("In den Chat")
+				.click();
+
+			await expect(webSearchPill).not.toBeVisible();
+
+			await expect(
+				page.getByText("Websuche wurde automatisch deaktiviert."),
+			).toBeVisible();
+		},
+	);
+
 	testWithLoggedInUser(
 		"Should not be able to send another message with enter while waiting for a response",
 		async ({ page }) => {
