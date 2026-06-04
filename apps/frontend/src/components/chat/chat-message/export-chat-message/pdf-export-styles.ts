@@ -4,7 +4,7 @@ export const styles = StyleSheet.create({
 	page: {
 		padding: 64,
 		fontSize: 12,
-		fontFamily: "Times-Roman",
+		fontFamily: "Berlin Type Office",
 	},
 	paragraph: { marginBottom: 8, wordBreak: "break-word" },
 	bold: { fontWeight: "bold" },
