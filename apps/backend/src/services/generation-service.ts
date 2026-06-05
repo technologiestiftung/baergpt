@@ -353,20 +353,10 @@ export class GenerationService {
 									data: citationObject.citations,
 								});
 
-								try {
-									await this.dbService.updateUserColumnValue(
-										userId,
-										"num_inference_tokens",
-										generateObjectUsage.totalTokens,
-									);
-									await this.dbService.updateUserColumnValue(
-										userId,
-										"num_inferences",
-										1,
-									);
-								} catch (error) {
-									captureError(error);
-								}
+								await this.dbService.updateUsage(
+									userId,
+									generateObjectUsage.totalTokens,
+								);
 							} catch (error) {
 								captureError(error);
 							}
@@ -452,22 +442,10 @@ export class GenerationService {
 									data: citedSources,
 								});
 
-								if (userId) {
-									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											webCitationUsage.totalTokens,
-										);
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
-										);
-									} catch (error) {
-										captureError(error);
-									}
-								}
+								await this.dbService.updateUsage(
+									userId,
+									webCitationUsage.totalTokens,
+								);
 							} catch (error) {
 								captureError(error);
 							}
@@ -480,24 +458,8 @@ export class GenerationService {
 							userId,
 							sessionId,
 						});
-						// Handle token usage tracking after stream completes
-						if (userId && usage?.totalTokens) {
-							try {
-								await this.dbService.updateUserColumnValue(
-									userId,
-									"num_inference_tokens",
-									usage.totalTokens,
-								);
-								// Increase num_inferences for user by one
-								await this.dbService.updateUserColumnValue(
-									userId,
-									"num_inferences",
-									1,
-								);
-							} catch (dbError) {
-								captureError(dbError);
-							}
-						}
+
+						await this.dbService.updateUsage(userId, usage.totalTokens);
 					},
 					experimental_telemetry: {
 						isEnabled: config.isTracingEnabled,
@@ -524,8 +486,12 @@ export class GenerationService {
 	async generateTextContent(args: {
 		llmHandler: LLMHandler;
 		messages: ModelMessage[];
-		userId: string;
-		langfusePrompt?: TextPromptClient | ChatPromptClient;
+		/**
+		 * userId can be undefined when generating embeddings for default documents
+		 * as they are not owned/uploaded by a specific user
+		 */
+		userId: string | undefined;
+		langfusePrompt: TextPromptClient | ChatPromptClient;
 	}): Promise<string> {
 		const { llmHandler, messages, userId, langfusePrompt } = args;
 		const { text, usage } = await generateText({
@@ -548,14 +514,7 @@ export class GenerationService {
 		});
 
 		if (userId) {
-			// Increase num_inferences for user by 1
-			await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
-			// Increase num_tokens by token count of this generation
-			await this.dbService.updateUserColumnValue(
-				userId,
-				"num_inference_tokens",
-				usage.totalTokens,
-			);
+			await this.dbService.updateUsage(userId, usage.totalTokens);
 		}
 		return text;
 	}

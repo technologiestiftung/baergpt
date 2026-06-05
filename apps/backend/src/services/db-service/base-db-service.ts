@@ -145,6 +145,8 @@ export abstract class BaseContentDbService {
 		amount: number,
 	): Promise<void>;
 
+	abstract updateUsage(userId: string, tokenAmount: number): Promise<void>;
+
 	/**
 	 * Creates a complete document record with all metadata, summary, and embeddings in the database.
 	 */
