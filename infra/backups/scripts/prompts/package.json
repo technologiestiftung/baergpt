@@ -1,0 +1,16 @@
+{
+	"name": "backup-prompts",
+	"version": "1.0.0",
+	"main": "backup-prompts.ts",
+	"scripts": {
+		"start": "tsx backup-prompts.ts"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"dependencies": {
+		"@langfuse/client": "5.4.1",
+		"tsx": "4.22.4"
+	}
+}
