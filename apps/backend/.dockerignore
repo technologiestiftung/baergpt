@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.env.*
+*.md
+.git
+.turbo
+coverage
