@@ -24,7 +24,11 @@ export class EmbeddingService {
 
 	async generateMistralEmbedding(
 		input: string,
-		userId?: string,
+		/**
+		 * userId can be undefined when generating embeddings for default documents
+		 * as they are not owned/uploaded by a specific user
+		 */
+		userId: string | undefined,
 	): Promise<EmbeddingResponse> {
 		const { embedding, usage } = await embed({
 			model: mistral.embeddingModel(config.mistralEmbeddingModel),
@@ -38,7 +42,6 @@ export class EmbeddingService {
 			throw new Error("Failed to create embedding");
 		}
 
-		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
 		if (userId) {
 			await this.dbService.updateUserColumnValue(
 				userId,

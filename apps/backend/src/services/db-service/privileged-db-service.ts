@@ -223,8 +223,13 @@ export class PrivilegedDbService extends BaseContentDbService {
 	): Promise<void> {
 		// No-op: Referenced by some services but guarded against if there is no user.
 		throw new Error(
-			"updateUserColumnValue should not be called on PrivilegedDbService. " +
-				"Ensure userId is checked before calling this method.",
+			"You're trying to update a user's token usage via the PrivilegedDbService. Either check if userId is defined before calling this method or use the UserScopedDbService instead.",
+		);
+	}
+
+	async updateUsage(_userId, _tokenAmount) {
+		throw new Error(
+			"You're trying to update a user's token usage via the PrivilegedDbService. Either check if userId is defined before calling this method or use the UserScopedDbService instead.",
 		);
 	}
 }
