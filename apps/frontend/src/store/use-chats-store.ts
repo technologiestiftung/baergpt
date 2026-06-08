@@ -304,8 +304,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 	deactivateExternalTools() {
 		const { selectedChatOptions } = get();
-		const activeExternalTool = selectedChatOptions.find((opt) =>
-			externalToolOptions.includes(opt),
+		const activeExternalTool = selectedChatOptions.find((option) =>
+			externalToolOptions.includes(option),
 		);
 		if (!activeExternalTool) {
 			return;
