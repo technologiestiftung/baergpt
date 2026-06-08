@@ -14,7 +14,10 @@ import { insertMessage as insertMessageIntoDb } from "../api/message/insert-mess
 import { updateMessage as updateMessageInDb } from "../api/message/update-message.ts";
 import { getTotalChatCount as getTotalChatCountFromDb } from "../api/chat/get-total-chat-count.ts";
 import { useErrorStore } from "./error-store.ts";
-import type { WebCitationSource } from "../api/chat/get-completion.ts";
+import type {
+	WebCitationSource,
+	ParlaCitationSource,
+} from "../api/chat/get-completion.ts";
 import { useUserDocumentStore } from "./use-user-document-store.ts";
 import { useUserFolderStore } from "./use-user-folder-store.ts";
 import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
@@ -53,6 +56,7 @@ interface ChatStore {
 		content: string;
 		citations: number[] | null;
 		web_citations: WebCitationSource[] | null;
+		parla_citations: ParlaCitationSource[] | null;
 	}): void;
 	autoDeactivatedExternalTool: ChatOption | null;
 	setAutoDeactivatedExternalTool(tool: ChatOption | null): void;
@@ -267,7 +271,14 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	 * Updates the content of a message
 	 * and debounces updating the message in the database
 	 */
-	updateMessage: ({ chat, messageId, content, citations, web_citations }) => {
+	updateMessage: ({
+		chat,
+		messageId,
+		content,
+		citations,
+		web_citations,
+		parla_citations,
+	}) => {
 		clearTimeout(updateMessageDebounceTimeout);
 
 		const foundMessage = chat.messages.find(
@@ -280,10 +291,16 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		foundMessage.content = content;
 		foundMessage.citations = citations;
 		foundMessage.web_citations = web_citations;
+		foundMessage.parla_citations = parla_citations;
 		get().updateChats(chat);
 
 		updateMessageDebounceTimeout = setTimeout(async () => {
-			await updateMessageInDb(messageId, { content, citations, web_citations });
+			await updateMessageInDb(messageId, {
+				content,
+				citations,
+				web_citations,
+				parla_citations,
+			});
 		}, 300);
 	},
 

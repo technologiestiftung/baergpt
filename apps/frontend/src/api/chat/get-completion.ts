@@ -19,10 +19,19 @@ export type WebCitationSource = {
 	age?: string[] | null;
 };
 
+export type ParlaCitationSource = {
+	url: string;
+	title: string;
+	source_type: string;
+	content: string;
+	page: number;
+};
+
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
 	| { type: "data-citations"; data: number[] }
-	| { type: "data-web-citations"; data: WebCitationSource[] };
+	| { type: "data-web-citations"; data: WebCitationSource[] }
+	| { type: "data-parla-citations"; data: ParlaCitationSource[] };
 
 const activeToolsDict: Record<ChatOption, string[]> = {
 	parla: ["parlaMCPTools"],
@@ -124,10 +133,12 @@ export async function getCompletion(
 			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
 			citations: null,
 			web_citations: null,
+			parla_citations: null,
 		});
 
 		let currentText = "";
 		let citations: number[] = [];
+		let webCitations: WebCitationSource[] = [];
 
 		let hasReceivedText = false;
 
@@ -146,6 +157,7 @@ export async function getCompletion(
 					content: currentText,
 					citations: citations.length ? citations : null,
 					web_citations: null,
+					parla_citations: null,
 				});
 			},
 			onCitations: (chunkIds: number[]) => {
@@ -157,6 +169,7 @@ export async function getCompletion(
 					content: currentText,
 					citations: citations.length ? citations : null,
 					web_citations: null,
+					parla_citations: null,
 				});
 				// Cache the citations now
 				if (citations.length) {
@@ -164,16 +177,28 @@ export async function getCompletion(
 				}
 			},
 			onWebCitations: (webSources: WebCitationSource[]) => {
+				webCitations = webSources;
 				updateMessage({
 					chat: currentChat,
 					messageId,
 					content: currentText,
 					citations: citations.length ? citations : null,
-					web_citations: webSources.length ? webSources : null,
+					web_citations: webCitations.length ? webCitations : null,
+					parla_citations: null,
 				});
 				if (webSources.length) {
 					ensureFaviconsCached(webSources.map(({ url }) => url));
 				}
+			},
+			onParlaCitations: (sources: ParlaCitationSource[]) => {
+				updateMessage({
+					chat: currentChat,
+					messageId,
+					content: currentText,
+					citations: citations.length ? citations : null,
+					web_citations: webCitations.length ? webCitations : null,
+					parla_citations: sources.length ? sources : null,
+				});
 			},
 			onFinish: () => {
 				setStatus("idle");
@@ -201,6 +226,7 @@ function processStreamLine(
 		onTextDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
+		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -233,6 +259,11 @@ function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "data-parla-citations") {
+			callbacks.onParlaCitations(event.data);
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -248,6 +279,7 @@ async function parseStream(
 		onTextDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
+		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ) {

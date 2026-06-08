@@ -28,7 +28,13 @@ import { captureError } from "../monitoring/capture-error";
 import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
+	parlaCitationAnswerSchema,
 } from "../schemas/citation-answer-schema";
+import {
+	parseParlaToolOutput,
+	type ParlaChunkData,
+} from "./parla-citation-extraction";
+import { resilientCall } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
@@ -446,6 +452,93 @@ export class GenerationService {
 									userId,
 									webCitationUsage.totalTokens,
 								);
+							} catch (error) {
+								captureError(error);
+							}
+						}
+
+						const allParlaChunks: ParlaChunkData[] = steps.flatMap((step) =>
+							step.toolResults
+								.filter((tr) => tr.toolName === "parla_vector_search")
+								.flatMap((tr) => parseParlaToolOutput(tr.output)),
+						);
+
+						if (allParlaChunks.length > 0) {
+							try {
+								const parlaCitationPromptClient = await resilientCall(
+									() =>
+										langfuse.prompt.get("document-citation-extraction", {
+											type: "chat",
+											label:
+												config.nodeEnv === "test"
+													? "development"
+													: config.nodeEnv,
+										}),
+									{ queueType: "llm" },
+								);
+
+								const compiledParlaCitationPrompts =
+									parlaCitationPromptClient.compile({
+										generatedAnswer: text,
+										availableSources: allParlaChunks
+											.map((c) => `[ID: ${c.id}]\n Snippet: ${c.content}`)
+											.join("\n\n"),
+									}) as ModelMessage[];
+
+								const { output: parlaObject, usage: parlaCitationUsage } =
+									await resilientCall(
+										() =>
+											generateText({
+												model: llmHandler.languageModel,
+												messages: compiledParlaCitationPrompts,
+												temperature: LLM_PARAMETERS.temperature,
+												output: Output.object({
+													schema: parlaCitationAnswerSchema,
+												}),
+												experimental_telemetry: {
+													isEnabled: config.isTracingEnabled,
+													functionId: "parla-citation-extraction",
+													metadata: {
+														sessionId: sessionId ? sessionId : "unknown",
+													},
+												},
+											}),
+										{ queueType: "llm" },
+									);
+
+								const citedParlaChunks = allParlaChunks
+									.filter((c) => parlaObject.citations.includes(c.id))
+									.map(({ content, page, url, title, source_type }) => ({
+										content,
+										page,
+										url,
+										title,
+										source_type,
+									}));
+
+								if (citedParlaChunks.length > 0) {
+									writer.write({
+										type: "data-parla-citations",
+										data: citedParlaChunks,
+									});
+								}
+
+								if (userId) {
+									try {
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inference_tokens",
+											parlaCitationUsage.totalTokens,
+										);
+										await this.dbService.updateUserColumnValue(
+											userId,
+											"num_inferences",
+											1,
+										);
+									} catch (error) {
+										captureError(error);
+									}
+								}
 							} catch (error) {
 								captureError(error);
 							}
