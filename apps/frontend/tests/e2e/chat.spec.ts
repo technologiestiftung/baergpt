@@ -792,6 +792,10 @@ test.describe("Chat", () => {
 	testDesktopOnly(
 		"Activating web search shows privacy warning banner",
 		async ({ page }) => {
+			if (process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true") {
+				testDesktopOnly.skip();
+			}
+
 			await page.goto("/");
 
 			const chatOptionsButton = page.getByRole("button", {
@@ -820,6 +824,9 @@ test.describe("Chat", () => {
 	testDesktopOnly(
 		"Adding document while web search active deactivates web search",
 		async ({ page }) => {
+			if (process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true") {
+				testDesktopOnly.skip();
+			}
 			await page.goto("/");
 
 			const chatOptionsButton = page.getByRole("button", {
@@ -851,6 +858,9 @@ test.describe("Chat", () => {
 	testDesktopOnly(
 		"Adding folder while web search active deactivates web search",
 		async ({ page }) => {
+			if (process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true") {
+				testDesktopOnly.skip();
+			}
 			const givenFolderName = "test-folder";
 
 			await page.goto("/");

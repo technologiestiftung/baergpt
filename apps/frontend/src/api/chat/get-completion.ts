@@ -38,7 +38,7 @@ export async function getCompletion(
 		updateMessage,
 		addMessageToChat,
 		selectedLlmModel,
-		selectedChatOptions,
+		selectedChatOption,
 	} = useChatsStore.getState();
 	const { getSelectedUserChatDocumentIds } = useUserDocumentStore.getState();
 	const { getSelectedUserChatFolderIds } = useUserFolderStore.getState();
@@ -95,9 +95,9 @@ export async function getCompletion(
 					allowed_document_ids: allowedDocumentIds,
 					allowed_folder_ids: selectedFolderIds,
 					is_addressed_formal: user?.is_addressed_formal,
-					active_tools: selectedChatOptions.flatMap(
-						(option) => activeToolsDict[option] ?? [],
-					),
+					active_tools: selectedChatOption
+						? (activeToolsDict[selectedChatOption] ?? [])
+						: [],
 					llm_model: selectedLlmModel,
 				}),
 			},

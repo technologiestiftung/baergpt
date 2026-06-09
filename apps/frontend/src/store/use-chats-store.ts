@@ -21,13 +21,14 @@ import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
+let autoDeactivateExternalToolTimeout: ReturnType<typeof setTimeout>;
 
 interface ChatStore {
 	isFirstLoad: boolean;
 	isLoading: boolean;
 	chats: ChatWithMessages[];
 	totalChatCount: number | null;
-	selectedChatOptions: ChatOption[];
+	selectedChatOption: ChatOption | null;
 	selectedLlmModel: LlmModel;
 	resetToDefaultChatOptions(): void;
 	toggleChatOption(option: ChatOption): void;
@@ -65,7 +66,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isLoading: false,
 	chats: [],
 	totalChatCount: null,
-	selectedChatOptions: [],
+	selectedChatOption: null,
 	selectedLlmModel: "mistral-small",
 	autoDeactivatedExternalTool: null,
 
@@ -74,17 +75,13 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	resetToDefaultChatOptions() {
-		set({ selectedChatOptions: [] });
+		set({ selectedChatOption: null });
 	},
 
 	toggleChatOption(option: ChatOption) {
-		const { selectedChatOptions } = get();
-		if (selectedChatOptions.includes(option)) {
-			set({
-				selectedChatOptions: selectedChatOptions.filter(
-					(item) => item !== option,
-				),
-			});
+		const { selectedChatOption } = get();
+		if (selectedChatOption === option) {
+			set({ selectedChatOption: null });
 		} else {
 			if (option === "webSearch") {
 				const { selectedUserChatDocuments, unselectUserChatDocument } =
@@ -113,11 +110,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				);
 			}
 
-			/* 
-			/ simplified solution for now to kick out other ChatOptions
-			/ can be changed once baseKnowledge is part of files and testing of combining tools is done
-			*/
-			set({ selectedChatOptions: [option] });
+			set({ selectedChatOption: option });
 		}
 	},
 
@@ -295,22 +288,24 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	setAutoDeactivatedExternalTool(tool) {
+		if (autoDeactivateExternalToolTimeout) {
+			clearTimeout(autoDeactivateExternalToolTimeout);
+		}
 		set({ autoDeactivatedExternalTool: tool });
-
-		setTimeout(() => {
+		autoDeactivateExternalToolTimeout = setTimeout(() => {
 			set({ autoDeactivatedExternalTool: null });
 		}, 20_000);
 	},
 
 	deactivateExternalTools() {
-		const { selectedChatOptions } = get();
-		const activeExternalTool = selectedChatOptions.find((option) =>
-			externalToolOptions.includes(option),
-		);
-		if (!activeExternalTool) {
+		const { selectedChatOption } = get();
+		if (
+			!selectedChatOption ||
+			!externalToolOptions.includes(selectedChatOption)
+		) {
 			return;
 		}
-		get().toggleChatOption(activeExternalTool);
-		get().setAutoDeactivatedExternalTool(activeExternalTool);
+		get().toggleChatOption(selectedChatOption);
+		get().setAutoDeactivatedExternalTool(selectedChatOption);
 	},
 }));

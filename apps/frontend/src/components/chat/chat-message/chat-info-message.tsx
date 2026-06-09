@@ -1,21 +1,6 @@
 import React from "react";
 import Content from "../../../content.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import type { ChatOption } from "../../../common.ts";
-
-const infoMessageKeys: Record<
-	ChatOption,
-	{ title: keyof typeof Content; p1: keyof typeof Content }
-> = {
-	webSearch: {
-		title: "chat.webSearchInfoText.title",
-		p1: "chat.webSearchInfoText.p1",
-	},
-	parla: {
-		title: "chat.parlaInfoText.title",
-		p1: "chat.parlaInfoText.p1",
-	},
-};
 
 export const ChatInfoMessage: React.FC = () => {
 	const { autoDeactivatedExternalTool } = useChatsStore();
@@ -23,8 +8,6 @@ export const ChatInfoMessage: React.FC = () => {
 	if (!autoDeactivatedExternalTool) {
 		return null;
 	}
-
-	const keys = infoMessageKeys[autoDeactivatedExternalTool];
 
 	return (
 		<div
@@ -38,10 +21,12 @@ export const ChatInfoMessage: React.FC = () => {
 					className="w-4 h-4"
 				/>
 				<h3 className="text-sm leading-5 font-semibold">
-					{Content[keys.title]}
+					{Content[`chat.${autoDeactivatedExternalTool}.infoText.title`]}
 				</h3>
 			</span>
-			<p className="text-sm leading-5 font-normal">{Content[keys.p1]}</p>
+			<p className="text-sm leading-5 font-normal">
+				{Content[`chat.${autoDeactivatedExternalTool}.infoText.p1`]}
+			</p>
 		</div>
 	);
 };

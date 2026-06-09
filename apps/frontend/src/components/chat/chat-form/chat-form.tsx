@@ -34,7 +34,7 @@ export const ChatForm: React.FC = () => {
 		useUserFolderStore();
 	const { getSelectedPublicChatDocumentIds } = usePublicDocumentsStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
-	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
+	const { getCurrentOrCreateChat, selectedChatOption, toggleChatOption } =
 		useChatsStore();
 	const { setAutoDeactivatedExternalTool } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
@@ -126,7 +126,7 @@ export const ChatForm: React.FC = () => {
 
 	const hasError = status === "error";
 
-	const isWebSearchActive = selectedChatOptions.includes("webSearch");
+	const isWebSearchActive = selectedChatOption === "webSearch";
 	const textAreaPlaceholder = isWebSearchActive
 		? Content["chat.textarea.placeholder.webSearch"]
 		: Content["chat.textarea.placeholder"];
@@ -170,13 +170,12 @@ export const ChatForm: React.FC = () => {
 					<div className="flex items-center gap-3">
 						<ChatOptionsToggleButton />
 						<div className="items-center gap-2 hidden md:flex">
-							{selectedChatOptions.map((option) => (
+							{selectedChatOption && (
 								<ContextPill
-									key={option}
-									option={option}
-									onClose={() => toggleChatOption(option)}
+									option={selectedChatOption}
+									onClose={() => toggleChatOption(selectedChatOption)}
 								/>
-							))}
+							)}
 						</div>
 					</div>
 					<div className="flex items-center gap-3">
