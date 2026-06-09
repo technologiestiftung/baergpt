@@ -2,7 +2,6 @@ import { serviceRoleDbClient } from "../src/supabase";
 import { PrivilegedDbService } from "../src/services/db-service/privileged-db-service";
 import { EmbeddingService } from "../src/services/embedding-service";
 import { config } from "../src/config";
-import { initQueues } from "../src/services/distributed-limiter";
 import {
 	trimToMistralTokenLimitByWords,
 	countMistralTokens,
@@ -21,8 +20,6 @@ async function backfillMistralEmbeddings() {
 
 	const dbService = new PrivilegedDbService(serviceRoleDbClient);
 	const embeddingService = new EmbeddingService(dbService);
-
-	await initQueues();
 
 	let totalProcessed = 0;
 	let hasMore = true;
@@ -56,7 +53,6 @@ async function backfillMistralEmbeddings() {
 		const contents = chunks.map((c) => {
 			const tokens = countMistralTokens(c.content);
 			if (tokens > MISTRAL_EMBED_MAX_TOKENS) {
-				// eslint-disable-next-line no-console
 				console.warn(
 					`Chunk id=${c.id} has ${tokens} tokens, truncating to ${MISTRAL_EMBED_MAX_TOKENS}`,
 				);

@@ -1,7 +1,6 @@
 import { serviceRoleDbClient } from "../src/supabase";
 import { PrivilegedDbService } from "../src/services/db-service/privileged-db-service";
 import { EmbeddingService } from "../src/services/embedding-service";
-import { initQueues } from "../src/services/distributed-limiter";
 import type { Document } from "../src/types/common";
 
 const DEFAULT_DOC_IDS = [7256, 7262, 7263, 7380];
@@ -19,8 +18,6 @@ async function rechunkDocuments(targetDocIds: number[]) {
 
 	const dbService = new PrivilegedDbService(serviceRoleDbClient);
 	const embeddingService = new EmbeddingService(dbService);
-
-	await initQueues();
 
 	for (const docId of targetDocIds) {
 		// eslint-disable-next-line no-console
