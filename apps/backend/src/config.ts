@@ -29,7 +29,6 @@ export interface Config {
 	mcpParlaUrl?: string;
 	braveSearchApiKey?: string;
 	braveSearchApiUrl?: string;
-	braveSearchMaxRPS?: number;
 	featureFlagWebSearchAllowed: boolean;
 	featureFlagMemoryLog: boolean;
 	isTracingEnabled: boolean;
@@ -165,9 +164,6 @@ export const config: Config = {
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
 	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
 	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,
-	braveSearchMaxRPS: process.env.BRAVE_SEARCH_MAX_RPS
-		? parseInt(process.env.BRAVE_SEARCH_MAX_RPS, 10)
-		: undefined,
 	featureFlagWebSearchAllowed:
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 	featureFlagMemoryLog: process.env.FEATURE_FLAG_MEMORY_LOG === "true",
