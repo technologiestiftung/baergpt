@@ -10,7 +10,7 @@
 	html {
 		scroll-behavior: smooth;
 	}
-
+	
 	.markdown-container p {
 		@apply my-3 hyphens-auto;
 		word-break: break-word;
@@ -38,7 +38,7 @@
 	.markdown-container h4,
 	.markdown-container h5,
 	.markdown-container h6 {
-		@apply font-bold pl-3 pt-2 text-dunkelblau-200;
+		@apply font-bold pt-2 text-dunkelblau-200;
 	}
 
 	.markdown-container h1 {
