@@ -7,6 +7,7 @@ import { IndexPage } from "./routes";
 import { BaseKnowledgePage } from "./routes/base-knowledge/index";
 import { LoginPage } from "./routes/login-page";
 import { ProductDashboardPage } from "@/routes/product-dashboard";
+import { DomainAllowlistPage } from "./routes/domain-allowlist/index";
 
 const router = createBrowserRouter([
 	{
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
 	{
 		path: "/product-dashboard/",
 		element: <ProductDashboardPage />,
+	},
+	{
+		path: "/domain-allowlist/",
+		element: <DomainAllowlistPage />,
 	},
 	{
 		path: "/login/",
