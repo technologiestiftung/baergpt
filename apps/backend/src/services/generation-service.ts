@@ -295,7 +295,6 @@ export class GenerationService {
 							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
 						},
 					},
-					//eslint-disable-next-line complexity
 					onFinish: async ({ text, usage, steps }) => {
 						logMemory(
 							`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
@@ -517,23 +516,10 @@ export class GenerationService {
 										data: citedParlaChunks,
 									});
 								}
-
-								if (userId) {
-									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											parlaCitationUsage.totalTokens,
-										);
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
-										);
-									} catch (error) {
-										captureError(error);
-									}
-								}
+								await this.dbService.updateUsage(
+									userId,
+									parlaCitationUsage.totalTokens,
+								);
 							} catch (error) {
 								captureError(error);
 							}
