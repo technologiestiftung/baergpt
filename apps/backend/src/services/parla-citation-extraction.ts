@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export type ParlaChunkData = {
 	id: number;
 	content: string;
@@ -7,47 +9,55 @@ export type ParlaChunkData = {
 	source_type: string;
 };
 
-function extractItems(output: unknown): unknown[] | null {
-	if (Array.isArray(output)) {
-		return output;
-	}
-	const wrapped = (output as { content?: unknown })?.content;
-	return Array.isArray(wrapped) ? (wrapped as unknown[]) : null;
-}
+const parlaResponseSchema = z.object({
+	documentMatches: z.array(
+		z.object({
+			registered_document: z.object({
+				source_url: z.string(),
+				source_type: z.string(),
+				metadata: z.record(z.string(), z.unknown()).nullable(),
+			}),
+			processed_document_chunk_matches: z.array(
+				z.object({
+					processed_document_chunk: z.object({
+						id: z.number(),
+						content: z.string(),
+						page: z.number(),
+					}),
+				}),
+			),
+		}),
+	),
+});
 
+// TODO: once the Parla MCP server returns structuredContent, tr.output will
+// be the structured data directly and this entire function can be replaced
+// with: parlaResponseSchema.safeParse(output)
 export function parseParlaToolOutput(output: unknown): ParlaChunkData[] {
-	const items = extractItems(output);
-	if (!items) {
+	const raw = output as { content?: { type: string; text: string }[] } | null;
+	const items: { type: string; text: string }[] = Array.isArray(output)
+		? output
+		: (raw?.content ?? []);
+
+	const text = items.find((item) => item.type === "text")?.text;
+	if (!text) {
 		return [];
 	}
-	const textItem = (items as Array<{ type: string; text: string }>).find(
-		(item) => item.type === "text",
-	);
-	if (!textItem) {
-		return [];
-	}
-	const jsonStart = textItem.text.indexOf("{");
+
+	const jsonStart = text.indexOf("{");
 	if (jsonStart === -1) {
 		return [];
 	}
+
 	try {
-		const parsed = JSON.parse(textItem.text.slice(jsonStart)) as {
-			documentMatches: Array<{
-				registered_document: {
-					source_url: string;
-					source_type: string;
-					metadata: Record<string, unknown> | null;
-				};
-				processed_document_chunk_matches: Array<{
-					processed_document_chunk: {
-						id: number;
-						content: string;
-						page: number;
-					};
-				}>;
-			}>;
-		};
-		return parsed.documentMatches.flatMap((match) =>
+		const parsed = parlaResponseSchema.safeParse(
+			JSON.parse(text.slice(jsonStart)),
+		);
+		if (!parsed.success) {
+			return [];
+		}
+
+		return parsed.data.documentMatches.flatMap((match) =>
 			match.processed_document_chunk_matches.map((chunkMatch) => ({
 				id: chunkMatch.processed_document_chunk.id,
 				content: chunkMatch.processed_document_chunk.content,

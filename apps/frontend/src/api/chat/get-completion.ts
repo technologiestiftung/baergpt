@@ -182,7 +182,7 @@ export async function getCompletion(
 					chat: currentChat,
 					messageId,
 					content: currentText,
-					citations: citations.length ? citations : null,
+					citations: null,
 					web_citations: webCitations.length ? webCitations : null,
 					parla_citations: null,
 				});
@@ -195,8 +195,8 @@ export async function getCompletion(
 					chat: currentChat,
 					messageId,
 					content: currentText,
-					citations: citations.length ? citations : null,
-					web_citations: webCitations.length ? webCitations : null,
+					citations: null,
+					web_citations: null,
 					parla_citations: sources.length ? sources : null,
 				});
 			},
