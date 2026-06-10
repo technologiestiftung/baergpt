@@ -152,7 +152,7 @@ echo "  $(wc -l < "$WORK_DIR/migrations.sql") lines, $(log_file_size "$WORK_DIR/
 # -----------------------------------------------------------------------------
 echo "[$ENV][PROMPT] Creating prompt backup..."
 PROMPT_SCRIPT_DIR="$(dirname "$0")/scripts/prompts"
-npm --prefix "$PROMPT_SCRIPT_DIR" ci --loglevel=warn
+[ -d "$PROMPT_SCRIPT_DIR/node_modules" ] || npm --prefix "$PROMPT_SCRIPT_DIR" ci --loglevel=warn
 OUTPUT_FILE="$WORK_DIR/prompt-backup.json" \
   "$PROMPT_SCRIPT_DIR/node_modules/.bin/tsx" "$PROMPT_SCRIPT_DIR/backup-prompts.ts"
 echo "  $(wc -l < "$WORK_DIR/prompt-backup.json") lines, $(log_file_size "$WORK_DIR/prompt-backup.json")"
