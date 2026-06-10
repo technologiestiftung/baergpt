@@ -62,7 +62,7 @@ export const DesktopSidebar: React.FC = () => {
 
 						{/* CityLAB Logo */}
 						<div
-							className={`flex flex-col gap-[6px] h-[53px] justify-end pt-3.5
+							className={`flex flex-col gap-1.5 h-[53px] justify-end pt-3.5
                                 ${isHistorySidebarOpen ? "pl-2 pr-3" : ""}`}
 						>
 							{isHistorySidebarOpen && (
@@ -75,7 +75,7 @@ export const DesktopSidebar: React.FC = () => {
 								href={Content["sidebar.citylab.link"]}
 								target="_blank"
 								rel="noopener noreferrer"
-								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-[6.6px]
+								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-1.5
                                     ${isHistorySidebarOpen ? "pr-1" : "px-2"}`}
 								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
