@@ -34,7 +34,6 @@ import {
 	parseParlaToolOutput,
 	type ParlaChunkData,
 } from "./parla-citation-extraction";
-import { resilientCall } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
@@ -296,6 +295,7 @@ export class GenerationService {
 							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
 						},
 					},
+					//eslint-disable-next-line complexity
 					onFinish: async ({ text, usage, steps }) => {
 						logMemory(
 							`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
@@ -465,16 +465,15 @@ export class GenerationService {
 
 						if (allParlaChunks.length > 0) {
 							try {
-								const parlaCitationPromptClient = await resilientCall(
-									() =>
-										langfuse.prompt.get("document-citation-extraction", {
-											type: "chat",
-											label:
-												config.nodeEnv === "test"
-													? "development"
-													: config.nodeEnv,
-										}),
-									{ queueType: "llm" },
+								const parlaCitationPromptClient = await langfuse.prompt.get(
+									"document-citation-extraction",
+									{
+										type: "chat",
+										label:
+											config.nodeEnv === "test"
+												? "development"
+												: config.nodeEnv,
+									},
 								);
 
 								const compiledParlaCitationPrompts =
@@ -486,25 +485,21 @@ export class GenerationService {
 									}) as ModelMessage[];
 
 								const { output: parlaObject, usage: parlaCitationUsage } =
-									await resilientCall(
-										() =>
-											generateText({
-												model: llmHandler.languageModel,
-												messages: compiledParlaCitationPrompts,
-												temperature: LLM_PARAMETERS.temperature,
-												output: Output.object({
-													schema: parlaCitationAnswerSchema,
-												}),
-												experimental_telemetry: {
-													isEnabled: config.isTracingEnabled,
-													functionId: "parla-citation-extraction",
-													metadata: {
-														sessionId: sessionId ? sessionId : "unknown",
-													},
-												},
-											}),
-										{ queueType: "llm" },
-									);
+									await generateText({
+										model: llmHandler.languageModel,
+										messages: compiledParlaCitationPrompts,
+										temperature: LLM_PARAMETERS.temperature,
+										output: Output.object({
+											schema: parlaCitationAnswerSchema,
+										}),
+										experimental_telemetry: {
+											isEnabled: config.isTracingEnabled,
+											functionId: "parla-citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+									});
 
 								const citedParlaChunks = allParlaChunks
 									.filter((c) => parlaObject.citations.includes(c.id))
