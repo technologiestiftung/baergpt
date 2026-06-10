@@ -21,13 +21,14 @@ import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
+let autoDeactivateExternalToolTimeout: ReturnType<typeof setTimeout>;
 
 interface ChatStore {
 	isFirstLoad: boolean;
 	isLoading: boolean;
 	chats: ChatWithMessages[];
 	totalChatCount: number | null;
-	selectedChatOptions: ChatOption[];
+	selectedChatOption: ChatOption | null;
 	selectedLlmModel: LlmModel;
 	resetToDefaultChatOptions(): void;
 	toggleChatOption(option: ChatOption): void;
@@ -53,35 +54,34 @@ interface ChatStore {
 		citations: number[] | null;
 		web_citations: WebCitationSource[] | null;
 	}): void;
-	isWebSearchRemovalInfoMessageShown: boolean;
-	setIsWebSearchRemovalInfoMessageShown(isShown: boolean): void;
+	autoDeactivatedExternalTool: ChatOption | null;
+	setAutoDeactivatedExternalTool(tool: ChatOption | null): void;
+	deactivateExternalTools(): void;
 }
+
+const externalToolOptions: ChatOption[] = ["webSearch", "parla"];
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
 	isLoading: false,
 	chats: [],
 	totalChatCount: null,
-	selectedChatOptions: [],
+	selectedChatOption: null,
 	selectedLlmModel: "mistral-small",
-	isWebSearchRemovalInfoMessageShown: false,
+	autoDeactivatedExternalTool: null,
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
 	},
 
 	resetToDefaultChatOptions() {
-		set({ selectedChatOptions: [] });
+		set({ selectedChatOption: null });
 	},
 
 	toggleChatOption(option: ChatOption) {
-		const { selectedChatOptions } = get();
-		if (selectedChatOptions.includes(option)) {
-			set({
-				selectedChatOptions: selectedChatOptions.filter(
-					(item) => item !== option,
-				),
-			});
+		const { selectedChatOption } = get();
+		if (selectedChatOption === option) {
+			set({ selectedChatOption: null });
 		} else {
 			if (option === "webSearch") {
 				const { selectedUserChatDocuments, unselectUserChatDocument } =
@@ -110,11 +110,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				);
 			}
 
-			/* 
-			/ simplified solution for now to kick out other ChatOptions
-			/ can be changed once baseKnowledge is part of files and testing of combining tools is done
-			*/
-			set({ selectedChatOptions: [option] });
+			set({ selectedChatOption: option });
 		}
 	},
 
@@ -291,11 +287,25 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		}, 300);
 	},
 
-	setIsWebSearchRemovalInfoMessageShown(isShown: boolean) {
-		set({ isWebSearchRemovalInfoMessageShown: isShown });
-
-		setTimeout(() => {
-			set({ isWebSearchRemovalInfoMessageShown: false });
+	setAutoDeactivatedExternalTool(tool) {
+		if (autoDeactivateExternalToolTimeout) {
+			clearTimeout(autoDeactivateExternalToolTimeout);
+		}
+		set({ autoDeactivatedExternalTool: tool });
+		autoDeactivateExternalToolTimeout = setTimeout(() => {
+			set({ autoDeactivatedExternalTool: null });
 		}, 20_000);
+	},
+
+	deactivateExternalTools() {
+		const { selectedChatOption } = get();
+		if (
+			!selectedChatOption ||
+			!externalToolOptions.includes(selectedChatOption)
+		) {
+			return;
+		}
+		get().toggleChatOption(selectedChatOption);
+		get().setAutoDeactivatedExternalTool(selectedChatOption);
 	},
 }));

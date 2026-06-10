@@ -9,7 +9,7 @@ import { DropZoneWrapperChat } from "./drop-zone-wrapper-chat.tsx";
 import { ChatInfoMessage } from "./chat-message/chat-info-message.tsx";
 
 export const ChatSection: React.FC = () => {
-	const { chats, isWebSearchRemovalInfoMessageShown } = useChatsStore();
+	const { chats } = useChatsStore();
 	const { currentChatId } = useCurrentChatIdStore();
 
 	const currentChat = chats.find((chat) => chat.id === currentChatId);
@@ -20,7 +20,7 @@ export const ChatSection: React.FC = () => {
 			{currentMessages.length === 0 && (
 				<div className="flex flex-col w-full max-w-[640px] mb-5 overflow-y-auto gap-y-4">
 					<GetStarted />
-					{isWebSearchRemovalInfoMessageShown && <ChatInfoMessage />}
+					<ChatInfoMessage />
 				</div>
 			)}
 			<div

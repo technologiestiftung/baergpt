@@ -1,7 +1,14 @@
 import React from "react";
 import Content from "../../../content.ts";
+import { useChatsStore } from "../../../store/use-chats-store.ts";
 
 export const ChatInfoMessage: React.FC = () => {
+	const { autoDeactivatedExternalTool } = useChatsStore();
+
+	if (!autoDeactivatedExternalTool) {
+		return null;
+	}
+
 	return (
 		<div
 			role="alert"
@@ -14,11 +21,11 @@ export const ChatInfoMessage: React.FC = () => {
 					className="w-4 h-4"
 				/>
 				<h3 className="text-sm leading-5 font-semibold">
-					{Content["chat.infoText.title"]}
+					{Content[`chat.${autoDeactivatedExternalTool}.infoText.title`]}
 				</h3>
 			</span>
 			<p className="text-sm leading-5 font-normal">
-				{Content["chat.infoText.p1"]}
+				{Content[`chat.${autoDeactivatedExternalTool}.infoText.p1`]}
 			</p>
 		</div>
 	);

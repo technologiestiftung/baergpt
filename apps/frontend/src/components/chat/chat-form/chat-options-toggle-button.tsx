@@ -9,7 +9,7 @@ import { McpOptionsDialog } from "./mcp-options-dialog.tsx";
 import { showMcpOptionsDialog } from "./mcp-options-dialog.tsx";
 
 export const ChatOptionsToggleButton: React.FC = () => {
-	const { selectedChatOptions, toggleChatOption } = useChatsStore();
+	const { selectedChatOption, toggleChatOption } = useChatsStore();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const selectButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
@@ -108,7 +108,7 @@ export const ChatOptionsToggleButton: React.FC = () => {
 						<ChatFormDropdown
 							items={chatOptionsItems.filter((item) => item.isEnabled)}
 							title={Content["chat.options.dropdown.title"]}
-							selectedItems={selectedChatOptions}
+							selectedItems={selectedChatOption ? [selectedChatOption] : []}
 							onItemClick={handleItemClick}
 							isOpen={isDropdownOpen}
 							onClose={handleClose}
