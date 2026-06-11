@@ -153,9 +153,10 @@ echo "  $(wc -l < "$WORK_DIR/migrations.sql") lines, $(log_file_size "$WORK_DIR/
 echo "[$ENV][PROMPT] Creating prompt backup..."
 PROMPT_SCRIPT_DIR="$(dirname "$0")/scripts/prompts"
 [ -d "$PROMPT_SCRIPT_DIR/node_modules" ] || npm --prefix "$PROMPT_SCRIPT_DIR" ci --loglevel=warn
-OUTPUT_FILE="$WORK_DIR/prompt-backup.json" \
+OUTPUT_FILE="$WORK_DIR/prompt-backup.json"
+LANGFUSE_SECRET_KEY="$LANGFUSE_SECRET_KEY" LANGFUSE_PUBLIC_KEY="$LANGFUSE_PUBLIC_KEY" LANGFUSE_BASE_URL="$LANGFUSE_BASE_URL" OUTPUT_FILE="$OUTPUT_FILE" \
   "$PROMPT_SCRIPT_DIR/node_modules/.bin/tsx" "$PROMPT_SCRIPT_DIR/backup-prompts.ts"
-echo "  $(wc -l < "$WORK_DIR/prompt-backup.json") lines, $(log_file_size "$WORK_DIR/prompt-backup.json")"
+echo "  $(wc -l < "$OUTPUT_FILE") lines, $(log_file_size "$OUTPUT_FILE")"
 
 # -----------------------------------------------------------------------------
 # 8. Encrypt and upload database backup
