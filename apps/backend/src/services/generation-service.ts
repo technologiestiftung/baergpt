@@ -22,7 +22,11 @@ import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
 import type { ActiveTools, ParsedPage } from "../types/common";
 import { ragSearchTool } from "../tools/rag-search-tool";
-import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
+import {
+	parlaMCPTools,
+	parseParlaToolOutput,
+	type ParlaChunkData,
+} from "../tools/mcp/parla-mcp-tools";
 import { webSearchTool } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
 import {
@@ -30,10 +34,6 @@ import {
 	webCitationAnswerSchema,
 	parlaCitationAnswerSchema,
 } from "../schemas/citation-answer-schema";
-import {
-	parseParlaToolOutput,
-	type ParlaChunkData,
-} from "./parla-citation-extraction";
 import {
 	countTokens,
 	computeSafePayload,
