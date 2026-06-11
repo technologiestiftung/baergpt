@@ -36,7 +36,7 @@
 		"@langfuse/otel": "4.2.0",
 		"@langfuse/tracing": "4.2.0",
 		"@mistralai/mistralai": "1.15.1",
-		"@opentelemetry/auto-instrumentations-node": "0.65.0",
+		"@opentelemetry/auto-instrumentations-node": "0.75.0",
 		"@opentelemetry/sdk-node": "0.206.0",
 		"@opentelemetry/sdk-trace-node": "2.1.0",
 		"@repo/db-schema": "file:../../libs/db-schema",
