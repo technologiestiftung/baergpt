@@ -28,7 +28,7 @@ export function MobileHistoryDrawer() {
 							<SidebarNavigation />
 						</div>
 						<div
-							className={`flex flex-col gap-[3px] md:h-[50px] justify-end py-4 md:pb-0 md:pt-3.5 px-6`}
+							className={`flex flex-col gap-1.5 md:h-[50px] justify-end py-4 md:pb-0 md:pt-3.5 px-6`}
 						>
 							<p className="text-dunkelblau-50 text-[10px] truncate">
 								{Content["sidebar.citylab.label"]}
@@ -42,16 +42,15 @@ export function MobileHistoryDrawer() {
 								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
 								<img
-									src="/icons/citylab-shapes-icon.svg"
+									src="/icons/citylab-shape-icon.svg"
 									alt="citylab-icon"
-									height="18px"
+									width="16px"
 									className="flex shrink-0"
 								/>
 								<img
 									src="/icons/citylab-berlin.svg"
 									alt="citylab-icon"
-									height={9.6}
-									width={67.5}
+									width="38px"
 									className="flex shrink-0"
 								/>
 							</a>

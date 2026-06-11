@@ -43,7 +43,7 @@ export const DesktopSidebar: React.FC = () => {
 						</div>
 					)}
 					<div>
-						<div className="h-[130px] flex flex-col justify-between">
+						<div className="h-[133px] flex flex-col">
 							{/* Full-width border */}
 							{isHistorySidebarOpen && (
 								<span className="block w-[calc(100%+14px)] ml-[-10px] h-px bg-dunkelblau-80" />
@@ -62,7 +62,7 @@ export const DesktopSidebar: React.FC = () => {
 
 						{/* CityLAB Logo */}
 						<div
-							className={`flex flex-col gap-[3px] h-[50px] justify-end pt-3.5 
+							className={`flex flex-col gap-1.5 h-[53px] justify-end pt-3.5
                                 ${isHistorySidebarOpen ? "pl-2 pr-3" : ""}`}
 						>
 							{isHistorySidebarOpen && (
@@ -75,23 +75,22 @@ export const DesktopSidebar: React.FC = () => {
 								href={Content["sidebar.citylab.link"]}
 								target="_blank"
 								rel="noopener noreferrer"
-								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-[6.6px]
+								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-1.5
                                     ${isHistorySidebarOpen ? "pr-1" : "px-2"}`}
 								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
 								<img
-									src="/icons/citylab-shapes-icon.svg"
+									src="/icons/citylab-shape-icon.svg"
 									alt="citylab-icon"
-									height="18px"
+									width="16px"
 									className="hidden md:flex shrink-0"
 								/>
 								{isHistorySidebarOpen && (
 									<img
 										src="/icons/citylab-berlin.svg"
 										alt="citylab-icon"
-										height={9.6}
-										width={67.5}
-										className="hidden md:flex shrink-0"
+										width="38px"
+										className="hidden md:flex shrink-0 mb-[2px]"
 									/>
 								)}
 							</a>

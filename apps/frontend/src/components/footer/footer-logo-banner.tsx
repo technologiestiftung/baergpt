@@ -6,8 +6,8 @@ const logoLinks = [
 		src: "/logos/citylab-berlin-logo.svg",
 		alt: Content["footer.citylabLogo.alt"],
 		href: Content["footer.citylabLogo.link"],
-		width: 174,
-		height: 35,
+		width: 140,
+		height: 63,
 	},
 	{
 		spanText: Content["footer.technologiestiftungLogo.p"],
