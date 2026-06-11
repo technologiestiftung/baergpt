@@ -1,4 +1,9 @@
-import type { WebCitationSource } from "./api/chat/get-completion";
+import type {
+	WebCitationSource,
+	ParlaCitationSource,
+} from "./api/chat/get-completion";
+
+export type { ParlaCitationSource } from "./api/chat/get-completion";
 
 export type NewChatMessage = Pick<
 	ChatMessage,
@@ -9,6 +14,7 @@ export type NewChatMessage = Pick<
 	| "allowed_folder_ids"
 	| "citations"
 	| "web_citations"
+	| "parla_citations"
 >;
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
@@ -33,6 +39,7 @@ export type ChatMessage = {
 	content: string;
 	citations: number[] | null;
 	web_citations: WebCitationSource[] | null;
+	parla_citations: ParlaCitationSource[] | null;
 	created_at: string;
 	id: number;
 	role: string;

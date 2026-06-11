@@ -18,7 +18,7 @@ export function AssistantMessage({
 }) {
 	const { status } = useInferenceLoadingStatusStore();
 	const { getCurrentChat } = useChatsStore();
-	const { content, citations, web_citations } = message;
+	const { content, citations, web_citations, parla_citations } = message;
 	const { getUIError } = useErrorStore();
 
 	const exportErrorMessage = getUIError("chat-export");
@@ -53,6 +53,7 @@ export function AssistantMessage({
 							messageId={message.id}
 							citations={citations}
 							webCitations={web_citations}
+							parlaCitations={parla_citations}
 							isLastMessage={isLastMessage}
 						/>
 					</div>

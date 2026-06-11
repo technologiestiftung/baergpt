@@ -21,3 +21,11 @@ export const webCitationAnswerSchema = z.object({
 			"Array der Webquellen, die tatsächlich in der Antwort verwendet wurden.",
 		),
 });
+
+export const parlaCitationAnswerSchema = z.object({
+	citations: z
+		.array(z.number().describe("ID der Parla-Quelle"))
+		.describe(
+			"Array der IDs von Parla-Quellen, die tatsächlich in der Antwort verwendet wurden.",
+		),
+});
