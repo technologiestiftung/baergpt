@@ -148,7 +148,17 @@ supabase db dump --db-url "$DB_URL" -f "$WORK_DIR/migrations.sql" \
 echo "  $(wc -l < "$WORK_DIR/migrations.sql") lines, $(log_file_size "$WORK_DIR/migrations.sql")"
 
 # -----------------------------------------------------------------------------
-# 7. Encrypt and upload database backup
+# 7. Create prompt backup
+# -----------------------------------------------------------------------------
+echo "[$ENV][PROMPT] Creating prompt backup..."
+PROMPT_SCRIPT_DIR="$(dirname "$0")/scripts/prompts"
+[ -d "$PROMPT_SCRIPT_DIR/node_modules" ] || npm --prefix "$PROMPT_SCRIPT_DIR" ci --loglevel=warn
+OUTPUT_FILE="$WORK_DIR/prompt-backup.json" \
+  "$PROMPT_SCRIPT_DIR/node_modules/.bin/tsx" "$PROMPT_SCRIPT_DIR/backup-prompts.ts"
+echo "  $(wc -l < "$WORK_DIR/prompt-backup.json") lines, $(log_file_size "$WORK_DIR/prompt-backup.json")"
+
+# -----------------------------------------------------------------------------
+# 8. Encrypt and upload database backup
 # -----------------------------------------------------------------------------
 echo "[$ENV][DB] Total dump size (uncompressed): $(log_dir_size "$WORK_DIR")"
 echo "[$ENV][DB] Disk available before upload: $(log_disk_avail)"
@@ -167,7 +177,7 @@ fi
 echo
 
 # -----------------------------------------------------------------------------
-# 8. Sync storage files
+# 9. Sync storage files
 # -----------------------------------------------------------------------------
 echo "[$ENV][FILES] Syncing live -> mirror..."
 rclone sync "$SOURCE_BUCKET" "$SNAPSHOT_ROOT/current_mirror" \
@@ -179,7 +189,7 @@ rclone copy "$SNAPSHOT_ROOT/current_mirror" "$SNAPSHOT_PATH/files" \
 echo
 
 # -----------------------------------------------------------------------------
-# 9. Prune old snapshots
+# 10. Prune old snapshots
 # -----------------------------------------------------------------------------
 echo "[$ENV] Pruning snapshots older than ${RETENTION_DAYS}d..."
 CUTOFF_DATE="$(date -u -d "-${RETENTION_DAYS} days" +%Y-%m-%d_%H%M)"
@@ -196,7 +206,7 @@ rclone lsf "$SNAPSHOT_ROOT" --dirs-only \
     done
 
 # -----------------------------------------------------------------------------
-# 10. Final summary
+# 11. Final summary
 # -----------------------------------------------------------------------------
 echo "[$ENV] Backup size summary:"
 SNAPSHOT_SIZE_JSON=$(rclone size "$SNAPSHOT_PATH" --json 2>/dev/null || echo '{}')

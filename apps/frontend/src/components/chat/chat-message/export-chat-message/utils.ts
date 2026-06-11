@@ -14,7 +14,7 @@ export const exportToDocx = async (markdown: string, fileName: string) => {
 				headingSpacing: 240,
 				paragraphSpacing: 240,
 				lineSpacing: 1.15,
-				fontFamily: "Berlin Type",
+				fontFamily: "Berlin Type Office",
 			},
 		};
 

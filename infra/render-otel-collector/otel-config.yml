@@ -25,7 +25,7 @@ processors:
         match_type: regexp
         resource_attributes:
           - key: service.name
-            value: "baergpt.*|bottleneck.*|gotenberg"
+            value: "baergpt.*|gotenberg"
 
   batch:
     timeout: 10s

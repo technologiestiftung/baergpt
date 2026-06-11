@@ -87,18 +87,16 @@ llms.post("/just-chatting", async (c: Context) => {
 				isAddressedFormal,
 				activeTools,
 			});
-		const response = await generationService.generateTextStreamResponse(
+		const response = await generationService.generateTextStreamResponse({
 			llmHandler,
-			promptMessages,
-			{
-				userId: body.user_id,
-				sessionId: body.chat_id,
-				langfusePrompt: langfusePrompt,
-				allowedDocumentIds: allowedDocumentIds,
-				allowedFolderIds: allowedFolderIds,
-				activeTools,
-			},
-		);
+			messages: promptMessages,
+			userId: body.user_id,
+			sessionId: body.chat_id,
+			langfusePrompt: langfusePrompt,
+			allowedDocumentIds: allowedDocumentIds,
+			allowedFolderIds: allowedFolderIds,
+			activeTools,
+		});
 
 		response.headers.set("Content-Type", "text/event-stream; charset=utf-8");
 		response.headers.set("Transfer-Encoding", "chunked");

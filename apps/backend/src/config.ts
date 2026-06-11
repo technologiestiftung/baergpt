@@ -1,7 +1,6 @@
 import "dotenv/config";
 
 export interface Config {
-	redisUrl: string;
 	mistralApiKey: string;
 	mistralEmbeddingModel: string;
 	mistralEmbedMaxContextTokens: number;
@@ -30,7 +29,6 @@ export interface Config {
 	mcpParlaUrl?: string;
 	braveSearchApiKey?: string;
 	braveSearchApiUrl?: string;
-	braveSearchMaxRPS?: number;
 	featureFlagWebSearchAllowed: boolean;
 	featureFlagMemoryLog: boolean;
 	isTracingEnabled: boolean;
@@ -38,9 +36,6 @@ export interface Config {
 
 /* eslint-disable-next-line complexity */
 export function verifyConfig(): void {
-	if (!process.env.REDIS_URL) {
-		throw new Error("REDIS_URL must be defined");
-	}
 	if (!process.env.MISTRAL_API_KEY) {
 		throw new Error("MISTRAL_API_KEY must be defined");
 	}
@@ -128,7 +123,6 @@ export function verifyConfig(): void {
 }
 
 export const config: Config = {
-	redisUrl: process.env.REDIS_URL as string,
 	mistralApiKey: process.env.MISTRAL_API_KEY,
 	mistralEmbeddingModel: process.env.MISTRAL_EMBEDDING_MODEL,
 	mistralEmbedMaxContextTokens: parseInt(
@@ -170,9 +164,6 @@ export const config: Config = {
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
 	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
 	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,
-	braveSearchMaxRPS: process.env.BRAVE_SEARCH_MAX_RPS
-		? parseInt(process.env.BRAVE_SEARCH_MAX_RPS, 10)
-		: undefined,
 	featureFlagWebSearchAllowed:
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 	featureFlagMemoryLog: process.env.FEATURE_FLAG_MEMORY_LOG === "true",

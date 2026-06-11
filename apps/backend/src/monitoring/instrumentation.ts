@@ -31,3 +31,7 @@ const sdk = new NodeSDK({
 
 sdk.start();
 Sentry.validateOpenTelemetrySetup();
+
+if (config.nodeEnv === "development") {
+	process.on("SIGTERM", () => process.exit(0));
+}

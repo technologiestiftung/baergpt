@@ -17,10 +17,6 @@ vi.mock("../config", () => ({
 	},
 }));
 
-vi.mock("../utils", () => ({
-	resilientCall: vi.fn((fn) => fn()),
-}));
-
 describe("Chunking Methods", () => {
 	let service: EmbeddingService;
 

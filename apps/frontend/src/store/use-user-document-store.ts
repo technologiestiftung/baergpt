@@ -144,11 +144,7 @@ export const useUserDocumentStore = create<UserDocumentStore>((set, get) => ({
 			document,
 		];
 
-		const { selectedChatOptions } = useChatsStore.getState();
-		if (selectedChatOptions.includes("webSearch")) {
-			useChatsStore.getState().toggleChatOption("webSearch");
-			useChatsStore.getState().setIsWebSearchRemovalInfoMessageShown(true);
-		}
+		useChatsStore.getState().deactivateExternalTools();
 
 		set(() => ({
 			selectedUserChatDocuments: updatedSelectedChatDocuments,

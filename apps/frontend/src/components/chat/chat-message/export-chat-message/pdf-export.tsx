@@ -4,6 +4,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import { styles } from "./pdf-export-styles";
+import { registerPdfFonts } from "./pdf-export-fonts";
 
 interface MarkdownNode {
 	type: string;
@@ -156,6 +157,7 @@ function renderNode(node: MarkdownNode, idx: number): React.ReactNode {
 
 export async function exportMarkdownToPdf(markdown: string, fileName: string) {
 	try {
+		registerPdfFonts();
 		const ast = unified().use(remarkParse).use(remarkGfm).parse(markdown) as {
 			children?: unknown[];
 		};

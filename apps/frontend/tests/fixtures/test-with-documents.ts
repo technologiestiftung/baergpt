@@ -209,7 +209,9 @@ export async function mockDocumentUpload({
 			});
 
 	const uploadOptions =
-		sourceType === "default_document" ? { upsert: true } : undefined;
+		sourceType === "default_document" || sourceType === "public_document"
+			? { upsert: true }
+			: undefined;
 
 	const { error: uploadError } = await storageClient.storage
 		.from(bucketName)

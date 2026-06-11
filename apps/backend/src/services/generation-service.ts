@@ -22,14 +22,18 @@ import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
 import type { ActiveTools, ParsedPage } from "../types/common";
 import { ragSearchTool } from "../tools/rag-search-tool";
-import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
+import {
+	parlaMCPTools,
+	parseParlaToolOutput,
+	type ParlaChunkData,
+} from "../tools/mcp/parla-mcp-tools";
 import { webSearchTool } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
 import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
+	parlaCitationAnswerSchema,
 } from "../schemas/citation-answer-schema";
-import { resilientCall } from "../utils";
 import {
 	countTokens,
 	computeSafePayload,
@@ -62,12 +66,10 @@ export class GenerationService {
 		promptName: string,
 	): Promise<number> {
 		try {
-			const client = await resilientCall(() =>
-				langfuse.prompt.get(promptName, {
-					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-					type: "chat",
-				}),
-			);
+			const client = await langfuse.prompt.get(promptName, {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+				type: "chat",
+			});
 
 			const compiled = client.compile({ docContent: "" }) as ModelMessage[];
 			const sys =
@@ -240,27 +242,28 @@ export class GenerationService {
 		return trimToTokenLimitByWords(content, tokenLimit);
 	}
 
-	async generateTextStreamResponse(
-		llmHandler: LLMHandler,
-		messages: ModelMessage[],
-		{
+	async generateTextStreamResponse(args: {
+		messages: ModelMessage[];
+		llmHandler: LLMHandler;
+		userId: string;
+		sessionId: string;
+		langfusePrompt: TextPromptClient | ChatPromptClient;
+		allowedDocumentIds: number[];
+		allowedFolderIds: number[];
+		activeTools: ActiveTools[];
+	}): Promise<Response> {
+		const {
+			messages,
+			llmHandler,
 			userId,
 			sessionId,
 			langfusePrompt,
-			allowedDocumentIds = [],
-			allowedFolderIds = [],
-			activeTools = [] as ActiveTools[],
-		}: {
-			userId?: string;
-			sessionId?: string;
-			langfusePrompt?: TextPromptClient | ChatPromptClient;
-			allowedDocumentIds?: number[];
-			allowedFolderIds?: number[];
-			activeTools?: ActiveTools[];
-		} = {},
-	): Promise<Response> {
-		const reqId = sessionId ? String(sessionId).slice(0, 8) : "no-session";
-		logMemory("chat:start", reqId);
+			allowedDocumentIds,
+			allowedFolderIds,
+			activeTools,
+		} = args;
+
+		logMemory("chat:start", sessionId);
 
 		const {
 			tools,
@@ -278,260 +281,276 @@ export class GenerationService {
 
 		const stream = createUIMessageStream({
 			execute: async ({ writer }) => {
-				const streamResponse = await resilientCall(
-					async () =>
-						streamText({
-							model: llmHandler.languageModel,
-							messages: messages.filter(nonEmptyAssistantMessage),
-							maxOutputTokens: 8192,
-							temperature: LLM_PARAMETERS.temperature,
-							tools,
-							toolChoice,
-							stopWhen: isLoopFinished(),
-							providerOptions: {
-								mistral: {
-									presencePenalty: LLM_PARAMETERS.presencePenalty,
-									frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-								},
-							},
-							onFinish: async ({ text, usage, steps }) => {
-								logMemory(
-									`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
-									reqId,
+				const streamResponse = streamText({
+					model: llmHandler.languageModel,
+					messages: messages.filter(nonEmptyAssistantMessage),
+					maxOutputTokens: 8192,
+					temperature: LLM_PARAMETERS.temperature,
+					tools,
+					toolChoice,
+					stopWhen: isLoopFinished(),
+					providerOptions: {
+						mistral: {
+							presencePenalty: LLM_PARAMETERS.presencePenalty,
+							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+						},
+					},
+					onFinish: async ({ text, usage, steps }) => {
+						logMemory(
+							`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
+							sessionId,
+						);
+
+						if (typeof toolsCleanup === "function") {
+							await toolsCleanup();
+						}
+
+						const allChunkMatches = steps.flatMap((step) =>
+							step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
+						);
+
+						if (allChunkMatches.length > 0) {
+							const availableSources = allChunkMatches.map(
+								(match: { chunkId: number; snippet: string }) => ({
+									id: match.chunkId,
+									snippet: match.snippet,
+								}),
+							);
+							try {
+								const citationPromptClient = await langfuse.prompt.get(
+									"document-citation-extraction",
+									{
+										type: "chat",
+										label:
+											config.nodeEnv === "test"
+												? "development"
+												: config.nodeEnv,
+									},
 								);
 
-								if (typeof toolsCleanup === "function") {
-									await toolsCleanup();
-								}
+								const compiledDocumentCitationExtractionPrompts =
+									citationPromptClient.compile({
+										generatedAnswer: text,
+										availableSources: availableSources
+											.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
+											.join("\n\n"),
+									}) as ModelMessage[];
 
-								const allChunkMatches = steps.flatMap((step) =>
-									step.toolResults.flatMap(
-										(tr) => tr.output?.chunkMatches || [],
-									),
-								);
-
-								if (allChunkMatches.length > 0) {
-									const availableSources = allChunkMatches.map(
-										(match: { chunkId: number; snippet: string }) => ({
-											id: match.chunkId,
-											snippet: match.snippet,
+								const { output: citationObject, usage: generateObjectUsage } =
+									await generateText({
+										model: llmHandler.languageModel,
+										messages: compiledDocumentCitationExtractionPrompts,
+										temperature: LLM_PARAMETERS.temperature,
+										output: Output.object({
+											schema: citationAnswerSchema,
 										}),
-									);
-									try {
-										const citationPromptClient = await resilientCall(
-											() =>
-												langfuse.prompt.get("document-citation-extraction", {
-													type: "chat",
-													label:
-														config.nodeEnv === "test"
-															? "development"
-															: config.nodeEnv,
-												}),
-											{ queueType: "llm" },
-										);
-										const compiledDocumentCitationExtractionPrompts =
-											citationPromptClient.compile({
-												generatedAnswer: text,
-												availableSources: availableSources
-													.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
-													.join("\n\n"),
-											}) as ModelMessage[];
+										experimental_telemetry: {
+											isEnabled: config.isTracingEnabled,
+											functionId: "citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+									});
 
-										const {
-											output: citationObject,
-											usage: generateObjectUsage,
-										} = await resilientCall(
-											() =>
-												generateText({
-													model: llmHandler.languageModel,
-													messages: compiledDocumentCitationExtractionPrompts,
-													temperature: LLM_PARAMETERS.temperature,
-													output: Output.object({
-														schema: citationAnswerSchema,
-													}),
-													experimental_telemetry: {
-														isEnabled: config.isTracingEnabled,
-														functionId: "citation-extraction",
-														metadata: {
-															sessionId: sessionId ? sessionId : "unknown",
-														},
-													},
-												}),
-											{ queueType: "llm" },
-										);
+								writer.write({
+									type: "data-citations",
+									data: citationObject.citations,
+								});
 
-										writer.write({
-											type: "data-citations",
-											data: citationObject.citations,
-										});
+								await this.dbService.updateUsage(
+									userId,
+									generateObjectUsage.totalTokens,
+								);
+							} catch (error) {
+								captureError(error);
+							}
+						}
 
-										try {
-											await this.dbService.updateUserColumnValue(
-												userId,
-												"num_inference_tokens",
-												generateObjectUsage.totalTokens,
-											);
-											await this.dbService.updateUserColumnValue(
-												userId,
-												"num_inferences",
-												1,
-											);
-										} catch (error) {
-											captureError(error);
-										}
-									} catch (error) {
-										captureError(error);
-									}
+						const allWebSources = steps.flatMap((step) =>
+							step.toolResults.flatMap((tr) => {
+								const generic = tr.output?.grounding
+									?.generic as WebSearchResult["grounding"]["generic"];
+								const sources = tr.output
+									?.sources as WebSearchResult["sources"];
+								if (!generic?.length || !sources) {
+									return [];
 								}
+								return (
+									generic
+										// Filter out items with no snippets
+										.filter(
+											(item) =>
+												item.snippets.find(
+													(s): s is string => typeof s === "string",
+												) !== undefined,
+										)
+										.map((item) => ({
+											url: item.url,
+											title: item.title,
+											snippet: item.snippets.find(
+												(s): s is string => typeof s === "string",
+											) as string,
+											age: sources[item.url]?.age,
+										}))
+								);
+							}),
+						);
 
-								const allWebSources = steps.flatMap((step) =>
-									step.toolResults.flatMap((tr) => {
-										const generic = tr.output?.grounding
-											?.generic as WebSearchResult["grounding"]["generic"];
-										const sources = tr.output
-											?.sources as WebSearchResult["sources"];
-										if (!generic?.length || !sources) {
-											return [];
-										}
-										return (
-											generic
-												// Filter out items with no snippets
-												.filter(
-													(item) =>
-														item.snippets.find(
-															(s): s is string => typeof s === "string",
-														) !== undefined,
-												)
-												.map((item) => ({
-													url: item.url,
-													title: item.title,
-													snippet: item.snippets.find(
-														(s): s is string => typeof s === "string",
-													) as string,
-													age: sources[item.url]?.age,
-												}))
-										);
-									}),
+						if (allWebSources.length > 0) {
+							try {
+								const webCitationPromptClient = await langfuse.prompt.get(
+									"web-citation-extraction",
+									{
+										label:
+											config.nodeEnv === "test"
+												? "development"
+												: config.nodeEnv,
+										type: "chat",
+									},
 								);
 
-								if (allWebSources.length > 0) {
-									try {
-										const webCitationPromptClient = await resilientCall(
-											() =>
-												langfuse.prompt.get("web-citation-extraction", {
-													label:
-														config.nodeEnv === "test"
-															? "development"
-															: config.nodeEnv,
-													type: "chat",
-												}),
-											{ queueType: "llm" },
-										);
-										const compiledWebCitationExtractionPrompts =
-											webCitationPromptClient.compile({
-												generatedAnswer: text,
-												availableSources: allWebSources
-													.map(
-														(s) =>
-															`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
-													)
-													.join("\n\n"),
-											}) as ModelMessage[];
+								const compiledWebCitationExtractionPrompts =
+									webCitationPromptClient.compile({
+										generatedAnswer: text,
+										availableSources: allWebSources
+											.map(
+												(s) =>
+													`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+											)
+											.join("\n\n"),
+									}) as ModelMessage[];
 
-										const { output: webObject, usage: webCitationUsage } =
-											await resilientCall(
-												() =>
-													generateText({
-														model: llmHandler.languageModel,
-														messages: compiledWebCitationExtractionPrompts,
-														temperature: LLM_PARAMETERS.temperature,
-														output: Output.object({
-															schema: webCitationAnswerSchema,
-														}),
-														experimental_telemetry: {
-															isEnabled: config.isTracingEnabled,
-															functionId: "web-citation-extraction",
-															metadata: {
-																sessionId: sessionId ? sessionId : "unknown",
-															},
-														},
-													}),
-												{ queueType: "llm" },
-											);
+								const { output: webObject, usage: webCitationUsage } =
+									await generateText({
+										model: llmHandler.languageModel,
+										messages: compiledWebCitationExtractionPrompts,
+										temperature: LLM_PARAMETERS.temperature,
+										output: Output.object({
+											schema: webCitationAnswerSchema,
+										}),
+										experimental_telemetry: {
+											isEnabled: config.isTracingEnabled,
+											functionId: "web-citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+									});
 
-										const citedSources = allWebSources.filter((s) =>
-											webObject.citations.some((c) => c.url === s.url),
-										);
+								const citedSources = allWebSources.filter((s) =>
+									webObject.citations.some((c) => c.url === s.url),
+								);
 
-										writer.write({
-											type: "data-web-citations",
-											data: citedSources,
-										});
-
-										if (userId) {
-											try {
-												await this.dbService.updateUserColumnValue(
-													userId,
-													"num_inference_tokens",
-													webCitationUsage.totalTokens,
-												);
-												await this.dbService.updateUserColumnValue(
-													userId,
-													"num_inferences",
-													1,
-												);
-											} catch (error) {
-												captureError(error);
-											}
-										}
-									} catch (error) {
-										captureError(error);
-									}
-								}
-
-								logMemory("chat:onFinish-complete", reqId);
-								updateActiveTrace({
-									name: "streamed-text-generation",
-									output: text,
-									userId,
-									sessionId,
+								writer.write({
+									type: "data-web-citations",
+									data: citedSources,
 								});
-								// Handle token usage tracking after stream completes
-								if (userId && usage?.totalTokens) {
-									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											usage.totalTokens,
-										);
-										// Increase num_inferences for user by one
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
-										);
-									} catch (dbError) {
-										captureError(dbError);
-									}
-								}
-							},
-							experimental_telemetry: {
-								isEnabled: config.isTracingEnabled,
-								functionId: "streamed-text-with-tool-calls",
-								metadata: {
-									sessionId: sessionId ? sessionId : "unknown",
-									langfusePrompt: langfusePrompt
-										? langfusePrompt.toJSON()
-										: undefined,
-								},
-							},
-							onError: (error) => {
-								logMemory("chat:onError", reqId);
+
+								await this.dbService.updateUsage(
+									userId,
+									webCitationUsage.totalTokens,
+								);
+							} catch (error) {
 								captureError(error);
-							},
-						}),
-					{ queueType: "llm" },
-				);
+							}
+						}
+
+						const allParlaChunks: ParlaChunkData[] = steps.flatMap((step) =>
+							step.toolResults
+								.filter((tr) => tr.toolName === "parla_vector_search")
+								.flatMap((tr) => parseParlaToolOutput(tr.output)),
+						);
+
+						if (allParlaChunks.length > 0) {
+							try {
+								const parlaCitationPromptClient = await langfuse.prompt.get(
+									"document-citation-extraction",
+									{
+										type: "chat",
+										label:
+											config.nodeEnv === "test"
+												? "development"
+												: config.nodeEnv,
+									},
+								);
+
+								const compiledParlaCitationPrompts =
+									parlaCitationPromptClient.compile({
+										generatedAnswer: text,
+										availableSources: allParlaChunks
+											.map((c) => `[ID: ${c.id}]\n Snippet: ${c.content}`)
+											.join("\n\n"),
+									}) as ModelMessage[];
+
+								const { output: parlaObject, usage: parlaCitationUsage } =
+									await generateText({
+										model: llmHandler.languageModel,
+										messages: compiledParlaCitationPrompts,
+										temperature: LLM_PARAMETERS.temperature,
+										output: Output.object({
+											schema: parlaCitationAnswerSchema,
+										}),
+										experimental_telemetry: {
+											isEnabled: config.isTracingEnabled,
+											functionId: "parla-citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+									});
+
+								const citedParlaChunks = allParlaChunks
+									.filter((c) => parlaObject.citations.includes(c.id))
+									.map(({ content, page, url, title, source_type }) => ({
+										content,
+										page,
+										url,
+										title,
+										source_type,
+									}));
+
+								if (citedParlaChunks.length > 0) {
+									writer.write({
+										type: "data-parla-citations",
+										data: citedParlaChunks,
+									});
+								}
+								await this.dbService.updateUsage(
+									userId,
+									parlaCitationUsage.totalTokens,
+								);
+							} catch (error) {
+								captureError(error);
+							}
+						}
+
+						logMemory("chat:onFinish-complete", sessionId);
+						updateActiveTrace({
+							name: "streamed-text-generation",
+							output: text,
+							userId,
+							sessionId,
+						});
+
+						await this.dbService.updateUsage(userId, usage.totalTokens);
+					},
+					experimental_telemetry: {
+						isEnabled: config.isTracingEnabled,
+						functionId: "streamed-text-with-tool-calls",
+						metadata: {
+							sessionId: sessionId ? sessionId : "unknown",
+							langfusePrompt: langfusePrompt
+								? langfusePrompt.toJSON()
+								: undefined,
+						},
+					},
+					onError: (error) => {
+						logMemory("chat:onError", sessionId);
+						captureError(error);
+					},
+				});
+
 				writer.merge(streamResponse.toUIMessageStream());
 			},
 		});
@@ -541,41 +560,35 @@ export class GenerationService {
 	async generateTextContent(args: {
 		llmHandler: LLMHandler;
 		messages: ModelMessage[];
-		userId: string;
-		langfusePrompt?: TextPromptClient | ChatPromptClient;
+		/**
+		 * userId can be undefined when generating embeddings for default documents
+		 * as they are not owned/uploaded by a specific user
+		 */
+		userId: string | undefined;
+		langfusePrompt: TextPromptClient | ChatPromptClient;
 	}): Promise<string> {
 		const { llmHandler, messages, userId, langfusePrompt } = args;
-		const { text, usage } = await resilientCall(
-			() =>
-				generateText({
-					model: llmHandler.languageModel,
-					messages: messages,
-					temperature: LLM_PARAMETERS.temperature,
-					providerOptions: {
-						mistral: {
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
-					experimental_telemetry: {
-						isEnabled: config.isTracingEnabled,
-						metadata: {
-							sessionId: "unknown",
-							langfusePrompt: langfusePrompt.toJSON(),
-						},
-					},
-				}),
-			{ queueType: "llm" },
-		);
+		const { text, usage } = await generateText({
+			model: llmHandler.languageModel,
+			messages: messages,
+			temperature: LLM_PARAMETERS.temperature,
+			providerOptions: {
+				mistral: {
+					presencePenalty: LLM_PARAMETERS.presencePenalty,
+					frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+				},
+			},
+			experimental_telemetry: {
+				isEnabled: config.isTracingEnabled,
+				metadata: {
+					sessionId: "unknown",
+					langfusePrompt: langfusePrompt.toJSON(),
+				},
+			},
+		});
+
 		if (userId) {
-			// Increase num_inferences for user by 1
-			await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
-			// Increase num_tokens by token count of this generation
-			await this.dbService.updateUserColumnValue(
-				userId,
-				"num_inference_tokens",
-				usage.totalTokens,
-			);
+			await this.dbService.updateUsage(userId, usage.totalTokens);
 		}
 		return text;
 	}

@@ -17,9 +17,9 @@
       "profile": "https://github.com/emmaluisa",
       "contributions": [
         "design"
-        ]
-     },
-     {
+      ]
+    },
+    {
       "login": "elona-m",
       "name": "Elona Müller",
       "avatar_url": "https://avatars.githubusercontent.com/u/177862132?v=4",
@@ -27,10 +27,10 @@
       "contributions": [
         "design",
         "ideas",
-        "userTesting" 
+        "userTesting"
       ]
-     },
-     {
+    },
+    {
       "login": "Esshahn",
       "name": "Ingo Hinterding",
       "avatar_url": "https://avatars.githubusercontent.com/u/434355?v=4",
@@ -38,8 +38,8 @@
       "contributions": [
         "ideas"
       ]
-     },
-     {
+    },
+    {
       "login": "annamehr",
       "name": "Anna Mehrländer",
       "avatar_url": "https://avatars.githubusercontent.com/u/31280003?v=4",
@@ -50,18 +50,18 @@
         "talk",
         "question",
         "userTesting"
-        ]
-     },
-     {
+      ]
+    },
+    {
       "login": "james-knippes",
       "name": "Jan Knittel",
       "avatar_url": "https://avatars.githubusercontent.com/u/30473830?v=4",
       "profile": "https://github.com/james-knippes",
       "contributions": [
         "security"
-         ]
-     },
-     {
+      ]
+    },
+    {
       "login": "zainab-tariq",
       "name": "Zainab Tariq",
       "avatar_url": "https://avatars.githubusercontent.com/u/15946816?v=4",
@@ -73,8 +73,8 @@
         "a11y",
         "test"
       ]
-     },
-     {
+    },
+    {
       "login": "aeschi",
       "name": "Anna Eschenbacher",
       "avatar_url": "https://avatars.githubusercontent.com/u/56318362?v=4",
@@ -87,8 +87,8 @@
         "doc",
         "test"
       ]
-     },
-     {
+    },
+    {
       "login": "raphael-arce",
       "name": "Raphael Arce",
       "avatar_url": "https://avatars.githubusercontent.com/u/8709861?v=4",
@@ -100,11 +100,11 @@
         "research",
         "review",
         "a11y",
-        "security", 
+        "security",
         "test"
-       ]
-     },
-     {
+      ]
+    },
+    {
       "login": "nlspnsgen",
       "name": "Niels Poensgen",
       "avatar_url": "https://avatars.githubusercontent.com/u/12913491?v=4",
@@ -116,9 +116,9 @@
         "test",
         "ideas",
         "security"
-       ]
-     },
-     {
+      ]
+    },
+    {
       "login": "malte-b",
       "name": "Malte Barth",
       "avatar_url": "https://avatars.githubusercontent.com/u/27922183?v=4",
@@ -132,6 +132,20 @@
         "research",
         "review",
         "test"
+      ]
+    },
+    {
+      "login": "mlnps",
+      "name": "mlnps",
+      "avatar_url": "https://avatars.githubusercontent.com/u/56865397?v=4",
+      "profile": "https://github.com/mlnps",
+      "contributions": [
+        "code",
+        "test",
+        "bug",
+        "review",
+        "infra",
+        "maintenance"
       ]
     }
   ],

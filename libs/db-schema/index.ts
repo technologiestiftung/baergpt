@@ -134,6 +134,7 @@ export type Database = {
 					content: string;
 					created_at: string;
 					id: number;
+					parla_citations: Json | null;
 					role: string;
 					type: string;
 					web_citations: Json | null;
@@ -146,6 +147,7 @@ export type Database = {
 					content: string;
 					created_at?: string;
 					id?: number;
+					parla_citations?: Json | null;
 					role: string;
 					type: string;
 					web_citations?: Json | null;
@@ -158,6 +160,7 @@ export type Database = {
 					content?: string;
 					created_at?: string;
 					id?: number;
+					parla_citations?: Json | null;
 					role?: string;
 					type?: string;
 					web_citations?: Json | null;

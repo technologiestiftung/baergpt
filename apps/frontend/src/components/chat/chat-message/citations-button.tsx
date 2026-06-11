@@ -10,11 +10,13 @@ import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.
 import { useCitationsStore } from "../../../store/use-citations-store.ts";
 import type { CitationWithDetails } from "../../../common.ts";
 import type { WebCitationSource } from "../../../api/chat/get-completion.ts";
+import type { ParlaCitationSource } from "../../../common.ts";
 
 interface CitationsButtonProps {
 	messageId: number;
 	citations: number[] | null;
 	webCitations: WebCitationSource[] | null;
+	parlaCitations: ParlaCitationSource[] | null;
 	isLastMessage: boolean;
 }
 
@@ -22,6 +24,7 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	messageId,
 	citations,
 	webCitations,
+	parlaCitations,
 	isLastMessage,
 }) => {
 	const { status } = useInferenceLoadingStatusStore();
@@ -29,6 +32,9 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	const isLoadingLastCitations = isLastMessage && isLoadingCitations;
 
 	const hasWebCitations = Boolean(webCitations && webCitations.length > 0);
+	const hasParlaCitations = Boolean(
+		parlaCitations && parlaCitations.length > 0,
+	);
 	const { getCitation } = useCitationsStore();
 	const hasDocumentCitations =
 		citations &&
@@ -36,7 +42,10 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 		checkCitationsExists(citations, getCitation);
 
 	const isCitationsButtonVisible =
-		hasDocumentCitations || hasWebCitations || isLoadingLastCitations;
+		hasDocumentCitations ||
+		hasWebCitations ||
+		hasParlaCitations ||
+		isLoadingLastCitations;
 
 	if (!isCitationsButtonVisible) {
 		return null;
@@ -74,11 +83,12 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 					</>
 				)}
 			</ChatButton>
-			{(hasDocumentCitations || hasWebCitations) && (
+			{(hasDocumentCitations || hasWebCitations || hasParlaCitations) && (
 				<CitationsDialog
 					messageId={messageId}
 					citations={citations}
 					webCitations={webCitations}
+					parlaCitations={parlaCitations}
 				/>
 			)}
 		</>

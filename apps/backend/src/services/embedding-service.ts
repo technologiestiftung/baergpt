@@ -12,7 +12,6 @@ import {
 	trimToMistralTokenLimitByWords,
 } from "./token-utils";
 import { BaseContentDbService } from "./db-service/base-db-service";
-import { resilientCall } from "../utils";
 import { embed, embedMany } from "ai";
 import { mistral } from "@ai-sdk/mistral";
 import { captureError } from "../monitoring/capture-error";
@@ -25,26 +24,24 @@ export class EmbeddingService {
 
 	async generateMistralEmbedding(
 		input: string,
-		userId?: string,
+		/**
+		 * userId can be undefined when generating embeddings for default documents
+		 * as they are not owned/uploaded by a specific user
+		 */
+		userId: string | undefined,
 	): Promise<EmbeddingResponse> {
-		const { embedding, usage } = await resilientCall(
-			async () => {
-				return await embed({
-					model: mistral.embeddingModel(config.mistralEmbeddingModel),
-					value: input,
-					experimental_telemetry: {
-						isEnabled: config.isTracingEnabled,
-					},
-				});
+		const { embedding, usage } = await embed({
+			model: mistral.embeddingModel(config.mistralEmbeddingModel),
+			value: input,
+			experimental_telemetry: {
+				isEnabled: config.isTracingEnabled,
 			},
-			{ queueType: "embeddings" },
-		);
+		});
 
 		if (!embedding) {
 			throw new Error("Failed to create embedding");
 		}
 
-		// Increase num_embedding_tokens by the amount of tokens from the response if userId is provided
 		if (userId) {
 			await this.dbService.updateUserColumnValue(
 				userId,
@@ -96,18 +93,13 @@ export class EmbeddingService {
 		let totalTokenUsage = 0;
 
 		for (const subBatch of subBatches) {
-			const { embeddings, usage } = await resilientCall(
-				async () => {
-					return await embedMany({
-						model: mistral.embeddingModel(config.mistralEmbeddingModel),
-						values: subBatch,
-						experimental_telemetry: {
-							isEnabled: config.isTracingEnabled,
-						},
-					});
+			const { embeddings, usage } = await embedMany({
+				model: mistral.embeddingModel(config.mistralEmbeddingModel),
+				values: subBatch,
+				experimental_telemetry: {
+					isEnabled: config.isTracingEnabled,
 				},
-				{ queueType: "embeddings" },
-			);
+			});
 
 			if (!embeddings) {
 				throw new Error("Failed to create embeddings");

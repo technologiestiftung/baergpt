@@ -2,11 +2,10 @@ import React from "react";
 import Content from "../../../content.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 
-export const WebSearchWarningBanner: React.FC = () => {
-	const { selectedChatOptions } = useChatsStore();
-	const isWebSearchActive = selectedChatOptions.includes("webSearch");
+export const ExternalToolWarningBanner: React.FC = () => {
+	const { selectedChatOption } = useChatsStore();
 
-	if (!isWebSearchActive) {
+	if (!selectedChatOption) {
 		return null;
 	}
 
@@ -17,7 +16,7 @@ export const WebSearchWarningBanner: React.FC = () => {
             bg-dunkelblau-100 rounded-t-2px text-sm leading-5 text-white font-normal
             focus-visible:outline-2px`}
 		>
-			{Content["chat.webSearchWarningBanner.label"]}
+			{Content[`chat.${selectedChatOption}.warningBanner.label`]}
 		</div>
 	);
 };

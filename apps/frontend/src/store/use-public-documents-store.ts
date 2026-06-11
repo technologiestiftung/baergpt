@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { PublicDocument, PublicFolder } from "../common";
 import { getPublicDocuments as getPublicDocumentsFromDb } from "../api/documents/get-public-documents";
 import Content from "../content.ts";
+import { useChatsStore } from "./use-chats-store.ts";
 
 type PublicDocumentsStore = {
 	publicDocuments: PublicDocument[];
@@ -41,6 +42,7 @@ export const usePublicDocumentsStore = create<PublicDocumentsStore>(
 		selectedPublicChatDocuments: [],
 
 		selectPublicChatDocument: (publicDocument) => {
+			useChatsStore.getState().deactivateExternalTools();
 			set(({ selectedPublicChatDocuments }) => ({
 				selectedPublicChatDocuments: [
 					...selectedPublicChatDocuments,
@@ -78,6 +80,7 @@ export const usePublicDocumentsStore = create<PublicDocumentsStore>(
 		selectedPublicChatFolders: [],
 
 		selectPublicChatFolder: (publicFolder) => {
+			useChatsStore.getState().deactivateExternalTools();
 			set(({ selectedPublicChatFolders }) => ({
 				selectedPublicChatFolders: [...selectedPublicChatFolders, publicFolder],
 			}));
