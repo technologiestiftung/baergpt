@@ -65,6 +65,7 @@ export const Content = {
 	"admin.sidebar.navigation.users": "Benutzerverwaltung",
 	"admin.sidebar.navigation.baseKnowledge": "Base Knowledge",
 	"admin.sidebar.navigation.productDashboard": "Product Dashboard",
+	"admin.sidebar.navigation.domainAllowlist": "Domainverwaltung",
 	"admin.sidebar.navigation.inviteCodes": "Invite Codes",
 	"admin.sidebar.close": "Schließen",
 	"admin.sidebar.title": "BÄRGPT Admin",
@@ -247,6 +248,18 @@ export const Content = {
 	"productDashboard.domainsTable.head.domain": "Domain",
 	"productDashboard.domainsTable.head.users": "Users",
 	"productDashboard.domainsTable.showAllButton": "Alle anzeigen",
+
+	/* ---------------------- Add New Domain ---------------------- */
+	"addNewDomain.title": "Neue Domain hinzufügen",
+	"addNewDomain.description":
+		"Füge eine geprüfte Berlin.de-Domain zur Allowlist hinzu, um Registrierungen von dieser Domain zu erlauben.",
+	"addNewDomain.form.domain": "Domain",
+	"addNewDomain.form.domainPlaceholder": "z.B. senjustv.berlin.de",
+	"addNewDomain.form.description": "Beschreibung (optional)",
+	"addNewDomain.form.descriptionPlaceholder":
+		"z.B. Senatsverwaltung für Justiz",
+	"addNewDomain.form.button.save": "Domain hinzufügen",
+	"addNewDomain.form.button.saved": "Domain hinzugefügt",
 } as const;
 
 export default Content;
