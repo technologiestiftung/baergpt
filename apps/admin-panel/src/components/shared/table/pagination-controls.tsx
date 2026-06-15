@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import type { Table } from "@tanstack/react-table";
-import type { User } from "../../../common";
 import Content from "../../../content";
 
-export function PaginationControls({ table }: { table: Table<User> }) {
+export function PaginationControls<TData>({
+	table,
+}: {
+	table: Table<TData>;
+}) {
 	return (
 		<div className="flex items-center justify-end space-x-2 py-4">
 			<Button
@@ -12,7 +15,7 @@ export function PaginationControls({ table }: { table: Table<User> }) {
 				onClick={() => table.previousPage()}
 				disabled={!table.getCanPreviousPage()}
 			>
-				{Content["userTable.pagination.previousPage"]}
+				{Content["table.pagination.previousPage"]}
 			</Button>
 			<Button
 				variant="outline"
@@ -20,7 +23,7 @@ export function PaginationControls({ table }: { table: Table<User> }) {
 				onClick={() => table.nextPage()}
 				disabled={!table.getCanNextPage()}
 			>
-				{Content["userTable.pagination.nextPage"]}
+				{Content["table.pagination.nextPage"]}
 			</Button>
 		</div>
 	);

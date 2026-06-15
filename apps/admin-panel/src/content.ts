@@ -84,16 +84,18 @@ export const Content = {
 	"inviteNewUser.form.button.save": "Einladung senden",
 	"inviteNewUser.form.button.saved": "Einladung verschickt",
 
+	/* ---------------------- Shared Table ---------------------- */
+	"table.pageSizeDropdown.pageSize.label": "Anzeigen: ",
+	"table.pageSizeDropdown.perTable": "pro Seite",
+	"table.pageSizeDropdown.all.label": "Alle",
+	"table.pagination.previousPage": "Zurück",
+	"table.pagination.nextPage": "Weiter",
+	"table.noResults": "Keine Ergebnisse.",
+
 	/* ---------------------- User Table ---------------------- */
 	"userTable.searchField.placeholder": "Suche nach Name oder E-Mail...",
-	"userTable.PageSizeDropdown.all.label": "Alle Benutzer",
-	"userTable.PageSizeDropdown.pageSize.label": "Anzeigen: ",
-	"userTable.PageSizeDropdown.perTable": "pro Seite",
-	"userTable.pagination.nextPage": "Weiter",
-	"userTable.pagination.previousPage": "Zurück",
 	"userTable.statusFilterDropdown.label": "Status filtern",
 	"userTable.statusFilterDropdown.all.label": "Status (alle)",
-	"userTable.noResults": "Keine Ergebnisse.",
 	"userTable.resultsCount.separator": "von",
 	"userTable.resultsCount.label": "Benutzer:innen",
 	// User Table Headers
@@ -260,6 +262,24 @@ export const Content = {
 		"z.B. Senatsverwaltung für Justiz",
 	"addNewDomain.form.button.save": "Domain hinzufügen",
 	"addNewDomain.form.button.saved": "Domain hinzugefügt",
+
+	// Domain Allowlist Table Headers
+	"domainAllowlistTable.tableHeader.domain": "Domain",
+	"domainAllowlistTable.tableHeader.description": "Beschreibung",
+	"domainAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
+	"domainAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
+	"domainAllowlistTable.tableHeader.isActive": "Status",
+	"domainAllowlistTable.tableHeader.actions": "Bearbeiten",
+	"domainAllowlistTable.tableHeader.actions.deactivate": "Deaktivieren",
+	"domainAllowlistTable.tableHeader.actions.activate": "Aktivieren",
+	"domainAllowlistTable.tableHeader.isActive.active": "aktiv",
+	"domainAllowlistTable.tableHeader.isActive.inactive": "inaktiv",
+
+	"domainAllowlistTable.count.label": "Domains insgesamt",
+	"domainAllowlistTable.active.label": "Aktive Domains",
+	"domainAllowlistTable.deactivated.label": "Deaktiviert",
+	"domainAllowlistTable.searchField.placeholder":
+		"Suche nach Domain oder Beschreibung...",
 } as const;
 
 export default Content;

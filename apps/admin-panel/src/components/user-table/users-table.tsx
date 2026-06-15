@@ -14,11 +14,19 @@ import {
 import { columns } from "./columns";
 import { Content } from "../../content";
 
-import { SearchField } from "./search-field";
-import { StatusFilterDropdown } from "./dropdowns/status-filter-dropdown";
-import { PageSizeDropdown } from "./dropdowns/page-size-dropdown";
-import { UsersTableContent } from "./users-table-content";
-import { PaginationControls } from "./pagination/pagination-controls";
+import { SearchField } from "../shared/table/search-field";
+import { FilterDropdown } from "../shared/table/filter-dropdown";
+import { PageSizeDropdown } from "../shared/table/page-size-dropdown";
+import { TableContent } from "../shared/table/table-content";
+import { PaginationControls } from "../shared/table/pagination-controls";
+
+const USER_STATUS_OPTIONS = [
+	Content["userTable.statusFilterDropdown.all.label"],
+	"Active",
+	"Inactive",
+	"Admin",
+	"Invited",
+];
 import type { User } from "../../common";
 import { useUserStore } from "../../store/use-user-store";
 import { InviteNewUserForm } from "../invite-new-user/invite-new-user-form";
@@ -90,12 +98,20 @@ export function UsersTable() {
 			</div>
 
 			<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-4 text-dunkelblau-200">
-				<SearchField value={globalFilter} onChange={setGlobalFilter} />
+				<SearchField
+					value={globalFilter}
+					onChange={setGlobalFilter}
+					placeholder={Content["userTable.searchField.placeholder"]}
+				/>
 				<div className="flex justify-between items-center w-full">
-					<StatusFilterDropdown table={table} />
+					<FilterDropdown
+						table={table}
+						columnId="status"
+						options={USER_STATUS_OPTIONS}
+					/>
 				</div>
 			</div>
-			<UsersTableContent table={table} />
+			<TableContent table={table} />
 
 			<div className="flex flex-wrap justify-between items-center w-full gap-2">
 				<PageSizeDropdown table={table} />

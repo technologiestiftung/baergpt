@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { Label } from "../ui/label";
 import Content from "../../content";
 import { useUserErrorStore } from "@/store/user-error-store";
+import { useDomainStore } from "@/store/use-domain-store";
 
 export const AddNewDomainForm: React.FC = () => {
 	const [isDomainAdded, setIsDomainAdded] = useState(false);

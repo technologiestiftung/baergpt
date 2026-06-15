@@ -2,6 +2,7 @@ import { useUserStore } from "../../store/use-user-store.ts";
 import type { Session } from "@supabase/supabase-js";
 import { useDocumentStore } from "../../store/use-document-store.ts";
 import { useAccessGroupStore } from "@/store/use-access-group-store.ts";
+import { useDomainStore } from "@/store/use-domain-store.ts";
 
 let abortController: null | AbortController = null;
 
@@ -28,6 +29,7 @@ export async function handleSessionChange(session: Session | null) {
 		if (useUserStore.getState().isUserAdmin) {
 			promises.push(useUserStore.getState().getUsers(signal));
 			promises.push(useAccessGroupStore.getState().getAccessGroupId(signal));
+			promises.push(useDomainStore.getState().getAllowedEmailDomains(signal));
 		}
 
 		await Promise.all(promises);
