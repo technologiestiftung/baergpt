@@ -19,6 +19,18 @@ export type WebSearchResult = {
 	};
 };
 
+type WebSearchError = {
+	type: string;
+	error: {
+		id: string;
+		status: number;
+		detail: string;
+		meta: Record<string, unknown>;
+		code: string;
+	};
+	time: number;
+};
+
 const EMPTY_RESULT: WebSearchResult = {
 	grounding: { generic: [] },
 	sources: {},
@@ -43,15 +55,10 @@ export const webSearchTool = tool({
 			);
 
 			if (!res.ok) {
-				const error = (await res.json()) as {
-					errors: {
-						code: string;
-						detail: string;
-					}[];
-				};
+				const error = (await res.json()) as WebSearchError;
 				captureError(
 					new Error(
-						`Brave search failed with status ${res.status} ${error.errors[0].code}: ${error.errors[0].detail}`,
+						`Brave search failed with status ${res.status}. Full error: ${JSON.stringify(error, null, 2)}`,
 					),
 				);
 				return EMPTY_RESULT;
