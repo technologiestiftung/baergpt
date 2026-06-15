@@ -1,9 +1,11 @@
 import React from "react";
 
-export const markdownWrapperScrollableTable = {
-	table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
+export function MarkdownWrapperScrollableTable(
+	props: React.TableHTMLAttributes<HTMLTableElement>,
+) {
+	return (
 		<div className="table-wrapper">
 			<table {...props} />
 		</div>
-	),
-};
+	);
+}
