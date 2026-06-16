@@ -22,8 +22,7 @@ export function FilterDropdown<TData>({
 	const selectedValue = filterColumn?.getFilterValue() as string | undefined;
 
 	const handleValueChange = (value: string, checked: boolean) => {
-		const newValue =
-			value === defaultOption || !checked ? undefined : value;
+		const newValue = value === defaultOption || !checked ? undefined : value;
 		filterColumn?.setFilterValue(newValue);
 	};
 
@@ -51,9 +50,7 @@ export function FilterDropdown<TData>({
 						<DropdownMenuCheckboxItem
 							key={option}
 							checked={isChecked}
-							onCheckedChange={(checked) =>
-								handleValueChange(option, checked)
-							}
+							onCheckedChange={(checked) => handleValueChange(option, checked)}
 						>
 							{option}
 						</DropdownMenuCheckboxItem>
