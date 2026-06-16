@@ -32,11 +32,11 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.dateAdded"],
-		accessorKey: "date_added",
+		accessorKey: "created_at",
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.addedBy"],
-		accessorKey: "added_by_user",
+		accessorKey: "created_by",
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.isActive"],

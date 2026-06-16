@@ -8,15 +8,21 @@ async function fetchAllowedEmailDomains(
 	return [
 		{
 			domain: "example.com",
-			date_added: new Date().toISOString(),
-			added_by_user: "test@example.com",
 			is_active: true,
+			created_at: new Date().toISOString(),
+			created_by: "test@example.com",
+			last_status_change_at: null,
+			last_status_change_by: null,
+			user_count: 0,
 		},
 		{
 			domain: "legacy.berlin.de",
-			date_added: new Date().toISOString(),
-			added_by_user: "admin@berlin.de",
 			is_active: false,
+			created_at: new Date().toISOString(),
+			created_by: "admin@berlin.de",
+			last_status_change_at: new Date().toISOString(),
+			last_status_change_by: "admin@berlin.de",
+			user_count: 3,
 		},
 	];
 }
