@@ -31,10 +31,6 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 		accessorKey: "domain",
 	},
 	{
-		header: Content["domainAllowlistTable.tableHeader.description"],
-		accessorKey: "description",
-	},
-	{
 		header: Content["domainAllowlistTable.tableHeader.dateAdded"],
 		accessorKey: "date_added",
 	},

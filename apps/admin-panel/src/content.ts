@@ -257,9 +257,6 @@ export const Content = {
 		"Füge eine geprüfte Berlin.de-Domain zur Allowlist hinzu, um Registrierungen von dieser Domain zu erlauben.",
 	"addNewDomain.form.domain": "Domain",
 	"addNewDomain.form.domainPlaceholder": "z.B. senjustv.berlin.de",
-	"addNewDomain.form.description": "Beschreibung (optional)",
-	"addNewDomain.form.descriptionPlaceholder":
-		"z.B. Senatsverwaltung für Justiz",
 	"addNewDomain.form.button.save": "Domain hinzufügen",
 	"addNewDomain.form.button.saved": "Domain hinzugefügt",
 	"addNewDomain.form.validation.wildcardNotAllowed":
@@ -269,7 +266,6 @@ export const Content = {
 
 	// Domain Allowlist Table Headers
 	"domainAllowlistTable.tableHeader.domain": "Domain",
-	"domainAllowlistTable.tableHeader.description": "Beschreibung",
 	"domainAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
 	"domainAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
 	"domainAllowlistTable.tableHeader.isActive": "Status",
@@ -282,8 +278,7 @@ export const Content = {
 	"domainAllowlistTable.count.label": "Domains insgesamt",
 	"domainAllowlistTable.active.label": "Aktive Domains",
 	"domainAllowlistTable.deactivated.label": "Deaktiviert",
-	"domainAllowlistTable.searchField.placeholder":
-		"Suche nach Domain oder Beschreibung...",
+	"domainAllowlistTable.searchField.placeholder": "Suche nach Domain...",
 } as const;
 
 export default Content;

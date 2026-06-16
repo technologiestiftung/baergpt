@@ -56,7 +56,6 @@ export const AddNewDomainForm: React.FC = () => {
 		event.preventDefault();
 
 		const domain = event.currentTarget.domain.value.trim();
-		const description = event.currentTarget.description.value;
 
 		applyDomainValidation(domain);
 		if (!domainInputRef.current?.checkValidity()) {
@@ -64,7 +63,7 @@ export const AddNewDomainForm: React.FC = () => {
 			return;
 		}
 
-		await addAllowedEmailDomain(domain, description);
+		await addAllowedEmailDomain(domain);
 
 		if (error) {
 			setIsErrorMessageVisible(true);
@@ -91,7 +90,7 @@ export const AddNewDomainForm: React.FC = () => {
 	};
 
 	return (
-		<div className="w-full self-start max-w-screen-xl border border-gray-200 rounded-lg p-4 mb-8">
+		<div className="w-fit self-start max-w-screen-xl border border-gray-200 rounded-lg p-4 mb-8">
 			<h2 className="text-lg font-semibold">{Content["addNewDomain.title"]}</h2>
 			<div className="text-gray-500 text-sm">
 				{Content["addNewDomain.description"]}
@@ -101,7 +100,7 @@ export const AddNewDomainForm: React.FC = () => {
 				className="flex flex-col pt-4 lg:pt-0 lg:flex-row items-start justify-start gap-x-6 xl:gap-x-8 space-y-4 lg:space-y-0 mt-4"
 				onSubmit={handleSubmit}
 			>
-				<div className="space-y-2 w-full">
+				<div className="space-y-2 max-w-96 w-full">
 					<Label htmlFor="domain" className="font-semibold">
 						{Content["addNewDomain.form.domain"]}
 					</Label>
@@ -126,17 +125,6 @@ export const AddNewDomainForm: React.FC = () => {
 							{domainError}
 						</p>
 					)}
-				</div>
-				<div className="space-y-2 w-full">
-					<Label htmlFor="description" className="font-semibold">
-						{Content["addNewDomain.form.description"]}
-					</Label>
-					<Input
-						id="description"
-						name="description"
-						placeholder={Content["addNewDomain.form.descriptionPlaceholder"]}
-						required
-					/>
 				</div>
 				<div className="self-start">
 					<Button

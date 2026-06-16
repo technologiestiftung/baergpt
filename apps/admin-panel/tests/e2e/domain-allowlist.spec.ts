@@ -30,13 +30,8 @@ async function gotoDomainAllowlist(page: Page) {
 	).toBeVisible();
 }
 
-async function fillAddDomainForm(
-	page: Page,
-	domain: string,
-	description: string,
-) {
+async function fillAddDomainForm(page: Page, domain: string) {
 	await page.locator("#domain").fill(domain);
-	await page.locator("#description").fill(description);
 }
 
 test.describe("Domain Allowlist", () => {
@@ -94,7 +89,7 @@ test.describe("Domain Allowlist", () => {
 	});
 
 	test("shows validation error for wildcard domain", async ({ page }) => {
-		await fillAddDomainForm(page, "*.berlin.de", "Wildcard test");
+		await fillAddDomainForm(page, "*.berlin.de");
 
 		await page.getByRole("button", { name: "Domain hinzufügen" }).click();
 
@@ -106,7 +101,7 @@ test.describe("Domain Allowlist", () => {
 	});
 
 	test("shows validation error for malformed domain", async ({ page }) => {
-		await fillAddDomainForm(page, "not-a-valid-domain", "Malformed test");
+		await fillAddDomainForm(page, "not-a-valid-domain");
 
 		await page.getByRole("button", { name: "Domain hinzufügen" }).click();
 

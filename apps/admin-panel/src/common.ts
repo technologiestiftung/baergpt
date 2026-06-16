@@ -50,7 +50,6 @@ export type Document = {
 
 export type AllowedEmailDomain = {
 	domain: string;
-	description: string;
 	date_added: string;
 	added_by_user: string;
 	is_active: boolean;
