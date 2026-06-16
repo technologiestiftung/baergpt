@@ -266,7 +266,7 @@ export const Content = {
 
 	// Domain Allowlist Table Headers
 	"domainAllowlistTable.tableHeader.domain": "Domain",
-	"domainAllowlistTable.tableHeader.userCount": "Anzahl der User:innen",
+	"domainAllowlistTable.tableHeader.userCount": "User:innen",
 	"domainAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
 	"domainAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
 	"domainAllowlistTable.tableHeader.isActive": "Status",
