@@ -56,7 +56,7 @@ export const DomainAllowlistPage: React.FC = () => {
 		globalFilterFn: (row, _columnId, filterValue: string) => {
 			const {
 				domain = "",
-				added_by_user = "",
+				created_by = "",
 				is_active = "",
 			} = row.original as AllowedEmailDomain;
 			const query = filterValue.toLowerCase();
@@ -66,7 +66,7 @@ export const DomainAllowlistPage: React.FC = () => {
 			const queryWords = query.split(/\s+/).filter((word) => word.length > 0);
 			const searchableFields = [
 				domain?.toLowerCase() || "",
-				added_by_user?.toLowerCase() || "",
+				created_by?.toLowerCase() || "",
 				is_active?.toString() || "",
 			];
 			const result = queryWords.every((word) =>
