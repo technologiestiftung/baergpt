@@ -277,8 +277,11 @@ export const Content = {
 
 	"domainAllowlistTable.count.label": "Domains insgesamt",
 	"domainAllowlistTable.active.label": "Aktive Domains",
-	"domainAllowlistTable.deactivated.label": "Deaktiviert",
+	"domainAllowlistTable.deactivated.label": "Deaktivierte Domains",
 	"domainAllowlistTable.searchField.placeholder": "Suche nach Domain...",
+	"domainAllowlistTable.statusFilterDropdown.all.label": "Alle",
+	"domainAllowlistTable.statusFilterDropdown.active.label": "Aktiv",
+	"domainAllowlistTable.statusFilterDropdown.inactive.label": "Inaktiv",
 
 	"changeDomainStatusDialog.title.deactivate": "Domain deaktivieren",
 	"changeDomainStatusDialog.title.activate": "Domain aktivieren",

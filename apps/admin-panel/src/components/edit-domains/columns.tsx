@@ -27,6 +27,29 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	{
 		header: Content["domainAllowlistTable.tableHeader.isActive"],
 		accessorKey: "is_active",
+		enableColumnFilter: true,
+		filterFn: (row, _columnId, filterValue: string) => {
+			if (
+				!filterValue ||
+				filterValue ===
+					Content["domainAllowlistTable.statusFilterDropdown.all.label"]
+			) {
+				return true;
+			}
+			if (
+				filterValue ===
+				Content["domainAllowlistTable.statusFilterDropdown.active.label"]
+			) {
+				return row.original.is_active === true;
+			}
+			if (
+				filterValue ===
+				Content["domainAllowlistTable.statusFilterDropdown.inactive.label"]
+			) {
+				return row.original.is_active === false;
+			}
+			return true;
+		},
 		cell: ({ row }) => {
 			const { is_active } = row.original;
 			const badgeColor = badgeColors.get(is_active);

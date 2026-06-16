@@ -23,7 +23,11 @@ import { FilterDropdown } from "@/components/shared/table/filter-dropdown.tsx";
 import { TableContent } from "@/components/shared/table/table-content.tsx";
 import { ChangeDomainStatusDialog } from "@/components/edit-domains/change-domain-status-dialog.tsx";
 
-const DOMAIN_STATUS_OPTIONS = ["Alle", "Aktiv", "Inaktiv"];
+const DOMAIN_STATUS_OPTIONS = [
+	Content["domainAllowlistTable.statusFilterDropdown.all.label"],
+	Content["domainAllowlistTable.statusFilterDropdown.active.label"],
+	Content["domainAllowlistTable.statusFilterDropdown.inactive.label"],
+];
 
 export const DomainAllowlistPage: React.FC = () => {
 	const allowedEmailDomains = useDomainStore(
