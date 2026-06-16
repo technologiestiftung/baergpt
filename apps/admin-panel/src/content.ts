@@ -279,6 +279,17 @@ export const Content = {
 	"domainAllowlistTable.active.label": "Aktive Domains",
 	"domainAllowlistTable.deactivated.label": "Deaktiviert",
 	"domainAllowlistTable.searchField.placeholder": "Suche nach Domain...",
+
+	"changeDomainStatusDialog.title.deactivate": "Domain deaktivieren",
+	"changeDomainStatusDialog.title.activate": "Domain aktivieren",
+	"changeDomainStatusDialog.description.deactivate.p1":
+		"Durch Bestätigung werden die Accounts von",
+	"changeDomainStatusDialog.description.deactivate.p2":
+		"User:innen mit folgender Domain deaktiviert.",
+
+	"changeDomainStatusDialog.description.activate":
+		"Durch Bestätigung können sich neue User:innen wieder registrieren. <strong>Accounts von bestehenden User:innen müssen manuell in der Benutzerverwaltung aktiviert werden.</strong>",
+	"changeDomainStatusDialog.button.cancel": "Abbrechen",
 } as const;
 
 export default Content;

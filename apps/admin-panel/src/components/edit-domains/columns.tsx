@@ -11,20 +11,6 @@ export const badgeColors = new Map<AllowedEmailDomain["is_active"], string>([
 	[false, "bg-red-100/30 text-red-600 dark:text-red-200 border-none"],
 ]);
 
-const handleToggleAllowedEmailDomain = async (
-	domain: string,
-	isActive: boolean,
-) => {
-	const { activateAllowedEmailDomain, deactivateAllowedEmailDomain } =
-		useDomainStore.getState();
-
-	if (isActive) {
-		await deactivateAllowedEmailDomain(domain);
-	} else {
-		await activateAllowedEmailDomain(domain);
-	}
-};
-
 export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	{
 		header: Content["domainAllowlistTable.tableHeader.domain"],
@@ -60,16 +46,17 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 		header: Content["domainAllowlistTable.tableHeader.actions"],
 		accessorKey: "actions",
 		cell: ({ row }) => {
-			const { domain, is_active } = row.original;
+			const { is_active } = row.original;
 
 			return (
 				<Button
 					variant="outline"
 					size="sm"
 					onClick={() => {
-						handleToggleAllowedEmailDomain(domain, is_active).catch(
-							console.error,
-						);
+						const { setSelectedDomain, setChangeDomainStatusDialogOpen } =
+							useDomainStore.getState();
+						setSelectedDomain(row.original);
+						setChangeDomainStatusDialogOpen(true);
 					}}
 				>
 					{is_active

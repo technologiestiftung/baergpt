@@ -48,6 +48,10 @@ interface DomainStore {
 	addAllowedEmailDomain: (domain: string) => Promise<void>;
 	deactivateAllowedEmailDomain: (domain: string) => Promise<void>;
 	activateAllowedEmailDomain: (domain: string) => Promise<void>;
+	selectedDomain: AllowedEmailDomain | null;
+	setSelectedDomain: (domain: AllowedEmailDomain | null) => void;
+	isChangeDomainStatusDialogOpen: boolean;
+	setChangeDomainStatusDialogOpen: (isOpen: boolean) => void;
 }
 
 export const useDomainStore = create<DomainStore>((set, get) => ({
@@ -80,4 +84,10 @@ export const useDomainStore = create<DomainStore>((set, get) => ({
 			});
 		}
 	},
+	selectedDomain: null,
+	setSelectedDomain: (domain: AllowedEmailDomain | null) =>
+		set({ selectedDomain: domain }),
+	isChangeDomainStatusDialogOpen: false,
+	setChangeDomainStatusDialogOpen: (isOpen: boolean) =>
+		set({ isChangeDomainStatusDialogOpen: isOpen }),
 }));

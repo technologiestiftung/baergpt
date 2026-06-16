@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Layout } from "../../components/layout/layout.tsx";
 import { AdminSidebar } from "../../components/admin-sidebar/admin-sidebar.tsx";
-import { AddNewDomainForm } from "../../components/add-new-domain-form/add-new-domain-form.tsx";
-import { columns } from "../../components/add-new-domain-form/columns.tsx";
+import { AddNewDomainForm } from "../../components/edit-domains/add-new-domain-form.tsx";
+import { columns } from "../../components/edit-domains/columns.tsx";
 import { Content } from "@/content.ts";
 import { useDomainStore } from "@/store/use-domain-store.ts";
 import {
@@ -21,6 +21,7 @@ import { PageSizeDropdown } from "@/components/shared/table/page-size-dropdown.t
 import { SearchField } from "@/components/shared/table/search-field.tsx";
 import { FilterDropdown } from "@/components/shared/table/filter-dropdown.tsx";
 import { TableContent } from "@/components/shared/table/table-content.tsx";
+import { ChangeDomainStatusDialog } from "@/components/edit-domains/change-domain-status-dialog.tsx";
 
 const DOMAIN_STATUS_OPTIONS = ["Alle", "Aktiv", "Inaktiv"];
 
@@ -139,6 +140,7 @@ export const DomainAllowlistPage: React.FC = () => {
 					</div>
 				</div>
 			</AdminSidebar>
+			<ChangeDomainStatusDialog />
 		</Layout>
 	);
 };
