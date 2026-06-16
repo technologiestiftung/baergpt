@@ -97,16 +97,31 @@ export type Database = {
 			};
 			allowed_email_domains: {
 				Row: {
+					created_at: string;
+					created_by: string | null;
 					domain: string;
 					id: number;
+					is_active: boolean;
+					last_status_change_at: string | null;
+					last_status_change_by: string | null;
 				};
 				Insert: {
+					created_at?: string;
+					created_by?: string | null;
 					domain: string;
 					id?: number;
+					is_active?: boolean;
+					last_status_change_at?: string | null;
+					last_status_change_by?: string | null;
 				};
 				Update: {
+					created_at?: string;
+					created_by?: string | null;
 					domain?: string;
 					id?: number;
+					is_active?: boolean;
+					last_status_change_at?: string | null;
+					last_status_change_by?: string | null;
 				};
 				Relationships: [];
 			};

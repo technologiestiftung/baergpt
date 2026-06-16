@@ -17,6 +17,9 @@ export async function seedLocalAdmin() {
 		await handleDelete(existingUser.id);
 	}
 
+	// Seed the local admin's domain first so createUser passes the allowlist domain trigger (local-only).
+	await seedLocalAllowedEmailDomains();
+
 	const { error: createUserError } = await supabase.auth.admin.createUser({
 		id,
 		email,
@@ -69,6 +72,19 @@ export async function seedLocalAdmin() {
 
 	/* eslint-disable-next-line no-console */
 	console.log("done!");
+}
+
+async function seedLocalAllowedEmailDomains() {
+	const { error } = await supabase
+		.from("allowed_email_domains")
+		.upsert([{ domain: "local.berlin.de", is_active: true }], {
+			onConflict: "domain",
+			ignoreDuplicates: true,
+		});
+
+	if (error) {
+		console.error("Error seeding local allowed email domains:", error);
+	}
 }
 
 async function handleDelete(id: string) {
