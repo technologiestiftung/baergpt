@@ -17,6 +17,10 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 		accessorKey: "domain",
 	},
 	{
+		header: Content["domainAllowlistTable.tableHeader.userCount"],
+		accessorKey: "user_count",
+	},
+	{
 		header: Content["domainAllowlistTable.tableHeader.dateAdded"],
 		accessorKey: "created_at",
 	},
@@ -64,6 +68,14 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 				</div>
 			);
 		},
+	},
+	{
+		header: Content["domainAllowlistTable.tableHeader.lastStatusChange"],
+		accessorKey: "last_status_change_at",
+	},
+	{
+		header: Content["domainAllowlistTable.tableHeader.lastStatusChangeBy"],
+		accessorKey: "last_status_change_by",
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.actions"],

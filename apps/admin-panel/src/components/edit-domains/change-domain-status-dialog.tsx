@@ -63,7 +63,7 @@ export const ChangeDomainStatusDialog: React.FC = () => {
 											"changeDomainStatusDialog.description.deactivate.p1"
 										]
 									}
-									{" 10 "}
+									{` ${selectedDomain?.user_count} `}
 									{
 										Content[
 											"changeDomainStatusDialog.description.deactivate.p2"
