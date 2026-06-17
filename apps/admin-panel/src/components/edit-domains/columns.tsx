@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 import { useDomainStore } from "@/store/use-domain-store";
+import { formatDate } from "../user-table/utils/format-date";
 
 export const badgeColors = new Map<AllowedEmailDomain["is_active"], string>([
 	[true, "bg-green-100/50 text-green-700 dark:text-green-300 border-none"],
@@ -23,6 +24,7 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	{
 		header: Content["domainAllowlistTable.tableHeader.dateAdded"],
 		accessorKey: "created_at",
+		cell: ({ getValue }) => formatDate(getValue() as string),
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.addedBy"],
@@ -72,6 +74,7 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	{
 		header: Content["domainAllowlistTable.tableHeader.lastStatusChange"],
 		accessorKey: "last_status_change_at",
+		cell: ({ getValue }) => formatDate(getValue() as string),
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.lastStatusChangeBy"],
