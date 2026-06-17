@@ -1,0 +1,7 @@
+# force-recreate: the config is a bind-mounted single file, so a plain `up -d`
+# keeps the old inode after the file is replaced. Recreating reloads it.
+- name: Recreate otel-collector
+  ansible.builtin.command:
+    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --force-recreate otel-collector"
+  args:
+    chdir: "{{ supabase_dir }}"

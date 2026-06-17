@@ -1,0 +1,133 @@
+# OTel Collector for the Supabase VM: host + container metrics and Kong gateway logs → STACKIT.
+# Env: STACKIT_OBSERVABILITY_{USERNAME,PASSWORD,METRICS_PUSH_URL,LOGS_OTLP_URL}, BAERGPT_ENV,
+# BAERGPT_HOSTNAME. LOGS_OTLP_URL must be the full ingest path (.../otlp/v1/logs), sent verbatim.
+
+extensions:
+  basicauth/stackit:
+    client_auth:
+      username: ${env:STACKIT_OBSERVABILITY_USERNAME}
+      password: ${env:STACKIT_OBSERVABILITY_PASSWORD}
+
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  hostmetrics:
+    collection_interval: 60s
+    root_path: /hostfs
+    scrapers:
+      cpu: {}
+      memory: {}
+      load: {}
+      disk: {}
+      filesystem: {}
+      network: {}
+      paging: {}
+
+  docker_stats:
+    collection_interval: 60s
+    endpoint: unix:///var/run/docker.sock
+    timeout: 20s
+    api_version: "1.40"  # string, not float; daemons reject the old 1.25 default
+
+  filelog/containers:
+    include:
+      - /var/lib/docker/containers/*/*-json.log
+    start_at: end
+    include_file_path: true
+    operators:
+      - id: container-parser
+        type: container
+        format: docker
+        add_metadata_from_filepath: false
+      - id: extract-container-id
+        type: regex_parser
+        parse_from: attributes["log.file.path"]
+        regex: '^/var/lib/docker/containers/(?P<container_id>[a-f0-9]+)/'
+      - id: rename-container-id
+        type: move
+        from: attributes.container_id
+        to: attributes["container.id"]
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 256
+    spike_limit_mib: 56
+
+  attributes/source:
+    actions:
+      - key: source
+        value: supabase-${env:BAERGPT_ENV}
+        action: upsert
+      - key: host
+        value: ${env:BAERGPT_HOSTNAME}
+        action: upsert
+
+  attributes/job-kong:
+    actions:
+      - key: job
+        value: kong
+        action: upsert
+
+  filter/gateway-only:  # keep only Kong access logs + error/crit/alert/emerg; drop everything else
+    error_mode: ignore
+    logs:
+      log_record:
+        - 'not (IsMatch(body, "^\\S+ \\S+ \\S+ \\[.*\\] \".*\" \\d{3} ") or IsMatch(body, "\\[(error|crit|alert|emerg)\\]"))'
+
+  resource/service:  # service.name -> Loki `service_name` stream label (else `unknown_service`)
+    attributes:
+      - key: service.name
+        value: supabase-${env:BAERGPT_ENV}
+        action: upsert
+
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+exporters:
+  prometheusremotewrite/stackit:
+    endpoint: ${env:STACKIT_OBSERVABILITY_METRICS_PUSH_URL}
+    auth:
+      authenticator: basicauth/stackit
+    resource_to_telemetry_conversion:
+      enabled: true  # surface docker_stats container.* as metric labels (e.g. container_name)
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    remote_write_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 1000
+
+  otlphttp/stackit:
+    logs_endpoint: ${env:STACKIT_OBSERVABILITY_LOGS_OTLP_URL}
+    auth:
+      authenticator: basicauth/stackit
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 1000
+
+service:
+  telemetry:
+    logs:
+      level: info
+  extensions: [basicauth/stackit, health_check]
+  pipelines:
+    metrics:
+      receivers: [hostmetrics, docker_stats]
+      processors: [memory_limiter, resource/service, attributes/source, batch]
+      exporters: [prometheusremotewrite/stackit]
+    logs/containers:
+      receivers: [filelog/containers]
+      processors: [memory_limiter, filter/gateway-only, resource/service, attributes/source, attributes/job-kong, batch]
+      exporters: [otlphttp/stackit]
