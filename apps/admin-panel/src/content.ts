@@ -266,9 +266,12 @@ export const Content = {
 
 	// Domain Allowlist Table Headers
 	"domainAllowlistTable.tableHeader.domain": "Domain",
+	"domainAllowlistTable.tableHeader.userCount": "User:innen",
 	"domainAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
 	"domainAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
 	"domainAllowlistTable.tableHeader.isActive": "Status",
+	"domainAllowlistTable.tableHeader.lastStatusChange": "Letzte Änderung",
+	"domainAllowlistTable.tableHeader.lastStatusChangeBy": "Geändert von",
 	"domainAllowlistTable.tableHeader.actions": "Bearbeiten",
 	"domainAllowlistTable.tableHeader.actions.deactivate": "Deaktivieren",
 	"domainAllowlistTable.tableHeader.actions.activate": "Aktivieren",
@@ -277,8 +280,22 @@ export const Content = {
 
 	"domainAllowlistTable.count.label": "Domains insgesamt",
 	"domainAllowlistTable.active.label": "Aktive Domains",
-	"domainAllowlistTable.deactivated.label": "Deaktiviert",
+	"domainAllowlistTable.deactivated.label": "Deaktivierte Domains",
 	"domainAllowlistTable.searchField.placeholder": "Suche nach Domain...",
+	"domainAllowlistTable.statusFilterDropdown.all.label": "Alle",
+	"domainAllowlistTable.statusFilterDropdown.active.label": "Aktiv",
+	"domainAllowlistTable.statusFilterDropdown.inactive.label": "Inaktiv",
+
+	"changeDomainStatusDialog.title.deactivate": "Domain deaktivieren",
+	"changeDomainStatusDialog.title.activate": "Domain aktivieren",
+	"changeDomainStatusDialog.description.deactivate.p1":
+		"Durch Bestätigung werden die Accounts von",
+	"changeDomainStatusDialog.description.deactivate.p2":
+		"User:innen mit folgender Domain deaktiviert.",
+
+	"changeDomainStatusDialog.description.activate":
+		"Durch Bestätigung können sich neue User:innen wieder registrieren. <strong>Accounts von bestehenden User:innen müssen manuell in der Benutzerverwaltung aktiviert werden.</strong>",
+	"changeDomainStatusDialog.button.cancel": "Abbrechen",
 } as const;
 
 export default Content;

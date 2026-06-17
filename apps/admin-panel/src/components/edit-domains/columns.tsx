@@ -11,24 +11,14 @@ export const badgeColors = new Map<AllowedEmailDomain["is_active"], string>([
 	[false, "bg-red-100/30 text-red-600 dark:text-red-200 border-none"],
 ]);
 
-const handleToggleAllowedEmailDomain = async (
-	domain: string,
-	isActive: boolean,
-) => {
-	const { activateAllowedEmailDomain, deactivateAllowedEmailDomain } =
-		useDomainStore.getState();
-
-	if (isActive) {
-		await deactivateAllowedEmailDomain(domain);
-	} else {
-		await activateAllowedEmailDomain(domain);
-	}
-};
-
 export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	{
 		header: Content["domainAllowlistTable.tableHeader.domain"],
 		accessorKey: "domain",
+	},
+	{
+		header: Content["domainAllowlistTable.tableHeader.userCount"],
+		accessorKey: "user_count",
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.dateAdded"],
@@ -41,6 +31,29 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	{
 		header: Content["domainAllowlistTable.tableHeader.isActive"],
 		accessorKey: "is_active",
+		enableColumnFilter: true,
+		filterFn: (row, _columnId, filterValue: string) => {
+			if (
+				!filterValue ||
+				filterValue ===
+					Content["domainAllowlistTable.statusFilterDropdown.all.label"]
+			) {
+				return true;
+			}
+			if (
+				filterValue ===
+				Content["domainAllowlistTable.statusFilterDropdown.active.label"]
+			) {
+				return row.original.is_active === true;
+			}
+			if (
+				filterValue ===
+				Content["domainAllowlistTable.statusFilterDropdown.inactive.label"]
+			) {
+				return row.original.is_active === false;
+			}
+			return true;
+		},
 		cell: ({ row }) => {
 			const { is_active } = row.original;
 			const badgeColor = badgeColors.get(is_active);
@@ -57,19 +70,28 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 		},
 	},
 	{
+		header: Content["domainAllowlistTable.tableHeader.lastStatusChange"],
+		accessorKey: "last_status_change_at",
+	},
+	{
+		header: Content["domainAllowlistTable.tableHeader.lastStatusChangeBy"],
+		accessorKey: "last_status_change_by",
+	},
+	{
 		header: Content["domainAllowlistTable.tableHeader.actions"],
 		accessorKey: "actions",
 		cell: ({ row }) => {
-			const { domain, is_active } = row.original;
+			const { is_active } = row.original;
 
 			return (
 				<Button
 					variant="outline"
 					size="sm"
 					onClick={() => {
-						handleToggleAllowedEmailDomain(domain, is_active).catch(
-							console.error,
-						);
+						const { setSelectedDomain, setChangeDomainStatusDialogOpen } =
+							useDomainStore.getState();
+						setSelectedDomain(row.original);
+						setChangeDomainStatusDialogOpen(true);
 					}}
 				>
 					{is_active

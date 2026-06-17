@@ -64,8 +64,9 @@ export const AddNewDomainForm: React.FC = () => {
 		}
 
 		await addAllowedEmailDomain(domain);
+		const submissionError = useUserErrorStore.getState().error;
 
-		if (error) {
+		if (submissionError) {
 			setIsErrorMessageVisible(true);
 
 			setTimeout(() => {

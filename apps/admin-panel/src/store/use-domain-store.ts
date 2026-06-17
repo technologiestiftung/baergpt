@@ -9,18 +9,18 @@ async function fetchAllowedEmailDomains(
 		{
 			domain: "example.com",
 			is_active: true,
-			created_at: new Date().toISOString(),
+			created_at: new Date().toISOString().split("T")[0],
 			created_by: "test@example.com",
 			last_status_change_at: null,
 			last_status_change_by: null,
-			user_count: 0,
+			user_count: 1,
 		},
 		{
 			domain: "legacy.berlin.de",
 			is_active: false,
-			created_at: new Date().toISOString(),
+			created_at: new Date().toISOString().split("T")[0],
 			created_by: "admin@berlin.de",
-			last_status_change_at: new Date().toISOString(),
+			last_status_change_at: new Date().toISOString().split("T")[0],
 			last_status_change_by: "admin@berlin.de",
 			user_count: 3,
 		},
@@ -48,6 +48,10 @@ interface DomainStore {
 	addAllowedEmailDomain: (domain: string) => Promise<void>;
 	deactivateAllowedEmailDomain: (domain: string) => Promise<void>;
 	activateAllowedEmailDomain: (domain: string) => Promise<void>;
+	selectedDomain: AllowedEmailDomain | null;
+	setSelectedDomain: (domain: AllowedEmailDomain | null) => void;
+	isChangeDomainStatusDialogOpen: boolean;
+	setChangeDomainStatusDialogOpen: (isOpen: boolean) => void;
 }
 
 export const useDomainStore = create<DomainStore>((set, get) => ({
@@ -80,4 +84,10 @@ export const useDomainStore = create<DomainStore>((set, get) => ({
 			});
 		}
 	},
+	selectedDomain: null,
+	setSelectedDomain: (domain: AllowedEmailDomain | null) =>
+		set({ selectedDomain: domain }),
+	isChangeDomainStatusDialogOpen: false,
+	setChangeDomainStatusDialogOpen: (isOpen: boolean) =>
+		set({ isChangeDomainStatusDialogOpen: isOpen }),
 }));
