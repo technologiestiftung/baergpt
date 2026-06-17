@@ -57,32 +57,29 @@ export const ChangeDomainStatusDialog: React.FC = () => {
 					<DialogDescription>
 						<div className="my-2">
 							{selectedDomain?.is_active && (
-								<span>
+								<p>
+									{` ${selectedDomain?.user_count} `}
 									{
 										Content[
 											"changeDomainStatusDialog.description.deactivate.p1"
 										]
 									}
-									{` ${selectedDomain?.user_count} `}
+									<span className="font-bold">{` "${selectedDomain?.domain}" `}</span>
 									{
 										Content[
 											"changeDomainStatusDialog.description.deactivate.p2"
 										]
 									}
-								</span>
+								</p>
 							)}
 							{!selectedDomain?.is_active && (
-								<span
-									dangerouslySetInnerHTML={{
-										__html:
-											Content["changeDomainStatusDialog.description.activate"],
-									}}
-								/>
+								<p>
+									{Content["changeDomainStatusDialog.description.activate.p1"]}
+									<span className="font-bold">{` "${selectedDomain?.domain}" `}</span>
+									{Content["changeDomainStatusDialog.description.activate.p2"]}
+								</p>
 							)}
 						</div>
-						<p className="font-bold text-destructive">
-							{selectedDomain?.domain}
-						</p>
 					</DialogDescription>
 				</DialogHeader>
 
