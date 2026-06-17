@@ -29,7 +29,7 @@
     "libs/*"
   ],
   "devDependencies": {
-    "turbo": "2.5.8",
+    "turbo": "2.9.14",
     "@repo/eslint": "file:libs/eslint",
     "@repo/prettier": "file:libs/prettier"
   },
