@@ -1,46 +1,9 @@
 import { create } from "zustand";
 import type { AllowedEmailDomain } from "../common";
-
-// TODO: replace with api/domain/get-allowed-email-domains when implemented
-async function fetchAllowedEmailDomains(
-	_signal: AbortSignal,
-): Promise<AllowedEmailDomain[]> {
-	return [
-		{
-			domain: "example.com",
-			is_active: true,
-			created_at: new Date().toISOString().split("T")[0],
-			created_by: "test@example.com",
-			last_status_change_at: null,
-			last_status_change_by: null,
-			user_count: 1,
-		},
-		{
-			domain: "legacy.berlin.de",
-			is_active: false,
-			created_at: new Date().toISOString().split("T")[0],
-			created_by: "admin@berlin.de",
-			last_status_change_at: new Date().toISOString().split("T")[0],
-			last_status_change_by: "admin@berlin.de",
-			user_count: 3,
-		},
-	];
-}
-
-// TODO: replace with api/domain/add-allowed-email-domain when implemented
-async function createAllowedEmailDomain(_domain: string): Promise<boolean> {
-	return true;
-}
-
-// TODO: replace with api/domain/deactivate-allowed-email-domain when implemented
-async function deactivateAllowedEmailDomain(_domain: string): Promise<boolean> {
-	return true;
-}
-
-// TODO: replace with api/domain/activate-allowed-email-domain when implemented
-async function activateAllowedEmailDomain(_domain: string): Promise<boolean> {
-	return true;
-}
+import { getAllowedEmailDomains } from "../api/domain/get-allowed-email-domains";
+import { addAllowedEmailDomain } from "../api/domain/add-allowed-email-domain";
+import { deactivateAllowedEmailDomain } from "../api/domain/deactivate-allowed-email-domain";
+import { activateAllowedEmailDomain } from "../api/domain/activate-allowed-email-domain";
 
 interface DomainStore {
 	allowedEmailDomains: AllowedEmailDomain[];
@@ -57,12 +20,11 @@ interface DomainStore {
 export const useDomainStore = create<DomainStore>((set, get) => ({
 	allowedEmailDomains: [],
 	getAllowedEmailDomains: async (signal: AbortSignal) => {
-		const allowedEmailDomains = await fetchAllowedEmailDomains(signal);
+		const allowedEmailDomains = await getAllowedEmailDomains(signal);
 		set({ allowedEmailDomains });
 	},
 	addAllowedEmailDomain: async (domain: string) => {
-		const normalizedDomain = domain.toLowerCase();
-		await createAllowedEmailDomain(normalizedDomain);
+		await addAllowedEmailDomain(domain.toLowerCase());
 	},
 	deactivateAllowedEmailDomain: async (domain: string) => {
 		const response = await deactivateAllowedEmailDomain(domain);
