@@ -55,7 +55,9 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 	};
 
 	return (
-		<div className="flex gap-x-2 items-center pl-5 md:pl-2.5">
+		<div
+			className={`flex gap-x-2 items-center pl-5 md:pl-2.5 hover:bg-hellblau-55 ${isSelectedForChat && "bg-hellblau-60"} `}
+		>
 			<div className={isMultiSelectForActionVisible ? "flex" : "hidden"}>
 				<Checkbox
 					id={`${item.id.toString()}-folder`}
@@ -66,7 +68,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 			</div>
 
 			<div
-				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow hover:bg-hellblau-55 group ${isSelectedForChat && "bg-hellblau-60"}`}
+				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow  group`}
 			>
 				<DroppableFolderName item={item} />
 
