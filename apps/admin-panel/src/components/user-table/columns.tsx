@@ -43,13 +43,13 @@ export const columns: ColumnDef<User>[] = [
 		accessorKey: "registered_at",
 		header: Content["userTable.tableHeader.registeredAt"],
 		enableSorting: true,
-		cell: ({ getValue }) => formatDate(getValue() as string),
+		cell: ({ getValue }) => formatDate(getValue() as string | null),
 	},
 	{
 		accessorKey: "last_login_at",
 		header: Content["userTable.tableHeader.lastLoginAt"],
 		enableSorting: true,
-		cell: ({ getValue }) => formatDate(getValue() as string),
+		cell: ({ getValue }) => formatDate(getValue() as string | null),
 	},
 	{
 		accessorKey: "num_inferences",
