@@ -272,7 +272,7 @@ export const Content = {
 	"domainAllowlistTable.tableHeader.isActive": "Status",
 	"domainAllowlistTable.tableHeader.lastStatusChange": "Letzte Änderung",
 	"domainAllowlistTable.tableHeader.lastStatusChangeBy": "Geändert von",
-	"domainAllowlistTable.tableHeader.actions": "Bearbeiten",
+	"domainAllowlistTable.tableHeader.actions": "",
 	"domainAllowlistTable.tableHeader.actions.deactivate": "Deaktivieren",
 	"domainAllowlistTable.tableHeader.actions.activate": "Aktivieren",
 	"domainAllowlistTable.tableHeader.isActive.active": "aktiv",
@@ -289,12 +289,12 @@ export const Content = {
 	"changeDomainStatusDialog.title.deactivate": "Domain deaktivieren",
 	"changeDomainStatusDialog.title.activate": "Domain aktivieren",
 	"changeDomainStatusDialog.description.deactivate.p1":
-		"Durch Bestätigung werden die Accounts von",
-	"changeDomainStatusDialog.description.deactivate.p2":
-		"User:innen mit folgender Domain deaktiviert.",
-
-	"changeDomainStatusDialog.description.activate":
-		"Durch Bestätigung können sich neue User:innen wieder registrieren. <strong>Accounts von bestehenden User:innen müssen manuell in der Benutzerverwaltung aktiviert werden.</strong>",
+		"Accounts mit der Domain",
+	"changeDomainStatusDialog.description.deactivate.p2": " werden deaktiviert.",
+	"changeDomainStatusDialog.description.activate.p1":
+		"Neue User:innen können sich wieder mit der Domain",
+	"changeDomainStatusDialog.description.activate.p2":
+		" registrieren. Bestehende Accounts müssen separat in der Benutzerverwaltung aktiviert werden.",
 	"changeDomainStatusDialog.button.cancel": "Abbrechen",
 } as const;
 
