@@ -78,6 +78,7 @@ BEGIN
 	IF NOT EXISTS (
 		SELECT 1 FROM pg_constraint
 		WHERE conname = 'allowed_email_domains_exact_format'
+			AND conrelid = 'public.allowed_email_domains'::regclass
 	) THEN
 		ALTER TABLE public.allowed_email_domains
 			ADD CONSTRAINT allowed_email_domains_exact_format
@@ -85,3 +86,7 @@ BEGIN
 	END IF;
 END;
 $$;
+
+-- Drop the open read policy: admin metadata (created_by, last_status_change_*) must not be
+-- readable directly. Reads go through the SECURITY DEFINER RPCs, which bypass RLS.
+DROP POLICY IF EXISTS "Allow read access for all users" ON public.allowed_email_domains;

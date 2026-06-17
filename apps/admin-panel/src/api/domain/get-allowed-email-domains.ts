@@ -9,8 +9,7 @@ export async function getAllowedEmailDomains(
 		.abortSignal(signal);
 
 	if (error) {
-		console.error("Failed to fetch allowed email domains:", error);
-		return [];
+		throw error;
 	}
 
 	return data ?? [];

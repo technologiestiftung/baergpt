@@ -24,7 +24,7 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	{
 		header: Content["domainAllowlistTable.tableHeader.dateAdded"],
 		accessorKey: "created_at",
-		cell: ({ getValue }) => formatDate(getValue() as string),
+		cell: ({ getValue }) => formatDate(getValue() as string | null),
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.addedBy"],
@@ -74,7 +74,7 @@ export const columns: ColumnDef<AllowedEmailDomain>[] = [
 	{
 		header: Content["domainAllowlistTable.tableHeader.lastStatusChange"],
 		accessorKey: "last_status_change_at",
-		cell: ({ getValue }) => formatDate(getValue() as string),
+		cell: ({ getValue }) => formatDate(getValue() as string | null),
 	},
 	{
 		header: Content["domainAllowlistTable.tableHeader.lastStatusChangeBy"],

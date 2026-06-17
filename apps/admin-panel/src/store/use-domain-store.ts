@@ -20,8 +20,15 @@ interface DomainStore {
 export const useDomainStore = create<DomainStore>((set, get) => ({
 	allowedEmailDomains: [],
 	getAllowedEmailDomains: async (signal: AbortSignal) => {
-		const allowedEmailDomains = await getAllowedEmailDomains(signal);
-		set({ allowedEmailDomains });
+		try {
+			const allowedEmailDomains = await getAllowedEmailDomains(signal);
+			set({ allowedEmailDomains });
+		} catch (error) {
+			if (signal.aborted) {
+				return;
+			}
+			console.error("Failed to fetch allowed email domains:", error);
+		}
 	},
 	addAllowedEmailDomain: async (domain: string) => {
 		await addAllowedEmailDomain(domain.toLowerCase());
@@ -29,21 +36,13 @@ export const useDomainStore = create<DomainStore>((set, get) => ({
 	deactivateAllowedEmailDomain: async (domain: string) => {
 		const response = await deactivateAllowedEmailDomain(domain);
 		if (response) {
-			set({
-				allowedEmailDomains: get().allowedEmailDomains.map((entry) =>
-					entry.domain === domain ? { ...entry, is_active: false } : entry,
-				),
-			});
+			await get().getAllowedEmailDomains(new AbortController().signal);
 		}
 	},
 	activateAllowedEmailDomain: async (domain: string) => {
 		const response = await activateAllowedEmailDomain(domain);
 		if (response) {
-			set({
-				allowedEmailDomains: get().allowedEmailDomains.map((entry) =>
-					entry.domain === domain ? { ...entry, is_active: true } : entry,
-				),
-			});
+			await get().getAllowedEmailDomains(new AbortController().signal);
 		}
 	},
 	selectedDomain: null,
