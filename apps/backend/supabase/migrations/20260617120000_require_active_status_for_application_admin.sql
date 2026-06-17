@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION public.is_application_admin () returns BOOLEAN language sql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 select exists (
     select 1
     from public.application_admins
