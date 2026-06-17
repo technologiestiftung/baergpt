@@ -81,7 +81,7 @@ BEGIN
 	) THEN
 		ALTER TABLE public.allowed_email_domains
 			ADD CONSTRAINT allowed_email_domains_exact_format
-			CHECK (domain ~ '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$');
+			CHECK (domain ~ '^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$');
 	END IF;
 END;
 $$;

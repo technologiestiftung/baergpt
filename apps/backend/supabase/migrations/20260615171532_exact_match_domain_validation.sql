@@ -1,8 +1,5 @@
 -- Switch domain validation to exact-match-only and is_active-aware.
--- Runs after 20260615171531, which adds the is_active column this depends on.
 -- Existing users are unaffected; the trigger only gates inserts and email updates.
-
--- Replace the validator to match exact, active domains only (existing triggers stay attached)
 CREATE OR REPLACE FUNCTION public.validate_email_domain () RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
 SET
     search_path = '' AS $$
