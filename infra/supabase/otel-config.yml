@@ -55,6 +55,8 @@ processors:
     limit_mib: 256
     spike_limit_mib: 56
 
+  # Load-bearing: `source` here and `service.name` below are what the alert rules in
+  # infra/terraform/observability select on. Changing them breaks every alert silently.
   attributes/source:
     actions:
       - key: source

@@ -1,0 +1,15 @@
+# Copy to staging.tfvars and fill in. staging.tfvars is gitignored.
+# project_id / instance_id are not secret, but we keep them out of git to match
+# the rest of infra/ (values resolved from 1Password / inventory).
+
+project_id    = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+instance_id   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+env           = "staging"
+target_source = "supabase-staging"
+
+# Thresholds (override defaults from variables.tf as needed)
+disk_used_ratio_max  = 0.90
+mem_used_ratio_max   = 0.90
+cpu_load_15m_max       = 2
+kong_5xx_ratio_max     = 0.20
+kong_5xx_min_errors_5m = 5

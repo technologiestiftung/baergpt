@@ -1,0 +1,35 @@
+name: Terraform Checks
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform-checks.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/terraform/**"
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository ⬇️
+        uses: actions/checkout@v5
+
+      - name: Install tools via asdf ⚙️
+        uses: asdf-vm/actions/install@v4
+
+      - name: Check formatting 🎨
+        run: terraform fmt -check -recursive -diff infra/terraform
+
+      - name: Validate observability module ✅
+        working-directory: infra/terraform/observability
+        run: |
+          # -backend=false: validate the config without touching remote state,
+          # so CI needs no STACKIT or object-storage credentials.
+          terraform init -backend=false
+          terraform validate
