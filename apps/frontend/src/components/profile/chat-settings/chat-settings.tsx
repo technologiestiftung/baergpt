@@ -1,15 +1,19 @@
 import Content from "../../../content";
 import { useUserStore } from "../../../store/user-store.ts";
-import { type FormEvent, useState, useRef } from "react";
+import { type FormEvent, useState, useRef, useEffect } from "react";
 import { SubmitButton } from "../../primitives/buttons/submit-button.tsx";
 import { useToastStore } from "../../../store/use-toast-store.ts";
 
 export const ChatSettings = () => {
 	const { user, updateAddressedFormal, updatePersonalPrompt } = useUserStore();
 	const [hasChanges, setHasChanges] = useState(false);
-	const [charCount, setCharCount] = useState(
-		user?.personal_system_prompt?.length ?? 0,
+	const [personalPrompt, setPersonalPrompt] = useState(
+		user?.personal_system_prompt ?? "",
 	);
+
+	useEffect(() => {
+		setPersonalPrompt(user?.personal_system_prompt ?? "");
+	}, [user?.personal_system_prompt]);
 
 	const chatSettingsPersonalPromptFormRef = useRef<HTMLFormElement | null>(
 		null,
@@ -39,8 +43,6 @@ export const ChatSettings = () => {
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-
-		const personalPrompt = event.currentTarget.personalPrompt.value;
 
 		await updatePersonalPrompt(personalPrompt);
 
@@ -101,13 +103,13 @@ export const ChatSettings = () => {
 					placeholder={
 						Content["profile.chatSettings.personalPrompt.placeholder"]
 					}
-					defaultValue={user?.personal_system_prompt ?? ""}
-					onChange={(e) => setCharCount(e.target.value.length)}
+					value={personalPrompt}
+					onChange={(e) => setPersonalPrompt(e.target.value)}
 					maxLength={500}
 					aria-describedby={`personalPromptSubtitle`}
 				/>
 				<p className="text-xs leading-6 font-normal text-dunkelblau-40">
-					{`${charCount} / 500 ${Content["profile.chatSettings.personalPrompt.characters"]}`}
+					{`${personalPrompt.length} / 500 ${Content["profile.chatSettings.personalPrompt.characters"]}`}
 				</p>
 
 				<SubmitButton disabled={!hasChanges} className="mt-4 self-end">
