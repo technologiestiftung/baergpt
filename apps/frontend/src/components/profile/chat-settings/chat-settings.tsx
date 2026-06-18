@@ -1,8 +1,19 @@
 import Content from "../../../content";
 import { useUserStore } from "../../../store/user-store.ts";
+import { type FormEvent, useState, useRef } from "react";
+import { SubmitButton } from "../../primitives/buttons/submit-button.tsx";
+import { useToastStore } from "../../../store/use-toast-store.ts";
 
 export const ChatSettings = () => {
-	const { user, updateAddressedFormal } = useUserStore();
+	const { user, updateAddressedFormal, updatePersonalPrompt } = useUserStore();
+	const [hasChanges, setHasChanges] = useState(false);
+	const [charCount, setCharCount] = useState(
+		user?.personal_system_prompt?.length ?? 0,
+	);
+
+	const chatSettingsPersonalPromptFormRef = useRef<HTMLFormElement | null>(
+		null,
+	);
 
 	const isAddressedFormal = user?.is_addressed_formal ?? true;
 
@@ -10,17 +21,43 @@ export const ChatSettings = () => {
 		await updateAddressedFormal(!isAddressedFormal);
 	};
 
+	const { addSuccess } = useToastStore();
+
 	const changeSalutationTo = isAddressedFormal
 		? Content["profile.chatSettings.informal"]
 		: Content["profile.chatSettings.formal"];
 
+	const handleFormChange = (event: FormEvent<HTMLFormElement>) => {
+		const form = event.currentTarget;
+		const personalPromptValue = form.personalPrompt.value;
+
+		const hasFormChanges =
+			personalPromptValue !== (user?.personal_system_prompt ?? "");
+
+		setHasChanges(hasFormChanges);
+	};
+
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+
+		const personalPrompt = event.currentTarget.personalPrompt.value;
+
+		await updatePersonalPrompt(personalPrompt);
+
+		addSuccess(Content["profile.chatSettings.personalPromptUpdateSuccess"]);
+
+		setTimeout(() => {
+			setHasChanges(false);
+		}, 500);
+	};
+
 	return (
-		<div className="flex flex-col gap-y-2">
+		<div className="flex flex-col gap-y-4">
 			<h3 className="text-base leading-6 font-semibold ">
 				{Content["profile.chatSettings.title"]}
 			</h3>
 			<div className="flex justify-between items-center flex-row gap-5">
-				<p className="text-base leading-6 font-normal">
+				<p className="text-sm leading-6 font-normal">
 					{Content["profile.chatSettings.salutation"]}
 				</p>
 				<label className="inline-flex items-center cursor-pointer relative">
@@ -38,6 +75,45 @@ export const ChatSettings = () => {
 					/>
 				</label>
 			</div>
+			<form
+				ref={chatSettingsPersonalPromptFormRef}
+				onSubmit={handleSubmit}
+				onChange={handleFormChange}
+				className="flex justify-between flex-col gap-4"
+			>
+				<div>
+					<label
+						htmlFor="personalPrompt"
+						className="text-sm leading-6 font-semibold block cursor-pointer"
+					>
+						{Content["profile.chatSettings.personalPrompt.title"]}
+					</label>
+					<p
+						id="personalPromptSubtitle"
+						className="text-sm text-dunkelblau-60 leading-6 font-normal"
+					>
+						{Content["profile.chatSettings.personalPrompt.subtitle"]}
+					</p>
+				</div>
+				<textarea
+					id="personalPrompt"
+					className="w-full min-h-[90px] max-h-60 p-2.5 text-sm border border-dunkelblau-200 rounded-3px placeholder:text-sm placeholder:text-schwarz-60 focus-visible:outline-default"
+					placeholder={
+						Content["profile.chatSettings.personalPrompt.placeholder"]
+					}
+					defaultValue={user?.personal_system_prompt ?? ""}
+					onChange={(e) => setCharCount(e.target.value.length)}
+					maxLength={500}
+					aria-describedby={`personalPromptSubtitle`}
+				/>
+				<p className="text-xs leading-6 font-normal text-dunkelblau-40">
+					{`${charCount} / 500 ${Content["profile.chatSettings.personalPrompt.characters"]}`}
+				</p>
+
+				<SubmitButton disabled={!hasChanges} className="mt-4 self-end">
+					{Content["profile.submitButton"]}
+				</SubmitButton>
+			</form>
 		</div>
 	);
 };

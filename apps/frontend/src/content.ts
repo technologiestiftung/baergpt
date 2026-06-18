@@ -1029,6 +1029,15 @@ export const Content = {
 	"profile.chatSettings.ariaLabel": "Anrede ändern zu",
 	"profile.chatSettings.formal": "Siezen",
 	"profile.chatSettings.informal": "Duzen",
+	"profile.chatSettings.personalPrompt.title":
+		"Welche Präferenzen soll BärGPT berücksichtigen?",
+	"profile.chatSettings.personalPrompt.subtitle":
+		"Gilt für alle Unterhaltungen im Rahmen von BärGPTs Richtlinien.",
+	"profile.chatSettings.personalPrompt.placeholder":
+		"z.B. Antworte knapp und in einfacher Sprache.",
+	"profile.chatSettings.personalPrompt.characters": "Zeichen",
+	"profile.chatSettings.personalPromptUpdateSuccess":
+		"Persönliche Präferenzen wurden aktualisiert",
 
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",

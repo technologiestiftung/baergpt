@@ -7,6 +7,7 @@ import { updateProfilesTable } from "../api/auth/update-profiles-table.ts";
 import { updateUserMetadata } from "../api/auth/update-user-metadata.ts";
 import { useErrorStore } from "./error-store.ts";
 import { updateAddressedFormal } from "../api/user/update-addressed-formal.ts";
+import { updatePersonalPrompt } from "../api/user/update-personal-prompt.ts";
 
 interface UserStore {
 	user: User | null;
@@ -19,6 +20,7 @@ interface UserStore {
 	}) => Promise<void>;
 	deleteAccount: () => Promise<{ error: Error | null }>;
 	updateAddressedFormal: (isAddressedFormal: boolean) => Promise<void>;
+	updatePersonalPrompt: (personalPrompt: string) => Promise<void>;
 }
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -64,6 +66,17 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
 	async updateAddressedFormal(isAddressedFormal: boolean) {
 		const { error } = await updateAddressedFormal(isAddressedFormal);
+
+		if (error) {
+			useErrorStore.getState().handleError(error);
+			return;
+		}
+
+		await get().getUser(new AbortController().signal);
+	},
+
+	async updatePersonalPrompt(personalPrompt: string) {
+		const { error } = await updatePersonalPrompt(personalPrompt);
 
 		if (error) {
 			useErrorStore.getState().handleError(error);
