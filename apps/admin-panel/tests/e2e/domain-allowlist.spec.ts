@@ -1,24 +1,22 @@
-import { test, expect, type Page } from "@playwright/test";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = process.env.VITE_TEST_SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-	throw new Error("Missing required environment variables for Supabase client");
-}
-
-const supabaseAdminClient = createClient(supabaseUrl, supabaseServiceKey);
+import { expect, type Locator, type Page } from "@playwright/test";
+import { testWithAdminUser as test } from "../fixtures/test-with-admin-user.ts";
+import { supabaseAdminClient } from "../supabase.ts";
 
 const WILDCARD_DOMAIN_ERROR =
 	"Wildcard-Muster wie *.berlin.de sind nicht erlaubt. Bitte geben Sie eine konkrete Domain ein.";
 const INVALID_FORMAT_ERROR =
 	"Bitte geben Sie eine gültige Domain ein (z. B. senjustv.berlin.de).";
 
-async function loginAsAdmin(page: Page, email: string, password: string) {
+type AdminAccount = {
+	email: string;
+	password: string;
+	id: string;
+};
+
+async function loginAsAdmin(page: Page, account: AdminAccount) {
 	await page.goto("/login/");
-	await page.getByRole("textbox", { name: "E-Mail-Adresse" }).fill(email);
-	await page.getByRole("textbox", { name: "Passwort" }).fill(password);
+	await page.getByRole("textbox", { name: "E-Mail-Adresse" }).fill(account.email);
+	await page.getByRole("textbox", { name: "Passwort" }).fill(account.password);
 	await page.getByRole("button", { name: "Anmelden" }).click();
 	await expect(page).toHaveURL("/");
 }
@@ -30,67 +28,63 @@ async function gotoDomainAllowlist(page: Page) {
 	).toBeVisible();
 }
 
-async function fillAddDomainForm(page: Page, domain: string) {
-	await page.locator("#domain").fill(domain);
+async function searchDomain(page: Page, domain: string) {
+	await page
+		.getByPlaceholder("Suche nach Domain...")
+		.fill(domain);
+}
+
+function domainRow(page: Page, domain: string) {
+	return page.getByRole("row").filter({ hasText: domain });
+}
+
+async function expectDomainStatus(
+	row: Locator,
+	status: "aktiv" | "inaktiv",
+) {
+	await expect(row.getByText(status, { exact: true })).toBeVisible();
+}
+
+async function confirmStatusChange(
+	page: Page,
+	action: "Deaktivieren" | "Aktivieren",
+) {
+	const dialog = page.getByRole("dialog");
+	await expect(dialog).toBeVisible();
+	await dialog.getByRole("button", { name: action }).click();
+	await expect(dialog).not.toBeVisible();
+}
+
+async function cancelStatusChange(page: Page) {
+	const dialog = page.getByRole("dialog");
+	await expect(dialog).toBeVisible();
+	await dialog.getByRole("button", { name: "Abbrechen" }).click();
+	await expect(dialog).not.toBeVisible();
+}
+
+async function deleteTestDomain(domain: string) {
+	const { error } = await supabaseAdminClient
+		.from("allowed_email_domains")
+		.delete()
+		.eq("domain", domain);
+	expect(error).toBeNull();
+}
+
+async function insertActiveTestDomain(domain: string) {
+	const { error } = await supabaseAdminClient
+		.from("allowed_email_domains")
+		.insert({ domain, is_active: true });
+	expect(error).toBeNull();
 }
 
 test.describe("Domain Allowlist", () => {
-	let testEmail: string;
-	let userId: string | undefined;
-
-	test.beforeAll(async ({}, testInfo) => {
-		testEmail = `domain-admin+${testInfo.workerIndex}@local.berlin.de`;
-		const { data, error } = await supabaseAdminClient.auth.admin.createUser({
-			email: testEmail,
-			password: "password123",
-			email_confirm: true,
-		});
-
-		if (error) {
-			throw new Error(`Failed to create admin user: ${error.message}`);
-		}
-
-		userId = data.user?.id;
-		expect(userId).toBeDefined();
-
-		const { error: adminError } = await supabaseAdminClient
-			.from("application_admins")
-			.insert([{ user_id: userId }]);
-
-		expect(adminError).toBeNull();
-	});
-
-	test.afterAll(async () => {
-		if (!testEmail) {
-			return;
-		}
-
-		const { data, error } = await supabaseAdminClient.auth.admin.listUsers();
-		if (error) {
-			console.error("Error listing users:", error);
-			return;
-		}
-
-		const user = data.users.find(({ email }) => email === testEmail);
-		if (!user) {
-			return;
-		}
-
-		const { error: deleteError } =
-			await supabaseAdminClient.auth.admin.deleteUser(user.id);
-		if (deleteError) {
-			console.error("Error deleting user:", deleteError);
-		}
-	});
-
-	test.beforeEach(async ({ page }) => {
-		await loginAsAdmin(page, testEmail, "password123");
+	test.beforeEach(async ({ page, adminAccount }) => {
+		await loginAsAdmin(page, adminAccount);
 		await gotoDomainAllowlist(page);
 	});
 
 	test("shows validation error for wildcard domain", async ({ page }) => {
-		await fillAddDomainForm(page, "*.berlin.de");
-
+		await page.locator("#domain").fill("*.berlin.de");
 		await page.getByRole("button", { name: "Domain hinzufügen" }).click();
 
 		await expect(page.locator("#domain-error")).toBeVisible();
@@ -101,8 +95,7 @@ test.describe("Domain Allowlist", () => {
 	});
 
 	test("shows validation error for malformed domain", async ({ page }) => {
-		await fillAddDomainForm(page, "not-a-valid-domain");
-
+		await page.locator("#domain").fill("not-a-valid-domain");
 		await page.getByRole("button", { name: "Domain hinzufügen" }).click();
 
 		await expect(page.locator("#domain-error")).toBeVisible();
@@ -110,5 +103,89 @@ test.describe("Domain Allowlist", () => {
 		await expect(
 			page.getByRole("button", { name: "Domain hinzugefügt" }),
 		).not.toBeVisible();
+	});
+
+	test("adds, deactivates, and reactivates a domain", async ({
+		page,
+	}, testInfo) => {
+		const testDomain = `e2e-${testInfo.project.name}-${testInfo.workerIndex}.berlin.de`;
+
+		try {
+			await page.locator("#domain").fill(testDomain);
+			await page.getByRole("button", { name: "Domain hinzufügen" }).click();
+			await expect(
+				page.getByRole("button", { name: "Domain hinzugefügt" }),
+			).toBeVisible();
+
+			await searchDomain(page, testDomain);
+			const row = domainRow(page, testDomain);
+			await expect(row).toBeVisible();
+			await expectDomainStatus(row, "aktiv");
+			await expect(
+				row.getByRole("button", { name: "Deaktivieren" }),
+			).toBeVisible();
+
+			await row.getByRole("button", { name: "Deaktivieren" }).click();
+			await expect(
+				page.getByRole("dialog", { name: "Domain deaktivieren" }),
+			).toBeVisible();
+			await confirmStatusChange(page, "Deaktivieren");
+
+			await searchDomain(page, testDomain);
+			const deactivatedRow = domainRow(page, testDomain);
+			await expectDomainStatus(deactivatedRow, "inaktiv");
+			await expect(
+				deactivatedRow.getByRole("button", { name: "Aktivieren" }),
+			).toBeVisible();
+
+			await deactivatedRow.getByRole("button", { name: "Aktivieren" }).click();
+			await expect(
+				page.getByRole("dialog", { name: "Domain aktivieren" }),
+			).toBeVisible();
+			await confirmStatusChange(page, "Aktivieren");
+
+			await searchDomain(page, testDomain);
+			const reactivatedRow = domainRow(page, testDomain);
+			await expectDomainStatus(reactivatedRow, "aktiv");
+			await expect(
+				reactivatedRow.getByRole("button", { name: "Deaktivieren" }),
+			).toBeVisible();
+		} finally {
+			await deleteTestDomain(testDomain);
+		}
+	});
+
+	test("canceling status change dialog leaves domain active", async ({
+		page,
+	}, testInfo) => {
+		const testDomain = `e2e-cancel-${testInfo.project.name}-${testInfo.workerIndex}.berlin.de`;
+
+		try {
+			await insertActiveTestDomain(testDomain);
+			await page.reload();
+			await expect(
+				page.getByRole("heading", { name: "Domainverwaltung" }),
+			).toBeVisible();
+
+			await searchDomain(page, testDomain);
+			const row = domainRow(page, testDomain);
+			await expect(row).toBeVisible();
+			await expectDomainStatus(row, "aktiv");
+
+			await row.getByRole("button", { name: "Deaktivieren" }).click();
+			await expect(
+				page.getByRole("dialog", { name: "Domain deaktivieren" }),
+			).toBeVisible();
+			await cancelStatusChange(page);
+
+			await searchDomain(page, testDomain);
+			const unchangedRow = domainRow(page, testDomain);
+			await expectDomainStatus(unchangedRow, "aktiv");
+			await expect(
+				unchangedRow.getByRole("button", { name: "Deaktivieren" }),
+			).toBeVisible();
+		} finally {
+			await deleteTestDomain(testDomain);
+		}
 	});
 });
