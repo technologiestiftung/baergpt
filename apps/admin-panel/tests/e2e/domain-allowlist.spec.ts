@@ -15,7 +15,9 @@ type AdminAccount = {
 
 async function loginAsAdmin(page: Page, account: AdminAccount) {
 	await page.goto("/login/");
-	await page.getByRole("textbox", { name: "E-Mail-Adresse" }).fill(account.email);
+	await page
+		.getByRole("textbox", { name: "E-Mail-Adresse" })
+		.fill(account.email);
 	await page.getByRole("textbox", { name: "Passwort" }).fill(account.password);
 	await page.getByRole("button", { name: "Anmelden" }).click();
 	await expect(page).toHaveURL("/");
@@ -29,19 +31,14 @@ async function gotoDomainAllowlist(page: Page) {
 }
 
 async function searchDomain(page: Page, domain: string) {
-	await page
-		.getByPlaceholder("Suche nach Domain...")
-		.fill(domain);
+	await page.getByPlaceholder("Suche nach Domain...").fill(domain);
 }
 
 function domainRow(page: Page, domain: string) {
 	return page.getByRole("row").filter({ hasText: domain });
 }
 
-async function expectDomainStatus(
-	row: Locator,
-	status: "aktiv" | "inaktiv",
-) {
+async function expectDomainStatus(row: Locator, status: "aktiv" | "inaktiv") {
 	await expect(row.getByText(status, { exact: true })).toBeVisible();
 }
 
