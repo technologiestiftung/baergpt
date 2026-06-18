@@ -81,11 +81,16 @@ llms.post("/just-chatting", async (c: Context) => {
 			activeTools.push("ragSearchTool");
 		}
 
+		const authenticatedUserId = c.get("authenticatedUserId");
+		const userSystemPrompt =
+			await userScopedDbService.getPersonalSystemPrompt(authenticatedUserId);
+
 		const { messages: promptMessages, promptClient: langfusePrompt } =
 			await generationService.createPrompt({
 				previousMessages: messages,
 				isAddressedFormal,
 				activeTools,
+				userSystemPrompt,
 			});
 		const response = await generationService.generateTextStreamResponse({
 			llmHandler,
