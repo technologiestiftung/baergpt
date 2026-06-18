@@ -277,10 +277,11 @@ describe("Integration tests for DB", async () => {
 					expect(rpcError).toBeNull();
 					expect(isAdmin).toBe(false);
 				} finally {
-					await serviceRoleDbClient
+					const { error: reactivateError } = await serviceRoleDbClient
 						.from("user_active_status")
 						.update({ is_active: true })
 						.eq("id", givenAdminId);
+					expect(reactivateError).toBeNull();
 				}
 			});
 		});
