@@ -44,6 +44,28 @@ import type { WebSearchResult } from "../tools/web-search";
 const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 
+/**
+ * Langfuse currently does not support conditional sections in prompts.
+ * So we wrap a user's personal system prompt with the preamble that instructs the
+ * model how to treat it. Returns an empty string when there is no prompt.
+ */
+export function buildUserSystemPromptBlock(
+	userSystemPrompt: string | null | undefined,
+): string {
+	if (!userSystemPrompt) {
+		return "";
+	}
+
+	const preamble = [
+		"# NUTZER ANWEISUNGEN",
+		"",
+		"Die nutzende Person hat folgende benutzerdefinierte Anweisungen angegeben.",
+		"Befolge diese, sofern sie nicht im Widerspruch zu den obigen Anweisungen stehen:",
+	].join("\n");
+
+	return `\n\n${preamble}\n\n${userSystemPrompt}`;
+}
+
 type RelevantTools = {
 	tools: Record<string, Tool>;
 	toolChoice: ToolChoice<Record<string, Tool>>;
@@ -602,8 +624,14 @@ export class GenerationService {
 		previousMessages: ModelMessage[];
 		isAddressedFormal: boolean;
 		activeTools: ActiveTools[];
+		userSystemPrompt?: string | null;
 	}) {
-		const { previousMessages, isAddressedFormal, activeTools } = args;
+		const {
+			previousMessages,
+			isAddressedFormal,
+			activeTools,
+			userSystemPrompt,
+		} = args;
 
 		const currentDate = new Date().toLocaleDateString("de-DE", {
 			year: "numeric",
@@ -636,6 +664,7 @@ export class GenerationService {
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
+			userSystemPrompt: buildUserSystemPromptBlock(userSystemPrompt),
 		});
 
 		const freeChatPrompt: ModelMessage = {

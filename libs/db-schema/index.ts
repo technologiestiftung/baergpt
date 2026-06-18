@@ -425,6 +425,7 @@ export type Database = {
 					num_embedding_tokens: number | null;
 					num_inference_tokens: number | null;
 					num_inferences: number | null;
+					personal_system_prompt: string | null;
 					personal_title: string | null;
 				};
 				Insert: {
@@ -437,6 +438,7 @@ export type Database = {
 					num_embedding_tokens?: number | null;
 					num_inference_tokens?: number | null;
 					num_inferences?: number | null;
+					personal_system_prompt?: string | null;
 					personal_title?: string | null;
 				};
 				Update: {
@@ -449,6 +451,7 @@ export type Database = {
 					num_embedding_tokens?: number | null;
 					num_inference_tokens?: number | null;
 					num_inferences?: number | null;
+					personal_system_prompt?: string | null;
 					personal_title?: string | null;
 				};
 				Relationships: [];
