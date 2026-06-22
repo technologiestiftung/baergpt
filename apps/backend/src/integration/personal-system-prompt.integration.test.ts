@@ -105,9 +105,11 @@ describe("getPersonalSystemPrompt", () => {
 		const otherUserService = await serviceForUser(OTHER_USER_ID, OTHER_EMAIL);
 
 		// RLS limits reads to the caller's own row, so requesting the owner's
-		// prompt as another user resolves to no visible row and rejects.
+		// prompt as another user resolves to no visible row. The owner's row
+		// exists, so the PGRST116 ("0 rows" from .single()) proves it was hidden
+		// by RLS rather than simply absent.
 		await expect(
 			otherUserService.getPersonalSystemPrompt(OWNER_USER_ID),
-		).rejects.toBeTruthy();
+		).rejects.toMatchObject({ code: "PGRST116" });
 	});
 });

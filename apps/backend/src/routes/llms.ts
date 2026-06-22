@@ -82,8 +82,19 @@ llms.post("/just-chatting", async (c: Context) => {
 		}
 
 		const authenticatedUserId = c.get("authenticatedUserId");
-		const userSystemPrompt =
-			await userScopedDbService.getPersonalSystemPrompt(authenticatedUserId);
+		if (!authenticatedUserId) {
+			return c.json({ error: "Unauthorized" }, 401);
+		}
+		let userSystemPrompt: string | null = null;
+		try {
+			userSystemPrompt =
+				await userScopedDbService.getPersonalSystemPrompt(authenticatedUserId);
+		} catch (error) {
+			if (config.nodeEnv !== "production") {
+				throw error;
+			}
+			captureError(error);
+		}
 
 		const { messages: promptMessages, promptClient: langfusePrompt } =
 			await generationService.createPrompt({
