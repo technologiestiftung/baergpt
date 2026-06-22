@@ -89,9 +89,9 @@ export const ChatSettings = () => {
 					value={personalPrompt}
 					onChange={(e) => setPersonalPrompt(e.target.value)}
 					maxLength={500}
-					aria-describedby={`personalPromptSubtitle`}
+					aria-describedby="personalPromptSubtitle personalPromptCounter"
 				/>
-				<p className="text-xs leading-6 font-normal text-dunkelblau-40">
+				<p id="personalPromptCounter" className="text-xs leading-6 font-normal text-dunkelblau-40">
 					{`${personalPrompt.length} / 500 ${Content["profile.chatSettings.personalPrompt.characters"]}`}
 				</p>
 
