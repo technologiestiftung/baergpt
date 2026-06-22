@@ -286,6 +286,65 @@ describe("Integration tests for DB", async () => {
 			});
 		});
 
+		describe("deactivated user RLS on own data", () => {
+			it("allows an active user to read/write their chats but blocks a deactivated one", async () => {
+				const { error: signInError } =
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenUserEmail,
+						password: givenUserPassword,
+					});
+				expect(signInError).toBeNull();
+
+				// Positive control: while active, the user can create and read a chat.
+				const { data: createdChat, error: insertError } =
+					await supabaseAnonClient
+						.from("chats")
+						.insert({ user_id: givenUserId, name: "rls-active-chat" })
+						.select("id")
+						.single();
+				expect(insertError).toBeNull();
+				expect(createdChat?.id).toBeDefined();
+
+				const { data: activeRead, error: activeReadError } =
+					await supabaseAnonClient.from("chats").select("id");
+				expect(activeReadError).toBeNull();
+				expect(activeRead?.length).toBeGreaterThan(0);
+
+				// Deactivate the user via the service role.
+				const { error: deactivateError } = await serviceRoleDbClient
+					.from("user_active_status")
+					.update({ is_active: false })
+					.eq("id", givenUserId);
+				expect(deactivateError).toBeNull();
+
+				try {
+					// Same still-valid session: reads now return zero rows (RLS USING).
+					const { data: deactivatedRead, error: readError } =
+						await supabaseAnonClient.from("chats").select("id");
+					expect(readError).toBeNull();
+					expect(deactivatedRead).toEqual([]);
+
+					// Writes are rejected by the WITH CHECK active gate.
+					const { error: blockedInsert } = await supabaseAnonClient
+						.from("chats")
+						.insert({ user_id: givenUserId, name: "rls-blocked-chat" });
+					expect(blockedInsert).not.toBeNull();
+				} finally {
+					await serviceRoleDbClient
+						.from("user_active_status")
+						.update({ is_active: true })
+						.eq("id", givenUserId);
+
+					if (createdChat?.id) {
+						await serviceRoleDbClient
+							.from("chats")
+							.delete()
+							.eq("id", createdChat.id);
+					}
+				}
+			});
+		});
+
 		describe("applications_admins table permissions", () => {
 			it("Users should not be able to read the applications_admins table", async () => {
 				const { data: sessionData, error: sessionError } =
