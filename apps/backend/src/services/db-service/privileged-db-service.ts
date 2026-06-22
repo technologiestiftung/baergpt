@@ -119,8 +119,14 @@ export class PrivilegedDbService extends BaseContentDbService {
 	}
 
 	/**
-	 * Soft delete a user by setting deleted_at timestamp.
-	 * Requires service role to update user_active_status.
+	 * Soft delete a user by setting deleted_at timestamp and banning the auth
+	 * account. Requires service role to update user_active_status and call the
+	 * Auth Admin API.
+	 *
+	 * Defense in depth: RLS (is_current_user_active) is the primary gate and
+	 * blocks the user's still-valid access token on every request. Banning the
+	 * auth account additionally stops them minting new tokens or refreshing
+	 * their session.
 	 */
 	async softDeleteUser(userId: string): Promise<void> {
 		const { error } = await this.client
@@ -130,6 +136,16 @@ export class PrivilegedDbService extends BaseContentDbService {
 
 		if (error) {
 			throw error;
+		}
+
+		// ~100 years; effectively permanent until restoreUser lifts it.
+		const { error: banError } = await this.client.auth.admin.updateUserById(
+			userId,
+			{ ban_duration: "876000h" },
+		);
+
+		if (banError) {
+			throw banError;
 		}
 	}
 
@@ -176,7 +192,8 @@ export class PrivilegedDbService extends BaseContentDbService {
 
 	/**
 	 * Restore a soft-deleted user.
-	 * Requires service role to update user_active_status.
+	 * Requires service role to update user_active_status and lift the auth ban
+	 * applied in softDeleteUser.
 	 */
 	async restoreUser(userId: string): Promise<void> {
 		const { error } = await this.client
@@ -186,6 +203,15 @@ export class PrivilegedDbService extends BaseContentDbService {
 
 		if (error) {
 			throw error;
+		}
+
+		const { error: unbanError } = await this.client.auth.admin.updateUserById(
+			userId,
+			{ ban_duration: "none" },
+		);
+
+		if (unbanError) {
+			throw unbanError;
 		}
 	}
 
