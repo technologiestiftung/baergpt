@@ -1,12 +1,11 @@
 import Content from "../../../content";
 import { useUserStore } from "../../../store/user-store.ts";
-import { type FormEvent, useState, useRef, useEffect } from "react";
+import { type FormEvent, useState, useEffect } from "react";
 import { SubmitButton } from "../../primitives/buttons/submit-button.tsx";
 import { useToastStore } from "../../../store/use-toast-store.ts";
 
 export const ChatSettings = () => {
 	const { user, updateAddressedFormal, updatePersonalPrompt } = useUserStore();
-	const [hasChanges, setHasChanges] = useState(false);
 	const [personalPrompt, setPersonalPrompt] = useState(
 		user?.personal_system_prompt ?? "",
 	);
@@ -15,9 +14,7 @@ export const ChatSettings = () => {
 		setPersonalPrompt(user?.personal_system_prompt ?? "");
 	}, [user?.personal_system_prompt]);
 
-	const chatSettingsPersonalPromptFormRef = useRef<HTMLFormElement | null>(
-		null,
-	);
+	const hasChanges = personalPrompt !== (user?.personal_system_prompt ?? "");
 
 	const isAddressedFormal = user?.is_addressed_formal ?? true;
 
@@ -31,26 +28,12 @@ export const ChatSettings = () => {
 		? Content["profile.chatSettings.informal"]
 		: Content["profile.chatSettings.formal"];
 
-	const handleFormChange = (event: FormEvent<HTMLFormElement>) => {
-		const form = event.currentTarget;
-		const personalPromptValue = form.personalPrompt.value;
-
-		const hasFormChanges =
-			personalPromptValue !== (user?.personal_system_prompt ?? "");
-
-		setHasChanges(hasFormChanges);
-	};
-
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
 		await updatePersonalPrompt(personalPrompt);
 
 		addSuccess(Content["profile.chatSettings.personalPromptUpdateSuccess"]);
-
-		setTimeout(() => {
-			setHasChanges(false);
-		}, 500);
 	};
 
 	return (
@@ -78,9 +61,7 @@ export const ChatSettings = () => {
 				</label>
 			</div>
 			<form
-				ref={chatSettingsPersonalPromptFormRef}
 				onSubmit={handleSubmit}
-				onChange={handleFormChange}
 				className="flex justify-between flex-col gap-4"
 			>
 				<div>
