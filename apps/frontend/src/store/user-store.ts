@@ -19,8 +19,12 @@ interface UserStore {
 		personal_title: string;
 	}) => Promise<void>;
 	deleteAccount: () => Promise<{ error: Error | null }>;
-	updateAddressedFormal: (isAddressedFormal: boolean) => Promise<void>;
-	updatePersonalPrompt: (personalPrompt: string) => Promise<void>;
+	updateAddressedFormal: (
+		isAddressedFormal: boolean,
+	) => Promise<{ error: Error | null }>;
+	updatePersonalPrompt: (
+		personalPrompt: string,
+	) => Promise<{ error: Error | null }>;
 }
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -69,10 +73,11 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
 		if (error) {
 			useErrorStore.getState().handleError(error);
-			return;
+			return { error };
 		}
 
 		await get().getUser(new AbortController().signal);
+		return { error: null };
 	},
 
 	async updatePersonalPrompt(personalPrompt: string) {
@@ -80,10 +85,11 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
 		if (error) {
 			useErrorStore.getState().handleError(error);
-			return;
+			return { error };
 		}
 
 		await get().getUser(new AbortController().signal);
+		return { error: null };
 	},
 
 	deleteAccount: async () => {

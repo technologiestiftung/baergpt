@@ -31,9 +31,11 @@ export const ChatSettings = () => {
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		await updatePersonalPrompt(personalPrompt);
+		const { error } = await updatePersonalPrompt(personalPrompt);
 
-		addSuccess(Content["profile.chatSettings.personalPromptUpdateSuccess"]);
+		if (!error) {
+			addSuccess(Content["profile.chatSettings.personalPromptUpdateSuccess"]);
+		}
 	};
 
 	return (
