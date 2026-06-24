@@ -254,6 +254,36 @@ describe("Integration tests for DB", async () => {
 				expect(rpcError).toBeNull();
 				expect(isAdmin).toBe(true);
 			});
+
+			it("Deactivated admin users should get false from is_application_admin()", async () => {
+				const { data: sessionData, error: sessionError } =
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+				expect(sessionError).toBeNull();
+				expect(sessionData.session).not.toBeNull();
+
+				const { error: deactivateError } = await serviceRoleDbClient
+					.from("user_active_status")
+					.update({ is_active: false })
+					.eq("id", givenAdminId);
+				expect(deactivateError).toBeNull();
+
+				try {
+					const { data: isAdmin, error: rpcError } =
+						await supabaseAnonClient.rpc("is_application_admin");
+
+					expect(rpcError).toBeNull();
+					expect(isAdmin).toBe(false);
+				} finally {
+					const { error: reactivateError } = await serviceRoleDbClient
+						.from("user_active_status")
+						.update({ is_active: true })
+						.eq("id", givenAdminId);
+					expect(reactivateError).toBeNull();
+				}
+			});
 		});
 
 		describe("applications_admins table permissions", () => {
