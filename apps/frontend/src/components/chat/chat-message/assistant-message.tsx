@@ -39,7 +39,7 @@ export function AssistantMessage({
 					{isBaerIconVisible && <BaerIcon />}
 				</div>
 
-				<div className="min-w-0 grow">{children}</div>
+				<div className="min-w-0 grow text-dunkelblau-100">{children}</div>
 			</div>
 			{hasChatButtons && (
 				<div className="flex flex-col gap-1 ml-[30px] w-fit">
