@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { enc } from "../constants";
 import { config } from "../config";
 import { isLoopFinished, ModelMessage, Tool, ToolChoice } from "ai";
@@ -274,7 +275,8 @@ export class GenerationService {
 			activeTools,
 		} = args;
 
-		logMemory("chat:start", sessionId);
+		const memoryLogId = crypto.randomUUID().slice(0, 8);
+		logMemory("chat:start", memoryLogId);
 
 		const {
 			tools,
@@ -309,7 +311,7 @@ export class GenerationService {
 					onFinish: async ({ text, usage, steps }) => {
 						logMemory(
 							`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
-							sessionId,
+							memoryLogId,
 						);
 
 						if (typeof toolsCleanup === "function") {
@@ -533,7 +535,7 @@ export class GenerationService {
 							}
 						}
 
-						logMemory("chat:onFinish-complete", sessionId);
+						logMemory("chat:onFinish-complete", memoryLogId);
 						updateActiveTrace({
 							name: "streamed-text-generation",
 							output: text,
@@ -554,7 +556,7 @@ export class GenerationService {
 						},
 					},
 					onError: (error) => {
-						logMemory("chat:onError", sessionId);
+						logMemory("chat:onError", memoryLogId);
 						captureError(error);
 					},
 				});
