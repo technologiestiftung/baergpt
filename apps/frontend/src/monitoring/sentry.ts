@@ -33,7 +33,6 @@ Sentry.init({
 	ignoreErrors: Array.from(NON_REPORTABLE_ERRORS),
 	sendDefaultPii: false,
 	enabled: ["production", "staging", "test"].includes(config.env),
-	maxBreadcrumbs: 20,
 });
 
 // Call this AFTER Sentry.init()
