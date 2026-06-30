@@ -123,21 +123,34 @@ describe("domain allowlist RPCs", () => {
 	});
 
 	it("get_allowed_email_domains_admin lists domains with derived creator email and user_count", async () => {
-		const { data, error } = await anonClient.rpc(
-			"get_allowed_email_domains_admin",
-		);
-		expect(error).toBeNull();
+		const listedDomain = "phase2-rpc-listed.berlin.de";
+		const { error: addError } = await anonClient.rpc("add_allowed_domain", {
+			p_domain: listedDomain,
+		});
+		expect(addError).toBeNull();
 
-		// Just-added domain: created_by is the creator's email (not the uuid),
-		// and no users sit on it yet. Verifies the zero/derived-email path.
-		const added = data?.find((entry) => entry.domain === addedDomain);
-		expect(added?.is_active).toBe(true);
-		expect(added?.created_by).toBe(adminEmail);
-		expect(added?.user_count).toBe(0);
+		try {
+			const { data, error } = await anonClient.rpc(
+				"get_allowed_email_domains_admin",
+			);
+			expect(error).toBeNull();
 
-		// testDomain has two users (normal@ + admin@). Verifies the count aggregation.
-		const testEntry = data?.find((entry) => entry.domain === testDomain);
-		expect(testEntry?.user_count).toBe(2);
+			// Just-added domain: created_by is the creator's email (not the uuid),
+			// and no users sit on it yet. Verifies the zero/derived-email path.
+			const created = data?.find((entry) => entry.domain === listedDomain);
+			expect(created?.is_active).toBe(true);
+			expect(created?.created_by).toBe(adminEmail);
+			expect(created?.user_count).toBe(0);
+
+			// testDomain has two users (normal@ + admin@). Verifies the count aggregation.
+			const testEntry = data?.find((entry) => entry.domain === testDomain);
+			expect(testEntry?.user_count).toBe(2);
+		} finally {
+			await serviceRoleDbClient
+				.from("allowed_email_domains")
+				.delete()
+				.eq("domain", listedDomain);
+		}
 	});
 
 	it("get_allowed_email_domains (registration-facing) returns only active domains", async () => {
@@ -163,7 +176,7 @@ describe("domain allowlist RPCs", () => {
 		}
 	});
 
-	it("deactivate_allowed_domain deactivates non-admin users (no deleted_at), exempts admins, stamps last_status_change, and blocks new signups", async () => {
+	it("deactivate_allowed_domain and activate_allowed_domain handle full lifecycle without reactivating users", async () => {
 		const { data: count, error } = await anonClient.rpc(
 			"deactivate_allowed_domain",
 			{ p_domain: testDomain },
@@ -203,39 +216,40 @@ describe("domain allowlist RPCs", () => {
 				email_confirm: true,
 			});
 		expect(signupError).not.toBeNull();
-	});
 
-	it("activate_allowed_domain re-enables the domain (stamps last_status_change) but does NOT reactivate users", async () => {
-		const { error } = await anonClient.rpc("activate_allowed_domain", {
-			p_domain: testDomain,
-		});
-		expect(error).toBeNull();
+		const { error: activateError } = await anonClient.rpc(
+			"activate_allowed_domain",
+			{
+				p_domain: testDomain,
+			},
+		);
+		expect(activateError).toBeNull();
 
-		const { data: domain } = await serviceRoleDbClient
+		const { data: reactivatedDomain } = await serviceRoleDbClient
 			.from("allowed_email_domains")
 			.select("is_active, last_status_change_by")
 			.eq("domain", testDomain)
 			.single();
-		expect(domain?.is_active).toBe(true);
-		expect(domain?.last_status_change_by).toBe(callerAdminId);
+		expect(reactivatedDomain?.is_active).toBe(true);
+		expect(reactivatedDomain?.last_status_change_by).toBe(callerAdminId);
 
 		// The previously-deactivated user stays inactive (no auto-reactivation).
-		const { data: normal } = await serviceRoleDbClient
+		const { data: normalAfterActivation } = await serviceRoleDbClient
 			.from("user_active_status")
 			.select("is_active")
 			.eq("id", normalUserId)
 			.single();
-		expect(normal?.is_active).toBe(false);
+		expect(normalAfterActivation?.is_active).toBe(false);
 
 		// New signups are allowed again.
-		const { error: signupError } =
+		const { error: signupAllowedError } =
 			await serviceRoleDbClient.auth.admin.createUser({
 				id: freshUserId,
 				email: `fresh@${testDomain}`,
 				password,
 				email_confirm: true,
 			});
-		expect(signupError).toBeNull();
+		expect(signupAllowedError).toBeNull();
 	});
 
 	it("rejects an authenticated non-admin caller on every admin RPC", async () => {
