@@ -33,11 +33,11 @@ export class UserScopedDbService extends BaseContentDbService {
 			.single();
 
 		if (error) {
-			throw error;
+			captureError(error);
+			return null;
 		}
 
-		const personalSystemPrompt = data?.personal_system_prompt?.trim();
-		return personalSystemPrompt ? personalSystemPrompt : null;
+		return data?.personal_system_prompt ?? null;
 	}
 
 	async updateUsage(userId: string, tokenAmount: number): Promise<void> {
