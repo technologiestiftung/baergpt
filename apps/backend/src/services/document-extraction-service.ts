@@ -359,11 +359,20 @@ export class ExcelExtractionService {
 	}
 }
 
-class MistralOCRService {
+export class MistralOCRService {
+	/**
+	 * A function (not a const) so it can be mocked in tests
+	 * that assert the real internal logic of specific
+	 * methods, e.g. `extractTextFromPdfWithMistral()`.
+	 */
+	shouldMockExternalServices(): boolean {
+		return config.nodeEnv === "test";
+	}
+
 	async extractTextFromPdfWithMistral(
 		pdfBytes: Uint8Array,
 	): Promise<ParsedPage[]> {
-		if (isTestMode) {
+		if (this.shouldMockExternalServices()) {
 			return mockOcrPages();
 		}
 
@@ -379,28 +388,32 @@ class MistralOCRService {
 			purpose: "ocr",
 		});
 
-		const ocrResponse = await client.ocr.process({
-			model: "mistral-ocr-latest",
-			document: {
-				type: "file",
-				fileId: uploaded_pdf.id,
-			},
-		});
-
-		if (!ocrResponse.pages) {
-			throw new Error("No pages found in OCR response");
-		}
 		try {
-			await client.files.delete({ fileId: uploaded_pdf.id }); // delete file from Mistral's cloud storage
-		} catch (error) {
-			if (error?.status !== 404 && error?.statusCode !== 404) {
-				captureError(error);
+			const ocrResponse = await client.ocr.process({
+				model: "mistral-ocr-latest",
+				document: {
+					type: "file",
+					fileId: uploaded_pdf.id,
+				},
+			});
+
+			if (!ocrResponse.pages || ocrResponse.pages.length === 0) {
+				throw new Error("No pages found in OCR response");
+			}
+
+			return ocrResponse.pages.map((page, index) => ({
+				content: page.markdown,
+				pageNumber: index + 1,
+				tokenCount: countTokens(page.markdown),
+			}));
+		} finally {
+			try {
+				await client.files.delete({ fileId: uploaded_pdf.id });
+			} catch (error) {
+				if (error?.status !== 404 && error?.statusCode !== 404) {
+					captureError(error);
+				}
 			}
 		}
-		return ocrResponse.pages.map((page, index) => ({
-			content: page.markdown,
-			pageNumber: index + 1,
-			tokenCount: countTokens(page.markdown),
-		}));
 	}
 }
