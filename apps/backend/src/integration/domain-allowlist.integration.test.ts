@@ -14,32 +14,52 @@ const anonClient = createClient<Database>(
 
 const password = "SecurePassword123!";
 
-// Creates a confirmed user and returns its id, throwing (and narrowing the type) if
+// Creates a confirmed user with a fixed id, throwing (and narrowing the type) if
 // creation failed — avoids non-null assertions on the nullable `data.user`.
-async function createConfirmedUser(email: string): Promise<string> {
-	const { data, error } = await serviceRoleDbClient.auth.admin.createUser({
+async function createConfirmedUser(email: string, id: string): Promise<void> {
+	const { error } = await serviceRoleDbClient.auth.admin.createUser({
+		id,
 		email,
 		password,
 		email_confirm: true,
 	});
-	if (error || !data.user) {
-		throw error ?? new Error(`Failed to create test user ${email}`);
+	if (error) {
+		throw error;
 	}
-	return data.user.id;
 }
 
 describe("domain allowlist RPCs", () => {
 	const adminEmail = "domain-rpc-admin@ts.berlin"; // ts.berlin is an active seeded domain
+	const nonAdminEmail = "domain-rpc-nonadmin@ts.berlin";
 	const addedDomain = "phase2-rpc-added.berlin.de";
 	const testDomain = "phase2-rpc-test.berlin.de";
-	let callerAdminId = "";
-	let normalUserId = "";
-	let domainAdminId = "";
-	const createdUserIds: string[] = [];
+
+	// Fixed ids so a crashed run's leftovers can be deleted (by id) before re-creating
+	const callerAdminId = "a1b2c3d4-0000-4000-8000-000000000001";
+	const normalUserId = "a1b2c3d4-0000-4000-8000-000000000002";
+	const domainAdminId = "a1b2c3d4-0000-4000-8000-000000000003";
+	const nonAdminUserId = "a1b2c3d4-0000-4000-8000-000000000004";
+	const freshUserId = "a1b2c3d4-0000-4000-8000-000000000005"; // created when re-testing signup
+	const allUserIds = [
+		callerAdminId,
+		normalUserId,
+		domainAdminId,
+		nonAdminUserId,
+		freshUserId,
+	];
 
 	beforeAll(async () => {
+		// Remove any leftovers from an interrupted run before recreating.
+		for (const id of allUserIds) {
+			await serviceRoleDbClient.auth.admin.deleteUser(id);
+		}
+		await serviceRoleDbClient
+			.from("allowed_email_domains")
+			.delete()
+			.in("domain", [testDomain, addedDomain]);
+
 		// Calling admin (at an already-allowed domain), used to invoke the RPCs.
-		callerAdminId = await createConfirmedUser(adminEmail);
+		await createConfirmedUser(adminEmail, callerAdminId);
 		await serviceRoleDbClient
 			.from("application_admins")
 			.insert({ user_id: callerAdminId });
@@ -49,12 +69,15 @@ describe("domain allowlist RPCs", () => {
 			.from("allowed_email_domains")
 			.insert({ domain: testDomain, is_active: true });
 
-		normalUserId = await createConfirmedUser(`normal@${testDomain}`);
+		await createConfirmedUser(`normal@${testDomain}`, normalUserId);
 
-		domainAdminId = await createConfirmedUser(`admin@${testDomain}`);
+		await createConfirmedUser(`admin@${testDomain}`, domainAdminId);
 		await serviceRoleDbClient
 			.from("application_admins")
 			.insert({ user_id: domainAdminId });
+
+		// Authenticated non-admin user (on the admin's domain)
+		await createConfirmedUser(nonAdminEmail, nonAdminUserId);
 
 		// Sign in so the anon client carries the admin's JWT for the RPC calls.
 		await anonClient.auth.signInWithPassword({ email: adminEmail, password });
@@ -62,12 +85,7 @@ describe("domain allowlist RPCs", () => {
 
 	afterAll(async () => {
 		await anonClient.auth.signOut();
-		for (const id of [
-			callerAdminId,
-			normalUserId,
-			domainAdminId,
-			...createdUserIds,
-		]) {
+		for (const id of allUserIds) {
 			await serviceRoleDbClient.auth.admin.deleteUser(id);
 		}
 		await serviceRoleDbClient
@@ -93,6 +111,56 @@ describe("domain allowlist RPCs", () => {
 		expect(data?.created_by).toBe(callerAdminId);
 		expect(data?.last_status_change_at).toBeNull();
 		expect(data?.last_status_change_by).toBeNull();
+	});
+
+	it("add_allowed_domain rejects malformed domains via the exact-format CHECK constraint", async () => {
+		for (const bad of ["*.berlin.de", "not-a-valid-domain"]) {
+			const { error } = await anonClient.rpc("add_allowed_domain", {
+				p_domain: bad,
+			});
+			expect(error, `expected "${bad}" to be rejected`).not.toBeNull();
+		}
+	});
+
+	it("get_allowed_email_domains_admin lists domains with derived creator email and user_count", async () => {
+		const { data, error } = await anonClient.rpc(
+			"get_allowed_email_domains_admin",
+		);
+		expect(error).toBeNull();
+
+		// Just-added domain: created_by is the creator's email (not the uuid),
+		// and no users sit on it yet. Verifies the zero/derived-email path.
+		const added = data?.find((entry) => entry.domain === addedDomain);
+		expect(added?.is_active).toBe(true);
+		expect(added?.created_by).toBe(adminEmail);
+		expect(added?.user_count).toBe(0);
+
+		// testDomain has two users (normal@ + admin@). Verifies the count aggregation.
+		const testEntry = data?.find((entry) => entry.domain === testDomain);
+		expect(testEntry?.user_count).toBe(2);
+	});
+
+	it("get_allowed_email_domains (registration-facing) returns only active domains", async () => {
+		const activeDomain = "phase2-rpc-pub-active.berlin.de";
+		const inactiveDomain = "phase2-rpc-pub-inactive.berlin.de";
+		await serviceRoleDbClient.from("allowed_email_domains").insert([
+			{ domain: activeDomain, is_active: true },
+			{ domain: inactiveDomain, is_active: false },
+		]);
+
+		try {
+			const { data, error } = await anonClient.rpc("get_allowed_email_domains");
+			expect(error).toBeNull();
+
+			const domains = data?.map((entry) => entry.domain) ?? [];
+			expect(domains).toContain(activeDomain);
+			expect(domains).not.toContain(inactiveDomain);
+		} finally {
+			await serviceRoleDbClient
+				.from("allowed_email_domains")
+				.delete()
+				.in("domain", [activeDomain, inactiveDomain]);
+		}
 	});
 
 	it("deactivate_allowed_domain deactivates non-admin users (no deleted_at), exempts admins, stamps last_status_change, and blocks new signups", async () => {
@@ -160,26 +228,57 @@ describe("domain allowlist RPCs", () => {
 		expect(normal?.is_active).toBe(false);
 
 		// New signups are allowed again.
-		const { data: created, error: signupError } =
+		const { error: signupError } =
 			await serviceRoleDbClient.auth.admin.createUser({
+				id: freshUserId,
 				email: `fresh@${testDomain}`,
 				password,
 				email_confirm: true,
 			});
 		expect(signupError).toBeNull();
-		if (created.user) {
-			createdUserIds.push(created.user.id);
-		}
 	});
 
-	it("rejects a non-admin (no session) caller", async () => {
-		const noAuthClient = createClient<Database>(
+	it("rejects an authenticated non-admin caller on every admin RPC", async () => {
+		const nonAdminClient = createClient<Database>(
 			config.supabaseUrl,
 			config.supabaseAnonKey,
 		);
-		const { error } = await noAuthClient.rpc("deactivate_allowed_domain", {
-			p_domain: testDomain,
+		await nonAdminClient.auth.signInWithPassword({
+			email: nonAdminEmail,
+			password,
 		});
-		expect(error).not.toBeNull();
+
+		const results = await Promise.all([
+			nonAdminClient.rpc("get_allowed_email_domains_admin"),
+			nonAdminClient.rpc("add_allowed_domain", {
+				p_domain: "rejected.berlin.de",
+			}),
+			nonAdminClient.rpc("activate_allowed_domain", { p_domain: testDomain }),
+			nonAdminClient.rpc("deactivate_allowed_domain", { p_domain: testDomain }),
+		]);
+		for (const { error } of results) {
+			expect(error).not.toBeNull();
+		}
+
+		await nonAdminClient.auth.signOut();
+	});
+
+	it("does not expose allowed_email_domains to non-admins via direct table read (RLS)", async () => {
+		const nonAdminClient = createClient<Database>(
+			config.supabaseUrl,
+			config.supabaseAnonKey,
+		);
+		await nonAdminClient.auth.signInWithPassword({
+			email: nonAdminEmail,
+			password,
+		});
+
+		const { data, error } = await nonAdminClient
+			.from("allowed_email_domains")
+			.select("*");
+		expect(error).toBeNull();
+		expect(data).toStrictEqual([]);
+
+		await nonAdminClient.auth.signOut();
 	});
 });
