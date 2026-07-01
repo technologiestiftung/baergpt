@@ -25,7 +25,7 @@ export const testWithAdminUser = baseTest.extend<
 			const email = `domain-admin+${workerInfo.workerIndex}+${workerInfo.project.name}@ts.berlin`;
 
 			const { data: existingUsers, error: listUsersError } =
-				await supabaseAdminClient.auth.admin.listUsers();
+				await supabaseAdminClient.auth.admin.listUsers({ perPage: 1000 });
 			baseTest.expect(listUsersError).toBeNull();
 
 			const existingUser = existingUsers?.users.find(

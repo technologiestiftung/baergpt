@@ -4,11 +4,12 @@ import { getAllowedEmailDomains } from "../api/domain/get-allowed-email-domains"
 import { addAllowedEmailDomain } from "../api/domain/add-allowed-email-domain";
 import { deactivateAllowedEmailDomain } from "../api/domain/deactivate-allowed-email-domain";
 import { activateAllowedEmailDomain } from "../api/domain/activate-allowed-email-domain";
+import { useUserErrorStore } from "./user-error-store";
 
 interface DomainStore {
 	allowedEmailDomains: AllowedEmailDomain[];
 	getAllowedEmailDomains: (signal: AbortSignal) => Promise<void>;
-	addAllowedEmailDomain: (domain: string) => Promise<void>;
+	addAllowedEmailDomain: (domain: string) => Promise<boolean>;
 	deactivateAllowedEmailDomain: (domain: string) => Promise<void>;
 	activateAllowedEmailDomain: (domain: string) => Promise<void>;
 	selectedDomain: AllowedEmailDomain | null;
@@ -31,7 +32,16 @@ export const useDomainStore = create<DomainStore>((set, get) => ({
 		}
 	},
 	addAllowedEmailDomain: async (domain: string) => {
-		await addAllowedEmailDomain(domain.toLowerCase());
+		const success = await addAllowedEmailDomain(domain.toLowerCase());
+
+		if (!success) {
+			useUserErrorStore
+				.getState()
+				.handleError(new Error("Failed to add allowed email domain"));
+			return false;
+		}
+
+		return true;
 	},
 	deactivateAllowedEmailDomain: async (domain: string) => {
 		const response = await deactivateAllowedEmailDomain(domain);

@@ -263,6 +263,8 @@ export const Content = {
 		"Wildcard-Muster wie *.berlin.de sind nicht erlaubt. Bitte geben Sie eine konkrete Domain ein.",
 	"addNewDomain.form.validation.invalidFormat":
 		"Bitte geben Sie eine gültige Domain ein (z. B. senjustv.berlin.de).",
+	"addNewDomain.form.unsuccessful.error":
+		"Die Domain konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
 
 	// Domain Allowlist Table Headers
 	"domainAllowlistTable.tableHeader.domain": "Domain",

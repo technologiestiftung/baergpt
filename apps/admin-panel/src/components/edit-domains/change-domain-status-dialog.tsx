@@ -54,7 +54,7 @@ export const ChangeDomainStatusDialog: React.FC = () => {
 							? Content["changeDomainStatusDialog.title.deactivate"]
 							: Content["changeDomainStatusDialog.title.activate"]}
 					</DialogTitle>
-					<DialogDescription>
+					<DialogDescription asChild>
 						<div className="my-2">
 							{selectedDomain?.is_active && (
 								<p>
