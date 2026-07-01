@@ -1,27 +1,11 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { testWithAdminUser as test } from "../fixtures/test-with-admin-user.ts";
+import { testWithLoggedInAdminUser as test } from "../fixtures/test-with-logged-in-admin-user.ts";
 import { supabaseAdminClient } from "../supabase.ts";
 
 const WILDCARD_DOMAIN_ERROR =
 	"Wildcard-Muster wie *.berlin.de sind nicht erlaubt. Bitte geben Sie eine konkrete Domain ein.";
 const INVALID_FORMAT_ERROR =
 	"Bitte geben Sie eine gültige Domain ein (z. B. senjustv.berlin.de).";
-
-type AdminAccount = {
-	email: string;
-	password: string;
-	id: string;
-};
-
-async function loginAsAdmin(page: Page, account: AdminAccount) {
-	await page.goto("/login/");
-	await page
-		.getByRole("textbox", { name: "E-Mail-Adresse" })
-		.fill(account.email);
-	await page.getByRole("textbox", { name: "Passwort" }).fill(account.password);
-	await page.getByRole("button", { name: "Anmelden" }).click();
-	await expect(page).toHaveURL("/");
-}
 
 async function gotoDomainAllowlist(page: Page) {
 	await page.goto("/domain-allowlist/");
@@ -59,14 +43,6 @@ async function cancelStatusChange(page: Page) {
 	await expect(dialog).not.toBeVisible();
 }
 
-async function deleteTestDomain(domain: string) {
-	const { error } = await supabaseAdminClient
-		.from("allowed_email_domains")
-		.delete()
-		.eq("domain", domain);
-	expect(error).toBeNull();
-}
-
 async function insertActiveTestDomain(domain: string) {
 	const { error } = await supabaseAdminClient
 		.from("allowed_email_domains")
@@ -75,8 +51,7 @@ async function insertActiveTestDomain(domain: string) {
 }
 
 test.describe("Domain Allowlist", () => {
-	test.beforeEach(async ({ page, adminAccount }) => {
-		await loginAsAdmin(page, adminAccount);
+	test.beforeEach(async ({ page }) => {
 		await gotoDomainAllowlist(page);
 	});
 
@@ -104,85 +79,75 @@ test.describe("Domain Allowlist", () => {
 
 	test("adds, deactivates, and reactivates a domain", async ({
 		page,
-	}, testInfo) => {
-		const testDomain = `e2e-${testInfo.project.name}-${testInfo.workerIndex}.berlin.de`;
+		testDomain,
+	}) => {
+		await page.locator("#domain").fill(testDomain);
+		await page.getByRole("button", { name: "Domain hinzufügen" }).click();
+		await expect(
+			page.getByRole("button", { name: "Domain hinzugefügt" }),
+		).toBeVisible();
 
-		try {
-			await page.locator("#domain").fill(testDomain);
-			await page.getByRole("button", { name: "Domain hinzufügen" }).click();
-			await expect(
-				page.getByRole("button", { name: "Domain hinzugefügt" }),
-			).toBeVisible();
+		await searchDomain(page, testDomain);
+		const row = domainRow(page, testDomain);
+		await expect(row).toBeVisible();
+		await expectDomainStatus(row, "aktiv");
+		await expect(
+			row.getByRole("button", { name: "Deaktivieren" }),
+		).toBeVisible();
 
-			await searchDomain(page, testDomain);
-			const row = domainRow(page, testDomain);
-			await expect(row).toBeVisible();
-			await expectDomainStatus(row, "aktiv");
-			await expect(
-				row.getByRole("button", { name: "Deaktivieren" }),
-			).toBeVisible();
+		await row.getByRole("button", { name: "Deaktivieren" }).click();
+		await expect(
+			page.getByRole("dialog", { name: "Domain deaktivieren" }),
+		).toBeVisible();
+		await confirmStatusChange(page, "Deaktivieren");
 
-			await row.getByRole("button", { name: "Deaktivieren" }).click();
-			await expect(
-				page.getByRole("dialog", { name: "Domain deaktivieren" }),
-			).toBeVisible();
-			await confirmStatusChange(page, "Deaktivieren");
+		await searchDomain(page, testDomain);
+		const deactivatedRow = domainRow(page, testDomain);
+		await expectDomainStatus(deactivatedRow, "inaktiv");
+		await expect(
+			deactivatedRow.getByRole("button", { name: "Aktivieren" }),
+		).toBeVisible();
 
-			await searchDomain(page, testDomain);
-			const deactivatedRow = domainRow(page, testDomain);
-			await expectDomainStatus(deactivatedRow, "inaktiv");
-			await expect(
-				deactivatedRow.getByRole("button", { name: "Aktivieren" }),
-			).toBeVisible();
+		await deactivatedRow.getByRole("button", { name: "Aktivieren" }).click();
+		await expect(
+			page.getByRole("dialog", { name: "Domain aktivieren" }),
+		).toBeVisible();
+		await confirmStatusChange(page, "Aktivieren");
 
-			await deactivatedRow.getByRole("button", { name: "Aktivieren" }).click();
-			await expect(
-				page.getByRole("dialog", { name: "Domain aktivieren" }),
-			).toBeVisible();
-			await confirmStatusChange(page, "Aktivieren");
-
-			await searchDomain(page, testDomain);
-			const reactivatedRow = domainRow(page, testDomain);
-			await expectDomainStatus(reactivatedRow, "aktiv");
-			await expect(
-				reactivatedRow.getByRole("button", { name: "Deaktivieren" }),
-			).toBeVisible();
-		} finally {
-			await deleteTestDomain(testDomain);
-		}
+		await searchDomain(page, testDomain);
+		const reactivatedRow = domainRow(page, testDomain);
+		await expectDomainStatus(reactivatedRow, "aktiv");
+		await expect(
+			reactivatedRow.getByRole("button", { name: "Deaktivieren" }),
+		).toBeVisible();
 	});
 
 	test("canceling status change dialog leaves domain active", async ({
 		page,
-	}, testInfo) => {
-		const testDomain = `e2e-cancel-${testInfo.project.name}-${testInfo.workerIndex}.berlin.de`;
+		testDomain,
+	}) => {
+		await insertActiveTestDomain(testDomain);
+		await page.reload();
+		await expect(
+			page.getByRole("heading", { name: "Domainverwaltung" }),
+		).toBeVisible();
 
-		try {
-			await insertActiveTestDomain(testDomain);
-			await page.reload();
-			await expect(
-				page.getByRole("heading", { name: "Domainverwaltung" }),
-			).toBeVisible();
+		await searchDomain(page, testDomain);
+		const row = domainRow(page, testDomain);
+		await expect(row).toBeVisible();
+		await expectDomainStatus(row, "aktiv");
 
-			await searchDomain(page, testDomain);
-			const row = domainRow(page, testDomain);
-			await expect(row).toBeVisible();
-			await expectDomainStatus(row, "aktiv");
+		await row.getByRole("button", { name: "Deaktivieren" }).click();
+		await expect(
+			page.getByRole("dialog", { name: "Domain deaktivieren" }),
+		).toBeVisible();
+		await cancelStatusChange(page);
 
-			await row.getByRole("button", { name: "Deaktivieren" }).click();
-			await expect(
-				page.getByRole("dialog", { name: "Domain deaktivieren" }),
-			).toBeVisible();
-			await cancelStatusChange(page);
-
-			await searchDomain(page, testDomain);
-			const unchangedRow = domainRow(page, testDomain);
-			await expectDomainStatus(unchangedRow, "aktiv");
-			await expect(
-				unchangedRow.getByRole("button", { name: "Deaktivieren" }),
-			).toBeVisible();
-		} finally {
-			await deleteTestDomain(testDomain);
-		}
+		await searchDomain(page, testDomain);
+		const unchangedRow = domainRow(page, testDomain);
+		await expectDomainStatus(unchangedRow, "aktiv");
+		await expect(
+			unchangedRow.getByRole("button", { name: "Deaktivieren" }),
+		).toBeVisible();
 	});
 });
