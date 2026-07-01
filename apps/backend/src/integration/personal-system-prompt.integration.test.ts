@@ -7,9 +7,9 @@ import { UserScopedDbService } from "../services/db-service/user-scoped-db-servi
 const OWNER_USER_ID = "33333333-3333-4333-8333-333333333333";
 const OTHER_USER_ID = "44444444-4444-4444-8444-444444444444";
 const INSERT_TRIGGER_USER_ID = "55555555-5555-4555-8555-555555555555";
-const OWNER_EMAIL = "psp-owner@local.berlin.de";
-const OTHER_EMAIL = "psp-other@local.berlin.de";
-const INSERT_TRIGGER_EMAIL = "psp-insert-trigger@local.berlin.de";
+const OWNER_EMAIL = "psp-owner@ts.berlin";
+const OTHER_EMAIL = "psp-other@ts.berlin";
+const INSERT_TRIGGER_EMAIL = "psp-insert-trigger@ts.berlin";
 
 const createTestUser = async (userId: string, email: string) => {
 	const { error } = await serviceRoleDbClient.auth.admin.createUser({
