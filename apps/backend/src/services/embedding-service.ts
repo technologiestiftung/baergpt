@@ -13,7 +13,7 @@ import {
 } from "./token-utils";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { embed, embedMany } from "ai";
-import { mistral } from "@ai-sdk/mistral";
+import { getEmbeddingModel } from "./llm-provider";
 import { captureError } from "../monitoring/capture-error";
 
 export class EmbeddingService {
@@ -31,7 +31,7 @@ export class EmbeddingService {
 		userId: string | undefined,
 	): Promise<EmbeddingResponse> {
 		const { embedding, usage } = await embed({
-			model: mistral.embeddingModel(config.mistralEmbeddingModel),
+			model: getEmbeddingModel(),
 			value: input,
 			experimental_telemetry: {
 				isEnabled: config.isTracingEnabled,
@@ -94,7 +94,7 @@ export class EmbeddingService {
 
 		for (const subBatch of subBatches) {
 			const { embeddings, usage } = await embedMany({
-				model: mistral.embeddingModel(config.mistralEmbeddingModel),
+				model: getEmbeddingModel(),
 				values: subBatch,
 				experimental_telemetry: {
 					isEnabled: config.isTracingEnabled,

@@ -11,12 +11,9 @@ import {
 import { ModelService } from "./model-service";
 import { logMemory } from "../monitoring/memory-logger";
 import { EmbeddingService } from "./embedding-service";
-import {
-	LangfuseClient,
-	ChatPromptClient,
-	TextPromptClient,
-} from "@langfuse/client";
+import { ChatPromptClient, TextPromptClient } from "@langfuse/client";
 import { updateActiveTrace } from "@langfuse/tracing";
+import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
@@ -41,7 +38,6 @@ import {
 } from "./token-utils";
 import type { WebSearchResult } from "../tools/web-search";
 
-const langfuse = new LangfuseClient();
 const modelService = new ModelService();
 
 type RelevantTools = {
@@ -66,9 +62,8 @@ export class GenerationService {
 		promptName: string,
 	): Promise<number> {
 		try {
-			const client = await langfuse.prompt.get(promptName, {
+			const client = await getChatPrompt(promptName, {
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
 			});
 
 			const compiled = client.compile({ docContent: "" }) as ModelMessage[];
@@ -91,9 +86,8 @@ export class GenerationService {
 
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
 
-		const summaryPromptClient = await langfuse.prompt.get("summary", {
+		const summaryPromptClient = await getChatPrompt("summary", {
 			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			type: "chat",
 		});
 
 		const compiledSummaryPrompt = summaryPromptClient.compile({
@@ -117,13 +111,9 @@ export class GenerationService {
 
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
 
-		const summaryPromptClient = await langfuse.prompt.get(
-			"one-sentence-summary",
-			{
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			},
-		);
+		const summaryPromptClient = await getChatPrompt("one-sentence-summary", {
+			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+		});
 
 		const compiledSummaryPrompt = summaryPromptClient.compile({
 			docContent: input,
@@ -150,9 +140,8 @@ export class GenerationService {
 				? input
 				: input.map((page) => page.content).join("\n");
 
-		const taggingPromptClient = await langfuse.prompt.get("tagging", {
+		const taggingPromptClient = await getChatPrompt("tagging", {
 			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			type: "chat",
 		});
 		const compiledTaggingPrompt = taggingPromptClient.compile({
 			docContent: docContent,
@@ -317,10 +306,9 @@ export class GenerationService {
 								}),
 							);
 							try {
-								const citationPromptClient = await langfuse.prompt.get(
+								const citationPromptClient = await getChatPrompt(
 									"document-citation-extraction",
 									{
-										type: "chat",
 										label:
 											config.nodeEnv === "test"
 												? "development"
@@ -399,14 +387,13 @@ export class GenerationService {
 
 						if (allWebSources.length > 0) {
 							try {
-								const webCitationPromptClient = await langfuse.prompt.get(
+								const webCitationPromptClient = await getChatPrompt(
 									"web-citation-extraction",
 									{
 										label:
 											config.nodeEnv === "test"
 												? "development"
 												: config.nodeEnv,
-										type: "chat",
 									},
 								);
 
@@ -464,10 +451,9 @@ export class GenerationService {
 
 						if (allParlaChunks.length > 0) {
 							try {
-								const parlaCitationPromptClient = await langfuse.prompt.get(
+								const parlaCitationPromptClient = await getChatPrompt(
 									"document-citation-extraction",
 									{
-										type: "chat",
 										label:
 											config.nodeEnv === "test"
 												? "development"
@@ -618,17 +604,16 @@ export class GenerationService {
 			config.featureFlagWebSearchAllowed &&
 			activeTools.includes("webSearchTool")
 		) {
-			freeChatPromptClient = await langfuse.prompt.get(
+			freeChatPromptClient = await getTextPrompt(
 				"free-chat-with-web-search-enabled",
 				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
 			);
 		} else if (activeTools.includes("ragSearchTool")) {
-			freeChatPromptClient = await langfuse.prompt.get(
-				"free-chat-with-documents",
-				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
-			);
+			freeChatPromptClient = await getTextPrompt("free-chat-with-documents", {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+			});
 		} else {
-			freeChatPromptClient = await langfuse.prompt.get("free-chat", {
+			freeChatPromptClient = await getTextPrompt("free-chat", {
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 			});
 		}
