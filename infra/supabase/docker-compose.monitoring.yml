@@ -1,0 +1,31 @@
+# Overlay merged onto docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+
+name: supabase
+
+services:
+  otel-collector:
+    container_name: supabase-otel-collector
+    image: otel/opentelemetry-collector-contrib:0.119.0
+    restart: unless-stopped
+    user: "0:0"  # root needed for /proc, /sys, docker.sock, /var/lib/docker/containers
+    command: ["--config=/etc/otel/config.yml"]
+    env_file:
+      - ./monitoring.env
+    environment:
+      STACKIT_OBSERVABILITY_USERNAME: ${STACKIT_OBSERVABILITY_USERNAME}
+      STACKIT_OBSERVABILITY_PASSWORD: ${STACKIT_OBSERVABILITY_PASSWORD}
+      STACKIT_OBSERVABILITY_METRICS_PUSH_URL: ${STACKIT_OBSERVABILITY_METRICS_PUSH_URL}
+      STACKIT_OBSERVABILITY_LOGS_OTLP_URL: ${STACKIT_OBSERVABILITY_LOGS_OTLP_URL}
+    volumes:
+      - ./otel-config.yml:/etc/otel/config.yml:ro
+      - /proc:/hostfs/proc:ro
+      - /sys:/hostfs/sys:ro
+      - /:/hostfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    deploy:
+      resources:
+        limits:
+          memory: 384M  # above otel-config memory_limiter (256MiB) so the limiter sheds load before the kernel OOM-kills
+          cpus: "0.5"

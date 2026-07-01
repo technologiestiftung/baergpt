@@ -61,10 +61,15 @@ echo "   - Bucket: $RESTORE_BUCKET"
 echo "   - Database: $DB_NAME"
 echo
 
-read -r -p "Type RESTORE-$ENV to continue: " CONFIRM
-if [[ "$CONFIRM" != "RESTORE-$ENV" ]]; then
-  echo "Aborted."
-  exit 1
+# non-interactive bypass for dr-drill.sh (RESTORE_ASSUME_YES=1, or --yes/-y)
+if [[ "${RESTORE_ASSUME_YES:-0}" == "1" || "${3:-}" == "--yes" || "${3:-}" == "-y" ]]; then
+  echo "[$ENV] Confirmation skipped (RESTORE_ASSUME_YES/--yes)."
+else
+  read -r -p "Type RESTORE-$ENV to continue: " CONFIRM
+  if [[ "$CONFIRM" != "RESTORE-$ENV" ]]; then
+    echo "Aborted."
+    exit 1
+  fi
 fi
 
 WORK_DIR=$(mktemp -d)
@@ -166,18 +171,51 @@ else
   echo "  (no migration history to restore)"
 fi
 
-# https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore#schema-changes-to-auth-and-storage
 # -----------------------------------------------------------------------------
-# 8. Apply auth/storage customizations
+# 8. Apply auth/storage customizations (RLS policies + triggers)
 # -----------------------------------------------------------------------------
-echo "[$ENV][DB] Applying auth/storage customizations..."
-if [[ -s "$WORK_DIR/auth_storage_changes.sql" ]]; then
-  cat "$WORK_DIR/auth_storage_changes.sql" | run_psql || {
-    echo "  ⚠ Some customizations may have failed"
-  }
-  echo "  ✓ Customizations applied"
+echo "[$ENV][DB] Applying auth/storage policies + triggers..."
+# New backups write auth_storage_objects.sql; older snapshots used auth_storage_changes.sql.
+AUTH_STORAGE_FILE=""
+for candidate in auth_storage_objects.sql auth_storage_changes.sql; do
+  if [[ -s "$WORK_DIR/$candidate" ]]; then AUTH_STORAGE_FILE="$candidate"; break; fi
+done
+if [[ -n "$AUTH_STORAGE_FILE" ]]; then
+  # ON_ERROR_STOP here but not in run_psql: the data restore must tolerate benign SETs
+  # like transaction_timeout, but policy/trigger DDL must not half-apply silently.
+  cat "$WORK_DIR/$AUTH_STORAGE_FILE" | ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_USER@$SERVER_IP" \
+    "docker exec -i $DB_CONTAINER psql -U postgres -d $DB_NAME -v ON_ERROR_STOP=1" \
+    || echo "  ⚠ Some auth/storage statements failed (the assertion below will catch it)"
+  echo "  ✓ Applied $AUTH_STORAGE_FILE"
+
+# Assertions to test the restore
+  STORAGE_POLICIES=$(ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_USER@$SERVER_IP" \
+    "docker exec -i $DB_CONTAINER psql -U postgres -d $DB_NAME -tAc \
+     \"SELECT count(*) FROM pg_policies WHERE schemaname='storage'\"" | tr -d '[:space:]')
+  AUTH_TRIGGERS=$(ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_USER@$SERVER_IP" \
+    "docker exec -i $DB_CONTAINER psql -U postgres -d $DB_NAME -tAc \
+     \"SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid \
+       JOIN pg_namespace n ON n.oid=c.relnamespace \
+       WHERE NOT t.tgisinternal AND n.nspname='auth'\"" | tr -d '[:space:]')
+  OBJECTS_RLS=$(ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_USER@$SERVER_IP" \
+    "docker exec -i $DB_CONTAINER psql -U postgres -d $DB_NAME -tAc \
+     \"SELECT c.relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace \
+       WHERE n.nspname='storage' AND c.relname='objects'\"" | tr -d '[:space:]')
+  STORAGE_BUCKETS=$(ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_USER@$SERVER_IP" \
+    "docker exec -i $DB_CONTAINER psql -U postgres -d $DB_NAME -tAc \
+     \"SELECT count(*) FROM storage.buckets\"" | tr -d '[:space:]')
+  echo "  storage policies: ${STORAGE_POLICIES:-?}, auth triggers: ${AUTH_TRIGGERS:-?}, storage.objects RLS: ${OBJECTS_RLS:-?}, storage buckets: ${STORAGE_BUCKETS:-?}"
+  if [[ "${STORAGE_POLICIES:-0}" -eq 0 || "${AUTH_TRIGGERS:-0}" -eq 0 || "$OBJECTS_RLS" != "t" || "${STORAGE_BUCKETS:-0}" -eq 0 ]]; then
+    echo "❌ Post-restore assertion failed: need storage RLS policies, auth triggers, RLS"
+    echo "   enabled on storage.objects (policies without RLS = data exposure, not just 404s),"
+    echo "   AND ≥1 storage bucket (no buckets = 'Bucket not found' on every download)."
+    echo "   Restore is INCOMPLETE — do not treat this database as recovered."
+    exit 1
+  fi
 else
-  echo "  (no customizations to apply)"
+  echo "  ⚠️  No auth/storage objects in this snapshot (pre-fix backup)."
+  echo "      storage RLS policies + auth.users triggers were NOT restored —"
+  echo "      re-apply them from the repo migrations before trusting this DB."
 fi
 
 # -----------------------------------------------------------------------------

@@ -12,7 +12,7 @@
 	}
 	
 	.markdown-container p {
-		@apply my-3 hyphens-auto;
+		@apply my-1.5 hyphens-auto;
 		word-break: break-word;
 	}
 

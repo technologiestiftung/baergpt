@@ -5,7 +5,7 @@ set -euo pipefail
 # Supabase CLI Backup Script
 # 
 # Uses official supabase db dump commands for proper backup handling.
-# Captures auth/storage customizations automatically via supabase db diff.
+# Captures auth/storage customizations (RLS policies + triggers) from the live catalog.
 #
 # Usage:
 #   backup_env.sh configs/staging.env
@@ -128,23 +128,49 @@ supabase db dump --db-url "$DB_URL" -f "$WORK_DIR/data.sql" --use-copy --data-on
 echo "  $(wc -l < "$WORK_DIR/data.sql") lines, $(log_file_size "$WORK_DIR/data.sql")"
 
 # -----------------------------------------------------------------------------
-# 5. Capture auth/storage customizations (triggers, RLS policies, etc.)
+# 5. Capture auth/storage customizations (RLS policies + triggers)
 # -----------------------------------------------------------------------------
-echo "[$ENV][DB] Capturing auth/storage customizations..."
-supabase db diff --db-url "$DB_URL" --schema auth,storage \
-  > "$WORK_DIR/auth_storage_changes.sql" 2>/dev/null || touch "$WORK_DIR/auth_storage_changes.sql"
-if [[ -s "$WORK_DIR/auth_storage_changes.sql" ]]; then
-  echo "  $(wc -l < "$WORK_DIR/auth_storage_changes.sql") lines, $(log_file_size "$WORK_DIR/auth_storage_changes.sql")"
-else
-  echo "  No customizations found"
+# Snapshot the live catalog as idempotent DDL. NOT `supabase db diff`: it reports
+# only drift vs migrations, so these migration-defined objects come back empty.
+echo "[$ENV][DB] Capturing auth/storage policies + triggers..."
+psql "$DB_URL" -X -At -v ON_ERROR_STOP=1 -f - > "$WORK_DIR/auth_storage_objects.sql" <<'SQL'
+-- RLS policies (app-defined; we don't touch base tables or RLS-enable flags)
+SELECT format('DROP POLICY IF EXISTS %I ON %I.%I;', policyname, schemaname, tablename)
+     || format(' CREATE POLICY %I ON %I.%I AS %s FOR %s TO %s%s%s;',
+          policyname, schemaname, tablename, permissive, cmd,
+          array_to_string(roles, ', '),
+          coalesce(' USING (' || qual || ')', ''),
+          coalesce(' WITH CHECK (' || with_check || ')', ''))
+FROM pg_policies WHERE schemaname IN ('auth', 'storage')
+UNION ALL
+-- app triggers only (function outside auth/storage) → excludes gotrue/storage base triggers
+SELECT format('DROP TRIGGER IF EXISTS %I ON %I.%I;', t.tgname, n.nspname, c.relname)
+     || ' ' || pg_get_triggerdef(t.oid) || ';'
+FROM pg_trigger t
+  JOIN pg_class     c  ON c.oid  = t.tgrelid
+  JOIN pg_namespace n  ON n.oid  = c.relnamespace
+  JOIN pg_proc      p  ON p.oid  = t.tgfoid
+  JOIN pg_namespace fn ON fn.oid = p.pronamespace
+WHERE NOT t.tgisinternal
+  AND n.nspname  IN ('auth', 'storage')
+  AND fn.nspname NOT IN ('auth', 'storage', 'pg_catalog', 'extensions');
+SQL
+echo "  $(wc -l < "$WORK_DIR/auth_storage_objects.sql") statements, $(log_file_size "$WORK_DIR/auth_storage_objects.sql")"
+if [[ ! -s "$WORK_DIR/auth_storage_objects.sql" ]]; then
+  echo "❌ auth_storage_objects.sql is empty — auth/storage capture failed; aborting backup."
+  exit 1
 fi
 
 # -----------------------------------------------------------------------------
 # 6. Dump migration history (preserves Supabase CLI migration state)
 # -----------------------------------------------------------------------------
 echo "[$ENV][DB] Dumping migration history..."
+#   1) schema-only -> recreates the supabase_migrations tables (restore target lacks them)
+#   2) --data-only -> the actual history rows
 supabase db dump --db-url "$DB_URL" -f "$WORK_DIR/migrations.sql" \
   --schema supabase_migrations 2>/dev/null || touch "$WORK_DIR/migrations.sql"
+supabase db dump --db-url "$DB_URL" --data-only --use-copy \
+  --schema supabase_migrations 2>/dev/null >> "$WORK_DIR/migrations.sql" || true
 echo "  $(wc -l < "$WORK_DIR/migrations.sql") lines, $(log_file_size "$WORK_DIR/migrations.sql")"
 
 # -----------------------------------------------------------------------------

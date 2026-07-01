@@ -9,8 +9,8 @@
   ansible.builtin.file:
     path: /home/migrations/bin
     state: directory
-    owner: migrations
-    group: migrations
+    owner: root
+    group: root
     mode: "0755"
 
 - name: Deploy docker-inspect-db-ip wrapper
