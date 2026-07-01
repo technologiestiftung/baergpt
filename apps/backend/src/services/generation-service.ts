@@ -11,7 +11,7 @@ import {
 import { ModelService } from "./model-service";
 import { logMemory } from "../monitoring/memory-logger";
 import { EmbeddingService } from "./embedding-service";
-import { ChatPromptClient, TextPromptClient } from "@langfuse/client";
+import type { ChatPromptClient, TextPromptClient } from "@langfuse/client";
 import { updateActiveTrace } from "@langfuse/tracing";
 import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
