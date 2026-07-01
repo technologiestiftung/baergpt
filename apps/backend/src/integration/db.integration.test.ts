@@ -330,16 +330,18 @@ describe("Integration tests for DB", async () => {
 						.insert({ user_id: givenUserId, name: "rls-blocked-chat" });
 					expect(blockedInsert).not.toBeNull();
 				} finally {
-					await serviceRoleDbClient
+					const { error: reactivateError } = await serviceRoleDbClient
 						.from("user_active_status")
 						.update({ is_active: true })
 						.eq("id", givenUserId);
+					expect(reactivateError).toBeNull();
 
 					if (createdChat?.id) {
-						await serviceRoleDbClient
+						const { error: cleanupChatError } = await serviceRoleDbClient
 							.from("chats")
 							.delete()
 							.eq("id", createdChat.id);
+						expect(cleanupChatError).toBeNull();
 					}
 				}
 			});

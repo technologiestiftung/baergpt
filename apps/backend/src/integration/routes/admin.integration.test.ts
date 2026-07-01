@@ -283,7 +283,7 @@ describe("/admin/", () => {
 		expect(profile.is_active).toBe(false);
 		expect(profile.deleted_at).toBeDefined();
 
-		// revert the soft delete
+		// revert the soft delete (also lift the auth ban set by softDeleteUser)
 		const { error } = await serviceRoleDbClient
 			.from("user_active_status")
 			.update({
@@ -292,6 +292,12 @@ describe("/admin/", () => {
 			})
 			.eq("id", givenUserId);
 		expect(error).toBeNull();
+
+		const { error: unbanError } =
+			await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+				ban_duration: "none",
+			});
+		expect(unbanError).toBeNull();
 	});
 
 	it("DELETE /admin/users/:userId should return a 403 if a non admin user tries to access it", async () => {
