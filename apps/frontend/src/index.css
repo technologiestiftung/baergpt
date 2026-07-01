@@ -10,7 +10,7 @@
 	html {
 		scroll-behavior: smooth;
 	}
-	
+
 	.markdown-container p {
 		@apply my-1.5 hyphens-auto;
 		word-break: break-word;
