@@ -275,7 +275,10 @@ export class GenerationService {
 			activeTools,
 		} = args;
 
-		const memoryLogId = crypto.randomUUID().slice(0, 8);
+		const memoryLogId =
+			config.nodeEnv === "production"
+				? crypto.randomUUID().slice(0, 8)
+				: sessionId;
 		logMemory("chat:start", memoryLogId);
 
 		const {
