@@ -76,7 +76,7 @@ const deleteDocument = async (
 };
 
 describe("Base Knowledge Integration Tests", () => {
-	const testUserEmail = "base-knowledge-test-user@local.berlin.de";
+	const testUserEmail = "base-knowledge-test-user@ts.berlin";
 	const testUserPassword = "SecurePassword123!";
 
 	let testUserId: string;
