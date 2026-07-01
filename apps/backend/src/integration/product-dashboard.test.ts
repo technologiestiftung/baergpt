@@ -36,8 +36,7 @@ const applicationAdminDbClient = createClient<Database>(
 
 describe("get_product_dashboard_stats", () => {
 	const givenAdminId = crypto.randomUUID();
-	const givenAdminEmail =
-		"admin-test-suite-product-dashboard-stats@local.berlin.de";
+	const givenAdminEmail = "admin-test-suite-product-dashboard-stats@ts.berlin";
 	const givenAdminPassword = "SecurePassword123!";
 
 	beforeAll(async () => {
@@ -186,8 +185,7 @@ describe("get_product_dashboard_stats", () => {
 			{ chatId: 999_999, chatMessageIds: [999_994, 999_995, 999_996, 999_997] },
 		];
 		const givenUserId = crypto.randomUUID();
-		const givenUserEmail =
-			"user-test-suite-product-dashboard-stats@local.berlin.de";
+		const givenUserEmail = "user-test-suite-product-dashboard-stats@ts.berlin";
 		const givenUserPassword = "SecurePassword123!";
 
 		beforeAll(async () => {

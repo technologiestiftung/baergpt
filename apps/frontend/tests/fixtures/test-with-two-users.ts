@@ -24,7 +24,7 @@ export type TwoUserTestFixtures = {
  * Creates a user with the given email prefix and returns the account details.
  */
 async function createUser(emailPrefix: string): Promise<UserAccount> {
-	const email = `${emailPrefix}@local.berlin.de`;
+	const email = `${emailPrefix}@ts.berlin`;
 
 	const { data, error: createUserError } =
 		await supabaseAdminClient.auth.admin.createUser({

@@ -65,6 +65,7 @@ export const Content = {
 	"admin.sidebar.navigation.users": "Benutzerverwaltung",
 	"admin.sidebar.navigation.baseKnowledge": "Base Knowledge",
 	"admin.sidebar.navigation.productDashboard": "Product Dashboard",
+	"admin.sidebar.navigation.domainAllowlist": "Domainverwaltung",
 	"admin.sidebar.navigation.inviteCodes": "Invite Codes",
 	"admin.sidebar.close": "Schließen",
 	"admin.sidebar.title": "BÄRGPT Admin",
@@ -83,16 +84,18 @@ export const Content = {
 	"inviteNewUser.form.button.save": "Einladung senden",
 	"inviteNewUser.form.button.saved": "Einladung verschickt",
 
+	/* ---------------------- Shared Table ---------------------- */
+	"table.pageSizeDropdown.pageSize.label": "Anzeigen: ",
+	"table.pageSizeDropdown.perTable": "pro Seite",
+	"table.pageSizeDropdown.all.label": "Alle",
+	"table.pagination.previousPage": "Zurück",
+	"table.pagination.nextPage": "Weiter",
+	"table.noResults": "Keine Ergebnisse.",
+
 	/* ---------------------- User Table ---------------------- */
 	"userTable.searchField.placeholder": "Suche nach Name oder E-Mail...",
-	"userTable.PageSizeDropdown.all.label": "Alle Benutzer",
-	"userTable.PageSizeDropdown.pageSize.label": "Anzeigen: ",
-	"userTable.PageSizeDropdown.perTable": "pro Seite",
-	"userTable.pagination.nextPage": "Weiter",
-	"userTable.pagination.previousPage": "Zurück",
 	"userTable.statusFilterDropdown.label": "Status filtern",
 	"userTable.statusFilterDropdown.all.label": "Status (alle)",
-	"userTable.noResults": "Keine Ergebnisse.",
 	"userTable.resultsCount.separator": "von",
 	"userTable.resultsCount.label": "Benutzer:innen",
 	// User Table Headers
@@ -247,6 +250,54 @@ export const Content = {
 	"productDashboard.domainsTable.head.domain": "Domain",
 	"productDashboard.domainsTable.head.users": "Users",
 	"productDashboard.domainsTable.showAllButton": "Alle anzeigen",
+
+	/* ---------------------- Add New Domain ---------------------- */
+	"addNewDomain.title": "Neue Domain hinzufügen",
+	"addNewDomain.description":
+		"Füge eine geprüfte Berlin.de-Domain zur Allowlist hinzu, um Registrierungen von dieser Domain zu erlauben.",
+	"addNewDomain.form.domain": "Domain",
+	"addNewDomain.form.domainPlaceholder": "z.B. senjustv.berlin.de",
+	"addNewDomain.form.button.save": "Domain hinzufügen",
+	"addNewDomain.form.button.saved": "Domain hinzugefügt",
+	"addNewDomain.form.validation.wildcardNotAllowed":
+		"Wildcard-Muster wie *.berlin.de sind nicht erlaubt. Bitte geben Sie eine konkrete Domain ein.",
+	"addNewDomain.form.validation.invalidFormat":
+		"Bitte geben Sie eine gültige Domain ein (z. B. senjustv.berlin.de).",
+	"addNewDomain.form.unsuccessful.error":
+		"Die Domain konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+
+	// Domain Allowlist Table Headers
+	"domainAllowlistTable.tableHeader.domain": "Domain",
+	"domainAllowlistTable.tableHeader.userCount": "User:innen",
+	"domainAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
+	"domainAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
+	"domainAllowlistTable.tableHeader.isActive": "Status",
+	"domainAllowlistTable.tableHeader.lastStatusChange": "Letzte Änderung",
+	"domainAllowlistTable.tableHeader.lastStatusChangeBy": "Geändert von",
+	"domainAllowlistTable.tableHeader.actions": "",
+	"domainAllowlistTable.tableHeader.actions.deactivate": "Deaktivieren",
+	"domainAllowlistTable.tableHeader.actions.activate": "Aktivieren",
+	"domainAllowlistTable.tableHeader.isActive.active": "aktiv",
+	"domainAllowlistTable.tableHeader.isActive.inactive": "inaktiv",
+
+	"domainAllowlistTable.count.label": "Domains insgesamt",
+	"domainAllowlistTable.active.label": "Aktive Domains",
+	"domainAllowlistTable.deactivated.label": "Deaktivierte Domains",
+	"domainAllowlistTable.searchField.placeholder": "Suche nach Domain...",
+	"domainAllowlistTable.statusFilterDropdown.all.label": "Alle",
+	"domainAllowlistTable.statusFilterDropdown.active.label": "Aktiv",
+	"domainAllowlistTable.statusFilterDropdown.inactive.label": "Inaktiv",
+
+	"changeDomainStatusDialog.title.deactivate": "Domain deaktivieren",
+	"changeDomainStatusDialog.title.activate": "Domain aktivieren",
+	"changeDomainStatusDialog.description.deactivate.p1":
+		"Accounts mit der Domain",
+	"changeDomainStatusDialog.description.deactivate.p2": " werden deaktiviert.",
+	"changeDomainStatusDialog.description.activate.p1":
+		"Neue User:innen können sich wieder mit der Domain",
+	"changeDomainStatusDialog.description.activate.p2":
+		" registrieren. Bestehende Accounts müssen separat in der Benutzerverwaltung aktiviert werden.",
+	"changeDomainStatusDialog.button.cancel": "Abbrechen",
 } as const;
 
 export default Content;
