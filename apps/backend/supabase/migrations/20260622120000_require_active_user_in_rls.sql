@@ -233,24 +233,34 @@ CREATE POLICY "Allow owners to delete documents and admins to delete base know" 
     AND (source_type <> 'default_document'::TEXT)
 );
 
--- 9. document_chunks
+-- 9. document_chunks — same per-command split as documents (5-8)
 DROP POLICY IF EXISTS "Allow authenticated users to access own or public document_chun" ON public.document_chunks;
 
-CREATE POLICY "Allow authenticated users to access own or public document_chun" ON public.document_chunks TO authenticated USING (
-    (
-        (owned_by_user_id IS NULL)
-        OR (
-            owned_by_user_id = (
-                SELECT
-                    auth.uid ()
+-- 9a. document_chunks — read (SELECT)
+DROP POLICY IF EXISTS "document_chunks select own or public" ON public.document_chunks;
+
+CREATE POLICY "document_chunks select own or public" ON public.document_chunks FOR
+SELECT
+    TO authenticated USING (
+        (
+            (owned_by_user_id IS NULL)
+            OR (
+                owned_by_user_id = (
+                    SELECT
+                        auth.uid ()
+                )
             )
         )
-    )
-    AND (
-        SELECT
-            public.is_current_user_active ()
-    )
-)
+        AND (
+            SELECT
+                public.is_current_user_active ()
+        )
+    );
+
+-- 9b. document_chunks — insert (INSERT)
+DROP POLICY IF EXISTS "document_chunks insert own or admin public" ON public.document_chunks;
+
+CREATE POLICY "document_chunks insert own or admin public" ON public.document_chunks FOR INSERT TO authenticated
 WITH
     CHECK (
         (
@@ -269,24 +279,83 @@ WITH
         )
     );
 
--- 10. document_summaries
+-- 9c. document_chunks — update (UPDATE)
+DROP POLICY IF EXISTS "document_chunks update own or admin public" ON public.document_chunks;
+
+DROP POLICY IF EXISTS "document_chunks update own" ON public.document_chunks;
+
+CREATE POLICY "document_chunks update own" ON public.document_chunks
+FOR UPDATE
+    TO authenticated USING (
+        owned_by_user_id = (
+            SELECT
+                auth.uid ()
+        )
+        AND (
+            SELECT
+                public.is_current_user_active ()
+        )
+    )
+WITH
+    CHECK (
+        owned_by_user_id = (
+            SELECT
+                auth.uid ()
+        )
+        AND (
+            SELECT
+                public.is_current_user_active ()
+        )
+    );
+
+-- 9d. document_chunks — delete (DELETE)
+DROP POLICY IF EXISTS "document_chunks delete own or admin public" ON public.document_chunks;
+
+CREATE POLICY "document_chunks delete own or admin public" ON public.document_chunks FOR DELETE TO authenticated USING (
+    (
+        owned_by_user_id = (
+            SELECT
+                auth.uid ()
+        )
+        AND (
+            SELECT
+                public.is_current_user_active ()
+        )
+    )
+    OR (
+        public.is_application_admin ()
+        AND (owned_by_user_id IS NULL)
+    )
+);
+
+-- 10. document_summaries — same per-command split as documents (5-8)
 DROP POLICY IF EXISTS "Allow authenticated users to access own or public document_summ" ON public.document_summaries;
 
-CREATE POLICY "Allow authenticated users to access own or public document_summ" ON public.document_summaries TO authenticated USING (
-    (
-        (owned_by_user_id IS NULL)
-        OR (
-            owned_by_user_id = (
-                SELECT
-                    auth.uid ()
+-- 10a. document_summaries — read (SELECT)
+DROP POLICY IF EXISTS "document_summaries select own or public" ON public.document_summaries;
+
+CREATE POLICY "document_summaries select own or public" ON public.document_summaries FOR
+SELECT
+    TO authenticated USING (
+        (
+            (owned_by_user_id IS NULL)
+            OR (
+                owned_by_user_id = (
+                    SELECT
+                        auth.uid ()
+                )
             )
         )
-    )
-    AND (
-        SELECT
-            public.is_current_user_active ()
-    )
-)
+        AND (
+            SELECT
+                public.is_current_user_active ()
+        )
+    );
+
+-- 10b. document_summaries — insert (INSERT)
+DROP POLICY IF EXISTS "document_summaries insert own or admin public" ON public.document_summaries;
+
+CREATE POLICY "document_summaries insert own or admin public" ON public.document_summaries FOR INSERT TO authenticated
 WITH
     CHECK (
         (
@@ -304,6 +373,55 @@ WITH
             AND (owned_by_user_id IS NULL)
         )
     );
+
+-- 10c. document_summaries — update (UPDATE)
+DROP POLICY IF EXISTS "document_summaries update own or admin public" ON public.document_summaries;
+
+DROP POLICY IF EXISTS "document_summaries update own" ON public.document_summaries;
+
+CREATE POLICY "document_summaries update own" ON public.document_summaries
+FOR UPDATE
+    TO authenticated USING (
+        owned_by_user_id = (
+            SELECT
+                auth.uid ()
+        )
+        AND (
+            SELECT
+                public.is_current_user_active ()
+        )
+    )
+WITH
+    CHECK (
+        owned_by_user_id = (
+            SELECT
+                auth.uid ()
+        )
+        AND (
+            SELECT
+                public.is_current_user_active ()
+        )
+    );
+
+-- 10d. document_summaries — delete (DELETE)
+DROP POLICY IF EXISTS "document_summaries delete own or admin public" ON public.document_summaries;
+
+CREATE POLICY "document_summaries delete own or admin public" ON public.document_summaries FOR DELETE TO authenticated USING (
+    (
+        owned_by_user_id = (
+            SELECT
+                auth.uid ()
+        )
+        AND (
+            SELECT
+                public.is_current_user_active ()
+        )
+    )
+    OR (
+        public.is_application_admin ()
+        AND (owned_by_user_id IS NULL)
+    )
+);
 
 -- 11. user_hidden_default_documents — insert (INSERT)
 DROP POLICY IF EXISTS "Users can insert their own hidden default docs" ON public.user_hidden_default_documents;
@@ -378,8 +496,9 @@ WITH
     );
 
 -- Storage (storage.objects): the same direct-JWT path as PostgREST. Gate the
--- 'documents' bucket (ownership) and the 'public_documents' read on active. The
--- admin 'public_documents' write policies already use is_application_admin().
+-- 'documents' bucket (ownership) on active. The 'public_documents' read stays
+-- public (anon-readable) and is not gated. The admin 'public_documents' write
+-- policies already use is_application_admin().
 -- 15. documents bucket — select own
 DROP POLICY IF EXISTS "Users can only select their own documents." ON storage.objects;
 
@@ -479,14 +598,10 @@ CREATE POLICY "Users can delete objects where their user ID is in the path" ON s
 );
 
 -- 19. public_documents bucket — read base knowledge
+-- Intentionally NOT gated on is_current_user_active(): public/base-knowledge
+-- documents are readable by anonymous users by design.
 DROP POLICY IF EXISTS "Users can select all public_documents." ON storage.objects;
 
 CREATE POLICY "Users can select all public_documents." ON storage.objects FOR
 SELECT
-    USING (
-        bucket_id = 'public_documents'
-        AND (
-            SELECT
-                public.is_current_user_active ()
-        )
-    );
+    USING (bucket_id = 'public_documents');
