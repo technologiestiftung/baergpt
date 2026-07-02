@@ -7,6 +7,7 @@ import { createFolder } from "../api/folders/create-folder.ts";
 import { isDocument } from "../components/documents/document-list/list-item/utils/is-document.ts";
 import { useCurrentFolderStore } from "./use-current-folder-store.ts";
 import { useChatsStore } from "./use-chats-store.ts";
+import { captureError } from "../monitoring/capture-error.ts";
 
 interface UserFolderStore {
 	userFolders: UserFolder[];
@@ -61,6 +62,7 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 					.getState()
 					.deleteUserDocument(document.id);
 				if (error) {
+					captureError(error);
 					hasDocumentDeleteError = true;
 				}
 			}

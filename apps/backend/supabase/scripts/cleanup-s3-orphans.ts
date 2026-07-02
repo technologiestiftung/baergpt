@@ -58,14 +58,20 @@ async function run() {
 		console.log("Running in dry-run mode. No objects will be deleted.");
 	}
 
+	const totalTimer = time("Total runtime");
+
 	console.log("Fetching documents table...");
+	const timer1 = time("Fetching documents table");
 	const sourceUrls = await getDocumentSourceUrlsWithStorageObjects();
+	timer1.end();
 	console.log(
 		`Found ${sourceUrls.length} documents in the documents table (including joined storage objects, e.g. for docx preview pdfs).`,
 	);
 
 	console.log("Fetching storage table...");
+	const timer2 = time("Fetching storage table");
 	const storageObjects = await getAllStorageObjects();
+	timer2.end();
 	console.log(`Found ${storageObjects.length} objects in the storage table.`);
 
 	/**
@@ -92,7 +98,9 @@ async function run() {
 	});
 
 	console.log("Fetching S3 objects...");
+	const timer3 = time("Fetching S3 objects");
 	const s3Keys = await getAllS3Objects();
+	timer3.end();
 	console.log(`Found ${s3Keys.length} objects in S3.`);
 
 	/**
@@ -140,6 +148,7 @@ async function run() {
 		missingInS3.length === 0
 	) {
 		console.log("No orphan(s) found.");
+		totalTimer.end();
 		return;
 	}
 
@@ -174,6 +183,22 @@ async function run() {
 			`Warning: Found ${missingInS3.length} document(s) in the documents table that are missing in S3.`,
 		);
 	}
+
+	totalTimer.end();
+}
+
+/**
+ * timer method for better logging visibility
+ */
+function time(label: string) {
+	const start = performance.now();
+	return {
+		end: () => {
+			const ms = performance.now() - start;
+			const seconds = (ms / 1000).toFixed(2);
+			console.log(`⏱  ${label}: ${seconds}s`);
+		},
+	};
 }
 
 async function getDocumentSourceUrlsWithStorageObjects() {
@@ -307,6 +332,8 @@ async function deleteFilesFromStorage(storageObjectsOrphans: FileObject[]) {
 		return;
 	}
 
+	const timer = time("Deleting files from storage table");
+
 	let count = 1;
 
 	for (const file of storageObjectsOrphans) {
@@ -324,6 +351,8 @@ async function deleteFilesFromStorage(storageObjectsOrphans: FileObject[]) {
 
 		count += 1;
 	}
+
+	timer.end();
 }
 
 async function getAllS3Objects(): Promise<string[]> {
@@ -382,6 +411,7 @@ async function deleteS3Objects(keys: string[]): Promise<void> {
 		);
 		return;
 	}
+	const timer = time("Deleting files from S3 bucket");
 
 	const maxS3BatchSize = 1000;
 
@@ -408,6 +438,8 @@ async function deleteS3Objects(keys: string[]): Promise<void> {
 			);
 		}
 	}
+
+	timer.end();
 }
 
 run().catch((error) => {
