@@ -1,24 +1,34 @@
 import { ChevronSmallIcon } from "../primitives/icons/chevron-small-icon.tsx";
 import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
 import { useDrop } from "react-dnd";
-import type { ListItem } from "./document-list/list-item/utils/types";
+import type { Document } from "../../common.ts";
 import { useDragAndDropStore } from "../../store/drag-and-drop-store.ts";
 import Content from "../../content.ts";
 import { useCurrentFolderStore } from "../../store/use-current-folder-store.ts";
 import { isPublicFolder } from "./document-list/list-item/utils/is-public-folder.ts";
 import { isUserFolder } from "./document-list/list-item/utils/is-user-folder.ts";
+import { isDocument } from "./document-list/list-item/utils/is-document.ts";
 
 export function DocumentBreadcrumbs() {
 	const { currentFolder, setCurrentFolder } = useCurrentFolderStore();
 	const { hoveredFolderId, setHoveredFolderId } = useDragAndDropStore();
-	const { removeItemFromFolder, getUserDocuments } = useUserDocumentStore();
+	const { removeItemsFromFolder, unselectUserDocumentForAction } =
+		useUserDocumentStore();
 
-	const [, drop] = useDrop({
+	const [, drop] = useDrop<Document[], unknown, unknown>({
 		accept: "ITEM",
-		drop: async (draggedItem: ListItem) => {
-			// Dropping on the back-folder removes the folder association
-			await removeItemFromFolder(draggedItem.id);
-			await getUserDocuments(new AbortController().signal); // Refresh the documents list
+		drop: async (draggedItems: Document[]) => {
+			const documents = draggedItems.filter(isDocument);
+
+			if (documents.length > 0) {
+				const documentIds = documents.map((doc) => doc.id);
+				await removeItemsFromFolder(documentIds);
+
+				for (const id of documentIds) {
+					unselectUserDocumentForAction(id);
+				}
+			}
+
 			setHoveredFolderId(null);
 		},
 		hover: () => setHoveredFolderId("back-folder"),

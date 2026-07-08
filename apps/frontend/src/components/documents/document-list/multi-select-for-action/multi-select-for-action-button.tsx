@@ -32,7 +32,7 @@ export const MultiSelectForActionButton: React.FC = () => {
 			) : (
 				<SecondaryButton onClick={() => showMultiSelectForAction()}>
 					<CheckboxIcon state="checked" />
-					{Content["deleteItemButton.label"]}
+					{Content["selectItemsButton.label"]}
 				</SecondaryButton>
 			)}
 		</>

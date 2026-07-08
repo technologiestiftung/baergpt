@@ -15,8 +15,8 @@ interface UserDocumentStore {
 	getUserDocuments: (signal: AbortSignal) => Promise<void>;
 
 	deleteUserDocument: (documentId: number) => Promise<Error | null>;
-	removeItemFromFolder: (documentId: number) => Promise<void>;
-	moveItemToFolder: (documentId: number, folderId: number) => Promise<void>;
+	removeItemsFromFolder: (documentIds: number[]) => Promise<void>;
+	moveItemsToFolder: (documentIds: number[], folderId: number) => Promise<void>;
 
 	selectedUserChatDocuments: UserDocument[];
 	selectUserChatDocument: (document: UserDocument) => void;
@@ -103,20 +103,23 @@ export const useUserDocumentStore = create<UserDocumentStore>((set, get) => ({
 
 		return null;
 	},
-	removeItemFromFolder: async (documentId: number) => {
-		await updateDocumentFolder(documentId, null);
-		set((state) => ({
-			userDocuments: state.userDocuments.map((doc) =>
-				doc.id === documentId ? { ...doc, folder_id: null } : doc,
-			),
-		}));
-	},
-	moveItemToFolder: async (documentId: number, folderId: number) => {
-		await updateDocumentFolder(documentId, folderId);
+	removeItemsFromFolder: async (documentIds: number[]) => {
+		await Promise.all(documentIds.map((id) => updateDocumentFolder(id, null)));
 
 		set((state) => ({
 			userDocuments: state.userDocuments.map((doc) =>
-				doc.id === documentId ? { ...doc, folder_id: folderId } : doc,
+				documentIds.includes(doc.id) ? { ...doc, folder_id: null } : doc,
+			),
+		}));
+	},
+	moveItemsToFolder: async (documentIds: number[], folderId: number) => {
+		await Promise.all(
+			documentIds.map((id) => updateDocumentFolder(id, folderId)),
+		);
+
+		set((state) => ({
+			userDocuments: state.userDocuments.map((doc) =>
+				documentIds.includes(doc.id) ? { ...doc, folder_id: folderId } : doc,
 			),
 		}));
 	},

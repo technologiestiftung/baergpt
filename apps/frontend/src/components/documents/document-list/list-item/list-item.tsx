@@ -8,31 +8,39 @@ import type { ListItem as ListItemType } from "./utils/types.ts";
 import { getDragAndDropId } from "./utils/get-drag-and-drop-id.ts";
 import { useDragAndDropStore } from "../../../../store/drag-and-drop-store.ts";
 import { isUserFolder } from "./utils/is-user-folder.ts";
+import type { Document } from "../../../../common.ts";
 
 interface ListItemProps {
 	item: ListItemType;
 }
 
 export const ListItem: React.FC<ListItemProps> = ({ item }) => {
-	const { moveItemToFolder } = useUserDocumentStore();
+	const { moveItemsToFolder, unselectUserDocumentForAction } =
+		useUserDocumentStore();
 	const { setHoveredFolderId, hoveredFolderId } = useDragAndDropStore();
 
 	const isHoveredForDrop = getDragAndDropId(item) === hoveredFolderId;
 
-	const [, dropRef] = useDrop({
+	const [, dropRef] = useDrop<Document[], unknown, unknown>({
 		accept: "ITEM",
-		drop: async (draggedItem: ListItemType) => {
-			const isValidTarget = !isDocument(item) && isDocument(draggedItem);
+		drop: async (draggedItems: Document[]) => {
+			const documents = draggedItems.filter(isDocument);
+			const isValidTarget = !isDocument(item) && documents.length > 0;
 
 			if (isValidTarget) {
-				await moveItemToFolder(draggedItem.id, item.id);
+				const documentIds = documents.map((doc) => doc.id);
+				await moveItemsToFolder(documentIds, item.id);
+
+				for (const id of documentIds) {
+					unselectUserDocumentForAction(id);
+				}
 			}
 
-			// Reset hovered folder when the drop is complete
 			setHoveredFolderId(null);
 		},
-		hover: (draggedItem: ListItemType) => {
-			const isValidTarget = !isDocument(item) && isDocument(draggedItem);
+		hover: (draggedItems: Document[]) => {
+			const documents = draggedItems.filter(isDocument);
+			const isValidTarget = !isDocument(item) && documents.length > 0;
 
 			if (isValidTarget) {
 				setHoveredFolderId(getDragAndDropId(item));
