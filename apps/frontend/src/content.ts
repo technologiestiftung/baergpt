@@ -1032,7 +1032,8 @@ export const Content = {
 	"profile.chatSettings.personalPrompt.title":
 		"Welche Präferenzen soll BärGPT berücksichtigen?",
 	"profile.chatSettings.personalPrompt.subtitle":
-		"Gilt für alle Unterhaltungen im Rahmen von BärGPTs Richtlinien.",
+		"Gilt für alle Unterhaltungen im Rahmen von",
+	"profile.chatSettings.personalPrompt.link": "BärGPTs Richtlinien.",
 	"profile.chatSettings.personalPrompt.placeholder":
 		"z.B. Antworte knapp und in einfacher Sprache.",
 	"profile.chatSettings.personalPrompt.characters": "Zeichen",
