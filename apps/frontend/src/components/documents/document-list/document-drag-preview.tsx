@@ -40,7 +40,7 @@ export const DocumentDragPreview: React.FC = () => {
 				{showStackedPreview ? (
 					<span className="flex flex-col gap-y-1 min-w-0">
 						{items.map((item) => (
-							<span className="flex gap-x-1 min-w-0 items-center">
+							<span className="flex gap-x-1 min-w-0 items-center" key={item.id}>
 								<DocumentIcon variant="lightBlue" className="shrink-0" />
 								<span className="truncate text-sm leading-5 font-normal text-dunkelblau-100">
 									{getListItemName(item)}

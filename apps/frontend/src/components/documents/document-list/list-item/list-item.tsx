@@ -29,14 +29,14 @@ export const ListItem: React.FC<ListItemProps> = ({ item }) => {
 
 			if (isValidTarget) {
 				const documentIds = documents.map((doc) => doc.id);
+
+				setHoveredFolderId(null);
 				await moveItemsToFolder(documentIds, item.id);
 
 				for (const id of documentIds) {
 					unselectUserDocumentForAction(id);
 				}
 			}
-
-			setHoveredFolderId(null);
 		},
 		hover: (draggedItems: Document[]) => {
 			const documents = draggedItems.filter(isDocument);

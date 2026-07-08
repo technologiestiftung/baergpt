@@ -22,14 +22,14 @@ export function DocumentBreadcrumbs() {
 
 			if (documents.length > 0) {
 				const documentIds = documents.map((doc) => doc.id);
+
+				setHoveredFolderId(null);
 				await removeItemsFromFolder(documentIds);
 
 				for (const id of documentIds) {
 					unselectUserDocumentForAction(id);
 				}
 			}
-
-			setHoveredFolderId(null);
 		},
 		hover: () => setHoveredFolderId("back-folder"),
 		canDrop: () => isUserFolder(currentFolder),
