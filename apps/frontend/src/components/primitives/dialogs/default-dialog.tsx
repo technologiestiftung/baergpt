@@ -13,8 +13,17 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 	className,
 	id,
 	afterClose,
+	isOpen,
 }) => {
 	const dialogRef = useRef<HTMLDialogElement | null>(null);
+
+	useEffect(() => {
+		if (isOpen) {
+			dialogRef.current?.showModal();
+		} else {
+			dialogRef.current?.close();
+		}
+	}, [isOpen]);
 
 	useEffect(() => {
 		document.addEventListener("mousedown", handleClickListener);

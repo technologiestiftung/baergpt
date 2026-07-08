@@ -43,7 +43,7 @@ export const DesktopSidebar: React.FC = () => {
 						</div>
 					)}
 					<div>
-						<div className="h-[133px] flex flex-col">
+						<div className="h-[155px] flex flex-col">
 							{/* Full-width border */}
 							{isHistorySidebarOpen && (
 								<span className="block w-[calc(100%+14px)] ml-[-10px] h-px bg-dunkelblau-80" />

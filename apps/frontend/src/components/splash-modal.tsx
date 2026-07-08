@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { DefaultDialog } from "./primitives/dialogs/default-dialog";
 import Content from "../content";
 import ReactMarkdown from "react-markdown";
@@ -8,36 +7,20 @@ import {
 	useSplashScreenStore,
 } from "../store/splash-screen-store.ts";
 
-const splashModalId = "splash-modal";
-
-function showSplashModal() {
-	(document.getElementById(splashModalId) as HTMLDialogElement).showModal();
-}
-
-function hideSplashModal() {
-	(document.getElementById(splashModalId) as HTMLDialogElement).close();
-}
-
 export const SplashModal = () => {
-	const { isOpen, content } = useSplashScreenStore();
+	const { isOpen, content, closeSplashScreen } = useSplashScreenStore();
 
-	useEffect(() => {
-		if (!isOpen) {
-			return;
-		}
-
-		showSplashModal();
-	}, [isOpen]);
-
-	const handleClose = () => {
-		hideSplashModal();
+	const handleAfterClose = () => {
+		closeSplashScreen();
+		markVersionAsSeen();
 	};
 
 	return (
 		<DefaultDialog
-			id={splashModalId}
+			id="splash-modal"
+			isOpen={isOpen}
 			className="md:w-[600px] max-h-[650px] max-w-[90vw] text-dunkelblau-200"
-			afterClose={markVersionAsSeen}
+			afterClose={handleAfterClose}
 		>
 			<div className="sticky top-0 bg-white flex flex-row items-center justify-between py-3 pl-[30px] pr-[23px] border-b-[0.5px] border-dunkelblau-50">
 				<div className="flex flex-col gap-2">
@@ -50,7 +33,7 @@ export const SplashModal = () => {
 				</div>
 				<button
 					className="size-7 p-1 rounded-3px focus-visible:outline-default hover:bg-hellblau-50 flex items-center justify-center"
-					onClick={handleClose}
+					onClick={closeSplashScreen}
 					data-testid={`close-splash-modal-button`}
 				>
 					<img

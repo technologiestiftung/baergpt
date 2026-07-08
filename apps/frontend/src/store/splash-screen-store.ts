@@ -7,6 +7,8 @@ import { config } from "../config.ts";
 type SplashScreenStore = {
 	isOpen: boolean;
 	content: string;
+	openSplashScreen: () => Promise<void>;
+	closeSplashScreen: () => void;
 };
 
 export const STORAGE_KEY = "last-seen-version";
@@ -16,9 +18,24 @@ let currentVersionIdentifier: string;
 export const useSplashScreenStore = create<SplashScreenStore>()(() => {
 	init().catch(captureError);
 
+	const openSplashScreen = async () => {
+		try {
+			const content = await getSplashScreenContent();
+			useSplashScreenStore.setState({ content, isOpen: true });
+		} catch (error) {
+			captureError(error);
+		}
+	};
+
+	const closeSplashScreen = () => {
+		useSplashScreenStore.setState({ isOpen: false });
+	};
+
 	return {
 		isOpen: false,
 		content: "",
+		openSplashScreen,
+		closeSplashScreen,
 	};
 });
 

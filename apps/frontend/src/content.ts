@@ -647,6 +647,8 @@ export const Content = {
 	"cookiesBanner.button.acceptSelection": "Auswahl bestätigen",
 	"cookiesBanner.thirdPartyCookies.label": "Externe Medien",
 	/* -------------------- Sidebar -------------------- */
+	"sidebar.navigation.news": "Neuigkeiten",
+	"sidebar.navigation.news.ariaLabel": "Neuigkeiten anzeigen",
 	"sidebar.ariaLabel": "Sidebar",
 	"sidebar.navigation.imprint": "Impressum",
 	"sidebar.navigation.imprint.link":
