@@ -959,10 +959,8 @@ export const Content = {
 	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
 
-	"chat.webSearch.warningBanner.label":
-		"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
-	"chat.parla.warningBanner.label":
-		"Parla aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+	"chat.externalTools.warningBanner.label":
+		"Eine oder mehrere der folgenden externen Datenquellen sind aktiv: Parla, Websuche. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",

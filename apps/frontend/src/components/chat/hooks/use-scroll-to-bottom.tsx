@@ -5,7 +5,7 @@ import { useChatsStore } from "../../../store/use-chats-store.ts";
 export function useScrollToBottom(
 	ref: MutableRefObject<HTMLOutputElement | null>,
 ) {
-	const { chats, autoDeactivatedExternalTool } = useChatsStore();
+	const { chats, autoDeactivatedExternalTools } = useChatsStore();
 	const { scrollToBottom } = useChatScrollingStore();
 
 	useEffect(() => {
@@ -15,5 +15,5 @@ export function useScrollToBottom(
 		}, 1);
 
 		return () => clearTimeout(timer);
-	}, [chats, autoDeactivatedExternalTool]);
+	}, [chats, autoDeactivatedExternalTools]);
 }

@@ -24,7 +24,7 @@ export const MCP_OPTIONS_VALUES: Record<string, McpOptions> = {
 };
 
 export const McpOptionsDialog: React.FC = () => {
-	const { selectedChatOption, toggleChatOption } = useChatsStore();
+	const { selectedChatOptions, toggleChatOption } = useChatsStore();
 
 	const mcpOptionsItems = [
 		{
@@ -58,7 +58,7 @@ export const McpOptionsDialog: React.FC = () => {
 
 				<ul className="flex flex-col w-full">
 					{mcpOptionsItems.map((item) => {
-						const isSelected = selectedChatOption === item.value;
+						const isSelected = selectedChatOptions.includes(item.value);
 						return (
 							<li key={item.value}>
 								<button
