@@ -49,14 +49,37 @@
       delegate_to: localhost
       become: false
 
+- name: Upload otel-collector config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/otel-config.yml"
+    dest: "{{ supabase_dir }}/otel-config.yml"
+    mode: "0644"
+    force: true
+  notify: Recreate otel-collector
+
+- name: Upload monitoring compose overlay
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/docker-compose.monitoring.yml"
+    dest: "{{ supabase_dir }}/docker-compose.monitoring.yml"
+    mode: "0644"
+    force: true
+  notify: Recreate otel-collector
+
+- name: Render monitoring.env from inventory
+  ansible.builtin.template:
+    src: monitoring.env.j2
+    dest: "{{ supabase_dir }}/monitoring.env"
+    mode: "0640"
+  notify: Recreate otel-collector
+
 - name: Pull images
   ansible.builtin.command:
-    cmd: "docker compose pull"
+    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml pull"
   args:
     chdir: "{{ supabase_dir }}"
 
-- name: Start Supabase stack
+- name: Start Supabase + monitoring stack
   ansible.builtin.command:
-    cmd: "docker compose up -d"
+    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d"
   args:
     chdir: "{{ supabase_dir }}"

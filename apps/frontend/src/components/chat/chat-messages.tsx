@@ -41,14 +41,14 @@ export const ChatMessages: React.FC = () => {
 			role="log"
 		>
 			<h2 className="sr-only">{Content["chat.messages.heading"]}</h2>
-			<div className="w-full h-full flex flex-col gap-y-4">
+			<div className="w-full h-full flex flex-col gap-y-1 lg:gap-y-3.5">
 				{currentChat?.messages.map((message) => (
 					<ChatMessage key={message.id} message={message} />
 				))}
 				{isWaitingForResponse && (
-					<div className="text-dunkelblau-80 flex gap-2 w-full items-center">
+					<div className="text-dunkelblau-50 flex gap-2 w-full items-center">
 						<BlueSquareIcon />
-						<span>{Content["chat.loadingText"]}</span>
+						<span className="text-sm">{Content["chat.loadingText"]}</span>
 					</div>
 				)}
 				{hasError && <ChatErrorMessage />}

@@ -77,7 +77,7 @@ test.describe("Login", () => {
 		// Fill in the email field with a valid email format, but not existing user
 		await page
 			.getByRole("textbox", { name: "E-Mail-Adresse Das E-Mail-" })
-			.fill("not-existing-user@local.berlin.de");
+			.fill("not-existing-user@ts.berlin");
 
 		// Fill in the password field with a valid password, but not existing user
 		await page
@@ -266,7 +266,7 @@ test.describe("Password Reset", () => {
 });
 
 test.describe("User Registration (uses different user to prevent side-effects on other tests)", () => {
-	const givenUserEmail = "user.registration@local.berlin.de";
+	const givenUserEmail = "user.registration@ts.berlin";
 	const givenUserPassword = "123456789!";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
@@ -604,7 +604,7 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 testWithLoggedInUser(
 	"should allow user to change email address",
 	async ({ page, account }) => {
-		const updatedEmail = "john.doe@new.berlin.de";
+		const updatedEmail = "john.doe@polizei.berlin.de";
 		const updatedAccount = {
 			...account,
 			email: updatedEmail,

@@ -2,9 +2,12 @@ import { useEffect } from "react";
 import { useAuthStore } from "../store/use-auth-store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
+import { useAuthErrorStore } from "../store/use-auth-error-store.ts";
+import { useIsActiveStore } from "../store/use-is-active-store.ts";
 
 export function useSessionRedirect() {
 	const session = useAuthStore((state) => state.session);
+	const isActive = useIsActiveStore((state) => state.isActive);
 
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -14,22 +17,21 @@ export function useSessionRedirect() {
 			session,
 			pathname: location.pathname,
 			navigate,
-		});
-
-		if (!session) {
-			return;
-		}
-	}, [session]);
+			isActive,
+		}).catch(console.error);
+	}, [session, isActive, location.pathname, navigate]);
 }
 
-function redirectBasedOnSession({
+async function redirectBasedOnSession({
 	session,
 	pathname,
 	navigate,
+	isActive,
 }: {
 	session: Session | null | undefined;
 	pathname: string;
 	navigate: (path: string) => void;
+	isActive: boolean | null;
 }) {
 	/**
 	 * On first load the session is undefined and
@@ -41,6 +43,18 @@ function redirectBasedOnSession({
 
 	if (!session) {
 		handleUnauthorized(pathname, navigate);
+		return;
+	}
+
+	if (isActive === null) {
+		return;
+	}
+
+	if (isActive === false) {
+		await useAuthStore.getState().logout();
+		useAuthErrorStore
+			.getState()
+			.handleError(new Error("User account has been deactivated."));
 		return;
 	}
 
@@ -61,7 +75,12 @@ function handleUnauthorized(
 }
 
 function handleAuthorized(pathname: string, navigate: (path: string) => void) {
-	const protectedPages = ["/", "/product-dashboard/", "/base-knowledge/"];
+	const protectedPages = [
+		"/",
+		"/product-dashboard/",
+		"/base-knowledge/",
+		"/domain-allowlist/",
+	];
 
 	// Allow access to protected pages
 	if (protectedPages.includes(pathname)) {

@@ -4,6 +4,8 @@ import { supabase } from "../../supabase-client.ts";
 import { useAuthErrorStore } from "./use-auth-error-store.ts";
 import { handleSessionChange } from "../api/session/handle-session-change.ts";
 import { useUserStore } from "./use-user-store.ts";
+import { getIsActive } from "../api/user/get-is-active.ts";
+import { useIsActiveStore } from "./use-is-active-store.ts";
 
 let resendTime: number | null = null;
 
@@ -140,7 +142,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		},
 
 		async login({ email, password }) {
-			const { data, error } = await supabase.auth.signInWithPassword({
+			const { error } = await supabase.auth.signInWithPassword({
 				email,
 				password,
 			});
@@ -160,17 +162,16 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 				return;
 			}
 
-			// Check if the user account is deactivated
-			const userId = data?.user?.id;
-			if (userId) {
-				await useUserStore.getState().getUser(new AbortController().signal);
-				if (useUserStore.getState().user?.deleted_at) {
-					await supabase.auth.signOut(); // Force logout
-					useAuthErrorStore
-						.getState()
-						.handleError(new Error("User account has been deactivated."));
-					return;
-				}
+			// Check if the user account is active
+			const isActive = await getIsActive(new AbortController().signal);
+
+			// force logout if the user account is not active
+			if (!isActive) {
+				await supabase.auth.signOut();
+				useAuthErrorStore
+					.getState()
+					.handleError(new Error("User account has been deactivated."));
+				return;
 			}
 
 			// Check if user is an admin
@@ -195,6 +196,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 				emailConfirmationStatus: "unknown",
 				isInitialized: true,
 			});
+			useIsActiveStore.getState().resetIsActive();
 		},
 	};
 });

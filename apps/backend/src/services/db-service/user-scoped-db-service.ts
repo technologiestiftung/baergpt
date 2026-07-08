@@ -25,6 +25,21 @@ export class UserScopedDbService extends BaseContentDbService {
 		}
 	}
 
+	async getPersonalSystemPrompt(userId: string): Promise<string | null> {
+		const { data, error } = await this.client
+			.from("profiles")
+			.select("personal_system_prompt")
+			.eq("id", userId)
+			.single();
+
+		if (error) {
+			captureError(error);
+			return null;
+		}
+
+		return data?.personal_system_prompt ?? null;
+	}
+
 	async updateUsage(userId: string, tokenAmount: number): Promise<void> {
 		try {
 			await this.updateUserColumnValue(

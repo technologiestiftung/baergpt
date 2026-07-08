@@ -26,7 +26,7 @@ const supabaseAnonClient = createClient<Database>(
 
 describe("Documents Route Integration", () => {
 	const givenUserId = "d279dcb8-ec47-410b-acfc-6d8fdf8a4d85";
-	const givenUserEmail = "docs-test-suite-user@local.berlin.de";
+	const givenUserEmail = "docs-test-suite-user@ts.berlin";
 	const givenUserPassword = "SecurePassword123!";
 	let accessToken: string;
 

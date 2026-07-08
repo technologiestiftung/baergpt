@@ -3,12 +3,18 @@ import ReactMarkdown from "react-markdown";
 import { UserMessage } from "./user-message.tsx";
 import type { ChatMessage } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
-import { markdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
+import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
 import type { JSX } from "react";
+import { AnchorLinkTargetBlank } from "../../primitives/markdown/anchor-link-target-blank.tsx";
 
 interface ChatMessageProps {
 	message: ChatMessage;
 }
+
+const customComponents = {
+	table: MarkdownWrapperScrollableTable,
+	a: AnchorLinkTargetBlank,
+};
 
 export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 	const { role, content } = message;
@@ -21,7 +27,7 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 						<ReactMarkdown
 							remarkPlugins={[remarkGfm]}
 							className="markdown-container"
-							components={markdownWrapperScrollableTable}
+							components={customComponents}
 						>
 							{content}
 						</ReactMarkdown>
@@ -34,7 +40,7 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 					<ReactMarkdown
 						remarkPlugins={[remarkGfm]}
 						className="markdown-container markdown-container-user"
-						components={markdownWrapperScrollableTable}
+						components={customComponents}
 					>
 						{content}
 					</ReactMarkdown>

@@ -26,7 +26,7 @@ const supabaseAnonClient = createClient<Database>(
 describe("Integration tests for DB", async () => {
 	describe("registration meta-data", () => {
 		it("should create a profile with the first_name and last_name from the meta-data", async () => {
-			const givenEmail = "example@local.berlin.de";
+			const givenEmail = "example@ts.berlin";
 			const givenPassword = "SecurePassword123!";
 			const givenFirstName = "John";
 			const givenLastName = "Doe";
@@ -72,11 +72,11 @@ describe("Integration tests for DB", async () => {
 
 	describe("application users", async () => {
 		const givenAdminId = "d18922bb-7f9a-4e15-a9c9-6788fe81842c";
-		const givenAdminEmail = "db-test-suite-admin@local.berlin.de";
+		const givenAdminEmail = "db-test-suite-admin@ts.berlin";
 		const givenAdminPassword = "SecurePassword123!";
 
 		const givenUserId = "73f1b859-1377-4f72-ac92-ea28b1fb5167";
-		const givenUserEmail = "db-test-suite-user@local.berlin.de";
+		const givenUserEmail = "db-test-suite-user@ts.berlin";
 		const givenUserPassword = "SecurePassword123!";
 
 		const { data: accessGroupData } = await serviceRoleDbClient
@@ -138,8 +138,8 @@ describe("Integration tests for DB", async () => {
 		});
 
 		describe("validate_email_domain()", () => {
-			const validEmail = "test@local.berlin.de";
-			const validEmail2 = "test2@local.berlin.de";
+			const validEmail = "test@ts.berlin";
+			const validEmail2 = "test2@ts.berlin";
 			const invalidEmail = "test@not-allowed.com";
 			let userId: string = "";
 
@@ -192,7 +192,7 @@ describe("Integration tests for DB", async () => {
 
 			it("should reject emails with invalid format", async () => {
 				const { error } = await serviceRoleDbClient.auth.admin.createUser({
-					email: "@local.berlin.de",
+					email: "@ts.berlin",
 					password: givenUserPassword,
 					email_confirm: true,
 				});
@@ -202,7 +202,7 @@ describe("Integration tests for DB", async () => {
 			it("should allow registration with exact domain match", async () => {
 				const { data, error } = await serviceRoleDbClient.auth.admin.createUser(
 					{
-						email: "test@ts.berlin",
+						email: "test@polizei.berlin.de",
 						password: givenUserPassword,
 						email_confirm: true,
 					},
@@ -253,6 +253,36 @@ describe("Integration tests for DB", async () => {
 
 				expect(rpcError).toBeNull();
 				expect(isAdmin).toBe(true);
+			});
+
+			it("Deactivated admin users should get false from is_application_admin()", async () => {
+				const { data: sessionData, error: sessionError } =
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+				expect(sessionError).toBeNull();
+				expect(sessionData.session).not.toBeNull();
+
+				const { error: deactivateError } = await serviceRoleDbClient
+					.from("user_active_status")
+					.update({ is_active: false })
+					.eq("id", givenAdminId);
+				expect(deactivateError).toBeNull();
+
+				try {
+					const { data: isAdmin, error: rpcError } =
+						await supabaseAnonClient.rpc("is_application_admin");
+
+					expect(rpcError).toBeNull();
+					expect(isAdmin).toBe(false);
+				} finally {
+					const { error: reactivateError } = await serviceRoleDbClient
+						.from("user_active_status")
+						.update({ is_active: true })
+						.eq("id", givenAdminId);
+					expect(reactivateError).toBeNull();
+				}
 			});
 		});
 

@@ -172,6 +172,10 @@ During a playbook run, the `.env` is fetched from 1Password, written temporarily
 
 ## Backups & Restore
 
+Each snapshot holds: roles, the `public` schema, all data, the **`auth`/`storage` RLS
+policies + triggers** (`auth_storage_objects.sql`), migration history, and the
+storage-bucket files — gpg-encrypted and pushed to object storage via rclone.
+
 ### Configuration
 
 Each environment needs a config file in `backups/configs/`:
@@ -202,4 +206,14 @@ See the example file for all required variables (rclone remotes, SSH credentials
 ./backups/restore_env.sh backups/configs/staging.env latest
 ```
 
-The restore script will prompt for confirmation before overwriting data.
+The restore prompts before overwriting, then asserts the `auth`/`storage` policies +
+triggers and RLS landed — it exits non-zero if the restore is incomplete. Pass `--yes`
+(or `RESTORE_ASSUME_YES=1`) to skip the prompt for automation.
+
+### Disaster Recovery Drill
+
+Full DR drill — wipe staging to bare, restore the latest snapshot, assert. Watch out, this is **DESTRUCTIVE** albeit staging-only; leaves staging on the restored snapshot.
+
+```bash
+./backups/dr-drill.sh backups/configs/staging.env
+```

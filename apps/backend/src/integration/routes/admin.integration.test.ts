@@ -20,10 +20,10 @@ const supabaseAnonClient = createClient<Database>(
 );
 
 describe("/admin/", () => {
-	const givenAdminEmail = "admin-test-suite-admin@local.berlin.de";
+	const givenAdminEmail = "admin-test-suite-admin@ts.berlin";
 	const givenAdminPassword = "SecurePassword123!";
 
-	const givenUserEmail = "admin-test-suite-user@local.berlin.de";
+	const givenUserEmail = "admin-test-suite-user@ts.berlin";
 	const givenUserPassword = "SecurePassword123!";
 
 	const userIds: Record<string, string> = {
@@ -109,7 +109,7 @@ describe("/admin/", () => {
 
 	it("PUT /admin/users/:userId/profile should update user profile and return 200", async () => {
 		const givenUpdatedUser = {
-			email: "updated@local.berlin.de",
+			email: "updated@ts.berlin",
 			academic_title: "Dr.",
 			personal_title: "UpdatedTitle",
 			firstName: "UpdatedFirstName",
@@ -449,7 +449,7 @@ describe("/admin/", () => {
 	});
 
 	it("POST /admin/users/invite should invite a new user and return 200", async () => {
-		const givenEmail = "db-test-suite-new-user@local.berlin.de";
+		const givenEmail = "db-test-suite-new-user@ts.berlin";
 		const givenFirstName = "Jane";
 		const givenLastName = "Doe";
 
@@ -506,7 +506,7 @@ describe("/admin/", () => {
 	});
 
 	it("POST /admin/users/invite should resend an invite to an existing user and return 200", async () => {
-		const givenEmail = "db-test-suite-new-user@local.berlin.de";
+		const givenEmail = "db-test-suite-new-user@ts.berlin";
 		const givenFirstName = "Jane";
 		const givenLastName = "Doe";
 

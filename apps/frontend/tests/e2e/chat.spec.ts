@@ -351,7 +351,7 @@ test.describe("Chat", () => {
 
 	testDesktopOnly("Chat with public document citations", async ({ page }) => {
 		// Create an admin user to upload the public document
-		const adminEmail = "admin.test@local.berlin.de";
+		const adminEmail = "admin.test@ts.berlin";
 		const adminPassword = "TestPassword123!";
 
 		const { data: adminUserData, error: createAdminError } =
@@ -968,6 +968,29 @@ test.describe("Chat", () => {
 				await page.unroute("**/llm/just-chatting");
 				hangingStream?.destroy();
 			}
+		},
+	);
+
+	testWithMockedLlm(
+		"Links in assistant messages open in new tab",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Mock LLM to return a message with a link
+			await mockLlmCompletion(page, {
+				textDelta: "Check [this link](https://example.com) for details.",
+			});
+
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const link = page
+				.getByTestId("assistant-message-markdown-container")
+				.locator("a");
+
+			await expect(link).toHaveAttribute("target", "_blank");
+			await expect(link).toHaveAttribute("rel", /(^|\s)noopener(\s|$)/);
+			await expect(link).toHaveAttribute("rel", /(^|\s)noreferrer(\s|$)/);
 		},
 	);
 });
