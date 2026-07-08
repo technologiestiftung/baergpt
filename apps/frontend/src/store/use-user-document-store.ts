@@ -104,22 +104,32 @@ export const useUserDocumentStore = create<UserDocumentStore>((set, get) => ({
 		return null;
 	},
 	removeItemsFromFolder: async (documentIds: number[]) => {
-		await Promise.all(documentIds.map((id) => updateDocumentFolder(id, null)));
+		const results = await Promise.allSettled(
+			documentIds.map((id) => updateDocumentFolder(id, null)),
+		);
 
-		set((state) => ({
-			userDocuments: state.userDocuments.map((doc) =>
-				documentIds.includes(doc.id) ? { ...doc, folder_id: null } : doc,
-			),
-		}));
-	},
-	moveItemsToFolder: async (documentIds: number[], folderId: number) => {
-		await Promise.all(
-			documentIds.map((id) => updateDocumentFolder(id, folderId)),
+		const succeededIds = new Set(
+			documentIds.filter((_, i) => results[i].status === "fulfilled"),
 		);
 
 		set((state) => ({
 			userDocuments: state.userDocuments.map((doc) =>
-				documentIds.includes(doc.id) ? { ...doc, folder_id: folderId } : doc,
+				succeededIds.has(doc.id) ? { ...doc, folder_id: null } : doc,
+			),
+		}));
+	},
+	moveItemsToFolder: async (documentIds: number[], folderId: number) => {
+		const results = await Promise.allSettled(
+			documentIds.map((id) => updateDocumentFolder(id, folderId)),
+		);
+
+		const succeededIds = new Set(
+			documentIds.filter((_, i) => results[i].status === "fulfilled"),
+		);
+
+		set((state) => ({
+			userDocuments: state.userDocuments.map((doc) =>
+				succeededIds.has(doc.id) ? { ...doc, folder_id: folderId } : doc,
 			),
 		}));
 	},

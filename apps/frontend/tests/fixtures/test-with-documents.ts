@@ -629,7 +629,7 @@ export async function deleteFileViaUI({
 }) {
 	// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 	const enterMultiSelectButton = page.getByRole("button", {
-		name: "Checkbox-Icon (ausgewählt) Löschen",
+		name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 	});
 	if (await enterMultiSelectButton.isVisible()) {
 		await enterMultiSelectButton.click();
@@ -649,7 +649,7 @@ export async function deleteFileViaUI({
 	await checkbox.click();
 
 	await page
-		.getByRole("button", { name: "Dialog öffnen, um Elemente zu löschen" })
+		.getByRole("button", { name: "Button klicken, um Elemente zu löschen" })
 		.click();
 
 	await page

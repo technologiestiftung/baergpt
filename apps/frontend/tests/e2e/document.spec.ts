@@ -368,7 +368,7 @@ test.describe("Documents", () => {
 
 			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 			const enterMultiSelectButton = page.getByRole("button", {
-				name: "Checkbox-Icon (ausgewählt) Löschen",
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 			});
 			if (await enterMultiSelectButton.isVisible()) {
 				await enterMultiSelectButton.click();
@@ -382,7 +382,7 @@ test.describe("Documents", () => {
 			await folderCheckbox.click();
 
 			await page
-				.getByRole("button", { name: "Dialog öffnen, um Elemente zu löschen" })
+				.getByRole("button", { name: "Button klicken, um Elemente zu löschen" })
 				.click();
 
 			await page
@@ -435,7 +435,7 @@ test.describe("Documents", () => {
 
 			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 			const enterMultiSelectButton = page.getByRole("button", {
-				name: "Checkbox-Icon (ausgewählt) Löschen",
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 			});
 			if (await enterMultiSelectButton.isVisible()) {
 				await enterMultiSelectButton.click();
@@ -450,7 +450,7 @@ test.describe("Documents", () => {
 
 			// Open the delete dialog
 			const deleteButton = page.getByRole("button", {
-				name: "Dialog öffnen, um Elemente zu löschen",
+				name: "Button klicken, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -513,7 +513,7 @@ test.describe("Documents", () => {
 
 			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 			const enterMultiSelectButton = page.getByRole("button", {
-				name: "Checkbox-Icon (ausgewählt) Löschen",
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 			});
 			if (await enterMultiSelectButton.isVisible()) {
 				await enterMultiSelectButton.click();
@@ -527,7 +527,7 @@ test.describe("Documents", () => {
 			await folderCheckbox.click();
 
 			const deleteButton = page.getByRole("button", {
-				name: "Dialog öffnen, um Elemente zu löschen",
+				name: "Button klicken, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -1051,7 +1051,7 @@ test.describe("Documents", () => {
 			await page.goto("/");
 
 			const activateMultiSelectButton = page.getByRole("button", {
-				name: "Checkbox-Icon (ausgewählt) Löschen",
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 			});
 			await activateMultiSelectButton.click();
 
