@@ -2,7 +2,7 @@ import { serviceRoleDbClient as supabase } from "../src/supabase";
 
 export async function seedLocalAdmin() {
 	const id = crypto.randomUUID();
-	const email = "admin@local.berlin.de";
+	const email = "admin@ts.berlin";
 	const password = "123456789!";
 
 	const { data, error: listUsersError } = await supabase.auth.admin.listUsers();

@@ -398,6 +398,118 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
+		"Move two files to a folder via drag and drop and back to root",
+		async ({ page, account, session }) => {
+			const folderName = "test-folder-dnd-multi";
+
+			await mockDocumentUpload({
+				userId: account.id,
+				accessToken: session.access_token,
+				accessGroupId: null,
+				fileName: secondaryDocumentName,
+				filePath: secondaryDocumentPath,
+				sourceType: defaultSourceType,
+				bucketName: defaultBucketName,
+			});
+
+			await page.goto("/");
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(folderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			const desktopPanel = page.locator("#desktop-documents-panel");
+			const fileNames = [defaultDocumentName, secondaryDocumentName] as const;
+
+			// Enter multi-select mode
+			await page
+				.getByRole("button", {
+					name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
+				})
+				.click();
+
+			// Select both files via their checkboxes
+			for (const name of fileNames) {
+				await desktopPanel
+					.getByRole("listitem")
+					.filter({ hasText: name })
+					.locator("label")
+					.first()
+					.click();
+			}
+
+			// Drag one file onto the folder — both selected files move together
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await page
+				.getByRole("button", { name: `Ordner-Icon ${folderName}` })
+				.hover();
+			await page.mouse.up();
+
+			// Verify both files are no longer visible in the root folder
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).not.toBeVisible();
+			}
+
+			// Navigate into the folder and verify both files are visible
+			await page
+				.getByRole("button", { name: `Ordner-Icon ${folderName}` })
+				.click();
+
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).toBeVisible();
+			}
+
+			// Select both files again
+			for (const name of fileNames) {
+				await desktopPanel
+					.getByRole("listitem")
+					.filter({ hasText: name })
+					.locator("label")
+					.first()
+					.click();
+			}
+
+			// Drag one file onto the breadcrumb — both move back to root
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await page.getByRole("button", { name: "Meine Dateien" }).hover();
+			await page.mouse.up();
+
+			// Verify both files are no longer visible inside the folder
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).not.toBeVisible();
+			}
+
+			// Navigate back to root and verify both files are visible
+			await page.getByRole("button", { name: "Meine Dateien" }).click();
+
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).toBeVisible();
+			}
+		},
+	);
+
+	testDesktopOnly(
 		"Delete folder with a single document also deletes document",
 		async ({ page }) => {
 			const givenFolderName = "temp-folder-single";
