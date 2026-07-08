@@ -62,14 +62,11 @@ export const ChatSettings = () => {
 					/>
 				</label>
 			</div>
-			<form
-				onSubmit={handleSubmit}
-				className="flex justify-between flex-col gap-4"
-			>
-				<div>
+			<form onSubmit={handleSubmit} className="flex justify-between flex-col">
+				<div className="mb-4">
 					<label
 						htmlFor="personalPrompt"
-						className="text-sm leading-6 font-semibold block cursor-pointer"
+						className="text-sm leading-5 font-normal block cursor-pointer"
 					>
 						{Content["profile.chatSettings.personalPrompt.title"]}
 					</label>
@@ -77,12 +74,22 @@ export const ChatSettings = () => {
 						id="personalPromptSubtitle"
 						className="text-sm text-dunkelblau-60 leading-6 font-normal"
 					>
-						{Content["profile.chatSettings.personalPrompt.subtitle"]}
+						<span>
+							{Content["profile.chatSettings.personalPrompt.subtitle"]}{" "}
+						</span>
+						<a
+							href="https://www.baergpt.berlin/terms-of-use/#section-4-1"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-sm text-dunkelblau-60 leading-6 font-normal underline-offset-2 underline"
+						>
+							{Content["profile.chatSettings.personalPrompt.link"]}
+						</a>
 					</p>
 				</div>
 				<textarea
 					id="personalPrompt"
-					className="w-full min-h-[90px] max-h-60 p-2.5 text-sm border border-dunkelblau-200 rounded-3px placeholder:text-sm placeholder:text-schwarz-60 focus-visible:outline-default"
+					className="w-full min-h-[90px] mb-4 max-h-60 p-2.5 text-sm border border-dunkelblau-200 rounded-3px placeholder:text-sm placeholder:text-schwarz-60 focus-visible:outline-default"
 					placeholder={
 						Content["profile.chatSettings.personalPrompt.placeholder"]
 					}
@@ -98,7 +105,7 @@ export const ChatSettings = () => {
 					{`${personalPrompt.length} / 500 ${Content["profile.chatSettings.personalPrompt.characters"]}`}
 				</p>
 
-				<SubmitButton disabled={!hasChanges} className="mt-4 self-end">
+				<SubmitButton disabled={!hasChanges} className="self-end">
 					{Content["profile.submitButton"]}
 				</SubmitButton>
 			</form>
