@@ -63,7 +63,7 @@ export const baseKnowledgeSearchTool = (
 				},
 			);
 			if (chunkMatches.length === 0) {
-				console.warn(`RAG search found no matches for query: ${query}`);
+				console.warn("RAG search found no matches for query");
 				return {};
 			}
 

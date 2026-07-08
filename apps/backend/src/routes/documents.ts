@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
@@ -13,6 +14,7 @@ import { documentProcessSchema } from "../schemas/document-process-schema";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
 import { logMemory } from "../monitoring/memory-logger";
+import { config } from "../config";
 
 const documents = new Hono();
 
@@ -26,7 +28,10 @@ documents.post("/process", async (c: Context) => {
 	let sourceUrl: string | null = null;
 	let bucket: string | null = null;
 	const authenticatedUserId = c.get("authenticatedUserId");
-	const reqId = (authenticatedUserId as string)?.slice(0, 8) ?? "no-user";
+	const reqId =
+		config.nodeEnv === "production"
+			? crypto.randomUUID().slice(0, 8)
+			: ((authenticatedUserId as string)?.slice(0, 8) ?? "no-user");
 
 	try {
 		logMemory("doc:start", reqId);

@@ -106,6 +106,7 @@ export type User = {
 	academic_title?: string | null;
 	personal_title?: string | null;
 	is_addressed_formal?: boolean | null;
+	personal_system_prompt?: string | null;
 };
 
 export type CitationWithDetails = {

@@ -14,6 +14,7 @@ export default {
 				"warning-85": "#E45F5F",
 				"warning-10": "#FEF4F5",
 				"schwarz-40": "#737373",
+				"schwarz-60": "#666666",
 				"schwarz-100": "#000000",
 				"dunkelblau-200": "#030812",
 				"dunkelblau-100": "#0C2753",

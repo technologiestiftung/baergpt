@@ -119,6 +119,99 @@ testWithLoggedInUser.describe("User Profile", () => {
 	);
 
 	testWithLoggedInUser(
+		"should allow user to update personal prompt",
+		async ({ page }) => {
+			await page.goto("/profile/");
+
+			await page.waitForResponse(
+				(res) =>
+					res.url().includes("/rest/v1/profiles") &&
+					res.request().method() === "GET" &&
+					res.ok(),
+			);
+
+			const newPrompt = "This is a new personal prompt for testing.";
+			const promptInput = page.locator("#personalPrompt");
+
+			await expect(promptInput).toBeVisible();
+
+			await promptInput.fill(newPrompt);
+			await expect(promptInput).toHaveValue(newPrompt);
+
+			const submitButton = page
+				.locator("form")
+				.filter({ has: promptInput })
+				.getByRole("button", { name: Content["profile.submitButton"] });
+
+			await expect(submitButton).toBeEnabled();
+
+			let updateRequestDetails: { personal_system_prompt?: string } | null =
+				null;
+			await page.route("**/rest/v1/profiles*", async (route) => {
+				if (route.request().method() === "PATCH") {
+					updateRequestDetails = route.request().postDataJSON();
+					await route.fulfill({
+						status: 200,
+						contentType: "application/json",
+						body: JSON.stringify([{ personal_system_prompt: newPrompt }]),
+					});
+				} else {
+					await route.fallback();
+				}
+			});
+
+			await Promise.all([
+				page.waitForResponse(
+					(res) =>
+						res.url().includes("/rest/v1/profiles") &&
+						res.request().method() === "PATCH",
+				),
+				submitButton.click(),
+			]);
+
+			expect(updateRequestDetails).toEqual(
+				expect.objectContaining({
+					personal_system_prompt: newPrompt,
+				}),
+			);
+
+			await expect(
+				page.getByText(
+					Content["profile.chatSettings.personalPromptUpdateSuccess"],
+				),
+			).toBeVisible();
+		},
+	);
+
+	testWithLoggedInUser(
+		"should respect max character limit for personal prompt",
+		async ({ page }) => {
+			await page.goto("/profile/");
+
+			await page.waitForResponse(
+				(res) =>
+					res.url().includes("/rest/v1/profiles") &&
+					res.request().method() === "GET" &&
+					res.ok(),
+			);
+
+			const promptInput = page.locator("#personalPrompt");
+			await expect(promptInput).toBeVisible();
+
+			await expect(promptInput).toHaveAttribute("maxLength", "500");
+
+			const longText = "a".repeat(505);
+			await promptInput.fill(longText);
+
+			const inputValue = await promptInput.inputValue();
+			expect(inputValue.length).toBe(500);
+
+			const counterText = page.locator("#personalPromptCounter");
+			await expect(counterText).toContainText("500 / 500");
+		},
+	);
+
+	testWithLoggedInUser(
 		"should stay on profile page when account deletion fails",
 		async ({ page, account }) => {
 			await page.goto("/profile/");

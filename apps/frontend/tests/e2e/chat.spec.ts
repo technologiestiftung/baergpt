@@ -351,7 +351,7 @@ test.describe("Chat", () => {
 
 	testDesktopOnly("Chat with public document citations", async ({ page }) => {
 		// Create an admin user to upload the public document
-		const adminEmail = "admin.test@local.berlin.de";
+		const adminEmail = "admin.test@ts.berlin";
 		const adminPassword = "TestPassword123!";
 
 		const { data: adminUserData, error: createAdminError } =

@@ -7,6 +7,7 @@ import { updateProfilesTable } from "../api/auth/update-profiles-table.ts";
 import { updateUserMetadata } from "../api/auth/update-user-metadata.ts";
 import { useErrorStore } from "./error-store.ts";
 import { updateAddressedFormal } from "../api/user/update-addressed-formal.ts";
+import { updatePersonalPrompt } from "../api/user/update-personal-prompt.ts";
 
 interface UserStore {
 	user: User | null;
@@ -18,7 +19,12 @@ interface UserStore {
 		personal_title: string;
 	}) => Promise<void>;
 	deleteAccount: () => Promise<{ error: Error | null }>;
-	updateAddressedFormal: (isAddressedFormal: boolean) => Promise<void>;
+	updateAddressedFormal: (
+		isAddressedFormal: boolean,
+	) => Promise<{ error: Error | null }>;
+	updatePersonalPrompt: (
+		personalPrompt: string,
+	) => Promise<{ error: Error | null }>;
 }
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -67,10 +73,23 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
 		if (error) {
 			useErrorStore.getState().handleError(error);
-			return;
+			return { error };
 		}
 
 		await get().getUser(new AbortController().signal);
+		return { error: null };
+	},
+
+	async updatePersonalPrompt(personalPrompt: string) {
+		const { error } = await updatePersonalPrompt(personalPrompt);
+
+		if (error) {
+			useErrorStore.getState().handleError(error);
+			return { error };
+		}
+
+		await get().getUser(new AbortController().signal);
+		return { error: null };
 	},
 
 	deleteAccount: async () => {

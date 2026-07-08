@@ -9,6 +9,9 @@ import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
 import { getDocumentProxy } from "unpdf";
 import { ocrTempFileName } from "../constants";
+import { mockOcrPages, mockWordToPdf } from "./external-mocks";
+
+const isTestMode = config.nodeEnv === "test";
 
 export class DocumentExtractionService {
 	async extractDocument(
@@ -123,6 +126,10 @@ export class WordDocumentExtractionService {
 		wordDoc: Buffer;
 	}): Promise<Uint8Array> {
 		const { fileName, wordDoc } = args;
+
+		if (isTestMode) {
+			return mockWordToPdf();
+		}
 
 		const form = new FormData();
 		const bytes = new Uint8Array(
@@ -356,6 +363,10 @@ class MistralOCRService {
 	async extractTextFromPdfWithMistral(
 		pdfBytes: Uint8Array,
 	): Promise<ParsedPage[]> {
+		if (isTestMode) {
+			return mockOcrPages();
+		}
+
 		const client = new Mistral({ apiKey: config.mistralApiKey });
 
 		const buffer = createBufferView(pdfBytes);

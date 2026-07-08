@@ -211,7 +211,7 @@ const deleteTestUser = async () => {
 
 describe("Integration Tests for Routes", () => {
 	beforeAll(async () => {
-		const email = "test@local.berlin.de";
+		const email = "test@ts.berlin";
 		await createTestUser(OWNER_USER_ID, email);
 		// Generate JWT token
 		validToken = await createValidJwtToken(OWNER_USER_ID, email);
@@ -512,7 +512,7 @@ describe("Integration Tests for Routes", () => {
 
 	it("should return error when deleting if user tries to delete another user's document", async () => {
 		// Create a document for a different user
-		const otherUserEmail = "test2@local.berlin.de";
+		const otherUserEmail = "test2@ts.berlin";
 		await createTestUser(OTHER_USER_ID, otherUserEmail);
 
 		const validToken2 = await createValidJwtToken(
