@@ -10,6 +10,8 @@ interface UserErrorStore {
 const errorMessages: { [key: string]: string } = {
 	"Failed to send invite link":
 		Content["form.validation.invite.unsuccessful.error"],
+	"Failed to add allowed email domain":
+		Content["addNewDomain.form.unsuccessful.error"],
 };
 
 export const useUserErrorStore = create<UserErrorStore>()((set) => ({

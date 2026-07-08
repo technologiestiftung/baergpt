@@ -47,3 +47,13 @@ export type Document = {
 	source_url: string;
 	uploaded_by_user_id: string | null;
 };
+
+export type AllowedEmailDomain = {
+	domain: string;
+	is_active: boolean;
+	created_at: string;
+	created_by: string | null;
+	last_status_change_at: string | null;
+	last_status_change_by: string | null;
+	user_count: number;
+};

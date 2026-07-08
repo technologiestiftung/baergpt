@@ -97,16 +97,31 @@ export type Database = {
 			};
 			allowed_email_domains: {
 				Row: {
+					created_at: string;
+					created_by: string | null;
 					domain: string;
 					id: number;
+					is_active: boolean;
+					last_status_change_at: string | null;
+					last_status_change_by: string | null;
 				};
 				Insert: {
+					created_at?: string;
+					created_by?: string | null;
 					domain: string;
 					id?: number;
+					is_active?: boolean;
+					last_status_change_at?: string | null;
+					last_status_change_by?: string | null;
 				};
 				Update: {
+					created_at?: string;
+					created_by?: string | null;
 					domain?: string;
 					id?: number;
+					is_active?: boolean;
+					last_status_change_at?: string | null;
+					last_status_change_by?: string | null;
 				};
 				Relationships: [];
 			};
@@ -425,6 +440,7 @@ export type Database = {
 					num_embedding_tokens: number | null;
 					num_inference_tokens: number | null;
 					num_inferences: number | null;
+					personal_system_prompt: string | null;
 					personal_title: string | null;
 				};
 				Insert: {
@@ -437,6 +453,7 @@ export type Database = {
 					num_embedding_tokens?: number | null;
 					num_inference_tokens?: number | null;
 					num_inferences?: number | null;
+					personal_system_prompt?: string | null;
 					personal_title?: string | null;
 				};
 				Update: {
@@ -449,6 +466,7 @@ export type Database = {
 					num_embedding_tokens?: number | null;
 					num_inference_tokens?: number | null;
 					num_inferences?: number | null;
+					personal_system_prompt?: string | null;
 					personal_title?: string | null;
 				};
 				Relationships: [];
@@ -512,6 +530,14 @@ export type Database = {
 			[_ in never]: never;
 		};
 		Functions: {
+			activate_allowed_domain: {
+				Args: { p_domain: string };
+				Returns: undefined;
+			};
+			add_allowed_domain: {
+				Args: { p_domain: string };
+				Returns: undefined;
+			};
 			change_value_for_user_by: {
 				Args: {
 					amount: number;
@@ -519,6 +545,10 @@ export type Database = {
 					user_id_to_update: string;
 				};
 				Returns: undefined;
+			};
+			deactivate_allowed_domain: {
+				Args: { p_domain: string };
+				Returns: number;
 			};
 			delete_user: {
 				Args: Record<PropertyKey, never>;
@@ -549,6 +579,19 @@ export type Database = {
 				Returns: {
 					domain: string;
 					id: number;
+				}[];
+			};
+			get_allowed_email_domains_admin: {
+				Args: Record<PropertyKey, never>;
+				Returns: {
+					created_at: string;
+					created_by: string;
+					domain: string;
+					id: number;
+					is_active: boolean;
+					last_status_change_at: string;
+					last_status_change_by: string;
+					user_count: number;
 				}[];
 			};
 			get_base_knowledge_documents: {

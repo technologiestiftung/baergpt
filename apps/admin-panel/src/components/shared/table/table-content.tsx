@@ -5,14 +5,12 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "../../components/ui/table";
+} from "@/components/ui/table";
 import { flexRender, type Table as ReactTable } from "@tanstack/react-table";
-import { columns } from "./columns";
-import type { User } from "../../common";
-import { ChevronLargeIcon } from "../../components/primitives/icons/chevron-large-icon";
-import Content from "../../content";
+import { ChevronLargeIcon } from "@/components/primitives/icons/chevron-large-icon";
+import Content from "../../../content";
 
-export function UsersTableContent({ table }: { table: ReactTable<User> }) {
+export function TableContent<TData>({ table }: { table: ReactTable<TData> }) {
 	return (
 		<div className="rounded-md border">
 			<Table>
@@ -55,8 +53,11 @@ export function UsersTableContent({ table }: { table: ReactTable<User> }) {
 						))
 					) : (
 						<TableRow>
-							<TableCell colSpan={columns.length} className="h-24 text-center">
-								{Content["userTable.noResults"]}
+							<TableCell
+								colSpan={table.getAllLeafColumns().length}
+								className="h-24 text-center"
+							>
+								{Content["table.noResults"]}
 							</TableCell>
 						</TableRow>
 					)}

@@ -36,6 +36,10 @@ const pages = {
 					title: Content["admin.sidebar.navigation.productDashboard"],
 					url: "/product-dashboard/",
 				},
+				{
+					title: Content["admin.sidebar.navigation.domainAllowlist"],
+					url: "/domain-allowlist/",
+				},
 			],
 		},
 	],

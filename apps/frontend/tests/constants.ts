@@ -9,7 +9,7 @@ export const defaultBucketName = "documents";
 export const defaultUserPassword = "123456789!";
 export const defaultUserFirstName = "john";
 export const defaultUserLastName = "doe";
-export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@local.berlin.de`;
+export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@ts.berlin`;
 
 export const defaultDocumentName = "default_document.pdf";
 export const seedDefaultDocumentName = "BaerGPT-Handbuch.pdf";

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { enc } from "../constants";
 import { config } from "../config";
 import { isLoopFinished, ModelMessage, Tool, ToolChoice } from "ai";
@@ -11,12 +12,9 @@ import {
 import { ModelService } from "./model-service";
 import { logMemory } from "../monitoring/memory-logger";
 import { EmbeddingService } from "./embedding-service";
-import {
-	LangfuseClient,
-	ChatPromptClient,
-	TextPromptClient,
-} from "@langfuse/client";
+import type { ChatPromptClient, TextPromptClient } from "@langfuse/client";
 import { updateActiveTrace } from "@langfuse/tracing";
+import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
@@ -41,8 +39,29 @@ import {
 } from "./token-utils";
 import type { WebSearchResult } from "../tools/web-search";
 
-const langfuse = new LangfuseClient();
 const modelService = new ModelService();
+
+/**
+ * Langfuse currently does not support conditional sections in prompts.
+ * So we wrap a user's personal system prompt with the preamble that instructs the
+ * model how to treat it. Returns an empty string when there is no prompt.
+ */
+export function buildUserSystemPromptBlock(
+	userSystemPrompt: string | null | undefined,
+): string {
+	if (!userSystemPrompt) {
+		return "";
+	}
+
+	const preamble = [
+		"# NUTZER ANWEISUNGEN",
+		"",
+		"Die nutzende Person hat folgende benutzerdefinierte Anweisungen angegeben.",
+		"Befolge diese, sofern sie nicht im Widerspruch zu den obigen Anweisungen stehen:",
+	].join("\n");
+
+	return `\n\n${preamble}\n\n${userSystemPrompt}`;
+}
 
 type RelevantTools = {
 	tools: Record<string, Tool>;
@@ -66,9 +85,8 @@ export class GenerationService {
 		promptName: string,
 	): Promise<number> {
 		try {
-			const client = await langfuse.prompt.get(promptName, {
+			const client = await getChatPrompt(promptName, {
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
 			});
 
 			const compiled = client.compile({ docContent: "" }) as ModelMessage[];
@@ -91,9 +109,8 @@ export class GenerationService {
 
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
 
-		const summaryPromptClient = await langfuse.prompt.get("summary", {
+		const summaryPromptClient = await getChatPrompt("summary", {
 			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			type: "chat",
 		});
 
 		const compiledSummaryPrompt = summaryPromptClient.compile({
@@ -117,13 +134,9 @@ export class GenerationService {
 
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
 
-		const summaryPromptClient = await langfuse.prompt.get(
-			"one-sentence-summary",
-			{
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			},
-		);
+		const summaryPromptClient = await getChatPrompt("one-sentence-summary", {
+			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+		});
 
 		const compiledSummaryPrompt = summaryPromptClient.compile({
 			docContent: input,
@@ -150,9 +163,8 @@ export class GenerationService {
 				? input
 				: input.map((page) => page.content).join("\n");
 
-		const taggingPromptClient = await langfuse.prompt.get("tagging", {
+		const taggingPromptClient = await getChatPrompt("tagging", {
 			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			type: "chat",
 		});
 		const compiledTaggingPrompt = taggingPromptClient.compile({
 			docContent: docContent,
@@ -263,7 +275,11 @@ export class GenerationService {
 			activeTools,
 		} = args;
 
-		logMemory("chat:start", sessionId);
+		const memoryLogId =
+			config.nodeEnv === "production"
+				? crypto.randomUUID().slice(0, 8)
+				: sessionId;
+		logMemory("chat:start", memoryLogId);
 
 		const {
 			tools,
@@ -298,7 +314,7 @@ export class GenerationService {
 					onFinish: async ({ text, usage, steps }) => {
 						logMemory(
 							`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
-							sessionId,
+							memoryLogId,
 						);
 
 						if (typeof toolsCleanup === "function") {
@@ -317,10 +333,9 @@ export class GenerationService {
 								}),
 							);
 							try {
-								const citationPromptClient = await langfuse.prompt.get(
+								const citationPromptClient = await getChatPrompt(
 									"document-citation-extraction",
 									{
-										type: "chat",
 										label:
 											config.nodeEnv === "test"
 												? "development"
@@ -399,14 +414,13 @@ export class GenerationService {
 
 						if (allWebSources.length > 0) {
 							try {
-								const webCitationPromptClient = await langfuse.prompt.get(
+								const webCitationPromptClient = await getChatPrompt(
 									"web-citation-extraction",
 									{
 										label:
 											config.nodeEnv === "test"
 												? "development"
 												: config.nodeEnv,
-										type: "chat",
 									},
 								);
 
@@ -464,10 +478,9 @@ export class GenerationService {
 
 						if (allParlaChunks.length > 0) {
 							try {
-								const parlaCitationPromptClient = await langfuse.prompt.get(
+								const parlaCitationPromptClient = await getChatPrompt(
 									"document-citation-extraction",
 									{
-										type: "chat",
 										label:
 											config.nodeEnv === "test"
 												? "development"
@@ -525,7 +538,7 @@ export class GenerationService {
 							}
 						}
 
-						logMemory("chat:onFinish-complete", sessionId);
+						logMemory("chat:onFinish-complete", memoryLogId);
 						updateActiveTrace({
 							name: "streamed-text-generation",
 							output: text,
@@ -546,7 +559,7 @@ export class GenerationService {
 						},
 					},
 					onError: (error) => {
-						logMemory("chat:onError", sessionId);
+						logMemory("chat:onError", memoryLogId);
 						captureError(error);
 					},
 				});
@@ -602,8 +615,14 @@ export class GenerationService {
 		previousMessages: ModelMessage[];
 		isAddressedFormal: boolean;
 		activeTools: ActiveTools[];
+		userSystemPrompt?: string | null;
 	}) {
-		const { previousMessages, isAddressedFormal, activeTools } = args;
+		const {
+			previousMessages,
+			isAddressedFormal,
+			activeTools,
+			userSystemPrompt,
+		} = args;
 
 		const currentDate = new Date().toLocaleDateString("de-DE", {
 			year: "numeric",
@@ -618,17 +637,16 @@ export class GenerationService {
 			config.featureFlagWebSearchAllowed &&
 			activeTools.includes("webSearchTool")
 		) {
-			freeChatPromptClient = await langfuse.prompt.get(
+			freeChatPromptClient = await getTextPrompt(
 				"free-chat-with-web-search-enabled",
 				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
 			);
 		} else if (activeTools.includes("ragSearchTool")) {
-			freeChatPromptClient = await langfuse.prompt.get(
-				"free-chat-with-documents",
-				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
-			);
+			freeChatPromptClient = await getTextPrompt("free-chat-with-documents", {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+			});
 		} else {
-			freeChatPromptClient = await langfuse.prompt.get("free-chat", {
+			freeChatPromptClient = await getTextPrompt("free-chat", {
 				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
 			});
 		}
@@ -636,6 +654,7 @@ export class GenerationService {
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
+			userSystemPrompt: buildUserSystemPromptBlock(userSystemPrompt),
 		});
 
 		const freeChatPrompt: ModelMessage = {
