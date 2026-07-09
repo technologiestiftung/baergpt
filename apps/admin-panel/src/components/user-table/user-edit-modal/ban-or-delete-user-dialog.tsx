@@ -10,8 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/store/use-user-store";
 import Content from "../../../content";
+import { banUser } from "@/api/user/ban-user.ts";
 
-export const DeleteUserDialog: React.FC = () => {
+export const BanOrDeleteUserDialog: React.FC = () => {
 	const {
 		selectedUser,
 		isDeleteUserDialogOpen,
@@ -21,19 +22,24 @@ export const DeleteUserDialog: React.FC = () => {
 		getUsers,
 	} = useUserStore();
 
-	const [deleteType, setDeleteType] = useState<"soft" | "hard">("soft");
+	const [type, setType] = useState<"ban" | "delete">("ban");
 
 	const handleDeleteUser = async () => {
 		if (!selectedUser) {
 			return;
 		}
 
-		const hardDelete = deleteType === "hard";
-		await deleteUser(selectedUser.user_id, hardDelete);
+		if (type === "ban") {
+			await banUser(selectedUser.user_id);
+		}
+
+		if (type === "delete") {
+			await deleteUser(selectedUser.user_id);
+		}
 
 		setDeleteUserDialogOpen(false);
 		setSelectedUser(null);
-		setDeleteType("soft"); // Reset to default
+		setType("ban"); // Reset to default
 
 		await getUsers(new AbortController().signal); // Refresh user list after deletion
 	};
@@ -41,7 +47,7 @@ export const DeleteUserDialog: React.FC = () => {
 	const handleDialogClose = (open: boolean) => {
 		setDeleteUserDialogOpen(open);
 		if (!open) {
-			setDeleteType("soft"); // Reset to default when closing
+			setType("ban"); // Reset to default when closing
 		}
 	};
 
@@ -68,18 +74,16 @@ export const DeleteUserDialog: React.FC = () => {
 						<div className="flex items-start space-x-3">
 							<input
 								type="radio"
-								id="soft-delete"
-								name="deleteType"
-								value="soft"
-								checked={deleteType === "soft"}
-								onChange={(e) =>
-									setDeleteType(e.target.value as "soft" | "hard")
-								}
+								id="ban"
+								name="type"
+								value="ban"
+								checked={type === "ban"}
+								onChange={(e) => setType(e.currentTarget.value as typeof type)}
 								className="mt-1"
 							/>
 							<div className="flex-1">
 								<label
-									htmlFor="soft-delete"
+									htmlFor="ban"
 									className="font-medium text-sm cursor-pointer"
 								>
 									{Content["userEditModal.deleteUserDialog.softDelete.label"]}
@@ -97,18 +101,16 @@ export const DeleteUserDialog: React.FC = () => {
 						<div className="flex items-start space-x-3">
 							<input
 								type="radio"
-								id="hard-delete"
-								name="deleteType"
-								value="hard"
-								checked={deleteType === "hard"}
-								onChange={(e) =>
-									setDeleteType(e.target.value as "soft" | "hard")
-								}
+								id="delete"
+								name="type"
+								value="delete"
+								checked={type === "delete"}
+								onChange={(e) => setType(e.currentTarget.value as typeof type)}
 								className="mt-1"
 							/>
 							<div className="flex-1">
 								<label
-									htmlFor="hard-delete"
+									htmlFor="delete"
 									className="font-medium text-sm cursor-pointer text-red-600"
 								>
 									{Content["userEditModal.deleteUserDialog.hardDelete.label"]}
@@ -131,9 +133,9 @@ export const DeleteUserDialog: React.FC = () => {
 						onClick={handleDeleteUser}
 						className="hover:text-primary-foreground hover:bg-destructive/90 border-destructive/90"
 					>
-						{deleteType === "hard"
-							? Content["userEditModal.deleteUserDialog.button.hardDelete"]
-							: Content["userEditModal.deleteUserDialog.button.softDelete"]}
+						{type === "delete"
+							? Content["userEditModal.deleteUserDialog.button.delete"]
+							: Content["userEditModal.deleteUserDialog.button.ban"]}
 					</Button>
 					<Button variant="default" onClick={() => handleDialogClose(false)}>
 						{Content["userEditModal.deleteUserDialog.button.cancel"]}

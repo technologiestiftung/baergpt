@@ -12,7 +12,6 @@ import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
 import { serviceRoleDbClient } from "../../supabase";
-import { addDays } from "date-fns";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -257,11 +256,11 @@ describe("/admin/", () => {
 		expect(response.status).toBe(403);
 	});
 
-	it("DELETE /admin/users/:userId should soft delete user and return 200", async () => {
+	it("PUT /admin/users/:userId/ban should ban a user and return 200", async () => {
 		const givenUserId = userIds[givenUserEmail];
 
-		const response = await app.request(`/admin/users/${givenUserId}`, {
-			method: "DELETE",
+		const response = await app.request(`/admin/users/${givenUserId}/ban`, {
+			method: "PUT",
 			headers: new Headers({
 				authorization: `Bearer ${adminSession?.access_token}`,
 			}),
@@ -269,32 +268,27 @@ describe("/admin/", () => {
 
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
-			message: "User soft deleted successfully",
+			message: "User banned successfully",
 		});
 
-		const { data: profile, error: getUserError } = await serviceRoleDbClient
-			.from("user_active_status")
-			.select("*")
-			.eq("id", givenUserId)
-			.single();
-		expect(getUserError).toBeNull();
+		const { data: getBannedUserData, error: getBannedUserError } =
+			await serviceRoleDbClient.auth.admin.getUserById(givenUserId);
+		expect(getBannedUserError).toBeNull();
+		// @ts-expect-error: banned_until is not typed, but it can be there
+		expect(getBannedUserData.user.banned_until).toBeDefined();
 
-		expect(profile).toBeDefined();
-		expect(profile.is_active).toBe(false);
-		expect(profile.deleted_at).toBeDefined();
-
-		// revert the soft delete
-		const { error } = await serviceRoleDbClient
-			.from("user_active_status")
-			.update({
-				is_active: true,
-				deleted_at: null,
-			})
-			.eq("id", givenUserId);
+		const { data, error } = await serviceRoleDbClient.auth.admin.updateUserById(
+			givenUserId,
+			{
+				ban_duration: "none", // remove the ban
+			},
+		);
 		expect(error).toBeNull();
+		// @ts-expect-error: banned_until is not typed, but it can be there
+		expect(data.user.banned_until).toBeUndefined();
 	});
 
-	it("DELETE /admin/users/:userId should return a 403 if a non admin user tries to access it", async () => {
+	it("PUT /admin/users/:userId/ban should return a 403 if a non admin user tries to access it", async () => {
 		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
 			email: givenUserEmail,
 			password: givenUserPassword,
@@ -305,30 +299,33 @@ describe("/admin/", () => {
 
 		const userSession = data.session;
 
-		const response = await app.request(`/admin/users/${data.session.user.id}`, {
-			method: "DELETE",
-			headers: new Headers({
-				authorization: `Bearer ${userSession.access_token}`,
-			}),
-		});
+		const response = await app.request(
+			`/admin/users/${data.session.user.id}/ban`,
+			{
+				method: "PUT",
+				headers: new Headers({
+					authorization: `Bearer ${userSession.access_token}`,
+				}),
+			},
+		);
 
 		expect(response.status).toBe(403);
 	});
 
-	it("PUT /admin/users/:userId/restore should restore user and return 200", async () => {
+	it("PUT /admin/users/:userId/unban should unban user and return 200", async () => {
 		const givenUserId = userIds[givenUserEmail];
 
-		// soft delete a given user first
-		const { error } = await serviceRoleDbClient
-			.from("user_active_status")
-			.update({
-				is_active: false,
-				deleted_at: addDays(new Date(), 1).toISOString(),
-			})
-			.eq("id", givenUserId);
+		const { data, error } = await serviceRoleDbClient.auth.admin.updateUserById(
+			givenUserId,
+			{
+				ban_duration: "876000h", // ~100 years = effectively permanent
+			},
+		);
 		expect(error).toBeNull();
+		// @ts-expect-error: banned_until is not typed, but it can be there
+		expect(data.user.banned_until).toBeDefined();
 
-		const response = await app.request(`/admin/users/${givenUserId}/restore`, {
+		const response = await app.request(`/admin/users/${givenUserId}/unban`, {
 			method: "PUT",
 			headers: new Headers({
 				authorization: `Bearer ${adminSession?.access_token}`,
@@ -337,19 +334,14 @@ describe("/admin/", () => {
 
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
-			message: "User restored successfully",
+			message: "User unbanned successfully",
 		});
 
-		const { data: profile, error: getUserError } = await serviceRoleDbClient
-			.from("user_active_status")
-			.select("*")
-			.eq("id", givenUserId)
-			.single();
-		expect(getUserError).toBeNull();
-
-		expect(profile).toBeDefined();
-		expect(profile.is_active).toBe(true);
-		expect(profile.deleted_at).toBeNull();
+		const { data: getUnbannedUserData, error: getUnbannedUserError } =
+			await serviceRoleDbClient.auth.admin.getUserById(givenUserId);
+		expect(getUnbannedUserError).toBeNull();
+		// @ts-expect-error: banned_until is not typed, but it can be there
+		expect(getUnbannedUserData.user.banned_until).toBeUndefined();
 	});
 
 	it("PUT /admin/users/:userId/restore should return a 403 if a non admin user tries to access it", async () => {
@@ -376,18 +368,15 @@ describe("/admin/", () => {
 		expect(response.status).toBe(403);
 	});
 
-	it("DELETE /admin/users/:userId?hard=true should hard delete user and return 200", async () => {
+	it("DELETE /admin/users/:userId should hard delete user and return 200", async () => {
 		const givenUserId = userIds[givenUserEmail];
 
-		const response = await app.request(
-			`/admin/users/${givenUserId}?hard=true`,
-			{
-				method: "DELETE",
-				headers: new Headers({
-					authorization: `Bearer ${adminSession?.access_token}`,
-				}),
-			},
-		);
+		const response = await app.request(`/admin/users/${givenUserId}`, {
+			method: "DELETE",
+			headers: new Headers({
+				authorization: `Bearer ${adminSession?.access_token}`,
+			}),
+		});
 
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
@@ -424,7 +413,7 @@ describe("/admin/", () => {
 		expect(restoreError).toBeNull();
 	});
 
-	it("DELETE /admin/users/:userId?=hard should return a 403 if a non admin user tries to access it", async () => {
+	it("DELETE /admin/users/:userI should return a 403 if a non admin user tries to access it", async () => {
 		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
 			email: givenUserEmail,
 			password: givenUserPassword,
@@ -435,129 +424,8 @@ describe("/admin/", () => {
 
 		const userSession = data.session;
 
-		const response = await app.request(
-			`/admin/users/${data.session.user.id}?hard=true`,
-			{
-				method: "DELETE",
-				headers: new Headers({
-					authorization: `Bearer ${userSession.access_token}`,
-				}),
-			},
-		);
-
-		expect(response.status).toBe(403);
-	});
-
-	it("POST /admin/users/invite should invite a new user and return 200", async () => {
-		const givenEmail = "db-test-suite-new-user@ts.berlin";
-		const givenFirstName = "Jane";
-		const givenLastName = "Doe";
-
-		const response = await app.request(`/admin/users/invite`, {
-			method: "POST",
-			headers: new Headers({
-				authorization: `Bearer ${adminSession?.access_token}`,
-			}),
-			body: JSON.stringify({
-				email: givenEmail,
-				firstName: givenFirstName,
-				lastName: givenLastName,
-			}),
-		});
-
-		const json = await response.json();
-
-		expect(response.status).toBe(200);
-		expect(json).toStrictEqual({
-			message: "Invite link sent successfully",
-		});
-
-		// Check if the user has been added to the users table
-		const {
-			data: { users: userList },
-			error: listUsersError,
-		} = await serviceRoleDbClient.auth.admin.listUsers();
-		expect(listUsersError).toBeNull();
-
-		const invitedUser = userList.find((user) => user.email === givenEmail);
-
-		expect(invitedUser).toBeDefined();
-		expect(invitedUser).not.toBeNull();
-
-		// Check if the user has been added to the profiles table with the correct first and last name
-		const { data: profile, error: getUserError } = await serviceRoleDbClient
-			.from("profiles")
-			.select("*")
-			.eq("id", invitedUser.id)
-			.single();
-		expect(getUserError).toBeNull();
-		expect(profile).toBeDefined();
-
-		const actualFirstName = profile.first_name;
-		const actualLastName = profile.last_name;
-
-		expect(actualFirstName).toStrictEqual(givenFirstName);
-		expect(actualLastName).toStrictEqual(givenLastName);
-
-		// Clean up: delete the invited user
-		const { error: deleteError } =
-			await serviceRoleDbClient.auth.admin.deleteUser(invitedUser.id);
-		expect(deleteError).toBeNull();
-	});
-
-	it("POST /admin/users/invite should resend an invite to an existing user and return 200", async () => {
-		const givenEmail = "db-test-suite-new-user@ts.berlin";
-		const givenFirstName = "Jane";
-		const givenLastName = "Doe";
-
-		const { data, error } =
-			await serviceRoleDbClient.auth.admin.inviteUserByEmail(givenEmail, {
-				data: {
-					first_name: givenFirstName,
-					last_name: givenLastName,
-				},
-			});
-		expect(error).toBeNull();
-		expect(data).toBeDefined();
-
-		const invitedUser = data.user;
-
-		const response = await app.request(`/admin/users/invite`, {
-			method: "POST",
-			headers: new Headers({
-				authorization: `Bearer ${adminSession?.access_token}`,
-			}),
-			body: JSON.stringify({
-				email: givenEmail,
-			}),
-		});
-
-		const json = await response.json();
-
-		expect(response.status).toBe(200);
-		expect(json).toStrictEqual({
-			message: "Invite link sent successfully",
-		});
-
-		// Clean up: delete the invited user
-		const { error: deleteError } =
-			await serviceRoleDbClient.auth.admin.deleteUser(invitedUser.id);
-		expect(deleteError).toBeNull();
-	});
-
-	it("POST /admin/users/invite should return a 403 if a non admin user tries to access it", async () => {
-		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-			email: givenUserEmail,
-			password: givenUserPassword,
-		});
-
-		expect(error).toBeNull();
-		expect(data.session).toBeDefined();
-
-		const userSession = data.session;
-
-		const response = await app.request(`/admin/users/invite`, {
-			method: "POST",
+		const response = await app.request(`/admin/users/${data.session.user.id}`, {
+			method: "DELETE",
 			headers: new Headers({
 				authorization: `Bearer ${userSession.access_token}`,
 			}),

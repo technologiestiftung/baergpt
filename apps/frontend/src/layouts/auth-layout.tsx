@@ -29,8 +29,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
 				<main className="flex">
 					{/* Before log-in and registration, */}
-					{/* the email confirmation status is unknown, */}
-					{/* OR if the email has been confirmed for /account-activated */}
+					{/* the email confirmation status is unknown */}
 					{/* so we just render the page as is */}
 					{(isConfirmationStatusUnknown || hasConfirmedEmail) && (
 						<>{children}</>

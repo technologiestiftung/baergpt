@@ -17,7 +17,7 @@ export const DangerZoneCard: React.FC = () => {
 		useUserStore();
 
 	const isUserDeactivated =
-		selectedUser && (!selectedUser.is_active || selectedUser.deleted_at);
+		selectedUser && (selectedUser.banned_until || selectedUser.deleted_at);
 
 	return (
 		<Card className="border-red-200">

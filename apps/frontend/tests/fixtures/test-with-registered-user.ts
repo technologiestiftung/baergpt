@@ -45,13 +45,6 @@ export const testWithRegisteredUser =
 
 				const id = data.user.id;
 
-				const { error: activationError } = await supabaseAdminClient
-					.from("user_active_status")
-					.update({ registration_finished_at: new Date().toISOString() })
-					.eq("id", id);
-
-				testWithoutSplashScreen.expect(activationError).toBeNull();
-
 				/**
 				 * This runs the test that uses this fixture (and injects the account).
 				 */

@@ -13,13 +13,13 @@ export function LoginPage() {
 	const { login } = useAuthStore();
 	const formRef = useRef<HTMLFormElement | null>(null);
 
-	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
 		const email = event.currentTarget.email.value;
 		const password = event.currentTarget.password.value;
 
-		Sentry.startSpan(
+		await Sentry.startSpan(
 			{ name: "User Login", op: "user.login.submit" },
 			async (span) => {
 				await login({ email, password, span });

@@ -90,39 +90,6 @@ test.describe("Login", () => {
 	});
 });
 
-testWithRegisteredUser(
-	"Logged-in user cannot access account-activated page without invite parameters",
-	async ({ page, account }) => {
-		// Login as this user
-		await page.goto("/login/");
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill(account.email);
-		await page
-			.getByRole("textbox", { name: "Passwort" })
-			.fill(account.password);
-		await page.getByRole("button", { name: "Anmelden" }).click();
-
-		// Verify we're logged in
-		await expect(
-			page.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
-
-		// Try to access account-activated page directly (should redirect to home)
-		await page.goto("/account-activated/");
-
-		// Should be redirected back to home page
-		await expect(page).toHaveURL("/");
-		await expect(
-			page.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
-	},
-);
-
 test.describe("Password Reset", () => {
 	testWithRegisteredUser("Password Reset Flow", async ({ page, account }) => {
 		const givenNewPassword = "!987654321";
@@ -271,8 +238,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
 
-	const changedLastName = "ChangedLastName";
-
 	testWithoutSplashScreen.afterEach(async () => {
 		const { data: listUsersData, error: listUsersError } =
 			await supabaseAdminClient.auth.admin.listUsers();
@@ -370,141 +335,41 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			}),
 		).toBeVisible();
 	});
-
-	testWithoutSplashScreen(
-		"User with invite link is forwarded to account activation",
-		async ({ page }) => {
-			// invite user via mail
-			const { error: inviteLinkError } =
-				await supabaseAdminClient.auth.admin.inviteUserByEmail(givenUserEmail, {
-					data: {
-						first_name: givenUserFirstName,
-						last_name: givenUserLastName,
-					},
-				});
-
-			expect(inviteLinkError).toBeNull();
-
-			// Open the invite link in mail inbucket
-			await page.goto("http://localhost:54324/"); // Inbucket URL
-			await page
-				.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
-				.first()
-				.click();
-
-			// Clicking on the link should open a new tab
-			const popupEvent = page.waitForEvent("popup");
-			await page
-				.locator("#preview-html")
-				.contentFrame()
-				.getByRole("link", { name: "Jetzt registrieren" })
-				.click();
-			const page1 = await popupEvent;
-
-			// check that we are on the account activation page
-			await page1.waitForLoadState("networkidle");
-			await expect(page1).toHaveURL(/\/account-activated/);
-
-			// User E-Mail should be mentioned at the top
-			await expect(
-				page1.getByRole("heading", { name: givenUserEmail }),
-			).toBeVisible();
-		},
-	);
-
-	testWithoutSplashScreen("Default Invite User Flow", async ({ page }) => {
-		// invite user via mail
-		const { error: inviteLinkError } =
-			await supabaseAdminClient.auth.admin.inviteUserByEmail(givenUserEmail, {
-				data: {
-					first_name: givenUserFirstName,
-					last_name: givenUserLastName,
-				},
-			});
-
-		expect(inviteLinkError).toBeNull();
-
-		// Open the invite link in mail inbucket
-		await page.goto("http://localhost:54324/"); // Inbucket URL
-		await page
-			.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
-			.first()
-			.click();
-
-		// Clicking on the link should open a new tab
-		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Jetzt registrieren" })
-			.click();
-		const page1 = await popupEvent;
-
-		// check that we are on the account activation page
-		await page1.waitForLoadState("networkidle");
-		await expect(page1).toHaveURL(/\/account-activated/);
-
-		// User E-Mail should be mentioned at the top
-		await expect(
-			page1.getByRole("heading", { name: givenUserEmail }),
-		).toBeVisible();
-
-		// Fill in the invite completion form
-		await page1.getByLabel("Anredekeine AngabeFrauHerr").selectOption("Frau");
-		await page1
-			.getByLabel("Titelkeine AngabeDr.Prof.Prof")
-			.selectOption("Prof. Dr.");
-		// first and last name should be prefilled. Testing for changing last name
-		await page1
-			.getByRole("textbox", { name: "Nachname" })
-			.fill(changedLastName);
-		await page1
-			.getByRole("textbox", { name: "Passwort Passwort anzeigen" })
-			.fill(givenUserPassword);
-		await page1
-			.getByRole("textbox", { name: "Passwort wiederholen Passwort" })
-			.fill(givenUserPassword);
-		// Check the checkbox
-		await page1.getByTestId("label-has-accepted-privacy-checkbox").click();
-
-		// Submit the invite completion form and wait for navigation to main page
-		await page1.getByRole("button", { name: "Registrieren" }).click();
-		await page1.waitForURL("/");
-
-		// After clicking on the link, we should be redirected to the main page
-		await expect(
-			page1.getByRole("heading", {
-				name: `Willkommen bei BärGPT, Frau Prof. Dr. ${changedLastName}`,
-			}),
-		).toBeVisible();
-
-		// logout user
-		await page1.getByRole("button", { name: "Profil" }).click();
-		await page1.getByRole("button", { name: "Ausloggen" }).click();
-	});
 });
 
-testWithRegisteredUser.describe("User active/inactive", async () => {
-	testWithRegisteredUser.beforeEach(async ({ account }) => {
-		const { error } = await supabaseAdminClient
-			.from("user_active_status")
-			.update({ is_active: false, deleted_at: new Date().toISOString() })
-			.eq("id", account.id);
+testWithRegisteredUser.describe("User ban", async () => {
+	async function banUser(userId: string) {
+		const { error } = await supabaseAdminClient.auth.admin.updateUserById(
+			userId,
+			{
+				ban_duration: "876000h", // 100 years
+			},
+		);
 
 		expect(error).toBeNull();
+	}
+
+	async function unbanUser(userId: string) {
+		const { error } = await supabaseAdminClient.auth.admin.updateUserById(
+			userId,
+			{
+				ban_duration: "none",
+			},
+		);
+
+		expect(error).toBeNull();
+	}
+
+	testWithRegisteredUser.beforeEach(async ({ account }) => {
+		await banUser(account.id);
 	});
 
 	testWithRegisteredUser.afterEach(async ({ account }) => {
-		const { error: setInactiveError } = await supabaseAdminClient
-			.from("user_active_status")
-			.update({ is_active: true, deleted_at: null })
-			.eq("id", account.id);
-
-		expect(setInactiveError).toBeNull();
+		await unbanUser(account.id);
 	});
 
 	testWithRegisteredUser(
-		"Logged-In User should be logged out when their account is deactivated",
+		"Logged-In User should be logged out when their account is banned",
 		async ({ page, account, baseURL }) => {
 			// Go to the login page
 			await page.goto("/login/");
@@ -521,22 +386,17 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 			// Check if we are still on the login page with the error message
 			// Note: order matters here, we need to wait for the Text to be visible before checking the URL.
 			await expect(
-				page.getByText("Der Benutzeraccount wurde deaktiviert."),
+				page.getByText("Der Benutzeraccount wurde gesperrt."),
 			).toBeVisible();
 			await expect(page).toHaveURL(`${baseURL}/login/`);
 
-			// Re-activate the user account in the database
-			const { error: setActiveError } = await supabaseAdminClient
-				.from("user_active_status")
-				.update({ is_active: true, deleted_at: null })
-				.eq("id", account.id);
-
-			expect(setActiveError).toBeNull();
+			// Unban the user account in the database
+			await unbanUser(account.id);
 
 			// Refresh the page to clear the error message
 			await page.goto("/");
 			await expect(
-				page.getByText("Der Benutzeraccount wurde deaktiviert."),
+				page.getByText("Der Benutzeraccount wurde gesperrt."),
 			).not.toBeVisible();
 			await expect(page).toHaveURL(`${baseURL}/`);
 
@@ -559,13 +419,8 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 				}),
 			).toBeVisible();
 
-			// De-activate the user account again in the database
-			const { error: setInactiveError } = await supabaseAdminClient
-				.from("user_active_status")
-				.update({ is_active: false, deleted_at: new Date().toISOString() })
-				.eq("id", account.id);
-
-			expect(setInactiveError).toBeNull();
+			// Ban the user account again in the database
+			await banUser(account.id);
 
 			// Refresh the page
 			await page.goto("/");
@@ -595,7 +450,7 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 			// Check if we are still on the login page with the error message
 			// Note: order matters here, we need to wait for the Text to be visible before checking the URL.
 			await expect(
-				page.getByText("Der Benutzeraccount wurde deaktiviert."),
+				page.getByText("Der Benutzeraccount wurde gesperrt."),
 			).toBeVisible();
 		},
 	);

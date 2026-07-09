@@ -6,7 +6,6 @@ import { handleSessionChange } from "../api/session/handle-session-change.ts";
 import { updatePassword } from "../api/auth/update-password.ts";
 import { requestPasswordResetByEmail } from "../api/auth/request-password-reset-by-email.ts";
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
-import { useIsActiveStore } from "./use-is-active-store.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
 import { getAllowedEmailDomains } from "../api/auth/get-allowed-email-domains.ts";
@@ -14,6 +13,7 @@ import { registerUser } from "../api/auth/register-user.ts";
 import { resendEmailConfirmation } from "../api/auth/resend-email-confirmation.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
 import type { Span } from "@sentry/react";
+import { getIsUserBanned } from "../api/auth/get-is-user-banned.ts";
 
 let resendTime: number | null = null;
 
@@ -30,6 +30,7 @@ interface AuthStore {
 	isPasswordRecoveryMode: boolean;
 	isUserAdmin: boolean;
 	isAdminStatusLoaded: boolean;
+	isBanned: boolean | null;
 	allowedEmailDomains?: string[];
 	register: (args: {
 		firstName: string;
@@ -54,6 +55,7 @@ interface AuthStore {
 	}) => Promise<void>;
 	logout: () => Promise<void>;
 	checkIsUserAdmin: (signal: AbortSignal) => Promise<void>;
+	checkIsUserBanned: () => Promise<void>;
 	getAllowedEmailDomains: (signal: AbortSignal) => Promise<void>;
 }
 
@@ -155,6 +157,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isPasswordRecoveryMode: false,
 		isUserAdmin: false,
 		isAdminStatusLoaded: false,
+		isBanned: null,
 
 		async register({ firstName, lastName, email, password, span }) {
 			const { data, error } = await registerUser({
@@ -319,7 +322,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			 * so that a new login starts with a fresh state,
 			 * and not with the previous user's active state.
 			 */
-			useIsActiveStore.getState().resetIsActive();
 
 			/**
 			 * In the past, sometimes the session was not destroyed properly.
@@ -349,6 +351,12 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			const isAdminStatusLoaded = get().isAdminStatusLoaded || !signal.aborted;
 
 			set({ isUserAdmin: isAdmin, isAdminStatusLoaded });
+		},
+
+		async checkIsUserBanned() {
+			const isUserBanned = await getIsUserBanned();
+
+			set({ isBanned: isUserBanned });
 		},
 
 		async getAllowedEmailDomains(signal: AbortSignal) {

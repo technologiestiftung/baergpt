@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/store/use-user-store";
 import Content from "../../../content";
 
-export const RestoreUserDialog: React.FC = () => {
+export const UnbanUserDialog: React.FC = () => {
 	const {
 		selectedUser,
 		isRestoreUserDialogOpen,
 		setSelectedUser,
 		setRestoreUserDialogOpen,
-		restoreUser,
+		unbanUser,
 		getUsers,
 	} = useUserStore();
 
@@ -26,7 +26,7 @@ export const RestoreUserDialog: React.FC = () => {
 			return;
 		}
 
-		await restoreUser(selectedUser.user_id);
+		await unbanUser(selectedUser.user_id);
 
 		setRestoreUserDialogOpen(false);
 		setSelectedUser(null);
@@ -42,15 +42,15 @@ export const RestoreUserDialog: React.FC = () => {
 			<DialogContent className="max-w-md">
 				<DialogHeader>
 					<DialogTitle>
-						{Content["userEditModal.restoreUserDialog.title"]}
+						{Content["userEditModal.unbanUserDialog.title"]}
 					</DialogTitle>
 					<DialogDescription>
 						{selectedUser && (
 							<>
-								{Content["userEditModal.restoreUserDialog.description.p1"]}{" "}
+								{Content["userEditModal.unbanUserDialog.description.p1"]}{" "}
 								{selectedUser.first_name} {selectedUser.last_name} (
 								{selectedUser.email}){" "}
-								{Content["userEditModal.restoreUserDialog.description.p2"]}
+								{Content["userEditModal.unbanUserDialog.description.p2"]}
 							</>
 						)}
 					</DialogDescription>
@@ -58,10 +58,10 @@ export const RestoreUserDialog: React.FC = () => {
 
 				<DialogFooter>
 					<Button variant="outline" onClick={() => handleDialogClose(false)}>
-						{Content["userEditModal.restoreUserDialog.button.cancel"]}
+						{Content["userEditModal.unbanUserDialog.button.cancel"]}
 					</Button>
 					<Button onClick={handleRestoreUser}>
-						{Content["userEditModal.restoreUserDialog.button.restore"]}
+						{Content["userEditModal.unbanUserDialog.button.restore"]}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

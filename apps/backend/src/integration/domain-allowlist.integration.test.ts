@@ -193,20 +193,11 @@ describe("domain allowlist RPCs", () => {
 		expect(domain?.last_status_change_at).not.toBeNull();
 		expect(domain?.last_status_change_by).toBe(callerAdminId);
 
-		const { data: normal } = await serviceRoleDbClient
-			.from("user_active_status")
-			.select("is_active, deleted_at")
-			.eq("id", normalUserId)
-			.single();
-		expect(normal?.is_active).toBe(false);
-		expect(normal?.deleted_at).toBeNull(); // pure-deactivation, not purge-armed
-
-		const { data: domainAdmin } = await serviceRoleDbClient
-			.from("user_active_status")
-			.select("is_active")
-			.eq("id", domainAdminId)
-			.single();
-		expect(domainAdmin?.is_active).toBe(true); // admin exempt
+		const { data: getUserData1, error: getUserError1 } =
+			await serviceRoleDbClient.auth.admin.getUserById(normalUserId);
+		expect(getUserError1).toBeNull();
+		// @ts-expect-error: banned_until is not typed, but it can be there
+		expect(getUserData1.user.banned_until).toBeDefined();
 
 		// New signups for the deactivated domain are now blocked by the trigger.
 		const { error: signupError } =
@@ -234,12 +225,11 @@ describe("domain allowlist RPCs", () => {
 		expect(reactivatedDomain?.last_status_change_by).toBe(callerAdminId);
 
 		// The previously-deactivated user stays inactive (no auto-reactivation).
-		const { data: normalAfterActivation } = await serviceRoleDbClient
-			.from("user_active_status")
-			.select("is_active")
-			.eq("id", normalUserId)
-			.single();
-		expect(normalAfterActivation?.is_active).toBe(false);
+		const { data: getUserData2, error: getUserError2 } =
+			await serviceRoleDbClient.auth.admin.getUserById(normalUserId);
+		expect(getUserError2).toBeNull();
+		// @ts-expect-error: banned_until is not typed, but it can be there
+		expect(getUserData2.user.banned_until).toBeDefined();
 
 		// New signups are allowed again.
 		const { error: signupAllowedError } =

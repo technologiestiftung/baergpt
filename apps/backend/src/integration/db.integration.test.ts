@@ -255,7 +255,7 @@ describe("Integration tests for DB", async () => {
 				expect(isAdmin).toBe(true);
 			});
 
-			it("Deactivated admin users should get false from is_application_admin()", async () => {
+			it("Banned admin users should get false from is_application_admin()", async () => {
 				const { data: sessionData, error: sessionError } =
 					await supabaseAnonClient.auth.signInWithPassword({
 						email: givenAdminEmail,
@@ -264,11 +264,11 @@ describe("Integration tests for DB", async () => {
 				expect(sessionError).toBeNull();
 				expect(sessionData.session).not.toBeNull();
 
-				const { error: deactivateError } = await serviceRoleDbClient
-					.from("user_active_status")
-					.update({ is_active: false })
-					.eq("id", givenAdminId);
-				expect(deactivateError).toBeNull();
+				const { error: banUserError } =
+					await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "876000h", // 100 years
+					});
+				expect(banUserError).toBeNull();
 
 				try {
 					const { data: isAdmin, error: rpcError } =
@@ -277,11 +277,11 @@ describe("Integration tests for DB", async () => {
 					expect(rpcError).toBeNull();
 					expect(isAdmin).toBe(false);
 				} finally {
-					const { error: reactivateError } = await serviceRoleDbClient
-						.from("user_active_status")
-						.update({ is_active: true })
-						.eq("id", givenAdminId);
-					expect(reactivateError).toBeNull();
+					const { error: unbanUserError } =
+						await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
+							ban_duration: "none",
+						});
+					expect(unbanUserError).toBeNull();
 				}
 			});
 		});
@@ -348,41 +348,6 @@ describe("Integration tests for DB", async () => {
 				}
 				expect(selectUpdatedError).toBeNull();
 				expect(updatedProfile.first_name).toBe("UpdatedName");
-			});
-		});
-
-		describe("user_active_status table permission", () => {
-			it("Users should not be able to read the user_active_status table", async () => {
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
-				expect(sessionError).toBeNull();
-				expect(sessionData.session).not.toBeNull();
-
-				const { data, error: selectError } = await supabaseAnonClient
-					.from("user_active_status")
-					.select("*");
-
-				expect(selectError).toBeNull();
-				expect(data).toStrictEqual([]);
-			});
-
-			it("Users should be able to get their active status via is_current_user_active() RPC", async () => {
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
-				expect(sessionError).toBeNull();
-				expect(sessionData.session).not.toBeNull();
-
-				const { data: isActive, error: rpcError } =
-					await supabaseAnonClient.rpc("is_current_user_active");
-
-				expect(rpcError).toBeNull();
-				expect(isActive).toBe(true);
 			});
 		});
 
@@ -658,15 +623,6 @@ describe("Integration tests for DB", async () => {
 
 				expect(profileError).toBeNull();
 				expect(profileData?.length).toBe(0);
-
-				const { data: userActiveStatusData, error: userActiveStatusError } =
-					await serviceRoleDbClient
-						.from("user_active_status")
-						.select("*")
-						.eq("id", givenAdminId);
-
-				expect(userActiveStatusError).toBeNull();
-				expect(userActiveStatusData?.length).toBe(0);
 
 				// manually delete storage files using supabase sdk
 				const { error: deleteStorageError } = await serviceRoleDbClient.storage

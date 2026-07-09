@@ -55,18 +55,6 @@ export async function seedLocalAdmin() {
 		return;
 	}
 
-	const { error: accountActivationError } = await supabase.rpc(
-		"log_account_activation",
-	);
-
-	if (accountActivationError) {
-		console.error(
-			"Error logging account activation for local admin:",
-			accountActivationError,
-		);
-		return;
-	}
-
 	/* eslint-disable-next-line no-console */
 	console.log("done!");
 }

@@ -1225,8 +1225,7 @@ export const Content = {
 		"Benutzer ist bereits registriert.",
 	"form.validation.password.shouldBeDifferent.error":
 		"Das neue Passwort muss sich vom alten Passwort unterscheiden.",
-	"form.validation.userDeactivated.error":
-		"Der Benutzeraccount wurde deaktiviert.",
+	"form.validation.userBanned.error": "Der Benutzeraccount wurde gesperrt.",
 
 	/* ---------------------- Footer ---------------------- */
 	"footer.baerLogo.alt": "Berliner Bär Logo",
