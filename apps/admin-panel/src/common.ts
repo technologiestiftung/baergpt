@@ -3,7 +3,7 @@ export type User = {
 	first_name: string;
 	last_name: string;
 	email: string;
-	is_active: boolean;
+	banned_until?: string | null;
 	is_admin?: boolean;
 	registered_at?: string | null;
 	last_login_at?: string | null;
@@ -15,7 +15,7 @@ export type User = {
 	academic_title?: string | null;
 	personal_title?: string | null;
 	deleted_at?: string | null;
-	status?: "active" | "inactive" | "admin" | "invited";
+	status?: "active" | "banned" | "admin";
 };
 
 export type UserProfile = {

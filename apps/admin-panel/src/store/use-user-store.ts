@@ -8,27 +8,27 @@ import {
 	updateUserProfile,
 	updateUserAdminStatus,
 } from "../api/user/update-user";
-import { deleteUser, restoreUser } from "../api/user/delete-user";
-import { inviteUser } from "@/api/user/invite-user";
+import { deleteUser } from "../api/user/delete-user";
 import { useUserErrorStore } from "./user-error-store";
 import { getUserStatus } from "../components/user-table/utils/get-user-status";
+import { banUser } from "@/api/user/ban-user.ts";
+import { unbanUser } from "@/api/user/unban-user.ts";
 
 interface UserStore {
 	user: UserProfile | null;
 	users: User[];
 	selectedUser: User | null;
 	isDeleteUserDialogOpen: boolean;
-	isRestoreUserDialogOpen: boolean;
+	isUnbanUserDialogOpen: boolean;
 	isUserProfileUpdated: boolean;
 	isEmailUpdateSuccessful: boolean;
-	isUserAdmin: boolean;
-	isAdminStatusLoaded: boolean;
+	isUserAdmin: boolean | null;
 	getUser: (signal: AbortSignal) => Promise<void>;
 	getUsers: (signal: AbortSignal) => Promise<void>;
 	checkIsUserAdmin: (signal: AbortSignal) => Promise<void>;
 	setSelectedUser: (user: User | null) => void;
 	setDeleteUserDialogOpen: (isOpen: boolean) => void;
-	setRestoreUserDialogOpen: (isOpen: boolean) => void;
+	setUnbanUserDialogOpen: (isOpen: boolean) => void;
 	updateUserProfile: (
 		userId: string,
 		profile: {
@@ -40,16 +40,12 @@ interface UserStore {
 		},
 	) => Promise<void>;
 	updateUserAdminStatus: (userId: string, isAdmin: boolean) => Promise<void>;
-	deleteUser: (userId: string, hardDelete?: boolean) => Promise<void>;
-	restoreUser: (userId: string) => Promise<void>;
-	inviteUser: (
-		email: string,
-		firstName?: string,
-		lastName?: string,
-	) => Promise<void>;
+	deleteUser: (userId: string) => Promise<void>;
+	banUser: (userId: string) => Promise<void>;
+	unbanUser: (userId: string) => Promise<void>;
 }
 
-export const useUserStore = create<UserStore>((set, get) => ({
+export const useUserStore = create<UserStore>((set) => ({
 	user: null,
 	users: [],
 	selectedUser: null,
@@ -57,23 +53,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
 	isDeleteUserDialogOpen: false,
 	setDeleteUserDialogOpen: (isOpen: boolean) =>
 		set({ isDeleteUserDialogOpen: isOpen }),
-	isRestoreUserDialogOpen: false,
-	setRestoreUserDialogOpen: (isOpen: boolean) =>
-		set({ isRestoreUserDialogOpen: isOpen }),
+	isUnbanUserDialogOpen: false,
+	setUnbanUserDialogOpen: (isOpen: boolean) =>
+		set({ isUnbanUserDialogOpen: isOpen }),
 	isUserProfileUpdated: false,
 	isEmailUpdateSuccessful: false,
-	isUserAdmin: false,
-	isAdminStatusLoaded: false,
+	isUserAdmin: null,
 	checkIsUserAdmin: async (signal: AbortSignal) => {
 		const isAdmin = await getAdminStatus(signal);
 
-		/**
-		 * If the admin status has not been loaded before, we need to check if the signal is still active.
-		 * If the signal is aborted, we assume the admin status has not loaded yet.
-		 * If the admin status has been loaded before, we can ignore the signal.
-		 */
-		const isAdminStatusLoaded = get().isAdminStatusLoaded || !signal.aborted;
-		set({ isUserAdmin: isAdmin, isAdminStatusLoaded });
+		set({ isUserAdmin: isAdmin });
 	},
 	getUser: async (signal: AbortSignal) => {
 		const userId = useAuthStore.getState().session?.user.id;
@@ -154,6 +143,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
 			console.error("Failed to update user first name:", error);
 		}
 	},
+
 	updateUserAdminStatus: async (userId: string, isAdmin: boolean) => {
 		try {
 			await updateUserAdminStatus(userId, isAdmin);
@@ -165,27 +155,28 @@ export const useUserStore = create<UserStore>((set, get) => ({
 			console.error("Failed to update user admin status:", error);
 		}
 	},
-	deleteUser: async (userId: string, hardDelete = false) => {
+
+	deleteUser: async (userId: string) => {
 		try {
-			await deleteUser(userId, hardDelete);
+			await deleteUser(userId);
 		} catch (error) {
 			console.error("Failed to delete user:", error);
 		}
 	},
-	restoreUser: async (userId: string) => {
+
+	banUser: async (userId: string) => {
 		try {
-			await restoreUser(userId);
+			await banUser(userId);
 		} catch (error) {
-			console.error("Failed to restore user:", error);
+			console.error("Failed to ban user:", error);
 		}
 	},
-	inviteUser: async (email: string, firstName?: string, lastName?: string) => {
+
+	unbanUser: async (userId: string) => {
 		try {
-			await inviteUser(email, firstName, lastName);
+			await unbanUser(userId);
 		} catch (error) {
-			if (error instanceof Error) {
-				useUserErrorStore.getState().handleError(new Error(error.message));
-			}
+			console.error("Failed to unban user:", error);
 		}
 	},
 }));

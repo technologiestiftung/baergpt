@@ -12,8 +12,8 @@ const errorMessages: { [key: string]: string } = {
 	"Invalid login credentials":
 		Content["form.validation.invalidCredentials.error"],
 	privacy_not_accepted: Content["form.validation.privacy.required.error"],
-	"User account has been deactivated.":
-		Content["form.validation.userDeactivated.error"],
+	"User account is not admin or has been banned.":
+		Content["form.validation.userBanned.error"],
 };
 
 export const useAuthErrorStore = create<AuthErrorStore>()((set) => ({

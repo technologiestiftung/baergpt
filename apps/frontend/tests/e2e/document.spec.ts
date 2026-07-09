@@ -28,7 +28,10 @@ import {
 	secondaryDocumentType,
 	seedDefaultDocumentName,
 } from "../constants.ts";
-import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { supabaseAdminClient } from "../supabase.ts";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@repo/db-schema";
+import { config } from "../config.ts";
 
 test.describe("Documents", () => {
 	testDesktopOnly(
@@ -154,20 +157,24 @@ test.describe("Documents", () => {
 				type: secondaryDocumentType,
 			});
 
-			// Set the session for the anon client to have access to the user's storage
-			const { error: sessionError } = await supabaseAnonClient.auth.setSession({
+			const localAnonClient = createClient<Database>(
+				config.supabaseUrl,
+				config.supabaseAnonKey,
+			);
+
+			const { error: sessionError } = await localAnonClient.auth.setSession({
 				access_token: session.access_token,
 				refresh_token: session.refresh_token,
 			});
 
 			expect(sessionError).toBeNull();
 
-			const { error: uploadError } = await supabaseAnonClient.storage
+			const { error: uploadError } = await localAnonClient.storage
 				.from("documents")
 				.upload(givenStoragePath, givenFile);
 
-			// Remove the session from the anon client to avoid side effects on other tests
-			await supabaseAnonClient.auth.signOut();
+			// Use scope local to avoid revoking the current access_token globally
+			await localAnonClient.auth.signOut({ scope: "local" });
 
 			expect(uploadError).toBeNull();
 

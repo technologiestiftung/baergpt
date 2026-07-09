@@ -2,16 +2,12 @@ import { useEffect } from "react";
 import { useAuthStore } from "../store/auth-store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
-import { useAuthErrorStore } from "../store/auth-error-store.ts";
-import { useIsActiveStore } from "../store/use-is-active-store.ts";
 import { useErrorStore } from "../store/error-store.ts";
+import { useAuthErrorStore } from "../store/auth-error-store.ts";
 
 export function useSessionRedirect() {
 	const session = useAuthStore((state) => state.session);
-	const isActive = useIsActiveStore((state) => state.isActive);
-	const registrationFinishedAt = useIsActiveStore(
-		(state) => state.registrationFinishedAt,
-	);
+	const isBanned = useAuthStore((state) => state.isBanned);
 
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -34,24 +30,21 @@ export function useSessionRedirect() {
 			session,
 			pathname: location.pathname,
 			navigate,
-			isActive,
-			registrationFinishedAt,
+			isBanned,
 		}).catch(useErrorStore.getState().handleError);
-	}, [session, isActive, registrationFinishedAt, location, navigate]);
+	}, [session, location, isBanned, navigate]);
 }
 
 async function redirectBasedOnSession({
 	session,
 	pathname,
 	navigate,
-	isActive,
-	registrationFinishedAt,
+	isBanned,
 }: {
 	session: Session | null | undefined;
 	pathname: string;
 	navigate: (path: string) => void;
-	isActive: boolean | null;
-	registrationFinishedAt: string | null | undefined;
+	isBanned: boolean | null;
 }) {
 	/**
 	 * On first load the session and user are undefined, and
@@ -71,36 +64,20 @@ async function redirectBasedOnSession({
 	}
 
 	/**
-	 * If isActive is null, we don't know yet if the user is active or not
+	 * If isBanned is null, we don't know yet if the user has been banned or not
 	 */
-	if (isActive === null) {
+	if (isBanned === null) {
 		return;
 	}
 
 	/**
-	 * If the user is not active, we log them out
+	 * If the user is banned, we log them out
 	 */
-	if (isActive === false) {
+	if (isBanned) {
 		await useAuthStore.getState().logout();
 		useAuthErrorStore
 			.getState()
 			.handleError(new Error("User account has been deactivated."));
-		return;
-	}
-
-	/**
-	 * If the registrationFinishedAt is undefined, we don't know yet if the user has completed the registration or not.
-	 * The user might have also registered themselves, so no registrationFinishedAt timestamp is set and no redirection to /account-activated/ is needed.
-	 */
-	if (registrationFinishedAt === undefined) {
-		return;
-	}
-
-	/**
-	 * If the user has completed activation but is on the activation page, redirect to home
-	 */
-	if (registrationFinishedAt !== null && pathname === "/account-activated/") {
-		navigate("/");
 		return;
 	}
 
@@ -127,12 +104,7 @@ function handleUnauthorized(
 }
 
 function handleAuthorized(pathname: string, navigate: (path: string) => void) {
-	const protectedPages = [
-		"/",
-		"/account-activated/",
-		"/profile/",
-		"/email-changed/",
-	];
+	const protectedPages = ["/", "/profile/", "/email-changed/"];
 
 	// Allow access to protected pages
 	if (protectedPages.includes(pathname)) {
