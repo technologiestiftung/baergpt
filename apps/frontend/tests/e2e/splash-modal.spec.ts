@@ -188,9 +188,7 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 			await page.getByTestId("close-splash-modal-button").click();
 			await expect(modal).toBeHidden();
 
-			await page
-				.getByRole("button", { name: "Neuigkeiten anzeigen" })
-				.click();
+			await page.getByRole("button", { name: "Neuigkeiten anzeigen" }).click();
 			await expect(modal).toBeVisible();
 			await expect(
 				page.getByRole("heading", { name: "Was ist neu?" }),
