@@ -7,7 +7,7 @@ import {
 	expect,
 	it,
 } from "vitest";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../config";
 import { serviceRoleDbClient as supabaseAdminClient } from "../supabase";
@@ -15,7 +15,6 @@ import { PrivilegedDbService } from "../services/db-service/privileged-db-servic
 import { EmbeddingService } from "../services/embedding-service";
 import type { KnowledgeBaseDocument } from "../types/common";
 import app from "../index";
-import { sign } from "hono/jwt";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -31,18 +30,17 @@ const createDeterministicEmbedding = (length = EMBEDDING_LENGTH) =>
 
 // Helper to create JWT token for testing
 const createTestToken = async (
-	userId: string,
 	email: string,
+	password: string,
 ): Promise<string> => {
-	return await sign(
-		{
-			exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour from now
-			sub: userId,
-			email: email,
-			role: "authenticated",
-		},
-		config.supabaseJwtKey,
-	);
+	const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
+		email,
+		password,
+	});
+
+	expect(error).toBeNull();
+
+	return data.session.access_token;
 };
 
 // Helper to delete document via backend route
@@ -106,7 +104,7 @@ describe("Base Knowledge Integration Tests", () => {
 				await supabaseAdminClient.auth.admin.listUsers();
 			expect(listErr).toBeNull();
 			const existing = existingUsers.users.find(
-				(u) => u.email === testUserEmail,
+				(u: User) => u.email === testUserEmail,
 			);
 			expect(existing).toBeDefined();
 			testUserId = existing ? existing.id : "";
@@ -432,7 +430,7 @@ describe("Base Knowledge Integration Tests", () => {
 			expect(docExists).not.toBeNull();
 
 			// Test admin deletion through the backend route
-			const adminToken = await createTestToken(testUserId, testUserEmail);
+			const adminToken = await createTestToken(testUserEmail, testUserPassword);
 			const deleteResult = await deleteDocument(testDoc.id, adminToken);
 			expect(deleteResult.success).toBe(true);
 			expect(deleteResult.status).toBe(204);
@@ -664,7 +662,10 @@ describe("Base Knowledge Integration Tests", () => {
 			expect(adminCheck).toBeNull();
 
 			// Attempt to delete the public document as a non-admin user should fail
-			const nonAdminToken = await createTestToken(testUserId, testUserEmail);
+			const nonAdminToken = await createTestToken(
+				testUserEmail,
+				testUserPassword,
+			);
 			const deleteResult = await deleteDocument(testDoc.id, nonAdminToken);
 			expect(deleteResult.success).toBe(false);
 			expect(deleteResult.status).toBe(404);

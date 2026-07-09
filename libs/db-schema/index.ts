@@ -471,27 +471,6 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			user_active_status: {
-				Row: {
-					deleted_at: string | null;
-					id: string;
-					is_active: boolean;
-					registration_finished_at: string | null;
-				};
-				Insert: {
-					deleted_at?: string | null;
-					id: string;
-					is_active?: boolean;
-					registration_finished_at?: string | null;
-				};
-				Update: {
-					deleted_at?: string | null;
-					id?: string;
-					is_active?: boolean;
-					registration_finished_at?: string | null;
-				};
-				Relationships: [];
-			};
 			user_hidden_default_documents: {
 				Row: {
 					created_at: string | null;
@@ -570,10 +549,6 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			get_account_activation_timestamp: {
-				Args: Record<PropertyKey, never>;
-				Returns: string;
-			};
 			get_allowed_email_domains: {
 				Args: Record<PropertyKey, never>;
 				Returns: {
@@ -647,11 +622,11 @@ export type Database = {
 				Args: Record<PropertyKey, never>;
 				Returns: {
 					academic_title: string;
+					banned_until: string;
 					deleted_at: string;
 					email: string;
 					first_name: string;
 					invited_at: string;
-					is_active: boolean;
 					is_admin: boolean;
 					last_login_at: string;
 					last_name: string;
@@ -693,13 +668,9 @@ export type Database = {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
 			};
-			is_current_user_active: {
+			is_current_user_banned: {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
-			};
-			log_account_activation: {
-				Args: Record<PropertyKey, never>;
-				Returns: undefined;
 			};
 			match_jina_document_chunks: {
 				Args: {

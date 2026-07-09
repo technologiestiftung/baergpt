@@ -125,7 +125,7 @@ export async function cleanupDocuments(userId: string) {
 	const { error: deleteDocumentsError } = await serviceRoleDbClient
 		.from("documents")
 		.delete()
-		.eq("owned_by_user_id", userId);
+		.or(`owned_by_user_id.eq.${userId},uploaded_by_user_id.eq.${userId}`);
 	expect(deleteDocumentsError).toBeNull();
 
 	const { error: deleteFoldersError } = await serviceRoleDbClient

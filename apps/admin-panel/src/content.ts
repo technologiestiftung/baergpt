@@ -50,10 +50,8 @@ export const Content = {
 		"Bitte stimmen Sie den Datenschutzbestimmungen zu.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
-	"form.validation.userDeactivated.error":
-		"Der Benutzeraccount wurde deaktiviert.",
-	"form.validation.invite.unsuccessful.error":
-		"Die Einladung konnte nicht verschickt werden.",
+	"form.validation.userBanned.error":
+		"Der Benutzeraccount ist kein Administrator oder wurde gesperrt.",
 
 	/* -------------------- Buttons -------------------- */
 	//profileButton
@@ -66,23 +64,9 @@ export const Content = {
 	"admin.sidebar.navigation.baseKnowledge": "Base Knowledge",
 	"admin.sidebar.navigation.productDashboard": "Product Dashboard",
 	"admin.sidebar.navigation.domainAllowlist": "Domainverwaltung",
-	"admin.sidebar.navigation.inviteCodes": "Invite Codes",
 	"admin.sidebar.close": "Schließen",
 	"admin.sidebar.title": "BÄRGPT Admin",
 	"admin.button.link.label": "Admin-Bereich",
-
-	/* ---------------------- Invite New User ---------------------- */
-	"inviteNewUser.title": "Neue Benutzer:innen einladen",
-	"inviteNewUser.description":
-		"Lade neue Benutzer:innen ein, die Zugriff auf BärGPT erhalten sollen.",
-	"inviteNewUser.form.firstName": "Vorname",
-	"inviteNewUser.form.firstNamePlaceholder": "Vorname eingeben",
-	"inviteNewUser.form.lastName": "Nachname",
-	"inviteNewUser.form.lastNamePlaceholder": "Nachname eingeben",
-	"inviteNewUser.form.email": "E-Mail-Adresse",
-	"inviteNewUser.form.emailPlaceholder": "E-Mail-Adresse eingeben",
-	"inviteNewUser.form.button.save": "Einladung senden",
-	"inviteNewUser.form.button.saved": "Einladung verschickt",
 
 	/* ---------------------- Shared Table ---------------------- */
 	"table.pageSizeDropdown.pageSize.label": "Anzeigen: ",
@@ -151,37 +135,37 @@ export const Content = {
 
 	"userEditModal.dangerZoneCard.title": "Gefahrenbereich",
 	"userEditModal.dangerZoneCard.description":
-		"Benutzer deaktivieren oder dauerhaft entfernen",
+		"Benutzer sperren oder dauerhaft löschen",
 	"userEditModal.dangerZoneCard.deleteUser.title": "Benutzer verwalten",
 	"userEditModal.dangerZoneCard.deleteUser.description":
-		"Benutzer deaktivieren (reversibel) oder permanent löschen (irreversibel).",
+		"Benutzer sperren (reversibel) oder permanent löschen (irreversibel).",
 	"userEditModal.dangerZoneCard.deleteUser.button": "Benutzer verwalten",
 
-	"userEditModal.dangerZoneCard.restoreUser.title": "Benutzer wiederherstellen",
-	"userEditModal.dangerZoneCard.restoreUser.description":
-		"Deaktivierten Benutzer wieder aktivieren und Zugang wiederherstellen.",
-	"userEditModal.dangerZoneCard.restoreUser.button": "Account wiederherstellen",
+	"userEditModal.dangerZoneCard.unbanUser.title": "Benutzer freischalten",
+	"userEditModal.dangerZoneCard.unbanUser.description":
+		"Deaktivierten Benutzer wieder aktivieren und Zugang freischalten.",
+	"userEditModal.dangerZoneCard.unbanUser.button": "Account freischalten",
 
-	"userEditModal.restoreUserDialog.title": "Account wiederherstellen",
-	"userEditModal.restoreUserDialog.description.p1": "Möchten Sie den Account",
-	"userEditModal.restoreUserDialog.description.p2":
+	"userEditModal.unbanUserDialog.title": "Account freischalten",
+	"userEditModal.unbanUserDialog.description.p1": "Möchten Sie den Account",
+	"userEditModal.unbanUserDialog.description.p2":
 		"wieder aktivieren? Der Account erhält dadurch wieder Zugang zum System.",
-	"userEditModal.restoreUserDialog.button.cancel": "Abbrechen",
-	"userEditModal.restoreUserDialog.button.restore": "Wiederherstellen",
+	"userEditModal.unbanUserDialog.button.cancel": "Abbrechen",
+	"userEditModal.unbanUserDialog.button.unban": "Freischalten",
 
 	"userEditModal.deleteUserDialog.title": "Account verwalten",
 	"userEditModal.deleteUserDialog.description.p1":
 		"Wählen Sie eine Aktion für:",
-	"userEditModal.deleteUserDialog.softDelete.label": "Account deaktivieren",
+	"userEditModal.deleteUserDialog.softDelete.label": "Account sperren",
 	"userEditModal.deleteUserDialog.softDelete.description":
-		"Der Account wird deaktiviert, aber alle Daten bleiben erhalten und können wiederhergestellt werden. Nach 30 Tagen werden die Daten automatisch gelöscht.",
+		"Der Account wird gesperrt, aber alle Daten bleiben erhalten. Ein Account kann wieder freigeschaltet werden.",
 	"userEditModal.deleteUserDialog.hardDelete.label": "Permanent löschen",
 	"userEditModal.deleteUserDialog.hardDelete.description":
 		"Der Account und alle zugehörigen Daten werden permanent gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
 	"userEditModal.deleteUserDialog.button.cancel": "Abbrechen",
 	"userEditModal.deleteUserDialog.button.confirm": "Aktion ausführen",
-	"userEditModal.deleteUserDialog.button.softDelete": "Benutzer deaktivieren",
-	"userEditModal.deleteUserDialog.button.hardDelete": "Permanent löschen",
+	"userEditModal.deleteUserDialog.button.ban": "Benutzer sperren",
+	"userEditModal.deleteUserDialog.button.delete": "Permanent löschen",
 	// User Edit Modal Form Validation
 	"userEditModal.form.emailUpdatedSuccess":
 		"E-Mail-Adresse erfolgreich aktualisiert",

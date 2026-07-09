@@ -2,12 +2,12 @@ import { useEffect } from "react";
 import { useAuthStore } from "../store/use-auth-store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
-import { useAuthErrorStore } from "../store/use-auth-error-store.ts";
-import { useIsActiveStore } from "../store/use-is-active-store.ts";
+import { useAuthErrorStore } from "@/store/use-auth-error-store.ts";
+import { useUserStore } from "@/store/use-user-store.ts";
 
 export function useSessionRedirect() {
 	const session = useAuthStore((state) => state.session);
-	const isActive = useIsActiveStore((state) => state.isActive);
+	const isUserAdmin = useUserStore((state) => state.isUserAdmin);
 
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -17,21 +17,21 @@ export function useSessionRedirect() {
 			session,
 			pathname: location.pathname,
 			navigate,
-			isActive,
+			isUserAdmin,
 		}).catch(console.error);
-	}, [session, isActive, location.pathname, navigate]);
+	}, [session, location.pathname, navigate, isUserAdmin]);
 }
 
 async function redirectBasedOnSession({
 	session,
 	pathname,
 	navigate,
-	isActive,
+	isUserAdmin,
 }: {
 	session: Session | null | undefined;
 	pathname: string;
 	navigate: (path: string) => void;
-	isActive: boolean | null;
+	isUserAdmin: boolean | null;
 }) {
 	/**
 	 * On first load the session is undefined and
@@ -46,15 +46,15 @@ async function redirectBasedOnSession({
 		return;
 	}
 
-	if (isActive === null) {
+	if (isUserAdmin === null) {
 		return;
 	}
 
-	if (isActive === false) {
+	if (!isUserAdmin) {
 		await useAuthStore.getState().logout();
 		useAuthErrorStore
 			.getState()
-			.handleError(new Error("User account has been deactivated."));
+			.handleError(new Error("User account is not admin or has been banned."));
 		return;
 	}
 

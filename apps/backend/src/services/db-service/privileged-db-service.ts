@@ -5,7 +5,7 @@ import { BaseContentDbService } from "./base-db-service";
  * AdminService handles operations that require the Supabase service role key.
  *
  * Operations include:
- * - Auth Admin API calls (updateUserById, deleteUser, inviteUserByEmail)
+ * - Auth Admin API calls (updateUserById, deleteUser)
  * - Writing to privileged tables (application_admins)
  * - Soft/hard user deletion and restoration
  */
@@ -119,14 +119,30 @@ export class PrivilegedDbService extends BaseContentDbService {
 	}
 
 	/**
-	 * Soft delete a user by setting deleted_at timestamp.
-	 * Requires service role to update user_active_status.
+	 * Ban a user.
+	 * Requires service role for auth.admin.updateUserById().
 	 */
-	async softDeleteUser(userId: string): Promise<void> {
-		const { error } = await this.client
-			.from("user_active_status")
-			.update({ deleted_at: new Date().toISOString(), is_active: false })
-			.eq("id", userId);
+	async banUser(userId: string): Promise<void> {
+		const { error: banUserError } = await this.client.auth.admin.updateUserById(
+			userId,
+			{
+				ban_duration: "876000h", // ~100 years = effectively permanent
+			},
+		);
+
+		if (banUserError) {
+			throw banUserError;
+		}
+	}
+
+	/**
+	 * Unban a user.
+	 * Requires service role for auth.admin.updateUserById().
+	 */
+	async unbanUser(userId: string): Promise<void> {
+		const { error } = await this.client.auth.admin.updateUserById(userId, {
+			ban_duration: "none",
+		});
 
 		if (error) {
 			throw error;
@@ -134,10 +150,10 @@ export class PrivilegedDbService extends BaseContentDbService {
 	}
 
 	/**
-	 * Hard delete a user (permanently removes from auth and cascades to profile).
+	 * Delete a user (permanently removes from auth and cascades to profile).
 	 * Requires service role for auth.admin.deleteUser().
 	 */
-	async hardDeleteUser(userId: string): Promise<void> {
+	async deleteUser(userId: string): Promise<void> {
 		// Get all documents for the user with storage info
 		const { data: documents, error: documentsError } = await this.client
 			.from("documents")
@@ -171,48 +187,6 @@ export class PrivilegedDbService extends BaseContentDbService {
 					captureError(storageError);
 				}
 			}
-		}
-	}
-
-	/**
-	 * Restore a soft-deleted user.
-	 * Requires service role to update user_active_status.
-	 */
-	async restoreUser(userId: string): Promise<void> {
-		const { error } = await this.client
-			.from("user_active_status")
-			.update({ deleted_at: null, is_active: true })
-			.eq("id", userId);
-
-		if (error) {
-			throw error;
-		}
-	}
-
-	/**
-	 * Send invite link to user.
-	 * Requires service role for auth.admin.inviteUserByEmail().
-	 */
-	async sendInviteLink(
-		email: string,
-		firstName?: string,
-		lastName?: string,
-	): Promise<void> {
-		const data: { first_name?: string; last_name?: string } = {};
-
-		if (firstName) {
-			data.first_name = firstName;
-		}
-		if (lastName) {
-			data.last_name = lastName;
-		}
-
-		const { error } = await this.client.auth.admin.inviteUserByEmail(email, {
-			data,
-		});
-
-		if (error) {
-			throw error;
 		}
 	}
 

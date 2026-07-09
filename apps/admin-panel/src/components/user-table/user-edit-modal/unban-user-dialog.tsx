@@ -11,46 +11,46 @@ import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/store/use-user-store";
 import Content from "../../../content";
 
-export const RestoreUserDialog: React.FC = () => {
+export const UnbanUserDialog: React.FC = () => {
 	const {
 		selectedUser,
-		isRestoreUserDialogOpen,
+		isUnbanUserDialogOpen,
 		setSelectedUser,
-		setRestoreUserDialogOpen,
-		restoreUser,
+		setUnbanUserDialogOpen,
+		unbanUser,
 		getUsers,
 	} = useUserStore();
 
-	const handleRestoreUser = async () => {
+	const handleUnbanUser = async () => {
 		if (!selectedUser) {
 			return;
 		}
 
-		await restoreUser(selectedUser.user_id);
+		await unbanUser(selectedUser.user_id);
 
-		setRestoreUserDialogOpen(false);
+		setUnbanUserDialogOpen(false);
 		setSelectedUser(null);
 		await getUsers(new AbortController().signal); // Refresh user list after deletion
 	};
 
 	const handleDialogClose = (open: boolean) => {
-		setRestoreUserDialogOpen(open);
+		setUnbanUserDialogOpen(open);
 	};
 
 	return (
-		<Dialog open={isRestoreUserDialogOpen} onOpenChange={handleDialogClose}>
+		<Dialog open={isUnbanUserDialogOpen} onOpenChange={handleDialogClose}>
 			<DialogContent className="max-w-md">
 				<DialogHeader>
 					<DialogTitle>
-						{Content["userEditModal.restoreUserDialog.title"]}
+						{Content["userEditModal.unbanUserDialog.title"]}
 					</DialogTitle>
 					<DialogDescription>
 						{selectedUser && (
 							<>
-								{Content["userEditModal.restoreUserDialog.description.p1"]}{" "}
+								{Content["userEditModal.unbanUserDialog.description.p1"]}{" "}
 								{selectedUser.first_name} {selectedUser.last_name} (
 								{selectedUser.email}){" "}
-								{Content["userEditModal.restoreUserDialog.description.p2"]}
+								{Content["userEditModal.unbanUserDialog.description.p2"]}
 							</>
 						)}
 					</DialogDescription>
@@ -58,10 +58,10 @@ export const RestoreUserDialog: React.FC = () => {
 
 				<DialogFooter>
 					<Button variant="outline" onClick={() => handleDialogClose(false)}>
-						{Content["userEditModal.restoreUserDialog.button.cancel"]}
+						{Content["userEditModal.unbanUserDialog.button.cancel"]}
 					</Button>
-					<Button onClick={handleRestoreUser}>
-						{Content["userEditModal.restoreUserDialog.button.restore"]}
+					<Button onClick={handleUnbanUser}>
+						{Content["userEditModal.unbanUserDialog.button.unban"]}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

@@ -8,7 +8,7 @@ import {
 	it,
 } from "vitest";
 import { serviceRoleDbClient } from "../supabase";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, User } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../config";
 import {
@@ -70,6 +70,78 @@ describe("Integration tests for DB", async () => {
 		});
 	});
 
+	describe("is_current_user_banned()", () => {
+		const givenEmail = "ban-rpc-test@ts.berlin";
+		const givenPassword = "SecurePassword123!";
+		let userId: string = "";
+
+		beforeAll(async () => {
+			const { data, error } = await serviceRoleDbClient.auth.admin.createUser({
+				email: givenEmail,
+				password: givenPassword,
+				email_confirm: true,
+			});
+			expect(error).toBeNull();
+			userId = data.user?.id ?? "";
+		});
+
+		afterAll(async () => {
+			if (userId) {
+				await serviceRoleDbClient.auth.admin.deleteUser(userId);
+			}
+		});
+
+		afterEach(async () => {
+			await supabaseAnonClient.auth.signOut();
+		});
+
+		it("should return false for an non-banned user", async () => {
+			await supabaseAnonClient.auth.signInWithPassword({
+				email: givenEmail,
+				password: givenPassword,
+			});
+
+			const { data: isBanned, error } = await supabaseAnonClient.rpc(
+				"is_current_user_banned",
+			);
+
+			expect(error).toBeNull();
+			expect(isBanned).toBe(false);
+		});
+
+		it("should return true for banned user then return false after unbanning the user", async () => {
+			await supabaseAnonClient.auth.signInWithPassword({
+				email: givenEmail,
+				password: givenPassword,
+			});
+
+			const { error: banError } =
+				await serviceRoleDbClient.auth.admin.updateUserById(userId, {
+					ban_duration: "876000h", // ~100 years
+				});
+			expect(banError).toBeNull();
+
+			const { data: isBanned1, error: isBannedError } =
+				await supabaseAnonClient.rpc("is_current_user_banned");
+
+			expect(isBannedError).toBeNull();
+			expect(isBanned1).toBe(true);
+
+			const { error: unbanError } =
+				await serviceRoleDbClient.auth.admin.updateUserById(userId, {
+					ban_duration: "none",
+				});
+			expect(unbanError).toBeNull();
+
+			const { data: isBanned2, error } = await supabaseAnonClient.rpc(
+				"is_current_user_banned",
+			);
+
+			expect(error).toBeNull();
+			expect(isBanned2).toBe(false);
+		});
+	});
+
 	describe("application users", async () => {
 		const givenAdminId = "d18922bb-7f9a-4e15-a9c9-6788fe81842c";
 		const givenAdminEmail = "db-test-suite-admin@ts.berlin";
@@ -101,11 +173,6 @@ describe("Integration tests for DB", async () => {
 		];
 
 		beforeAll(async () => {
-			// Clean up any leftover users from previous interrupted test runs
-			for (const user of users) {
-				await serviceRoleDbClient.auth.admin.deleteUser(user.id);
-			}
-
 			for (const user of users) {
 				const { error: signupError } =
 					await serviceRoleDbClient.auth.admin.createUser({
@@ -255,7 +322,7 @@ describe("Integration tests for DB", async () => {
 				expect(isAdmin).toBe(true);
 			});
 
-			it("Deactivated admin users should get false from is_application_admin()", async () => {
+			it("Banned admin users should get false from is_application_admin()", async () => {
 				const { data: sessionData, error: sessionError } =
 					await supabaseAnonClient.auth.signInWithPassword({
 						email: givenAdminEmail,
@@ -264,11 +331,11 @@ describe("Integration tests for DB", async () => {
 				expect(sessionError).toBeNull();
 				expect(sessionData.session).not.toBeNull();
 
-				const { error: deactivateError } = await serviceRoleDbClient
-					.from("user_active_status")
-					.update({ is_active: false })
-					.eq("id", givenAdminId);
-				expect(deactivateError).toBeNull();
+				const { error: banUserError } =
+					await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "876000h", // 100 years
+					});
+				expect(banUserError).toBeNull();
 
 				try {
 					const { data: isAdmin, error: rpcError } =
@@ -277,11 +344,11 @@ describe("Integration tests for DB", async () => {
 					expect(rpcError).toBeNull();
 					expect(isAdmin).toBe(false);
 				} finally {
-					const { error: reactivateError } = await serviceRoleDbClient
-						.from("user_active_status")
-						.update({ is_active: true })
-						.eq("id", givenAdminId);
-					expect(reactivateError).toBeNull();
+					const { error: unbanUserError } =
+						await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
+							ban_duration: "none",
+						});
+					expect(unbanUserError).toBeNull();
 				}
 			});
 		});
@@ -302,6 +369,34 @@ describe("Integration tests for DB", async () => {
 
 				expect(selectError).toBeNull();
 				expect(data).toStrictEqual([]);
+			});
+
+			it("Banned users should also not be able to read the application_admins table", async () => {
+				const { error: signInError } =
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenUserEmail,
+						password: givenUserPassword,
+					});
+				expect(signInError).toBeNull();
+
+				const { error: banError } =
+					await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
+
+				try {
+					const { data, error: selectError } = await supabaseAnonClient
+						.from("application_admins")
+						.select("*");
+
+					expect(selectError).toBeNull();
+					expect(data).toStrictEqual([]);
+				} finally {
+					await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "none",
+					});
+				}
 			});
 		});
 
@@ -349,40 +444,75 @@ describe("Integration tests for DB", async () => {
 				expect(selectUpdatedError).toBeNull();
 				expect(updatedProfile.first_name).toBe("UpdatedName");
 			});
-		});
 
-		describe("user_active_status table permission", () => {
-			it("Users should not be able to read the user_active_status table", async () => {
-				const { data: sessionData, error: sessionError } =
+			it("Banned users should not be able to read their own profile", async () => {
+				const { data: sessionData, error: signInError } =
 					await supabaseAnonClient.auth.signInWithPassword({
 						email: givenUserEmail,
 						password: givenUserPassword,
 					});
-				expect(sessionError).toBeNull();
-				expect(sessionData.session).not.toBeNull();
+				expect(signInError).toBeNull();
+				expect(sessionData.session?.user).toBeDefined();
 
-				const { data, error: selectError } = await supabaseAnonClient
-					.from("user_active_status")
-					.select("*");
+				const { error: banError } =
+					await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
 
-				expect(selectError).toBeNull();
-				expect(data).toStrictEqual([]);
+				try {
+					const { data, error: selectError } = await supabaseAnonClient
+						.from("profiles")
+						.select("*")
+						.eq("id", givenUserId);
+
+					expect(selectError).toBeNull();
+					expect(data).toStrictEqual([]);
+				} finally {
+					await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "none",
+					});
+				}
 			});
 
-			it("Users should be able to get their active status via is_current_user_active() RPC", async () => {
-				const { data: sessionData, error: sessionError } =
+			it("Banned users should not be able to update their own profile", async () => {
+				const { error: signInError } =
 					await supabaseAnonClient.auth.signInWithPassword({
 						email: givenUserEmail,
 						password: givenUserPassword,
 					});
-				expect(sessionError).toBeNull();
-				expect(sessionData.session).not.toBeNull();
+				expect(signInError).toBeNull();
 
-				const { data: isActive, error: rpcError } =
-					await supabaseAnonClient.rpc("is_current_user_active");
+				const { error: banError } =
+					await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
 
-				expect(rpcError).toBeNull();
-				expect(isActive).toBe(true);
+				try {
+					const { error: updateError } = await supabaseAnonClient
+						.from("profiles")
+						.update({ first_name: "BannedUpdate" })
+						.eq("id", givenUserId);
+
+					expect(updateError).toBeNull();
+
+					const { data, error: selectError } = await serviceRoleDbClient
+						.from("profiles")
+						.select("first_name")
+						.eq("id", givenUserId)
+						.single();
+
+					if (selectError) {
+						throw selectError;
+					}
+
+					expect(data.first_name).not.toEqual("BannedUpdate");
+				} finally {
+					await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "none",
+					});
+				}
 			});
 		});
 
@@ -434,6 +564,34 @@ describe("Integration tests for DB", async () => {
 				expect(rpcError).not.toBeNull();
 				expect((rpcError as Error)?.message).toContain("Permission denied");
 			});
+
+			it("Should return permission error if a banned admin tries to get users", async () => {
+				const { error: signInError } =
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+				expect(signInError).toBeNull();
+
+				const { error: banError } =
+					await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
+
+				try {
+					const { data: usersData, error: rpcError } =
+						await supabaseAnonClient.rpc("get_users");
+
+					expect(usersData).toBeNull();
+					expect(rpcError).not.toBeNull();
+					expect((rpcError as Error)?.message).toContain("Permission denied");
+				} finally {
+					await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "none",
+					});
+				}
+			});
 		});
 
 		describe("add_user_to_access_group function", () => {
@@ -468,10 +626,10 @@ describe("Integration tests for DB", async () => {
 				expect(allUsers).toBeDefined();
 
 				const adminUser = allUsers.users.find(
-					(user) => user.email === givenAdminEmail,
+					(user: User) => user.email === givenAdminEmail,
 				);
 				const regularUser = allUsers.users.find(
-					(user) => user.email === givenUserEmail,
+					(user: User) => user.email === givenUserEmail,
 				);
 
 				if (!adminUser || !regularUser) {
@@ -659,15 +817,6 @@ describe("Integration tests for DB", async () => {
 				expect(profileError).toBeNull();
 				expect(profileData?.length).toBe(0);
 
-				const { data: userActiveStatusData, error: userActiveStatusError } =
-					await serviceRoleDbClient
-						.from("user_active_status")
-						.select("*")
-						.eq("id", givenAdminId);
-
-				expect(userActiveStatusError).toBeNull();
-				expect(userActiveStatusData?.length).toBe(0);
-
 				// manually delete storage files using supabase sdk
 				const { error: deleteStorageError } = await serviceRoleDbClient.storage
 					.from("documents")
@@ -693,6 +842,39 @@ describe("Integration tests for DB", async () => {
 					.insert({ user_id: givenAdminId });
 
 				expect(setAdminError).toBeNull();
+			});
+
+			it("should return an error if a banned user tries to delete their own account", async () => {
+				const { error: signInError } =
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenUserEmail,
+						password: givenUserPassword,
+					});
+				expect(signInError).toBeNull();
+
+				const { error: banError } =
+					await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
+
+				try {
+					const { error: deleteError } =
+						await supabaseAnonClient.rpc("delete_user");
+
+					expect(deleteError.message).toBe(
+						"Permission denied: banned users may not delete their account",
+					);
+
+					const { data, error: selectError } =
+						await serviceRoleDbClient.auth.admin.getUserById(givenUserId);
+					expect(selectError).toBeNull();
+					expect(data.user).not.toBeNull();
+				} finally {
+					await serviceRoleDbClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "none",
+					});
+				}
 			});
 		});
 
@@ -910,6 +1092,52 @@ describe("Integration tests for DB", async () => {
 					];
 
 					expect(actualCitationDetails).toMatchObject(expectedCitationDetails);
+				});
+			});
+
+			describe("banned user", () => {
+				let givenChunkId: number;
+
+				beforeEach(async () => {
+					givenChunkId = await mockDocumentUpload({
+						userId: givenAdminId,
+						accessGroupId: null,
+						fileName: defaultDocumentName,
+						filePath: defaultDocumentPath,
+						sourceType: "personal_document",
+						bucketName: "documents",
+						userEmail: givenAdminEmail,
+						userPassword: givenAdminPassword,
+					});
+				});
+
+				afterEach(async () => await cleanupDocuments(givenAdminId));
+
+				it("should return no citation details for a banned user", async () => {
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+
+					const { error: banError } =
+						await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
+							ban_duration: "876000h",
+						});
+					expect(banError).toBeNull();
+
+					try {
+						const { data: citationDetails } = await supabaseAnonClient.rpc(
+							"get_citation_details",
+							{ chunk_ids: [givenChunkId] },
+						);
+
+						// RLS on document_chunks blocks banned users, so the function returns []
+						expect(citationDetails).toMatchObject([]);
+					} finally {
+						await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
+							ban_duration: "none",
+						});
+					}
 				});
 			});
 

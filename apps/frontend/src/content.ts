@@ -1227,8 +1227,7 @@ export const Content = {
 		"Benutzer ist bereits registriert.",
 	"form.validation.password.shouldBeDifferent.error":
 		"Das neue Passwort muss sich vom alten Passwort unterscheiden.",
-	"form.validation.userDeactivated.error":
-		"Der Benutzeraccount wurde deaktiviert.",
+	"form.validation.userBanned.error": "Der Benutzeraccount wurde gesperrt.",
 
 	/* ---------------------- Footer ---------------------- */
 	"footer.baerLogo.alt": "Berliner Bär Logo",
@@ -1264,108 +1263,8 @@ export const Content = {
 
 	/* ---------------------- Admin ---------------------- */
 	"admin.button.link.label": "Adminbereich",
-	/* ---------------------- User Table ---------------------- */
-	"userTable.searchField.placeholder": "Suche nach Name oder E-Mail...",
-	"userTable.PageSizeDropdown.all.label": "Alle Benutzer",
-	"userTable.PageSizeDropdown.pageSize.label": "Anzeigen: ",
-	"userTable.PageSizeDropdown.perTable": "pro Seite",
-	"userTable.pagination.nextPage": "Weiter",
-	"userTable.pagination.previousPage": "Zurück",
-	"userTable.statusFilterDropdown.label": "Status filtern",
-	"userTable.statusFilterDropdown.all.label": "Status (alle)",
-	"userTable.noResults": "Keine Ergebnisse.",
-	"userTable.resultsCount.separator": "von",
-	"userTable.resultsCount.label": "Benutzer:innen",
-	// User Table Headers
-	"userTable.tableHeader.firstName": "Vorname",
-	"userTable.tableHeader.lastName": "Nachname",
-	"userTable.tableHeader.email": "E-Mail",
-	"userTable.tableHeader.registeredAt": "Registriert",
-	"userTable.tableHeader.lastLoginAt": "Zuletzt aktiv",
-	"userTable.tableHeader.inferences": "Inferenzen",
-	"userTable.tableHeader.documents": "Dokumente",
-	"userTable.tableHeader.status": "Status",
-	"userTable.tableHeader.actions": "Bearbeiten",
-	"userTable.tableHeader.actions.ariaLabel": "Benutzer bearbeiten",
 
-	/* ---------------------- User Edit Modal ---------------------- */
-
-	"userEditModal.title": "Benutzer bearbeiten",
-	"userEditModal.form.title": "Persönliche Daten",
-	"userEditModal.form.description":
-		"Bearbeiten Sie die Benutzerdaten und Einstellungen",
-	"userEditModal.form.titleLabel": "Titel",
-	"userEditModal.form.academicTitle.placeholder": "keine Angabe",
-	"userEditModal.form.academicTitle.defaultOption": "keine Angabe",
-	"userEditModal.form.academicTitle.options": ["Dr.", "Prof.", "Prof. Dr."],
-	"userEditModal.form.personalTitleLabel": "Anrede",
-	"userEditModal.form.personalTitle.options": ["Frau", "Herr"],
-	"userEditModal.form.personalTitle.placeholder": "keine Angabe",
-	"userEditModal.form.personalTitle.defaultOption": "keine Angabe",
-	"userEditModal.form.firstName": "Vorname",
-	"userEditModal.form.firstNamePlaceholder": "Vorname eingeben",
-	"userEditModal.form.lastName": "Nachname",
-	"userEditModal.form.lastNamePlaceholder": "Nachname eingeben",
-	"userEditModal.form.email": "E-Mail-Adresse",
-	"userEditModal.form.emailPlaceholder": "E-Mail-Adresse eingeben",
-	"userEditModal.form.isAdmin": "Admin",
-	"userEditModal.form.button.save": "Änderungen speichern",
-	"userEditModal.form.button.saved": "Änderungen gespeichert",
-
-	"userEditModal.userInformationCard.title": "Benutzerinformationen",
-	"userEditModal.userInformationCard.description":
-		"Schreibgeschützte Informationen über den Benutzer",
-	"userEditModal.userInformationCard.registeredAt": "Registriert seit",
-	"userEditModal.userInformationCard.lastLoginAt": "Zuletzt aktiv",
-	"userEditModal.userInformationCard.inferences": "Inferenzen",
-	"userEditModal.userInformationCard.documents": "Dokumente",
-	"userEditModal.userInformationCard.requests": "Anfragen",
-	"userEditModal.userInformationCard.accountStatus": "Status",
-	"userEditModal.userInformationCard.accountStatus.deactivated":
-		"Deaktiviert am",
-
-	"userEditModal.dangerZoneCard.title": "Gefahrenbereich",
-	"userEditModal.dangerZoneCard.description":
-		"Benutzer deaktivieren oder dauerhaft entfernen",
-	"userEditModal.dangerZoneCard.deleteUser.title": "Benutzer verwalten",
-	"userEditModal.dangerZoneCard.deleteUser.description":
-		"Benutzer deaktivieren (reversibel) oder permanent löschen (irreversibel).",
-	"userEditModal.dangerZoneCard.deleteUser.button": "Benutzer verwalten",
-
-	"userEditModal.dangerZoneCard.restoreUser.title": "Benutzer wiederherstellen",
-	"userEditModal.dangerZoneCard.restoreUser.description":
-		"Deaktivierten Benutzer wieder aktivieren und Zugang wiederherstellen.",
-	"userEditModal.dangerZoneCard.restoreUser.button": "Account wiederherstellen",
-
-	"userEditModal.restoreUserDialog.title": "Account wiederherstellen",
-	"userEditModal.restoreUserDialog.description.p1": "Möchten Sie den Account",
-	"userEditModal.restoreUserDialog.description.p2":
-		"wieder aktivieren? Der Account erhält dadurch wieder Zugang zum System.",
-	"userEditModal.restoreUserDialog.button.cancel": "Abbrechen",
-	"userEditModal.restoreUserDialog.button.restore": "Wiederherstellen",
-
-	"userEditModal.deleteUserDialog.title": "Account verwalten",
-	"userEditModal.deleteUserDialog.description.p1":
-		"Wählen Sie eine Aktion für:",
-	"userEditModal.deleteUserDialog.softDelete.label": "Account deaktivieren",
-	"userEditModal.deleteUserDialog.softDelete.description":
-		"Der Account wird deaktiviert, aber alle Daten bleiben erhalten und können wiederhergestellt werden. Nach 30 Tagen werden die Daten automatisch gelöscht.",
-	"userEditModal.deleteUserDialog.hardDelete.label": "Permanent löschen",
-	"userEditModal.deleteUserDialog.hardDelete.description":
-		"Der Account und alle zugehörigen Daten werden permanent gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-	"userEditModal.deleteUserDialog.button.cancel": "Abbrechen",
-	"userEditModal.deleteUserDialog.button.confirm": "Aktion ausführen",
-	"userEditModal.deleteUserDialog.button.softDelete": "Benutzer deaktivieren",
-	"userEditModal.deleteUserDialog.button.hardDelete": "Permanent löschen",
-	// User Edit Modal Form Validation
-	"userEditModal.form.emailUpdatedSuccess":
-		"E-Mail-Adresse erfolgreich aktualisiert",
-	"userEditModal.form.invalidEmailError":
-		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
-	"userEditModal.form.emailAlreadyInUseError":
-		"Diese E-Mail-Adresse ist bereits in Verwendung.",
-	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",
-	//Splash Modal
+	/* ---------------------- Splash Modal ---------------------- */
 	"splashModal.title": "Was ist neu?",
 	"splashModal.description": "Die wichtigsten Neuigkeiten im Überblick",
 } as const;

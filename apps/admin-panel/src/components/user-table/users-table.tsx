@@ -23,13 +23,11 @@ import { PaginationControls } from "../shared/table/pagination-controls";
 const USER_STATUS_OPTIONS = [
 	Content["userTable.statusFilterDropdown.all.label"],
 	"Active",
-	"Inactive",
+	"Banned",
 	"Admin",
-	"Invited",
 ];
 import type { User } from "../../common";
 import { useUserStore } from "../../store/use-user-store";
-import { InviteNewUserForm } from "../invite-new-user/invite-new-user-form";
 
 export function UsersTable() {
 	const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
@@ -86,7 +84,6 @@ export function UsersTable() {
 
 	return (
 		<div className="w-full max-w-screen-xl mx-5">
-			<InviteNewUserForm />
 			<div className="max-w-60 bg-white border border-gray-200 rounded-lg p-4">
 				<div className="text-2xl font-bold text-dunkelblau-200 mb-0.5">
 					{table.getFilteredRowModel().rows.length}{" "}
