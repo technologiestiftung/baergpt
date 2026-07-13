@@ -6,6 +6,7 @@ import { DocumentIcon } from "../../../primitives/icons/document-icon.tsx";
 import { getListItemName } from "./utils/get-list-item-name.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
 import { getEmptyImage } from "react-dnd-html5-backend";
+import { useUserDocumentStore } from "../../../../store/use-user-document-store.ts";
 
 type DragableProps = {
 	item: Document;
@@ -19,6 +20,8 @@ export function DraggableDocumentName({ item }: DragableProps) {
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const tooltipTimeoutRef = useRef<number | null>(null);
 	const spanRef = useRef<HTMLSpanElement>(null);
+
+	const { selectedUserDocumentsForAction } = useUserDocumentStore();
 
 	const handleMouseEnter = (
 		event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
@@ -47,8 +50,19 @@ export function DraggableDocumentName({ item }: DragableProps) {
 		hideTooltip();
 	};
 
+	const resolveDragGroup = (): Document[] => {
+		if (
+			// Check if dragged item is also selected for action
+			selectedUserDocumentsForAction.some((doc) => doc.id === item.id)
+		) {
+			return selectedUserDocumentsForAction;
+		}
+
+		return [item];
+	};
+
 	const [{ isDragging }, dragRef, preview] = useDrag<
-		Document,
+		Document[],
 		unknown,
 		{ isDragging: boolean }
 	>({
@@ -59,7 +73,7 @@ export function DraggableDocumentName({ item }: DragableProps) {
 				tooltipTimeoutRef.current = null;
 			}
 			hideTooltip();
-			return item;
+			return resolveDragGroup();
 		},
 		collect: (monitor) => ({ isDragging: monitor.isDragging() }),
 	});

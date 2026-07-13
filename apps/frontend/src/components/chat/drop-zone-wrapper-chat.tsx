@@ -3,6 +3,7 @@ import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
 import type { UserDocument } from "../../common.ts";
 import { useDrop } from "react-dnd";
 import { AddToChatIcon } from "../primitives/icons/add-to-chat-icon.tsx";
+import { isUserDocument } from "../documents/document-list/list-item/utils/is-user-document.ts";
 
 export function DropZoneWrapperChat({
 	children,
@@ -15,26 +16,30 @@ export function DropZoneWrapperChat({
 }) {
 	const {
 		selectUserChatDocument,
-		unselectUserChatDocument,
 		selectedUserChatDocuments,
+		unselectUserDocumentForAction,
 	} = useUserDocumentStore();
 
-	const handleAddDocumentToChat = (itemToAddToChat: UserDocument) => {
-		if (
-			selectedUserChatDocuments.some((doc) => doc.id === itemToAddToChat.id)
-		) {
-			unselectUserChatDocument(itemToAddToChat.id);
-			return;
+	const handleAddDocumentsToChat = (itemsToAdd: UserDocument[]) => {
+		for (const item of itemsToAdd) {
+			if (!selectedUserChatDocuments.some((doc) => doc.id === item.id)) {
+				selectUserChatDocument(item);
+			}
 		}
-		selectUserChatDocument(itemToAddToChat);
 	};
 
 	const [isHoveringOverChat, setIsHoveringOverChat] = useState(false);
 
-	const [, dropRef] = useDrop({
+	const [, dropRef] = useDrop<UserDocument[], unknown, unknown>({
 		accept: "ITEM",
-		drop: async (draggedItem: UserDocument) => {
-			handleAddDocumentToChat(draggedItem);
+		drop: (draggedItems) => {
+			const userDocs = draggedItems.filter(isUserDocument);
+			handleAddDocumentsToChat(userDocs);
+
+			for (const doc of userDocs) {
+				unselectUserDocumentForAction(doc.id);
+			}
+
 			setIsHoveringOverChat(false);
 		},
 		hover: () => setIsHoveringOverChat(true),

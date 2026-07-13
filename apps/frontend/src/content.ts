@@ -693,8 +693,8 @@ export const Content = {
 	//createFolderButton
 	"createFolderButton.label": "Ordner erstellen",
 	//deleteItemButton
-	"deleteItemButton.label": "Löschen",
-	"deleteItemButton.ariaLabel": "Dialog öffnen, um Elemente zu löschen",
+	"selectItemsButton.label": "Dateien auswählen",
+	"deleteItemButton.ariaLabel": "Button klicken, um Elemente zu löschen",
 	"multiSelectForAction.cancel.label": "Auswahl abbrechen",
 	//BottomMenuBar
 	"bottomMenuBar.arialabel": "Sidebar",

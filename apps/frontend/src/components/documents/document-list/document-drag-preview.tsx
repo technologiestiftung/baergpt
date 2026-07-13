@@ -4,24 +4,30 @@ import type { Document } from "../../../common.ts";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { getListItemName } from "./list-item/utils/get-list-item-name.ts";
 
+const ROW_THRESHOLD = 5;
+
 type DragLayerState = {
 	isDragging: boolean;
-	item: Document | null;
+	items: Document[] | null;
 	currentOffset: { x: number; y: number } | null;
 };
 
 export const DocumentDragPreview: React.FC = () => {
-	const { isDragging, item, currentOffset } = useDragLayer(
+	const { isDragging, items, currentOffset } = useDragLayer(
 		(monitor): DragLayerState => ({
 			isDragging: monitor.isDragging(),
-			item: (monitor.getItem() as Document) ?? null,
+			items: (monitor.getItem() as Document[]) ?? null,
 			currentOffset: monitor.getClientOffset(),
 		}),
 	);
 
-	if (!isDragging || !item || !currentOffset) {
+	if (!isDragging || !items || items.length === 0 || !currentOffset) {
 		return null;
 	}
+
+	const firstItem = items[0];
+	const extraCount = items.length - 1;
+	const showStackedPreview = items.length <= ROW_THRESHOLD;
 
 	return (
 		<div className="pointer-events-none fixed inset-0 z-50">
@@ -31,12 +37,30 @@ export const DocumentDragPreview: React.FC = () => {
 					transform: `translate(${currentOffset.x}px, ${currentOffset.y}px)`,
 				}}
 			>
-				<span className="flex gap-x-1 min-w-0">
-					<DocumentIcon variant="lightBlue" className="shrink-0" />
-					<span className="truncate text-sm leading-5 font-normal text-dunkelblau-100">
-						{getListItemName(item)}
+				{showStackedPreview ? (
+					<span className="flex flex-col gap-y-1 min-w-0">
+						{items.map((item) => (
+							<span className="flex gap-x-1 min-w-0 items-center" key={item.id}>
+								<DocumentIcon variant="lightBlue" className="shrink-0" />
+								<span className="truncate text-sm leading-5 font-normal text-dunkelblau-100">
+									{getListItemName(item)}
+								</span>
+							</span>
+						))}
 					</span>
-				</span>
+				) : (
+					<span className="flex gap-x-1 min-w-0 items-center">
+						<DocumentIcon variant="lightBlue" className="shrink-0" />
+						<span className="truncate text-sm leading-5 font-normal text-dunkelblau-100">
+							{getListItemName(firstItem)}
+						</span>
+						{extraCount > 0 && (
+							<span className="shrink-0 ml-1 rounded-full bg-dunkelblau-100 text-white text-xs font-semibold px-1.5 py-0.5 leading-none">
+								+{extraCount}
+							</span>
+						)}
+					</span>
+				)}
 			</div>
 		</div>
 	);
