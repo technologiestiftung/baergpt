@@ -32,6 +32,10 @@ export interface Config {
 	featureFlagWebSearchAllowed: boolean;
 	featureFlagMemoryLog: boolean;
 	isTracingEnabled: boolean;
+	staanSearchApiKey?: string;
+	staanSearchApiUrl?: string;
+	staanSearchMaxRPS?: number;
+	webSearchProvider?: string;
 }
 
 /* eslint-disable-next-line complexity */
@@ -115,9 +119,13 @@ export function verifyConfig(): void {
 		(!process.env.BRAVE_SEARCH_API_KEY ||
 			!process.env.BRAVE_SEARCH_API_URL ||
 			!process.env.BRAVE_SEARCH_MAX_RPS)
+		||
+		(!process.env.STAAN_SEARCH_API_KEY ||
+			!process.env.STAAN_SEARCH_API_URL ||
+			!process.env.STAAN_SEARCH_MAX_RPS)
 	) {
 		throw new Error(
-			"BRAVE_SEARCH_API_KEY, BRAVE_SEARCH_API_URL and BRAVE_SEARCH_MAX_RPS must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
+			"BRAVE_SEARCH_API_KEY, BRAVE_SEARCH_API_URL and BRAVE_SEARCH_MAX_RPS or STAAN_SEARCH_API_KEY, STAAN_SEARCH_API_URL and STAAN_SEARCH_MAX_RPS must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
 		);
 	}
 }
@@ -171,4 +179,8 @@ export const config: Config = {
 		process.env.NODE_ENV !== undefined &&
 		process.env.NODE_ENV !== "production" &&
 		process.env.NODE_ENV !== "test",
+	staanSearchApiKey: process.env.STAAN_SEARCH_API_KEY,
+	staanSearchApiUrl: process.env.STAAN_SEARCH_API_URL,
+	staanSearchMaxRPS: parseInt(process.env.STAAN_SEARCH_MAX_RPS, 10),
+	webSearchProvider: process.env.WEB_SEARCH_PROVIDER,
 };
