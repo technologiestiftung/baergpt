@@ -807,7 +807,7 @@ test.describe("Chat", () => {
 
 			await expect(
 				page.getByText(
-					"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+					"Eine oder mehrere der folgenden externen Datenquellen sind aktiv: Parla, Websuche. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 				),
 			).toBeVisible();
 
@@ -815,7 +815,7 @@ test.describe("Chat", () => {
 
 			await expect(
 				page.getByText(
-					"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+					"Eine oder mehrere der folgenden externen Datenquellen sind aktiv: Parla, Websuche. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 				),
 			).not.toBeVisible();
 		},
@@ -991,6 +991,52 @@ test.describe("Chat", () => {
 			await expect(link).toHaveAttribute("target", "_blank");
 			await expect(link).toHaveAttribute("rel", /(^|\s)noopener(\s|$)/);
 			await expect(link).toHaveAttribute("rel", /(^|\s)noreferrer(\s|$)/);
+		},
+	);
+
+	testDesktopOnly(
+		"Web and Parla citations render together in the sources dialog",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// A single response carrying both web and Parla citations exercises the
+			// multi-tool path where all citation types are preserved simultaneously.
+			await mockLlmCompletion(page, {
+				textDelta: "Antwort mit gemischten Quellen.",
+				webCitations: [
+					{
+						url: "https://www.rbb24.de/berlin-baeume",
+						title: "Berliner Stadtbäume 2026",
+						snippet: "Aktuelle Zahlen zu Baumfällungen in Berlin.",
+					},
+				],
+				parlaCitations: [
+					{
+						url: "https://parla.berlin/dokument-123",
+						title: "Berliner Straßenbaumkonzept",
+						source_type: "Drucksache",
+						content: "Regelungen zur Pflanzung von Straßenbäumen.",
+						page: 4,
+					},
+				],
+			});
+
+			await page
+				.getByPlaceholder("Stellen Sie eine Frage")
+				.fill("Bäume in Berlin?");
+			await sendAndWaitForLLMResponse(page);
+
+			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
+			await allCitationsButton.click();
+
+			// Both citation types are present in the same dialog.
+			await expect(
+				page.getByRole("link", { name: /Berliner Stadtbäume 2026/ }),
+			).toBeVisible();
+			await expect(
+				page.getByRole("link", { name: /Berliner Straßenbaumkonzept/ }),
+			).toBeVisible();
 		},
 	);
 });
