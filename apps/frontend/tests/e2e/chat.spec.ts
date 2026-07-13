@@ -807,7 +807,7 @@ test.describe("Chat", () => {
 
 			await expect(
 				page.getByText(
-					"Eine oder mehrere der folgenden externen Datenquellen sind aktiv: Parla, Websuche. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+					"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 				),
 			).toBeVisible();
 
@@ -815,7 +815,7 @@ test.describe("Chat", () => {
 
 			await expect(
 				page.getByText(
-					"Eine oder mehrere der folgenden externen Datenquellen sind aktiv: Parla, Websuche. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+					"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 				),
 			).not.toBeVisible();
 		},

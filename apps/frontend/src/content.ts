@@ -960,7 +960,7 @@ export const Content = {
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
 
 	"chat.externalTools.warningBanner.label":
-		"Eine oder mehrere der folgenden externen Datenquellen sind aktiv: Parla, Websuche. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+		"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
