@@ -86,14 +86,10 @@ export const BanOrDeleteUserDialog: React.FC = () => {
 									htmlFor="ban"
 									className="font-medium text-sm cursor-pointer"
 								>
-									{Content["userEditModal.deleteUserDialog.softDelete.label"]}
+									{Content["userEditModal.deleteUserDialog.ban.label"]}
 								</label>
 								<p className="text-xs text-gray-600 mt-1">
-									{
-										Content[
-											"userEditModal.deleteUserDialog.softDelete.description"
-										]
-									}
+									{Content["userEditModal.deleteUserDialog.ban.description"]}
 								</p>
 							</div>
 						</div>
