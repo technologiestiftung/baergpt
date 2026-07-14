@@ -85,34 +85,17 @@ export const UserInformationCard: React.FC = () => {
 						{Content["userEditModal.userInformationCard.accountStatus"]}
 					</Label>
 					<div className="text-sm text-muted-foreground">
-						{selectedUser?.deleted_at ? (
-							<>
-								<span>
-									{
-										Content[
-											"userEditModal.userInformationCard.accountStatus.deactivated"
-										]
-									}
-								</span>{" "}
-								{new Date(selectedUser.deleted_at).toLocaleDateString("de-DE", {
-									year: "numeric",
-									month: "long",
-									day: "numeric",
-								})}
-							</>
-						) : (
-							<div className="flex space-x-2">
-								<Badge
-									variant="outline"
-									className={cn(
-										"capitalize",
-										badgeColors.get(selectedUser?.status),
-									)}
-								>
-									{selectedUser?.status || "active"}
-								</Badge>
-							</div>
-						)}
+						<div className="flex space-x-2">
+							<Badge
+								variant="outline"
+								className={cn(
+									"capitalize",
+									badgeColors.get(selectedUser?.status),
+								)}
+							>
+								{selectedUser?.status || "active"}
+							</Badge>
+						</div>
 					</div>
 				</div>
 			</CardContent>

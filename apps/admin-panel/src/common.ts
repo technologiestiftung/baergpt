@@ -14,7 +14,6 @@ export type User = {
 	num_embedding_tokens: number;
 	academic_title?: string | null;
 	personal_title?: string | null;
-	deleted_at?: string | null;
 	status?: "active" | "banned" | "admin";
 };
 
@@ -29,7 +28,6 @@ export type UserProfile = {
 	num_inference_tokens: number | null;
 	num_inferences: number | null;
 	personal_title: string | null;
-	deleted_at?: string | null;
 };
 
 export type Document = {

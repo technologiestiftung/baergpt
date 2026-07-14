@@ -156,8 +156,8 @@ export const Content = {
 	"userEditModal.deleteUserDialog.title": "Account verwalten",
 	"userEditModal.deleteUserDialog.description.p1":
 		"Wählen Sie eine Aktion für:",
-	"userEditModal.deleteUserDialog.softDelete.label": "Account sperren",
-	"userEditModal.deleteUserDialog.softDelete.description":
+	"userEditModal.deleteUserDialog.ban.label": "Account sperren",
+	"userEditModal.deleteUserDialog.ban.description":
 		"Der Account wird gesperrt, aber alle Daten bleiben erhalten. Ein Account kann wieder freigeschaltet werden.",
 	"userEditModal.deleteUserDialog.hardDelete.label": "Permanent löschen",
 	"userEditModal.deleteUserDialog.hardDelete.description":

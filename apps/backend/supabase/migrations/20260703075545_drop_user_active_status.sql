@@ -2,18 +2,19 @@
 -- Users who are inactive get banned until far future.
 -- Supabase does not expose a direct UPDATE on auth.users from SQL in migrations,
 -- so we use the auth.users table directly (available to postgres role).
-UPDATE auth.users
-SET
-    banned_until = '2099-01-01 00:00:00+00'
-WHERE
-    id IN (
-        SELECT
-            id
-        FROM
-            public.user_active_status
-        WHERE
-            is_active = FALSE
+DO $$
+BEGIN
+IF to_regclass('public.user_active_status') IS NOT NULL THEN
+    UPDATE auth.users
+    SET banned_until = '2099-01-01 00:00:00+00'
+    WHERE id IN (
+        SELECT id
+        FROM public.user_active_status
+        WHERE is_active = FALSE
     );
+END IF;
+END;
+$$;
 
 -- ─── 2. Drop the cron job ─────────────────────────────────────────────────────
 DO $$
@@ -76,7 +77,7 @@ SET
     search_path = '' AS $$
 SELECT
     EXISTS (SELECT 1 FROM public.application_admins WHERE user_id = auth.uid())
-    AND NOT public.is_current_user_banned();
+    AND NOT (SELECT public.is_current_user_banned());
 $$;
 
 -- ─── 6. Rewrite deactivate_allowed_domain — use auth.users.banned_until ───────
@@ -307,8 +308,7 @@ CREATE FUNCTION public.get_users () RETURNS TABLE (
     num_embedding_tokens BIGINT,
     academic_title TEXT,
     is_admin BOOLEAN,
-    banned_until TIMESTAMPTZ,
-    deleted_at TIMESTAMPTZ
+    banned_until TIMESTAMPTZ
 ) LANGUAGE plpgsql SECURITY DEFINER
 SET
     search_path = '' AS $$
@@ -333,8 +333,7 @@ SELECT
     COALESCE(p.num_embedding_tokens, 0)::bigint,
     p.academic_title::text,
     (CASE WHEN a.user_id IS NOT NULL THEN TRUE ELSE FALSE END) AS is_admin,
-    u.banned_until::timestamptz AS banned_until,
-    NULL::timestamptz AS deleted_at
+    u.banned_until::timestamptz AS banned_until
 FROM auth.users u
          LEFT JOIN public.profiles p ON p.id = u.id
          LEFT JOIN public.application_admins a ON a.user_id = u.id
@@ -350,7 +349,7 @@ DROP INDEX IF EXISTS public.idx_user_active_status_is_active;
 
 DROP INDEX IF EXISTS public.idx_user_active_status_deleted_at;
 
-DROP TABLE public.user_active_status;
+DROP TABLE IF EXISTS public.user_active_status;
 
 -- ─── 10. Add a banned-user check to every RLS policy that authorizes a user by
 -- matching auth.uid() against an owner / user_id column. Banned users
@@ -359,8 +358,7 @@ DROP TABLE public.user_active_status;
 --
 -- Policies gated solely by public.is_application_admin() already inherit the
 -- ban check (that function now ANDs NOT is_current_user_banned()), so they are
--- left untouched. The profiles SELECT policy was already updated in the
--- preceding migration and is likewise omitted.
+-- left untouched.
 -- ─── 10.1 access_group_members ────────────────────────────────────────────────────────────────────
 ALTER POLICY access_group_members_select ON public.access_group_members USING (
     (

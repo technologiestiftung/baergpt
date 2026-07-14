@@ -46,13 +46,6 @@ async function createUser(emailPrefix: string): Promise<UserAccount> {
 
 	const id = data.user.id;
 
-	const { error: activationError } = await supabaseAdminClient
-		.from("user_active_status")
-		.update({ registration_finished_at: new Date().toISOString() })
-		.eq("id", id);
-
-	baseTest.expect(activationError).toBeNull();
-
 	return { email, password: defaultUserPassword, id };
 }
 

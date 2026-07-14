@@ -247,7 +247,7 @@ async function banUser(userId: string) {
 	const { error } = await supabaseAdminClient.auth.admin.updateUserById(
 		userId,
 		{
-			ban_duration: "876000h", // 1 year
+			ban_duration: "876000h", // 100 year
 		},
 	);
 

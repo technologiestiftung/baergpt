@@ -344,7 +344,7 @@ describe("/admin/", () => {
 		expect(getUnbannedUserData.user.banned_until).toBeUndefined();
 	});
 
-	it("PUT /admin/users/:userId/restore should return a 403 if a non admin user tries to access it", async () => {
+	it("PUT /admin/users/:userId/unban should return a 403 if a non admin user tries to access it", async () => {
 		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
 			email: givenUserEmail,
 			password: givenUserPassword,
@@ -356,7 +356,7 @@ describe("/admin/", () => {
 		const userSession = data.session;
 
 		const response = await app.request(
-			`/admin/users/${data.session.user.id}/restore`,
+			`/admin/users/${data.session.user.id}/unban`,
 			{
 				method: "PUT",
 				headers: new Headers({
