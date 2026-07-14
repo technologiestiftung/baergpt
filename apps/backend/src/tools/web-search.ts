@@ -33,7 +33,7 @@ export type StaanWebSearchResult = {
 		market: string;
 		count: number;
 		offset: number;
-	}
+	};
 	web: {
 		results: {
 			title: string;
@@ -85,7 +85,9 @@ const EMPTY_STAAN_RESULT: StaanWebSearchResult = {
 };
 const REQUEST_TIMEOUT_MS = 30_000;
 
-function isBraveWebSearchResult(output: unknown): output is BraveWebSearchResult {
+function isBraveWebSearchResult(
+	output: unknown,
+): output is BraveWebSearchResult {
 	return (
 		typeof output === "object" &&
 		output !== null &&
@@ -94,7 +96,9 @@ function isBraveWebSearchResult(output: unknown): output is BraveWebSearchResult
 	);
 }
 
-function isStaanWebSearchResult(output: unknown): output is StaanWebSearchResult {
+function isStaanWebSearchResult(
+	output: unknown,
+): output is StaanWebSearchResult {
 	return (
 		typeof output === "object" &&
 		output !== null &&
@@ -137,7 +141,9 @@ function extractStaanWebSources(
 	}
 
 	return results
-		.filter((item) => typeof item.snippet === "string" && item.snippet.length > 0)
+		.filter(
+			(item) => typeof item.snippet === "string" && item.snippet.length > 0,
+		)
 		.map((item) => ({
 			url: item.url,
 			title: item.title,
@@ -168,7 +174,6 @@ export const webSearchTool = tool({
 			const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
 			if (config.webSearchProvider === "brave") {
-
 				const res = await fetch(
 					`${config.braveSearchApiUrl}?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
 					{
@@ -188,13 +193,13 @@ export const webSearchTool = tool({
 					);
 					return EMPTY_BRAVE_RESULT;
 				}
-	
+
 				const data = (await res.json()) as BraveWebSearchResult;
-	
+
 				if (!data.grounding?.generic?.length) {
 					return EMPTY_BRAVE_RESULT;
 				}
-	
+
 				return data;
 			} else if (config.webSearchProvider === "staan") {
 				const res = await fetch(
@@ -224,10 +229,10 @@ export const webSearchTool = tool({
 				}
 
 				return data;
-			} else {
-				throw new Error(`Unsupported web search provider: ${config.webSearchProvider}`);
-			}
-
+			} 
+				throw new Error(
+					`Unsupported web search provider: ${config.webSearchProvider}`,
+				);
 			
 		} catch (error) {
 			captureError(error);
