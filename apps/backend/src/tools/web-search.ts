@@ -229,11 +229,10 @@ export const webSearchTool = tool({
 				}
 
 				return data;
-			} 
-				throw new Error(
-					`Unsupported web search provider: ${config.webSearchProvider}`,
-				);
-			
+			}
+			throw new Error(
+				`Unsupported web search provider: ${config.webSearchProvider}`,
+			);
 		} catch (error) {
 			captureError(error);
 			return config.webSearchProvider === "staan"
