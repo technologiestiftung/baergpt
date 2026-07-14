@@ -37,7 +37,7 @@ export const DocumentsList: React.FC = () => {
 			<DocumentListHeader />
 
 			<div className="flex flex-col w-full h-full">
-				<ul className="grow h-0 overflow-y-auto mt-2 md:mt-0 filesection-scrollbar">
+				<ul className="relative grow h-0 overflow-y-auto mt-2 md:mt-0 filesection-scrollbar">
 					{(isFirstLoad || isLoading) && <DocumentListSkeleton count={8} />}
 
 					{isPublicFolder(currentFolder) &&
