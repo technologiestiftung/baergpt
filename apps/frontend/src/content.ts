@@ -647,6 +647,8 @@ export const Content = {
 	"cookiesBanner.button.acceptSelection": "Auswahl bestätigen",
 	"cookiesBanner.thirdPartyCookies.label": "Externe Medien",
 	/* -------------------- Sidebar -------------------- */
+	"sidebar.navigation.news": "Neuigkeiten",
+	"sidebar.navigation.news.ariaLabel": "Neuigkeiten anzeigen",
 	"sidebar.ariaLabel": "Sidebar",
 	"sidebar.navigation.imprint": "Impressum",
 	"sidebar.navigation.imprint.link":
@@ -1365,7 +1367,7 @@ export const Content = {
 	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",
 	//Splash Modal
 	"splashModal.title": "Was ist neu?",
-	"splashModal.description": "Die wichtigsten Neuerungen im Überblick",
+	"splashModal.description": "Die wichtigsten Neuigkeiten im Überblick",
 } as const;
 
 export default Content;

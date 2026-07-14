@@ -2,8 +2,16 @@ import React from "react";
 import { useDrawerStore } from "../../store/drawer-store";
 import { Content } from "../../content";
 import { SidebarLink } from "./sidebar-link.tsx";
+import { SidebarButton } from "./sidebar-button.tsx";
+import { openSplashModal } from "../splash-modal.tsx";
 
-const navItems = [
+const newsNavItem = {
+	iconSrc: "/icons/news-icon.svg",
+	label: Content["sidebar.navigation.news"],
+	ariaLabel: Content["sidebar.navigation.news.ariaLabel"],
+};
+
+const linkNavItems = [
 	{
 		href: Content["sidebar.navigation.feedback.link"],
 		iconSrc: "/icons/feedback-icon.svg",
@@ -31,7 +39,14 @@ export const SidebarNavigation: React.FC = () => {
 	return (
 		<>
 			<div className="w-full relative flex flex-col items-center md:gap-2">
-				{navItems.map(({ href, iconSrc, label, ariaLabel }) => (
+				<SidebarButton
+					iconSrc={newsNavItem.iconSrc}
+					label={newsNavItem.label}
+					ariaLabel={newsNavItem.ariaLabel}
+					isLabelVisible={isHistorySidebarOpen}
+					onClick={() => openSplashModal()}
+				/>
+				{linkNavItems.map(({ href, iconSrc, label, ariaLabel }) => (
 					<SidebarLink
 						key={href}
 						href={href}
