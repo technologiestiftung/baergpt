@@ -885,6 +885,7 @@ export const Content = {
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
 	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
 	"chat.sendButton.ariaLabel": "Nachricht senden",
+	"chat.scrollToBottomButton.ariaLabel": "Zum Ende des Chats scrollen",
 	"chat.stopGeneratingButton.ariaLabel": "Textgenerierung stoppen",
 	"chatStopGeneratingIcon.imgAlt": "Generierung stoppen (Pause-Symbol)",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
