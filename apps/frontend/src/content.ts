@@ -1367,7 +1367,7 @@ export const Content = {
 	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",
 	//Splash Modal
 	"splashModal.title": "Was ist neu?",
-	"splashModal.description": "Die wichtigsten Neuerungen im Überblick",
+	"splashModal.description": "Die wichtigsten Neuigkeiten im Überblick",
 } as const;
 
 export default Content;

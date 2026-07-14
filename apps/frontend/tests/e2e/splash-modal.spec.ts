@@ -25,7 +25,7 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 
 			// Check modal description
 			await expect(
-				page.getByText("Die wichtigsten Neuerungen im Überblick"),
+				page.getByText("Die wichtigsten Neuigkeiten im Überblick"),
 			).toBeVisible();
 		},
 	);

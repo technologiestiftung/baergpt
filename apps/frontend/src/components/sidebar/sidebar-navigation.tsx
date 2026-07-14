@@ -3,7 +3,7 @@ import { useDrawerStore } from "../../store/drawer-store";
 import { Content } from "../../content";
 import { SidebarLink } from "./sidebar-link.tsx";
 import { SidebarButton } from "./sidebar-button.tsx";
-import { useSplashScreenStore } from "../../store/splash-screen-store.ts";
+import { openSplashModal } from "../splash-modal.tsx";
 
 const newsNavItem = {
 	iconSrc: "/icons/news-icon.svg",
@@ -35,7 +35,6 @@ const linkNavItems = [
 export const SidebarNavigation: React.FC = () => {
 	const { openDrawerId } = useDrawerStore();
 	const isHistorySidebarOpen = openDrawerId === "history";
-	const { openSplashScreen } = useSplashScreenStore();
 
 	return (
 		<>
@@ -45,7 +44,7 @@ export const SidebarNavigation: React.FC = () => {
 					label={newsNavItem.label}
 					ariaLabel={newsNavItem.ariaLabel}
 					isLabelVisible={isHistorySidebarOpen}
-					onClick={() => openSplashScreen()}
+					onClick={() => openSplashModal()}
 				/>
 				{linkNavItems.map(({ href, iconSrc, label, ariaLabel }) => (
 					<SidebarLink
