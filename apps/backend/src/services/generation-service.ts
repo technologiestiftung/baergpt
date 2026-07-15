@@ -25,7 +25,10 @@ import {
 	parseParlaToolOutput,
 	type ParlaChunkData,
 } from "../tools/mcp/parla-mcp-tools";
-import { webSearchTool } from "../tools/web-search";
+import {
+	extractWebSourcesFromToolOutput,
+	webSearchTool,
+} from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
 import {
 	citationAnswerSchema,
@@ -37,7 +40,6 @@ import {
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
-import type { WebSearchResult } from "../tools/web-search";
 
 const modelService = new ModelService();
 
@@ -393,33 +395,9 @@ export class GenerationService {
 						}
 
 						const allWebSources = steps.flatMap((step) =>
-							step.toolResults.flatMap((tr) => {
-								const generic = tr.output?.grounding
-									?.generic as WebSearchResult["grounding"]["generic"];
-								const sources = tr.output
-									?.sources as WebSearchResult["sources"];
-								if (!generic?.length || !sources) {
-									return [];
-								}
-								return (
-									generic
-										// Filter out items with no snippets
-										.filter(
-											(item) =>
-												item.snippets.find(
-													(s): s is string => typeof s === "string",
-												) !== undefined,
-										)
-										.map((item) => ({
-											url: item.url,
-											title: item.title,
-											snippet: item.snippets.find(
-												(s): s is string => typeof s === "string",
-											) as string,
-											age: sources[item.url]?.age,
-										}))
-								);
-							}),
+							step.toolResults.flatMap((tr) =>
+								extractWebSourcesFromToolOutput(tr.output),
+							),
 						);
 
 						if (allWebSources.length > 0) {
