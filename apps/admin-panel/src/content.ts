@@ -282,6 +282,45 @@ export const Content = {
 	"changeDomainStatusDialog.description.activate.p2":
 		" registrieren. Bestehende Accounts müssen separat in der Benutzerverwaltung aktiviert werden.",
 	"changeDomainStatusDialog.button.cancel": "Abbrechen",
+
+	/* ---------------------- Add New Individual Email ---------------------- */
+	"addNewIndividualEmail.title": "Neue E-Mail-Adresse hinzufügen",
+	"addNewIndividualEmail.description":
+		"Füge eine einzelne E-Mail-Adresse zur Allowlist hinzu, um dieser Person die Registrierung zu erlauben.",
+	"addNewIndividualEmail.form.email": "E-Mail-Adresse",
+	"addNewIndividualEmail.form.emailPlaceholder":
+		"z.B. max.mustermann@extern.de",
+	"addNewIndividualEmail.form.button.save": "E-Mail hinzufügen",
+	"addNewIndividualEmail.form.button.saved": "E-Mail hinzugefügt",
+	"addNewIndividualEmail.form.validation.invalidFormat":
+		"Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+	"addNewIndividualEmail.form.emailAlreadyExistsError":
+		"Diese E-Mail-Adresse ist bereits in der Allowlist.",
+	"addNewIndividualEmail.form.unsuccessful.error":
+		"Die E-Mail-Adresse konnte nicht hinzugefügt werden",
+
+	// Individual Email Allowlist Table
+	"individualEmailAllowlistTable.tableHeader.email": "E-Mail-Adresse",
+	"individualEmailAllowlistTable.tableHeader.hasAccount": "Account",
+	"individualEmailAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
+	"individualEmailAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
+	"individualEmailAllowlistTable.tableHeader.actions": "Aktionen",
+	"individualEmailAllowlistTable.tableHeader.actions.remove": "Entfernen",
+	"individualEmailAllowlistTable.tableHeader.hasAccount.yes": "Ja",
+	"individualEmailAllowlistTable.tableHeader.hasAccount.no": "Nein",
+
+	"individualEmailAllowlistTable.count.label": "E-Mails insgesamt",
+	"individualEmailAllowlistTable.searchField.placeholder":
+		"Suche nach E-Mail...",
+
+	"removeIndividualEmailDialog.title": "E-Mail entfernen",
+	"removeIndividualEmailDialog.description.withAccount": "Der Account von",
+	"removeIndividualEmailDialog.description.noAccount": "Die E-Mail-Adresse",
+	"removeIndividualEmailDialog.description.p2":
+		"wird aus der Allowlist entfernt und der Account (falls vorhanden) wird permanent gelöscht.",
+	"removeIndividualEmailDialog.button.cancel": "Abbrechen",
+
+	"admin.sidebar.navigation.individualEmailAllowlist": "E-Mail-Verwaltung",
 } as const;
 
 export default Content;

@@ -10,6 +10,10 @@ interface UserErrorStore {
 const errorMessages: { [key: string]: string } = {
 	"Failed to add allowed email domain":
 		Content["addNewDomain.form.unsuccessful.error"],
+	"Failed to add individual email":
+		Content["addNewIndividualEmail.form.unsuccessful.error"],
+	'duplicate key value violates unique constraint "allowed_individual_emails_email_key"':
+		Content["addNewIndividualEmail.form.emailAlreadyExistsError"],
 };
 
 export const useUserErrorStore = create<UserErrorStore>()((set) => ({

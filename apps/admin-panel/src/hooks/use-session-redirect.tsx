@@ -80,6 +80,7 @@ function handleAuthorized(pathname: string, navigate: (path: string) => void) {
 		"/product-dashboard/",
 		"/base-knowledge/",
 		"/domain-allowlist/",
+		"/individual-email-allowlist/",
 	];
 
 	// Allow access to protected pages

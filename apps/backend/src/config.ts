@@ -115,13 +115,15 @@ export function verifyConfig(): void {
 	}
 
 	if (
-		(process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
-			(!process.env.BRAVE_SEARCH_API_KEY ||
-				!process.env.BRAVE_SEARCH_API_URL ||
-				!process.env.BRAVE_SEARCH_MAX_RPS)) ||
-		!process.env.STAAN_SEARCH_API_KEY ||
-		!process.env.STAAN_SEARCH_API_URL ||
-		!process.env.STAAN_SEARCH_MAX_RPS
+		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
+		!(
+			(process.env.BRAVE_SEARCH_API_KEY &&
+				process.env.BRAVE_SEARCH_API_URL &&
+				process.env.BRAVE_SEARCH_MAX_RPS) ||
+			(process.env.STAAN_SEARCH_API_KEY &&
+				process.env.STAAN_SEARCH_API_URL &&
+				process.env.STAAN_SEARCH_MAX_RPS)
+		)
 	) {
 		throw new Error(
 			"BRAVE_SEARCH_API_KEY, BRAVE_SEARCH_API_URL and BRAVE_SEARCH_MAX_RPS or STAAN_SEARCH_API_KEY, STAAN_SEARCH_API_URL and STAAN_SEARCH_MAX_RPS must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",

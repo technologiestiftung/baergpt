@@ -18,7 +18,7 @@ export const BanOrDeleteUserDialog: React.FC = () => {
 		isDeleteUserDialogOpen,
 		setSelectedUser,
 		setDeleteUserDialogOpen,
-		deleteUser,
+		deleteUserById,
 		getUsers,
 	} = useUserStore();
 
@@ -34,7 +34,7 @@ export const BanOrDeleteUserDialog: React.FC = () => {
 		}
 
 		if (type === "delete") {
-			await deleteUser(selectedUser.user_id);
+			await deleteUserById(selectedUser.user_id);
 		}
 
 		setDeleteUserDialogOpen(false);
