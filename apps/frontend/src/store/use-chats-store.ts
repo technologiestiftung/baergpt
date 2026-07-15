@@ -31,7 +31,7 @@ interface ChatStore {
 	isLoading: boolean;
 	chats: ChatWithMessages[];
 	totalChatCount: number | null;
-	selectedChatOption: ChatOption | null;
+	selectedChatOptions: ChatOption[];
 	selectedLlmModel: LlmModel;
 	resetToDefaultChatOptions(): void;
 	toggleChatOption(option: ChatOption): void;
@@ -58,8 +58,8 @@ interface ChatStore {
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
 	}): void;
-	autoDeactivatedExternalTool: ChatOption | null;
-	setAutoDeactivatedExternalTool(tool: ChatOption | null): void;
+	autoDeactivatedExternalTools: ChatOption[];
+	setAutoDeactivatedExternalTools(tools: ChatOption[]): void;
 	deactivateExternalTools(): void;
 }
 
@@ -70,52 +70,60 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isLoading: false,
 	chats: [],
 	totalChatCount: null,
-	selectedChatOption: null,
+	selectedChatOptions: [],
 	selectedLlmModel: "mistral-small",
-	autoDeactivatedExternalTool: null,
+	autoDeactivatedExternalTools: [],
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
 	},
 
 	resetToDefaultChatOptions() {
-		set({ selectedChatOption: null });
+		set({ selectedChatOptions: [] });
 	},
 
 	toggleChatOption(option: ChatOption) {
-		const { selectedChatOption } = get();
-		if (selectedChatOption === option) {
-			set({ selectedChatOption: null });
-		} else {
-			if (option === "webSearch") {
-				const { selectedUserChatDocuments, unselectUserChatDocument } =
-					useUserDocumentStore.getState();
-				selectedUserChatDocuments.forEach((document) =>
-					unselectUserChatDocument(document.id),
-				);
+		const { selectedChatOptions } = get();
 
-				const { selectedUserChatFolders, unselectUserChatFolder } =
-					useUserFolderStore.getState();
-				selectedUserChatFolders.forEach((folder) =>
-					unselectUserChatFolder(folder.id),
-				);
-
-				const {
-					selectedPublicChatDocuments,
-					selectedPublicChatFolders,
-					unselectPublicChatDocument,
-					unselectPublicChatFolder,
-				} = usePublicDocumentsStore.getState();
-				selectedPublicChatDocuments.forEach((document) =>
-					unselectPublicChatDocument(document.id),
-				);
-				selectedPublicChatFolders.forEach((folder) =>
-					unselectPublicChatFolder(folder.id),
-				);
-			}
-
-			set({ selectedChatOption: option });
+		if (selectedChatOptions.includes(option)) {
+			set({
+				selectedChatOptions: selectedChatOptions.filter(
+					(active) => active !== option,
+				),
+			});
+			return;
 		}
+
+		// Activating any external tool clears selected documents/folders, because
+		// document/folder RAG is mutually exclusive with external tools.
+		if (externalToolOptions.includes(option)) {
+			const { selectedUserChatDocuments, unselectUserChatDocument } =
+				useUserDocumentStore.getState();
+			selectedUserChatDocuments.forEach((document) =>
+				unselectUserChatDocument(document.id),
+			);
+
+			const { selectedUserChatFolders, unselectUserChatFolder } =
+				useUserFolderStore.getState();
+			selectedUserChatFolders.forEach((folder) =>
+				unselectUserChatFolder(folder.id),
+			);
+
+			const {
+				selectedPublicChatDocuments,
+				selectedPublicChatFolders,
+				unselectPublicChatDocument,
+				unselectPublicChatFolder,
+			} = usePublicDocumentsStore.getState();
+			selectedPublicChatDocuments.forEach((document) =>
+				unselectPublicChatDocument(document.id),
+			);
+			selectedPublicChatFolders.forEach((folder) =>
+				unselectPublicChatFolder(folder.id),
+			);
+		}
+
+		set({ selectedChatOptions: [...selectedChatOptions, option] });
 	},
 
 	/**
@@ -304,25 +312,29 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		}, 300);
 	},
 
-	setAutoDeactivatedExternalTool(tool) {
+	setAutoDeactivatedExternalTools(tools: ChatOption[]) {
 		if (autoDeactivateExternalToolTimeout) {
 			clearTimeout(autoDeactivateExternalToolTimeout);
 		}
-		set({ autoDeactivatedExternalTool: tool });
+		set({ autoDeactivatedExternalTools: tools });
 		autoDeactivateExternalToolTimeout = setTimeout(() => {
-			set({ autoDeactivatedExternalTool: null });
+			set({ autoDeactivatedExternalTools: [] });
 		}, 20_000);
 	},
 
 	deactivateExternalTools() {
-		const { selectedChatOption } = get();
-		if (
-			!selectedChatOption ||
-			!externalToolOptions.includes(selectedChatOption)
-		) {
+		const { selectedChatOptions } = get();
+		const activeExternalTools = selectedChatOptions.filter((option) =>
+			externalToolOptions.includes(option),
+		);
+		if (activeExternalTools.length === 0) {
 			return;
 		}
-		get().toggleChatOption(selectedChatOption);
-		get().setAutoDeactivatedExternalTool(selectedChatOption);
+		set({
+			selectedChatOptions: selectedChatOptions.filter(
+				(option) => !externalToolOptions.includes(option),
+			),
+		});
+		get().setAutoDeactivatedExternalTools(activeExternalTools);
 	},
 }));

@@ -34,9 +34,9 @@ export const ChatForm: React.FC = () => {
 		useUserFolderStore();
 	const { getSelectedPublicChatDocumentIds } = usePublicDocumentsStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
-	const { getCurrentOrCreateChat, selectedChatOption, toggleChatOption } =
+	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
 		useChatsStore();
-	const { setAutoDeactivatedExternalTool } = useChatsStore.getState();
+	const { setAutoDeactivatedExternalTools } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -82,7 +82,7 @@ export const ChatForm: React.FC = () => {
 		// Clear any previous errors
 		clearError();
 
-		setAutoDeactivatedExternalTool(null);
+		setAutoDeactivatedExternalTools([]);
 
 		// Clear textarea on submit
 		if (textarea) {
@@ -101,6 +101,7 @@ export const ChatForm: React.FC = () => {
 			content: messageText,
 			citations: null,
 			web_citations: null,
+			parla_citations: null,
 			allowed_document_ids,
 			allowed_folder_ids: selectedUserChatFolders.map((folder) => folder.id),
 		};
@@ -126,7 +127,7 @@ export const ChatForm: React.FC = () => {
 
 	const hasError = status === "error";
 
-	const isWebSearchActive = selectedChatOption === "webSearch";
+	const isWebSearchActive = selectedChatOptions.includes("webSearch");
 	const textAreaPlaceholder = isWebSearchActive
 		? Content["chat.textarea.placeholder.webSearch"]
 		: Content["chat.textarea.placeholder"];
@@ -170,12 +171,13 @@ export const ChatForm: React.FC = () => {
 					<div className="flex items-center gap-3">
 						<ChatOptionsToggleButton />
 						<div className="items-center gap-2 hidden md:flex">
-							{selectedChatOption && (
+							{selectedChatOptions.map((option) => (
 								<ContextPill
-									option={selectedChatOption}
-									onClose={() => toggleChatOption(selectedChatOption)}
+									key={option}
+									option={option}
+									onClose={() => toggleChatOption(option)}
 								/>
-							)}
+							))}
 						</div>
 					</div>
 					<div className="flex items-center gap-3">

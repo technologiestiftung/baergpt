@@ -47,7 +47,7 @@ export async function getCompletion(
 		updateMessage,
 		addMessageToChat,
 		selectedLlmModel,
-		selectedChatOption,
+		selectedChatOptions,
 	} = useChatsStore.getState();
 	const { getSelectedUserChatDocumentIds } = useUserDocumentStore.getState();
 	const { getSelectedUserChatFolderIds } = useUserFolderStore.getState();
@@ -104,9 +104,9 @@ export async function getCompletion(
 					allowed_document_ids: allowedDocumentIds,
 					allowed_folder_ids: selectedFolderIds,
 					is_addressed_formal: user?.is_addressed_formal,
-					active_tools: selectedChatOption
-						? (activeToolsDict[selectedChatOption] ?? [])
-						: [],
+					active_tools: selectedChatOptions.flatMap(
+						(option) => activeToolsDict[option] ?? [],
+					),
 					llm_model: selectedLlmModel,
 				}),
 			},
@@ -137,10 +137,21 @@ export async function getCompletion(
 		});
 
 		let currentText = "";
-		let citations: number[] = [];
+		let documentCitations: number[] = [];
 		let webCitations: WebCitationSource[] = [];
+		let parlaCitations: ParlaCitationSource[] = [];
 
 		let hasReceivedText = false;
+
+		const writeMessage = () =>
+			updateMessage({
+				chat: currentChat,
+				messageId,
+				content: currentText,
+				citations: documentCitations.length ? documentCitations : null,
+				web_citations: webCitations.length ? webCitations : null,
+				parla_citations: parlaCitations.length ? parlaCitations : null,
+			});
 
 		await parseStream(response.body, {
 			onTextDelta: (delta: string) => {
@@ -151,54 +162,26 @@ export async function getCompletion(
 				}
 
 				currentText += delta;
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-					web_citations: null,
-					parla_citations: null,
-				});
+				writeMessage();
 			},
 			onCitations: (chunkIds: number[]) => {
-				citations = chunkIds;
-				// Update message immediately when citations arrive
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-					web_citations: null,
-					parla_citations: null,
-				});
+				documentCitations = chunkIds;
+				writeMessage();
 				// Cache the citations now
-				if (citations.length) {
-					ensureCached(citations);
+				if (documentCitations.length) {
+					ensureCached(documentCitations);
 				}
 			},
 			onWebCitations: (webSources: WebCitationSource[]) => {
 				webCitations = webSources;
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: null,
-					web_citations: webCitations.length ? webCitations : null,
-					parla_citations: null,
-				});
+				writeMessage();
 				if (webSources.length) {
 					ensureFaviconsCached(webSources.map(({ url }) => url));
 				}
 			},
 			onParlaCitations: (sources: ParlaCitationSource[]) => {
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: null,
-					web_citations: null,
-					parla_citations: sources.length ? sources : null,
-				});
+				parlaCitations = sources;
+				writeMessage();
 			},
 			onFinish: () => {
 				setStatus("idle");

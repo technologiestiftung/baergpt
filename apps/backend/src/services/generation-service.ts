@@ -69,6 +69,16 @@ type RelevantTools = {
 	cleanup?: () => Promise<void>;
 };
 
+/**
+ * The base `free-chat-basic` prompt exposes a `{{toolInstructions}}`
+ * variable, into which we inject one instruction block per active tool.
+ */
+const TOOL_INSTRUCTION_PROMPTS: ReadonlyArray<[ActiveTools, string]> = [
+	["ragSearchTool", "tool-instruction-documents"],
+	["webSearchTool", "tool-instruction-web-search"],
+	["parlaMCPTools", "tool-instruction-parla"],
+];
+
 export class GenerationService {
 	private readonly dbService: BaseContentDbService;
 	private readonly embeddingService: EmbeddingService;
@@ -631,30 +641,27 @@ export class GenerationService {
 		});
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
-		let freeChatPromptClient: TextPromptClient;
+		const label = config.nodeEnv === "test" ? "development" : config.nodeEnv;
 
-		if (
-			config.featureFlagWebSearchAllowed &&
-			activeTools.includes("webSearchTool")
-		) {
-			freeChatPromptClient = await getTextPrompt(
-				"free-chat-with-web-search-enabled",
-				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
-			);
-		} else if (activeTools.includes("ragSearchTool")) {
-			freeChatPromptClient = await getTextPrompt("free-chat-with-documents", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			});
-		} else {
-			freeChatPromptClient = await getTextPrompt("free-chat", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			});
+		const freeChatPromptClient = await getTextPrompt("free-chat-basic", {
+			label,
+		});
+		const activeToolSet = new Set(activeTools);
+		const toolInstructionBlocks: string[] = [];
+		for (const [tool, promptName] of TOOL_INSTRUCTION_PROMPTS) {
+			if (!activeToolSet.has(tool)) {
+				continue;
+			}
+			const blockClient = await getTextPrompt(promptName, { label });
+			toolInstructionBlocks.push(blockClient.compile({}));
 		}
+		const toolInstructions = toolInstructionBlocks.join("\n\n");
 
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
 			userSystemPrompt: buildUserSystemPromptBlock(userSystemPrompt),
+			toolInstructions: toolInstructions,
 		});
 
 		const freeChatPrompt: ModelMessage = {
