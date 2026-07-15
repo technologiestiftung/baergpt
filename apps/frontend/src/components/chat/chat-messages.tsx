@@ -22,14 +22,8 @@ export const ChatMessages: React.FC = () => {
 		(message) => message.role === "user",
 	).length;
 
-	const {
-		messagesContainerRef,
-		contentRef,
-		spacerRef,
-		isAtBottom,
-		onScroll,
-		scrollToBottom,
-	} = useChatScrolling(currentChatId, userMessageCount);
+	const { messagesContainerRef, contentRef, spacerRef, isAtBottom, onScroll } =
+		useChatScrolling(currentChatId, userMessageCount);
 
 	const isWaitingForResponse = status === "waiting-for-response";
 	const hasError = status === "error";
@@ -64,7 +58,7 @@ export const ChatMessages: React.FC = () => {
 					<div ref={spacerRef} aria-hidden="true" className="shrink-0" />
 				</div>
 			</output>
-			{!isAtBottom && <ChatScrollButton scrollToBottom={scrollToBottom} />}
+			{!isAtBottom && <ChatScrollButton />}
 		</div>
 	);
 };

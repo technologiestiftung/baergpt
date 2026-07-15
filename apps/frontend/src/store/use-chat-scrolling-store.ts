@@ -44,7 +44,7 @@ export const useChatScrollingStore = create<ChatScrollingStore>()(
 		},
 
 		/**
-		 * While reserving space, keep just enough room below the last user message
+		 * While reserving space, keep enough room below the last user message
 		 * for it to sit at the top of the viewport; shrinks to zero as the answer
 		 * fills the view.
 		 */
