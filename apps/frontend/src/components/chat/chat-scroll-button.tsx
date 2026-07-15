@@ -7,7 +7,7 @@ export const ChatScrollButton = () => {
 		<button
 			type="button"
 			onClick={() => scrollToBottom()}
-			className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white shadow-md focus-visible:outline-2px"
+			className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full hover:bg-hellblau-30 transition-colors duration-300 bg-white shadow-lg focus-visible:outline-2px"
 			aria-label={Content["chat.scrollToBottomButton.ariaLabel"]}
 		>
 			<img
