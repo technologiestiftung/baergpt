@@ -55,3 +55,11 @@ export type AllowedEmailDomain = {
 	last_status_change_by: string | null;
 	user_count: number;
 };
+
+export type AllowedIndividualEmail = {
+	id: number;
+	email: string;
+	created_at: string;
+	created_by: string | null;
+	has_account: boolean;
+};

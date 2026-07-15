@@ -40,12 +40,13 @@ interface UserStore {
 		},
 	) => Promise<void>;
 	updateUserAdminStatus: (userId: string, isAdmin: boolean) => Promise<void>;
-	deleteUser: (userId: string) => Promise<void>;
+	deleteUserById: (userId: string) => Promise<void>;
+	deleteUserByEmail: (userId: string) => Promise<void>;
 	banUser: (userId: string) => Promise<void>;
 	unbanUser: (userId: string) => Promise<void>;
 }
 
-export const useUserStore = create<UserStore>((set) => ({
+export const useUserStore = create<UserStore>((set, get) => ({
 	user: null,
 	users: [],
 	selectedUser: null,
@@ -156,12 +157,25 @@ export const useUserStore = create<UserStore>((set) => ({
 		}
 	},
 
-	deleteUser: async (userId: string) => {
+	deleteUserById: async (userId: string) => {
 		try {
 			await deleteUser(userId);
 		} catch (error) {
 			console.error("Failed to delete user:", error);
 		}
+	},
+
+	deleteUserByEmail: async (email: string) => {
+		const foundUser = get().users.find((user) => user.email === email);
+
+		if (!foundUser) {
+			console.error(
+				`User with email ${email} could not be found for deletion.`,
+			);
+			return;
+		}
+
+		await get().deleteUserById(foundUser.user_id);
 	},
 
 	banUser: async (userId: string) => {

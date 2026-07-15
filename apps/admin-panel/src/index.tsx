@@ -8,6 +8,7 @@ import { BaseKnowledgePage } from "./routes/base-knowledge/index";
 import { LoginPage } from "./routes/login-page";
 import { ProductDashboardPage } from "@/routes/product-dashboard";
 import { DomainAllowlistPage } from "./routes/domain-allowlist/index";
+import { IndividualEmailAllowlistPage } from "./routes/individual-email-allowlist/index";
 
 const router = createBrowserRouter([
 	{
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
 	{
 		path: "/domain-allowlist/",
 		element: <DomainAllowlistPage />,
+	},
+	{
+		path: "/individual-email-allowlist/",
+		element: <IndividualEmailAllowlistPage />,
 	},
 	{
 		path: "/login/",

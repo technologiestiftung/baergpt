@@ -73,8 +73,14 @@ export const testWithAdminUser = baseTest.extend<
 			const { error: deleteUserError } =
 				await supabaseAdminClient.auth.admin.deleteUser(id);
 			if (deleteUserError?.message !== "User not found") {
-				testWithAdminUser.expect(deleteUserError).toBeNull();
+				baseTest.expect(deleteUserError).toBeNull();
 			}
+
+			const { error: removeIndividualEmailError } = await supabaseAdminClient
+				.from("allowed_individual_emails")
+				.delete()
+				.eq("email", email);
+			baseTest.expect(removeIndividualEmailError).toBeNull();
 		},
 		{ scope: "worker" },
 	],
