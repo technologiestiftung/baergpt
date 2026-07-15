@@ -8,7 +8,6 @@ import { requestPasswordResetByEmail } from "../api/auth/request-password-reset-
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
-import { getAllowedEmailDomains } from "../api/auth/get-allowed-email-domains.ts";
 import { registerUser } from "../api/auth/register-user.ts";
 import { resendEmailConfirmation } from "../api/auth/resend-email-confirmation.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
@@ -31,7 +30,6 @@ interface AuthStore {
 	isUserAdmin: boolean;
 	isAdminStatusLoaded: boolean;
 	isBanned: boolean | null;
-	allowedEmailDomains?: string[];
 	register: (args: {
 		firstName: string;
 		lastName: string;
@@ -56,7 +54,6 @@ interface AuthStore {
 	logout: () => Promise<void>;
 	checkIsUserAdmin: (signal: AbortSignal) => Promise<void>;
 	checkIsUserBanned: () => Promise<void>;
-	getAllowedEmailDomains: (signal: AbortSignal) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>()((set, get) => {
@@ -353,11 +350,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			const isUserBanned = await getIsUserBanned();
 
 			set({ isBanned: isUserBanned });
-		},
-
-		async getAllowedEmailDomains(signal: AbortSignal) {
-			const allowedEmailDomains = await getAllowedEmailDomains(signal);
-			set({ allowedEmailDomains });
 		},
 	};
 });

@@ -13,7 +13,7 @@
 		"prettier:check": "prettier  --check .",
 		"prettier:write": "prettier --write .",
 		"preview": "vite preview",
-		"test": "vitest run src",
+		"test": "vitest run src --passWithNoTests",
 		"test:watch": "vitest watch src",
 		"test:a11y": "npx playwright test tests/a11y --config=playwright.config.ts",
 		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts"

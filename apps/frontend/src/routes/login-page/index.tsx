@@ -46,6 +46,7 @@ export function LoginPage() {
 							<EmailInput
 								id="email"
 								placeholder="vorname.name@subdomain.berlin.de"
+								useEmailAllowedCheck={false}
 							/>
 						</label>
 
