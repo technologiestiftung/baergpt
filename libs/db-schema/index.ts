@@ -125,6 +125,27 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			allowed_individual_emails: {
+				Row: {
+					created_at: string;
+					created_by: string | null;
+					email: string;
+					id: number;
+				};
+				Insert: {
+					created_at?: string;
+					created_by?: string | null;
+					email: string;
+					id?: number;
+				};
+				Update: {
+					created_at?: string;
+					created_by?: string | null;
+					email?: string;
+					id?: number;
+				};
+				Relationships: [];
+			};
 			application_admins: {
 				Row: {
 					id: number;
@@ -517,6 +538,10 @@ export type Database = {
 				Args: { p_domain: string };
 				Returns: undefined;
 			};
+			add_allowed_individual_email: {
+				Args: { p_email: string };
+				Returns: undefined;
+			};
 			change_value_for_user_by: {
 				Args: {
 					amount: number;
@@ -524,6 +549,10 @@ export type Database = {
 					user_id_to_update: string;
 				};
 				Returns: undefined;
+			};
+			check_email_allowed: {
+				Args: { p_email: string };
+				Returns: boolean;
 			};
 			deactivate_allowed_domain: {
 				Args: { p_domain: string };
@@ -567,6 +596,16 @@ export type Database = {
 					last_status_change_at: string;
 					last_status_change_by: string;
 					user_count: number;
+				}[];
+			};
+			get_allowed_individual_emails: {
+				Args: Record<PropertyKey, never>;
+				Returns: {
+					created_at: string;
+					created_by: string;
+					email: string;
+					has_account: boolean;
+					id: number;
 				}[];
 			};
 			get_base_knowledge_documents: {
@@ -623,7 +662,6 @@ export type Database = {
 				Returns: {
 					academic_title: string;
 					banned_until: string;
-					deleted_at: string;
 					email: string;
 					first_name: string;
 					invited_at: string;
@@ -737,6 +775,10 @@ export type Database = {
 			};
 			regenerate_embedding_indices_for_summaries: {
 				Args: Record<PropertyKey, never>;
+				Returns: undefined;
+			};
+			remove_allowed_individual_email: {
+				Args: { p_email: string };
 				Returns: undefined;
 			};
 			update_user_email_confirmed_at: {

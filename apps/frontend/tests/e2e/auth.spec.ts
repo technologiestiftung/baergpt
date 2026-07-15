@@ -265,16 +265,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		// Go to the registration page
 		await page.goto("/register/");
 
-		// Wait for allowed email domains to be loaded before filling the form
-		await page
-			.waitForResponse(
-				(resp) => resp.url().includes("get_allowed_email_domains"),
-				{ timeout: 10_000 },
-			)
-			.catch(() => {}); // Ignore if already completed
-
 		// Fill in the registration form
-
 		const firstNameInput = page.getByRole("textbox", {
 			name: "Vorname",
 		});
@@ -287,6 +278,13 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			name: "E-Mail-Adresse Nur",
 		});
 		await emailInput.fill(givenUserEmail);
+
+		// Wait for check email allowed to be loaded before proceeding
+		await page
+			.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
+				timeout: 10_000,
+			})
+			.catch(() => {}); // Ignore if already completed
 
 		const passwordInput = page.getByRole("textbox", {
 			name: "Passwort",
@@ -336,6 +334,35 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		).toBeVisible();
 	});
 });
+
+testWithoutSplashScreen(
+	"Try to register with not allowed user",
+	async ({ page }) => {
+		// Go to the registration page
+		await page.goto("/register/");
+
+		// Wait for check email allowed to be loaded before proceeding
+		const emailAllowedCheck = page
+			.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
+				timeout: 10_000,
+			})
+			.catch(() => {}); // Ignore if already completed
+
+		const emailInput = page.getByRole("textbox", {
+			name: "E-Mail-Adresse Nur",
+		});
+		await emailInput.click();
+		await emailInput.pressSequentially("not-allowed@example.com");
+		await emailInput.blur();
+
+		await emailAllowedCheck;
+
+		const errorMessage = page.getByText(
+			"E-Mail nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
+		);
+		await expect(errorMessage).toBeVisible();
+	},
+);
 
 testWithRegisteredUser.describe("User ban", async () => {
 	async function banUser(userId: string) {

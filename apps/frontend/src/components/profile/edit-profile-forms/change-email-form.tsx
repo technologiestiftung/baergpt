@@ -96,8 +96,8 @@ export function ChangeEmailForm() {
 						key={resetKey}
 						id="email"
 						defaultValue={originalEmail || ""}
-						useRegexValidation={true}
 						className="placeholder:text-dunkelblau-200"
+						useEmailAllowedCheck={true}
 					/>
 					{changeMailError && (
 						<div className="text-berlin-rot mt-1.5 text-sm" role="alert">

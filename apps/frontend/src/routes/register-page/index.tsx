@@ -1,4 +1,4 @@
-import React, { type FormEvent, useRef, useState, useEffect } from "react";
+import React, { type FormEvent, useRef, useState } from "react";
 import Checkbox from "../../components/primitives/checkboxes/checkbox.tsx";
 import Content from "../../content.ts";
 import { TextInput } from "../../components/primitives/text-inputs/text-input.tsx";
@@ -14,21 +14,12 @@ import { ChevronIcon } from "../../components/primitives/icons/chevron-icon.tsx"
 import * as Sentry from "@sentry/react";
 
 export function RegisterPage() {
-	const { register, getAllowedEmailDomains } = useAuthStore();
+	const { register } = useAuthStore();
 	const { error } = useAuthErrorStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
 	const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
-
-	useEffect(() => {
-		const controller = new AbortController();
-		getAllowedEmailDomains(controller.signal);
-
-		return () => {
-			controller.abort();
-		};
-	}, []);
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -172,7 +163,7 @@ export function RegisterPage() {
 							<EmailInput
 								id="email"
 								placeholder={Content["registerPage.emailPlaceholder"]}
-								useRegexValidation={true}
+								useEmailAllowedCheck={true}
 							/>
 						</label>
 

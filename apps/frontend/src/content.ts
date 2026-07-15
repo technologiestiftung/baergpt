@@ -1209,7 +1209,7 @@ export const Content = {
 	"form.validation.general.valueMissing": "Bitte füllen Sie dieses Feld aus.",
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
 	"form.validation.email.customError":
-		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
+		"E-Mail nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"form.validation.password.tooShort":
 		"Das Passwort muss mindestens 10 Zeichen lang sein.",
 	"form.validation.login.password.tooShort":

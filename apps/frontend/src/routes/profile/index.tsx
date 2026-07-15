@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import Content from "../../content.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { AppLayout } from "../../layouts/app-layout.tsx";
@@ -11,18 +10,8 @@ import { ChatSettings } from "../../components/profile/chat-settings/chat-settin
 import { ChangePasswordForm } from "../../components/profile/edit-profile-forms/change-password-form.tsx";
 
 export function ProfilePage() {
-	const { getAllowedEmailDomains } = useAuthStore();
 	const { session } = useAuthStore();
 	useSessionRedirect();
-
-	useEffect(() => {
-		const controller = new AbortController();
-		getAllowedEmailDomains(controller.signal);
-
-		return () => {
-			controller.abort();
-		};
-	}, []);
 
 	if (!session) {
 		return null;
