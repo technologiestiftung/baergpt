@@ -312,16 +312,12 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			set({
 				session: null,
 				unconfirmedEmail: null,
+				isBanned: null,
 				emailConfirmationStatus: "unknown",
 				isInitialized: true,
 				isUserAdmin: false,
 				isAdminStatusLoaded: false,
 			});
-			/**
-			 * Reset the isActive state when logging out,
-			 * so that a new login starts with a fresh state,
-			 * and not with the previous user's active state.
-			 */
 
 			/**
 			 * In the past, sometimes the session was not destroyed properly.
