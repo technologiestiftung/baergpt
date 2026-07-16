@@ -153,7 +153,7 @@ export const ChatForm: React.FC = () => {
 								`}
 				>
 					<textarea
-						className={`w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
+						className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
 						ref={textareaRef}
 						name="content"
 						rows={1}
