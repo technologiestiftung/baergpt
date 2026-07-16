@@ -6,6 +6,7 @@ interface UseDropdownKeyboardProps<T> {
 	isOpen: boolean;
 	onClose: () => void;
 	onItemClick: (value: T) => void;
+	closeOnArrowLeft?: boolean;
 }
 
 interface UseDropdownKeyboardReturn {
@@ -18,6 +19,7 @@ export function useDropdownKeyboard<T>({
 	isOpen,
 	onClose,
 	onItemClick,
+	closeOnArrowLeft = false,
 }: UseDropdownKeyboardProps<T>): UseDropdownKeyboardReturn {
 	const optionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
@@ -27,6 +29,9 @@ export function useDropdownKeyboard<T>({
 		currentIndex: number,
 		optionButtons: HTMLButtonElement[],
 	) => {
+		if (optionButtons.length === 0) {
+			return;
+		}
 		const nextIndex = (currentIndex + 1) % optionButtons.length;
 		optionButtons[nextIndex].focus();
 	};
@@ -35,6 +40,9 @@ export function useDropdownKeyboard<T>({
 		currentIndex: number,
 		optionButtons: HTMLButtonElement[],
 	) => {
+		if (optionButtons.length === 0) {
+			return;
+		}
 		const previousIndex =
 			(currentIndex - 1 + optionButtons.length) % optionButtons.length;
 		optionButtons[previousIndex].focus();
@@ -51,6 +59,13 @@ export function useDropdownKeyboard<T>({
 			case "Tab":
 				event.preventDefault();
 				onClose();
+				break;
+
+			case "ArrowLeft":
+				if (closeOnArrowLeft) {
+					event.preventDefault();
+					onClose();
+				}
 				break;
 
 			case "ArrowDown":

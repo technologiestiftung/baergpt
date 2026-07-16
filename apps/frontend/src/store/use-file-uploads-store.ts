@@ -36,10 +36,18 @@ export type FileUpload = {
 
 const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
 
+export type UploadFilesOptions = {
+	selectInChatOnSuccess?: boolean;
+};
+
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
-	uploadFile: (args: { fileUpload: FileUpload; span: Span }) => Promise<void>;
-	uploadFiles: (files: File[]) => Promise<void>;
+	uploadFile: (args: {
+		fileUpload: FileUpload;
+		span: Span;
+		selectInChatOnSuccess?: boolean;
+	}) => Promise<void>;
+	uploadFiles: (files: File[], options?: UploadFilesOptions) => Promise<void>;
 	isUploadingOver: () => boolean;
 	hasAvailableUploadSlots: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
@@ -50,10 +58,11 @@ type UseFileUploadsStore = {
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
 
-	async uploadFile({ fileUpload: { file }, span }) {
+	async uploadFile({ fileUpload: { file }, span, selectInChatOnSuccess }) {
 		const { updateFileUploadStatus } = get();
 		const { session } = useAuthStore.getState();
-		const { userDocuments, getUserDocuments } = useUserDocumentStore.getState();
+		const { userDocuments, getUserDocuments, selectUserChatDocument } =
+			useUserDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
 		const slugifiedFilename = slugify(file.name, { lower: true });
@@ -96,6 +105,16 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 
 			await getUserDocuments(new AbortController().signal);
+
+			if (selectInChatOnSuccess) {
+				const uploadedDocument = useUserDocumentStore
+					.getState()
+					.userDocuments.find((doc) => doc.source_url === filePath);
+
+				if (uploadedDocument) {
+					selectUserChatDocument(uploadedDocument);
+				}
+			}
 		} catch (error) {
 			useErrorStore.getState().handleError(error, span);
 
@@ -110,8 +129,9 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		}
 	},
 
-	uploadFiles: async (files: File[]) => {
+	uploadFiles: async (files: File[], options?: UploadFilesOptions) => {
 		const { fileUploads, uploadFile } = get();
+		const { selectInChatOnSuccess } = options ?? {};
 		const { userDocuments, deletedDefaultDocumentIds } =
 			useUserDocumentStore.getState();
 
@@ -181,7 +201,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 					Sentry.startSpan(
 						{ name: "File Upload", op: "file.upload" },
 						async (span) => {
-							await uploadFile({ fileUpload, span });
+							await uploadFile({ fileUpload, span, selectInChatOnSuccess });
 						},
 					).finally(() => {
 						queueState.activeUploads--;

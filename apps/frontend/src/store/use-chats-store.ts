@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type {
 	ChatWithMessages,
 	NewChatMessage,
-	ChatOption,
+	ChatTool,
 	LlmModel,
 } from "../common";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
@@ -31,10 +31,10 @@ interface ChatStore {
 	isLoading: boolean;
 	chats: ChatWithMessages[];
 	totalChatCount: number | null;
-	selectedChatOptions: ChatOption[];
+	selectedChatTools: ChatTool[];
 	selectedLlmModel: LlmModel;
-	resetToDefaultChatOptions(): void;
-	toggleChatOption(option: ChatOption): void;
+	resetToDefaultChatTools(): void;
+	toggleChatTool(tool: ChatTool): void;
 	setSelectedLlmModel(model: LlmModel): void;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
@@ -58,19 +58,19 @@ interface ChatStore {
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
 	}): void;
-	autoDeactivatedExternalTools: ChatOption[];
-	setAutoDeactivatedExternalTools(tools: ChatOption[]): void;
+	autoDeactivatedExternalTools: ChatTool[];
+	setAutoDeactivatedExternalTools(tools: ChatTool[]): void;
 	deactivateExternalTools(): void;
 }
 
-const externalToolOptions: ChatOption[] = ["webSearch", "parla"];
+const externalChatTools: ChatTool[] = ["webSearch", "parla"];
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
 	isLoading: false,
 	chats: [],
 	totalChatCount: null,
-	selectedChatOptions: [],
+	selectedChatTools: [],
 	selectedLlmModel: "mistral-small",
 	autoDeactivatedExternalTools: [],
 
@@ -78,17 +78,17 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		set({ selectedLlmModel: model });
 	},
 
-	resetToDefaultChatOptions() {
-		set({ selectedChatOptions: [] });
+	resetToDefaultChatTools() {
+		set({ selectedChatTools: [], autoDeactivatedExternalTools: [] });
 	},
 
-	toggleChatOption(option: ChatOption) {
-		const { selectedChatOptions } = get();
+	toggleChatTool(tool: ChatTool) {
+		const { selectedChatTools } = get();
 
-		if (selectedChatOptions.includes(option)) {
+		if (selectedChatTools.includes(tool)) {
 			set({
-				selectedChatOptions: selectedChatOptions.filter(
-					(active) => active !== option,
+				selectedChatTools: selectedChatTools.filter(
+					(active) => active !== tool,
 				),
 			});
 			return;
@@ -96,7 +96,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		// Activating any external tool clears selected documents/folders, because
 		// document/folder RAG is mutually exclusive with external tools.
-		if (externalToolOptions.includes(option)) {
+		if (externalChatTools.includes(tool)) {
 			const { selectedUserChatDocuments, unselectUserChatDocument } =
 				useUserDocumentStore.getState();
 			selectedUserChatDocuments.forEach((document) =>
@@ -123,7 +123,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 			);
 		}
 
-		set({ selectedChatOptions: [...selectedChatOptions, option] });
+		set({ selectedChatTools: [...selectedChatTools, tool] });
 	},
 
 	/**
@@ -312,7 +312,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		}, 300);
 	},
 
-	setAutoDeactivatedExternalTools(tools: ChatOption[]) {
+	setAutoDeactivatedExternalTools(tools: ChatTool[]) {
 		if (autoDeactivateExternalToolTimeout) {
 			clearTimeout(autoDeactivateExternalToolTimeout);
 		}
@@ -323,16 +323,16 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	deactivateExternalTools() {
-		const { selectedChatOptions } = get();
-		const activeExternalTools = selectedChatOptions.filter((option) =>
-			externalToolOptions.includes(option),
+		const { selectedChatTools } = get();
+		const activeExternalTools = selectedChatTools.filter((tool) =>
+			externalChatTools.includes(tool),
 		);
 		if (activeExternalTools.length === 0) {
 			return;
 		}
 		set({
-			selectedChatOptions: selectedChatOptions.filter(
-				(option) => !externalToolOptions.includes(option),
+			selectedChatTools: selectedChatTools.filter(
+				(tool) => !externalChatTools.includes(tool),
 			),
 		});
 		get().setAutoDeactivatedExternalTools(activeExternalTools);

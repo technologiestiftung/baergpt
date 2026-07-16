@@ -1,13 +1,8 @@
 import Content from "../../../content";
-import type {
-	LlmModel,
-	ChatOptionsDropdownValue,
-	McpOptions,
-} from "../../../common";
+import type { LlmModel } from "../../../common";
 import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
-import { MCP_OPTIONS_VALUES } from "./mcp-options-dialog.tsx";
 
-interface ChatFormDropdownProps<T extends LlmModel | ChatOptionsDropdownValue> {
+interface ChatFormDropdownProps<T extends LlmModel> {
 	title: string;
 	items: {
 		label: string;
@@ -22,9 +17,7 @@ interface ChatFormDropdownProps<T extends LlmModel | ChatOptionsDropdownValue> {
 	onClose: () => void;
 }
 
-export const ChatFormDropdown = <
-	T extends LlmModel | ChatOptionsDropdownValue,
->({
+export const ChatFormDropdown = <T extends LlmModel>({
 	items,
 	title,
 	selectedItems,
@@ -40,10 +33,6 @@ export const ChatFormDropdown = <
 		onItemClick: (item) => onItemClick(item.value),
 	});
 
-	const isMcpOptionSelected = selectedItems.some((selectedItem) =>
-		Object.values(MCP_OPTIONS_VALUES).includes(selectedItem as McpOptions),
-	);
-
 	return (
 		<div
 			className={`z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1 ${className}`}
@@ -55,9 +44,7 @@ export const ChatFormDropdown = <
 			</div>
 			<ul className="flex flex-col">
 				{items.map((item, index) => {
-					const isSelected =
-						selectedItems.includes(item.value) ||
-						(item.value === "mcpServer" && isMcpOptionSelected);
+					const isSelected = selectedItems.includes(item.value);
 
 					return (
 						<li key={item.value}>
@@ -71,7 +58,7 @@ export const ChatFormDropdown = <
 										optionButtonRefs.current.delete(index);
 									}
 								}}
-								className="flex items-center justify-between w-full px-4 py-3 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default rounded-3px"
+								className="flex items-center justify-between w-full px-4 py-3 text-left gap-6 hover:bg-hellblau-30 focus-visible:bg-hellblau-30 focus-visible:outline-default rounded-3px"
 								onClick={() => onItemClick(item.value)}
 								aria-label={item.ariaLabel}
 								role="option"

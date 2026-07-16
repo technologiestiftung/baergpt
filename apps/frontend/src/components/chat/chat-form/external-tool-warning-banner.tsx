@@ -3,9 +3,9 @@ import Content from "../../../content.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 
 export const ExternalToolWarningBanner: React.FC = () => {
-	const { selectedChatOptions } = useChatsStore();
+	const { selectedChatTools } = useChatsStore();
 
-	if (selectedChatOptions.length === 0) {
+	if (selectedChatTools.length === 0) {
 		return null;
 	}
 
