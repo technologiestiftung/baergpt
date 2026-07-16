@@ -5,7 +5,6 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.ts";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
 import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
@@ -23,8 +22,6 @@ import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
 import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
-
-const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const chatFormId = "chat-form";
 
@@ -68,7 +65,6 @@ export const ChatForm: React.FC = () => {
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		setHasUserScrolledUp(false);
 
 		const form = event.currentTarget;
 		const textarea = textareaRef.current;

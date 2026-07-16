@@ -972,6 +972,53 @@ test.describe("Chat", () => {
 	);
 
 	testWithMockedLlm(
+		"New message scrolls to top and scroll-to-bottom button works",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// A long answer so the conversation overflows the viewport, to
+			// make the scroll-to-top behavior and the scroll button observable.
+			const longAnswer = Array.from(
+				{ length: 80 },
+				(_, index) => `Absatz ${index + 1}: Lorem ipsum dolor sit amet.`,
+			).join("\n\n");
+			await mockLlmCompletion(page, { textDelta: longAnswer });
+
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
+
+			const messagesContainer = page.getByRole("log");
+			const question = page.getByTestId("user-message-markdown-container");
+
+			// The freshly sent question should be pinned near the top of the
+			// scrollable messages container rather than at the bottom.
+			await expect
+				.poll(async () => {
+					const containerBox = await messagesContainer.boundingBox();
+					const questionBox = await question.boundingBox();
+					if (!containerBox || !questionBox) {
+						return Number.POSITIVE_INFINITY;
+					}
+					return questionBox.y - containerBox.y;
+				})
+				.toBeLessThan(100);
+
+			// Because the answer overflows, the scroll-to-bottom button is shown.
+			const scrollToBottomButton = page.getByRole("button", {
+				name: "Zum Ende des Chats scrollen",
+			});
+			await expect(scrollToBottomButton).toBeVisible();
+
+			// Clicking it jumps to the bottom, which hides the button again.
+			await scrollToBottomButton.click();
+			await expect(scrollToBottomButton).toBeHidden();
+		},
+	);
+
+	testWithMockedLlm(
 		"Links in assistant messages open in new tab",
 		async ({ page }) => {
 			await page.goto("/");
