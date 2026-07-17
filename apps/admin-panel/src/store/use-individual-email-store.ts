@@ -41,15 +41,20 @@ export const useIndividualEmailStore = create<IndividualEmailStore>(
 				const isDuplicate =
 					error.message ===
 					'duplicate key value violates unique constraint "allowed_individual_emails_email_key"';
+				const isWrongFormat =
+					error.message ===
+					'new row for relation "allowed_individual_emails" violates check constraint "allowed_individual_emails_format"';
 
-				if (isDuplicate) {
+				// These error messages are mapped to specific human-readable error messages
+				if (isDuplicate || isWrongFormat) {
 					useUserErrorStore.getState().handleError(new Error(error.message));
 					return;
 				}
 
+				// This error messages is mapped to a generic error message
 				useUserErrorStore
 					.getState()
-					.handleError(new Error("Failed Failed to add individual email"));
+					.handleError(new Error("Failed to add individual email"));
 				return;
 			}
 
