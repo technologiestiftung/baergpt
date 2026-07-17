@@ -14,6 +14,8 @@ const errorMessages: { [key: string]: string } = {
 		Content["addNewIndividualEmail.form.unsuccessful.error"],
 	'duplicate key value violates unique constraint "allowed_individual_emails_email_key"':
 		Content["addNewIndividualEmail.form.emailAlreadyExistsError"],
+	'new row for relation "allowed_individual_emails" violates check constraint "allowed_individual_emails_format"':
+		Content["addNewIndividualEmail.form.wrongFormat"],
 };
 
 export const useUserErrorStore = create<UserErrorStore>()((set) => ({

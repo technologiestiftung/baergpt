@@ -296,12 +296,13 @@ export const Content = {
 		"Bitte geben Sie eine gültige E-Mail-Adresse ein.",
 	"addNewIndividualEmail.form.emailAlreadyExistsError":
 		"Diese E-Mail-Adresse ist bereits in der Allowlist.",
+	"addNewIndividualEmail.form.wrongFormat": "Falsches E-Mail-Format.",
 	"addNewIndividualEmail.form.unsuccessful.error":
 		"Die E-Mail-Adresse konnte nicht hinzugefügt werden",
 
 	// Individual Email Allowlist Table
 	"individualEmailAllowlistTable.tableHeader.email": "E-Mail-Adresse",
-	"individualEmailAllowlistTable.tableHeader.hasAccount": "Account",
+	"individualEmailAllowlistTable.tableHeader.hasAccount": "Account registriert",
 	"individualEmailAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
 	"individualEmailAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
 	"individualEmailAllowlistTable.tableHeader.actions": "Aktionen",
