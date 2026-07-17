@@ -780,6 +780,9 @@ export const Content = {
 	"documentsList.delete.imgAlt": "Mülleimer-Icon",
 	"documentsList.deleteDocument": "Dokument löschen",
 	"documentsList.deleteFolder": "Ordner löschen",
+	"documentsList.rename": "Umbenennen",
+	"documentsList.rename.imgAlt": "Stift-Icon",
+	"documentsList.renameFolder": "Ordner umbenennen",
 
 	"documentsList.menuIcon.imgAlt": "Menü-Icon",
 	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
@@ -837,6 +840,10 @@ export const Content = {
 	"createFolderDialog.folderName": "Unbenannter Ordner",
 	"createFolderDialog.cancel": "Abbrechen",
 	"createFolderDialog.create": "Erstellen",
+	//RenameFolderDialog
+	"renameFolderDialog.title": "Ordner umbenennen",
+	"renameFolderDialog.cancel": "Abbrechen",
+	"renameFolderDialog.rename": "Umbenennen",
 	//DeleteHistoryEntryDialog
 	"deleteHistoryEntryDialog.title": "Chat löschen?",
 	"deleteHistoryEntryDialog.confirmation.p1": "Möchten Sie",

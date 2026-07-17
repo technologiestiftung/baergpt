@@ -5,6 +5,7 @@ import { DesktopDocuments } from "./desktop-documents.tsx";
 import { MobileDocuments } from "./mobile-documents.tsx";
 import { DeleteItemDialog } from "./delete-item/delete-item-dialog.tsx";
 import { CreateFolderDialog } from "./create-folder/create-folder-dialog.tsx";
+import { RenameFolderDialog } from "./rename-folder/rename-folder-dialog.tsx";
 
 export const DocumentsSection: React.FC = () => {
 	const { userDocuments, deletedDefaultDocumentIds } = useUserDocumentStore();
@@ -23,6 +24,7 @@ export const DocumentsSection: React.FC = () => {
 			<MobileDocuments hasUserItems={hasUserItems} />
 			<DeleteItemDialog />
 			<CreateFolderDialog />
+			<RenameFolderDialog />
 		</>
 	);
 };
