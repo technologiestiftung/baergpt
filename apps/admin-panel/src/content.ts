@@ -1,10 +1,10 @@
 export const Content = {
 	/* -------------------- Header -------------------- */
 	"header.logo.alt": "BärGPT Logo",
-	"header.navigation.help.label": "Hilfecenter",
+	"header.navigation.help.label": "Hilfe und Tipps",
 	"header.navigation.help.mobileLabel": "Hilfe",
 	"header.navigation.profile": "Profil",
-	"header.navigation.help.ariaLabel": "Zum Hilfecenter",
+	"header.navigation.help.ariaLabel": "Hilfe und Tipps",
 	"header.navigation.help.link": "https://hilfe.baergpt.berlin/",
 	"header.navigation.profile.ariaLabel": "Zur Profil-Seite",
 
