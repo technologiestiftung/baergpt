@@ -1,7 +1,13 @@
 import crypto from "crypto";
 import { enc } from "../constants";
 import { config } from "../config";
-import { isLoopFinished, ModelMessage, Tool, ToolChoice } from "ai";
+import {
+	isLoopFinished,
+	ModelMessage,
+	Tool,
+	ToolChoice,
+	UIMessageStreamWriter,
+} from "ai";
 import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
@@ -34,13 +40,22 @@ import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
 	parlaCitationAnswerSchema,
+	openDataCitationAnswerSchema,
 } from "../schemas/citation-answer-schema";
 import {
 	countTokens,
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
-import { openDataMCPTools } from "../tools/mcp/open-data-mcp-tools";
+import {
+	openDataMCPTools,
+	extractOpenDataSourcesFromToolOutput,
+	OPEN_DATA_DATASET_TOOL_NAMES,
+	openDataMcpToolOutputSchema,
+	openDataToolInputSchema,
+	type OpenDataCitationSource,
+	type OpenDataToolInput,
+} from "../tools/mcp/open-data-mcp-tools";
 import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
 
 const modelService = new ModelService();
@@ -528,6 +543,47 @@ export class GenerationService {
 							}
 						}
 
+						const allOpenDataSources: OpenDataCitationSource[] = steps.flatMap(
+							(step) =>
+								step.toolResults
+									.filter((tr) => OPEN_DATA_DATASET_TOOL_NAMES.has(tr.toolName))
+									.flatMap((tr) => {
+										const parsedOutput = openDataMcpToolOutputSchema.safeParse(
+											tr.output,
+										);
+										if (!parsedOutput.success) {
+											return [];
+										}
+
+										const parsedInput =
+											openDataToolInputSchema.safeParse(tr.input);
+										const input: OpenDataToolInput = parsedInput.success
+											? parsedInput.data
+											: {};
+
+										return extractOpenDataSourcesFromToolOutput(
+											input,
+											parsedOutput.data,
+										);
+									}),
+						);
+						const uniqueOpenDataSources = Array.from(
+							new Map(
+								allOpenDataSources.map((source) => [source.url, source]),
+							).values(),
+						);
+
+						if (uniqueOpenDataSources.length > 0) {
+							await this.extractAndWriteOpenDataCitations({
+								sources: uniqueOpenDataSources,
+								text,
+								llmHandler,
+								sessionId,
+								userId,
+								writer,
+							});
+						}
+
 						logMemory("chat:onFinish-complete", memoryLogId);
 						updateActiveTrace({
 							name: "streamed-text-generation",
@@ -732,5 +788,66 @@ export class GenerationService {
 		}
 
 		return relevantTools;
+	}
+
+	private async extractAndWriteOpenDataCitations(args: {
+		sources: OpenDataCitationSource[];
+		text: string;
+		llmHandler: LLMHandler;
+		sessionId: string;
+		userId: string;
+		writer: UIMessageStreamWriter;
+	}): Promise<void> {
+		const { sources, text, llmHandler, sessionId, userId, writer } = args;
+
+		try {
+			const openDataCitationPromptClient = await getChatPrompt(
+				"web-citation-extraction",
+				{
+					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+				},
+			);
+
+			const compiledOpenDataCitationExtractionPrompts =
+				openDataCitationPromptClient.compile({
+					generatedAnswer: text,
+					availableSources: sources
+						.map((s) => `[URL: ${s.url}]\n Titel: ${s.title}`)
+						.join("\n\n"),
+				}) as ModelMessage[];
+
+			const { output: openDataObject, usage: openDataCitationUsage } =
+				await generateText({
+					model: llmHandler.languageModel,
+					messages: compiledOpenDataCitationExtractionPrompts,
+					temperature: LLM_PARAMETERS.temperature,
+					output: Output.object({ schema: openDataCitationAnswerSchema }),
+					experimental_telemetry: {
+						isEnabled: config.isTracingEnabled,
+						functionId: "open-data-citation-extraction",
+						metadata: {
+							sessionId: sessionId ? sessionId : "unknown",
+						},
+					},
+				});
+
+			const citedOpenDataSources = sources.filter((s) =>
+				openDataObject.citations.some((c) => c.url === s.url),
+			);
+
+			if (citedOpenDataSources.length > 0) {
+				writer.write({
+					type: "data-open-data-citations",
+					data: citedOpenDataSources,
+				});
+			}
+
+			await this.dbService.updateUsage(
+				userId,
+				openDataCitationUsage.totalTokens,
+			);
+		} catch (error) {
+			captureError(error);
+		}
 	}
 }
