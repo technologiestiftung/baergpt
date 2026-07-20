@@ -777,12 +777,16 @@ test.describe("Documents", () => {
 		await menuButtonFolder.click();
 
 		// Expect rename button in dropdown to be visible and click it
-		const renameOption = page.getByRole("option", { name: "Ordner umbenennen" });
+		const renameOption = page.getByRole("option", {
+			name: "Ordner umbenennen",
+		});
 		await expect(renameOption).toBeVisible();
 		await renameOption.click();
 
 		// Expect the dialog to be prefilled with the current folder name
-		const renameInput = page.getByRole("textbox", { name: "Ordner umbenennen" });
+		const renameInput = page.getByRole("textbox", {
+			name: "Ordner umbenennen",
+		});
 		await expect(renameInput).toBeVisible();
 		await expect(renameInput).toHaveValue(givenFolderName);
 
@@ -814,7 +818,9 @@ test.describe("Documents", () => {
 			await page
 				.getByRole("textbox", { name: "Neuer Ordner" })
 				.fill(givenFolderName);
-			await page.getByRole("button", { name: "Erstellen", exact: true }).click();
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
 
 			// Open the rename dialog via the dropdown
 			const menuButtonFolder = page
