@@ -17,6 +17,7 @@ import { useErrorStore } from "./error-store.ts";
 import type {
 	WebCitationSource,
 	ParlaCitationSource,
+	OpenDataCitationSource,
 } from "../api/chat/get-completion.ts";
 import { useUserDocumentStore } from "./use-user-document-store.ts";
 import { useUserFolderStore } from "./use-user-folder-store.ts";
@@ -57,6 +58,7 @@ interface ChatStore {
 		citations: number[] | null;
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
+		open_data_citations: OpenDataCitationSource[] | null;
 	}): void;
 	autoDeactivatedExternalTools: ChatTool[];
 	setAutoDeactivatedExternalTools(tools: ChatTool[]): void;
@@ -286,6 +288,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		citations,
 		web_citations,
 		parla_citations,
+		open_data_citations,
 	}) => {
 		clearTimeout(updateMessageDebounceTimeout);
 
@@ -300,6 +303,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		foundMessage.citations = citations;
 		foundMessage.web_citations = web_citations;
 		foundMessage.parla_citations = parla_citations;
+		foundMessage.open_data_citations = open_data_citations;
 		get().updateChats(chat);
 
 		updateMessageDebounceTimeout = setTimeout(async () => {
@@ -308,6 +312,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				citations,
 				web_citations,
 				parla_citations,
+				open_data_citations,
 			});
 		}, 300);
 	},

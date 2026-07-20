@@ -942,6 +942,8 @@ export const Content = {
 	"chat.citationsDialog.page": "Seite",
 	"chat.tooltipCitation.page": "Seite",
 	"chat.citationsDialog.publicDocumentPill.label": "Verwaltungswissen",
+	"chat.citationsDialog.openData.datasetLabel": "Berlin Open Data Datensatz",
+	"chat.citationsDialog.openData.icon.alt": "Berlin Open Data Logo",
 
 	"chat.exportChatTextButton.label": "Exportieren",
 	"chat.exportChatTextButton.ariaLabel": "Chat exportieren",
