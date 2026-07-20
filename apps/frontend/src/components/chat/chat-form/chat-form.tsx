@@ -16,7 +16,7 @@ import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
+import { ChatMenuToggleButton } from "./chat-menu/chat-menu-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
@@ -31,7 +31,7 @@ export const ChatForm: React.FC = () => {
 		useUserFolderStore();
 	const { getSelectedPublicChatDocumentIds } = usePublicDocumentsStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
-	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
+	const { getCurrentOrCreateChat, selectedChatTools, toggleChatTool } =
 		useChatsStore();
 	const { setAutoDeactivatedExternalTools } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
@@ -123,7 +123,7 @@ export const ChatForm: React.FC = () => {
 
 	const hasError = status === "error";
 
-	const isWebSearchActive = selectedChatOptions.includes("webSearch");
+	const isWebSearchActive = selectedChatTools.includes("webSearch");
 	const textAreaPlaceholder = isWebSearchActive
 		? Content["chat.textarea.placeholder.webSearch"]
 		: Content["chat.textarea.placeholder"];
@@ -131,7 +131,7 @@ export const ChatForm: React.FC = () => {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className={`flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
+			className={`relative flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
 				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
@@ -165,13 +165,13 @@ export const ChatForm: React.FC = () => {
 				</div>
 				<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
 					<div className="flex items-center gap-3">
-						<ChatOptionsToggleButton />
+						<ChatMenuToggleButton />
 						<div className="items-center gap-2 hidden md:flex">
-							{selectedChatOptions.map((option) => (
+							{selectedChatTools.map((tool) => (
 								<ContextPill
-									key={option}
-									option={option}
-									onClose={() => toggleChatOption(option)}
+									key={tool}
+									tool={tool}
+									onClose={() => toggleChatTool(tool)}
 								/>
 							))}
 						</div>

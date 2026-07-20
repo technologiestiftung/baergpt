@@ -730,24 +730,21 @@ test.describe("Chat", () => {
 		await expect(chatOptionsButton).toBeVisible();
 		await chatOptionsButton.click();
 
-		const mcpServerOption = page.getByRole("option", {
-			name: "MCP Server auswählen",
+		const connectorsOption = page.getByRole("option", {
+			name: "Konnektoren auswählen",
 		});
 
-		// Open the MCP server selection dialog
-		await mcpServerOption.click();
+		// Open the connectors submenu via hover
+		await connectorsOption.hover();
 
-		const mcpDialog = page.locator("#mcp-options-dialog");
-		await expect(mcpDialog).toBeVisible();
+		const connectorsSubmenu = page.getByTestId("chat-menu-connectors-submenu");
+		await expect(connectorsSubmenu).toBeVisible();
 
-		// locate the Parla Berlin option inside the dialog
-		const parlaBerlinOption = mcpDialog.getByRole("button", {
+		// locate the Parla Berlin option inside the submenu
+		const parlaBerlinOption = connectorsSubmenu.getByRole("button", {
 			name: /Parla Berlin/,
 		});
 		await expect(parlaBerlinOption).toBeVisible();
-		await expect(
-			mcpDialog.getByText("Schriftliche Anfragen des Abgh. Berlins"),
-		).toBeVisible();
 
 		// Select Parla Berlin and assert the check icon is visible
 		await test.step("Select Parla Berlin", async () => {
@@ -757,7 +754,7 @@ test.describe("Chat", () => {
 			).toBeVisible();
 		});
 
-		// Deselect Parla Berlin in the dialog and assert the check icon is hidden
+		// Deselect Parla Berlin in the submenu and assert the check icon is hidden
 		await test.step("Deselect Parla Berlin", async () => {
 			await parlaBerlinOption.click();
 			await expect(
@@ -765,17 +762,9 @@ test.describe("Chat", () => {
 			).toBeHidden();
 		});
 
-		// Close the MCP options dialog
-		await test.step("Close MCP options dialog", async () => {
-			await page.getByTestId("mcp-options-dialog-close").click();
-			await expect(mcpDialog).not.toBeVisible();
-		});
-
-		// Re-select Parla Berlin via the dialog to verify the context pill
-		await chatOptionsButton.click();
-		await mcpServerOption.click();
+		// Re-select Parla Berlin via the submenu to verify the context pill
 		await parlaBerlinOption.click();
-		await page.getByTestId("mcp-options-dialog-close").click();
+		await page.locator("body").click({ position: { x: 0, y: 0 } });
 
 		// Verify the context pill appears with "Parla Berlin entfernen" (remove option)
 		const contextPill = page.getByRole("button", {
