@@ -22,9 +22,49 @@ import * as captureErrorModule from "../monitoring/capture-error";
 
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import type { ParlaMCPToolsResult } from "../tools/mcp/parla-mcp-tools";
+import {
+	openDataMCPTools,
+	extractOpenDataSourcesFromToolOutput,
+	openDataMcpToolOutputSchema,
+} from "../tools/mcp/open-data-mcp-tools";
+import type { OpenDataMCPToolsResult } from "../tools/mcp/open-data-mcp-tools";
+import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
+import type { DatawrapperMCPToolsResult } from "../tools/mcp/datawrapper-mcp-tools";
 import { z } from "zod";
+import type { Tool } from "ai";
 
-describe("MCP Tools Integration", () => {
+const toolCallOptions = {
+	abortSignal: new AbortController().signal,
+	toolCallId: "test-call-id",
+	messages: [],
+};
+
+function requireToolExecute(tool: Tool | undefined, toolName: string) {
+	expect(tool).toBeDefined();
+	expect(tool?.execute).toBeDefined();
+
+	if (!tool?.execute) {
+		throw new Error(`${toolName} execute function not found`);
+	}
+
+	return { tool, execute: tool.execute };
+}
+
+function requireZodObjectSchema(
+	tool: Tool | undefined,
+	toolName: string,
+): z.ZodObject<z.ZodRawShape> {
+	expect(tool).toBeDefined();
+	expect(tool).toHaveProperty("inputSchema");
+
+	if (!tool) {
+		throw new Error(`${toolName} tool not found`);
+	}
+
+	return tool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
+}
+
+describe("Parla MCP Tools Integration", () => {
 	let mcpResult: ParlaMCPToolsResult | null;
 
 	beforeAll(async () => {
@@ -62,9 +102,11 @@ describe("MCP Tools Integration", () => {
 	it("should handle initialization errors gracefully", async () => {
 		const givenError = new Error("MCP server is down");
 
-		vi.spyOn(mcpModule, "createMCPClient").mockImplementation(() => {
-			throw givenError;
-		});
+		const createMCPClientSpy = vi
+			.spyOn(mcpModule, "createMCPClient")
+			.mockImplementation(() => {
+				throw givenError;
+			});
 
 		const captureErrorSpy = vi
 			.spyOn(captureErrorModule, "captureError")
@@ -74,6 +116,9 @@ describe("MCP Tools Integration", () => {
 		expect(result).toBeNull();
 
 		expect(captureErrorSpy).toHaveBeenNthCalledWith(1, givenError);
+
+		createMCPClientSpy.mockRestore();
+		captureErrorSpy.mockRestore();
 	});
 
 	it("parla_vector_search tool should have execute function that can be called", async () => {
@@ -93,22 +138,17 @@ describe("MCP Tools Integration", () => {
 				chunk_limit: 5,
 			};
 
-			const result = await vectorSearchTool.execute(mockParams, {
-				abortSignal: new AbortController().signal,
-				toolCallId: "test-call-id",
-				messages: [],
-			});
+			const result = await vectorSearchTool.execute(mockParams, toolCallOptions);
 			expect(result).toBeDefined();
 		}
 	}, 60_000);
 
 	it("should wrap tools with proper Zod validation for parla_vector_search", async () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
-		expect(vectorSearchTool).toBeDefined();
-		expect(vectorSearchTool).toHaveProperty("inputSchema");
-
-		const params =
-			vectorSearchTool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
+		const params = requireZodObjectSchema(
+			vectorSearchTool,
+			"parla_vector_search",
+		);
 
 		expect(params).toBeDefined();
 		expect(params.shape).toBeDefined();
@@ -124,22 +164,17 @@ describe("MCP Tools Integration", () => {
 
 	it("should handle missing execute function gracefully", async () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
-
-		expect(vectorSearchTool).toBeDefined();
-		expect(vectorSearchTool.execute).toBeDefined();
+		const { execute } = requireToolExecute(
+			vectorSearchTool,
+			"parla_vector_search",
+		);
 
 		// Create a scenario where execute would fail
 		// by passing invalid parameters that don't match the schema
 		try {
-			await vectorSearchTool.execute(
-				{ invalid: "params" } as unknown as Parameters<
-					typeof vectorSearchTool.execute
-				>[0],
-				{
-					abortSignal: new AbortController().signal,
-					toolCallId: "test-call-id",
-					messages: [],
-				},
+			await execute(
+				{ invalid: "params" } as unknown as Parameters<typeof execute>[0],
+				toolCallOptions,
 			);
 		} catch (error) {
 			expect(error).toBeDefined();
@@ -151,6 +186,212 @@ describe("MCP Tools Integration", () => {
 			await expect(mcpResult.cleanup()).resolves.not.toThrow();
 
 			// Call again to ensure it's idempotent
+			await expect(mcpResult.cleanup()).resolves.not.toThrow();
+		}
+	});
+});
+
+describe("Berlin Open Data MCP Tools Integration", () => {
+	let mcpResult: OpenDataMCPToolsResult | null;
+
+	beforeAll(async () => {
+		mcpResult = await openDataMCPTools();
+	}, 60_000);
+
+	afterAll(async () => {
+		if (mcpResult?.cleanup) {
+			await mcpResult.cleanup();
+		}
+	});
+
+	it("should successfully initialize MCP client and return tools", () => {
+		expect(mcpResult).not.toBeNull();
+		expect(mcpResult?.tools).toBeDefined();
+		expect(typeof mcpResult?.tools).toBe("object");
+	});
+
+	it("should include expected Berlin Open Data tools", () => {
+		const expectedTools = [
+			"search_berlin_datasets",
+			"search_datasets_filtered",
+			"get_dataset_details",
+			"get_portal_stats",
+			"fetch_dataset_data",
+			"aggregate_dataset",
+		];
+
+		for (const toolName of expectedTools) {
+			expect(mcpResult?.tools).toHaveProperty(toolName);
+		}
+	});
+
+	it("search_berlin_datasets should have correct Zod schema properties", () => {
+		const searchTool = mcpResult?.tools["search_berlin_datasets"];
+		const params = requireZodObjectSchema(
+			searchTool,
+			"search_berlin_datasets",
+		);
+
+		expect(params.shape).toHaveProperty("query");
+		expect(params.shape).toHaveProperty("limit");
+		expect(params.shape).toHaveProperty("sort");
+	});
+
+	it("get_dataset_details should require dataset_id", () => {
+		const detailsTool = mcpResult?.tools["get_dataset_details"];
+		const params = requireZodObjectSchema(detailsTool, "get_dataset_details");
+
+		expect(params.shape).toHaveProperty("dataset_id");
+	});
+
+	it("search_berlin_datasets execute should return parseable MCP output", async () => {
+		const searchTool = mcpResult?.tools["search_berlin_datasets"];
+		const { execute } = requireToolExecute(
+			searchTool,
+			"search_berlin_datasets",
+		);
+
+		const result = await execute({ query: "Fahrrad", limit: 1 }, toolCallOptions);
+
+		const parsedOutput = openDataMcpToolOutputSchema.safeParse(result);
+		expect(parsedOutput.success).toBe(true);
+		expect(parsedOutput.data?.content[0]?.text).toContain("Search Results");
+	}, 60_000);
+
+	it("extractOpenDataSourcesFromToolOutput should parse search results", async () => {
+		const searchTool = mcpResult?.tools["search_berlin_datasets"];
+		const { execute } = requireToolExecute(
+			searchTool,
+			"search_berlin_datasets",
+		);
+
+		const input = { query: "Fahrrad", limit: 1 };
+		const result = await execute(input, toolCallOptions);
+		const parsedOutput = openDataMcpToolOutputSchema.parse(result);
+
+		const sources = extractOpenDataSourcesFromToolOutput(input, parsedOutput);
+
+		expect(sources.length).toBeGreaterThan(0);
+		expect(sources[0]).toMatchObject({
+			url: expect.stringContaining("https://daten.berlin.de/datensaetze/"),
+			title: expect.any(String),
+			datasetId: expect.any(String),
+		});
+	}, 60_000);
+
+	it("get_portal_stats execute should return portal statistics", async () => {
+		const statsTool = mcpResult?.tools["get_portal_stats"];
+		const { execute } = requireToolExecute(statsTool, "get_portal_stats");
+
+		const result = await execute({}, toolCallOptions);
+		const parsedOutput = openDataMcpToolOutputSchema.safeParse(result);
+
+		expect(parsedOutput.success).toBe(true);
+		expect(parsedOutput.data?.content[0]?.text).toContain(
+			"Berlin Open Data Portal Statistics",
+		);
+	}, 60_000);
+
+	it("should handle initialization errors gracefully", async () => {
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
+
+		const createMCPClientSpy = vi
+			.spyOn(mcpModule, "createMCPClient")
+			.mockImplementation(() => {
+				throw new Error("Berlin Open Data MCP server is down");
+			});
+
+		const result = await openDataMCPTools();
+		expect(result).toBeNull();
+		expect(consoleErrorSpy).toHaveBeenCalled();
+
+		createMCPClientSpy.mockRestore();
+		consoleErrorSpy.mockRestore();
+	});
+
+	it("cleanup function should be callable multiple times", async () => {
+		if (mcpResult?.cleanup) {
+			await expect(mcpResult.cleanup()).resolves.not.toThrow();
+			await expect(mcpResult.cleanup()).resolves.not.toThrow();
+		}
+	});
+});
+
+describe("Datawrapper MCP Tools Integration", () => {
+	let mcpResult: DatawrapperMCPToolsResult | null;
+
+	beforeAll(async () => {
+		mcpResult = await datawrapperMCPTools();
+	}, 60_000);
+
+	afterAll(async () => {
+		if (mcpResult?.cleanup) {
+			await mcpResult.cleanup();
+		}
+	});
+
+	it("should successfully initialize MCP client and return tools", () => {
+		expect(mcpResult).not.toBeNull();
+		expect(mcpResult?.tools).toBeDefined();
+		expect(typeof mcpResult?.tools).toBe("object");
+	});
+
+	it("should include create_visualization and publish_visualization tools", () => {
+		expect(mcpResult?.tools).toHaveProperty("create_visualization");
+		expect(mcpResult?.tools).toHaveProperty("publish_visualization");
+
+		expect(mcpResult?.tools["create_visualization"]?.description).toBeDefined();
+		expect(
+			mcpResult?.tools["publish_visualization"]?.description,
+		).toBeDefined();
+	});
+
+	it("create_visualization should require api_key, data, and chart_type", () => {
+		const createTool = mcpResult?.tools["create_visualization"];
+		const params = requireZodObjectSchema(createTool, "create_visualization");
+
+		expect(params.shape).toHaveProperty("api_key");
+		expect(params.shape).toHaveProperty("data");
+		expect(params.shape).toHaveProperty("chart_type");
+		expect(params.shape).toHaveProperty("map_type");
+		expect(params.shape).toHaveProperty("base_color");
+	});
+
+	it("publish_visualization should require api_key and chart_id", () => {
+		const publishTool = mcpResult?.tools["publish_visualization"];
+		const params = requireZodObjectSchema(
+			publishTool,
+			"publish_visualization",
+		);
+
+		expect(params.shape).toHaveProperty("api_key");
+		expect(params.shape).toHaveProperty("chart_id");
+	});
+
+	it("should handle initialization errors gracefully", async () => {
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
+
+		const createMCPClientSpy = vi
+			.spyOn(mcpModule, "createMCPClient")
+			.mockImplementation(() => {
+				throw new Error("Datawrapper MCP server is down");
+			});
+
+		const result = await datawrapperMCPTools();
+		expect(result).toBeNull();
+		expect(consoleErrorSpy).toHaveBeenCalled();
+
+		createMCPClientSpy.mockRestore();
+		consoleErrorSpy.mockRestore();
+	});
+
+	it("cleanup function should be callable multiple times", async () => {
+		if (mcpResult?.cleanup) {
+			await expect(mcpResult.cleanup()).resolves.not.toThrow();
 			await expect(mcpResult.cleanup()).resolves.not.toThrow();
 		}
 	});
