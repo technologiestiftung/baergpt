@@ -56,6 +56,8 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 		onClose();
 	};
 
+	const isWebSearchActive = selectedChatTools.includes("webSearch");
+
 	const menuItems: MenuItem[] = [
 		{
 			id: "fileUpload",
@@ -83,8 +85,14 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 						id: "webSearch",
 						label: Content["chat.options.li3.label"],
 						ariaLabel: Content["chat.options.li3.ariaLabel"],
-						icon: <WebSearchIcon width={16} height={16} />,
-						isSelected: selectedChatTools.includes("webSearch"),
+						icon: (
+							<WebSearchIcon
+								width={16}
+								height={16}
+								variant={isWebSearchActive ? "active" : "default"}
+							/>
+						),
+						isSelected: isWebSearchActive,
 						onSelect: () => {
 							toggleChatTool("webSearch");
 							onClose();

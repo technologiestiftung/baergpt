@@ -38,6 +38,8 @@ export function ChatMenuRow({
 			aria-label={ariaLabel}
 			role="option"
 			aria-selected={isSelected}
+			aria-haspopup={hasSubmenu ? "listbox" : undefined}
+			aria-expanded={hasSubmenu ? isActive : undefined}
 		>
 			<div className="flex items-center">
 				{typeof icon === "string" ? (
