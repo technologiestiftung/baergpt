@@ -12,7 +12,7 @@ export function HistoryGroupsByNone({
 
 	return (
 		<>
-			<ul className="mb-5">
+			<ul>
 				{chats.map((chat) => (
 					<li key={chat.id}>
 						<HistoryEntry chat={chat} />

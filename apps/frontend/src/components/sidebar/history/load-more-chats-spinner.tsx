@@ -20,7 +20,7 @@ export function LoadMoreChatsSpinner({
 	useIntersectionObserver({ containerRef, ref, hasLoadedAllChats });
 
 	return (
-		<div className="flex justify-center pl-2 text-hellblau-50 text-xs">
+		<div className="flex justify-center pl-2 text-dunkelblau-40 text-xs mt-2">
 			{hasLoadedAllChats && <span>{Content["chatHistory.allLoaded"]}</span>}
 
 			{!hasLoadedAllChats && (
