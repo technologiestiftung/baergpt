@@ -1,5 +1,5 @@
 import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
-import { type Tool } from "ai";
+import { tool, type Tool } from "ai";
 import { z } from "zod";
 import { captureError } from "../../monitoring/capture-error";
 import { config } from "../../config";

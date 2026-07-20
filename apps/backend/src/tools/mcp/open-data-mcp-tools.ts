@@ -39,6 +39,10 @@ export const openDataMCPTools =
 								.number()
 								.optional()
 								.describe("Maximum number of results to return (default: 20)"),
+							sort: z
+								.string()
+								.optional()
+								.describe("Optional CKAN sort expression (e.g. 'score desc')"),
 						}),
 						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
@@ -141,21 +145,33 @@ export const openDataMCPTools =
 							throw new Error("MCP tool execute function not found");
 						},
 					});
-				} else if (toolName === "execute_code") {
+				} else if (toolName === "get_portal_stats") {
+					wrappedTools[toolName] = tool({
+						description: mcpTool.description,
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						inputSchema: z.object({}),
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						execute: async (params, options) => {
+							if (mcpTool.execute) {
+								return await mcpTool.execute(params, options);
+							}
+							throw new Error("MCP tool execute function not found");
+						},
+					});
+				} else if (toolName === "get_facets") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
 						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
-							code: z
-								.string()
-								.describe(
-									"JavaScript code to execute. The dataset is available as `data` (array of row objects).",
-								),
-							dataset_id: z
+							query: z
 								.string()
 								.optional()
+								.describe("Search query to scope facets to (default: '*')"),
+							limit: z
+								.number()
+								.optional()
 								.describe(
-									"Dataset ID to use. If not provided, uses the most recently fetched dataset.",
+									"Maximum number of facet values to return (default: 10, max: 50)",
 								),
 						}),
 						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
@@ -166,11 +182,152 @@ export const openDataMCPTools =
 							throw new Error("MCP tool execute function not found");
 						},
 					});
-				} else if (toolName === "get_portal_stats") {
+				} else if (toolName === "list_tags") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
 						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
-						inputSchema: z.object({}),
+						inputSchema: z.object({
+							query: z
+								.string()
+								.optional()
+								.describe("Optional filter to search tag names"),
+							limit: z
+								.number()
+								.optional()
+								.describe(
+									"Maximum number of tags to return (default: 50, max: 100)",
+								),
+						}),
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						execute: async (params, options) => {
+							if (mcpTool.execute) {
+								return await mcpTool.execute(params, options);
+							}
+							throw new Error("MCP tool execute function not found");
+						},
+					});
+				} else if (toolName === "list_geo_layers") {
+					wrappedTools[toolName] = tool({
+						description: mcpTool.description,
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						inputSchema: z.object({
+							dataset_id: z
+								.string()
+								.describe("The ID or name of the dataset with a WFS resource"),
+						}),
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						execute: async (params, options) => {
+							if (mcpTool.execute) {
+								return await mcpTool.execute(params, options);
+							}
+							throw new Error("MCP tool execute function not found");
+						},
+					});
+				} else if (toolName === "fetch_geo_features") {
+					wrappedTools[toolName] = tool({
+						description: mcpTool.description,
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						inputSchema: z.object({
+							wfs_url: z.string().describe("The WFS service URL"),
+							typename: z
+								.string()
+								.describe("The WFS layer/type name to fetch features from"),
+							limit: z
+								.number()
+								.optional()
+								.describe(
+									"Maximum number of features to return (default: 100, max: 5000)",
+								),
+							property_filter: z
+								.string()
+								.optional()
+								.describe(
+									"Optional CQL filter on feature properties (e.g. \"bezirk = 'Mitte'\")",
+								),
+						}),
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						execute: async (params, options) => {
+							if (mcpTool.execute) {
+								return await mcpTool.execute(params, options);
+							}
+							throw new Error("MCP tool execute function not found");
+						},
+					});
+				} else if (toolName === "aggregate_dataset") {
+					wrappedTools[toolName] = tool({
+						description: mcpTool.description,
+						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
+						inputSchema: z.object({
+							dataset_id: z.string().describe("The dataset ID or name"),
+							resource_id: z
+								.string()
+								.optional()
+								.describe(
+									"Optional: specific resource ID. If not provided, uses first available resource.",
+								),
+							group_by: z
+								.array(z.string())
+								.optional()
+								.describe("Columns to group results by"),
+							metrics: z
+								.array(
+									z.object({
+										op: z
+											.enum([
+												"sum",
+												"avg",
+												"min",
+												"max",
+												"count",
+												"count_distinct",
+											])
+											.describe("Aggregation operation"),
+										column: z
+											.string()
+											.optional()
+											.describe("Column to aggregate (not needed for 'count')"),
+										as: z
+											.string()
+											.optional()
+											.describe("Optional alias for the resulting column"),
+									}),
+								)
+								.describe("At least one aggregation metric to compute"),
+							filters: z
+								.array(
+									z.object({
+										column: z.string(),
+										op: z.enum([
+											"eq",
+											"neq",
+											"gt",
+											"gte",
+											"lt",
+											"lte",
+											"contains",
+											"in",
+										]),
+										value: z.unknown(),
+									}),
+								)
+								.optional()
+								.describe("Filters applied before aggregation"),
+							sort: z
+								.array(
+									z.object({
+										column: z.string(),
+										direction: z.enum(["asc", "desc"]).optional(),
+									}),
+								)
+								.optional()
+								.describe("Sort order for the aggregated result rows"),
+							limit: z
+								.number()
+								.optional()
+								.describe(
+									"Maximum number of result rows to return (default: 1000, max: 1000)",
+								),
+						}),
 						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {

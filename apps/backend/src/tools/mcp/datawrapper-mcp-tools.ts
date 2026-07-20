@@ -2,8 +2,6 @@ import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
 import { tool, type Tool } from "ai";
 import { z } from "zod";
 
-import { config } from "../../config";
-
 export interface DatawrapperMCPToolsResult {
 	tools: Record<string, Tool>;
 	cleanup: () => Promise<void>;
@@ -13,14 +11,10 @@ export const datawrapperMCPTools =
 	async (): Promise<DatawrapperMCPToolsResult | null> => {
 		let datawrapperHttpClient: MCPClient | undefined;
 		try {
-			const headers = config.datawrapperAccessToken
-				? { Authorization: `Bearer ${config.datawrapperAccessToken}` }
-				: undefined;
 			datawrapperHttpClient = await createMCPClient({
 				transport: {
 					type: "http",
 					url: "https://datawrapper-mcp.up.railway.app/mcp",
-					headers,
 				},
 			});
 
@@ -40,6 +34,11 @@ export const datawrapperMCPTools =
 							"Create a Datawrapper visualization (not published)",
 						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
+							api_key: z
+								.string()
+								.describe(
+									"The user's Datawrapper API token. This server is stateless and requires it on every request, so ask the user for it in chat if it hasn't been provided yet.",
+								),
 							data: z.union([
 								z
 									.array(z.record(z.string(), z.unknown()))
@@ -99,6 +98,30 @@ export const datawrapperMCPTools =
 								.string()
 								.optional()
 								.describe("Column with values for choropleth maps."),
+							base_color: z
+								.string()
+								.optional()
+								.describe(
+									'Optional base color for the chart, e.g. "#E63946".',
+								),
+							thick: z
+								.boolean()
+								.optional()
+								.describe(
+									"Optional Datawrapper thickness toggle for supported chart types.",
+								),
+							value_label_format: z
+								.string()
+								.optional()
+								.describe(
+									'Optional Datawrapper number format for value labels, e.g. "0,0.[00]" or "0.0%".',
+								),
+							visualize_overrides: z
+								.record(z.string(), z.unknown())
+								.optional()
+								.describe(
+									"Optional advanced Datawrapper visualize metadata overrides. Use for styling beyond base_color.",
+								),
 							title: z.string().optional().describe("Optional chart title"),
 							description: z
 								.string()
@@ -123,6 +146,11 @@ export const datawrapperMCPTools =
 							mcpTool.description || "Publish a Datawrapper visualization",
 						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
+							api_key: z
+								.string()
+								.describe(
+									"The user's Datawrapper API token. This server is stateless and requires it on every request, so ask the user for it in chat if it hasn't been provided yet.",
+								),
 							chart_id: z
 								.string()
 								.describe("The chart ID returned from create_visualization"),
