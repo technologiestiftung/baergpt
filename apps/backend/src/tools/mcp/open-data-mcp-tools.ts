@@ -13,6 +13,128 @@ export type OpenDataCitationSource = {
 	datasetId: string;
 };
 
+const aggregateFilterValueSchema = z.union([
+	z.string(),
+	z.number(),
+	z.boolean(),
+	z.array(z.union([z.string(), z.number()])),
+]);
+
+const aggregateMetricSchema = z.object({
+	op: z.enum(["sum", "avg", "min", "max", "count", "count_distinct"]),
+	column: z.string().optional(),
+	as: z.string().optional(),
+});
+
+const aggregateFilterSchema = z.object({
+	column: z.string(),
+	op: z.enum(["eq", "neq", "gt", "gte", "lt", "lte", "contains", "in"]),
+	value: aggregateFilterValueSchema,
+});
+
+const aggregateSortSchema = z.object({
+	column: z.string(),
+	direction: z.enum(["asc", "desc"]).optional(),
+});
+
+export const searchBerlinDatasetsInputSchema = z.object({
+	query: z.string(),
+	limit: z.number().optional(),
+	sort: z.string().optional(),
+});
+
+export const searchDatasetsFilteredInputSchema = z.object({
+	query: z.string().optional(),
+	organization: z.string().optional(),
+	tag: z.string().optional(),
+	format: z.string().optional(),
+	modified_since: z.string().optional(),
+	sort: z.string().optional(),
+	rows: z.number().optional(),
+});
+
+export const getDatasetDetailsInputSchema = z.object({
+	dataset_id: z.string(),
+});
+
+export const fetchDatasetDataInputSchema = z.object({
+	dataset_id: z.string(),
+	resource_id: z.string().optional(),
+	full_data: z.boolean().optional(),
+});
+
+export const listAllDatasetsInputSchema = z.object({
+	offset: z.number().optional(),
+	limit: z.number().optional(),
+});
+
+export const downloadDatasetInputSchema = z.object({
+	dataset_id: z.string(),
+	resource_id: z.string().optional(),
+	format: z.enum(["csv", "json", "geojson"]).optional(),
+});
+
+export const getPortalStatsInputSchema = z.object({});
+
+export const getFacetsInputSchema = z.object({
+	query: z.string().optional(),
+	limit: z.number().optional(),
+});
+
+export const listTagsInputSchema = z.object({
+	query: z.string().optional(),
+	limit: z.number().optional(),
+});
+
+export const listGeoLayersInputSchema = z.object({
+	dataset_id: z.string(),
+});
+
+export const fetchGeoFeaturesInputSchema = z.object({
+	wfs_url: z.string(),
+	typename: z.string(),
+	limit: z.number().optional(),
+	property_filter: z.string().optional(),
+});
+
+export const aggregateDatasetInputSchema = z.object({
+	dataset_id: z.string(),
+	resource_id: z.string().optional(),
+	group_by: z.array(z.string()).optional(),
+	metrics: z.array(aggregateMetricSchema),
+	filters: z.array(aggregateFilterSchema).optional(),
+	sort: z.array(aggregateSortSchema).optional(),
+	limit: z.number().optional(),
+});
+
+export const openDataToolInputSchema = z.union([
+	searchBerlinDatasetsInputSchema,
+	searchDatasetsFilteredInputSchema,
+	getDatasetDetailsInputSchema,
+	fetchDatasetDataInputSchema,
+	listAllDatasetsInputSchema,
+	downloadDatasetInputSchema,
+	getPortalStatsInputSchema,
+	getFacetsInputSchema,
+	listTagsInputSchema,
+	listGeoLayersInputSchema,
+	fetchGeoFeaturesInputSchema,
+	aggregateDatasetInputSchema,
+]);
+
+export type OpenDataToolInput = z.infer<typeof openDataToolInputSchema>;
+
+export const openDataMcpTextContentSchema = z.object({
+	type: z.literal("text"),
+	text: z.string(),
+});
+
+export const openDataMcpToolOutputSchema = z.object({
+	content: z.array(openDataMcpTextContentSchema),
+});
+
+export type OpenDataMcpToolOutput = z.infer<typeof openDataMcpToolOutputSchema>;
+
 /**
  * Names of tools that reference a specific Berlin dataset in their
  * response and are therefore eligible for source-citation extraction.
@@ -49,34 +171,19 @@ const SEARCH_RESULT_PATTERN =
 const DATASET_DETAILS_PATTERN =
 	/^#\s*(.+?)\n\n## Overview\n\*\*ID\*\*:\s*(\S+)\n\*\*Portal URL\*\*:\s*(https:\/\/daten\.berlin\.de\/datensaetze\/\S+)/;
 
-function extractTextFromMcpOutput(output: unknown): string | null {
-	if (
-		typeof output !== "object" ||
-		output === null ||
-		!("content" in output) ||
-		!Array.isArray((output as { content: unknown }).content)
-	) {
-		return null;
-	}
-
-	const textPart = (
-		output as { content: Array<{ type?: string; text?: string }> }
-	).content.find(
-		(part) => part?.type === "text" && typeof part.text === "string",
-	);
+function extractTextFromMcpOutput(output: OpenDataMcpToolOutput): string | null {
+	const textPart = output.content.find((part) => part.type === "text");
 
 	return textPart?.text ?? null;
 }
 
-function extractDatasetIdFromInput(input: unknown): string | null {
-	if (typeof input !== "object" || input === null || !("dataset_id" in input)) {
+function extractDatasetIdFromInput(input: OpenDataToolInput): string | null {
+	if (!("dataset_id" in input)) {
 		return null;
 	}
 
-	const datasetId = (input as { dataset_id?: unknown }).dataset_id;
-	return typeof datasetId === "string" && datasetId.length > 0
-		? datasetId
-		: null;
+	const { dataset_id: datasetId } = input;
+	return datasetId.length > 0 ? datasetId : null;
 }
 
 /**
@@ -88,8 +195,8 @@ function extractDatasetIdFromInput(input: unknown): string | null {
  * citation from the tool's input.
  */
 export function extractOpenDataSourcesFromToolOutput(
-	input: unknown,
-	output: unknown,
+	input: OpenDataToolInput,
+	output: OpenDataMcpToolOutput,
 ): OpenDataCitationSource[] {
 	const text = extractTextFromMcpOutput(output);
 
@@ -155,19 +262,7 @@ export const openDataMCPTools =
 				if (toolName === "search_berlin_datasets") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							query: z
-								.string()
-								.describe("Natural language search query in German or English"),
-							limit: z
-								.number()
-								.optional()
-								.describe("Maximum number of results to return (default: 20)"),
-							sort: z
-								.string()
-								.optional()
-								.describe("Optional CKAN sort expression (e.g. 'score desc')"),
-						}),
+						inputSchema: searchBerlinDatasetsInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -178,9 +273,7 @@ export const openDataMCPTools =
 				} else if (toolName === "get_dataset_details") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							dataset_id: z.string().describe("The ID or name of the dataset"),
-						}),
+						inputSchema: getDatasetDetailsInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -191,21 +284,7 @@ export const openDataMCPTools =
 				} else if (toolName === "fetch_dataset_data") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							dataset_id: z.string().describe("The dataset ID or name"),
-							resource_id: z
-								.string()
-								.optional()
-								.describe(
-									"Optional: specific resource ID. If not provided, uses first available resource.",
-								),
-							full_data: z
-								.boolean()
-								.optional()
-								.describe(
-									"If true, return all data for small datasets (≤500 rows). Refused for large datasets.",
-								),
-						}),
+						inputSchema: fetchDatasetDataInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -216,18 +295,7 @@ export const openDataMCPTools =
 				} else if (toolName === "list_all_datasets") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							offset: z
-								.number()
-								.optional()
-								.describe("Starting position (default: 0)"),
-							limit: z
-								.number()
-								.optional()
-								.describe(
-									"Number of results to return (default: 100, max: 1000)",
-								),
-						}),
+						inputSchema: listAllDatasetsInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -238,21 +306,7 @@ export const openDataMCPTools =
 				} else if (toolName === "download_dataset") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							dataset_id: z.string().describe("The dataset ID or name"),
-							resource_id: z
-								.string()
-								.optional()
-								.describe(
-									"Optional: specific resource ID. If not provided, uses first available data resource.",
-								),
-							format: z
-								.enum(["csv", "json", "geojson"])
-								.optional()
-								.describe(
-									"Output format: csv, json, or geojson. Use geojson for geodata.",
-								),
-						}),
+						inputSchema: downloadDatasetInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -263,7 +317,7 @@ export const openDataMCPTools =
 				} else if (toolName === "get_portal_stats") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({}),
+						inputSchema: getPortalStatsInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -274,18 +328,7 @@ export const openDataMCPTools =
 				} else if (toolName === "get_facets") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							query: z
-								.string()
-								.optional()
-								.describe("Search query to scope facets to (default: '*')"),
-							limit: z
-								.number()
-								.optional()
-								.describe(
-									"Maximum number of facet values to return (default: 10, max: 50)",
-								),
-						}),
+						inputSchema: getFacetsInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -296,18 +339,7 @@ export const openDataMCPTools =
 				} else if (toolName === "list_tags") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							query: z
-								.string()
-								.optional()
-								.describe("Optional filter to search tag names"),
-							limit: z
-								.number()
-								.optional()
-								.describe(
-									"Maximum number of tags to return (default: 50, max: 100)",
-								),
-						}),
+						inputSchema: listTagsInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -318,11 +350,7 @@ export const openDataMCPTools =
 				} else if (toolName === "list_geo_layers") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							dataset_id: z
-								.string()
-								.describe("The ID or name of the dataset with a WFS resource"),
-						}),
+						inputSchema: listGeoLayersInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -333,24 +361,7 @@ export const openDataMCPTools =
 				} else if (toolName === "fetch_geo_features") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							wfs_url: z.string().describe("The WFS service URL"),
-							typename: z
-								.string()
-								.describe("The WFS layer/type name to fetch features from"),
-							limit: z
-								.number()
-								.optional()
-								.describe(
-									"Maximum number of features to return (default: 100, max: 5000)",
-								),
-							property_filter: z
-								.string()
-								.optional()
-								.describe(
-									"Optional CQL filter on feature properties (e.g. \"bezirk = 'Mitte'\")",
-								),
-						}),
+						inputSchema: fetchGeoFeaturesInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -361,77 +372,7 @@ export const openDataMCPTools =
 				} else if (toolName === "aggregate_dataset") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						inputSchema: z.object({
-							dataset_id: z.string().describe("The dataset ID or name"),
-							resource_id: z
-								.string()
-								.optional()
-								.describe(
-									"Optional: specific resource ID. If not provided, uses first available resource.",
-								),
-							group_by: z
-								.array(z.string())
-								.optional()
-								.describe("Columns to group results by"),
-							metrics: z
-								.array(
-									z.object({
-										op: z
-											.enum([
-												"sum",
-												"avg",
-												"min",
-												"max",
-												"count",
-												"count_distinct",
-											])
-											.describe("Aggregation operation"),
-										column: z
-											.string()
-											.optional()
-											.describe("Column to aggregate (not needed for 'count')"),
-										as: z
-											.string()
-											.optional()
-											.describe("Optional alias for the resulting column"),
-									}),
-								)
-								.describe("At least one aggregation metric to compute"),
-							filters: z
-								.array(
-									z.object({
-										column: z.string(),
-										op: z.enum([
-											"eq",
-											"neq",
-											"gt",
-											"gte",
-											"lt",
-											"lte",
-											"contains",
-											"in",
-										]),
-										value: z.unknown(),
-									}),
-								)
-								.optional()
-								.describe("Filters applied before aggregation"),
-							sort: z
-								.array(
-									z.object({
-										column: z.string(),
-										direction: z.enum(["asc", "desc"]).optional(),
-									}),
-								)
-								.optional()
-								.describe("Sort order for the aggregated result rows"),
-							limit: z
-								.number()
-								.optional()
-								.describe(
-									"Maximum number of result rows to return (default: 1000, max: 1000)",
-								),
-						}),
+						inputSchema: aggregateDatasetInputSchema,
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
