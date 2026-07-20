@@ -27,7 +27,7 @@ export const RenameFolderDialog: React.FC = () => {
 		? singleItemSelectedForAction
 		: null;
 
-	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
 		if (!folder) {
@@ -41,11 +41,19 @@ export const RenameFolderDialog: React.FC = () => {
 			return;
 		}
 
-		if (newName !== folder.name) {
-			useUserFolderStore.getState().renameUserFolder(folder.id, newName);
+		if (newName === folder.name) {
+			hideRenameFolderDialog();
+			return;
 		}
 
-		hideRenameFolderDialog();
+		const error = await useUserFolderStore
+			.getState()
+			.renameUserFolder(folder.id, newName);
+
+		// Close only once the rename succeeds; keep it open on failure to retry
+		if (!error) {
+			hideRenameFolderDialog();
+		}
 	};
 
 	return (

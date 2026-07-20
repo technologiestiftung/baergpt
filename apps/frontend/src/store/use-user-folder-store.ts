@@ -16,7 +16,10 @@ interface UserFolderStore {
 	getUserFolders: (signal: AbortSignal) => Promise<void>;
 	createUserFolder: (folderName: string) => Promise<void>;
 	deleteUserFolder: (folderId: number) => Promise<void>;
-	renameUserFolder: (folderId: number, newName: string) => Promise<void>;
+	renameUserFolder: (
+		folderId: number,
+		newName: string,
+	) => Promise<Error | null>;
 
 	selectedUserChatFolders: UserFolder[];
 	selectUserChatFolder: (folder: UserFolder) => void;
@@ -100,15 +103,32 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 	renameUserFolder: async (folderId: number, newName: string) => {
 		try {
 			await renameFolder(folderId, newName);
-
-			set(({ userFolders }) => ({
-				userFolders: userFolders.map((folder) =>
-					folder.id === folderId ? { ...folder, name: newName } : folder,
-				),
-			}));
 		} catch (error) {
 			captureError(error);
+			return error as Error;
 		}
+
+		// Keep every list holding this folder object in sync, not just userFolders
+		const withRenamedFolder = (folders: UserFolder[]) =>
+			folders.map((folder) =>
+				folder.id === folderId ? { ...folder, name: newName } : folder,
+			);
+
+		set(
+			({
+				userFolders,
+				selectedUserChatFolders,
+				selectedUserFoldersForAction,
+			}) => ({
+				userFolders: withRenamedFolder(userFolders),
+				selectedUserChatFolders: withRenamedFolder(selectedUserChatFolders),
+				selectedUserFoldersForAction: withRenamedFolder(
+					selectedUserFoldersForAction,
+				),
+			}),
+		);
+
+		return null;
 	},
 
 	selectedUserChatFolders: [],
