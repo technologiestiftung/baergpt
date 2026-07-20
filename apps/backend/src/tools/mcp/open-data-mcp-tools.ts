@@ -7,6 +7,131 @@ export interface OpenDataMCPToolsResult {
 	cleanup: () => Promise<void>;
 }
 
+export type OpenDataCitationSource = {
+	url: string;
+	title: string;
+	datasetId: string;
+};
+
+/**
+ * Names of tools that reference a specific Berlin dataset in their
+ * response and are therefore eligible for source-citation extraction.
+ */
+export const OPEN_DATA_DATASET_TOOL_NAMES = new Set([
+	"search_berlin_datasets",
+	"search_datasets_filtered",
+	"get_dataset_details",
+	"fetch_dataset_data",
+	"download_dataset",
+	"aggregate_dataset",
+	"list_geo_layers",
+]);
+
+const DATASET_URL_PREFIX = "https://daten.berlin.de/datensaetze/";
+
+/**
+ * `search_berlin_datasets` / `search_datasets_filtered` render one markdown block per result, e.g.:
+ *   ## 1. Some Dataset Title
+ *   **ID**: some-dataset-id
+ *   **URL**: https://daten.berlin.de/datensaetze/some-dataset-id
+ */
+const SEARCH_RESULT_PATTERN =
+	/##\s*\d+\.\s*(.+?)\n\*\*ID\*\*:\s*(\S+)\n\*\*URL\*\*:\s*(https:\/\/daten\.berlin\.de\/datensaetze\/\S+)/g;
+
+/**
+ * `get_dataset_details` renders a single markdown block, e.g.:
+ *   # Some Dataset Title
+ *
+ *   ## Overview
+ *   **ID**: some-dataset-id
+ *   **Portal URL**: https://daten.berlin.de/datensaetze/some-dataset-id
+ */
+const DATASET_DETAILS_PATTERN =
+	/^#\s*(.+?)\n\n## Overview\n\*\*ID\*\*:\s*(\S+)\n\*\*Portal URL\*\*:\s*(https:\/\/daten\.berlin\.de\/datensaetze\/\S+)/;
+
+function extractTextFromMcpOutput(output: unknown): string | null {
+	if (
+		typeof output !== "object" ||
+		output === null ||
+		!("content" in output) ||
+		!Array.isArray((output as { content: unknown }).content)
+	) {
+		return null;
+	}
+
+	const textPart = (
+		output as { content: Array<{ type?: string; text?: string }> }
+	).content.find(
+		(part) => part?.type === "text" && typeof part.text === "string",
+	);
+
+	return textPart?.text ?? null;
+}
+
+function extractDatasetIdFromInput(input: unknown): string | null {
+	if (typeof input !== "object" || input === null || !("dataset_id" in input)) {
+		return null;
+	}
+
+	const datasetId = (input as { dataset_id?: unknown }).dataset_id;
+	return typeof datasetId === "string" && datasetId.length > 0
+		? datasetId
+		: null;
+}
+
+/**
+ * Extracts the Berlin Open Data dataset(s) referenced by a tool call so they
+ * can be surfaced as sources. The upstream MCP server returns plain markdown text
+ * rather than structured JSON, so we parse them above.
+ * For tools that reference a dataset by ID but don't repeat its title/URL in the
+ * response text (e.g. large tabular previews) we fall back to constructing the
+ * citation from the tool's input.
+ */
+export function extractOpenDataSourcesFromToolOutput(
+	input: unknown,
+	output: unknown,
+): OpenDataCitationSource[] {
+	const text = extractTextFromMcpOutput(output);
+
+	const searchMatches = text
+		? [...text.matchAll(SEARCH_RESULT_PATTERN)].map((match) => ({
+				title: match[1].trim(),
+				datasetId: match[2].trim(),
+				url: match[3].trim(),
+			}))
+		: [];
+
+	if (searchMatches.length > 0) {
+		return searchMatches;
+	}
+
+	const detailsMatch = text?.match(DATASET_DETAILS_PATTERN);
+	if (detailsMatch) {
+		return [
+			{
+				title: detailsMatch[1].trim(),
+				datasetId: detailsMatch[2].trim(),
+				url: detailsMatch[3].trim(),
+			},
+		];
+	}
+
+	const datasetId = extractDatasetIdFromInput(input);
+	if (!datasetId) {
+		return [];
+	}
+
+	const titleMatch = text?.match(/^#\s*(?:Data from:\s*)?(.+)$/m);
+
+	return [
+		{
+			url: `${DATASET_URL_PREFIX}${datasetId}`,
+			title: titleMatch?.[1]?.trim() ?? datasetId,
+			datasetId,
+		},
+	];
+}
+
 export const openDataMCPTools =
 	async (): Promise<OpenDataMCPToolsResult | null> => {
 		let openDataHttpClient: MCPClient | undefined;
@@ -30,7 +155,6 @@ export const openDataMCPTools =
 				if (toolName === "search_berlin_datasets") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							query: z
 								.string()
@@ -44,7 +168,6 @@ export const openDataMCPTools =
 								.optional()
 								.describe("Optional CKAN sort expression (e.g. 'score desc')"),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -55,11 +178,9 @@ export const openDataMCPTools =
 				} else if (toolName === "get_dataset_details") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							dataset_id: z.string().describe("The ID or name of the dataset"),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -70,7 +191,6 @@ export const openDataMCPTools =
 				} else if (toolName === "fetch_dataset_data") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							dataset_id: z.string().describe("The dataset ID or name"),
 							resource_id: z
@@ -86,7 +206,6 @@ export const openDataMCPTools =
 									"If true, return all data for small datasets (≤500 rows). Refused for large datasets.",
 								),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -97,7 +216,6 @@ export const openDataMCPTools =
 				} else if (toolName === "list_all_datasets") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							offset: z
 								.number()
@@ -110,7 +228,6 @@ export const openDataMCPTools =
 									"Number of results to return (default: 100, max: 1000)",
 								),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -121,7 +238,6 @@ export const openDataMCPTools =
 				} else if (toolName === "download_dataset") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							dataset_id: z.string().describe("The dataset ID or name"),
 							resource_id: z
@@ -137,7 +253,6 @@ export const openDataMCPTools =
 									"Output format: csv, json, or geojson. Use geojson for geodata.",
 								),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -148,9 +263,7 @@ export const openDataMCPTools =
 				} else if (toolName === "get_portal_stats") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -161,7 +274,6 @@ export const openDataMCPTools =
 				} else if (toolName === "get_facets") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							query: z
 								.string()
@@ -174,7 +286,6 @@ export const openDataMCPTools =
 									"Maximum number of facet values to return (default: 10, max: 50)",
 								),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -185,7 +296,6 @@ export const openDataMCPTools =
 				} else if (toolName === "list_tags") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							query: z
 								.string()
@@ -198,7 +308,6 @@ export const openDataMCPTools =
 									"Maximum number of tags to return (default: 50, max: 100)",
 								),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -209,13 +318,11 @@ export const openDataMCPTools =
 				} else if (toolName === "list_geo_layers") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							dataset_id: z
 								.string()
 								.describe("The ID or name of the dataset with a WFS resource"),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -226,7 +333,6 @@ export const openDataMCPTools =
 				} else if (toolName === "fetch_geo_features") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							wfs_url: z.string().describe("The WFS service URL"),
 							typename: z
@@ -245,7 +351,6 @@ export const openDataMCPTools =
 									"Optional CQL filter on feature properties (e.g. \"bezirk = 'Mitte'\")",
 								),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -256,7 +361,6 @@ export const openDataMCPTools =
 				} else if (toolName === "aggregate_dataset") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							dataset_id: z.string().describe("The dataset ID or name"),
 							resource_id: z
@@ -328,7 +432,6 @@ export const openDataMCPTools =
 									"Maximum number of result rows to return (default: 1000, max: 1000)",
 								),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -337,7 +440,6 @@ export const openDataMCPTools =
 						},
 					});
 				} else {
-					// For other tools, use them as-is
 					wrappedTools[toolName] = mcpTool as Tool;
 				}
 			}

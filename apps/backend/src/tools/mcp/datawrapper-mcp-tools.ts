@@ -32,7 +32,6 @@ export const datawrapperMCPTools =
 						description:
 							mcpTool.description ||
 							"Create a Datawrapper visualization (not published)",
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							api_key: z
 								.string()
@@ -101,9 +100,7 @@ export const datawrapperMCPTools =
 							base_color: z
 								.string()
 								.optional()
-								.describe(
-									'Optional base color for the chart, e.g. "#E63946".',
-								),
+								.describe('Optional base color for the chart, e.g. "#E63946".'),
 							thick: z
 								.boolean()
 								.optional()
@@ -132,7 +129,6 @@ export const datawrapperMCPTools =
 								.optional()
 								.describe("Optional Berlin dataset ID for tracking"),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -144,7 +140,6 @@ export const datawrapperMCPTools =
 					wrappedTools[toolName] = tool({
 						description:
 							mcpTool.description || "Publish a Datawrapper visualization",
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						inputSchema: z.object({
 							api_key: z
 								.string()
@@ -155,7 +150,6 @@ export const datawrapperMCPTools =
 								.string()
 								.describe("The chart ID returned from create_visualization"),
 						}),
-						// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
 								return await mcpTool.execute(params, options);
@@ -164,7 +158,6 @@ export const datawrapperMCPTools =
 						},
 					});
 				} else {
-					// For other tools, use them as-is
 					wrappedTools[toolName] = mcpTool as Tool;
 				}
 			}
