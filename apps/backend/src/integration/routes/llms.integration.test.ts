@@ -22,8 +22,8 @@ const externalToolEnabled: Partial<Record<ActiveTools, boolean>> = {
 	parlaMCPTools: config.featureFlagMcpParlaAllowed,
 	// Not feature-flagged (yet) and not surfaced in the frontend, but already
 	// valid/external at the API level.
-	datawrapperMCPTools: true,
 	openDataMCPTools: true,
+	datawrapperMCPTools: true,
 };
 const enabledExternalTool =
 	[...EXTERNAL_TOOLS].find((tool) => externalToolEnabled[tool]) ?? null;
