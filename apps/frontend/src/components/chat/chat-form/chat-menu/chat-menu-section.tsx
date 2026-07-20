@@ -9,12 +9,15 @@ import { WebSearchIcon } from "../../../primitives/icons/web-search-icon.tsx";
 import type { ChatToolsMenuItemId } from "../../../../common.ts";
 import { ChatMenuRow } from "./chat-menu-row.tsx";
 
+export const CHAT_TOOLS_MENU_ID = "chat-tools-menu";
+
 interface MenuItem {
 	id: ChatToolsMenuItemId;
 	label: string;
 	ariaLabel: string;
 	icon: string | React.ReactNode;
 	isSelected: boolean;
+	isCheckbox?: boolean;
 	onSelect: () => void;
 }
 
@@ -93,6 +96,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 							/>
 						),
 						isSelected: isWebSearchActive,
+						isCheckbox: true,
 						onSelect: () => {
 							toggleChatTool("webSearch");
 							onClose();
@@ -131,11 +135,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 	};
 
 	return (
-		<div
-			className={`z-50 absolute -left-0.5 bottom-full mb-3 rounded-3px bg-white border border-hellblau-50 focus-visible:outline-default shadow-md min-w-[200px] ${className}`}
-			onKeyDown={handleDropdownKeyDown}
-			role="listbox"
-		>
+		<>
 			<input
 				type="file"
 				ref={fileInputRef}
@@ -147,59 +147,69 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 				className="hidden"
 				multiple
 			/>
-			<ul className="flex flex-col">
-				{menuItems.map((item, index) => {
-					if (item.id === "connectors") {
+			<div
+				id={CHAT_TOOLS_MENU_ID}
+				className={`z-50 absolute -left-0.5 bottom-full mb-3 rounded-3px bg-white border border-hellblau-50 focus-visible:outline-default shadow-md min-w-[200px] ${className}`}
+				onKeyDown={handleDropdownKeyDown}
+				role="menu"
+				aria-label={Content["chat.options.toggleButton.tooltip.ariaLabel"]}
+			>
+				<ul role="none" className="flex flex-col">
+					{menuItems.map((item, index) => {
+						if (item.id === "connectors") {
+							return (
+								<li
+									key={item.id}
+									role="none"
+									className="relative"
+									onMouseEnter={openConnectorsSubmenu}
+								>
+									<ChatMenuRow
+										label={item.label}
+										ariaLabel={item.ariaLabel}
+										icon={item.icon}
+										isSelected={item.isSelected}
+										isActive={isConnectorsSubmenuOpen}
+										onClick={item.onSelect}
+										onKeyDown={handleConnectorsKeyDown}
+										optionButtonRef={(el) => {
+											setOptionRef(index)(el);
+											connectorsButtonRef.current = el;
+										}}
+										hasSubmenu={true}
+									/>
+									{isConnectorsSubmenuOpen && (
+										<div className="absolute left-full bottom-[1px]">
+											<ChatMenuConnectorsSubmenu
+												isOpen={isConnectorsSubmenuOpen}
+												onClose={closeConnectorsSubmenu}
+												onItemSelect={onClose}
+												connectorsButtonRef={connectorsButtonRef}
+												className="ml-1"
+											/>
+										</div>
+									)}
+								</li>
+							);
+						}
+
 						return (
-							<li
-								key={item.id}
-								className="relative"
-								onMouseEnter={openConnectorsSubmenu}
-							>
+							<li key={item.id} role="none">
 								<ChatMenuRow
 									label={item.label}
 									ariaLabel={item.ariaLabel}
 									icon={item.icon}
 									isSelected={item.isSelected}
-									isActive={isConnectorsSubmenuOpen}
+									isCheckbox={item.isCheckbox}
 									onClick={item.onSelect}
-									onKeyDown={handleConnectorsKeyDown}
-									optionButtonRef={(el) => {
-										setOptionRef(index)(el);
-										connectorsButtonRef.current = el;
-									}}
-									hasSubmenu={true}
+									onMouseEnter={closeConnectorsSubmenu}
+									optionButtonRef={setOptionRef(index)}
 								/>
-								{isConnectorsSubmenuOpen && (
-									<div className="absolute left-full bottom-[1px]">
-										<ChatMenuConnectorsSubmenu
-											isOpen={isConnectorsSubmenuOpen}
-											onClose={closeConnectorsSubmenu}
-											onItemSelect={onClose}
-											connectorsButtonRef={connectorsButtonRef}
-											className="ml-1"
-										/>
-									</div>
-								)}
 							</li>
 						);
-					}
-
-					return (
-						<li key={item.id}>
-							<ChatMenuRow
-								label={item.label}
-								ariaLabel={item.ariaLabel}
-								icon={item.icon}
-								isSelected={item.isSelected}
-								onClick={item.onSelect}
-								onMouseEnter={closeConnectorsSubmenu}
-								optionButtonRef={setOptionRef(index)}
-							/>
-						</li>
-					);
-				})}
-			</ul>
-		</div>
+					})}
+				</ul>
+			</div>
+		</>
 	);
 };

@@ -8,6 +8,7 @@ interface ChatMenuRowProps {
 	icon: string | React.ReactNode;
 	isSelected: boolean;
 	isActive?: boolean;
+	isCheckbox?: boolean;
 	onClick: () => void;
 	onMouseEnter?: () => void;
 	onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -21,6 +22,7 @@ export function ChatMenuRow({
 	icon,
 	isSelected,
 	isActive = false,
+	isCheckbox = false,
 	onClick,
 	onMouseEnter,
 	onKeyDown,
@@ -36,9 +38,9 @@ export function ChatMenuRow({
 			onMouseEnter={onMouseEnter}
 			onKeyDown={onKeyDown}
 			aria-label={ariaLabel}
-			role="option"
-			aria-selected={isSelected}
-			aria-haspopup={hasSubmenu ? "listbox" : undefined}
+			role={isCheckbox ? "menuitemcheckbox" : "menuitem"}
+			aria-checked={isCheckbox ? isSelected : undefined}
+			aria-haspopup={hasSubmenu ? "menu" : undefined}
 			aria-expanded={hasSubmenu ? isActive : undefined}
 		>
 			<div className="flex items-center">
@@ -73,10 +75,11 @@ export function ChatMenuRow({
 			/>
 			<img
 				src="/icons/chevron-small-right.svg"
-				alt="Chevron right"
+				alt=""
 				width={16}
 				height={16}
 				className={`${hasSubmenu ? "block" : "hidden"}`}
+				aria-hidden="true"
 			/>
 		</button>
 	);
