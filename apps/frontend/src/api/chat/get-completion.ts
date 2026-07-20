@@ -1,32 +1,62 @@
 import { useChatsStore } from "../../store/use-chats-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
-import type { ChatWithMessages } from "../../common.ts";
-import { useDocumentStore } from "../../store/document-store.ts";
-import { useFolderStore } from "../../store/folder-store.ts";
+import type { ChatTool, ChatWithMessages } from "../../common.ts";
+import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../store/use-user-folder-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
 import { useInferenceLoadingStatusStore } from "../../store/use-inference-loading-status-store.ts";
 import { useCitationsStore } from "../../store/use-citations-store.ts";
+import { useFaviconStore } from "../../store/favicon-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
+import type { Span } from "@sentry/react";
+import { usePublicDocumentsStore } from "../../store/use-public-documents-store.ts";
+
+export type WebCitationSource = {
+	url: string;
+	title: string;
+	snippet: string;
+	age?: string[] | null;
+};
+
+export type ParlaCitationSource = {
+	url: string;
+	title: string;
+	source_type: string;
+	content: string;
+	page: number;
+};
 
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
-	| { type: "data-citations"; data: number[] };
+	| { type: "data-citations"; data: number[] }
+	| { type: "data-web-citations"; data: WebCitationSource[] }
+	| { type: "data-parla-citations"; data: ParlaCitationSource[] };
+
+const activeToolsDict: Record<ChatTool, string[]> = {
+	parla: ["parlaMCPTools"],
+	webSearch: ["webSearchTool"],
+};
 
 export async function getCompletion(
 	currentChat: ChatWithMessages,
+	span: Span,
 ): Promise<void> {
 	const { handleError } = useErrorStore.getState();
 	const {
 		updateMessage,
 		addMessageToChat,
 		selectedLlmModel,
-		selectedChatOptions,
+		selectedChatTools,
 	} = useChatsStore.getState();
-	const { getSelectedChatDocumentIds } = useDocumentStore.getState();
-	const { getSelectedChatFolderIds } = useFolderStore.getState();
+	const { getSelectedUserChatDocumentIds } = useUserDocumentStore.getState();
+	const { getSelectedUserChatFolderIds } = useUserFolderStore.getState();
+	const { getSelectedPublicChatDocumentIds } =
+		usePublicDocumentsStore.getState();
+
 	const { setStatus } = useInferenceLoadingStatusStore.getState();
 	const { ensureCached } = useCitationsStore.getState();
+	const { ensureFaviconsCached } = useFaviconStore.getState();
 
 	const { session } = useAuthStore.getState();
 	const { user } = useUserStore.getState();
@@ -45,24 +75,13 @@ export async function getCompletion(
 			content,
 		}));
 
-		// fetch selected document and folder IDs
-		const selectedDocumentIds = getSelectedChatDocumentIds();
-		const selectedFolderIds = getSelectedChatFolderIds();
-		const documents = useDocumentStore.getState().documents;
-
-		// fetch documents within the selected folders
-		const folderDocumentIds = documents
-			.filter(
-				(doc) =>
-					doc.folder_id !== undefined &&
-					doc.folder_id !== null &&
-					selectedFolderIds.includes(doc.folder_id),
-			)
-			.map((doc) => doc.id);
+		const selectedDocumentIds = getSelectedUserChatDocumentIds();
+		const selectedFolderIds = getSelectedUserChatFolderIds();
+		const publicDocumentIds = getSelectedPublicChatDocumentIds();
 
 		// merge document IDs from selected documents and folders
 		const allowedDocumentIds = Array.from(
-			new Set([...selectedDocumentIds, ...folderDocumentIds]),
+			new Set([...selectedDocumentIds, ...publicDocumentIds]),
 		);
 
 		const headers = new Headers();
@@ -85,8 +104,9 @@ export async function getCompletion(
 					allowed_document_ids: allowedDocumentIds,
 					allowed_folder_ids: selectedFolderIds,
 					is_addressed_formal: user?.is_addressed_formal,
-					is_base_knowledge_active:
-						selectedChatOptions.includes("baseKnowledge"),
+					active_tools: selectedChatTools.flatMap(
+						(option) => activeToolsDict[option] ?? [],
+					),
 					llm_model: selectedLlmModel,
 				}),
 			},
@@ -95,13 +115,13 @@ export async function getCompletion(
 		if (!response.ok) {
 			const errorResponse = await response.json();
 			setStatus("error");
-			handleError(new Error(errorResponse.code));
+			handleError(new Error(errorResponse.code), span);
 			return;
 		}
 
 		if (!response.body) {
 			setStatus("error");
-			handleError(new Error("Response body from API is empty"));
+			handleError(new Error("Response body from API is empty"), span);
 			return;
 		}
 
@@ -109,14 +129,29 @@ export async function getCompletion(
 			content: "",
 			type: "text",
 			role: "assistant",
-			allowed_document_ids: selectedDocumentIds, // Save selected document IDs
+			allowed_document_ids: allowedDocumentIds, // Save selected document IDs
 			allowed_folder_ids: selectedFolderIds, // Save selected folder IDs
 			citations: null,
+			web_citations: null,
+			parla_citations: null,
 		});
 
 		let currentText = "";
-		let citations: number[] = [];
+		let documentCitations: number[] = [];
+		let webCitations: WebCitationSource[] = [];
+		let parlaCitations: ParlaCitationSource[] = [];
+
 		let hasReceivedText = false;
+
+		const writeMessage = () =>
+			updateMessage({
+				chat: currentChat,
+				messageId,
+				content: currentText,
+				citations: documentCitations.length ? documentCitations : null,
+				web_citations: webCitations.length ? webCitations : null,
+				parla_citations: parlaCitations.length ? parlaCitations : null,
+			});
 
 		await parseStream(response.body, {
 			onTextDelta: (delta: string) => {
@@ -127,26 +162,26 @@ export async function getCompletion(
 				}
 
 				currentText += delta;
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-				});
+				writeMessage();
 			},
 			onCitations: (chunkIds: number[]) => {
-				citations = chunkIds;
-				// Update message immediately when citations arrive
-				updateMessage({
-					chat: currentChat,
-					messageId,
-					content: currentText,
-					citations: citations.length ? citations : null,
-				});
+				documentCitations = chunkIds;
+				writeMessage();
 				// Cache the citations now
-				if (citations.length) {
-					ensureCached(citations);
+				if (documentCitations.length) {
+					ensureCached(documentCitations);
 				}
+			},
+			onWebCitations: (webSources: WebCitationSource[]) => {
+				webCitations = webSources;
+				writeMessage();
+				if (webSources.length) {
+					ensureFaviconsCached(webSources.map(({ url }) => url));
+				}
+			},
+			onParlaCitations: (sources: ParlaCitationSource[]) => {
+				parlaCitations = sources;
+				writeMessage();
 			},
 			onFinish: () => {
 				setStatus("idle");
@@ -154,10 +189,15 @@ export async function getCompletion(
 			},
 		});
 	} catch (error) {
-		setStatus("error");
 		// Only handle error if it's not an abort error
-		if (error instanceof Error && error.name !== "AbortError") {
-			handleError(error);
+		const isUserAbort = error instanceof Error && error.name === "AbortError";
+		if (isUserAbort) {
+			setStatus("idle");
+		} else {
+			setStatus("error");
+			if (error instanceof Error) {
+				handleError(error, span);
+			}
 		}
 		setStreamingAbortController(null);
 	}
@@ -168,6 +208,8 @@ function processStreamLine(
 	callbacks: {
 		onTextDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
+		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
+		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -195,6 +237,16 @@ function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "data-web-citations") {
+			callbacks.onWebCitations(event.data);
+			return false;
+		}
+
+		if (event.type === "data-parla-citations") {
+			callbacks.onParlaCitations(event.data);
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -209,6 +261,8 @@ async function parseStream(
 	callbacks: {
 		onTextDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
+		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
+		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ) {

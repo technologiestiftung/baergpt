@@ -1,6 +1,6 @@
 import { StorageApiError } from "@supabase/storage-js";
 import { useAuthStore } from "../../store/auth-store";
-import { useFolderStore } from "../../store/folder-store";
+import { useCurrentFolderStore } from "../../store/use-current-folder-store.ts";
 import { supabase } from "../../../supabase-client";
 
 /**
@@ -10,7 +10,6 @@ export async function uploadFileToDb(
 	file: File,
 	filePath: string,
 ): Promise<void> {
-	//const { session } = useAuthStore.getState();
 	try {
 		const { error: uploadError } = await supabase.storage
 			.from("documents")
@@ -36,7 +35,7 @@ export async function processDocument(
 	filePath: string,
 ): Promise<void> {
 	const { session } = useAuthStore.getState();
-	const { currentFolder } = useFolderStore.getState();
+	const { currentFolder } = useCurrentFolderStore.getState();
 
 	// Create document metadata
 	const documentData = {

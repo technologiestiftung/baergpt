@@ -1,9 +1,14 @@
+import { Readable } from "node:stream";
 import {
 	mockDocumentUpload,
-	uploadFileViaDragAndDrop,
+	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
 import { expect, test } from "@playwright/test";
-import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
+import {
+	mockLlmCompletion,
+	sendAndWaitForLLMResponse,
+} from "../fixtures/mock-llm.ts";
+import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -13,34 +18,29 @@ import {
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
+import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 
 test.describe("Chat", () => {
-	testWithLoggedInUser(
+	testWithMockedLlm(
 		"Chat without documents and copy answer",
 		async ({ page, browserName }) => {
 			await page.goto("/");
 
-			// Fill in the chat question
-			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
-			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
-
-			// Wait for the response to appear (2 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(2);
-
-			// Verify the answer is not empty
-			const markdownAnswer = page.locator("div.markdown-container").last();
-			await expect(markdownAnswer).not.toBeEmpty();
+			const question = page.getByTestId("user-message-markdown-container");
+			await expect(question).toBeVisible();
 
 			if (browserName === "webkit") {
 				return;
 			}
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
 
 			await page.getByAltText("Kopieren").last().click();
 
@@ -52,7 +52,60 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testWithLoggedInUser(
+	testWithMockedLlm(
+		"Stop generating aborts stream without error banner",
+		async ({ page }) => {
+			await page.goto("/");
+			let hangingStream: Readable | undefined;
+
+			// Mock the LLM API to return a partial response
+			await page.route("**/llm/just-chatting", async (route) => {
+				hangingStream = new Readable({
+					read() {},
+				});
+				hangingStream.push(
+					`data: ${JSON.stringify({
+						type: "text-delta",
+						id: "1",
+						delta: "Partial ",
+					})}\n\n`,
+				);
+
+				await route.fulfill({
+					status: 200,
+					headers: {
+						"Content-Type": "text/event-stream; charset=utf-8",
+					},
+					// @ts-expect-error Playwright Node accepts Readable for streaming bodies; public types omit it.
+					body: hangingStream,
+				});
+			});
+
+			try {
+				await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+				await page.getByRole("button", { name: "Nachricht senden" }).click();
+
+				const stopButton = page.getByRole("button", {
+					name: "Textgenerierung stoppen",
+				});
+				await expect(stopButton).toBeVisible();
+
+				await stopButton.click();
+
+				await expect(
+					page.getByText("Ihre Anfrage konnte gerade nicht bearbeitet werden."),
+				).not.toBeVisible();
+
+				await expect(
+					page.getByRole("button", { name: "Nachricht senden" }),
+				).toBeVisible();
+			} finally {
+				hangingStream?.destroy();
+			}
+		},
+	);
+
+	testWithMockedLlm(
 		"Copy text with markdown formatting as rich text and plain text",
 		async ({ page, browserName }) => {
 			await page.goto("/");
@@ -60,10 +113,7 @@ test.describe("Chat", () => {
 			// Fill in the chat question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("**hallo**");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
 			if (browserName === "webkit") {
 				return;
@@ -103,7 +153,7 @@ test.describe("Chat", () => {
 		const addButton = page
 			.getByRole("listitem")
 			.filter({ hasText: defaultDocumentName })
-			.getByLabel("Zum Chat hinzufügen");
+			.getByLabel("In den Chat");
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -117,21 +167,73 @@ test.describe("Chat", () => {
 			.getByPlaceholder("Stellen Sie eine Frage")
 			.fill("Worum geht es?");
 
-		// Click the send button
-		await page
-			.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-			.click();
+		await sendAndWaitForLLMResponse(page);
 
-		// Wait for the response to appear (2 markdown containers: question + answer)
-		// Use longer timeout since it involves backend API calls
-		await expect(page.locator("div.markdown-container")).toHaveCount(2, {
-			timeout: 60_000,
-		});
+		const question = page.getByTestId("user-message-markdown-container");
+		await expect(question).toBeVisible();
 
-		// Verify the answer is not empty
-		const markdownAnswer = page.locator("div.markdown-container").last();
-		await expect(markdownAnswer).not.toBeEmpty();
+		const answer = page.getByTestId("assistant-message-markdown-container");
+		await expect(answer).not.toBeEmpty();
 	});
+
+	testDesktopOnly(
+		"Add document and user folder to chat via dropdown",
+		async ({ page }) => {
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect add to chat button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "In den Chat" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "In den Chat" }).click();
+
+			// Verify the document is added to the chat
+			await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			// Add the folder and documents to the chat
+			const menuButtonFolder = page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonFolder).toBeVisible();
+			await menuButtonFolder.click();
+
+			// Expect add to chat button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "In den Chat" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "In den Chat" }).click();
+
+			// Verify the folder is added to the chat
+			await expect(page.getByText("2 Elemente in diesem Chat")).toBeVisible();
+		},
+	);
 
 	testDesktopOnly(
 		"Add multiple documents / folders to chat",
@@ -140,7 +242,7 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
-			await uploadFileViaDragAndDrop({
+			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: secondaryDocumentName,
 				filePath: secondaryDocumentPath,
@@ -149,10 +251,10 @@ test.describe("Chat", () => {
 
 			// Create a new folder
 			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
 				.click();
 			await page
-				.getByRole("textbox", { name: "Ordner Name" })
+				.getByRole("textbox", { name: "Neuer Ordner" })
 				.fill(givenFolderName);
 			await page
 				.getByRole("button", { name: "Erstellen", exact: true })
@@ -167,17 +269,17 @@ test.describe("Chat", () => {
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: givenFolderName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 			await page
 				.getByRole("listitem")
 				.filter({ hasText: secondaryDocumentName })
-				.getByLabel("Zum Chat hinzufügen")
+				.getByLabel("In den Chat")
 				.click();
 
 			await expect(
@@ -191,8 +293,8 @@ test.describe("Chat", () => {
 
 			// Verify the folder and documents are removed from the chat
 			await expect(
-				page.getByRole("button", { name: "Keine Dateien in diesem Chat" }),
-			).toBeVisible();
+				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
+			).not.toBeVisible();
 		},
 	);
 
@@ -204,26 +306,13 @@ test.describe("Chat", () => {
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [documentChunkId];
 
-			await page.route("**/llm/just-chatting", async (route) => {
-				// Format as Server-Sent Events (SSE) stream
-				const streamBody = [
-					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
-					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
-					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
-				].join("");
-
-				await route.fulfill({
-					status: 200,
-					body: streamBody,
-					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
-				});
-			});
+			await mockLlmCompletion(page, { textDelta: content, citations });
 
 			// Find the add-to-chat button for the specific document
 			const addButton = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen");
+				.getByLabel("In den Chat");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -233,10 +322,7 @@ test.describe("Chat", () => {
 				.getByPlaceholder("Stellen Sie eine Frage")
 				.fill("Worum geht es?");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
 			// Wait for the citations button to appear (after stream finishes and citations are loaded)
 			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
@@ -265,9 +351,8 @@ test.describe("Chat", () => {
 
 	testDesktopOnly("Chat with public document citations", async ({ page }) => {
 		// Create an admin user to upload the public document
-		const adminEmail = "admin.test@local.berlin.de";
+		const adminEmail = "admin.test@ts.berlin";
 		const adminPassword = "TestPassword123!";
-		let adminUserId: string | undefined;
 
 		const { data: adminUserData, error: createAdminError } =
 			await supabaseAdminClient.auth.admin.createUser({
@@ -286,7 +371,7 @@ test.describe("Chat", () => {
 			throw createAdminError;
 		}
 
-		adminUserId = adminUserData.user.id;
+		const adminUserId = adminUserData.user.id;
 
 		try {
 			// Grant admin role by adding to application_admins table
@@ -341,26 +426,13 @@ test.describe("Chat", () => {
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [publicDocumentChunkId];
 
-			await page.route("**/llm/just-chatting", async (route) => {
-				// Format as Server-Sent Events (SSE) stream
-				const streamBody = [
-					`data: ${JSON.stringify({ type: "text-delta", id: "1", delta: content })}\n\n`,
-					`data: ${JSON.stringify({ type: "data-citations", data: citations })}\n\n`,
-					`data: ${JSON.stringify({ type: "finish" })}\n\n`,
-				].join("");
-
-				await route.fulfill({
-					status: 200,
-					body: streamBody,
-					headers: { "Content-Type": "text/event-stream; charset=utf-8" },
-				});
-			});
+			await mockLlmCompletion(page, { textDelta: content, citations });
 
 			// Find the add-to-chat button
 			const addButton = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Zum Chat hinzufügen");
+				.getByLabel("In den Chat");
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -370,13 +442,12 @@ test.describe("Chat", () => {
 				.getByPlaceholder("Stellen Sie eine Frage")
 				.fill("Worum geht es?");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
 			// Wait for the citations button to appear (after stream finishes and citations are loaded)
-			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			const allCitationsButton = page.getByRole("button", {
+				name: "Quellen",
+			});
 			await expect(allCitationsButton).toBeVisible();
 
 			await allCitationsButton.click();
@@ -409,31 +480,21 @@ test.describe("Chat", () => {
 		}
 	});
 
-	testWithLoggedInUser(
+	testDesktopOnly(
 		"Export chat messages as Word and PDF document",
-		async ({ page, isMobile, browserName }) => {
-			// Skip this test on mobile
-			test.skip(isMobile === true, "Skipping desktop tests on mobile");
-
+		async ({ page, browserName }) => {
 			await page.goto("/");
 
 			// Fill in the chat question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
-			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
+			const question = page.getByTestId("user-message-markdown-container");
+			await expect(question).toBeVisible();
 
-			// Wait for the response to appear (2 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(2);
-
-			// Verify the answer is not empty
-			const markdownAnswer = page.locator("div.markdown-container").last();
-			await expect(markdownAnswer).not.toBeEmpty();
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
 
 			if (browserName === "webkit") {
 				return;
@@ -512,7 +573,62 @@ test.describe("Chat", () => {
 		await expect(page.getByRole("heading", { name: "Chats" })).toBeVisible();
 	});
 
-	testWithLoggedInUser(
+	testDesktopOnlyWithManyChats("Chat history loading", async ({ page }) => {
+		const isNextChatsPageRequest = (url: URL) =>
+			url.pathname.includes("/rest/v1/chats") &&
+			url.searchParams.get("offset") === "20";
+
+		const createDeferredPromise = () => {
+			let resolveDeferredPromise: (value?: unknown) => void = () => {};
+			const deferredPromise = new Promise((resolve) => {
+				resolveDeferredPromise = resolve;
+			});
+			return { deferredPromise, resolveDeferredPromise };
+		};
+
+		const { deferredPromise, resolveDeferredPromise } = createDeferredPromise();
+
+		const requestPromise = page.route(isNextChatsPageRequest, async (route) => {
+			await deferredPromise;
+			await route.continue();
+		});
+
+		await page.goto("/");
+
+		const firstChatInHistory = page
+			.getByRole("complementary")
+			.locator("div")
+			.filter({ hasText: /^Test Chat 30$/ });
+
+		await expect(firstChatInHistory).toBeVisible();
+
+		const loadingSpinner = page
+			.getByRole("complementary", { name: "Sidebar" })
+			.getByTestId("load-more-chats-spinner");
+
+		await expect(loadingSpinner).toBeVisible();
+
+		resolveDeferredPromise();
+
+		const lastChatInHistory = page
+			.getByRole("complementary")
+			.locator("div")
+			.filter({ hasText: /^Test Chat 11$/ });
+
+		await lastChatInHistory.scrollIntoViewIfNeeded();
+
+		await requestPromise;
+
+		await expect(loadingSpinner).not.toBeVisible();
+
+		const allChatsLoadedMessage = page
+			.getByRole("complementary")
+			.getByText("Alle Chats geladen");
+
+		await expect(allChatsLoadedMessage).toBeVisible();
+	});
+
+	testWithMockedLlm(
 		"Change LLM model from small to large and back",
 		async ({ page }) => {
 			await page.goto("/");
@@ -523,27 +639,24 @@ test.describe("Chat", () => {
 			// Fill in the chat question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
-			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
+			const question1 = page
+				.getByTestId("user-message-markdown-container")
+				.first();
+			await expect(question1).toBeVisible();
 
-			// Wait for the response to appear (2 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(2);
-
-			// Verify the answer is not empty
-			const markdownAnswerOne = page.locator("div.markdown-container").last();
-			await expect(markdownAnswerOne).not.toBeEmpty();
+			const answer1 = page
+				.getByTestId("assistant-message-markdown-container")
+				.first();
+			await expect(answer1).not.toBeEmpty();
 
 			// Click on the LLM model button
 			await page.getByRole("button", { name: "Schnell" }).click();
 
 			// Select the large LLM model
 			await page
-				.getByRole("option", { name: "Mistral Large (präzise) auswählen" })
+				.getByRole("option", { name: "Mistral Medium 3.5 (präzise) auswählen" })
 				.click();
 
 			// Verify that the large LLM model is selected
@@ -552,20 +665,17 @@ test.describe("Chat", () => {
 			// Fill in the chat question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 
-			// Click the send button
-			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+			await sendAndWaitForLLMResponse(page);
 
-			// Wait for the AI response with a longer timeout since it involves backend API calls
-			await page.waitForLoadState("networkidle");
+			const question2 = page
+				.getByTestId("user-message-markdown-container")
+				.last();
+			await expect(question2).toBeVisible();
 
-			// Wait for the response to appear (4 markdown containers: question + answer)
-			await expect(page.locator("div.markdown-container")).toHaveCount(4);
-
-			// Verify the answer is not empty
-			const markdownAnswerTwo = page.locator("div.markdown-container").last();
-			await expect(markdownAnswerTwo).not.toBeEmpty();
+			const answer2 = page
+				.getByTestId("assistant-message-markdown-container")
+				.last();
+			await expect(answer2).not.toBeEmpty();
 
 			// Click on the LLM model button
 			await page.getByRole("button", { name: "Präzise" }).click();
@@ -575,7 +685,7 @@ test.describe("Chat", () => {
 
 			// Select the small LLM model
 			await page
-				.getByRole("option", { name: "Mistral Small (schnell) auswählen" })
+				.getByRole("option", { name: "Mistral Small 4 (schnell) auswählen" })
 				.click();
 
 			// Verify that the model selection window is closed after selecting a model
@@ -586,113 +696,383 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testDesktopOnly("Toggle base knowledge on and off", async ({ page }) => {
+	testDesktopOnly(
+		"Toggle base knowledge folder on and off",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await page.getByRole("button", { name: "In den Chat" }).first().click();
+
+			const baseKnowledgeFolderInChat = page.getByTestId(
+				"remove-item-Verwaltungswissen",
+			);
+			await expect(baseKnowledgeFolderInChat).toBeVisible();
+
+			await baseKnowledgeFolderInChat.click();
+			await expect(baseKnowledgeFolderInChat).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly("Toggle Parla Berlin MCP", async ({ page }) => {
+		const isMcpParlaAllowed =
+			process.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true";
+
+		if (!isMcpParlaAllowed) {
+			testDesktopOnly.skip();
+		}
+
 		await page.goto("/");
 
-		// Find and click the chat options toggle button
+		// Open the chat options dropdown ("Wissen erweitern")
 		const chatOptionsButton = page.getByRole("button", {
 			name: "Weitere Funktionen aktivieren",
 		});
 		await expect(chatOptionsButton).toBeVisible();
-
-		// Verify the baseKnowledge Pill is visible by default
-		const baseKnowledgePill = page.getByRole("button", {
-			name: /Verwaltungswissen entfernen/,
-		});
-		await expect(baseKnowledgePill).toBeVisible();
-
-		// Verify the baseKnowledge Pill is not visible after clicking to remove
-		await baseKnowledgePill.click();
-		await expect(baseKnowledgePill).not.toBeVisible();
-
-		// Click to open the dropdown
 		await chatOptionsButton.click();
 
-		// Verify the dropdown is open with the title "Wissen erweitern"
-		await expect(page.getByText("Wissen erweitern")).toBeVisible();
-
-		// Click on "Verwaltungswissen" option to toggle it on
-		const baseKnowledgeOption = page.getByRole("option", {
-			name: "Verwaltungswissen auswählen",
+		const connectorsOption = page.getByRole("option", {
+			name: "Konnektoren auswählen",
 		});
 
-		await expect(baseKnowledgeOption).toBeVisible();
-		await baseKnowledgeOption.click();
+		// Open the connectors submenu via hover
+		await connectorsOption.hover();
 
-		// Verify the dropdown closes after selection
-		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
+		const connectorsSubmenu = page.getByTestId("chat-menu-connectors-submenu");
+		await expect(connectorsSubmenu).toBeVisible();
 
-		// Verify the context pill appears with "Verwaltungswissen" label
+		// locate the Parla Berlin option inside the submenu
+		const parlaBerlinOption = connectorsSubmenu.getByRole("button", {
+			name: /Parla Berlin/,
+		});
+		await expect(parlaBerlinOption).toBeVisible();
+
+		// Select Parla Berlin and assert the check icon is visible
+		await test.step("Select Parla Berlin", async () => {
+			await parlaBerlinOption.click();
+			await expect(
+				parlaBerlinOption.getByAltText("Ein blaues Häkchen-Icon"),
+			).toBeVisible();
+		});
+
+		// Deselect Parla Berlin in the submenu and assert the check icon is hidden
+		await test.step("Deselect Parla Berlin", async () => {
+			await parlaBerlinOption.click();
+			await expect(
+				parlaBerlinOption.getByAltText("Ein blaues Häkchen-Icon"),
+			).toBeHidden();
+		});
+
+		// Re-select Parla Berlin via the submenu to verify the context pill
+		await parlaBerlinOption.click();
+		await page.locator("body").click({ position: { x: 0, y: 0 } });
+
+		// Verify the context pill appears with "Parla Berlin entfernen" (remove option)
 		const contextPill = page.getByRole("button", {
-			name: /Verwaltungswissen entfernen/,
+			name: /Parla Berlin entfernen/,
 		});
 		await expect(contextPill).toBeVisible();
 
-		// Deselect base knowledge through the dropdown
-		await chatOptionsButton.click();
-		await expect(page.getByText("Wissen erweitern")).toBeVisible();
-
-		// Click on "Verwaltungswissen" again to deselect it
-		await baseKnowledgeOption.click();
-		await expect(page.getByText("Wissen erweitern")).not.toBeVisible();
-
-		// Verify the context pill disappears after deselecting through dropdown
+		// Deselect by clicking the pill; pill and label should disappear
+		await contextPill.click();
+		await expect(page.getByText("Parla Berlin")).not.toBeVisible();
 		await expect(contextPill).not.toBeVisible();
 	});
 
 	testDesktopOnly(
-		"Disabling base knowledge should re-activate it when swapping between two chats",
+		"Activating web search shows privacy warning banner",
 		async ({ page }) => {
+			if (process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true") {
+				testDesktopOnly.skip();
+			}
+
 			await page.goto("/");
 
-			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
-			await chatInput.fill("hallo");
-
-			const sendButton = page.getByRole("button", {
-				name: "Ein weißer Pfeil nach rechts",
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
 			});
-			await sendButton.click();
+			await chatOptionsButton.click();
 
-			await page.waitForLoadState("networkidle");
+			await page.getByRole("option", { name: "Websuche auswählen" }).click();
 
-			const baseKnowledgePill = page.getByRole("button", {
-				name: /Verwaltungswissen entfernen/,
-			});
-			await baseKnowledgePill.click();
+			await expect(
+				page.getByText(
+					"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+				),
+			).toBeVisible();
 
-			await expect(baseKnowledgePill).not.toBeVisible();
+			await page.getByRole("button", { name: "Websuche entfernen" }).click();
 
-			const startNewChatButton = page.getByRole("button", {
-				name: "Neuen Chat erstellen",
-			});
-			await startNewChatButton.click();
-
-			await expect(baseKnowledgePill).toBeVisible();
+			await expect(
+				page.getByText(
+					"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+				),
+			).not.toBeVisible();
 		},
 	);
 
 	testDesktopOnly(
-		"Disabling base knowledge should not re-activate it when starting the first chat",
+		"Adding document while web search active deactivates web search",
+		async ({ page }) => {
+			if (process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true") {
+				testDesktopOnly.skip();
+			}
+			await page.goto("/");
+
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+
+			const webSearchPill = page.getByRole("button", {
+				name: "Websuche entfernen",
+			});
+			await expect(webSearchPill).toBeVisible();
+
+			await page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("In den Chat")
+				.click();
+
+			await expect(webSearchPill).not.toBeVisible();
+
+			await expect(
+				page.getByText("Websuche wurde automatisch deaktiviert."),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Adding folder while web search active deactivates web search",
+		async ({ page }) => {
+			if (process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true") {
+				testDesktopOnly.skip();
+			}
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+
+			const webSearchPill = page.getByRole("button", {
+				name: "Websuche entfernen",
+			});
+			await expect(webSearchPill).toBeVisible();
+
+			await page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("In den Chat")
+				.click();
+
+			await expect(webSearchPill).not.toBeVisible();
+
+			await expect(
+				page.getByText("Websuche wurde automatisch deaktiviert."),
+			).toBeVisible();
+		},
+	);
+
+	testWithLoggedInUser(
+		"Should not be able to send another message with enter while waiting for a response",
+		async ({ page }) => {
+			await page.goto("/");
+			let hangingStream: Readable | undefined;
+
+			// Mock the LLM API to return a partial response
+			await page.route("**/llm/just-chatting", async (route) => {
+				hangingStream = new Readable({
+					read() {},
+				});
+				hangingStream.push(
+					`data: ${JSON.stringify({
+						type: "text-delta",
+						id: "1",
+						delta: "Partial ",
+					})}\n\n`,
+				);
+
+				await route.fulfill({
+					status: 200,
+					headers: {
+						"Content-Type": "text/event-stream; charset=utf-8",
+					},
+					// @ts-expect-error Playwright Node accepts Readable for streaming bodies; public types omit it.
+					body: hangingStream,
+				});
+			});
+
+			try {
+				const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+				await chatInput.fill("hallo123");
+
+				const submitButton = page.getByRole("button", {
+					name: "Nachricht senden",
+				});
+				await submitButton.click();
+
+				const question = page.getByTestId("user-message-markdown-container");
+				await expect(question).toBeVisible();
+
+				const stopButton = page.getByRole("button", {
+					name: "Textgenerierung stoppen",
+				});
+				await expect(stopButton).toBeVisible();
+
+				const userMessages = page.getByTestId(
+					"user-message-markdown-container",
+				);
+				const userMessageCountBefore = await userMessages.count();
+
+				await chatInput.fill("hallo456");
+				await chatInput.focus();
+
+				await page.keyboard.press("Enter");
+
+				await expect(userMessages).toHaveCount(userMessageCountBefore);
+			} finally {
+				await page.unroute("**/llm/just-chatting");
+				hangingStream?.destroy();
+			}
+		},
+	);
+
+	testWithMockedLlm(
+		"New message scrolls to top and scroll-to-bottom button works",
 		async ({ page }) => {
 			await page.goto("/");
 
-			// Disable the base knowledge feature
-			const baseKnowledgePill = page.getByRole("button", {
-				name: /Verwaltungswissen entfernen/,
-			});
-			await baseKnowledgePill.click();
+			// A long answer so the conversation overflows the viewport, to
+			// make the scroll-to-top behavior and the scroll button observable.
+			const longAnswer = Array.from(
+				{ length: 80 },
+				(_, index) => `Absatz ${index + 1}: Lorem ipsum dolor sit amet.`,
+			).join("\n\n");
+			await mockLlmCompletion(page, { textDelta: longAnswer });
 
-			// Start a new chat by asking a question
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
 
-			// Click the send button
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
+
+			const messagesContainer = page.getByRole("log");
+			const question = page.getByTestId("user-message-markdown-container");
+
+			// The freshly sent question should be pinned near the top of the
+			// scrollable messages container rather than at the bottom.
+			await expect
+				.poll(async () => {
+					const containerBox = await messagesContainer.boundingBox();
+					const questionBox = await question.boundingBox();
+					if (!containerBox || !questionBox) {
+						return Number.POSITIVE_INFINITY;
+					}
+					return questionBox.y - containerBox.y;
+				})
+				.toBeLessThan(100);
+
+			// Because the answer overflows, the scroll-to-bottom button is shown.
+			const scrollToBottomButton = page.getByRole("button", {
+				name: "Zum Ende des Chats scrollen",
+			});
+			await expect(scrollToBottomButton).toBeVisible();
+
+			// Clicking it jumps to the bottom, which hides the button again.
+			await scrollToBottomButton.click();
+			await expect(scrollToBottomButton).toBeHidden();
+		},
+	);
+
+	testWithMockedLlm(
+		"Links in assistant messages open in new tab",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Mock LLM to return a message with a link
+			await mockLlmCompletion(page, {
+				textDelta: "Check [this link](https://example.com) for details.",
+			});
+
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const link = page
+				.getByTestId("assistant-message-markdown-container")
+				.locator("a");
+
+			await expect(link).toHaveAttribute("target", "_blank");
+			await expect(link).toHaveAttribute("rel", /(^|\s)noopener(\s|$)/);
+			await expect(link).toHaveAttribute("rel", /(^|\s)noreferrer(\s|$)/);
+		},
+	);
+
+	testDesktopOnly(
+		"Web and Parla citations render together in the sources dialog",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// A single response carrying both web and Parla citations exercises the
+			// multi-tool path where all citation types are preserved simultaneously.
+			await mockLlmCompletion(page, {
+				textDelta: "Antwort mit gemischten Quellen.",
+				webCitations: [
+					{
+						url: "https://www.rbb24.de/berlin-baeume",
+						title: "Berliner Stadtbäume 2026",
+						snippet: "Aktuelle Zahlen zu Baumfällungen in Berlin.",
+					},
+				],
+				parlaCitations: [
+					{
+						url: "https://parla.berlin/dokument-123",
+						title: "Berliner Straßenbaumkonzept",
+						source_type: "Drucksache",
+						content: "Regelungen zur Pflanzung von Straßenbäumen.",
+						page: 4,
+					},
+				],
+			});
+
 			await page
-				.getByRole("button", { name: "Ein weißer Pfeil nach rechts" })
-				.click();
+				.getByPlaceholder("Stellen Sie eine Frage")
+				.fill("Bäume in Berlin?");
+			await sendAndWaitForLLMResponse(page);
 
-			await page.waitForLoadState("networkidle");
+			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
+			await allCitationsButton.click();
 
-			await expect(baseKnowledgePill).not.toBeVisible();
+			// Both citation types are present in the same dialog.
+			await expect(
+				page.getByRole("link", { name: /Berliner Stadtbäume 2026/ }),
+			).toBeVisible();
+			await expect(
+				page.getByRole("link", { name: /Berliner Straßenbaumkonzept/ }),
+			).toBeVisible();
 		},
 	);
 });

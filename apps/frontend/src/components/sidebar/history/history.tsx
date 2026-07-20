@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 import { HistoryGroup } from "./history-group.tsx";
 import { subDays, format } from "date-fns";
@@ -6,6 +6,7 @@ import { Skeleton } from "../../primitives/skeletons/skeleton.tsx";
 import Content from "../../../content.ts";
 import { de } from "date-fns/locale";
 import { useErrorStore } from "../../../store/error-store.ts";
+import { LoadMoreChatsSpinner } from "./load-more-chats-spinner.tsx";
 
 const today = new Date();
 const sevenDaysAgo = subDays(today, 7);
@@ -13,6 +14,7 @@ const sevenDaysAgo = subDays(today, 7);
 export const History: React.FC = () => {
 	const { isFirstLoad, chats, isLoading } = useChatsStore();
 	const { getUIError } = useErrorStore();
+	const historyContainerRef = useRef<HTMLDivElement>(null);
 	const errorMessage = getUIError("chats-fetch");
 
 	const chatsToday = useMemo(
@@ -89,20 +91,22 @@ export const History: React.FC = () => {
 			<h2 className="text-base leading-6 font-semibold text-hellblau-50 md:px-2 px-5 whitespace-nowrap">
 				{Content["chatHistory.title"]}
 			</h2>
-			<div className="flex flex-col grow min-h-0 overflow-y-auto px-5 md:px-0 md:pr-4 history-scrollbar">
+			<div
+				ref={historyContainerRef}
+				className="flex flex-col grow min-h-0 overflow-y-auto px-5 md:px-0 md:pr-4 history-scrollbar"
+			>
 				<div className="w-full h-full">
 					<div
 						className={`w-full ${errorMessage ? "h-full overflow-hidden" : "h-fit"}`}
 					>
-						{isFirstLoad ||
-							(isLoading && (
-								<div className="flex flex-col gap-1 md:px-2">
-									<Skeleton className="w-full px-2 h-7" />
-									<Skeleton className="w-full px-2  h-7" />
-									<Skeleton className="w-full px-2  h-7" />
-									<Skeleton className="w-full px-2  h-7" />
-								</div>
-							))}
+						{isFirstLoad && (
+							<div className="flex flex-col gap-1 md:px-2">
+								<Skeleton className="w-full px-2 h-7" />
+								<Skeleton className="w-full px-2  h-7" />
+								<Skeleton className="w-full px-2  h-7" />
+								<Skeleton className="w-full px-2  h-7" />
+							</div>
+						)}
 
 						{!isFirstLoad && (
 							<>
@@ -110,6 +114,7 @@ export const History: React.FC = () => {
 									{chatGroups.map(({ label, chats: chatGroup }) => (
 										<HistoryGroup key={label} label={label} chats={chatGroup} />
 									))}
+									<LoadMoreChatsSpinner containerRef={historyContainerRef} />
 								</div>
 							</>
 						)}

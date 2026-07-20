@@ -1,31 +1,40 @@
 import React, {
 	type FormEvent,
 	type KeyboardEvent,
+	type MouseEvent,
 	useRef,
 	useState,
 } from "react";
-import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.ts";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
 import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
-import { useFolderStore } from "../../../store/folder-store.ts";
-import { useDocumentStore } from "../../../store/document-store.ts";
+import { ChatStopGeneratingIcon } from "../../primitives/icons/chat-stop-generating-icon.tsx";
+import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
+import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
+import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
 import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
+import { ChatMenuToggleButton } from "./chat-menu/chat-menu-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
+import * as Sentry from "@sentry/react";
+import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
+import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
-const { setHasUserScrolledUp } = useChatScrollingStore.getState();
+export const chatFormId = "chat-form";
 
 export const ChatForm: React.FC = () => {
-	const { status, clearError } = useInferenceLoadingStatusStore();
-	const { selectedChatFolders } = useFolderStore();
-	const { selectedChatDocuments } = useDocumentStore();
-	const { getCurrentOrCreateChat, selectedChatOptions, toggleChatOption } =
+	const { status, clearError, isLoading } = useInferenceLoadingStatusStore();
+	const { selectedUserChatFolders: selectedUserChatFolders } =
+		useUserFolderStore();
+	const { getSelectedPublicChatDocumentIds } = usePublicDocumentsStore();
+	const { selectedUserChatDocuments } = useUserDocumentStore();
+	const { getCurrentOrCreateChat, selectedChatTools, toggleChatTool } =
 		useChatsStore();
+	const { setAutoDeactivatedExternalTools } = useChatsStore.getState();
+	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
@@ -42,16 +51,20 @@ export const ChatForm: React.FC = () => {
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
 	const handleTextAreaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-		const isSubmit = event.key === "Enter" && !event.shiftKey;
-		if (isSubmit) {
+		const isEnterWithoutShiftPressed = event.key === "Enter" && !event.shiftKey;
+		if (isEnterWithoutShiftPressed) {
 			event.preventDefault();
+		}
+
+		const isSubmitEnabled =
+			!isLoading() && event.currentTarget.value.trim().length > 0;
+		if (isEnterWithoutShiftPressed && isSubmitEnabled) {
 			event.currentTarget.form?.requestSubmit();
 		}
 	};
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		setHasUserScrolledUp(false);
 
 		const form = event.currentTarget;
 		const textarea = textareaRef.current;
@@ -65,38 +78,65 @@ export const ChatForm: React.FC = () => {
 		// Clear any previous errors
 		clearError();
 
+		setAutoDeactivatedExternalTools([]);
+
 		// Clear textarea on submit
 		if (textarea) {
 			textarea.value = "";
 			handleTextAreaInput(); // Reset height
 		}
+
+		const allowed_document_ids = [
+			...selectedUserChatDocuments.map(({ id }) => id),
+			...getSelectedPublicChatDocumentIds(),
+		];
+
 		const userMessage: NewChatMessage = {
 			type: "text",
 			role: "user",
 			content: messageText,
 			citations: null,
-			allowed_document_ids: selectedChatDocuments.map((doc) => doc.id),
-			allowed_folder_ids: selectedChatFolders.map((folder) => folder.id),
+			web_citations: null,
+			parla_citations: null,
+			allowed_document_ids,
+			allowed_folder_ids: selectedUserChatFolders.map((folder) => folder.id),
 		};
 
-		const chat = await getCurrentOrCreateChat(userMessage);
-		await getCompletion(chat);
+		const model = useChatsStore.getState().selectedLlmModel;
+
+		Sentry.startSpan(
+			{
+				name: "Stream Chat Message Response",
+				op: `chat.message.stream.${model}`,
+			},
+			async (span) => {
+				const chat = await getCurrentOrCreateChat(userMessage);
+				await getCompletion(chat, span);
+			},
+		);
 	};
 
-	const isInferenceLoading = [
-		"waiting-for-response",
-		"loading-text",
-		"loading-citations",
-	].includes(status);
+	const handleStop = (event: MouseEvent<HTMLButtonElement>) => {
+		event.preventDefault();
+		abortStreaming();
+	};
 
 	const hasError = status === "error";
+
+	const isWebSearchActive = selectedChatTools.includes("webSearch");
+	const textAreaPlaceholder = isWebSearchActive
+		? Content["chat.textarea.placeholder.webSearch"]
+		: Content["chat.textarea.placeholder"];
 
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px]"
+			className={`relative flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
+				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
+			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
+			<ExternalToolWarningBanner />
 
 			<div className="flex flex-col justify-between rounded-b-3px">
 				<div
@@ -113,40 +153,50 @@ export const ChatForm: React.FC = () => {
 								`}
 				>
 					<textarea
-						className="w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80"
+						className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
 						ref={textareaRef}
 						name="content"
 						rows={1}
 						required={true}
-						placeholder={Content["chat.textarea.placeholder"]}
+						placeholder={textAreaPlaceholder}
 						onKeyDown={handleTextAreaKeyDown}
 						onInput={handleTextAreaInput}
 					/>
 				</div>
 				<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
 					<div className="flex items-center gap-3">
-						<ChatOptionsToggleButton />
+						<ChatMenuToggleButton />
 						<div className="items-center gap-2 hidden md:flex">
-							{selectedChatOptions.map((option) => (
+							{selectedChatTools.map((tool) => (
 								<ContextPill
-									key={option}
-									option={option}
-									onClose={() => toggleChatOption(option)}
+									key={tool}
+									tool={tool}
+									onClose={() => toggleChatTool(tool)}
 								/>
 							))}
 						</div>
 					</div>
 					<div className="flex items-center gap-3">
 						<LlmModelToggleButton />
-						<button
-							type="submit"
-							disabled={
-								(isInferenceLoading && !hasError) || !textareaContent.trim()
-							}
-							className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
-						>
-							<ArrowWhiteRightIcon />
-						</button>
+						{isLoading() && !hasError ? (
+							<button
+								type="button"
+								aria-label={Content["chat.stopGeneratingButton.ariaLabel"]}
+								onClick={handleStop}
+								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-110 focus-visible:outline-2px"
+							>
+								<ChatStopGeneratingIcon />
+							</button>
+						) : (
+							<button
+								type="submit"
+								disabled={!textareaContent.trim()}
+								aria-label={Content["chat.sendButton.ariaLabel"]}
+								className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
+							>
+								<ArrowWhiteRightIcon />
+							</button>
+						)}
 					</div>
 				</div>
 			</div>

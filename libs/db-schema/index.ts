@@ -97,15 +97,51 @@ export type Database = {
 			};
 			allowed_email_domains: {
 				Row: {
+					created_at: string;
+					created_by: string | null;
 					domain: string;
+					id: number;
+					is_active: boolean;
+					last_status_change_at: string | null;
+					last_status_change_by: string | null;
+				};
+				Insert: {
+					created_at?: string;
+					created_by?: string | null;
+					domain: string;
+					id?: number;
+					is_active?: boolean;
+					last_status_change_at?: string | null;
+					last_status_change_by?: string | null;
+				};
+				Update: {
+					created_at?: string;
+					created_by?: string | null;
+					domain?: string;
+					id?: number;
+					is_active?: boolean;
+					last_status_change_at?: string | null;
+					last_status_change_by?: string | null;
+				};
+				Relationships: [];
+			};
+			allowed_individual_emails: {
+				Row: {
+					created_at: string;
+					created_by: string | null;
+					email: string;
 					id: number;
 				};
 				Insert: {
-					domain: string;
+					created_at?: string;
+					created_by?: string | null;
+					email: string;
 					id?: number;
 				};
 				Update: {
-					domain?: string;
+					created_at?: string;
+					created_by?: string | null;
+					email?: string;
 					id?: number;
 				};
 				Relationships: [];
@@ -134,8 +170,10 @@ export type Database = {
 					content: string;
 					created_at: string;
 					id: number;
+					parla_citations: Json | null;
 					role: string;
 					type: string;
+					web_citations: Json | null;
 				};
 				Insert: {
 					allowed_document_ids?: number[] | null;
@@ -145,8 +183,10 @@ export type Database = {
 					content: string;
 					created_at?: string;
 					id?: number;
+					parla_citations?: Json | null;
 					role: string;
 					type: string;
+					web_citations?: Json | null;
 				};
 				Update: {
 					allowed_document_ids?: number[] | null;
@@ -156,8 +196,10 @@ export type Database = {
 					content?: string;
 					created_at?: string;
 					id?: number;
+					parla_citations?: Json | null;
 					role?: string;
 					type?: string;
+					web_citations?: Json | null;
 				};
 				Relationships: [
 					{
@@ -195,6 +237,7 @@ export type Database = {
 					access_group_id: string | null;
 					chunk_index: number;
 					chunk_jina_embedding: string | null;
+					chunk_mistral_embedding: string | null;
 					content: string;
 					document_id: number | null;
 					folder_id: number | null;
@@ -207,6 +250,7 @@ export type Database = {
 					access_group_id?: string | null;
 					chunk_index: number;
 					chunk_jina_embedding?: string | null;
+					chunk_mistral_embedding?: string | null;
 					content: string;
 					document_id?: number | null;
 					folder_id?: number | null;
@@ -219,6 +263,7 @@ export type Database = {
 					access_group_id?: string | null;
 					chunk_index?: number;
 					chunk_jina_embedding?: string | null;
+					chunk_mistral_embedding?: string | null;
 					content?: string;
 					document_id?: number | null;
 					folder_id?: number | null;
@@ -416,6 +461,7 @@ export type Database = {
 					num_embedding_tokens: number | null;
 					num_inference_tokens: number | null;
 					num_inferences: number | null;
+					personal_system_prompt: string | null;
 					personal_title: string | null;
 				};
 				Insert: {
@@ -428,6 +474,7 @@ export type Database = {
 					num_embedding_tokens?: number | null;
 					num_inference_tokens?: number | null;
 					num_inferences?: number | null;
+					personal_system_prompt?: string | null;
 					personal_title?: string | null;
 				};
 				Update: {
@@ -440,28 +487,8 @@ export type Database = {
 					num_embedding_tokens?: number | null;
 					num_inference_tokens?: number | null;
 					num_inferences?: number | null;
+					personal_system_prompt?: string | null;
 					personal_title?: string | null;
-				};
-				Relationships: [];
-			};
-			user_active_status: {
-				Row: {
-					deleted_at: string | null;
-					id: string;
-					is_active: boolean;
-					registration_finished_at: string | null;
-				};
-				Insert: {
-					deleted_at?: string | null;
-					id: string;
-					is_active?: boolean;
-					registration_finished_at?: string | null;
-				};
-				Update: {
-					deleted_at?: string | null;
-					id?: string;
-					is_active?: boolean;
-					registration_finished_at?: string | null;
 				};
 				Relationships: [];
 			};
@@ -503,6 +530,18 @@ export type Database = {
 			[_ in never]: never;
 		};
 		Functions: {
+			activate_allowed_domain: {
+				Args: { p_domain: string };
+				Returns: undefined;
+			};
+			add_allowed_domain: {
+				Args: { p_domain: string };
+				Returns: undefined;
+			};
+			add_allowed_individual_email: {
+				Args: { p_email: string };
+				Returns: undefined;
+			};
 			change_value_for_user_by: {
 				Args: {
 					amount: number;
@@ -511,9 +550,13 @@ export type Database = {
 				};
 				Returns: undefined;
 			};
-			delete_document_and_update_count: {
-				Args: { document_id: number };
-				Returns: undefined;
+			check_email_allowed: {
+				Args: { p_email: string };
+				Returns: boolean;
+			};
+			deactivate_allowed_domain: {
+				Args: { p_domain: string };
+				Returns: number;
 			};
 			delete_user: {
 				Args: Record<PropertyKey, never>;
@@ -535,14 +578,33 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			get_account_activation_timestamp: {
-				Args: Record<PropertyKey, never>;
-				Returns: string;
-			};
 			get_allowed_email_domains: {
 				Args: Record<PropertyKey, never>;
 				Returns: {
 					domain: string;
+					id: number;
+				}[];
+			};
+			get_allowed_email_domains_admin: {
+				Args: Record<PropertyKey, never>;
+				Returns: {
+					created_at: string;
+					created_by: string;
+					domain: string;
+					id: number;
+					is_active: boolean;
+					last_status_change_at: string;
+					last_status_change_by: string;
+					user_count: number;
+				}[];
+			};
+			get_allowed_individual_emails: {
+				Args: Record<PropertyKey, never>;
+				Returns: {
+					created_at: string;
+					created_by: string;
+					email: string;
+					has_account: boolean;
 					id: number;
 				}[];
 			};
@@ -569,19 +631,40 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
+			get_document_summaries: {
+				Args: { input_document_ids: number[]; input_folder_ids: number[] };
+				Returns: {
+					created_at: string;
+					file_name: string;
+					id: number;
+					short_summary: string;
+				}[];
+			};
+			get_documents_with_storage_objects: {
+				Args: { p_limit: number; p_offset: number };
+				Returns: {
+					bucket_id: string;
+					source_url: string;
+					storage_name: string;
+					storage_version: string;
+				}[];
+			};
 			get_maintenance_mode_status: {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
+			};
+			get_product_dashboard_stats: {
+				Args: Record<PropertyKey, never>;
+				Returns: Json;
 			};
 			get_users: {
 				Args: Record<PropertyKey, never>;
 				Returns: {
 					academic_title: string;
-					deleted_at: string;
+					banned_until: string;
 					email: string;
 					first_name: string;
 					invited_at: string;
-					is_active: boolean;
 					is_admin: boolean;
 					last_login_at: string;
 					last_name: string;
@@ -623,13 +706,9 @@ export type Database = {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
 			};
-			is_current_user_active: {
+			is_current_user_banned: {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
-			};
-			log_account_activation: {
-				Args: Record<PropertyKey, never>;
-				Returns: undefined;
 			};
 			match_jina_document_chunks: {
 				Args: {
@@ -696,6 +775,18 @@ export type Database = {
 			};
 			regenerate_embedding_indices_for_summaries: {
 				Args: Record<PropertyKey, never>;
+				Returns: undefined;
+			};
+			remove_allowed_individual_email: {
+				Args: { p_email: string };
+				Returns: undefined;
+			};
+			update_user_email_confirmed_at: {
+				Args: { new_email_confirmed_at: string; user_id: string };
+				Returns: undefined;
+			};
+			update_user_last_sign_in_at: {
+				Args: { new_last_sign_in_at: string; user_id: string };
 				Returns: undefined;
 			};
 			verify_own_password: {

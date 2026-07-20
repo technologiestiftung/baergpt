@@ -1,27 +1,14 @@
-import Content from "../../../content.ts";
-
-type QuestionMarkIconProps = {
-	variant?: "black" | "blue";
-};
-
-export function QuestionMarkIcon({ variant = "black" }: QuestionMarkIconProps) {
+export function QuestionMarkIcon() {
 	return (
-		<>
-			<img
-				src="/icons/question-mark-icon.svg"
-				width={16}
-				height={16}
-				alt={Content["questionMarkIcon.imgAlt"]}
-				className={`${variant === "black" ? "block" : "hidden"}`}
-			/>
-
-			<img
-				src="/icons/question-mark-light-icon.svg"
-				width={16}
-				height={16}
-				alt={Content["questionMarkIcon.imgAlt"]}
-				className={`${variant === "blue" ? "block" : "hidden"}`}
-			/>
-		</>
+		<img
+			src="/icons/question-mark-icon.svg"
+			width={16}
+			height={16}
+			/**
+			 * The alt-text is empty by design. The current usage of the icon is
+			 * purely decorative, so it doesn't need an alt text.
+			 */
+			alt={""}
+		/>
 	);
 }

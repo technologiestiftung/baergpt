@@ -1,13 +1,20 @@
+import crypto from "crypto";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
 import { captureError } from "../monitoring/capture-error";
-import { Document } from "../types/common";
+import {
+	Document,
+	DefaultDocumentDeletionError,
+	DocumentNotFoundError,
+} from "../types/common";
 import { documentProcessSchema } from "../schemas/document-process-schema";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
+import { logMemory } from "../monitoring/memory-logger";
+import { config } from "../config";
 
 const documents = new Hono();
 
@@ -20,10 +27,14 @@ documents.post("/process", async (c: Context) => {
 
 	let sourceUrl: string | null = null;
 	let bucket: string | null = null;
+	const authenticatedUserId = c.get("authenticatedUserId");
+	const reqId =
+		config.nodeEnv === "production"
+			? crypto.randomUUID().slice(0, 8)
+			: ((authenticatedUserId as string)?.slice(0, 8) ?? "no-user");
 
 	try {
-		// Get authenticated user ID from context (set by basicAuth middleware)
-		const authenticatedUserId = c.get("authenticatedUserId");
+		logMemory("doc:start", reqId);
 		// Parse and validate request body
 		const body = await c.req.json();
 		const parseResult = documentProcessSchema.parse(body);
@@ -50,6 +61,10 @@ documents.post("/process", async (c: Context) => {
 		};
 		const extractionResult = await userScopedDbService.extractDocument(
 			documentForExtraction,
+		);
+		logMemory(
+			`doc:after-extract (pages=${extractionResult.numPages}, size=${extractionResult.fileSize})`,
+			reqId,
 		);
 
 		// Step 2: Process document (embed and summarize)
@@ -80,11 +95,10 @@ documents.post("/process", async (c: Context) => {
 				llmIdentifier,
 				documentForProcessing,
 			),
-			embeddingService.batchEmbed(parsedPages, documentForProcessing, {
-				chunkingTechnique: "markdown",
-			}),
+			embeddingService.batchEmbed(parsedPages, documentForProcessing),
 		]);
 
+		logMemory(`doc:after-embed+summarize (chunks=${embeddings.length})`, reqId);
 		// Step 3: Create complete document record
 		await userScopedDbService.logProcessedDocument(
 			documentForProcessing,
@@ -92,8 +106,10 @@ documents.post("/process", async (c: Context) => {
 			embeddings,
 		);
 
+		logMemory("doc:complete", reqId);
 		return c.body(null, 204);
 	} catch (error) {
+		logMemory("doc:error", reqId);
 		captureError(error);
 
 		// Handle Zod validation errors separately
@@ -109,13 +125,41 @@ documents.post("/process", async (c: Context) => {
 			try {
 				await userScopedDbService.deleteFileFromStorage(sourceUrl, bucket);
 			} catch (cleanupError) {
-				captureError(
-					new Error(
-						`Failed to cleanup document ${sourceUrl} after processing error: ${cleanupError}`,
-					),
-				);
+				captureError(cleanupError);
 			}
 		}
+		return c.json({ error: "Internal Server Error" }, 500);
+	}
+});
+
+documents.delete("/:documentId", async (c: Context) => {
+	const userClient = c.get("UserScopedDbClient");
+	const userScopedDbService = new UserScopedDbService(userClient);
+	const documentId = c.req.param("documentId");
+	const authenticatedUserId = c.get("authenticatedUserId");
+
+	if (!authenticatedUserId) {
+		return c.json({ error: "Unauthorized" }, 401);
+	}
+	const parsedDocumentId = Number(documentId);
+	if (isNaN(parsedDocumentId)) {
+		return c.json({ error: "Invalid document ID" }, 400);
+	}
+
+	try {
+		await userScopedDbService.deleteDocument(
+			parsedDocumentId,
+			authenticatedUserId,
+		);
+		return c.body(null, 204);
+	} catch (error) {
+		if (error instanceof DocumentNotFoundError) {
+			return c.json({ error: "Document not found" }, 404);
+		}
+		if (error instanceof DefaultDocumentDeletionError) {
+			return c.json({ error: "Default documents cannot be deleted" }, 403);
+		}
+		captureError(error);
 		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });

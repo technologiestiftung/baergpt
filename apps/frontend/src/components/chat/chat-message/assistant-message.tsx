@@ -18,7 +18,7 @@ export function AssistantMessage({
 }) {
 	const { status } = useInferenceLoadingStatusStore();
 	const { getCurrentChat } = useChatsStore();
-	const { content, citations } = message;
+	const { content, citations, web_citations, parla_citations } = message;
 	const { getUIError } = useErrorStore();
 
 	const exportErrorMessage = getUIError("chat-export");
@@ -31,12 +31,15 @@ export function AssistantMessage({
 
 	return (
 		<>
-			<div className="flex gap-x-4 self-start">
+			<div
+				className="flex gap-x-4 self-start"
+				data-testid="assistant-message-markdown-container"
+			>
 				<div className="pt-3.5 min-w-5 min-h-5">
 					{isBaerIconVisible && <BaerIcon />}
 				</div>
 
-				<div className="min-w-0 grow">{children}</div>
+				<div className="min-w-0 grow text-dunkelblau-100">{children}</div>
 			</div>
 			{hasChatButtons && (
 				<div className="flex flex-col gap-1 ml-[30px] w-fit">
@@ -49,6 +52,8 @@ export function AssistantMessage({
 						<CitationsButton
 							messageId={message.id}
 							citations={citations}
+							webCitations={web_citations}
+							parlaCitations={parla_citations}
 							isLastMessage={isLastMessage}
 						/>
 					</div>

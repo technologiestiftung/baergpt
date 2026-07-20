@@ -31,3 +31,5 @@ export const allowedSourceTypes = [
 	"public_document",
 	"default_document",
 ] as const;
+
+export const ocrTempFileName = "uploaded_file.pdf";

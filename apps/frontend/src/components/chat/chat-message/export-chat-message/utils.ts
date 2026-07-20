@@ -7,7 +7,18 @@ export const exportToDocx = async (markdown: string, fileName: string) => {
 			"@mohtasham/md-to-docx"
 		);
 
-		const blob = await convertMarkdownToDocx(markdown);
+		const exportOptions = {
+			documentType: "document" as const,
+			style: {
+				titleSize: 32,
+				headingSpacing: 240,
+				paragraphSpacing: 240,
+				lineSpacing: 1.15,
+				fontFamily: "Berlin Type Office",
+			},
+		};
+
+		const blob = await convertMarkdownToDocx(markdown, exportOptions);
 		downloadDocx(blob, `${fileName}.docx`);
 	} catch (error) {
 		captureError(error);

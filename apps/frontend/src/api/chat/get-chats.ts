@@ -4,7 +4,14 @@ import { useErrorStore } from "../../store/error-store.ts";
 
 const { handleError } = useErrorStore.getState();
 
-export async function getChats(signal: AbortSignal) {
+/**
+ * We query chats with a range, where the start and end are inclusive.
+ * Therefore, to get 20 items, we need to set the end to start + 19.
+ * e.g. offset = 0 -> range(0, 19) --> 20 items
+ */
+const RANGE_LIMIT = 19;
+
+export async function getChats(offset: number, signal: AbortSignal) {
 	const { session } = useAuthStore.getState();
 
 	if (!session?.user.id) {
@@ -16,6 +23,7 @@ export async function getChats(signal: AbortSignal) {
 		.select("*")
 		.eq("user_id", session.user.id)
 		.order("created_at", { ascending: false })
+		.range(offset, offset + RANGE_LIMIT)
 		.abortSignal(signal);
 
 	if (signal.aborted) {

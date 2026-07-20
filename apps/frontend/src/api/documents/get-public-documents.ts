@@ -1,10 +1,10 @@
 import { supabase } from "../../../supabase-client";
-import type { Document } from "../../common";
+import type { PublicDocument } from "../../common";
 import { useErrorStore } from "../../store/error-store.ts";
 
 export async function getPublicDocuments(
 	signal: AbortSignal,
-): Promise<Document[]> {
+): Promise<PublicDocument[]> {
 	const { data, error } = await supabase
 		.from("documents")
 		.select("*")
@@ -27,5 +27,5 @@ export async function getPublicDocuments(
 		return [];
 	}
 
-	return (data as Document[]) ?? [];
+	return (data as PublicDocument[]) ?? [];
 }

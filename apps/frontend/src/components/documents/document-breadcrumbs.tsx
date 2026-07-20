@@ -1,39 +1,62 @@
-import React from "react";
 import { ChevronSmallIcon } from "../primitives/icons/chevron-small-icon.tsx";
-import { useFolderStore } from "../../store/folder-store";
-import { useDocumentStore } from "../../store/document-store.ts";
+import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
 import { useDrop } from "react-dnd";
-import type { ListItem } from "./document-list/list-item/utils/types";
+import type { Document } from "../../common.ts";
 import { useDragAndDropStore } from "../../store/drag-and-drop-store.ts";
 import Content from "../../content.ts";
+import { useCurrentFolderStore } from "../../store/use-current-folder-store.ts";
+import { isPublicFolder } from "./document-list/list-item/utils/is-public-folder.ts";
+import { isUserFolder } from "./document-list/list-item/utils/is-user-folder.ts";
+import { isDocument } from "./document-list/list-item/utils/is-document.ts";
 
-const DocumentBreadcrumbs: React.FC = () => {
-	const { currentFolder, setCurrentFolder } = useFolderStore();
+export function DocumentBreadcrumbs() {
+	const { currentFolder, setCurrentFolder } = useCurrentFolderStore();
 	const { hoveredFolderId, setHoveredFolderId } = useDragAndDropStore();
-	const { removeItemFromFolder, getDocuments } = useDocumentStore();
+	const { removeItemsFromFolder, unselectUserDocumentForAction } =
+		useUserDocumentStore();
 
-	const [, drop] = useDrop({
+	const [, drop] = useDrop<Document[], unknown, unknown>({
 		accept: "ITEM",
-		drop: async (draggedItem: ListItem) => {
-			// Dropping on the back-folder removes the folder association
-			await removeItemFromFolder(draggedItem.id);
-			await getDocuments(new AbortController().signal); // Refresh the documents list
-			setHoveredFolderId(null);
+		drop: async (draggedItems: Document[]) => {
+			const documents = draggedItems.filter(isDocument);
+
+			if (documents.length > 0) {
+				const documentIds = documents.map((doc) => doc.id);
+
+				setHoveredFolderId(null);
+				await removeItemsFromFolder(documentIds);
+
+				for (const id of documentIds) {
+					unselectUserDocumentForAction(id);
+				}
+			}
 		},
 		hover: () => setHoveredFolderId("back-folder"),
+		canDrop: () => isUserFolder(currentFolder),
 	});
 
-	const isHoveredForDrop = hoveredFolderId === "back-folder";
+	const resetCurrentFolder = () => {
+		if (currentFolder) {
+			setCurrentFolder(null);
+		}
+	};
+
+	const isHoveredForDrop =
+		isUserFolder(currentFolder) && hoveredFolderId === "back-folder";
 
 	return (
-		<div className="w-full flex flex-col gap-1 mb-5 md:mb-0 md:gap-0 md:flex-row md:justify-between">
-			<div className={`flex flex-row items-center gap-1 md:gap-2 text-lg`}>
+		<div className="w-full flex flex-col h-8 mb-4 md:mb-0 md:flex-row md:justify-between">
+			<div
+				className={`flex flex-row items-center gap-1 text-base leading-6 font-normal text-dunkelblau-100`}
+			>
 				<button
-					className={`focus-visible:outline-default rounded-3px hover:underline underline-offset-4 ${isHoveredForDrop && "bg-hellblau-100 outline-default outline-dunkelblau-100"}`}
-					onClick={() => setCurrentFolder(null)}
+					className={`focus-visible:outline-default rounded-3px hover:underline underline-offset-4 px-0.5 ${isHoveredForDrop && "bg-hellblau-100 outline outline-1 outline-dunkelblau-100"}`}
+					onClick={resetCurrentFolder}
 					ref={drop}
 				>
-					{Content["documentsSection.mainFolder.label"]}
+					{currentFolder && isPublicFolder(currentFolder)
+						? Content["documentSection.publicFolder.label"]
+						: Content["documentsSection.mainFolder.label"]}
 				</button>
 				{currentFolder && (
 					<>
@@ -44,6 +67,6 @@ const DocumentBreadcrumbs: React.FC = () => {
 			</div>
 		</div>
 	);
-};
+}
 
 export default DocumentBreadcrumbs;

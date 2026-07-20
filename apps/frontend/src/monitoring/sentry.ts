@@ -1,24 +1,40 @@
+import React from "react";
 import * as Sentry from "@sentry/react";
 import { supabase } from "../../supabase-client.ts";
+import {
+	createBrowserRouter,
+	createRoutesFromChildren,
+	matchRoutes,
+	useLocation,
+	useNavigationType,
+} from "react-router-dom";
 import { NON_REPORTABLE_ERRORS } from "./capture-error.ts";
+import { config } from "../config.ts";
 
 Sentry.init({
-	dsn: `${import.meta.env.VITE_SENTRY_DSN}`,
+	dsn: config.sentryDsn,
 	integrations: [
-		Sentry.browserTracingIntegration(),
-		Sentry.replayIntegration(),
+		Sentry.reactRouterV6BrowserTracingIntegration({
+			useEffect: React.useEffect,
+			useLocation,
+			useNavigationType,
+			createRoutesFromChildren,
+			matchRoutes,
+		}),
 		Sentry.supabaseIntegration({ supabaseClient: supabase }),
+		Sentry.consoleLoggingIntegration({
+			levels: ["trace", "debug", "assert", "log", "info", "warn", "error"],
+		}),
 	],
-	environment: import.meta.env.VITE_VERCEL_ENV || "development",
-	tracesSampleRate: 0,
-	replaysSessionSampleRate: 0,
-	replaysOnErrorSampleRate: 1.0,
-	tracePropagationTargets: import.meta.env.VITE_TRACE_PROPAGATION_TARGETS.split(
-		",",
-	),
+	enableLogs: true,
+	environment: config.env || "development",
+	tracesSampleRate: 1,
+	tracePropagationTargets: config.tracePropagationTargets,
 	ignoreErrors: Array.from(NON_REPORTABLE_ERRORS),
 	sendDefaultPii: false,
-	enabled: ["production", "staging", "test"].includes(
-		import.meta.env.VITE_VERCEL_ENV,
-	),
+	enabled: ["production", "staging", "test"].includes(config.env),
 });
+
+// Call this AFTER Sentry.init()
+export const sentryCreateBrowserRouter =
+	Sentry.wrapCreateBrowserRouterV6(createBrowserRouter);

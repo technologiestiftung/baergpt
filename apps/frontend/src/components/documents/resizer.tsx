@@ -68,7 +68,7 @@ export function Resizer({
 			className={`w-1 h-full cursor-ew-resize transition-colors ${
 				isDragActive
 					? "bg-hellblau-100"
-					: "bg-transparent hover:bg-hellblau-100"
+					: "bg-hellblau-30 hover:bg-hellblau-100"
 			}`}
 		/>
 	);

@@ -1,3 +1,10 @@
+import type {
+	WebCitationSource,
+	ParlaCitationSource,
+} from "./api/chat/get-completion";
+
+export type { ParlaCitationSource } from "./api/chat/get-completion";
+
 export type NewChatMessage = Pick<
 	ChatMessage,
 	| "content"
@@ -6,11 +13,16 @@ export type NewChatMessage = Pick<
 	| "allowed_document_ids"
 	| "allowed_folder_ids"
 	| "citations"
+	| "web_citations"
+	| "parla_citations"
 >;
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
-export type ChatOption = "baseKnowledge" | "webSearch";
+export type Connector = "parla";
+export type ChatTool = "webSearch" | Connector;
+
+export type ChatToolsMenuItemId = ChatTool | "fileUpload" | "connectors";
 
 export type LlmModel = "mistral-small" | "mistral-large";
 
@@ -26,17 +38,24 @@ export type ChatMessage = {
 	chat_id: number;
 	content: string;
 	citations: number[] | null;
+	web_citations: WebCitationSource[] | null;
+	parla_citations: ParlaCitationSource[] | null;
 	created_at: string;
 	id: number;
 	role: string;
 	type: string;
 };
 
-export type DocumentFolder = {
+export type UserFolder = {
 	created_at: string;
 	id: number;
 	name: string;
 	user_id: string;
+};
+
+export type PublicFolder = {
+	id: number;
+	name: string;
 };
 
 export type SourceType =
@@ -44,7 +63,9 @@ export type SourceType =
 	| "personal_document"
 	| "default_document";
 
-export type Document = {
+export type Document = UserDocument | PublicDocument;
+
+export type UserDocument = {
 	created_at: string | null;
 	file_checksum: string | null;
 	file_name: string | null;
@@ -54,12 +75,22 @@ export type Document = {
 	num_pages: number | null;
 	owned_by_user_id: string | null;
 	processing_finished_at: string | null;
-	source_type: SourceType;
+	source_type: "personal_document" | "default_document";
 	source_url: string;
 };
 
-export type DocumentWithUrl = Document & {
-	previewUrl?: string;
+export type PublicDocument = {
+	created_at: string | null;
+	file_checksum: string | null;
+	file_name: string | null;
+	file_size: number | null;
+	folder_id: number | null;
+	id: number;
+	num_pages: number | null;
+	owned_by_user_id: string | null;
+	processing_finished_at: string | null;
+	source_type: "public_document";
+	source_url: string;
 };
 
 export type User = {
@@ -75,6 +106,7 @@ export type User = {
 	academic_title?: string | null;
 	personal_title?: string | null;
 	is_addressed_formal?: boolean | null;
+	personal_system_prompt?: string | null;
 };
 
 export type CitationWithDetails = {

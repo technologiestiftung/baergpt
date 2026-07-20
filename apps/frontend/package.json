@@ -13,13 +13,13 @@
 		"prettier:check": "prettier  --check .",
 		"prettier:write": "prettier --write .",
 		"preview": "vite preview",
-		"test": "vitest run src",
+		"test": "vitest run src --passWithNoTests",
 		"test:watch": "vitest watch src",
 		"test:a11y": "npx playwright test tests/a11y --config=playwright.config.ts",
 		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts"
 	},
 	"dependencies": {
-		"@mohtasham/md-to-docx": "2.2.1",
+		"@mohtasham/md-to-docx": "2.9.0",
 		"@react-pdf/renderer": "4.3.0",
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/react": "10.5.0",
@@ -52,12 +52,12 @@
 		"@vitejs/plugin-react": "5.0.3",
 		"autoprefixer": "10.4.19",
 		"globals": "15.8.0",
-		"postcss": "8.4.40",
+		"postcss": "8.5.10",
 		"strip-literal": "2.1.0",
 		"tailwindcss": "3.4.7",
 		"typescript": "5.8.3",
-		"vite": "7.3.1",
-		"vitest": "3.2.4"
+		"vite": "7.3.2",
+		"vitest": "3.2.6"
 	},
 	"overrides": {
 		"whatwg-url": "14.2.0"

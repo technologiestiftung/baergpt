@@ -1,36 +1,40 @@
+import crypto from "crypto";
 import { enc } from "../constants";
 import { config } from "../config";
-import type { ModelMessage, Tool, ToolChoice } from "ai";
+import { isLoopFinished, ModelMessage, Tool, ToolChoice } from "ai";
 import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
-	generateObject,
 	generateText,
-	stepCountIs,
+	Output,
 	streamText,
 } from "ai";
 import { ModelService } from "./model-service";
+import { logMemory } from "../monitoring/memory-logger";
 import { EmbeddingService } from "./embedding-service";
-import {
-	LangfuseClient,
-	ChatPromptClient,
-	TextPromptClient,
-} from "@langfuse/client";
+import type { ChatPromptClient, TextPromptClient } from "@langfuse/client";
 import { updateActiveTrace } from "@langfuse/tracing";
-import {
-	type Document,
-	type KnowledgeBaseDocument,
-	type LLMHandler,
-} from "../types/common";
+import { getChatPrompt, getTextPrompt } from "./prompt-provider";
+import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
-import type { ParsedPage } from "../types/common";
-import { baseKnowledgeSearchTool } from "../tools/base-knowledge-search-tool";
+import type { ActiveTools, ParsedPage } from "../types/common";
 import { ragSearchTool } from "../tools/rag-search-tool";
-import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
+import {
+	parlaMCPTools,
+	parseParlaToolOutput,
+	type ParlaChunkData,
+} from "../tools/mcp/parla-mcp-tools";
+import {
+	extractWebSourcesFromToolOutput,
+	webSearchTool,
+} from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
-import { citationAnswerSchema } from "../schemas/citation-answer-schema";
-import { resilientCall } from "../utils";
+import {
+	citationAnswerSchema,
+	webCitationAnswerSchema,
+	parlaCitationAnswerSchema,
+} from "../schemas/citation-answer-schema";
 import {
 	countTokens,
 	computeSafePayload,
@@ -39,8 +43,45 @@ import {
 import { openDataMCPTools } from "../tools/mcp/open-data-mcp-tools";
 import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
 
-const langfuse = new LangfuseClient();
 const modelService = new ModelService();
+
+/**
+ * Langfuse currently does not support conditional sections in prompts.
+ * So we wrap a user's personal system prompt with the preamble that instructs the
+ * model how to treat it. Returns an empty string when there is no prompt.
+ */
+export function buildUserSystemPromptBlock(
+	userSystemPrompt: string | null | undefined,
+): string {
+	if (!userSystemPrompt) {
+		return "";
+	}
+
+	const preamble = [
+		"# NUTZER ANWEISUNGEN",
+		"",
+		"Die nutzende Person hat folgende benutzerdefinierte Anweisungen angegeben.",
+		"Befolge diese, sofern sie nicht im Widerspruch zu den obigen Anweisungen stehen:",
+	].join("\n");
+
+	return `\n\n${preamble}\n\n${userSystemPrompt}`;
+}
+
+type RelevantTools = {
+	tools: Record<string, Tool>;
+	toolChoice: ToolChoice<Record<string, Tool>>;
+	cleanup?: () => Promise<void>;
+};
+
+/**
+ * The base `free-chat-basic` prompt exposes a `{{toolInstructions}}`
+ * variable, into which we inject one instruction block per active tool.
+ */
+const TOOL_INSTRUCTION_PROMPTS: ReadonlyArray<[ActiveTools, string]> = [
+	["ragSearchTool", "tool-instruction-documents"],
+	["webSearchTool", "tool-instruction-web-search"],
+	["parlaMCPTools", "tool-instruction-parla"],
+];
 
 export class GenerationService {
 	private readonly dbService: BaseContentDbService;
@@ -50,66 +91,6 @@ export class GenerationService {
 		this.dbService = dbService;
 		this.embeddingService = new EmbeddingService(this.dbService);
 	}
-	/**
-	 * Select the first pages whose combined content fits within a safe token budget
-	 * for the summary prompt. Falls back to at least the first page if none fit.
-	 */
-	private async selectFirstPagesFittingBudget(
-		llmIdentifier: string,
-		parsedPages: ParsedPage[],
-	): Promise<ParsedPage[]> {
-		const contextSize = modelService.availableModels[llmIdentifier].contextSize;
-		const systemTokensForSummary =
-			await this.estimateSystemPromptTokens("summary");
-		const safeTokenLimit = computeSafePayload(
-			contextSize,
-			systemTokensForSummary,
-		);
-
-		const selected: ParsedPage[] = [];
-		let accumulatedTokens = 0;
-
-		for (const page of parsedPages) {
-			const pageTokens = page.tokenCount ?? countTokens(page.content);
-			if (accumulatedTokens + pageTokens > safeTokenLimit) {
-				break;
-			}
-			accumulatedTokens += pageTokens;
-			selected.push(page);
-		}
-
-		return selected.length > 0 ? selected : parsedPages.slice(0, 1);
-	}
-
-	/**
-	 * Compress content to a target token limit by:
-	 * 1) attempting up to `maxRounds` model compressions, then
-	 * 2) hard-trimming with a binary search as a final safeguard.
-	 */
-	private async compressToTokenLimit(
-		llmIdentifier: string,
-		content: string,
-		options: { tokenLimit: number; maxRounds?: number } = { tokenLimit: 0 },
-	): Promise<string> {
-		const { tokenLimit, maxRounds = 3 } = options;
-		let current = content;
-		let tokens = countTokens(current);
-
-		for (let round = 0; round < maxRounds && tokens > tokenLimit; round++) {
-			const shorter = await this.generateSummary(llmIdentifier, current);
-			if (!shorter) {
-				break;
-			}
-			current = shorter;
-			tokens = countTokens(current);
-		}
-
-		if (tokens <= tokenLimit) {
-			return current;
-		}
-
-		return trimToTokenLimitByWords(current, tokenLimit);
-	}
 
 	/**
 	 * Estimate system prompt token count for a given prompt name by compiling with empty content.
@@ -118,12 +99,9 @@ export class GenerationService {
 		promptName: string,
 	): Promise<number> {
 		try {
-			const client = await resilientCall(() =>
-				langfuse.prompt.get(promptName, {
-					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-					type: "chat",
-				}),
-			);
+			const client = await getChatPrompt(promptName, {
+				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+			});
 
 			const compiled = client.compile({ docContent: "" }) as ModelMessage[];
 			const sys =
@@ -136,90 +114,96 @@ export class GenerationService {
 		}
 	}
 
-	async generateSummary(
-		llmIdentifier: string,
-		docInput: string | ParsedPage[],
-		{
-			oneSentenceSummary = false,
-			userId,
-		}: {
-			oneSentenceSummary?: boolean;
-			userId?: string;
-		} = {},
-	): Promise<string | null> {
+	async generateSummary(args: {
+		llmIdentifier: string;
+		input: string;
+		userId: string;
+	}): Promise<string> {
+		const { llmIdentifier, input, userId } = args;
+
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
-		let compiledSummaryPrompt: ModelMessage[];
-		let summaryPromptClient: ChatPromptClient;
-		const docContent =
-			typeof docInput === "string"
-				? docInput
-				: docInput.map((page) => page.content).join("\n");
 
-		if (oneSentenceSummary) {
-			summaryPromptClient = await langfuse.prompt.get("one-sentence-summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
-			compiledSummaryPrompt = summaryPromptClient.compile({
-				docContent: docContent,
-			}) as ModelMessage[];
-		} else {
-			summaryPromptClient = await langfuse.prompt.get("summary", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-				type: "chat",
-			});
-			compiledSummaryPrompt = summaryPromptClient.compile({
-				docContent: docContent,
-			}) as ModelMessage[];
-		}
+		const summaryPromptClient = await getChatPrompt("summary", {
+			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+		});
 
-		try {
-			return this.generateTextContent(llmHandler, compiledSummaryPrompt, {
-				userId,
-				langfusePrompt: summaryPromptClient,
-			});
-		} catch (error) {
-			captureError(error);
-			return null;
-		}
+		const compiledSummaryPrompt = summaryPromptClient.compile({
+			docContent: input,
+		}) as ModelMessage[];
+
+		return this.generateTextContent({
+			llmHandler,
+			messages: compiledSummaryPrompt,
+			userId,
+			langfusePrompt: summaryPromptClient,
+		});
 	}
 
-	async generateTags(
-		llmIdentifier: string,
-		docInput: string | ParsedPage[],
-		{ userId }: { userId?: string } = {},
-	): Promise<string[] | null> {
+	async generateOneSentenceSummary(args: {
+		llmIdentifier: string;
+		input: string;
+		userId: string;
+	}): Promise<string> {
+		const { llmIdentifier, input, userId } = args;
+
+		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
+
+		const summaryPromptClient = await getChatPrompt("one-sentence-summary", {
+			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+		});
+
+		const compiledSummaryPrompt = summaryPromptClient.compile({
+			docContent: input,
+		}) as ModelMessage[];
+
+		return this.generateTextContent({
+			llmHandler,
+			messages: compiledSummaryPrompt,
+			userId,
+			langfusePrompt: summaryPromptClient,
+		});
+	}
+
+	async generateTags(args: {
+		llmIdentifier: string;
+		input: string | ParsedPage[];
+		userId: string;
+	}): Promise<string[]> {
+		const { llmIdentifier, input, userId } = args;
+
 		const llmHandler = modelService.resolveLlmHandler(llmIdentifier);
 		const docContent =
-			typeof docInput === "string"
-				? docInput
-				: docInput.map((page) => page.content).join("\n");
+			typeof input === "string"
+				? input
+				: input.map((page) => page.content).join("\n");
 
-		const taggingPromptClient = await langfuse.prompt.get("tagging", {
+		const taggingPromptClient = await getChatPrompt("tagging", {
 			label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			type: "chat",
 		});
 		const compiledTaggingPrompt = taggingPromptClient.compile({
 			docContent: docContent,
 		}) as ModelMessage[];
 
-		try {
-			const response: string = await this.generateTextContent(
-				llmHandler,
-				compiledTaggingPrompt,
-				{ userId, langfusePrompt: taggingPromptClient },
+		const response: string = await this.generateTextContent({
+			llmHandler,
+			messages: compiledTaggingPrompt,
+			userId,
+			langfusePrompt: taggingPromptClient,
+		});
+		// Extract JSON from potential code block artifacts
+		const jsonMatch = response.match(
+			/```(?:json)?\s*(\{.*?\})\s*```|(\{.*?\})/s,
+		);
+		const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[2] : response;
+		const parsed = JSON.parse(jsonString.trim());
+
+		if (!parsed.tags || !Array.isArray(parsed.tags)) {
+			throw new Error(
+				`Tags were invalid or not found in the LLM response: ${parsed}`,
 			);
-			// Extract JSON from potential code block artifacts
-			const jsonMatch = response.match(
-				/```(?:json)?\s*(\{.*?\})\s*```|(\{.*?\})/s,
-			);
-			const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[2] : response;
-			const parsed = JSON.parse(jsonString.trim());
-			return parsed.tags || [];
-		} catch (error) {
-			captureError(error);
-			return null;
 		}
+
+		return parsed.tags;
 	}
 
 	async summarize(
@@ -230,151 +214,333 @@ export class GenerationService {
 		summary: string;
 		shortSummary: string;
 		tags: string[];
-		summaryEmbedding: number[];
 	}> {
-		const numTokens = parsedPages.reduce(
-			(total, page) => total + (page.tokenCount ?? countTokens(page.content)),
-			0,
-		);
+		const summaryInput = await this.getSummaryInput(parsedPages, llmIdentifier);
 
-		let summary: string | null = null;
-		const MAX_TOKEN_COUNT_FOR_SUMMARY =
-			modelService.availableModels[llmIdentifier].contextSize;
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
 
-		const overContext = numTokens > MAX_TOKEN_COUNT_FOR_SUMMARY;
-		let summaryInput: string | ParsedPage[] = parsedPages;
-
-		if (overContext) {
-			const selectedPages = await this.selectFirstPagesFittingBudget(
-				llmIdentifier,
-				parsedPages,
-			);
-			summaryInput = selectedPages;
-		}
-
-		// Safety mechanism in case the first page is larger than MAX_TOKEN_COUNT_FOR_SUMMARY
-		const systemTokens = await this.estimateSystemPromptTokens("summary");
-		const safeLimit = computeSafePayload(
-			MAX_TOKEN_COUNT_FOR_SUMMARY,
-			systemTokens,
-		);
-
-		let joined;
-		if (typeof summaryInput === "string") {
-			joined = summaryInput;
-		} else {
-			joined = summaryInput.map((page) => page.content).join("\n");
-		}
-		if (countTokens(joined) > safeLimit) {
-			summaryInput = trimToTokenLimitByWords(joined, safeLimit);
-		}
-
-		summary = await this.generateSummary(llmIdentifier, summaryInput, {
-			userId,
-		});
-
-		if (!summary) {
-			throw new Error("Failed to generate document summary");
-		}
-
-		const shortSummary = await this.generateSummary(llmIdentifier, summary, {
-			oneSentenceSummary: true,
-			userId,
-		});
-
-		if (!shortSummary) {
-			throw new Error("Failed to generate short document summary");
-		}
-
-		const summaryForEmbedding = await this.compressToTokenLimit(
+		const summary = await this.generateSummary({
 			llmIdentifier,
-			summary,
-			{ tokenLimit: config.jinaMaxContextTokens, maxRounds: 3 },
-		);
-
-		const summaryEmbeddingResponse =
-			await this.embeddingService.generateJinaEmbedding(
-				summaryForEmbedding,
-				"retrieval.passage",
-				userId,
-			);
-
-		if (!summaryEmbeddingResponse || !summaryEmbeddingResponse.embedding) {
-			throw new Error("Failed to generate document embedding");
-		}
-
-		const tags = await this.generateTags(llmIdentifier, summary, {
+			input: summaryInput,
 			userId,
 		});
 
-		if (!tags) {
-			throw new Error("Failed to generate document tags");
-		}
+		const shortSummary = await this.generateOneSentenceSummary({
+			llmIdentifier,
+			input: summaryInput,
+			userId,
+		});
+
+		const tags = await this.generateTags({
+			llmIdentifier,
+			input: summary,
+			userId,
+		});
 
 		return {
 			summary,
 			shortSummary,
 			tags,
-			summaryEmbedding: summaryEmbeddingResponse.embedding,
 		};
 	}
 
-	async generateTextStreamResponse(
-		llmHandler: LLMHandler,
-		messages: ModelMessage[],
-		{
+	async getSummaryInput(
+		parsedPages: ParsedPage[],
+		llmIdentifier: string,
+	): Promise<string> {
+		const { contextSize } = modelService.availableModels[llmIdentifier];
+		const systemPromptToken = await this.estimateSystemPromptTokens("summary");
+		const tokenLimit = computeSafePayload(contextSize, systemPromptToken);
+
+		const [firstPage] = parsedPages;
+
+		if (firstPage.tokenCount > tokenLimit) {
+			return trimToTokenLimitByWords(firstPage.content, tokenLimit);
+		}
+
+		const content = parsedPages.map((page) => page.content).join("\n");
+		const tokenCount = countTokens(content);
+
+		if (tokenCount <= tokenLimit) {
+			return content;
+		}
+
+		return trimToTokenLimitByWords(content, tokenLimit);
+	}
+
+	async generateTextStreamResponse(args: {
+		messages: ModelMessage[];
+		llmHandler: LLMHandler;
+		userId: string;
+		sessionId: string;
+		langfusePrompt: TextPromptClient | ChatPromptClient;
+		allowedDocumentIds: number[];
+		allowedFolderIds: number[];
+		activeTools: ActiveTools[];
+	}): Promise<Response> {
+		const {
+			messages,
+			llmHandler,
 			userId,
 			sessionId,
 			langfusePrompt,
-			allowedDocumentIds = [],
-			allowedFolderIds = [],
-			isBaseKnowledgeActive,
-		}: {
-			userId?: string;
-			sessionId?: string;
-			langfusePrompt?: TextPromptClient | ChatPromptClient;
-			allowedDocumentIds?: number[];
-			allowedFolderIds?: number[];
-			isBaseKnowledgeActive?: boolean;
-		} = {},
-	): Promise<Response> {
-		let knowledgeBaseDocuments: KnowledgeBaseDocument[] = [];
-		if (isBaseKnowledgeActive && userId) {
-			knowledgeBaseDocuments =
-				await this.dbService.getBaseKnowledgeDocuments(userId);
-		}
-		const { tools, toolChoice, maxSteps, useBaseKnowledgeAfterFirstStep } =
-			await this.getRelevantTools({
-				allowedDocumentIds,
-				allowedFolderIds,
-				isBaseKnowledgeActive: isBaseKnowledgeActive ?? false,
-				userId,
-				knowledgeBaseDocuments,
-			});
+			allowedDocumentIds,
+			allowedFolderIds,
+			activeTools,
+		} = args;
 
-		const prepareStep = this.getPrepareStep(useBaseKnowledgeAfterFirstStep);
+		const memoryLogId =
+			config.nodeEnv === "production"
+				? crypto.randomUUID().slice(0, 8)
+				: sessionId;
+		logMemory("chat:start", memoryLogId);
 
-		updateActiveTrace({ input: messages[messages.length - 1].content });
-		const generationResult = await resilientCall(
-			() =>
-				generateText({
+		const {
+			tools,
+			toolChoice,
+			cleanup: toolsCleanup,
+		} = await this.getRelevantTools({
+			allowedDocumentIds,
+			allowedFolderIds,
+			activeTools,
+			userId,
+		});
+
+		const nonEmptyAssistantMessage = (message: ModelMessage) =>
+			!(message.role === "assistant" && message.content === "");
+
+		const stream = createUIMessageStream({
+			execute: async ({ writer }) => {
+				const streamResponse = streamText({
 					model: llmHandler.languageModel,
-					messages: messages,
+					messages: messages.filter(nonEmptyAssistantMessage),
+					maxOutputTokens: 8192,
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
 					toolChoice,
-					stopWhen: stepCountIs(maxSteps),
-					prepareStep,
+					stopWhen: isLoopFinished(),
 					providerOptions: {
 						mistral: {
 							presencePenalty: LLM_PARAMETERS.presencePenalty,
 							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
 						},
 					},
+					onFinish: async ({ text, usage, steps }) => {
+						logMemory(
+							`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
+							memoryLogId,
+						);
+
+						if (typeof toolsCleanup === "function") {
+							await toolsCleanup();
+						}
+
+						const allChunkMatches = steps.flatMap((step) =>
+							step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
+						);
+
+						if (allChunkMatches.length > 0) {
+							const availableSources = allChunkMatches.map(
+								(match: { chunkId: number; snippet: string }) => ({
+									id: match.chunkId,
+									snippet: match.snippet,
+								}),
+							);
+							try {
+								const citationPromptClient = await getChatPrompt(
+									"document-citation-extraction",
+									{
+										label:
+											config.nodeEnv === "test"
+												? "development"
+												: config.nodeEnv,
+									},
+								);
+
+								const compiledDocumentCitationExtractionPrompts =
+									citationPromptClient.compile({
+										generatedAnswer: text,
+										availableSources: availableSources
+											.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
+											.join("\n\n"),
+									}) as ModelMessage[];
+
+								const { output: citationObject, usage: generateObjectUsage } =
+									await generateText({
+										model: llmHandler.languageModel,
+										messages: compiledDocumentCitationExtractionPrompts,
+										temperature: LLM_PARAMETERS.temperature,
+										output: Output.object({
+											schema: citationAnswerSchema,
+										}),
+										experimental_telemetry: {
+											isEnabled: config.isTracingEnabled,
+											functionId: "citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+									});
+
+								writer.write({
+									type: "data-citations",
+									data: citationObject.citations,
+								});
+
+								await this.dbService.updateUsage(
+									userId,
+									generateObjectUsage.totalTokens,
+								);
+							} catch (error) {
+								captureError(error);
+							}
+						}
+
+						const allWebSources = steps.flatMap((step) =>
+							step.toolResults.flatMap((tr) =>
+								extractWebSourcesFromToolOutput(tr.output),
+							),
+						);
+
+						if (allWebSources.length > 0) {
+							try {
+								const webCitationPromptClient = await getChatPrompt(
+									"web-citation-extraction",
+									{
+										label:
+											config.nodeEnv === "test"
+												? "development"
+												: config.nodeEnv,
+									},
+								);
+
+								const compiledWebCitationExtractionPrompts =
+									webCitationPromptClient.compile({
+										generatedAnswer: text,
+										availableSources: allWebSources
+											.map(
+												(s) =>
+													`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+											)
+											.join("\n\n"),
+									}) as ModelMessage[];
+
+								const { output: webObject, usage: webCitationUsage } =
+									await generateText({
+										model: llmHandler.languageModel,
+										messages: compiledWebCitationExtractionPrompts,
+										temperature: LLM_PARAMETERS.temperature,
+										output: Output.object({
+											schema: webCitationAnswerSchema,
+										}),
+										experimental_telemetry: {
+											isEnabled: config.isTracingEnabled,
+											functionId: "web-citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+									});
+
+								const citedSources = allWebSources.filter((s) =>
+									webObject.citations.some((c) => c.url === s.url),
+								);
+
+								writer.write({
+									type: "data-web-citations",
+									data: citedSources,
+								});
+
+								await this.dbService.updateUsage(
+									userId,
+									webCitationUsage.totalTokens,
+								);
+							} catch (error) {
+								captureError(error);
+							}
+						}
+
+						const allParlaChunks: ParlaChunkData[] = steps.flatMap((step) =>
+							step.toolResults
+								.filter((tr) => tr.toolName === "parla_vector_search")
+								.flatMap((tr) => parseParlaToolOutput(tr.output)),
+						);
+
+						if (allParlaChunks.length > 0) {
+							try {
+								const parlaCitationPromptClient = await getChatPrompt(
+									"document-citation-extraction",
+									{
+										label:
+											config.nodeEnv === "test"
+												? "development"
+												: config.nodeEnv,
+									},
+								);
+
+								const compiledParlaCitationPrompts =
+									parlaCitationPromptClient.compile({
+										generatedAnswer: text,
+										availableSources: allParlaChunks
+											.map((c) => `[ID: ${c.id}]\n Snippet: ${c.content}`)
+											.join("\n\n"),
+									}) as ModelMessage[];
+
+								const { output: parlaObject, usage: parlaCitationUsage } =
+									await generateText({
+										model: llmHandler.languageModel,
+										messages: compiledParlaCitationPrompts,
+										temperature: LLM_PARAMETERS.temperature,
+										output: Output.object({
+											schema: parlaCitationAnswerSchema,
+										}),
+										experimental_telemetry: {
+											isEnabled: config.isTracingEnabled,
+											functionId: "parla-citation-extraction",
+											metadata: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+										},
+									});
+
+								const citedParlaChunks = allParlaChunks
+									.filter((c) => parlaObject.citations.includes(c.id))
+									.map(({ content, page, url, title, source_type }) => ({
+										content,
+										page,
+										url,
+										title,
+										source_type,
+									}));
+
+								if (citedParlaChunks.length > 0) {
+									writer.write({
+										type: "data-parla-citations",
+										data: citedParlaChunks,
+									});
+								}
+								await this.dbService.updateUsage(
+									userId,
+									parlaCitationUsage.totalTokens,
+								);
+							} catch (error) {
+								captureError(error);
+							}
+						}
+
+						logMemory("chat:onFinish-complete", memoryLogId);
+						updateActiveTrace({
+							name: "streamed-text-generation",
+							output: text,
+							userId,
+							sessionId,
+						});
+
+						await this.dbService.updateUsage(userId, usage.totalTokens);
+					},
 					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-						functionId: "text-toolCall-generation",
+						isEnabled: config.isTracingEnabled,
+						functionId: "streamed-text-with-tool-calls",
 						metadata: {
 							sessionId: sessionId ? sessionId : "unknown",
 							langfusePrompt: langfusePrompt
@@ -382,288 +548,72 @@ export class GenerationService {
 								: undefined,
 						},
 					},
-				}),
-			{ queueType: "llm" },
-		);
-		if (userId && generationResult.usage?.totalTokens) {
-			try {
-				await this.dbService.updateUserColumnValue(
-					userId,
-					"num_inference_tokens",
-					generationResult.usage.totalTokens,
-				);
-				await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
-			} catch (error) {
-				captureError(error);
-			}
-		}
-		const allChunkMatches = generationResult.steps.flatMap((step) =>
-			step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
-		);
-		const newMessages = generationResult.response.messages;
-		if (newMessages.length > 0) {
-			messages.push(...newMessages);
-		}
-		const stream = createUIMessageStream({
-			execute: async ({ writer }) => {
-				const streamResponse = await resilientCall(
-					async () =>
-						streamText({
-							model: llmHandler.languageModel,
-							messages: messages,
-							temperature: LLM_PARAMETERS.temperature,
-							providerOptions: {
-								mistral: {
-									presencePenalty: LLM_PARAMETERS.presencePenalty,
-									frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-								},
-							},
-							onFinish: async ({ text, usage }) => {
-								if (allChunkMatches.length > 0) {
-									const availableSources = allChunkMatches.map(
-										(match: { chunkId: number; snippet: string }) => ({
-											id: match.chunkId,
-											snippet: match.snippet,
-										}),
-									);
+					onError: (error) => {
+						logMemory("chat:onError", memoryLogId);
+						captureError(error);
+					},
+				});
 
-									const citationObject = await generateObject({
-										model: llmHandler.languageModel,
-										system: `Du bist ein Assistent, der Quellenangaben extrahiert. Analysiere die gegebene Antwort und identifiziere, welche der verfügbaren Quellen tatsächlich verwendet wurden, um diese Antwort zu generieren. Gib NUR die IDs der Quellen zurück, deren Inhalt direkt in der Antwort verwendet oder paraphrasiert wurde.`,
-										prompt: `Generierte Antwort:
-"""
-${text}
-"""
-
-Verfügbare Quellen:
-${availableSources.map((s: { id: number; snippet: string }) => `[ID: ${s.id}]\n${s.snippet}`).join("\n\n")}
-
-Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort verwendet wurden. Gib NUR diese IDs als Array zurück.`,
-										temperature: LLM_PARAMETERS.temperature,
-										// @ts-expect-error Weird Vercel AI SDK issue with Zod and types
-										schema: citationAnswerSchema,
-										experimental_telemetry: {
-											isEnabled: config.nodeEnv !== "test",
-											functionId: "citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
-											},
-										},
-										onFinish: async ({ usage: citationUsage }) => {
-											if (userId && citationUsage?.totalTokens) {
-												try {
-													await this.dbService.updateUserColumnValue(
-														userId,
-														"num_inference_tokens",
-														citationUsage.totalTokens,
-													);
-													await this.dbService.updateUserColumnValue(
-														userId,
-														"num_inferences",
-														1,
-													);
-												} catch (error) {
-													captureError(error);
-												}
-											}
-										},
-										onError: (error) => {
-											captureError(error);
-										},
-									});
-									writer.write({
-										type: "data-citations",
-										data: citationObject.object.citations,
-									});
-								}
-
-								updateActiveTrace({
-									name: "streamed-text-generation",
-									output: text,
-									userId,
-									sessionId,
-								});
-								// Handle token usage tracking after stream completes
-								if (userId && usage?.totalTokens) {
-									try {
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inference_tokens",
-											usage.totalTokens,
-										);
-										// Increase num_inferences for user by one
-										await this.dbService.updateUserColumnValue(
-											userId,
-											"num_inferences",
-											1,
-										);
-									} catch (dbError) {
-										captureError(dbError);
-									}
-								}
-							},
-							experimental_telemetry: {
-								isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-								metadata: {
-									sessionId: sessionId ? sessionId : "unknown",
-									langfusePrompt: langfusePrompt
-										? langfusePrompt.toJSON()
-										: undefined,
-								},
-							},
-							onError: (error) => {
-								captureError(error);
-							},
-						}),
-					{ queueType: "llm" },
-				);
 				writer.merge(streamResponse.toUIMessageStream());
 			},
 		});
 		return createUIMessageStreamResponse({ stream });
 	}
 
-	async generateTextContent(
-		llmHandler: LLMHandler,
-		messages: ModelMessage[],
-		{
-			userId,
-			sessionId,
-			langfusePrompt,
-		}: {
-			userId?: string;
-			sessionId?: string;
-			langfusePrompt?: TextPromptClient | ChatPromptClient;
-		} = {},
-	): Promise<string> {
-		const { text, usage } = await resilientCall(
-			() =>
-				generateText({
-					model: llmHandler.languageModel,
-					messages: messages,
-					temperature: LLM_PARAMETERS.temperature,
-					providerOptions: {
-						mistral: {
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
-					experimental_telemetry: {
-						isEnabled: config.nodeEnv !== "test", // Disable telemetry in CI
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
-						},
-					},
-				}),
-			{ queueType: "llm" },
-		);
+	async generateTextContent(args: {
+		llmHandler: LLMHandler;
+		messages: ModelMessage[];
+		/**
+		 * userId can be undefined when generating embeddings for default documents
+		 * as they are not owned/uploaded by a specific user
+		 */
+		userId: string | undefined;
+		langfusePrompt: TextPromptClient | ChatPromptClient;
+	}): Promise<string> {
+		const { llmHandler, messages, userId, langfusePrompt } = args;
+		const { text, usage } = await generateText({
+			model: llmHandler.languageModel,
+			messages: messages,
+			temperature: LLM_PARAMETERS.temperature,
+			providerOptions: {
+				mistral: {
+					presencePenalty: LLM_PARAMETERS.presencePenalty,
+					frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+				},
+			},
+			experimental_telemetry: {
+				isEnabled: config.isTracingEnabled,
+				metadata: {
+					sessionId: "unknown",
+					langfusePrompt: langfusePrompt.toJSON(),
+				},
+			},
+		});
+
 		if (userId) {
-			// Increase num_inferences for user by 1
-			await this.dbService.updateUserColumnValue(userId, "num_inferences", 1);
-			// Increase num_tokens by token count of this generation
-			await this.dbService.updateUserColumnValue(
-				userId,
-				"num_inference_tokens",
-				usage?.totalTokens ?? 0,
-			);
+			await this.dbService.updateUsage(userId, usage.totalTokens);
 		}
 		return text;
 	}
 
-	splitArrayEqually<T>(array: T[], chunkSize: number): T[][] {
-		const result: T[][] = [];
-		for (let i = 0; i < array.length; i += chunkSize) {
-			result.push(array.slice(i, i + chunkSize));
-		}
-		return result;
-	}
-
-	splitInChunksAccordingToTokenLimit(
-		input: string,
-		tokenLimit: number,
-		overlap: number = 128,
-	): string[] {
-		const finalChunks: string[] = [];
-
-		// Split input into smaller chunks with overlap
-		let currentChunk = "";
-		const words = input.split(/\s+/);
-		let currentOverlap = "";
-
-		for (let i = 0; i < words.length; i++) {
-			const currentWord = words[i];
-
-			// If we're starting a new chunk after the first one, add overlap with the previous chunk
-			if (currentChunk === "" && finalChunks.length > 0) {
-				const overlapStart = this.getOverlapStart(words, i, overlap);
-				currentOverlap = words.slice(overlapStart, i).join(" ");
-				currentChunk = currentOverlap;
-			}
-
-			if (
-				enc.encode(currentWord).length > tokenLimit ||
-				enc.encode(`${currentOverlap} ${currentWord}`).length > tokenLimit
-			) {
-				// If a single word or the current overlap + the current word exceed token limit, we skip them
-				continue;
-			}
-
-			const potentialChunk =
-				currentChunk + (currentChunk ? " " : "") + currentWord;
-			const tokenCountPotentialChunk = enc.encode(potentialChunk).length;
-
-			if (tokenCountPotentialChunk <= tokenLimit) {
-				currentChunk = potentialChunk;
-				continue;
-			}
-
-			finalChunks.push(currentChunk);
-			currentChunk = ""; // Reset current chunk
-		}
-
-		// Add final chunk if not empty
-		if (currentChunk) {
-			finalChunks.push(currentChunk);
-		}
-
-		return finalChunks;
-	}
-
-	getOverlapStart(words: string[], countStart: number, overlap: number) {
-		let overlapTokenCount = 0;
-		let overlapStart = countStart;
-
-		// Count backwards until we reach desired overlap token count
-		for (let j = countStart - 1; j >= 0; j--) {
-			const wordTokens = enc.encode(words[j]).length;
-
-			if (overlapTokenCount + wordTokens > overlap) {
-				break;
-			}
-
-			overlapTokenCount += wordTokens;
-			overlapStart = j;
-		}
-
-		return overlapStart;
-	}
-
 	/**
-	 * Creates a prompt for either an initial query or a follow-up query in a conversation
-	 * @param params - Either a GenerateAnswerBody object or an array of ChatMessage objects
+	 * Creates a system prompt and inserts it at the beginning conversation
 	 * @returns An array of ChatMessages for the LLM
 	 */
 
-	async createPrompt(
-		previousMessages: ModelMessage[],
-		isAddressedFormal: boolean,
-	): Promise<{
-		messages: ModelMessage[];
-		promptClient: TextPromptClient;
-	}> {
+	async createPrompt(args: {
+		previousMessages: ModelMessage[];
+		isAddressedFormal: boolean;
+		activeTools: ActiveTools[];
+		userSystemPrompt?: string | null;
+	}) {
+		const {
+			previousMessages,
+			isAddressedFormal,
+			activeTools,
+			userSystemPrompt,
+		} = args;
+
 		const currentDate = new Date().toLocaleDateString("de-DE", {
 			year: "numeric",
 			month: "long",
@@ -671,20 +621,34 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 		});
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
+		const label = config.nodeEnv === "test" ? "development" : config.nodeEnv;
 
-		// Always use free-chat prompt
-		const freeChatPromptClient = await langfuse.prompt.get(
-			"free-chat",
-			{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv }, // Fallback to development prompt version during tests
-		);
+		const freeChatPromptClient = await getTextPrompt("free-chat-basic", {
+			label,
+		});
+		const activeToolSet = new Set(activeTools);
+		const toolInstructionBlocks: string[] = [];
+		for (const [tool, promptName] of TOOL_INSTRUCTION_PROMPTS) {
+			if (!activeToolSet.has(tool)) {
+				continue;
+			}
+			const blockClient = await getTextPrompt(promptName, { label });
+			toolInstructionBlocks.push(blockClient.compile({}));
+		}
+		const toolInstructions = toolInstructionBlocks.join("\n\n");
+
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
+			userSystemPrompt: buildUserSystemPromptBlock(userSystemPrompt),
+			toolInstructions: toolInstructions,
 		});
+
 		const freeChatPrompt: ModelMessage = {
 			role: "system",
 			content: compiledFreeChatPrompt,
 		};
+
 		return {
 			messages: [freeChatPrompt, ...previousMessages],
 			promptClient: freeChatPromptClient,
@@ -694,156 +658,79 @@ Analysiere die Antwort und identifiziere, welche Quellen-IDs für die Antwort ve
 	private async getRelevantTools(options: {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
-		isBaseKnowledgeActive: boolean;
+		activeTools: string[];
 		userId?: string;
-		knowledgeBaseDocuments?: KnowledgeBaseDocument[];
-	}): Promise<{
-		tools: Record<string, Tool>;
-		toolChoice: ToolChoice<Record<string, Tool>>;
-		maxSteps: number;
-		useBaseKnowledgeAfterFirstStep: boolean;
-	}> {
-		const {
-			allowedDocumentIds,
-			allowedFolderIds,
-			isBaseKnowledgeActive,
-			userId,
-			knowledgeBaseDocuments,
-		} = options;
-		const hasAllowedDocumentsOrFolders =
-			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
-		const ragTool = ragSearchTool({
-			allowedDocumentIds,
-			allowedFolderIds,
-			userId,
-			dbService: this.dbService,
-			embeddingService: this.embeddingService,
-		});
-		const baseKnowledgeTool = knowledgeBaseDocuments
-			? baseKnowledgeSearchTool({
-					knowledgeBaseDocuments,
-					userId,
-					dbService: this.dbService,
-					embeddingService: this.embeddingService,
-				})
-			: null;
+	}): Promise<RelevantTools> {
+		const { allowedDocumentIds, allowedFolderIds, activeTools, userId } =
+			options;
 
-		// Case 1: Both RAG and base knowledge are active
-		if (
-			hasAllowedDocumentsOrFolders &&
-			isBaseKnowledgeActive &&
-			baseKnowledgeTool
-		) {
-			return {
-				tools: {
-					ragSearchTool: ragTool,
-					baseKnowledgeSearchTool: baseKnowledgeTool,
-				},
-				toolChoice: { type: "tool", toolName: "ragSearchTool" },
-				maxSteps: 2,
-				useBaseKnowledgeAfterFirstStep: true,
-			};
-		}
-
-		// Case 2: Only RAG is active
-		if (hasAllowedDocumentsOrFolders) {
-			return {
-				tools: {
-					ragSearchTool: ragSearchTool({
-						allowedDocumentIds,
-						allowedFolderIds,
-						userId,
-						dbService: this.dbService,
-						embeddingService: this.embeddingService,
-					}),
-				},
-				toolChoice: { type: "tool", toolName: "ragSearchTool" },
-				maxSteps: 1,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
-		}
-
-		// Case 3: MCP Tools are active (combine all that respond)
-		const mcpTools: Record<string, Tool> = {};
-		// TODO: Right now if Parla MCP is available, most of the time BärGPT will use it, even though another MCP would be the better choice. We need to fix this somehow through better descriptions and prompt engineering.
-		const parlaMCPToolsResponse = await parlaMCPTools();
-		if (parlaMCPToolsResponse) {
-			// TODO: Decide whether this can be on at the same time as base knowledge
-			// TODO: Add flag from frontend to enable/disable Parla MCP Tools
-			Object.assign(mcpTools, parlaMCPToolsResponse.tools);
-		}
-
-		const datawrapperMCPToolsResponse = await datawrapperMCPTools();
-		if (datawrapperMCPToolsResponse) {
-			// TODO: Decide whether this can be on at the same time as base knowledge
-			// TODO: Add flag from frontend to enable/disable Datawrapper MCP Tools
-			Object.assign(mcpTools, datawrapperMCPToolsResponse.tools);
-		}
-
-		const openDataMCPToolsResponse = await openDataMCPTools();
-		if (openDataMCPToolsResponse) {
-			// TODO: Decide whether this can be on at the same time as base knowledge
-			// TODO: Add flag from frontend to enable/disable Open Data MCP Tools
-			Object.assign(mcpTools, openDataMCPToolsResponse.tools);
-		}
-
-		if (Object.keys(mcpTools).length > 0) {
-			return {
-				tools: mcpTools,
-				toolChoice: "auto",
-				maxSteps: 10,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
-		}
-
-		// Case 4: Only base knowledge is active
-		if (isBaseKnowledgeActive && baseKnowledgeTool) {
-			return {
-				tools: {
-					baseKnowledgeSearchTool: baseKnowledgeTool,
-				},
-				toolChoice: {
-					type: "tool",
-					toolName: "baseKnowledgeSearchTool",
-				},
-				maxSteps: 1,
-				useBaseKnowledgeAfterFirstStep: false,
-			};
-		}
-
-		// Case 5: No tools active
-		return {
+		const relevantTools: RelevantTools = {
 			tools: {},
 			toolChoice: "none",
-			maxSteps: 1,
-			useBaseKnowledgeAfterFirstStep: false,
+			cleanup: async () => {},
 		};
-	}
+		const cleanupFns: Array<() => Promise<void>> = [];
 
-	private getPrepareStep(useBaseKnowledgeAfterFirstStep: boolean):
-		| (({ stepNumber }: { stepNumber: number }) => {
-				toolChoice?: {
-					type: "tool";
-					toolName: "baseKnowledgeSearchTool";
-				};
-				activeTools?: string[];
-		  })
-		| undefined {
-		if (!useBaseKnowledgeAfterFirstStep) {
-			return undefined;
+		const hasAllowedDocumentsOrFolders =
+			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
+		if (hasAllowedDocumentsOrFolders) {
+			relevantTools.tools.ragSearchTool = await ragSearchTool({
+				allowedDocumentIds,
+				allowedFolderIds,
+				userId,
+				dbService: this.dbService,
+				embeddingService: this.embeddingService,
+			});
+			relevantTools.toolChoice = "auto";
 		}
 
-		return ({ stepNumber }: { stepNumber: number }) => {
-			if (stepNumber === 1) {
-				return {
-					toolChoice: {
-						type: "tool",
-						toolName: "baseKnowledgeSearchTool",
-					} as const,
-					activeTools: ["baseKnowledgeSearchTool"],
+		if (activeTools.includes("webSearchTool")) {
+			relevantTools.tools.webSearchTool = webSearchTool;
+			relevantTools.toolChoice = "auto";
+		}
+
+		if (activeTools.includes("parlaMCPTools")) {
+			const parlaMCPToolsResponse = await parlaMCPTools();
+			if (parlaMCPToolsResponse) {
+				relevantTools.tools = {
+					...relevantTools.tools,
+					...parlaMCPToolsResponse.tools,
 				};
+				relevantTools.toolChoice = "auto";
+				cleanupFns.push(parlaMCPToolsResponse.cleanup);
 			}
-			return {};
-		};
+		}
+
+		if (activeTools.includes("datawrapperMCPTools")) {
+			const datawrapperMCPToolsResponse = await datawrapperMCPTools();
+			if (datawrapperMCPToolsResponse) {
+				relevantTools.tools = {
+					...relevantTools.tools,
+					...datawrapperMCPToolsResponse.tools,
+				};
+				relevantTools.toolChoice = "auto";
+				cleanupFns.push(datawrapperMCPToolsResponse.cleanup);
+			}
+		}
+
+		if (activeTools.includes("openDataMCPTools")) {
+			const openDataMCPToolsResponse = await openDataMCPTools();
+			if (openDataMCPToolsResponse) {
+				relevantTools.tools = {
+					...relevantTools.tools,
+					...openDataMCPToolsResponse.tools,
+				};
+				relevantTools.toolChoice = "auto";
+				cleanupFns.push(openDataMCPToolsResponse.cleanup);
+			}
+		}
+
+		if (cleanupFns.length > 0) {
+			relevantTools.cleanup = async () => {
+				await Promise.all(cleanupFns.map((cleanupFn) => cleanupFn()));
+			};
+		}
+
+		return relevantTools;
 	}
 }

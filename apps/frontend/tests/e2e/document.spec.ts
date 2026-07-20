@@ -1,11 +1,13 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Request } from "@playwright/test";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import {
 	deleteFileViaUI,
+	mockDocumentProcessing,
 	mockDocumentUpload,
-	uploadFileViaDragAndDrop,
-	uploadFileViaFileChooser,
-	uploadMultipleFilesViaFileChooser,
+	attemptFileUploadViaFileChooser,
+	attemptMultipleFilesViaFileChooser,
+	uploadFileViaDragAndDropAndWait,
+	uploadFileViaFileChooserAndWait,
 } from "../fixtures/test-with-documents.ts";
 import {
 	defaultBucketName,
@@ -24,13 +26,18 @@ import {
 	secondaryDocumentName,
 	secondaryDocumentPath,
 	secondaryDocumentType,
+	seedDefaultDocumentName,
 } from "../constants.ts";
+import { supabaseAdminClient } from "../supabase.ts";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@repo/db-schema";
+import { config } from "../config.ts";
 
 test.describe("Documents", () => {
 	testDesktopOnly(
 		"Upload via file chooser & delete via UI",
 		async ({ page, browserName }) => {
-			await uploadFileViaFileChooser({
+			await uploadFileViaFileChooserAndWait({
 				page,
 				fileName: secondaryDocumentName,
 				filePath: secondaryDocumentPath,
@@ -42,100 +49,170 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
-		"Upload max of 5 documents at once via file chooser",
-		async ({ page, browserName }) => {
-			// Test uploading exactly 5 documents (the max limit)
-			const filesToUpload = defaultDocuments.slice(0, 5);
+		"Attempt to upload more than 5 documents shows 6th document in waiting state",
+		async ({ page, browserName, account }) => {
+			// Try to upload 6 documents (1 more than the max limit)
+			const allFiles = defaultDocuments.slice(0, 6);
+			const filesToUploadFirst = allFiles.slice(0, 5);
 
-			await uploadMultipleFilesViaFileChooser({
-				files: filesToUpload,
+			// Track which requests have been received and resolvers to control them
+			const requestResolvers: Array<() => void> = [];
+
+			// Mock the /documents/process route to control upload completion
+			await page.route("**/documents/process", async (route) => {
+				// Hold each request until we manually resolve it
+				await new Promise<void>((resolve) => {
+					requestResolvers.push(resolve);
+				});
+				return route.fulfill({ status: 204 });
+			});
+
+			attemptMultipleFilesViaFileChooser({
+				files: allFiles,
 				page,
 				browserName,
 				uploadButtonName: "Datei hochladen",
 			});
 
-			// Verify all 5 files are visible in the document list
-			for (const file of filesToUpload) {
+			await expect.poll(() => requestResolvers.length).toBe(5);
+
+			// Verify the first 5 files are shown with the state "Hochladen läuft"
+			for (const file of filesToUploadFirst) {
 				await expect(
-					page.getByRole("button", { name: `Dokumente-Icon ${file.name}` }),
+					page
+						.locator("#desktop-documents-panel")
+						.getByText(`${file.name}Hochladen läuft`, { exact: true }),
 				).toBeVisible();
 			}
 
-			// Clean up: delete all uploaded files
-			for (const file of filesToUpload) {
+			// Verify the 6th file is shown with the state "Warte"
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText(`${allFiles[5].name}Warte`, { exact: true }),
+			).toBeVisible();
+
+			// Mock the processing of the first file
+			await mockDocumentProcessing({
+				userId: account.id,
+				sourceUrl: `${account.id}/${allFiles[0].name}`,
+				accessGroupId: null,
+				fileName: allFiles[0].name,
+				sourceType: defaultSourceType,
+			});
+
+			// Resolve the first upload → 6th should transition from "Warte" to "Hochladen läuft"
+			requestResolvers[0]();
+
+			// Wait until the 6th request is intercepted (6th upload starts)
+			await expect
+				.poll(() => requestResolvers.length, { timeout: 30_000 })
+				.toBe(6);
+
+			// Verify the 6th file transitions to "Hochladen läuft"
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText(`${allFiles[5].name}Hochladen läuft`, { exact: true }),
+			).toBeVisible();
+
+			// Resolve all remaining requests
+			for (let i = 1; i < requestResolvers.length; i++) {
+				await mockDocumentProcessing({
+					userId: account.id,
+					sourceUrl: `${account.id}/${allFiles[i].name}`,
+					accessGroupId: null,
+					fileName: allFiles[i].name,
+					sourceType: defaultSourceType,
+				});
+				requestResolvers[i]();
+			}
+
+			// Close the file upload dialog
+			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+
+			// Verify all 6 files appear in the document list
+			const desktopPanel = page.locator("#desktop-documents-panel");
+			for (const file of allFiles) {
+				await expect(
+					desktopPanel.getByRole("button", {
+						name: `Dokumente-Icon ${file.name}`,
+					}),
+				).toBeVisible();
+			}
+
+			// Clean up: delete all successfully uploaded files
+			for (const file of allFiles) {
 				await deleteFileViaUI({ page, fileName: file.name });
 			}
 		},
 	);
 
 	testDesktopOnly(
-		"Attempt to upload more than 5 documents shows error for extras",
-		async ({ page, browserName }) => {
-			// Try to upload 6 documents (1 more than the max limit)
-			const allFiles = defaultDocuments.slice(0, 6);
-			const filesToUpload = allFiles.slice(0, 5);
-			const fileToReject = allFiles[5];
+		"Should delete the file from storage when the processing fails",
+		async ({ page, account, browserName, session }) => {
+			const givenStoragePath = `${account.id}/${secondaryDocumentName}`;
 
-			await page.goto("/");
-			await page.waitForLoadState("networkidle");
+			const givenFile = new File(["test content"], secondaryDocumentName, {
+				type: secondaryDocumentType,
+			});
 
-			const filePaths = allFiles.map((file) => file.path);
+			const localAnonClient = createClient<Database>(
+				config.supabaseUrl,
+				config.supabaseAnonKey,
+			);
 
-			if (browserName === "firefox") {
-				page.on("filechooser", async (fileChooser) => {
-					await fileChooser.setFiles([]);
-				});
+			const { error: sessionError } = await localAnonClient.auth.setSession({
+				access_token: session.access_token,
+				refresh_token: session.refresh_token,
+			});
 
-				const fileInput = page.locator('input[type="file"]').first();
-				await fileInput.setInputFiles(filePaths);
-			} else {
-				const fileChooserPromise = page.waitForEvent("filechooser");
-				await page.getByRole("button", { name: "Datei hochladen" }).click();
-				const fileChooser = await fileChooserPromise;
-				await fileChooser.setFiles(filePaths);
-			}
+			expect(sessionError).toBeNull();
 
-			// Wait for the error message for the rejected file
-			await expect(page.getByText("Max. 5 Dateien pro Upload.")).toBeVisible();
+			const { error: uploadError } = await localAnonClient.storage
+				.from("documents")
+				.upload(givenStoragePath, givenFile);
 
-			// Verify the first 5 files are being uploaded/uploaded successfully
-			for (const file of filesToUpload) {
-				await expect(page.getByText(file.name, { exact: true })).toBeVisible();
-			}
+			// Use scope local to avoid revoking the current access_token globally
+			await localAnonClient.auth.signOut({ scope: "local" });
 
-			// Wait for successful uploads to complete
-			for (let i = 0; i < 5; i++) {
-				await page.waitForResponse(
-					(givenResponse) =>
-						givenResponse.url().includes("/documents/process") &&
-						givenResponse.request().method() === "POST",
-					{
-						timeout: 60_000,
-					},
-				);
-			}
+			expect(uploadError).toBeNull();
 
-			// Close the file upload dialog
-			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+			const { data: exists1, error: existsError1 } =
+				await supabaseAdminClient.storage
+					.from(defaultBucketName)
+					.exists(givenStoragePath);
 
-			// Verify only the first 5 files appear in the document list
-			for (const file of filesToUpload) {
-				await expect(
-					page.getByRole("button", { name: `Dokumente-Icon ${file.name}` }),
-				).toBeVisible();
-			}
+			expect(existsError1).toBeNull();
+			expect(exists1).toBe(true);
 
-			// Verify the 6th file is NOT in the document list
-			await expect(
-				page.getByRole("button", {
-					name: `Dokumente-Icon ${fileToReject.name}`,
-				}),
-			).not.toBeVisible();
+			const waitForDeletion = page.waitForResponse(
+				(response) =>
+					response.url().includes("/storage/v1/object/documents") &&
+					response.request().method() === "DELETE",
+			);
 
-			// Clean up: delete all successfully uploaded files
-			for (const file of filesToUpload) {
-				await deleteFileViaUI({ page, fileName: file.name });
-			}
+			await attemptFileUploadViaFileChooser({
+				page,
+				filePath: secondaryDocumentPath,
+				browserName,
+				uploadButtonName: "Datei hochladen",
+			});
+
+			await waitForDeletion;
+
+			const { data: exists2, error: existsError2 } =
+				await supabaseAdminClient.storage
+					.from(defaultBucketName)
+					.exists(givenStoragePath);
+
+			/**
+			 * If the file does not exist, supabase returns false + an error:
+			 * https://github.com/supabase/supabase-js/issues/1363
+			 * So we expect an error to be defined, but we also expect exists to be false.
+			 */
+			expect(existsError2).toBeDefined();
+			expect(exists2).toBe(false);
 		},
 	);
 
@@ -228,10 +305,10 @@ test.describe("Documents", () => {
 
 			// Create a new folder
 			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
 				.click();
 			await page
-				.getByRole("textbox", { name: "Ordner Name" })
+				.getByRole("textbox", { name: "Neuer Ordner" })
 				.fill(givenFolderName);
 			await page
 				.getByRole("button", { name: "Erstellen", exact: true })
@@ -296,6 +373,14 @@ test.describe("Documents", () => {
 				}),
 			).toBeVisible();
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -303,21 +388,131 @@ test.describe("Documents", () => {
 				.locator("label");
 			await folderCheckbox.click();
 
-			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
-			});
-			await deleteButton.click();
+			await page
+				.getByRole("button", { name: "Button klicken, um Elemente zu löschen" })
+				.click();
 
-			const confirmButton = page.getByRole("button", {
-				name: "Löschen",
-				exact: true,
-			});
-			await confirmButton.click();
+			await page
+				.getByRole("dialog")
+				.getByRole("button", { name: "Löschen" })
+				.click();
 
 			// Verify the folder is deleted
 			await expect(
-				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
 			).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Move two files to a folder via drag and drop and back to root",
+		async ({ page, account, session }) => {
+			const folderName = "test-folder-dnd-multi";
+
+			await mockDocumentUpload({
+				userId: account.id,
+				accessToken: session.access_token,
+				accessGroupId: null,
+				fileName: secondaryDocumentName,
+				filePath: secondaryDocumentPath,
+				sourceType: defaultSourceType,
+				bucketName: defaultBucketName,
+			});
+
+			await page.goto("/");
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(folderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			const desktopPanel = page.locator("#desktop-documents-panel");
+			const fileNames = [defaultDocumentName, secondaryDocumentName] as const;
+
+			// Enter multi-select mode
+			await page
+				.getByRole("button", {
+					name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
+				})
+				.click();
+
+			// Select both files via their checkboxes
+			for (const name of fileNames) {
+				await desktopPanel
+					.getByRole("listitem")
+					.filter({ hasText: name })
+					.locator("label")
+					.first()
+					.click();
+			}
+
+			// Drag one file onto the folder — both selected files move together
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await page
+				.getByRole("button", { name: `Ordner-Icon ${folderName}` })
+				.hover();
+			await page.mouse.up();
+
+			// Verify both files are no longer visible in the root folder
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).not.toBeVisible();
+			}
+
+			// Navigate into the folder and verify both files are visible
+			await page
+				.getByRole("button", { name: `Ordner-Icon ${folderName}` })
+				.click();
+
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).toBeVisible();
+			}
+
+			// Select both files again
+			for (const name of fileNames) {
+				await desktopPanel
+					.getByRole("listitem")
+					.filter({ hasText: name })
+					.locator("label")
+					.first()
+					.click();
+			}
+
+			// Drag one file onto the breadcrumb — both move back to root
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await page.getByRole("button", { name: "Meine Dateien" }).hover();
+			await page.mouse.up();
+
+			// Verify both files are no longer visible inside the folder
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).not.toBeVisible();
+			}
+
+			// Navigate back to root and verify both files are visible
+			await page.getByRole("button", { name: "Meine Dateien" }).click();
+
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).toBeVisible();
+			}
 		},
 	);
 
@@ -328,12 +523,12 @@ test.describe("Documents", () => {
 			await page.goto("/");
 
 			const createNewFolderButton = page.getByRole("button", {
-				name: "Neuer Ordner Plus-Icon",
+				name: "Ordner-Icon Ordner erstellen",
 			});
 			await createNewFolderButton.click();
 
 			const folderNameInput = page.getByRole("textbox", {
-				name: "Ordner Name",
+				name: "Neuer Ordner",
 			});
 			await folderNameInput.fill(givenFolderName);
 
@@ -357,6 +552,14 @@ test.describe("Documents", () => {
 			await folderElement.hover();
 			await page.mouse.up();
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -364,8 +567,9 @@ test.describe("Documents", () => {
 				.locator("label");
 			await folderCheckbox.click();
 
+			// Open the delete dialog
 			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
+				name: "Button klicken, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -377,8 +581,11 @@ test.describe("Documents", () => {
 
 			// Assert folder gone
 			await expect(
-				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+				page.getByRole("button", {
+					name: `Ordner-Icon ${givenFolderName}`,
+				}),
 			).not.toBeVisible();
+
 			// Assert document gone as well (no longer visible anywhere)
 			await expect(
 				page.getByRole("button", {
@@ -396,15 +603,15 @@ test.describe("Documents", () => {
 
 			// Create folder
 			await page
-				.getByRole("button", { name: "Neuer Ordner Plus-Icon" })
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
 				.click();
-			await page.getByRole("textbox", { name: "Ordner Name" }).fill(folder);
+			await page.getByRole("textbox", { name: "Neuer Ordner" }).fill(folder);
 			await page
 				.getByRole("button", { name: "Erstellen", exact: true })
 				.click();
 
 			// Ensure second doc exists (upload if necessary)
-			await uploadFileViaDragAndDrop({
+			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: secondaryDocumentName,
 				filePath: secondaryDocumentPath,
@@ -423,6 +630,14 @@ test.describe("Documents", () => {
 				await page.mouse.up();
 			}
 
+			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
+			const enterMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
+			});
+			if (await enterMultiSelectButton.isVisible()) {
+				await enterMultiSelectButton.click();
+			}
+
 			const folderCheckbox = page
 				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
@@ -431,7 +646,7 @@ test.describe("Documents", () => {
 			await folderCheckbox.click();
 
 			const deleteButton = page.getByRole("button", {
-				name: "Löschen Mülleimer-Icon",
+				name: "Button klicken, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -443,7 +658,14 @@ test.describe("Documents", () => {
 
 			// Assert folder gone and both docs gone
 			await expect(
-				page.getByRole("listitem").filter({ hasText: folder }),
+				page
+					.locator("#desktop-documents-panel")
+					.getByRole("listitem")
+					.filter({
+						has: page.getByRole("button", {
+							name: `Ordner-Icon ${folder}`,
+						}),
+					}),
 			).not.toBeVisible();
 			for (const name of [defaultDocumentName, secondaryDocumentName]) {
 				await expect(
@@ -453,10 +675,83 @@ test.describe("Documents", () => {
 		},
 	);
 
+	testDesktopOnly(
+		"Delete Document and Folder via dropdown",
+		async ({ page }) => {
+			const givenFolderName = "test-folder";
+
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect delete button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Dokument löschen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Dokument löschen" }).click();
+
+			// Expect delete dialog to be visible and confirm deletion
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await page.getByRole("button", { name: "Löschen", exact: true }).click();
+
+			// Expect document to be deleted
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).not.toBeVisible();
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Verify the folder is created
+			await expect(
+				page.getByRole("listitem").filter({ hasText: givenFolderName }),
+			).toBeVisible();
+
+			const menuButtonFolder = page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonFolder).toBeVisible();
+
+			await menuButtonFolder.click();
+
+			// Expect delete button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Ordner löschen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Ordner löschen" }).click();
+
+			// Expect delete dialog to be visible and confirm deletion
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await page.getByRole("button", { name: "Löschen", exact: true }).click();
+
+			// Expect folder to be deleted
+			await expect(
+				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
+			).not.toBeVisible();
+		},
+	);
+
 	testDesktopOnly("Drag & drop document to upload", async ({ page }) => {
 		await page.goto("/");
 
-		await uploadFileViaDragAndDrop({
+		await uploadFileViaDragAndDropAndWait({
 			page,
 			fileName: secondaryDocumentName,
 			filePath: secondaryDocumentPath,
@@ -470,7 +765,11 @@ test.describe("Documents", () => {
 		await page.goto("/");
 
 		// The panel should be open by default
-		await expect(page.getByRole("heading", { name: "Dateien" })).toBeVisible();
+		const documentPanelHeading = page.getByRole("heading", {
+			name: "Dateien",
+			exact: true,
+		});
+		await expect(documentPanelHeading).toBeVisible();
 
 		const oldPanelWidth = await page.evaluate(
 			() => document.getElementById("desktop-documents-panel")?.clientWidth,
@@ -508,15 +807,13 @@ test.describe("Documents", () => {
 		await page.getByRole("button", { name: "Ausblenden der Dateien" }).click();
 
 		// The panel should be closed
-		await expect(
-			page.getByRole("heading", { name: "Dateien" }),
-		).not.toBeVisible();
+		await expect(documentPanelHeading).not.toBeVisible();
 
 		// Reopen the documents panel
 		await page.getByRole("button", { name: "Anzeigen der Dateien" }).click();
 
 		// The panel should be open again
-		await expect(page.getByRole("heading", { name: "Dateien" })).toBeVisible();
+		await expect(documentPanelHeading).toBeVisible();
 	});
 
 	testDesktopOnly(
@@ -547,11 +844,37 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
+		"Open pdf document preview via dropdown",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await expect(menuButtonDocument).toBeVisible();
+
+			await menuButtonDocument.click();
+
+			// Expect view button in dropdown to be visible and click it
+			await expect(
+				page.getByRole("option", { name: "Dokument anzeigen" }),
+			).toBeVisible();
+			await page.getByRole("option", { name: "Dokument anzeigen" }).click();
+
+			// Expect preview to be visible
+			await expect(
+				page.getByRole("heading", { name: defaultDocumentName }),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
 		"Upload word document, open it in the preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
 
-			await uploadFileViaDragAndDrop({
+			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: msWordDocumentName,
 				filePath: msWordDocumentPath,
@@ -589,7 +912,7 @@ test.describe("Documents", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
-			await uploadFileViaDragAndDrop({
+			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: msExcelDocumentName,
 				filePath: msExcelDocumentPath,
@@ -625,7 +948,7 @@ test.describe("Documents", () => {
 	testDesktopOnly(
 		"Shows limit reached message and disables upload button when max files uploaded",
 		async ({ page, account, session }) => {
-			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 30;
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 100;
 
 			// Mock multiple document uploads to reach the limit
 			// We already have 1 document from the fixture, so upload (maxFiles - 1) more
@@ -644,19 +967,224 @@ test.describe("Documents", () => {
 			await page.goto("/");
 			await page.waitForLoadState("networkidle");
 
-			// Verify the limit reached info messages are displayed
+			// Verify the limit reached info messages are displayed (scope to desktop panel)
+			const desktopPanel = page.locator("#desktop-documents-panel");
 			await expect(
-				page.getByText(`Sie haben das Limit von ${maxFiles} Dateien erreicht.`),
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
 			).toBeVisible();
 			await expect(
-				page.getByText("Löschen Sie eine Datei, um eine neue hochzuladen."),
+				desktopPanel.getByText(
+					"Löschen Sie eine Datei, um eine neue hochzuladen.",
+				),
 			).toBeVisible();
 
 			// Verify the upload button is disabled
-			const uploadButton = page.getByRole("button", {
+			const uploadButton = desktopPanel.getByRole("button", {
 				name: "Datei hochladen",
 			});
 			await expect(uploadButton).toBeDisabled();
+		},
+	);
+
+	testDesktopOnly(
+		"Hidden default documents do not count toward upload limit",
+		async ({ page, account, session }) => {
+			const maxFiles = Number(process.env.VITE_MAX_TOTAL_FILES_UPLOADED) || 100;
+
+			// Fixture has 1 personal doc; mock 98 more → 99 personal. With 1 default (created above) = 100 visible (at limit)
+			for (let i = 1; i < maxFiles - 1; i++) {
+				await mockDocumentUpload({
+					userId: account.id,
+					accessToken: session.access_token,
+					accessGroupId: null,
+					fileName: `test-document-edge-${i}.pdf`,
+					filePath: defaultDocumentPath,
+					sourceType: defaultSourceType,
+					bucketName: defaultBucketName,
+				});
+			}
+
+			await page.goto("/");
+			await page.waitForLoadState("networkidle");
+
+			const desktopPanel = page.locator("#desktop-documents-panel");
+
+			// At 100 visible → limit reached
+			await expect(
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
+			).toBeVisible();
+			const uploadButton = desktopPanel.getByRole("button", {
+				name: "Datei hochladen",
+			});
+			await expect(uploadButton).toBeDisabled();
+
+			// Delete (hide) the seed default document via UI → 99 visible, one slot free
+			await deleteFileViaUI({ page, fileName: seedDefaultDocumentName });
+
+			// Wait for document list refetch and UI to reflect 99 visible (hidden default no longer counted)
+			await expect(
+				desktopPanel.getByText(`${maxFiles - 1} von ${maxFiles}`),
+			).toBeVisible({ timeout: 15_000 });
+			await expect(uploadButton).toBeEnabled();
+
+			// Upload the 100th visible file using setInputFiles to simulate user file selection
+			await mockDocumentUpload({
+				userId: account.id,
+				accessToken: session.access_token,
+				accessGroupId: null,
+				fileName: secondaryDocumentName,
+				filePath: secondaryDocumentPath,
+				sourceType: "personal_document",
+				bucketName: defaultBucketName,
+			});
+			await page.goto("/");
+
+			// Now at 100 visible → limit reached again
+			await expect(
+				desktopPanel.getByText(
+					`Sie haben das Limit von ${maxFiles} Dateien erreicht.`,
+				),
+			).toBeVisible();
+			await expect(uploadButton).toBeDisabled();
+		},
+	);
+
+	testDesktopOnly(
+		"Move a document into the public folder Verwaltungswissen should not be possible",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Verify the Verwaltungswissen folder exists
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await expect(publicFolder).toBeVisible();
+
+			// Attempt to drag a document onto the Verwaltungswissen folder
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await publicFolder.hover();
+			await page.mouse.up();
+
+			// Verify the document is still visible in the root folder (move was rejected)
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"File upload is not visible when inside the public folder Verwaltungswissen",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const desktopPanel = page.locator("#desktop-documents-panel");
+
+			// Navigate into the Verwaltungswissen folder
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await expect(publicFolder).toBeVisible();
+			await publicFolder.click();
+
+			// Verify the upload button is not visible
+			await expect(
+				desktopPanel.getByRole("button", { name: "Datei hochladen" }),
+			).not.toBeVisible();
+
+			// Verify the drag & drop overlay is not rendered (drop zone is disabled)
+			await expect(
+				desktopPanel.locator("input[type='file']"),
+			).not.toBeAttached();
+		},
+	);
+
+	testDesktopOnly(
+		"Cannot drag & drop a file to upload when inside the public folder Verwaltungswissen",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Navigate into the Verwaltungswissen folder
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await expect(publicFolder).toBeVisible();
+			await publicFolder.click();
+
+			// Prepare a file for drag and drop
+			const buffer = (await import("node:fs"))
+				.readFileSync(secondaryDocumentPath)
+				.toString("base64");
+
+			const dataTransfer = await page.evaluateHandle(
+				async ({ bufferData, localFileName, localFileType }) => {
+					const dt = new DataTransfer();
+					const blob = await fetch(bufferData).then((res) => res.blob());
+					const file = new File([blob], localFileName, { type: localFileType });
+					dt.items.add(file);
+					return dt;
+				},
+				{
+					bufferData: `data:application/octet-stream;base64,${buffer}`,
+					localFileName: secondaryDocumentName,
+					localFileType: secondaryDocumentType,
+				},
+			);
+
+			let uploadRequestTriggered = false;
+			const onRequest = (request: Request) => {
+				if (
+					request.method() === "POST" &&
+					request.url().includes("/documents/process")
+				) {
+					uploadRequestTriggered = true;
+				}
+			};
+			page.on("request", onRequest);
+
+			// Attempt drag & drop on the documents panel
+			const desktopPanel = page.locator("#desktop-documents-panel");
+			await desktopPanel.dispatchEvent("dragenter", { dataTransfer });
+			await desktopPanel.dispatchEvent("dragover", { dataTransfer });
+			await desktopPanel.dispatchEvent("drop", { dataTransfer });
+
+			const documentUpload = desktopPanel.getByText(secondaryDocumentName);
+			await expect(documentUpload).not.toBeVisible({ timeout: 1_000 });
+			expect(uploadRequestTriggered).toBe(false);
+
+			page.off("request", onRequest);
+		},
+	);
+
+	testDesktopOnly(
+		"Navigating into a public folder should disable the multi-select",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const activateMultiSelectButton = page.getByRole("button", {
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
+			});
+			await activateMultiSelectButton.click();
+
+			const firstSelectItemCheckbox = page
+				.getByRole("img", { name: "Checkbox-icon (nicht ausgewä" })
+				.first();
+			await expect(firstSelectItemCheckbox).toBeVisible();
+
+			const publicFolder = page.getByRole("button", {
+				name: "Ordner-Icon Verwaltungswissen",
+			});
+			await publicFolder.click();
+
+			await expect(firstSelectItemCheckbox).not.toBeVisible();
 		},
 	);
 });

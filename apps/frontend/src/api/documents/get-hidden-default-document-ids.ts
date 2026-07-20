@@ -1,7 +1,9 @@
 import { supabase } from "../../../supabase-client";
 import { useAuthStore } from "../../store/auth-store";
 
-export async function getHiddenDefaultDocumentIds(): Promise<number[]> {
+export async function getHiddenDefaultDocumentIds(
+	signal: AbortSignal,
+): Promise<number[]> {
 	const { session } = useAuthStore.getState();
 	if (!session?.user.id) {
 		return [];
@@ -10,7 +12,8 @@ export async function getHiddenDefaultDocumentIds(): Promise<number[]> {
 	const { data, error } = await supabase
 		.from("user_hidden_default_documents")
 		.select("document_id")
-		.eq("user_id", session.user.id);
+		.eq("user_id", session.user.id)
+		.abortSignal(signal);
 
 	if (error || !data) {
 		return [];

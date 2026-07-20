@@ -7,6 +7,7 @@ import { updateProfilesTable } from "../api/auth/update-profiles-table.ts";
 import { updateUserMetadata } from "../api/auth/update-user-metadata.ts";
 import { useErrorStore } from "./error-store.ts";
 import { updateAddressedFormal } from "../api/user/update-addressed-formal.ts";
+import { updatePersonalPrompt } from "../api/user/update-personal-prompt.ts";
 
 interface UserStore {
 	user: User | null;
@@ -17,8 +18,13 @@ interface UserStore {
 		academic_title: string;
 		personal_title: string;
 	}) => Promise<void>;
-	deleteAccount: () => Promise<void>;
-	updateAddressedFormal: (isAddressedFormal: boolean) => Promise<void>;
+	deleteAccount: () => Promise<{ error: Error | null }>;
+	updateAddressedFormal: (
+		isAddressedFormal: boolean,
+	) => Promise<{ error: Error | null }>;
+	updatePersonalPrompt: (
+		personalPrompt: string,
+	) => Promise<{ error: Error | null }>;
 }
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -67,28 +73,41 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
 		if (error) {
 			useErrorStore.getState().handleError(error);
-			return;
+			return { error };
 		}
 
 		await get().getUser(new AbortController().signal);
+		return { error: null };
+	},
+
+	async updatePersonalPrompt(personalPrompt: string) {
+		const { error } = await updatePersonalPrompt(personalPrompt);
+
+		if (error) {
+			useErrorStore.getState().handleError(error);
+			return { error };
+		}
+
+		await get().getUser(new AbortController().signal);
+		return { error: null };
 	},
 
 	deleteAccount: async () => {
 		const session = useAuthStore.getState().session;
 		if (!session) {
-			useErrorStore
-				.getState()
-				.handleError(new Error("No active session found"));
-			return;
+			const error = new Error("account_deletion_failed");
+			useErrorStore.getState().handleError(error);
+			return { error };
 		}
 		const { error } = await deleteUser();
 		if (error) {
 			useErrorStore.getState().handleError(error);
-			return;
+			return { error };
 		}
 		// Clear user data
 		set({ user: null });
 		// Clear session
 		await useAuthStore.getState().logout();
+		return { error: null };
 	},
 }));

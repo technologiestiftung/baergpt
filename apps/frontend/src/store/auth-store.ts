@@ -6,13 +6,13 @@ import { handleSessionChange } from "../api/session/handle-session-change.ts";
 import { updatePassword } from "../api/auth/update-password.ts";
 import { requestPasswordResetByEmail } from "../api/auth/request-password-reset-by-email.ts";
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
-import { useIsActiveStore } from "./use-is-active-store.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
-import { getAllowedEmailDomains } from "../api/auth/get-allowed-email-domains.ts";
 import { registerUser } from "../api/auth/register-user.ts";
 import { resendEmailConfirmation } from "../api/auth/resend-email-confirmation.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
+import type { Span } from "@sentry/react";
+import { getIsUserBanned } from "../api/auth/get-is-user-banned.ts";
 
 let resendTime: number | null = null;
 
@@ -29,12 +29,13 @@ interface AuthStore {
 	isPasswordRecoveryMode: boolean;
 	isUserAdmin: boolean;
 	isAdminStatusLoaded: boolean;
-	allowedEmailDomains?: string[];
+	isBanned: boolean | null;
 	register: (args: {
 		firstName: string;
 		lastName: string;
 		email: string;
 		password: string;
+		span: Span;
 	}) => Promise<void>;
 	updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
 	updatePassword: (newPassword: string) => Promise<void>;
@@ -45,10 +46,14 @@ interface AuthStore {
 	}) => Promise<void>;
 	requestPasswordReset: (email: string) => Promise<void>;
 	resetPassword: (newPassword: string) => Promise<void>;
-	login: (args: { email: string; password: string }) => Promise<void>;
+	login: (args: {
+		email: string;
+		password: string;
+		span: Span;
+	}) => Promise<void>;
 	logout: () => Promise<void>;
 	checkIsUserAdmin: (signal: AbortSignal) => Promise<void>;
-	getAllowedEmailDomains: (signal: AbortSignal) => Promise<void>;
+	checkIsUserBanned: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>()((set, get) => {
@@ -149,8 +154,9 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isPasswordRecoveryMode: false,
 		isUserAdmin: false,
 		isAdminStatusLoaded: false,
+		isBanned: null,
 
-		async register({ firstName, lastName, email, password }) {
+		async register({ firstName, lastName, email, password, span }) {
 			const { data, error } = await registerUser({
 				email,
 				password,
@@ -159,7 +165,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			});
 
 			if (error) {
-				useAuthErrorStore.getState().handleError(error);
+				useAuthErrorStore.getState().handleError(error, span);
 				return;
 			}
 
@@ -277,26 +283,25 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			set({ isPasswordResetSuccessful: true });
 		},
 
-		async login({ email, password }) {
+		async login({ email, password, span }) {
 			const { error } = await supabase.auth.signInWithPassword({
 				email,
 				password,
 			});
 
-			if (error) {
-				console.error("Login error:", error);
-
-				if (error.message === "Email not confirmed") {
-					set({
-						unconfirmedEmail: email,
-						emailConfirmationStatus: "unconfirmed",
-					});
-					return;
-				}
-
-				useAuthErrorStore.getState().handleError(error);
+			if (!error) {
 				return;
 			}
+
+			if (error.message === "Email not confirmed") {
+				set({
+					unconfirmedEmail: email,
+					emailConfirmationStatus: "unconfirmed",
+				});
+				return;
+			}
+
+			useAuthErrorStore.getState().handleError(error, span);
 		},
 
 		async logout() {
@@ -304,17 +309,12 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			set({
 				session: null,
 				unconfirmedEmail: null,
+				isBanned: null,
 				emailConfirmationStatus: "unknown",
 				isInitialized: true,
 				isUserAdmin: false,
 				isAdminStatusLoaded: false,
 			});
-			/**
-			 * Reset the isActive state when logging out,
-			 * so that a new login starts with a fresh state,
-			 * and not with the previous user's active state.
-			 */
-			useIsActiveStore.getState().resetIsActive();
 
 			/**
 			 * In the past, sometimes the session was not destroyed properly.
@@ -346,9 +346,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			set({ isUserAdmin: isAdmin, isAdminStatusLoaded });
 		},
 
-		async getAllowedEmailDomains(signal: AbortSignal) {
-			const allowedEmailDomains = await getAllowedEmailDomains(signal);
-			set({ allowedEmailDomains });
+		async checkIsUserBanned() {
+			const isUserBanned = await getIsUserBanned();
+
+			set({ isBanned: isUserBanned });
 		},
 	};
 });

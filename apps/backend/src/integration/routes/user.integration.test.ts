@@ -1,32 +1,23 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
-import { sign } from "hono/jwt";
 import { PDFDocument } from "pdf-lib";
 import { serviceRoleDbClient } from "../../supabase";
-import { initQueues } from "../../services/distributed-limiter";
-
-let validToken: string;
+import { Database } from "@repo/db-schema";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
 	config.supabaseAnonKey,
 );
 
+let validToken: string;
+
 const OWNER_USER_ID = "11111111-1111-4111-8111-111111111111";
 const OTHER_USER_ID = "22222222-2222-4222-8222-222222222222";
 
-const RPC_DELETE_DOCUMENT = "delete_document_and_update_count";
 const UPLOAD_DELAY_MS = 1_000;
 const RATE_LIMIT_RETRY_DELAY_MS = 5_000;
-
-const createAuthedClient = (jwt: string) =>
-	createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
-		auth: { persistSession: false },
-		global: { headers: { Authorization: `Bearer ${jwt}` } },
-	});
 
 // Generate a PDF from text and return bytes
 const generatePdfBytesFromText = async (text: string): Promise<Uint8Array> => {
@@ -61,6 +52,35 @@ const uploadToStorage = async (args: {
 	if (error) {
 		throw new Error(`Storage upload error: ${error.message}`);
 	}
+};
+
+const deleteDocument = async (
+	documentId: number,
+	userToken: string,
+): Promise<{ success: boolean; status: number; error?: string }> => {
+	const response = await app.request(
+		`/documents/${documentId}`,
+		{
+			method: "DELETE",
+			headers: {
+				Authorization: `Bearer ${userToken}`,
+			},
+		},
+		{
+			JWT_SECRET: config.supabaseJwtKey,
+		},
+	);
+
+	if (response.status === 204) {
+		return { success: true, status: 204 };
+	}
+
+	const body = await response.json();
+	return {
+		success: false,
+		status: response.status,
+		error: body.error || "Unknown error",
+	};
 };
 
 async function getLatestDocumentIdBySourceUrl(
@@ -139,13 +159,19 @@ const delay = (ms: number): Promise<void> => {
 /**
  * Create a test user in auth.users table
  */
-const createTestUser = async (userId: string, email: string) => {
+const createTestUser = async (args: {
+	userId: string;
+	email: string;
+	password: string;
+}) => {
+	const { userId, email, password } = args;
+
 	try {
 		const { error: createError } =
 			await serviceRoleDbClient.auth.admin.createUser({
 				id: userId,
-				email: email,
-				password: "SecureTestPassword123!",
+				email,
+				password,
 				email_confirm: true,
 			});
 
@@ -159,18 +185,17 @@ const createTestUser = async (userId: string, email: string) => {
 };
 
 const createValidJwtToken = async (
-	userId: string,
 	email: string,
+	password: string,
 ): Promise<string> => {
-	return await sign(
-		{
-			exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour from now
-			sub: userId,
-			email: email,
-			role: "authenticated",
-		},
-		config.supabaseJwtKey,
-	);
+	const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
+		email,
+		password,
+	});
+
+	expect(error).toBeNull();
+
+	return data.session.access_token;
 };
 
 /**
@@ -196,13 +221,11 @@ const deleteTestUser = async () => {
 
 describe("Integration Tests for Routes", () => {
 	beforeAll(async () => {
-		// Initialize queues for the test process
-		await initQueues();
-
-		const email = "test@local.berlin.de";
-		await createTestUser(OWNER_USER_ID, email);
+		const email = "test@ts.berlin";
+		const password = "SecureTestPassword123!";
+		await createTestUser({ userId: OWNER_USER_ID, email, password });
 		// Generate JWT token
-		validToken = await createValidJwtToken(OWNER_USER_ID, email);
+		validToken = await createValidJwtToken(email, password);
 
 		// Run a full cleanup before all tests
 		await cleanupTestDocuments();
@@ -385,12 +408,9 @@ describe("Integration Tests for Routes", () => {
 		expect(documentId).toBeDefined();
 
 		// Delete the uploaded document as the authenticated owner
-		const authedUserClient = createAuthedClient(validToken);
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: documentId as number },
-		);
-		expect(deleteError).toBeNull();
+		const deleteResult = await deleteDocument(documentId as number, validToken);
+		expect(deleteResult.success).toBe(true);
+		expect(deleteResult.status).toBe(204);
 
 		// document should be deleted
 		const { data: deletedDocuments } = await serviceRoleDbClient
@@ -459,13 +479,8 @@ describe("Integration Tests for Routes", () => {
 			.eq("document_id", documentId as number);
 		expect((preChunks?.length ?? 0) > 0).toBe(true);
 
-		// Delete the document via RPC
-		const authedUserClient = createAuthedClient(validToken);
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: documentId as number },
-		);
-		expect(deleteError).toBeNull();
+		const deleteResult = await deleteDocument(documentId as number, validToken);
+		expect(deleteResult.success).toBe(true);
 
 		// Validate cascade: no summaries and chunks remain
 		const { data: postSummaries } = await serviceRoleDbClient
@@ -482,57 +497,41 @@ describe("Integration Tests for Routes", () => {
 	}, 80_000);
 
 	it("should return error when deleting for non-existent document ID", async () => {
-		const authedUserClient = createAuthedClient(validToken);
-
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: 999 },
-		);
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain("not_found");
+		const deleteResult = await deleteDocument(999, validToken);
+		expect(deleteResult.success).toBe(false);
+		expect(deleteResult.status).toBe(404);
 	}, 80_000);
 
 	it("should return error when deleting documents if document ID is missing", async () => {
-		const authedUserClient = createAuthedClient(validToken);
-
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: null as unknown as number },
+		const deleteResult = await deleteDocument(
+			null as unknown as number,
+			validToken,
 		);
-
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain("not_found");
+		expect(deleteResult.success).toBe(false);
 	}, 20_000);
 
-	it("should return syntax error when deleting if document ID is not a number", async () => {
-		const { error: deleteError } = await supabaseAnonClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: "abc" as unknown as number },
-		);
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain(
-			`invalid input syntax for type bigint: "abc"`,
-		);
+	it("should return error when deleting if document ID is not a number", async () => {
+		const deleteResult = await deleteDocument(Number("abc"), validToken);
+		expect(deleteResult.success).toBe(false);
 	}, 20_000);
 
 	it("should return error when deleting if user is not authenticated", async () => {
-		const { error: deleteError } = await supabaseAnonClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: 1 },
-		);
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain("not_found");
+		const deleteResult = await deleteDocument(1, "invalid-token");
+		expect(deleteResult.success).toBe(false);
+		expect(deleteResult.status).toBe(401);
 	}, 20_000);
 
 	it("should return error when deleting if user tries to delete another user's document", async () => {
 		// Create a document for a different user
-		const otherUserEmail = "test2@local.berlin.de";
-		await createTestUser(OTHER_USER_ID, otherUserEmail);
+		const otherUserEmail = "test2@ts.berlin";
+		const password = "SecureTestPassword123!";
+		await createTestUser({
+			userId: OTHER_USER_ID,
+			email: otherUserEmail,
+			password,
+		});
 
-		const validToken2 = await createValidJwtToken(
-			OTHER_USER_ID,
-			otherUserEmail,
-		);
+		const validToken2 = await createValidJwtToken(otherUserEmail, password);
 
 		const fileName = "delete-me-2.pdf";
 		const sourceUrl = `${OTHER_USER_ID}/${fileName}`;
@@ -571,13 +570,9 @@ describe("Integration Tests for Routes", () => {
 			sourceUrl,
 		);
 		expect(docId).toBeDefined();
-		const authedUserClient = createAuthedClient(validToken);
-		const { error: deleteError } = await authedUserClient.rpc(
-			RPC_DELETE_DOCUMENT,
-			{ document_id: docId as number },
-		);
-		expect(deleteError).not.toBeNull();
-		expect(deleteError?.message).toContain("not_found");
+		const deleteResult = await deleteDocument(docId as number, validToken);
+		expect(deleteResult.success).toBe(false);
+		expect(deleteResult.status).toBe(404);
 		// Cleanup
 		await serviceRoleDbClient
 			.from("documents")

@@ -1,0 +1,85 @@
+- name: Clone Supabase repo (shallow)
+  ansible.builtin.git:
+    repo: "{{ supabase_repo }}"
+    dest: "{{ supabase_src }}"
+    version: "{{ supabase_ref }}"
+    depth: 1
+    force: true
+
+- name: Ensure Supabase target dir exists
+  ansible.builtin.file:
+    path: "{{ supabase_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy docker folder to target
+  ansible.builtin.command:
+    cmd: "cp -r {{ supabase_src }}/docker/. {{ supabase_dir }}/"
+  args:
+    creates: "{{ supabase_dir }}/docker-compose.yml"
+
+- name: Overwrite docker-compose.yml with project version
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/docker-compose.yml"
+    dest: "{{ supabase_dir }}/docker-compose.yml"
+    mode: "0644"
+    force: true
+
+- block:
+    - name: Render .env from 1Password (local)
+      ansible.builtin.command:
+        cmd: "op read 'op://{{ lookup('env', 'ENV_FILE_REF') }}' --out-file {{ playbook_dir }}/../supabase/.env --force"
+      delegate_to: localhost
+      run_once: true
+      become: false
+      no_log: true
+      check_mode: false
+
+    - name: Upload resolved .env
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../supabase/.env"
+        dest: "{{ supabase_dir }}/.env"
+        mode: "0640"
+
+  always:
+    - name: Delete local .env after upload
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../supabase/.env"
+        state: absent
+      delegate_to: localhost
+      become: false
+
+- name: Upload otel-collector config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/otel-config.yml"
+    dest: "{{ supabase_dir }}/otel-config.yml"
+    mode: "0644"
+    force: true
+  notify: Recreate otel-collector
+
+- name: Upload monitoring compose overlay
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/docker-compose.monitoring.yml"
+    dest: "{{ supabase_dir }}/docker-compose.monitoring.yml"
+    mode: "0644"
+    force: true
+  notify: Recreate otel-collector
+
+- name: Render monitoring.env from inventory
+  ansible.builtin.template:
+    src: monitoring.env.j2
+    dest: "{{ supabase_dir }}/monitoring.env"
+    mode: "0640"
+  notify: Recreate otel-collector
+
+- name: Pull images
+  ansible.builtin.command:
+    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml pull"
+  args:
+    chdir: "{{ supabase_dir }}"
+
+- name: Start Supabase + monitoring stack
+  ansible.builtin.command:
+    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d"
+  args:
+    chdir: "{{ supabase_dir }}"

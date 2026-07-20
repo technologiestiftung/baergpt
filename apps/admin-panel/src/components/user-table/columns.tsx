@@ -13,14 +13,10 @@ export const badgeColors = new Map<User["status"], string>([
 		"bg-emerald-100/50 text-emerald-700 dark:text-emerald-300 border-emerald-300",
 	],
 	[
-		"inactive",
+		"banned",
 		"bg-amber-100/30 text-amber-600 dark:text-amber-200 border-amber-200",
 	],
 	["admin", "bg-slate-200 border-slate-400 text-slate-800"],
-	[
-		"invited",
-		"bg-blue-100/50 text-blue-700 dark:text-blue-300 border-blue-300",
-	],
 ]);
 
 export const columns: ColumnDef<User>[] = [
@@ -43,13 +39,13 @@ export const columns: ColumnDef<User>[] = [
 		accessorKey: "registered_at",
 		header: Content["userTable.tableHeader.registeredAt"],
 		enableSorting: true,
-		cell: ({ getValue }) => formatDate(getValue() as string),
+		cell: ({ getValue }) => formatDate(getValue() as string | null),
 	},
 	{
 		accessorKey: "last_login_at",
 		header: Content["userTable.tableHeader.lastLoginAt"],
 		enableSorting: true,
-		cell: ({ getValue }) => formatDate(getValue() as string),
+		cell: ({ getValue }) => formatDate(getValue() as string | null),
 	},
 	{
 		accessorKey: "num_inferences",

@@ -7,28 +7,74 @@ import {
 	expect,
 	it,
 } from "vitest";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../config";
 import { serviceRoleDbClient as supabaseAdminClient } from "../supabase";
 import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import { EmbeddingService } from "../services/embedding-service";
 import type { KnowledgeBaseDocument } from "../types/common";
+import app from "../index";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
 	config.supabaseAnonKey,
 );
 
-const EMBEDDING_LENGTH = config.jinaEmbeddingDimensions;
+const EMBEDDING_LENGTH = config.mistralEmbeddingDimensions;
 const PUBLIC_BUCKET = "public_documents";
 const SMALL_FILE_SIZE = 500;
 
 const createDeterministicEmbedding = (length = EMBEDDING_LENGTH) =>
 	Array.from({ length }, (_, i) => (i % 10) / 10);
 
+// Helper to create JWT token for testing
+const createTestToken = async (
+	email: string,
+	password: string,
+): Promise<string> => {
+	const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
+		email,
+		password,
+	});
+
+	expect(error).toBeNull();
+
+	return data.session.access_token;
+};
+
+// Helper to delete document via backend route
+const deleteDocument = async (
+	documentId: number,
+	userToken: string,
+): Promise<{ success: boolean; status: number; error?: string }> => {
+	const response = await app.request(
+		`/documents/${documentId}`,
+		{
+			method: "DELETE",
+			headers: {
+				Authorization: `Bearer ${userToken}`,
+			},
+		},
+		{
+			JWT_SECRET: config.supabaseJwtKey,
+		},
+	);
+
+	if (response.status === 204) {
+		return { success: true, status: 204 };
+	}
+
+	const body = await response.json();
+	return {
+		success: false,
+		status: response.status,
+		error: body.error || "Unknown error",
+	};
+};
+
 describe("Base Knowledge Integration Tests", () => {
-	const testUserEmail = "base-knowledge-test-user@local.berlin.de";
+	const testUserEmail = "base-knowledge-test-user@ts.berlin";
 	const testUserPassword = "SecurePassword123!";
 
 	let testUserId: string;
@@ -58,7 +104,7 @@ describe("Base Knowledge Integration Tests", () => {
 				await supabaseAdminClient.auth.admin.listUsers();
 			expect(listErr).toBeNull();
 			const existing = existingUsers.users.find(
-				(u) => u.email === testUserEmail,
+				(u: User) => u.email === testUserEmail,
 			);
 			expect(existing).toBeDefined();
 			testUserId = existing ? existing.id : "";
@@ -116,19 +162,6 @@ describe("Base Knowledge Integration Tests", () => {
 
 		expect(summaryError).toBeNull();
 
-		// Create a deterministic test embedding for the summary (stable across runs)
-		const testEmbedding = createDeterministicEmbedding();
-
-		// Update summary with embedding
-		const { error: embeddingError } = await supabaseAdminClient
-			.from("document_summaries")
-			.update({
-				summary_jina_embedding: JSON.stringify(testEmbedding),
-			})
-			.eq("document_id", documentId);
-
-		expect(embeddingError).toBeNull();
-
 		// Create document chunks
 		const chunkEmbedding = createDeterministicEmbedding();
 
@@ -143,7 +176,7 @@ describe("Base Knowledge Integration Tests", () => {
 				owned_by_user_id: null,
 				folder_id: null,
 				access_group_id: accessGroupId,
-				chunk_jina_embedding: JSON.stringify(chunkEmbedding),
+				chunk_mistral_embedding: JSON.stringify(chunkEmbedding),
 			});
 
 		expect(chunkError).toBeNull();
@@ -214,7 +247,7 @@ describe("Base Knowledge Integration Tests", () => {
 	it("should perform hybrid search on base knowledge documents", async () => {
 		// Mock embedding generation to avoid external API dependency in tests
 		// override for test
-		embeddingService.generateJinaEmbedding = async () => ({
+		embeddingService.generateMistralEmbedding = async () => ({
 			embedding: Array.from(
 				{ length: EMBEDDING_LENGTH },
 				(_, i) => (i % 10) / 10,
@@ -235,9 +268,8 @@ describe("Base Knowledge Integration Tests", () => {
 
 		// Generate embedding for test query
 		const testQuery = "artificial intelligence";
-		const embeddingResponse = await embeddingService.generateJinaEmbedding(
+		const embeddingResponse = await embeddingService.generateMistralEmbedding(
 			testQuery,
-			"retrieval.query",
 			testUserId,
 		);
 
@@ -396,12 +428,12 @@ describe("Base Knowledge Integration Tests", () => {
 
 			expect(checkError).toBeNull();
 			expect(docExists).not.toBeNull();
-			// Test admin deletion through the database function
-			const { error: deleteError } = await supabaseAnonClient.rpc(
-				"delete_document_and_update_count",
-				{ document_id: testDoc.id },
-			);
-			expect(deleteError).toBeNull();
+
+			// Test admin deletion through the backend route
+			const adminToken = await createTestToken(testUserEmail, testUserPassword);
+			const deleteResult = await deleteDocument(testDoc.id, adminToken);
+			expect(deleteResult.success).toBe(true);
+			expect(deleteResult.status).toBe(204);
 
 			// Verify the document was deleted from database
 			const { data: deletedDoc, error: verifyError } = await supabaseAdminClient
@@ -501,7 +533,7 @@ describe("Base Knowledge Integration Tests", () => {
 						owned_by_user_id: null,
 						folder_id: null,
 						access_group_id: accessGroupId,
-						chunk_jina_embedding: JSON.stringify(testEmbedding),
+						chunk_mistral_embedding: JSON.stringify(testEmbedding),
 					});
 
 				expect(chunkError).toBeNull();
@@ -582,7 +614,7 @@ describe("Base Knowledge Integration Tests", () => {
 					owned_by_user_id: null, // Should be blocked
 					folder_id: null,
 					access_group_id: accessGroupId,
-					chunk_jina_embedding: JSON.stringify(testEmbedding),
+					chunk_mistral_embedding: JSON.stringify(testEmbedding),
 				});
 
 			expect(chunkError).not.toBeNull();
@@ -630,12 +662,13 @@ describe("Base Knowledge Integration Tests", () => {
 			expect(adminCheck).toBeNull();
 
 			// Attempt to delete the public document as a non-admin user should fail
-			const { error: deleteError } = await supabaseAnonClient.rpc(
-				"delete_document_and_update_count",
-				{ document_id: testDoc.id },
+			const nonAdminToken = await createTestToken(
+				testUserEmail,
+				testUserPassword,
 			);
-			expect(deleteError).not.toBeNull();
-			expect(deleteError?.message).toContain("unauthorized");
+			const deleteResult = await deleteDocument(testDoc.id, nonAdminToken);
+			expect(deleteResult.success).toBe(false);
+			expect(deleteResult.status).toBe(404);
 
 			// Verify the document still exists
 			const { data: stillExists, error: verifyError } =

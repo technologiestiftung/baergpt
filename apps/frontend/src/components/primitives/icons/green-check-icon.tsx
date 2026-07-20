@@ -1,11 +1,14 @@
 import Content from "../../../content";
 
-export function GreenCheckIcon() {
+type GreenCheckIconProps = {
+	size?: "small" | "large";
+};
+export function GreenCheckIcon({ size = "large" }: GreenCheckIconProps) {
 	return (
 		<img
 			src="/icons/green-check-icon.svg"
-			width={24}
-			height={24}
+			width={size === "small" ? 20 : 24}
+			height={size === "small" ? 20 : 24}
 			alt={Content["greenCheckIcon.imgAlt"]}
 		/>
 	);

@@ -6,19 +6,25 @@ import { AuthLayout } from "../../layouts/auth-layout.tsx";
 import { useAuthStore } from "../../store/auth-store.ts";
 import Content from "../../content.ts";
 import { useAuthErrorStore } from "../../store/auth-error-store.ts";
+import * as Sentry from "@sentry/react";
 
 export function LoginPage() {
 	const { error } = useAuthErrorStore();
 	const { login } = useAuthStore();
 	const formRef = useRef<HTMLFormElement | null>(null);
 
-	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
 		const email = event.currentTarget.email.value;
 		const password = event.currentTarget.password.value;
 
-		login({ email, password });
+		await Sentry.startSpan(
+			{ name: "User Login", op: "user.login.submit" },
+			async (span) => {
+				await login({ email, password, span });
+			},
+		);
 	};
 
 	return (
@@ -40,6 +46,7 @@ export function LoginPage() {
 							<EmailInput
 								id="email"
 								placeholder="vorname.name@subdomain.berlin.de"
+								useEmailAllowedCheck={false}
 							/>
 						</label>
 

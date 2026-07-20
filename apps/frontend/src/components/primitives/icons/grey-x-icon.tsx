@@ -1,11 +1,14 @@
 import Content from "../../../content";
 
-export function GreyXIcon() {
+type GreyXIconProps = {
+	size?: "small" | "large";
+};
+export function GreyXIcon({ size = "large" }: GreyXIconProps) {
 	return (
 		<img
 			src="/icons/grey-x-icon.svg"
-			width={20}
-			height={20}
+			width={size === "small" ? 20 : 24}
+			height={size === "small" ? 20 : 24}
 			alt={Content["greyXIcon.imgAlt"]}
 		/>
 	);

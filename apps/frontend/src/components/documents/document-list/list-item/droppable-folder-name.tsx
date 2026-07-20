@@ -2,19 +2,19 @@ import React, { useRef } from "react";
 import { FolderIcon } from "../../../primitives/icons/folder-icon.tsx";
 import { getListItemName } from "./utils/get-list-item-name.ts";
 import { getDragAndDropId } from "./utils/get-drag-and-drop-id.ts";
-import type { DocumentFolder } from "../../../../common.ts";
-import { useFolderStore } from "../../../../store/folder-store.ts";
+import type { UserFolder } from "../../../../common.ts";
+import { useCurrentFolderStore } from "../../../../store/use-current-folder-store.ts";
 import { useDragAndDropStore } from "../../../../store/drag-and-drop-store.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
 
 type DroppableFolderNameProps = {
-	item: DocumentFolder;
+	item: UserFolder;
 };
 
 const TOOLTIP_DELAY = 600;
 
 export function DroppableFolderName({ item }: DroppableFolderNameProps) {
-	const { setCurrentFolder } = useFolderStore();
+	const { setCurrentFolder } = useCurrentFolderStore();
 	const { hoveredFolderId } = useDragAndDropStore();
 
 	const isHoveredForDrop = getDragAndDropId(item) === hoveredFolderId;
@@ -52,7 +52,7 @@ export function DroppableFolderName({ item }: DroppableFolderNameProps) {
 
 	return (
 		<button
-			className={`flex w-0 grow gap-x-2 py-1 rounded-3px focus-visible:outline-default ${isHoveredForDrop && "bg-hellblau-100 outline-default outline-dunkelblau-100"}`}
+			className={`flex w-0 grow gap-x-1 rounded-3px focus-visible:outline-default`}
 			onClick={() => {
 				setCurrentFolder(item);
 				handleMouseLeave();
@@ -62,8 +62,11 @@ export function DroppableFolderName({ item }: DroppableFolderNameProps) {
 			onFocus={handleMouseEnter}
 			onBlur={handleMouseLeave}
 		>
-			<FolderIcon />
-			<span ref={spanRef} className="truncate pointer-events-none">
+			<FolderIcon variant={isHoveredForDrop ? "darkblue" : "default"} />
+			<span
+				ref={spanRef}
+				className="truncate pointer-events-none text-sm leading-5 font-normal text-dunkelblau-100"
+			>
 				{getListItemName(item)}
 			</span>
 		</button>

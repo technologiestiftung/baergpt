@@ -2,9 +2,12 @@ import { useEffect } from "react";
 import { useAuthStore } from "../store/use-auth-store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
+import { useAuthErrorStore } from "@/store/use-auth-error-store.ts";
+import { useUserStore } from "@/store/use-user-store.ts";
 
 export function useSessionRedirect() {
 	const session = useAuthStore((state) => state.session);
+	const isUserAdmin = useUserStore((state) => state.isUserAdmin);
 
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -14,22 +17,21 @@ export function useSessionRedirect() {
 			session,
 			pathname: location.pathname,
 			navigate,
-		});
-
-		if (!session) {
-			return;
-		}
-	}, [session]);
+			isUserAdmin,
+		}).catch(console.error);
+	}, [session, location.pathname, navigate, isUserAdmin]);
 }
 
-function redirectBasedOnSession({
+async function redirectBasedOnSession({
 	session,
 	pathname,
 	navigate,
+	isUserAdmin,
 }: {
 	session: Session | null | undefined;
 	pathname: string;
 	navigate: (path: string) => void;
+	isUserAdmin: boolean | null;
 }) {
 	/**
 	 * On first load the session is undefined and
@@ -41,6 +43,18 @@ function redirectBasedOnSession({
 
 	if (!session) {
 		handleUnauthorized(pathname, navigate);
+		return;
+	}
+
+	if (isUserAdmin === null) {
+		return;
+	}
+
+	if (!isUserAdmin) {
+		await useAuthStore.getState().logout();
+		useAuthErrorStore
+			.getState()
+			.handleError(new Error("User account is not admin or has been banned."));
 		return;
 	}
 
@@ -61,7 +75,13 @@ function handleUnauthorized(
 }
 
 function handleAuthorized(pathname: string, navigate: (path: string) => void) {
-	const protectedPages = ["/", "/account-activated/", "/base-knowledge/"];
+	const protectedPages = [
+		"/",
+		"/product-dashboard/",
+		"/base-knowledge/",
+		"/domain-allowlist/",
+		"/individual-email-allowlist/",
+	];
 
 	// Allow access to protected pages
 	if (protectedPages.includes(pathname)) {

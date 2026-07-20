@@ -1,76 +1,124 @@
 import { create } from "zustand";
 import type { MutableRefObject } from "react";
 
+const SCROLL_THRESHOLD = 32;
+const USER_MESSAGE_SELECTOR = '[data-testid="user-message-markdown-container"]';
+
+type OutputRef = MutableRefObject<HTMLOutputElement | null>;
+type DivRef = MutableRefObject<HTMLDivElement | null>;
+
 interface ChatScrollingStore {
-	hasUserScrolledUp: boolean;
-	setHasUserScrolledUp: (hasUserScrolled: boolean) => void;
-
-	previousScrollTop: number;
-	setPreviousScrollTop: (previousScrollTop: number) => void;
-
-	scrollToBottom: (ref: MutableRefObject<HTMLDivElement | null>) => void;
-	handleScroll: (ref: MutableRefObject<HTMLDivElement | null>) => void;
+	containerRef: OutputRef;
+	contentRef: DivRef;
+	spacerRef: DivRef;
+	isAtBottom: boolean;
+	isReservingSpace: boolean;
+	updateIsAtBottom: () => void;
+	adjustSpacer: () => void;
+	scrollNewMessageToTop: () => void;
+	scrollToBottom: (behavior?: "auto" | "smooth") => void;
 }
 
 export const useChatScrollingStore = create<ChatScrollingStore>()(
 	(set, get) => ({
-		hasUserScrolledUp: false,
-		setHasUserScrolledUp: (hasUserScrolled) =>
-			set({ hasUserScrolledUp: hasUserScrolled }),
+		containerRef: { current: null },
+		contentRef: { current: null },
+		spacerRef: { current: null },
+		isAtBottom: true,
+		isReservingSpace: false,
 
-		previousScrollTop: 0,
-		setPreviousScrollTop: (previousScrollTop) => set({ previousScrollTop }),
-
-		scrollToBottom: (ref) => {
-			const messagesContainer = ref.current;
-
-			if (!messagesContainer) {
+		updateIsAtBottom: () => {
+			const container = get().containerRef.current;
+			if (!container) {
 				return;
 			}
-
-			const { hasUserScrolledUp } = get();
-
-			if (hasUserScrolledUp) {
-				return;
-			}
-
-			messagesContainer.scrollTop =
-				messagesContainer.scrollHeight - messagesContainer.clientHeight;
+			const contentBottom = getContentHeight(
+				container,
+				get().spacerRef.current,
+			);
+			set({
+				isAtBottom:
+					container.scrollTop + container.clientHeight >=
+					contentBottom - SCROLL_THRESHOLD,
+			});
 		},
 
-		handleScroll: (ref: MutableRefObject<HTMLDivElement | null>) => {
-			const messagesContainer = ref.current;
-
-			if (!messagesContainer) {
+		/**
+		 * While reserving space, keep enough room below the last user message
+		 * for it to sit at the top of the viewport; shrinks to zero as the answer
+		 * fills the view.
+		 */
+		adjustSpacer: () => {
+			const { containerRef, spacerRef, isReservingSpace } = get();
+			const container = containerRef.current;
+			const spacer = spacerRef.current;
+			if (!container || !spacer) {
 				return;
 			}
-
-			const { previousScrollTop, setPreviousScrollTop, setHasUserScrolledUp } =
-				get();
-			const {
-				scrollHeight,
-				clientHeight,
-				scrollTop: currentScrollTop,
-			} = messagesContainer;
-
-			const isScrollPositionCloseToEnd =
-				scrollHeight - clientHeight <= currentScrollTop + 1;
-
-			if (isScrollPositionCloseToEnd) {
-				setHasUserScrolledUp(false);
+			const lastUserMessageTop = isReservingSpace
+				? getLastUserMessageTop(container)
+				: null;
+			if (lastUserMessageTop === null) {
+				spacer.style.height = "0px";
 				return;
 			}
+			const contentBelowMessage =
+				getContentHeight(container, spacer) - lastUserMessageTop;
+			spacer.style.height = `${Math.max(0, container.clientHeight - contentBelowMessage)}px`;
+		},
 
-			/**
-			 * Only stop auto scrolling to the new message, when user is scrolling towards top.
-			 * When the user is scrolling down, there is no need to stop auto scrolling.
-			 */
-			const hasUserScrolledTowardsTop = previousScrollTop > currentScrollTop;
-			if (hasUserScrolledTowardsTop) {
-				setHasUserScrolledUp(true);
+		scrollNewMessageToTop: () => {
+			const container = get().containerRef.current;
+			if (!container) {
+				return;
 			}
+			set({ isReservingSpace: true, isAtBottom: false });
+			get().adjustSpacer();
+			const top = getLastUserMessageTop(container);
+			if (top !== null) {
+				container.scrollTo({ top, behavior: "smooth" });
+			}
+		},
 
-			setPreviousScrollTop(currentScrollTop);
+		scrollToBottom: (behavior = "smooth") => {
+			const { containerRef, spacerRef } = get();
+			const container = containerRef.current;
+			if (!container) {
+				return;
+			}
+			set({ isReservingSpace: false });
+			if (spacerRef.current) {
+				spacerRef.current.style.height = "0px";
+			}
+			container.scrollTo({
+				top:
+					getContentHeight(container, spacerRef.current) -
+					container.clientHeight,
+				behavior,
+			});
+			set({ isAtBottom: true });
 		},
 	}),
 );
+
+function getLastUserMessageTop(container: HTMLOutputElement) {
+	const userMessages = container.querySelectorAll<HTMLElement>(
+		USER_MESSAGE_SELECTOR,
+	);
+	const lastUserMessage = userMessages[userMessages.length - 1];
+	if (!lastUserMessage) {
+		return null;
+	}
+	return (
+		lastUserMessage.getBoundingClientRect().top -
+		container.getBoundingClientRect().top +
+		container.scrollTop
+	);
+}
+
+function getContentHeight(
+	container: HTMLOutputElement,
+	spacer: HTMLDivElement | null,
+) {
+	return container.scrollHeight - (spacer?.offsetHeight ?? 0);
+}

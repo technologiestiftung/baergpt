@@ -6,6 +6,7 @@ import {
 import { supabaseAdminClient } from "../supabase.ts";
 import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
+import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
 
 test.describe("Login", () => {
 	testWithRegisteredUser("User Login and Logout", async ({ page, account }) => {
@@ -47,9 +48,7 @@ test.describe("Login", () => {
 		await page.goto("/login/");
 
 		// Try to log in with empty fields
-		await page
-			.getByRole("button", { name: "Anmelden Ein weißer Pfeil" })
-			.click();
+		await page.getByRole("button", { name: "Anmelden" }).click();
 
 		// Email and Password fields should show validation errors
 		await expect(
@@ -69,7 +68,7 @@ test.describe("Login", () => {
 
 		// Fill the password field with a too short password
 		await page
-			.getByRole("textbox", { name: "Passwort Password anzeigen" })
+			.getByRole("textbox", { name: "Passwort Passwort anzeigen" })
 			.fill("1");
 
 		// Password field should show validation error
@@ -78,53 +77,18 @@ test.describe("Login", () => {
 		// Fill in the email field with a valid email format, but not existing user
 		await page
 			.getByRole("textbox", { name: "E-Mail-Adresse Das E-Mail-" })
-			.fill("not-existing-user@local.berlin.de");
+			.fill("not-existing-user@ts.berlin");
 
 		// Fill in the password field with a valid password, but not existing user
 		await page
-			.getByRole("textbox", { name: "Passwort Password anzeigen" })
+			.getByRole("textbox", { name: "Passwort Passwort anzeigen" })
 			.fill("123456789!");
 
 		// Logging in with valid email and password format, but non-existing user
-		await page
-			.getByRole("button", { name: "Anmelden Ein weißer Pfeil" })
-			.click();
+		await page.getByRole("button", { name: "Anmelden" }).click();
 		await expect(page.getByText("Benutzername oder Passwort")).toBeVisible();
 	});
 });
-
-testWithRegisteredUser(
-	"Logged-in user cannot access account-activated page without invite parameters",
-	async ({ page, account }) => {
-		// Login as this user
-		await page.goto("/login/");
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill(account.email);
-		await page
-			.getByRole("textbox", { name: "Passwort" })
-			.fill(account.password);
-		await page.getByRole("button", { name: "Anmelden" }).click();
-
-		// Verify we're logged in
-		await expect(
-			page.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
-
-		// Try to access account-activated page directly (should redirect to home)
-		await page.goto("/account-activated/");
-
-		// Should be redirected back to home page
-		await expect(page).toHaveURL("/");
-		await expect(
-			page.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
-	},
-);
 
 test.describe("Password Reset", () => {
 	testWithRegisteredUser("Password Reset Flow", async ({ page, account }) => {
@@ -170,7 +134,7 @@ test.describe("Password Reset", () => {
 
 		// Fill in the new password field
 		await page1
-			.getByRole("textbox", { name: "Neues Passwort Ein Fragezeichen-" })
+			.getByRole("textbox", { name: "Neues Passwort Passwort" })
 			.fill(givenNewPassword);
 		await page1
 			.getByRole("textbox", { name: "Neues Passwort wiederholen" })
@@ -199,9 +163,7 @@ test.describe("Password Reset", () => {
 		await page.goto("/request-password-reset/");
 
 		// Try to submit the form with empty fields
-		await page
-			.getByRole("button", { name: "Zurücksetzen Ein weißer Pfeil" })
-			.click();
+		await page.getByRole("button", { name: "Zurücksetzen" }).click();
 
 		// Check for the validation errors
 		await expect(page.getByText("Bitte füllen Sie dieses Feld")).toBeVisible();
@@ -212,9 +174,7 @@ test.describe("Password Reset", () => {
 			.fill("invalid-email");
 
 		// Try to submit the form
-		await page
-			.getByRole("button", { name: "Zurücksetzen Ein weißer Pfeil" })
-			.click();
+		await page.getByRole("button", { name: "Zurücksetzen" }).click();
 
 		// Check for the validation error
 		await expect(page.getByText("Das E-Mail-Format ist falsch.")).toBeVisible();
@@ -224,9 +184,7 @@ test.describe("Password Reset", () => {
 		await page.goto("/reset-password/");
 
 		// Try to submit the form with empty fields
-		await page
-			.getByRole("button", { name: "Passwort ändern Ein weißer" })
-			.click();
+		await page.getByRole("button", { name: "Passwort ändern" }).click();
 
 		// Check for the validation errors
 		await expect(
@@ -237,7 +195,9 @@ test.describe("Password Reset", () => {
 		).toBeVisible();
 
 		// Fill in the new password field with a too short password
-		await page.getByRole("textbox", { name: "Neues Passwort Ein" }).fill("1");
+		await page
+			.getByRole("textbox", { name: "Neues Passwort Passwort" })
+			.fill("1");
 
 		// Fill in the password repeat field with a too short password
 		await page
@@ -245,9 +205,7 @@ test.describe("Password Reset", () => {
 			.fill("1");
 
 		// Try to submit the form
-		await page
-			.getByRole("button", { name: "Passwort ändern Ein weißer" })
-			.click();
+		await page.getByRole("button", { name: "Passwort ändern" }).click();
 
 		// Check for the validation errors
 		await expect(
@@ -259,7 +217,7 @@ test.describe("Password Reset", () => {
 
 		// Fill in the new password field with a valid password
 		await page
-			.getByRole("textbox", { name: "Neues Passwort Ein" })
+			.getByRole("textbox", { name: "Neues Passwort Passwort" })
 			.fill("123456789!");
 		// Fill in the password reset field with a valid but different password
 		await page
@@ -267,9 +225,7 @@ test.describe("Password Reset", () => {
 			.fill("123456789!0");
 
 		// Try to submit the form
-		await page
-			.getByRole("button", { name: "Passwort ändern Ein weißer" })
-			.click();
+		await page.getByRole("button", { name: "Passwort ändern" }).click();
 
 		// Check for the validation error
 		await expect(page.getByText("Die Passwörter stimmen nicht")).toBeVisible();
@@ -277,14 +233,12 @@ test.describe("Password Reset", () => {
 });
 
 test.describe("User Registration (uses different user to prevent side-effects on other tests)", () => {
-	const givenUserEmail = "user.registration@local.berlin.de";
+	const givenUserEmail = "user.registration@ts.berlin";
 	const givenUserPassword = "123456789!";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
 
-	const changedLastName = "ChangedLastName";
-
-	test.afterEach(async () => {
+	testWithoutSplashScreen.afterEach(async () => {
 		const { data: listUsersData, error: listUsersError } =
 			await supabaseAdminClient.auth.admin.listUsers();
 
@@ -307,20 +261,11 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		expect(deleteUserError).toBeNull();
 	});
 
-	test("Default Registration Flow", async ({ page }) => {
+	testWithoutSplashScreen("Default Registration Flow", async ({ page }) => {
 		// Go to the registration page
 		await page.goto("/register/");
 
-		// Wait for allowed email domains to be loaded before filling the form
-		await page
-			.waitForResponse(
-				(resp) => resp.url().includes("get_allowed_email_domains"),
-				{ timeout: 10_000 },
-			)
-			.catch(() => {}); // Ignore if already completed
-
 		// Fill in the registration form
-
 		const firstNameInput = page.getByRole("textbox", {
 			name: "Vorname",
 		});
@@ -334,13 +279,21 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		});
 		await emailInput.fill(givenUserEmail);
 
+		// Wait for check email allowed to be loaded before proceeding
+		await page
+			.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
+				timeout: 10_000,
+			})
+			.catch(() => {}); // Ignore if already completed
+
 		const passwordInput = page.getByRole("textbox", {
-			name: "Passwort Ein Fragezeichen-",
+			name: "Passwort",
+			exact: true,
 		});
 		await passwordInput.fill(givenUserPassword);
 
 		const passwordRepeatInput = page.getByRole("textbox", {
-			name: "Passwort wiederholen Password",
+			name: "Passwort wiederholen",
 		});
 		await passwordRepeatInput.fill(givenUserPassword);
 
@@ -349,20 +302,13 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		);
 		await privacyCheckboxInput.check();
 
-		const personalDataCheckboxInput = page.locator(
-			'[data-testid="label-has-accepted-personal-data-checkbox"]',
-		);
-		await personalDataCheckboxInput.check();
-
 		// Wait for the registration request to complete
 		await Promise.all([
 			page.waitForResponse(
 				(resp) =>
 					resp.url().includes("/auth/v1/signup") && resp.status() === 200,
 			),
-			page
-				.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
-				.click(),
+			page.getByRole("button", { name: "Registrieren" }).click(),
 		]);
 
 		// Info message about confirmation mail should be visible
@@ -387,145 +333,70 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			}),
 		).toBeVisible();
 	});
-
-	test("User with invite link is forwarded to account activation", async ({
-		page,
-	}) => {
-		// invite user via mail
-		const { error: inviteLinkError } =
-			await supabaseAdminClient.auth.admin.inviteUserByEmail(givenUserEmail, {
-				data: {
-					first_name: givenUserFirstName,
-					last_name: givenUserLastName,
-				},
-			});
-
-		expect(inviteLinkError).toBeNull();
-
-		// Open the invite link in mail inbucket
-		await page.goto("http://localhost:54324/"); // Inbucket URL
-		await page
-			.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
-			.first()
-			.click();
-
-		// Clicking on the link should open a new tab
-		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Jetzt registrieren" })
-			.click();
-		const page1 = await popupEvent;
-
-		// check that we are on the account activation page
-		await page1.waitForLoadState("networkidle");
-		await expect(page1).toHaveURL(/\/account-activated/);
-
-		// User E-Mail should be mentioned at the top
-		await expect(
-			page1.getByRole("heading", { name: givenUserEmail }),
-		).toBeVisible();
-	});
-
-	test("Default Invite User Flow", async ({ page }) => {
-		// invite user via mail
-		const { error: inviteLinkError } =
-			await supabaseAdminClient.auth.admin.inviteUserByEmail(givenUserEmail, {
-				data: {
-					first_name: givenUserFirstName,
-					last_name: givenUserLastName,
-				},
-			});
-
-		expect(inviteLinkError).toBeNull();
-
-		// Open the invite link in mail inbucket
-		await page.goto("http://localhost:54324/"); // Inbucket URL
-		await page
-			.getByRole("link", { name: `Admin To: ${givenUserEmail}` })
-			.first()
-			.click();
-
-		// Clicking on the link should open a new tab
-		const popupEvent = page.waitForEvent("popup");
-		await page
-			.locator("#preview-html")
-			.contentFrame()
-			.getByRole("link", { name: "Jetzt registrieren" })
-			.click();
-		const page1 = await popupEvent;
-
-		// check that we are on the account activation page
-		await page1.waitForLoadState("networkidle");
-		await expect(page1).toHaveURL(/\/account-activated/);
-
-		// User E-Mail should be mentioned at the top
-		await expect(
-			page1.getByRole("heading", { name: givenUserEmail }),
-		).toBeVisible();
-
-		// Fill in the invite completion form
-		await page1.getByLabel("Anredekeine AngabeFrauHerr").selectOption("Frau");
-		await page1
-			.getByLabel("Titelkeine AngabeDr.Prof.Prof")
-			.selectOption("Prof. Dr.");
-		// first and last name should be prefilled. Testing for changing last name
-		await page1
-			.getByRole("textbox", { name: "Nachname" })
-			.fill(changedLastName);
-		await page1
-			.getByRole("textbox", { name: "Passwort Ein Fragezeichen-" })
-			.fill(givenUserPassword);
-		await page1
-			.getByRole("textbox", { name: "Passwort wiederholen Password" })
-			.fill(givenUserPassword);
-		// Check the checkbox
-		await page1.getByTestId("label-has-accepted-privacy-checkbox").click();
-		await page1
-			.getByTestId("label-has-accepted-personal-data-checkbox")
-			.click();
-
-		// Submit the invite completion form and wait for navigation to main page
-		await page1
-			.getByRole("button", { name: "Registrieren Ein weißer Pfeil" })
-			.click();
-		await page1.waitForURL("/");
-
-		// After clicking on the link, we should be redirected to the main page
-		await expect(
-			page1.getByRole("heading", {
-				name: `Willkommen bei BärGPT, Frau Prof. Dr. ${changedLastName}`,
-			}),
-		).toBeVisible();
-
-		// logout user
-		await page1.getByRole("button", { name: "Profil" }).click();
-		await page1.getByRole("button", { name: "Ausloggen" }).click();
-	});
 });
 
-testWithRegisteredUser.describe("User active/inactive", async () => {
-	testWithRegisteredUser.beforeEach(async ({ account }) => {
-		const { error } = await supabaseAdminClient
-			.from("user_active_status")
-			.update({ is_active: false, deleted_at: new Date().toISOString() })
-			.eq("id", account.id);
+testWithoutSplashScreen(
+	"Try to register with not allowed user",
+	async ({ page }) => {
+		// Go to the registration page
+		await page.goto("/register/");
+
+		// Wait for check email allowed to be loaded before proceeding
+		const emailAllowedCheck = page
+			.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
+				timeout: 10_000,
+			})
+			.catch(() => {}); // Ignore if already completed
+
+		const emailInput = page.getByRole("textbox", {
+			name: "E-Mail-Adresse Nur",
+		});
+		await emailInput.click();
+		await emailInput.pressSequentially("not-allowed@example.com");
+		await emailInput.blur();
+
+		await emailAllowedCheck;
+
+		const errorMessage = page.getByText(
+			"E-Mail nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
+		);
+		await expect(errorMessage).toBeVisible();
+	},
+);
+
+testWithRegisteredUser.describe("User ban", async () => {
+	async function banUser(userId: string) {
+		const { error } = await supabaseAdminClient.auth.admin.updateUserById(
+			userId,
+			{
+				ban_duration: "876000h", // 100 years
+			},
+		);
 
 		expect(error).toBeNull();
+	}
+
+	async function unbanUser(userId: string) {
+		const { error } = await supabaseAdminClient.auth.admin.updateUserById(
+			userId,
+			{
+				ban_duration: "none",
+			},
+		);
+
+		expect(error).toBeNull();
+	}
+
+	testWithRegisteredUser.beforeEach(async ({ account }) => {
+		await banUser(account.id);
 	});
 
 	testWithRegisteredUser.afterEach(async ({ account }) => {
-		const { error: setInactiveError } = await supabaseAdminClient
-			.from("user_active_status")
-			.update({ is_active: true, deleted_at: null })
-			.eq("id", account.id);
-
-		expect(setInactiveError).toBeNull();
+		await unbanUser(account.id);
 	});
 
 	testWithRegisteredUser(
-		"Logged-In User should be logged out when their account is deactivated",
+		"Logged-In User should be logged out when their account is banned",
 		async ({ page, account, baseURL }) => {
 			// Go to the login page
 			await page.goto("/login/");
@@ -542,22 +413,17 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 			// Check if we are still on the login page with the error message
 			// Note: order matters here, we need to wait for the Text to be visible before checking the URL.
 			await expect(
-				page.getByText("Der Benutzeraccount wurde deaktiviert."),
+				page.getByText("Der Benutzeraccount wurde gesperrt."),
 			).toBeVisible();
 			await expect(page).toHaveURL(`${baseURL}/login/`);
 
-			// Re-activate the user account in the database
-			const { error: setActiveError } = await supabaseAdminClient
-				.from("user_active_status")
-				.update({ is_active: true, deleted_at: null })
-				.eq("id", account.id);
-
-			expect(setActiveError).toBeNull();
+			// Unban the user account in the database
+			await unbanUser(account.id);
 
 			// Refresh the page to clear the error message
 			await page.goto("/");
 			await expect(
-				page.getByText("Der Benutzeraccount wurde deaktiviert."),
+				page.getByText("Der Benutzeraccount wurde gesperrt."),
 			).not.toBeVisible();
 			await expect(page).toHaveURL(`${baseURL}/`);
 
@@ -580,13 +446,8 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 				}),
 			).toBeVisible();
 
-			// De-activate the user account again in the database
-			const { error: setInactiveError } = await supabaseAdminClient
-				.from("user_active_status")
-				.update({ is_active: false, deleted_at: new Date().toISOString() })
-				.eq("id", account.id);
-
-			expect(setInactiveError).toBeNull();
+			// Ban the user account again in the database
+			await banUser(account.id);
 
 			// Refresh the page
 			await page.goto("/");
@@ -616,7 +477,7 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 			// Check if we are still on the login page with the error message
 			// Note: order matters here, we need to wait for the Text to be visible before checking the URL.
 			await expect(
-				page.getByText("Der Benutzeraccount wurde deaktiviert."),
+				page.getByText("Der Benutzeraccount wurde gesperrt."),
 			).toBeVisible();
 		},
 	);
@@ -625,7 +486,7 @@ testWithRegisteredUser.describe("User active/inactive", async () => {
 testWithLoggedInUser(
 	"should allow user to change email address",
 	async ({ page, account }) => {
-		const updatedEmail = "john.doe@new.berlin.de";
+		const updatedEmail = "john.doe@polizei.berlin.de";
 		const updatedAccount = {
 			...account,
 			email: updatedEmail,
@@ -671,7 +532,7 @@ testWithLoggedInUser(
 		await expect(emailChangeSuccessfulPage).toBeVisible();
 
 		const linkToBaerGPTHomePage = page1.getByRole("link", {
-			name: "Zu BärGPT Ein weißer Pfeil",
+			name: "Zu BärGPT",
 		});
 		await linkToBaerGPTHomePage.click();
 

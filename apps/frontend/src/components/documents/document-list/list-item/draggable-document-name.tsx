@@ -1,10 +1,12 @@
-import React, { useRef } from "react";
-import { useDocumentStore } from "../../../../store/document-store.ts";
+import React, { useEffect, useRef } from "react";
+import { usePreviewDocumentStore } from "../../../../store/use-preview-document-store.ts";
 import { useDrag } from "react-dnd";
 import type { Document } from "../../../../common.ts";
 import { DocumentIcon } from "../../../primitives/icons/document-icon.tsx";
 import { getListItemName } from "./utils/get-list-item-name.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
+import { getEmptyImage } from "react-dnd-html5-backend";
+import { useUserDocumentStore } from "../../../../store/use-user-document-store.ts";
 
 type DragableProps = {
 	item: Document;
@@ -13,10 +15,13 @@ type DragableProps = {
 const TOOLTIP_DELAY = 600;
 
 export function DraggableDocumentName({ item }: DragableProps) {
-	const { selectPreviewDocument } = useDocumentStore();
+	const { selectPreviewDocument, selectedPreviewDocument } =
+		usePreviewDocumentStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const tooltipTimeoutRef = useRef<number | null>(null);
 	const spanRef = useRef<HTMLSpanElement>(null);
+
+	const { selectedUserDocumentsForAction } = useUserDocumentStore();
 
 	const handleMouseEnter = (
 		event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
@@ -45,10 +50,39 @@ export function DraggableDocumentName({ item }: DragableProps) {
 		hideTooltip();
 	};
 
-	const [, dragRef] = useDrag({
+	const resolveDragGroup = (): Document[] => {
+		if (
+			// Check if dragged item is also selected for action
+			selectedUserDocumentsForAction.some((doc) => doc.id === item.id)
+		) {
+			return selectedUserDocumentsForAction;
+		}
+
+		return [item];
+	};
+
+	const [{ isDragging }, dragRef, preview] = useDrag<
+		Document[],
+		unknown,
+		{ isDragging: boolean }
+	>({
 		type: "ITEM",
-		item,
+		item: () => {
+			if (tooltipTimeoutRef.current) {
+				clearTimeout(tooltipTimeoutRef.current);
+				tooltipTimeoutRef.current = null;
+			}
+			hideTooltip();
+			return resolveDragGroup();
+		},
+		collect: (monitor) => ({ isDragging: monitor.isDragging() }),
 	});
+
+	useEffect(() => {
+		preview(getEmptyImage(), { captureDraggingState: true });
+	}, [preview]);
+
+	const isSelectedForPreview = selectedPreviewDocument?.id === item.id;
 
 	return (
 		<button
@@ -58,12 +92,17 @@ export function DraggableDocumentName({ item }: DragableProps) {
 			ref={dragRef}
 			onMouseEnter={handleMouseEnter}
 			onMouseLeave={handleMouseLeave}
+			onMouseDown={handleMouseLeave}
 			onFocus={handleMouseEnter}
 			onBlur={handleMouseLeave}
 		>
-			<span className="flex gap-x-2 truncate">
+			<span className="flex gap-x-1 truncate">
 				<DocumentIcon variant="lightBlue" />
-				<span ref={spanRef} className="truncate pointer-events-none">
+				<span
+					ref={spanRef}
+					className={`truncate pointer-events-none text-sm leading-5 ${isDragging ? "text-hellblau-110" : "text-dunkelblau-100"}
+					${isSelectedForPreview ? "font-bold" : "font-normal"}`}
+				>
 					{getListItemName(item)}
 				</span>
 			</span>

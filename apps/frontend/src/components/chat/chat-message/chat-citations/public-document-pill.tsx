@@ -7,7 +7,7 @@ export function PublicDocumentPill() {
 			data-testid="public-document-pill"
 		>
 			<img src="/icons/baer-icon-white.svg" alt="baer-icon-white" />
-			{Content["chat.publicDocumentPill.label"]}
+			{Content["chat.citationsDialog.publicDocumentPill.label"]}
 		</div>
 	);
 }

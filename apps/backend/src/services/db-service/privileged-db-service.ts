@@ -1,10 +1,11 @@
+import { captureError } from "../../monitoring/capture-error";
 import type { ServiceRoleDbClient } from "../../supabase";
 import { BaseContentDbService } from "./base-db-service";
 /**
  * AdminService handles operations that require the Supabase service role key.
  *
  * Operations include:
- * - Auth Admin API calls (updateUserById, deleteUser, inviteUserByEmail)
+ * - Auth Admin API calls (updateUserById, deleteUser)
  * - Writing to privileged tables (application_admins)
  * - Soft/hard user deletion and restoration
  */
@@ -118,71 +119,74 @@ export class PrivilegedDbService extends BaseContentDbService {
 	}
 
 	/**
-	 * Soft delete a user by setting deleted_at timestamp.
-	 * Requires service role to update user_active_status.
+	 * Ban a user.
+	 * Requires service role for auth.admin.updateUserById().
 	 */
-	async softDeleteUser(userId: string): Promise<void> {
-		const { error } = await this.client
-			.from("user_active_status")
-			.update({ deleted_at: new Date().toISOString(), is_active: false })
-			.eq("id", userId);
+	async banUser(userId: string): Promise<void> {
+		const { error: banUserError } = await this.client.auth.admin.updateUserById(
+			userId,
+			{
+				ban_duration: "876000h", // ~100 years = effectively permanent
+			},
+		);
 
-		if (error) {
-			throw error;
+		if (banUserError) {
+			throw banUserError;
 		}
 	}
 
 	/**
-	 * Hard delete a user (permanently removes from auth and cascades to profile).
-	 * Requires service role for auth.admin.deleteUser().
+	 * Unban a user.
+	 * Requires service role for auth.admin.updateUserById().
 	 */
-	async hardDeleteUser(userId: string): Promise<void> {
-		const { error } = await this.client.auth.admin.deleteUser(userId);
-
-		if (error) {
-			throw error;
-		}
-	}
-
-	/**
-	 * Restore a soft-deleted user.
-	 * Requires service role to update user_active_status.
-	 */
-	async restoreUser(userId: string): Promise<void> {
-		const { error } = await this.client
-			.from("user_active_status")
-			.update({ deleted_at: null, is_active: true })
-			.eq("id", userId);
-
-		if (error) {
-			throw error;
-		}
-	}
-
-	/**
-	 * Send invite link to user.
-	 * Requires service role for auth.admin.inviteUserByEmail().
-	 */
-	async sendInviteLink(
-		email: string,
-		firstName?: string,
-		lastName?: string,
-	): Promise<void> {
-		const data: { first_name?: string; last_name?: string } = {};
-
-		if (firstName) {
-			data.first_name = firstName;
-		}
-		if (lastName) {
-			data.last_name = lastName;
-		}
-
-		const { error } = await this.client.auth.admin.inviteUserByEmail(email, {
-			data,
+	async unbanUser(userId: string): Promise<void> {
+		const { error } = await this.client.auth.admin.updateUserById(userId, {
+			ban_duration: "none",
 		});
 
 		if (error) {
 			throw error;
+		}
+	}
+
+	/**
+	 * Delete a user (permanently removes from auth and cascades to profile).
+	 * Requires service role for auth.admin.deleteUser().
+	 */
+	async deleteUser(userId: string): Promise<void> {
+		// Get all documents for the user with storage info
+		const { data: documents, error: documentsError } = await this.client
+			.from("documents")
+			.select("source_url, source_type")
+			.eq("owned_by_user_id", userId);
+
+		if (documentsError) {
+			throw documentsError;
+		}
+
+		// Delete the user from auth (cascades to documents and related tables)
+		const { error: deleteUserError } =
+			await this.client.auth.admin.deleteUser(userId);
+
+		if (deleteUserError) {
+			throw deleteUserError;
+		}
+
+		// Clean up storage files after DB cascade completes
+		if (documents && documents.length > 0) {
+			for (const doc of documents) {
+				const bucket = ["public_document", "default_document"].includes(
+					doc.source_type,
+				)
+					? "public_documents"
+					: "documents";
+
+				try {
+					await this.deleteFileFromStorage(doc.source_url, bucket);
+				} catch (storageError) {
+					captureError(storageError);
+				}
+			}
 		}
 	}
 
@@ -193,8 +197,13 @@ export class PrivilegedDbService extends BaseContentDbService {
 	): Promise<void> {
 		// No-op: Referenced by some services but guarded against if there is no user.
 		throw new Error(
-			"updateUserColumnValue should not be called on PrivilegedDbService. " +
-				"Ensure userId is checked before calling this method.",
+			"You're trying to update a user's token usage via the PrivilegedDbService. Either check if userId is defined before calling this method or use the UserScopedDbService instead.",
+		);
+	}
+
+	async updateUsage(_userId, _tokenAmount) {
+		throw new Error(
+			"You're trying to update a user's token usage via the PrivilegedDbService. Either check if userId is defined before calling this method or use the UserScopedDbService instead.",
 		);
 	}
 }

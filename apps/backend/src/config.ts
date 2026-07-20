@@ -1,15 +1,13 @@
 import "dotenv/config";
 
 export interface Config {
-	redisUrl: string;
 	mistralApiKey: string;
+	mistralEmbeddingModel: string;
+	mistralEmbedMaxContextTokens: number;
+	mistralEmbedMaxDocumentsPerRequest: number;
+	mistralEmbedMaxTotalTokensPerRequest: number;
+	mistralEmbeddingDimensions: number;
 	mistralMaxRPS: number;
-	jinaApiKey: string;
-	jinaEmbeddingModel: string;
-	jinaMaxRPS: number;
-	jinaMaxContextTokens: number;
-	jinaMaxDocumentsPerRequest: number;
-	jinaEmbeddingDimensions: number;
 	supabaseUrl: string;
 	supabaseServiceRoleKey: string;
 	supabaseAnonKey: string;
@@ -28,36 +26,43 @@ export interface Config {
 	gotenbergApiBasicAuthPassword: string;
 	presencePenalty: number;
 	frequencyPenalty: number;
+	featureFlagMcpParlaAllowed: boolean;
+	mcpParlaUrl?: string;
+	braveSearchApiKey?: string;
+	braveSearchApiUrl?: string;
+	featureFlagWebSearchAllowed: boolean;
+	featureFlagMemoryLog: boolean;
+	isTracingEnabled: boolean;
+	staanSearchApiKey?: string;
+	staanSearchApiUrl?: string;
+	staanSearchMaxRPS?: number;
+	webSearchProvider?: string;
 }
 
 /* eslint-disable-next-line complexity */
 export function verifyConfig(): void {
-	if (!process.env.REDIS_URL) {
-		throw new Error("REDIS_URL must be defined");
-	}
 	if (!process.env.MISTRAL_API_KEY) {
 		throw new Error("MISTRAL_API_KEY must be defined");
 	}
+	if (!process.env.MISTRAL_EMBEDDING_MODEL) {
+		throw new Error("MISTRAL_EMBEDDING_MODEL must be defined");
+	}
+	if (!process.env.MISTRAL_EMBED_MAX_CONTEXT_TOKENS) {
+		throw new Error("MISTRAL_EMBED_MAX_CONTEXT_TOKENS must be defined");
+	}
+	if (!process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST) {
+		throw new Error(
+			"MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST must be defined",
+		);
+	}
+	if (!process.env.MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST) {
+		throw new Error("MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST must be defined");
+	}
+	if (!process.env.MISTRAL_EMBEDDING_DIMENSIONS) {
+		throw new Error("MISTRAL_EMBEDDING_DIMENSIONS must be defined");
+	}
 	if (!process.env.MISTRAL_MAX_RPS) {
 		throw new Error("MISTRAL_MAX_RPS must be defined");
-	}
-	if (!process.env.JINA_API_KEY) {
-		throw new Error("JINA_API_KEY must be defined");
-	}
-	if (!process.env.JINA_EMBEDDING_MODEL) {
-		throw new Error("JINA_EMBEDDING_MODEL must be defined");
-	}
-	if (!process.env.JINA_MAX_RPS) {
-		throw new Error("JINA_MAX_RPS must be defined");
-	}
-	if (!process.env.JINA_MAX_CONTEXT_TOKENS) {
-		throw new Error("JINA_MAX_CONTEXT_TOKENS must be defined");
-	}
-	if (!process.env.JINA_MAX_DOCUMENTS_PER_REQUEST) {
-		throw new Error("JINA_MAX_DOCUMENTS_PER_REQUEST must be defined");
-	}
-	if (!process.env.JINA_EMBEDDING_DIMENSIONS) {
-		throw new Error("JINA_EMBEDDING_DIMENSIONS must be defined");
 	}
 	if (!process.env.UPLOAD_FILE_SIZE_LIMIT_MB && !process.env.CI) {
 		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be defined");
@@ -101,21 +106,52 @@ export function verifyConfig(): void {
 	if (!process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD && !process.env.CI) {
 		throw new Error("GOTENBERG_API_BASIC_AUTH_PASSWORD must be defined");
 	}
+	if (
+		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true" &&
+		!process.env.MCP_PARLA_URL
+	) {
+		throw new Error(
+			"MCP_PARLA_URL must be defined when FEATURE_FLAG_MCP_PARLA_ALLOWED is true",
+		);
+	}
+
+	if (
+		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
+		!(
+			(process.env.BRAVE_SEARCH_API_KEY &&
+				process.env.BRAVE_SEARCH_API_URL &&
+				process.env.BRAVE_SEARCH_MAX_RPS) ||
+			(process.env.STAAN_SEARCH_API_KEY &&
+				process.env.STAAN_SEARCH_API_URL &&
+				process.env.STAAN_SEARCH_MAX_RPS)
+		)
+	) {
+		throw new Error(
+			"BRAVE_SEARCH_API_KEY, BRAVE_SEARCH_API_URL and BRAVE_SEARCH_MAX_RPS or STAAN_SEARCH_API_KEY, STAAN_SEARCH_API_URL and STAAN_SEARCH_MAX_RPS must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
+		);
+	}
 }
 
 export const config: Config = {
-	redisUrl: process.env.REDIS_URL as string,
 	mistralApiKey: process.env.MISTRAL_API_KEY,
-	mistralMaxRPS: parseInt(process.env.MISTRAL_MAX_RPS, 10),
-	jinaApiKey: process.env.JINA_API_KEY,
-	jinaEmbeddingModel: process.env.JINA_EMBEDDING_MODEL,
-	jinaMaxRPS: parseInt(process.env.JINA_MAX_RPS, 10),
-	jinaMaxContextTokens: parseInt(process.env.JINA_MAX_CONTEXT_TOKENS, 10),
-	jinaMaxDocumentsPerRequest: parseInt(
-		process.env.JINA_MAX_DOCUMENTS_PER_REQUEST,
+	mistralEmbeddingModel: process.env.MISTRAL_EMBEDDING_MODEL,
+	mistralEmbedMaxContextTokens: parseInt(
+		process.env.MISTRAL_EMBED_MAX_CONTEXT_TOKENS,
 		10,
 	),
-	jinaEmbeddingDimensions: parseInt(process.env.JINA_EMBEDDING_DIMENSIONS, 10),
+	mistralEmbedMaxDocumentsPerRequest: parseInt(
+		process.env.MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST,
+		10,
+	),
+	mistralEmbedMaxTotalTokensPerRequest: parseInt(
+		process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST,
+		10,
+	),
+	mistralEmbeddingDimensions: parseInt(
+		process.env.MISTRAL_EMBEDDING_DIMENSIONS,
+		10,
+	),
+	mistralMaxRPS: parseInt(process.env.MISTRAL_MAX_RPS, 10),
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
@@ -134,4 +170,20 @@ export const config: Config = {
 	gotenbergApiBasicAuthPassword: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
 	presencePenalty: parseFloat(process.env.PRESENCE_PENALTY || "0"),
 	frequencyPenalty: parseFloat(process.env.FREQUENCY_PENALTY || "0"),
+	featureFlagMcpParlaAllowed:
+		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
+	mcpParlaUrl: process.env.MCP_PARLA_URL,
+	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
+	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,
+	featureFlagWebSearchAllowed:
+		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
+	featureFlagMemoryLog: process.env.FEATURE_FLAG_MEMORY_LOG === "true",
+	isTracingEnabled:
+		process.env.NODE_ENV !== undefined &&
+		process.env.NODE_ENV !== "production" &&
+		process.env.NODE_ENV !== "test",
+	staanSearchApiKey: process.env.STAAN_SEARCH_API_KEY,
+	staanSearchApiUrl: process.env.STAAN_SEARCH_API_URL,
+	staanSearchMaxRPS: parseInt(process.env.STAAN_SEARCH_MAX_RPS, 10),
+	webSearchProvider: process.env.WEB_SEARCH_PROVIDER,
 };

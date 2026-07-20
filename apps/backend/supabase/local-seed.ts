@@ -1,8 +1,9 @@
 import { serviceRoleDbClient as supabase } from "../src/supabase";
+import type { User } from "@supabase/supabase-js";
 
 export async function seedLocalAdmin() {
 	const id = crypto.randomUUID();
-	const email = "admin@local.berlin.de";
+	const email = "local.admin@ts.berlin";
 	const password = "123456789!";
 
 	const { data, error: listUsersError } = await supabase.auth.admin.listUsers();
@@ -12,7 +13,7 @@ export async function seedLocalAdmin() {
 		return;
 	}
 
-	const existingUser = data.users.find((user) => user.email === email);
+	const existingUser = data.users.find((user: User) => user.email === email);
 	if (existingUser) {
 		await handleDelete(existingUser.id);
 	}
@@ -52,18 +53,6 @@ export async function seedLocalAdmin() {
 
 	if (loginError) {
 		console.error("Error logging in local admin:", loginError);
-		return;
-	}
-
-	const { error: accountActivationError } = await supabase.rpc(
-		"log_account_activation",
-	);
-
-	if (accountActivationError) {
-		console.error(
-			"Error logging account activation for local admin:",
-			accountActivationError,
-		);
 		return;
 	}
 

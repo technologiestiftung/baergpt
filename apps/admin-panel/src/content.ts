@@ -22,7 +22,6 @@ export const Content = {
 	"loginPage.emailLabel": "E-Mail-Adresse",
 	"loginPage.passwordLabel": "Passwort",
 	"loginPage.submitButton": "Anmelden",
-	"loginPage.resetPassword.label": "Passwort vergessen?",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
 	"unconfirmedEmail.h1": "Registrierung fast abgeschlossen",
@@ -42,7 +41,7 @@ export const Content = {
 
 	"form.validation.general.valueMissing": "Bitte füllen Sie dieses Feld aus.",
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
-	"form.validation.password.worng.error": "Das Passwort ist falsch.",
+	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.password.tooShort":
 		"Das Passwort muss mindestens 6 Zeichen lang sein.",
 	"form.validation.password.customError":
@@ -51,10 +50,8 @@ export const Content = {
 		"Bitte stimmen Sie den Datenschutzbestimmungen zu.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
-	"form.validation.userDeactivated.error":
-		"Der Benutzeraccount wurde deaktiviert.",
-	"form.validation.invite.unsuccessful.error":
-		"Die Einladung konnte nicht verschickt werden.",
+	"form.validation.userBanned.error":
+		"Der Benutzeraccount ist kein Administrator oder wurde gesperrt.",
 
 	/* -------------------- Buttons -------------------- */
 	//profileButton
@@ -65,34 +62,24 @@ export const Content = {
 	/* ---------------------- Admin ---------------------- */
 	"admin.sidebar.navigation.users": "Benutzerverwaltung",
 	"admin.sidebar.navigation.baseKnowledge": "Base Knowledge",
-	"admin.sidebar.navigation.inviteCodes": "Invite Codes",
+	"admin.sidebar.navigation.productDashboard": "Product Dashboard",
+	"admin.sidebar.navigation.domainAllowlist": "Domainverwaltung",
 	"admin.sidebar.close": "Schließen",
 	"admin.sidebar.title": "BÄRGPT Admin",
 	"admin.button.link.label": "Admin-Bereich",
 
-	/* ---------------------- Invite New User ---------------------- */
-	"inviteNewUser.title": "Neue Benutzer:innen einladen",
-	"inviteNewUser.description":
-		"Lade neue Benutzer:innen ein, die Zugriff auf BärGPT erhalten sollen.",
-	"inviteNewUser.form.firstName": "Vorname",
-	"inviteNewUser.form.firstNamePlaceholder": "Vorname eingeben",
-	"inviteNewUser.form.lastName": "Nachname",
-	"inviteNewUser.form.lastNamePlaceholder": "Nachname eingeben",
-	"inviteNewUser.form.email": "E-Mail-Adresse",
-	"inviteNewUser.form.emailPlaceholder": "E-Mail-Adresse eingeben",
-	"inviteNewUser.form.button.save": "Einladung senden",
-	"inviteNewUser.form.button.saved": "Einladung verschickt",
+	/* ---------------------- Shared Table ---------------------- */
+	"table.pageSizeDropdown.pageSize.label": "Anzeigen: ",
+	"table.pageSizeDropdown.perTable": "pro Seite",
+	"table.pageSizeDropdown.all.label": "Alle",
+	"table.pagination.previousPage": "Zurück",
+	"table.pagination.nextPage": "Weiter",
+	"table.noResults": "Keine Ergebnisse.",
 
 	/* ---------------------- User Table ---------------------- */
 	"userTable.searchField.placeholder": "Suche nach Name oder E-Mail...",
-	"userTable.PageSizeDropdown.all.label": "Alle Benutzer",
-	"userTable.PageSizeDropdown.pageSize.label": "Anzeigen: ",
-	"userTable.PageSizeDropdown.perTable": "pro Seite",
-	"userTable.pagination.nextPage": "Weiter",
-	"userTable.pagination.previousPage": "Zurück",
 	"userTable.statusFilterDropdown.label": "Status filtern",
 	"userTable.statusFilterDropdown.all.label": "Status (alle)",
-	"userTable.noResults": "Keine Ergebnisse.",
 	"userTable.resultsCount.separator": "von",
 	"userTable.resultsCount.label": "Benutzer:innen",
 	// User Table Headers
@@ -148,37 +135,37 @@ export const Content = {
 
 	"userEditModal.dangerZoneCard.title": "Gefahrenbereich",
 	"userEditModal.dangerZoneCard.description":
-		"Benutzer deaktivieren oder dauerhaft entfernen",
+		"Benutzer sperren oder dauerhaft löschen",
 	"userEditModal.dangerZoneCard.deleteUser.title": "Benutzer verwalten",
 	"userEditModal.dangerZoneCard.deleteUser.description":
-		"Benutzer deaktivieren (reversibel) oder permanent löschen (irreversibel).",
+		"Benutzer sperren (reversibel) oder permanent löschen (irreversibel).",
 	"userEditModal.dangerZoneCard.deleteUser.button": "Benutzer verwalten",
 
-	"userEditModal.dangerZoneCard.restoreUser.title": "Benutzer wiederherstellen",
-	"userEditModal.dangerZoneCard.restoreUser.description":
-		"Deaktivierten Benutzer wieder aktivieren und Zugang wiederherstellen.",
-	"userEditModal.dangerZoneCard.restoreUser.button": "Account wiederherstellen",
+	"userEditModal.dangerZoneCard.unbanUser.title": "Benutzer freischalten",
+	"userEditModal.dangerZoneCard.unbanUser.description":
+		"Deaktivierten Benutzer wieder aktivieren und Zugang freischalten.",
+	"userEditModal.dangerZoneCard.unbanUser.button": "Account freischalten",
 
-	"userEditModal.restoreUserDialog.title": "Account wiederherstellen",
-	"userEditModal.restoreUserDialog.description.p1": "Möchten Sie den Account",
-	"userEditModal.restoreUserDialog.description.p2":
+	"userEditModal.unbanUserDialog.title": "Account freischalten",
+	"userEditModal.unbanUserDialog.description.p1": "Möchten Sie den Account",
+	"userEditModal.unbanUserDialog.description.p2":
 		"wieder aktivieren? Der Account erhält dadurch wieder Zugang zum System.",
-	"userEditModal.restoreUserDialog.button.cancel": "Abbrechen",
-	"userEditModal.restoreUserDialog.button.restore": "Wiederherstellen",
+	"userEditModal.unbanUserDialog.button.cancel": "Abbrechen",
+	"userEditModal.unbanUserDialog.button.unban": "Freischalten",
 
 	"userEditModal.deleteUserDialog.title": "Account verwalten",
 	"userEditModal.deleteUserDialog.description.p1":
 		"Wählen Sie eine Aktion für:",
-	"userEditModal.deleteUserDialog.softDelete.label": "Account deaktivieren",
-	"userEditModal.deleteUserDialog.softDelete.description":
-		"Der Account wird deaktiviert, aber alle Daten bleiben erhalten und können wiederhergestellt werden. Nach 30 Tagen werden die Daten automatisch gelöscht.",
+	"userEditModal.deleteUserDialog.ban.label": "Account sperren",
+	"userEditModal.deleteUserDialog.ban.description":
+		"Der Account wird gesperrt, aber alle Daten bleiben erhalten. Ein Account kann wieder freigeschaltet werden.",
 	"userEditModal.deleteUserDialog.hardDelete.label": "Permanent löschen",
 	"userEditModal.deleteUserDialog.hardDelete.description":
 		"Der Account und alle zugehörigen Daten werden permanent gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
 	"userEditModal.deleteUserDialog.button.cancel": "Abbrechen",
 	"userEditModal.deleteUserDialog.button.confirm": "Aktion ausführen",
-	"userEditModal.deleteUserDialog.button.softDelete": "Benutzer deaktivieren",
-	"userEditModal.deleteUserDialog.button.hardDelete": "Permanent löschen",
+	"userEditModal.deleteUserDialog.button.ban": "Benutzer sperren",
+	"userEditModal.deleteUserDialog.button.delete": "Permanent löschen",
 	// User Edit Modal Form Validation
 	"userEditModal.form.emailUpdatedSuccess":
 		"E-Mail-Adresse erfolgreich aktualisiert",
@@ -215,6 +202,126 @@ export const Content = {
 		"Folgendes Element wirklich aus der Base Knowledge löschen?",
 	"baseKnowledge.deleteDialog.deleteDocumentButton.label": "Dokument löschen",
 	"baseKnowledge.deleteDialog.cancelButton.label": "Abbrechen",
+
+	/* ---------------------- Product Dashboard ---------------------- */
+	"productDashboard.error": "Es gab einen Fehler beim Laden der Daten.",
+
+	"productDashboard.userEvolution.title": "Total Users & Daily New Users",
+	"productDashboard.userEvolution.description":
+		"Kumulierte Nutzer:innen (Linie) und neue Registrierungen pro Tag (Balken) in den letzten 30 Tagen.",
+	"productDashboard.userEvolution.total.label": "Total Users",
+	"productDashboard.userEvolution.new.label": "Daily New Users",
+
+	"productDashboard.metricCards.dau.label": "Täglich aktive Nutzer:innen",
+	"productDashboard.metricCards.dau.details": "Heute",
+	"productDashboard.metricCards.wau.label": "Wöchentlich aktive Nutzer:innen",
+	"productDashboard.metricCards.wau.details": "Letzte 7 Tage",
+	"productDashboard.metricCards.mau.label": "Monatlich aktive Nutzer:innen",
+	"productDashboard.metricCards.mau.details": "Letzte 30 Tage",
+
+	"productDashboard.metricCards.totalChats.label": "Gesamtzahl der Chats",
+	"productDashboard.metricCards.totalUserDocuments.label":
+		"Gesamtzahl der Benutzerdokumente",
+	"productDashboard.metricCards.averageInferencesPerUser.label":
+		"Durchschnittliche Inferenzen pro Nutzer:in",
+	"productDashboard.metricCards.totalMessagesWithDocuments.label":
+		"Gesamtzahl der Nachrichten mit eigenen Dokumenten",
+	"productDashboard.metricCards.totalMessagesWithoutDocuments.label":
+		"Gesamtzahl der Nachrichten ohne eigene Dokumente",
+
+	"productDashboard.domainsTable.title": "Domains",
+	"productDashboard.domainsTable.description": "Registrierte User pro Domain.",
+	"productDashboard.domainsTable.head.domain": "Domain",
+	"productDashboard.domainsTable.head.users": "Users",
+	"productDashboard.domainsTable.showAllButton": "Alle anzeigen",
+
+	/* ---------------------- Add New Domain ---------------------- */
+	"addNewDomain.title": "Neue Domain hinzufügen",
+	"addNewDomain.description":
+		"Füge eine geprüfte Berlin.de-Domain zur Allowlist hinzu, um Registrierungen von dieser Domain zu erlauben.",
+	"addNewDomain.form.domain": "Domain",
+	"addNewDomain.form.domainPlaceholder": "z.B. senjustv.berlin.de",
+	"addNewDomain.form.button.save": "Domain hinzufügen",
+	"addNewDomain.form.button.saved": "Domain hinzugefügt",
+	"addNewDomain.form.validation.wildcardNotAllowed":
+		"Wildcard-Muster wie *.berlin.de sind nicht erlaubt. Bitte geben Sie eine konkrete Domain ein.",
+	"addNewDomain.form.validation.invalidFormat":
+		"Bitte geben Sie eine gültige Domain ein (z. B. senjustv.berlin.de).",
+	"addNewDomain.form.unsuccessful.error":
+		"Die Domain konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+
+	// Domain Allowlist Table Headers
+	"domainAllowlistTable.tableHeader.domain": "Domain",
+	"domainAllowlistTable.tableHeader.userCount": "User:innen",
+	"domainAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
+	"domainAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
+	"domainAllowlistTable.tableHeader.isActive": "Status",
+	"domainAllowlistTable.tableHeader.lastStatusChange": "Letzte Änderung",
+	"domainAllowlistTable.tableHeader.lastStatusChangeBy": "Geändert von",
+	"domainAllowlistTable.tableHeader.actions": "",
+	"domainAllowlistTable.tableHeader.actions.deactivate": "Deaktivieren",
+	"domainAllowlistTable.tableHeader.actions.activate": "Aktivieren",
+	"domainAllowlistTable.tableHeader.isActive.active": "aktiv",
+	"domainAllowlistTable.tableHeader.isActive.inactive": "inaktiv",
+
+	"domainAllowlistTable.count.label": "Domains insgesamt",
+	"domainAllowlistTable.active.label": "Aktive Domains",
+	"domainAllowlistTable.deactivated.label": "Deaktivierte Domains",
+	"domainAllowlistTable.searchField.placeholder": "Suche nach Domain...",
+	"domainAllowlistTable.statusFilterDropdown.all.label": "Alle",
+	"domainAllowlistTable.statusFilterDropdown.active.label": "Aktiv",
+	"domainAllowlistTable.statusFilterDropdown.inactive.label": "Inaktiv",
+
+	"changeDomainStatusDialog.title.deactivate": "Domain deaktivieren",
+	"changeDomainStatusDialog.title.activate": "Domain aktivieren",
+	"changeDomainStatusDialog.description.deactivate.p1":
+		"Accounts mit der Domain",
+	"changeDomainStatusDialog.description.deactivate.p2": " werden deaktiviert.",
+	"changeDomainStatusDialog.description.activate.p1":
+		"Neue User:innen können sich wieder mit der Domain",
+	"changeDomainStatusDialog.description.activate.p2":
+		" registrieren. Bestehende Accounts müssen separat in der Benutzerverwaltung aktiviert werden.",
+	"changeDomainStatusDialog.button.cancel": "Abbrechen",
+
+	/* ---------------------- Add New Individual Email ---------------------- */
+	"addNewIndividualEmail.title": "Neue E-Mail-Adresse hinzufügen",
+	"addNewIndividualEmail.description":
+		"Füge eine einzelne E-Mail-Adresse zur Allowlist hinzu, um dieser Person die Registrierung zu erlauben.",
+	"addNewIndividualEmail.form.email": "E-Mail-Adresse",
+	"addNewIndividualEmail.form.emailPlaceholder":
+		"z.B. max.mustermann@extern.de",
+	"addNewIndividualEmail.form.button.save": "E-Mail hinzufügen",
+	"addNewIndividualEmail.form.button.saved": "E-Mail hinzugefügt",
+	"addNewIndividualEmail.form.validation.invalidFormat":
+		"Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+	"addNewIndividualEmail.form.emailAlreadyExistsError":
+		"Diese E-Mail-Adresse ist bereits in der Allowlist.",
+	"addNewIndividualEmail.form.wrongFormat": "Falsches E-Mail-Format.",
+	"addNewIndividualEmail.form.unsuccessful.error":
+		"Die E-Mail-Adresse konnte nicht hinzugefügt werden",
+
+	// Individual Email Allowlist Table
+	"individualEmailAllowlistTable.tableHeader.email": "E-Mail-Adresse",
+	"individualEmailAllowlistTable.tableHeader.hasAccount": "Account registriert",
+	"individualEmailAllowlistTable.tableHeader.dateAdded": "Hinzugefügt am",
+	"individualEmailAllowlistTable.tableHeader.addedBy": "Hinzugefügt von",
+	"individualEmailAllowlistTable.tableHeader.actions": "Aktionen",
+	"individualEmailAllowlistTable.tableHeader.actions.remove": "Entfernen",
+	"individualEmailAllowlistTable.tableHeader.hasAccount.yes": "Ja",
+	"individualEmailAllowlistTable.tableHeader.hasAccount.no": "Nein",
+
+	"individualEmailAllowlistTable.count.label": "E-Mails insgesamt",
+	"individualEmailAllowlistTable.searchField.placeholder":
+		"Suche nach E-Mail...",
+
+	"removeIndividualEmailDialog.title": "E-Mail entfernen",
+	"removeIndividualEmailDialog.description.withAccount": "Der Account von",
+	"removeIndividualEmailDialog.description.noAccount": "Die E-Mail-Adresse",
+	"removeIndividualEmailDialog.description.p2":
+		"wird aus der Allowlist entfernt und der Account (falls vorhanden) wird permanent gelöscht.",
+	"removeIndividualEmailDialog.button.cancel": "Abbrechen",
+
+	"admin.sidebar.navigation.individualEmailAllowlist": "E-Mail-Verwaltung",
 } as const;
 
 export default Content;

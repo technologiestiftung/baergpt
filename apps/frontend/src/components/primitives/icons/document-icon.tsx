@@ -21,8 +21,8 @@ export const DocumentIcon: React.FC<DocumentIconProps> = ({
 
 		<img
 			src="/icons/document-icon-light.svg"
-			width={24}
-			height={24}
+			width={20}
+			height={20}
 			alt={Content["documentIcon.imgAlt"]}
 			className={`${className} ${variant === "lightBlue" ? "block" : "hidden"}`}
 		/>

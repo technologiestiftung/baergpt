@@ -1,8 +1,9 @@
 import React, { type ReactNode, useState } from "react";
-import { useDocumentStore } from "../../store/document-store.ts";
-import type { Document } from "../../common.ts";
+import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
+import type { UserDocument } from "../../common.ts";
 import { useDrop } from "react-dnd";
 import { AddToChatIcon } from "../primitives/icons/add-to-chat-icon.tsx";
+import { isUserDocument } from "../documents/document-list/list-item/utils/is-user-document.ts";
 
 export function DropZoneWrapperChat({
 	children,
@@ -13,23 +14,32 @@ export function DropZoneWrapperChat({
 	className?: string;
 	style?: React.CSSProperties;
 }) {
-	const { selectChatDocument, unselectChatDocument, selectedChatDocuments } =
-		useDocumentStore();
+	const {
+		selectUserChatDocument,
+		selectedUserChatDocuments,
+		unselectUserDocumentForAction,
+	} = useUserDocumentStore();
 
-	const handleAddDocumentToChat = (itemToAddToChat: Document) => {
-		if (selectedChatDocuments.some((doc) => doc.id === itemToAddToChat.id)) {
-			unselectChatDocument(itemToAddToChat.id);
-			return;
+	const handleAddDocumentsToChat = (itemsToAdd: UserDocument[]) => {
+		for (const item of itemsToAdd) {
+			if (!selectedUserChatDocuments.some((doc) => doc.id === item.id)) {
+				selectUserChatDocument(item);
+			}
 		}
-		selectChatDocument(itemToAddToChat);
 	};
 
 	const [isHoveringOverChat, setIsHoveringOverChat] = useState(false);
 
-	const [, dropRef] = useDrop({
+	const [, dropRef] = useDrop<UserDocument[], unknown, unknown>({
 		accept: "ITEM",
-		drop: async (draggedItem: Document) => {
-			handleAddDocumentToChat(draggedItem);
+		drop: (draggedItems) => {
+			const userDocs = draggedItems.filter(isUserDocument);
+			handleAddDocumentsToChat(userDocs);
+
+			for (const doc of userDocs) {
+				unselectUserDocumentForAction(doc.id);
+			}
+
 			setIsHoveringOverChat(false);
 		},
 		hover: () => setIsHoveringOverChat(true),
@@ -49,7 +59,7 @@ export function DropZoneWrapperChat({
 				className={`absolute h-full w-full top-0 left-0 right-0 z-20 bg-hellblau-100/90 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none 
 				transition-opacity duration-200 ${isHoveringOverChat ? "opacity-100" : "opacity-0"}`}
 			>
-				<AddToChatIcon variant="plus-dark" size={48} />
+				<AddToChatIcon size={48} />
 
 				<span className="font-bold mt-3 text-lg">
 					Datei ablegen, um BärGPT dazu eine Frage zu stellen

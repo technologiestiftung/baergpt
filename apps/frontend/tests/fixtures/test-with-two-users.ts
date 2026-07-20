@@ -24,7 +24,7 @@ export type TwoUserTestFixtures = {
  * Creates a user with the given email prefix and returns the account details.
  */
 async function createUser(emailPrefix: string): Promise<UserAccount> {
-	const email = `${emailPrefix}@local.berlin.de`;
+	const email = `${emailPrefix}@ts.berlin`;
 
 	const { data, error: createUserError } =
 		await supabaseAdminClient.auth.admin.createUser({
@@ -45,13 +45,6 @@ async function createUser(emailPrefix: string): Promise<UserAccount> {
 	}
 
 	const id = data.user.id;
-
-	const { error: activationError } = await supabaseAdminClient
-		.from("user_active_status")
-		.update({ registration_finished_at: new Date().toISOString() })
-		.eq("id", id);
-
-	baseTest.expect(activationError).toBeNull();
 
 	return { email, password: defaultUserPassword, id };
 }

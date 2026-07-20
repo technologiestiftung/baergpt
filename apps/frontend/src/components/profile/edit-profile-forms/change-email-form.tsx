@@ -19,7 +19,18 @@ export function ChangeEmailForm() {
 		return null;
 	}
 
-	const { email: originalEmail, new_email: requestedNewEmail } = session.user;
+	const {
+		email: originalEmail,
+		new_email: requestedNewEmail,
+		email_change_sent_at: emailChangeSentAt,
+	} = session.user;
+
+	let isEmailChangeActive = false;
+	if (requestedNewEmail && emailChangeSentAt) {
+		const sentAtTime = new Date(emailChangeSentAt).getTime();
+		const remainingTime = sentAtTime + 60 * 60 * 1000 - Date.now();
+		isEmailChangeActive = remainingTime > 0;
+	}
 
 	const handleFormChange = (event: FormEvent<HTMLFormElement>) => {
 		const form = event.currentTarget;
@@ -57,7 +68,7 @@ export function ChangeEmailForm() {
 				{Content["profile.changeEmailForm.title"]}
 			</h3>
 
-			{requestedNewEmail && (
+			{isEmailChangeActive && (
 				<div className="text-dunkelblau-60 text-sm">
 					{Content["profile.changeEmailForm.hint.p1"]}{" "}
 					<span className="font-semibold">{requestedNewEmail}</span>{" "}
@@ -85,8 +96,8 @@ export function ChangeEmailForm() {
 						key={resetKey}
 						id="email"
 						defaultValue={originalEmail || ""}
-						useRegexValidation={true}
 						className="placeholder:text-dunkelblau-200"
+						useEmailAllowedCheck={true}
 					/>
 					{changeMailError && (
 						<div className="text-berlin-rot mt-1.5 text-sm" role="alert">

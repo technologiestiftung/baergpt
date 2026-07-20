@@ -1,4 +1,5 @@
 import Content from "../../../content";
+import { WarningButton } from "../../primitives/buttons/warning-button";
 import { DeleteAccountDialog } from "./delete-account-dialog";
 import { showDeleteAccountDialog } from "./delete-account-dialog";
 
@@ -18,14 +19,14 @@ export const DeleteAccount = () => {
 							{Content["profile.deleteAccount.description"]}
 						</p>
 					</div>
-					<button
-						id="delete-account-button"
-						className="p-2 rounded-[3px] w-fit flex-shrink-0 self-end md:self-center text-white text-sm leading-5 font-normal bg-warning-100 hover:bg-warning-85 focus-visible:outline-default"
+					<WarningButton
+						type="button"
+						ariaLabel={Content["profile.deleteAccount.button"]}
+						testId="delete-account-button"
 						onClick={() => showDeleteAccountDialog()}
-						aria-label={Content["profile.deleteAccount.button"]}
 					>
 						{Content["profile.deleteAccount.button"]}
-					</button>
+					</WarningButton>
 				</div>
 			</div>
 			<DeleteAccountDialog />

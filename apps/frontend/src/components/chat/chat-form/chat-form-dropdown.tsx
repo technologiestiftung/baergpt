@@ -1,9 +1,8 @@
-import { useRef, type KeyboardEvent } from "react";
 import Content from "../../../content";
-import type { LlmModel, ChatOption } from "../../../common";
-import { useFocusOnOpen } from "./hooks/use-focus-on-open.tsx";
+import type { LlmModel } from "../../../common";
+import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
 
-interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
+interface ChatFormDropdownProps<T extends LlmModel> {
 	title: string;
 	items: {
 		label: string;
@@ -18,7 +17,7 @@ interface ChatFormDropdownProps<T extends LlmModel | ChatOption> {
 	onClose: () => void;
 }
 
-export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
+export const ChatFormDropdown = <T extends LlmModel>({
 	items,
 	title,
 	selectedItems,
@@ -27,64 +26,15 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 	isOpen,
 	onClose,
 }: ChatFormDropdownProps<T>) => {
-	const optionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
-	const containerRef = useRef<HTMLDivElement>(null);
-
-	useFocusOnOpen(isOpen, optionButtonRefs);
-
-	const selectNextOption = (
-		currentIndex: number,
-		optionButtons: HTMLButtonElement[],
-	) => {
-		const nextIndex = (currentIndex + 1) % optionButtons.length;
-		optionButtons[nextIndex].focus();
-	};
-
-	const selectPreviousOption = (
-		currentIndex: number,
-		optionButtons: HTMLButtonElement[],
-	) => {
-		const previousIndex =
-			(currentIndex - 1 + optionButtons.length) % optionButtons.length;
-		optionButtons[previousIndex].focus();
-	};
-
-	// Handle keyboard navigation
-	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-		const optionButtons = Array.from(optionButtonRefs.current.values());
-		const currentIndex = optionButtons.findIndex(
-			(button) => button === document.activeElement,
-		);
-
-		switch (event.key) {
-			case "Escape":
-			case "Tab":
-				event.preventDefault();
-				onClose();
-				break;
-
-			case "ArrowDown":
-				event.preventDefault();
-				selectNextOption(currentIndex, optionButtons);
-				break;
-			case "ArrowUp":
-				event.preventDefault();
-				selectPreviousOption(currentIndex, optionButtons);
-				break;
-
-			case "Enter":
-				event.preventDefault();
-				onItemClick(items[currentIndex].value);
-				break;
-
-			default:
-				break;
-		}
-	};
+	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
+		items,
+		isOpen,
+		onClose,
+		onItemClick: (item) => onItemClick(item.value),
+	});
 
 	return (
 		<div
-			ref={containerRef}
 			className={`z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1 ${className}`}
 			onKeyDown={handleKeyDown}
 			role="listbox"
@@ -95,6 +45,7 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 			<ul className="flex flex-col">
 				{items.map((item, index) => {
 					const isSelected = selectedItems.includes(item.value);
+
 					return (
 						<li key={item.value}>
 							<button
@@ -107,7 +58,7 @@ export const ChatFormDropdown = <T extends LlmModel | ChatOption>({
 										optionButtonRefs.current.delete(index);
 									}
 								}}
-								className="flex items-center justify-between w-full px-4 py-3 text-left gap-6 hover:bg-hellblau-30 focus-visible:outline-default rounded-3px"
+								className="flex items-center justify-between w-full px-4 py-3 text-left gap-6 hover:bg-hellblau-30 focus-visible:bg-hellblau-30 focus-visible:outline-default rounded-3px"
 								onClick={() => onItemClick(item.value)}
 								aria-label={item.ariaLabel}
 								role="option"

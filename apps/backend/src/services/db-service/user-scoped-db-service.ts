@@ -1,5 +1,6 @@
 import type { UserScopedDbClient } from "../../supabase";
 import { BaseContentDbService } from "./base-db-service";
+import { captureError } from "../../monitoring/capture-error";
 
 export class UserScopedDbService extends BaseContentDbService {
 	protected readonly client: UserScopedDbClient;
@@ -21,6 +22,34 @@ export class UserScopedDbService extends BaseContentDbService {
 
 		if (error) {
 			throw error;
+		}
+	}
+
+	async getPersonalSystemPrompt(userId: string): Promise<string | null> {
+		const { data, error } = await this.client
+			.from("profiles")
+			.select("personal_system_prompt")
+			.eq("id", userId)
+			.single();
+
+		if (error) {
+			captureError(error);
+			return null;
+		}
+
+		return data?.personal_system_prompt ?? null;
+	}
+
+	async updateUsage(userId: string, tokenAmount: number): Promise<void> {
+		try {
+			await this.updateUserColumnValue(
+				userId,
+				"num_inference_tokens",
+				tokenAmount,
+			);
+			await this.updateUserColumnValue(userId, "num_inferences", 1);
+		} catch (error) {
+			captureError(error);
 		}
 	}
 }

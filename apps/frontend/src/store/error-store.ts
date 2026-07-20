@@ -2,11 +2,12 @@ import { create } from "zustand";
 import { useToastStore } from "./use-toast-store";
 import { captureError } from "../monitoring/capture-error";
 import Content from "../content";
+import type { Span } from "@sentry/react";
 
 interface ErrorStore {
 	error?: string;
 	uiErrors: Record<string, string>;
-	handleError: (error: unknown) => void;
+	handleError: (error: unknown, span?: Span) => void;
 	getMessageForKey: (errorKey: string) => string | null;
 	setUIError: (
 		context: string,
@@ -46,6 +47,8 @@ const errorMessages: { [key: string]: string } = {
 	no_healthy_llm_available:
 		"Temporär keine Modelle verfügbar. Bitte versuchen Sie es später erneut.",
 	"Token has expired or is invalid": "Code ist abgelaufen oder ungültig.",
+	account_deletion_failed:
+		"Ihr Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
 	document_not_found: "Dokument konnte nicht gelöscht werden.",
 	document_download_failed:
 		Content["documentsPreviewSection.download.failed.error"],
@@ -58,13 +61,13 @@ export const useErrorStore = create<ErrorStore>()((set, get) => ({
 	uiErrors: {},
 	error: undefined,
 
-	handleError: (error) => {
+	handleError: (error, span) => {
+		captureError(error, span);
+
 		if (!isError(error)) {
 			console.error("Given error object is not an instance of Error:", error);
 			return;
 		}
-
-		captureError(error);
 
 		const userReadableErrorMessage = errorMessages[error.message];
 

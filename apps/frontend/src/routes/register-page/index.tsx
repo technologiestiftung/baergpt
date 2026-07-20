@@ -1,4 +1,4 @@
-import React, { type FormEvent, useRef, useState, useEffect } from "react";
+import React, { type FormEvent, useRef, useState } from "react";
 import Checkbox from "../../components/primitives/checkboxes/checkbox.tsx";
 import Content from "../../content.ts";
 import { TextInput } from "../../components/primitives/text-inputs/text-input.tsx";
@@ -11,24 +11,15 @@ import { useAuthErrorStore } from "../../store/auth-error-store.ts";
 import { QuestionMarkIcon } from "../../components/primitives/icons/question-mark-icon.tsx";
 import { useTooltipStore } from "../../store/tooltip-store.ts";
 import { ChevronIcon } from "../../components/primitives/icons/chevron-icon.tsx";
+import * as Sentry from "@sentry/react";
 
 export function RegisterPage() {
-	const { register, getAllowedEmailDomains } = useAuthStore();
+	const { register } = useAuthStore();
 	const { error } = useAuthErrorStore();
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
-	const [hasAcceptedPersonalData, setHasAcceptedPersonalData] = useState(false);
 	const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
-
-	useEffect(() => {
-		const controller = new AbortController();
-		getAllowedEmailDomains(controller.signal);
-
-		return () => {
-			controller.abort();
-		};
-	}, []);
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -38,7 +29,15 @@ export function RegisterPage() {
 		const email = event.currentTarget.email.value;
 		const password = event.currentTarget.password.value;
 
-		register({ firstName, lastName, email, password });
+		Sentry.startSpan(
+			{
+				name: "Registration Form Submitted",
+				op: "user.registration.submit",
+			},
+			async (span) => {
+				await register({ firstName, lastName, email, password, span });
+			},
+		);
 	};
 
 	const handleChange = (event: React.ChangeEvent<HTMLFormElement>) => {
@@ -81,7 +80,7 @@ export function RegisterPage() {
 							alt="info-icon"
 						/>
 
-						<div className="flex flex-col gap-3 min-w-0">
+						<div className="flex flex-col gap-3 min-w-0" id="notice">
 							<p className="text-sm leading-5 md:text-base md:leading-6 font-semibold">
 								{Content["registerPage.notice.heading"]}
 							</p>
@@ -107,6 +106,8 @@ export function RegisterPage() {
 										? Content["registerPage.notice.showLess.button.ariaLabel"]
 										: Content["registerPage.notice.showMore.button.ariaLabel"]
 								}
+								aria-expanded={isNoticeExpanded}
+								aria-controls="notice"
 								onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
 							>
 								{isNoticeExpanded
@@ -162,37 +163,35 @@ export function RegisterPage() {
 							<EmailInput
 								id="email"
 								placeholder={Content["registerPage.emailPlaceholder"]}
-								useRegexValidation={true}
+								useEmailAllowedCheck={true}
 							/>
 						</label>
 
-						<label
-							htmlFor="password"
-							className="flex flex-col mt-4 md:mt-5 gap-y-1 text-sm md:text-base"
-						>
-							<span className="flex gap-x-1 items-center">
+						<div className="flex mt-4 md:mt-5 mb-1 text-sm md:text-base gap-x-1 items-center">
+							<label htmlFor="password">
 								{Content["registerPage.passwordLabel"]}
-								<button
-									type="button"
-									className="rounded-3px focus-visible:outline-default"
-									onMouseEnter={handleShowPasswordTooltip}
-									onMouseLeave={hideTooltip}
-									onFocus={handleShowPasswordTooltip}
-									onBlur={hideTooltip}
-								>
-									<QuestionMarkIcon />
-								</button>
-							</span>
-							<PasswordInput id="password" minLength={10} />
-						</label>
+							</label>
+							<button
+								type="button"
+								aria-label={Content["registerPage.passwordTooltip.ariaLabel"]}
+								className="rounded-3px focus-visible:outline-default"
+								onMouseEnter={handleShowPasswordTooltip}
+								onMouseLeave={hideTooltip}
+								onFocus={handleShowPasswordTooltip}
+								onBlur={hideTooltip}
+							>
+								<QuestionMarkIcon />
+							</button>
+						</div>
+						<PasswordInput id="password" minLength={10} />
 
 						<label
 							htmlFor="repeatPassword"
-							className="flex flex-col mt-4 md:mt-5 gap-y-1 text-sm md:text-base"
+							className="flex flex-col mt-4 md:mt-5 mb-1 text-sm md:text-base"
 						>
 							{Content["registerPage.repeatPasswordLabel"]}
-							<PasswordInput id="repeatPassword" />
 						</label>
+						<PasswordInput id="repeatPassword" />
 
 						<div className="mt-6">
 							<Checkbox
@@ -220,22 +219,6 @@ export function RegisterPage() {
 									<span data-testid={`label-has-accepted-privacy-checkbox`}>
 										{Content["registerPage.privacyText.p2"]}
 									</span>
-								</span>
-							</Checkbox>
-						</div>
-
-						<div className="mt-3">
-							<Checkbox
-								id="has-accepted-personal-data"
-								checked={hasAcceptedPersonalData}
-								onChange={setHasAcceptedPersonalData}
-								required={true}
-							>
-								<span
-									className="text-sm md:text-base"
-									data-testid={`label-has-accepted-personal-data-checkbox`}
-								>
-									{Content["registerPage.personalData.label"]}
 								</span>
 							</Checkbox>
 						</div>

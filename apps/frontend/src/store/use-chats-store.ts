@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type {
 	ChatWithMessages,
 	NewChatMessage,
-	ChatOption,
+	ChatTool,
 	LlmModel,
 } from "../common";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
@@ -12,21 +12,34 @@ import { deleteChat as deleteChatFromDb } from "../api/chat/delete-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
 import { updateMessage as updateMessageInDb } from "../api/message/update-message.ts";
+import { getTotalChatCount as getTotalChatCountFromDb } from "../api/chat/get-total-chat-count.ts";
 import { useErrorStore } from "./error-store.ts";
+import type {
+	WebCitationSource,
+	ParlaCitationSource,
+} from "../api/chat/get-completion.ts";
+import { useUserDocumentStore } from "./use-user-document-store.ts";
+import { useUserFolderStore } from "./use-user-folder-store.ts";
+import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
-let debounceTimeout: ReturnType<typeof setTimeout>;
+let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
+let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
+let autoDeactivateExternalToolTimeout: ReturnType<typeof setTimeout>;
 
 interface ChatStore {
 	isFirstLoad: boolean;
 	isLoading: boolean;
 	chats: ChatWithMessages[];
-	selectedChatOptions: ChatOption[];
+	totalChatCount: number | null;
+	selectedChatTools: ChatTool[];
 	selectedLlmModel: LlmModel;
-	resetToDefaultChatOptions(): void;
-	toggleChatOption(option: ChatOption): void;
+	resetToDefaultChatTools(): void;
+	toggleChatTool(tool: ChatTool): void;
 	setSelectedLlmModel(model: LlmModel): void;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
+	getNextChatsPage(): Promise<void>;
+	syncChats(newChats: ChatWithMessages[]): void;
 	getCurrentChat(): ChatWithMessages | undefined;
 	getCurrentOrCreateChat(
 		chatMessage: NewChatMessage,
@@ -42,35 +55,75 @@ interface ChatStore {
 		messageId: number;
 		content: string;
 		citations: number[] | null;
+		web_citations: WebCitationSource[] | null;
+		parla_citations: ParlaCitationSource[] | null;
 	}): void;
+	autoDeactivatedExternalTools: ChatTool[];
+	setAutoDeactivatedExternalTools(tools: ChatTool[]): void;
+	deactivateExternalTools(): void;
 }
+
+const externalChatTools: ChatTool[] = ["webSearch", "parla"];
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
 	isLoading: false,
 	chats: [],
-	selectedChatOptions: ["baseKnowledge"],
+	totalChatCount: null,
+	selectedChatTools: [],
 	selectedLlmModel: "mistral-small",
+	autoDeactivatedExternalTools: [],
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
 	},
 
-	resetToDefaultChatOptions() {
-		set({ selectedChatOptions: ["baseKnowledge"] });
+	resetToDefaultChatTools() {
+		set({ selectedChatTools: [], autoDeactivatedExternalTools: [] });
 	},
 
-	toggleChatOption(option: ChatOption) {
-		const { selectedChatOptions } = get();
-		if (selectedChatOptions.includes(option)) {
+	toggleChatTool(tool: ChatTool) {
+		const { selectedChatTools } = get();
+
+		if (selectedChatTools.includes(tool)) {
 			set({
-				selectedChatOptions: selectedChatOptions.filter(
-					(item) => item !== option,
+				selectedChatTools: selectedChatTools.filter(
+					(active) => active !== tool,
 				),
 			});
-		} else {
-			set({ selectedChatOptions: [...selectedChatOptions, option] });
+			return;
 		}
+
+		// Activating any external tool clears selected documents/folders, because
+		// document/folder RAG is mutually exclusive with external tools.
+		if (externalChatTools.includes(tool)) {
+			const { selectedUserChatDocuments, unselectUserChatDocument } =
+				useUserDocumentStore.getState();
+			selectedUserChatDocuments.forEach((document) =>
+				unselectUserChatDocument(document.id),
+			);
+
+			const { selectedUserChatFolders, unselectUserChatFolder } =
+				useUserFolderStore.getState();
+			selectedUserChatFolders.forEach((folder) =>
+				unselectUserChatFolder(folder.id),
+			);
+
+			const {
+				selectedPublicChatDocuments,
+				selectedPublicChatFolders,
+				unselectPublicChatDocument,
+				unselectPublicChatFolder,
+			} = usePublicDocumentsStore.getState();
+			selectedPublicChatDocuments.forEach((document) =>
+				unselectPublicChatDocument(document.id),
+			);
+			selectedPublicChatFolders.forEach((folder) =>
+				unselectPublicChatFolder(folder.id),
+			);
+		}
+
+		set({ selectedChatTools: [...selectedChatTools, tool] });
 	},
 
 	/**
@@ -80,25 +133,65 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	async getChatsFromDb(signal) {
 		set({ isLoading: true });
 
+		const offset = get().chats.length;
+
 		// Clear any existing fetch error when starting a new fetch attempt
 		useErrorStore.getState().clearUIError("chats-fetch");
 
-		const chats = await getChatsFromDb(signal);
+		const totalChatCount = await getTotalChatCountFromDb(signal);
 
-		const promises = chats.map(async (chat) => {
+		set({ totalChatCount });
+
+		const chatsFromDb = await getChatsFromDb(offset, signal);
+
+		const promises = chatsFromDb.map(async (chat) => {
 			const messages = await getMessagesFromDb(chat.id, signal);
 			return { ...chat, messages };
 		});
 
 		const chatsWithMessages = await Promise.all(promises);
 
-		set({ chats: chatsWithMessages });
+		get().syncChats(chatsWithMessages);
 
 		if (get().isFirstLoad) {
 			set({ isFirstLoad: false });
 		}
 
 		set({ isLoading: false });
+	},
+
+	syncChats(newChats: ChatWithMessages[]) {
+		const existingChats = get().chats;
+
+		const synchronizedChats: ChatWithMessages[] = [...existingChats];
+
+		newChats.forEach((newChat) => {
+			const isDuplicate = existingChats.some((chat) => chat.id === newChat.id);
+			if (isDuplicate) {
+				return;
+			}
+			synchronizedChats.push(newChat);
+		});
+
+		set({ chats: synchronizedChats });
+	},
+
+	async getNextChatsPage() {
+		clearTimeout(getChatsDebounceTimeout);
+
+		const { totalChatCount, chats } = get();
+		if (totalChatCount === null) {
+			return;
+		}
+
+		const hasLoadedAllChats = chats.length === totalChatCount;
+		if (hasLoadedAllChats) {
+			return;
+		}
+
+		getChatsDebounceTimeout = setTimeout(async () => {
+			await get().getChatsFromDb(new AbortController().signal);
+		}, 200);
 	},
 
 	getCurrentChat: () => {
@@ -186,8 +279,15 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	 * Updates the content of a message
 	 * and debounces updating the message in the database
 	 */
-	updateMessage: ({ chat, messageId, content, citations }) => {
-		clearTimeout(debounceTimeout);
+	updateMessage: ({
+		chat,
+		messageId,
+		content,
+		citations,
+		web_citations,
+		parla_citations,
+	}) => {
+		clearTimeout(updateMessageDebounceTimeout);
 
 		const foundMessage = chat.messages.find(
 			(message) => message.id === messageId,
@@ -198,11 +298,43 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		foundMessage.content = content;
 		foundMessage.citations = citations;
-
+		foundMessage.web_citations = web_citations;
+		foundMessage.parla_citations = parla_citations;
 		get().updateChats(chat);
 
-		debounceTimeout = setTimeout(async () => {
-			await updateMessageInDb(messageId, { content, citations });
+		updateMessageDebounceTimeout = setTimeout(async () => {
+			await updateMessageInDb(messageId, {
+				content,
+				citations,
+				web_citations,
+				parla_citations,
+			});
 		}, 300);
+	},
+
+	setAutoDeactivatedExternalTools(tools: ChatTool[]) {
+		if (autoDeactivateExternalToolTimeout) {
+			clearTimeout(autoDeactivateExternalToolTimeout);
+		}
+		set({ autoDeactivatedExternalTools: tools });
+		autoDeactivateExternalToolTimeout = setTimeout(() => {
+			set({ autoDeactivatedExternalTools: [] });
+		}, 20_000);
+	},
+
+	deactivateExternalTools() {
+		const { selectedChatTools } = get();
+		const activeExternalTools = selectedChatTools.filter((tool) =>
+			externalChatTools.includes(tool),
+		);
+		if (activeExternalTools.length === 0) {
+			return;
+		}
+		set({
+			selectedChatTools: selectedChatTools.filter(
+				(tool) => !externalChatTools.includes(tool),
+			),
+		});
+		get().setAutoDeactivatedExternalTools(activeExternalTools);
 	},
 }));

@@ -10,6 +10,7 @@ import {
 	type HybridSearchResult,
 	type KnowledgeBaseDocument,
 	DocumentNotFoundError,
+	DefaultDocumentDeletionError,
 } from "../../types/common";
 import { ragSearchDefaults } from "../../constants";
 import {
@@ -28,7 +29,6 @@ export abstract class BaseContentDbService {
 			summary: string;
 			shortSummary: string;
 			tags: string[];
-			summaryEmbedding: number[];
 		},
 		documentData: Document,
 	): Promise<void> {
@@ -36,7 +36,6 @@ export abstract class BaseContentDbService {
 			owned_by_user_id: documentData.owned_by_user_id || null,
 			summary: summaryData.summary,
 			short_summary: summaryData.shortSummary,
-			summary_jina_embedding: `[${summaryData.summaryEmbedding.join(",")}]`,
 			tags: summaryData.tags,
 			document_id: documentData.id,
 			folder_id: documentData.folder_id,
@@ -48,17 +47,17 @@ export abstract class BaseContentDbService {
 		}
 		return;
 	}
-	async retrieveSummaries(documentIds: number[]): Promise<Map<number, string>> {
-		const { error: summariesError, data: summaries } = await this.client
-			.from("document_summaries")
-			.select("document_id, summary")
-			.in("document_id", documentIds);
+	async retrieveSummaries(documentIds: number[], folderIds: number[]) {
+		const { data: summaries, error: summariesError } = await this.client.rpc(
+			"get_document_summaries",
+			{ input_document_ids: documentIds, input_folder_ids: folderIds },
+		);
 
 		if (summariesError) {
-			throw new Error("Failed to find summaries");
+			throw summariesError;
 		}
 
-		return new Map(summaries.map((s) => [s.document_id, s.summary]));
+		return summaries;
 	}
 
 	/**
@@ -107,9 +106,13 @@ export abstract class BaseContentDbService {
 		source_url: string,
 		bucket: string,
 	): Promise<void> {
+		const pathsToRemove = [source_url];
+		if (/\.(docx?)$/i.test(source_url)) {
+			pathsToRemove.push(source_url.replace(/\.(docx?)$/i, ".pdf"));
+		}
 		const { error: deletionError } = await this.client.storage
 			.from(bucket)
-			.remove([source_url]);
+			.remove(pathsToRemove);
 
 		if (!deletionError) {
 			return;
@@ -142,6 +145,8 @@ export abstract class BaseContentDbService {
 		amount: number,
 	): Promise<void>;
 
+	abstract updateUsage(userId: string, tokenAmount: number): Promise<void>;
+
 	/**
 	 * Creates a complete document record with all metadata, summary, and embeddings in the database.
 	 */
@@ -151,14 +156,9 @@ export abstract class BaseContentDbService {
 			summary: string;
 			shortSummary: string;
 			tags: string[];
-			summaryEmbedding: number[];
 		},
 		embeddings: Embedding[],
 	): Promise<void> {
-		if (!document) {
-			throw new Error("Document is undefined");
-		}
-
 		// 1. Insert Document
 		const { data, error } = await this.client
 			.from("documents")
@@ -182,10 +182,6 @@ export abstract class BaseContentDbService {
 			throw error;
 		}
 
-		if (!data || data.length === 0) {
-			throw new Error("Document insert returned no data");
-		}
-
 		const newDocument = data[0];
 		const documentId = newDocument.id;
 
@@ -207,7 +203,6 @@ export abstract class BaseContentDbService {
 
 			return null;
 		} catch (innerError) {
-			// If saving aux data fails, we should cleanup the document to avoid partial state
 			await this.deleteDocumentById(documentId);
 			throw innerError;
 		}
@@ -218,17 +213,22 @@ export abstract class BaseContentDbService {
 	 * Deletes a document by its ID after a partial save failure.
 	 * Only logs errors rather than throwing them to avoid masking the original error.
 	 */
-	private async deleteDocumentById(documentId: number): Promise<void> {
+	async deleteDocumentById(documentId: number): Promise<void> {
+		const { bucket, sourceUrl } =
+			await this.getStorageInformationForDocumentId(documentId);
+		await this.deleteFileFromStorage(sourceUrl, bucket);
+
 		const { error } = await this.client
 			.from("documents")
 			.delete()
 			.eq("id", documentId);
 
+		/**
+		 * We are intentionally not throwing errors from this cleanup function to avoid masking
+		 * the original error that caused the cleanup to be necessary.
+		 */
 		if (error) {
-			console.error(
-				`Failed to cleanup document ${documentId} after partial save failure:`,
-				error,
-			);
+			captureError(error);
 		}
 	}
 
@@ -240,7 +240,7 @@ export abstract class BaseContentDbService {
 			embeddings.map((e) => ({
 				owned_by_user_id: document.owned_by_user_id || null,
 				content: e.content,
-				chunk_jina_embedding: JSON.stringify(e.embedding),
+				chunk_mistral_embedding: JSON.stringify(e.embedding),
 				chunk_index: e.chunkIndex,
 				document_id: document.id,
 				folder_id: document.folder_id,
@@ -255,42 +255,53 @@ export abstract class BaseContentDbService {
 	}
 
 	async extractDocument(document: Document): Promise<ExtractionResult> {
-		const fileName = document.source_url.split("/").pop();
 		const bucket = ["public_document", "default_document"].includes(
 			document.source_type,
 		)
 			? "public_documents"
 			: "documents";
-		try {
-			if (/\.(docx)$/i.test(fileName)) {
-				const wordBuffer = await this.getDocumentBufferFromSupabase(
-					bucket,
-					document.source_url,
-				);
-				const pdfBuffer = await wordExtractionService.convertDocxToPdf(
-					Buffer.from(wordBuffer),
-				);
-				await this.uploadFileToStorage(
-					document.source_url.replace(/\.(docx)$/i, ".pdf"),
-					new File([pdfBuffer], fileName.replace(/\.(docx)$/i, ".pdf"), {
-						type: "application/pdf",
-					}),
-					bucket,
-				);
-			}
-		} catch (error) {
-			captureError(error);
-		}
+
 		const fileBytes = await this.getDocumentBufferFromSupabase(
 			bucket,
 			document.source_url,
 		);
+
+		if (/\.(docx?)$/i.test(document.source_url)) {
+			await this.savePdfPreview({ fileBytes, bucket, document });
+		}
+
 		const extractionResult = await documentExtraction.extractDocument(
 			fileBytes,
 			document,
 		);
 
 		return extractionResult;
+	}
+
+	async savePdfPreview({
+		fileBytes,
+		bucket,
+		document,
+	}: {
+		fileBytes: Uint8Array;
+		bucket: string;
+		document: Document;
+	}) {
+		const pdfPreviewUrl = document.source_url.replace(/\.(docx?)$/i, ".pdf");
+		const fileName = document.source_url.split("/").pop();
+
+		const pdfBuffer = await wordExtractionService.convertWordToPdf({
+			fileName,
+			wordDoc: Buffer.from(fileBytes),
+		});
+
+		await this.uploadFileToStorage(
+			pdfPreviewUrl,
+			new File([pdfBuffer], fileName, {
+				type: "application/pdf",
+			}),
+			bucket,
+		);
 	}
 
 	/**
@@ -358,41 +369,86 @@ export abstract class BaseContentDbService {
 	async deleteDocument(documentId: number, userId: string): Promise<void> {
 		const isAdmin = await this.getUserAdminStatus();
 
-		let query = this.client
+		let selectQuery = this.client
+			.from("documents")
+			.select("source_url, source_type, owned_by_user_id")
+			.eq("id", documentId);
+
+		// This security check is added in addition to an existing RLS policy which enforces this as well to make the logic more explicit
+		// and also block deletion if a service role key is used bypassing RLS policies
+		if (isAdmin) {
+			// Admin can access their own docs OR docs with null owned_by_user_id
+			selectQuery = selectQuery.or(
+				`owned_by_user_id.eq.${userId},owned_by_user_id.is.null`,
+			);
+		} else {
+			// Regular users can only access their own documents
+			selectQuery = selectQuery.eq("owned_by_user_id", userId);
+		}
+
+		const { data: documentData, error: selectError } =
+			await selectQuery.single();
+
+		if (selectError || !documentData) {
+			throw new DocumentNotFoundError(documentId);
+		}
+		if (documentData.source_type === "default_document") {
+			throw new DefaultDocumentDeletionError(documentId);
+		}
+
+		let deleteQuery = this.client
 			.from("documents")
 			.delete({ count: "exact" })
 			.eq("id", documentId);
 
+		// This security check is added in addition to an existing RLS policy which enforces this as well to make the logic more explicit
+		// and also block deletion if a service role key is used bypassing RLS policies
 		if (isAdmin) {
 			// Admin can delete their own docs OR docs with null owned_by_user_id
-			query = query.or(
+			deleteQuery = deleteQuery.or(
 				`owned_by_user_id.eq.${userId},owned_by_user_id.is.null`,
 			);
 		} else {
 			// Regular users can only delete their own documents
-			query = query.eq("owned_by_user_id", userId);
+			deleteQuery = deleteQuery.eq("owned_by_user_id", userId);
 		}
 
-		const { error: dbError, count: deletedDocumentsCount } = await query;
+		const { error: deleteError, count: deletedDocumentsCount } =
+			await deleteQuery;
 
-		if (dbError) {
-			throw dbError;
+		if (deleteError) {
+			throw deleteError;
 		}
 
+		// Verify that the document was actually deleted
 		if (!deletedDocumentsCount) {
 			throw new DocumentNotFoundError(documentId);
 		}
 
-		const documentCount = await this.getDocumentCountPerUser(userId);
+		const bucket = ["public_document", "default_document"].includes(
+			documentData.source_type,
+		)
+			? "public_documents"
+			: "documents";
+
+		if ((isAdmin && bucket === "public_documents") || bucket === "documents") {
+			await this.deleteFileFromStorage(documentData.source_url, bucket);
+		}
 
 		// Update the user's document count
-		const { error: updateError } = await this.client
-			.from("profiles")
-			.update({ num_documents: documentCount })
-			.eq("id", userId);
+		if (documentData.owned_by_user_id) {
+			const documentCount = await this.getDocumentCountPerUser(
+				documentData.owned_by_user_id,
+			);
 
-		if (updateError) {
-			throw updateError;
+			const { error: updateError } = await this.client
+				.from("profiles")
+				.update({ num_documents: documentCount })
+				.eq("id", documentData.owned_by_user_id);
+
+			if (updateError) {
+				throw updateError;
+			}
 		}
 	}
 
@@ -476,13 +532,31 @@ export abstract class BaseContentDbService {
 			});
 
 		if (error) {
-			console.error(
-				`Storage error when checking file existence for ${sourceUrl} in bucket ${bucket}:`,
-				error.message,
-			);
+			captureError(error);
 			return false;
 		}
 
 		return data?.some((file) => file.name === fileName) ?? false;
+	}
+
+	async getStorageInformationForDocumentId(
+		documentId: number,
+	): Promise<{ bucket: string; sourceUrl: string }> {
+		const { data, error } = await this.client
+			.from("documents")
+			.select("source_url, source_type")
+			.eq("id", documentId)
+			.single();
+		if (error) {
+			throw error;
+		}
+
+		const bucket = ["public_document", "default_document"].includes(
+			data.source_type,
+		)
+			? "public_documents"
+			: "documents";
+
+		return { bucket, sourceUrl: data.source_url };
 	}
 }

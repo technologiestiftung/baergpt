@@ -1,7 +1,6 @@
 import Content from "../../../content.ts";
 import { SecondaryButton } from "../../primitives/buttons/secondary-button.tsx";
 import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
-import { UploadIcon } from "../../icons/upload-icon.tsx";
 
 type NoFilesUploadZoneProps = {
 	onUploadClick: () => void;
@@ -13,29 +12,25 @@ export function NoFilesUploadZone({ onUploadClick }: NoFilesUploadZoneProps) {
 	);
 
 	return (
-		<div className="border-dashed p-3 border border-dunkelblau-60 flex flex-col w-full h-full items-center justify-center">
-			<div className="flex flex-col h-full justify-center items-center">
+		<div className="flex flex-col w-full h-full items-center justify-center gap-y-8">
+			<div className="flex flex-col gap-2 h-full justify-center items-center">
+				<img
+					src="/icons/folder-stack-icon.svg"
+					width={94}
+					className="mb-6"
+					alt={Content["fileUpload.uploadButton.imgAlt"]}
+				/>
 				<div
-					className={`font-bold mt-5 text-dunkelblau-200 ${!hasAvailableUploadSlots && "text-dunkelblau-40"}`}
+					className={`text-base leading-6 font-semibold text-dunkelblau-100 ${!hasAvailableUploadSlots && "text-dunkelblau-40"}`}
 				>
 					{Content["fileUpload.uploadInstructions.p1"]}
 				</div>
 
-				<div
-					className={`mt-1.5 text-dunkelblau-200 ${!hasAvailableUploadSlots && "text-dunkelblau-40"}`}
-				>
-					{Content["fileUpload.uploadInstructions.p2"]}
-				</div>
-
 				<SecondaryButton
-					className="mt-2"
 					onClick={onUploadClick}
 					disabled={!hasAvailableUploadSlots}
 				>
 					{Content["fileUpload.searchComputerbutton.label"]}{" "}
-					<UploadIcon
-						className={`size-6  ${hasAvailableUploadSlots ? "text-dunkelblau-100" : "text-dunkelblau-40"}`}
-					/>
 				</SecondaryButton>
 			</div>
 		</div>

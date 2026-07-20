@@ -1,12 +1,10 @@
 import { Hono } from "hono";
 import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
-import { adminAuth } from "../middleware/admin-auth";
 import { captureError } from "../monitoring/capture-error";
-import basicAuth from "../middleware/basic-auth";
 import { serviceRoleDbClient } from "../supabase";
+import { adminAuth } from "../middleware/admin-auth";
 
 const admin = new Hono();
-admin.use(basicAuth);
 admin.use(adminAuth);
 
 const serviceRoleAdminService = new PrivilegedDbService(serviceRoleDbClient);
@@ -87,7 +85,6 @@ admin.put("/users/:userId/admin", async (c) => {
 	}
 });
 
-// Route for deleting a user (soft delete by default, hard delete if specified)
 admin.delete("/users/:userId", async (c) => {
 	try {
 		const userId = c.req.param("userId");
@@ -95,55 +92,40 @@ admin.delete("/users/:userId", async (c) => {
 			return c.json({ error: "User ID is required" }, 400);
 		}
 
-		// Check if hard delete is requested via query parameter
-		const hardDelete = c.req.query("hard") === "true";
-
-		if (hardDelete) {
-			await serviceRoleAdminService.hardDeleteUser(userId);
-			return c.json({ message: "User permanently deleted successfully" });
-		}
-
-		await serviceRoleAdminService.softDeleteUser(userId);
-		return c.json({ message: "User soft deleted successfully" });
+		await serviceRoleAdminService.deleteUser(userId);
+		return c.json({ message: "User permanently deleted successfully" });
 	} catch (error) {
 		captureError(error);
 		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });
 
-// Route for restoring a soft-deleted user
-admin.put("/users/:userId/restore", async (c) => {
+admin.put("/users/:userId/ban", async (c) => {
 	try {
 		const userId = c.req.param("userId");
 		if (!userId) {
 			return c.json({ error: "User ID is required" }, 400);
 		}
 
-		await serviceRoleAdminService.restoreUser(userId);
-		return c.json({ message: "User restored successfully" });
+		await serviceRoleAdminService.banUser(userId);
+		return c.json({ message: "User banned successfully" });
 	} catch (error) {
 		captureError(error);
 		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });
 
-// Route for sending an invite link to a user
-admin.post("/users/invite", async (c) => {
+admin.put("/users/:userId/unban", async (c) => {
 	try {
-		const { email, firstName, lastName } = await c.req.json();
-		if (!email) {
-			return c.json({ error: "Email is required" }, 400);
+		const userId = c.req.param("userId");
+		if (!userId) {
+			return c.json({ error: "User ID is required" }, 400);
 		}
 
-		await serviceRoleAdminService.sendInviteLink(email, firstName, lastName);
-		return c.json({ message: "Invite link sent successfully" });
+		await serviceRoleAdminService.unbanUser(userId);
+		return c.json({ message: "User unbanned successfully" });
 	} catch (error) {
 		captureError(error);
-
-		if (error instanceof SyntaxError) {
-			return c.json({ error: "Invalid JSON in request body" }, 400);
-		}
-
 		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });

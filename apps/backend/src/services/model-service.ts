@@ -1,6 +1,6 @@
 import { config } from "../config";
 import { LLMHandler } from "../types/common";
-import { mistral } from "@ai-sdk/mistral";
+import { getLanguageModel } from "./llm-provider";
 
 type ModelProvider = "Mistral";
 
@@ -73,12 +73,12 @@ export class ModelService {
 	handlers: Record<string, LLMHandler> = {
 		"mistral-small": new LLMHandler(
 			"mistral-small",
-			mistral(config.smallModelIdentifier),
+			getLanguageModel(config.smallModelIdentifier),
 			"https://api.mistral.ai/v1",
 		),
 		"mistral-large": new LLMHandler(
 			"mistral-large",
-			mistral(config.largeModelIdentifier),
+			getLanguageModel(config.largeModelIdentifier),
 			"https://api.mistral.ai/v1",
 		),
 	};

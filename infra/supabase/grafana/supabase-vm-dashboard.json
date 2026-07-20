@@ -1,0 +1,176 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "Supabase VM — Health",
+  "uid": null,
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-6h", "to": "now" },
+  "tags": ["supabase", "otel", "stackit"],
+  "templating": {
+    "list": [
+      {
+        "name": "ds_metrics",
+        "label": "Metrics datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": { "text": "Thanos", "value": "Thanos" },
+        "hide": 0
+      },
+      {
+        "name": "ds_logs",
+        "label": "Logs datasource",
+        "type": "datasource",
+        "query": "loki",
+        "current": { "text": "Loki", "value": "Loki" },
+        "hide": 0
+      },
+      {
+        "name": "source",
+        "label": "Source",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+        "query": "label_values(source)",
+        "regex": "/supabase-.*/",
+        "current": { "text": "supabase-staging", "value": "supabase-staging" },
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "gauge",
+      "title": "CPU used %",
+      "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 70 },
+            { "color": "red", "value": 90 }
+          ] }
+        }
+      },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+          "expr": "100 * (1 - (sum(rate(system_cpu_time_seconds_total{source=\"$source\", state=\"idle\"}[5m])) / sum(rate(system_cpu_time_seconds_total{source=\"$source\"}[5m]))))" }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "RAM used %",
+      "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 75 },
+            { "color": "red", "value": 90 }
+          ] }
+        }
+      },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+          "expr": "100 * sum(system_memory_usage_bytes{source=\"$source\", state=\"used\"}) / sum(system_memory_usage_bytes{source=\"$source\"})" }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "Disk used % (/)",
+      "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 75 },
+            { "color": "red", "value": 90 }
+          ] }
+        }
+      },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+          "expr": "100 * sum(system_filesystem_usage_bytes{source=\"$source\", state=\"used\", mountpoint=\"/\"}) / sum(system_filesystem_usage_bytes{source=\"$source\", state=~\"used|free\", mountpoint=\"/\"})" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU & RAM % over time",
+      "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 7 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "calcs": ["last"] } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+          "expr": "100 * (1 - (sum(rate(system_cpu_time_seconds_total{source=\"$source\", state=\"idle\"}[5m])) / sum(rate(system_cpu_time_seconds_total{source=\"$source\"}[5m]))))",
+          "legendFormat": "CPU %" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+          "expr": "100 * sum(system_memory_usage_bytes{source=\"$source\", state=\"used\"}) / sum(system_memory_usage_bytes{source=\"$source\"})",
+          "legendFormat": "RAM %" }
+      ]
+    },
+
+    { "type": "row", "title": "Per-container", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 } },
+
+    {
+      "type": "timeseries",
+      "title": "Container CPU (% of one core)",
+      "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0 } },
+      "options": { "legend": { "displayMode": "table", "calcs": ["last", "max"] } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+          "expr": "sum by (container_name) (rate(container_cpu_usage_nanoseconds_total{source=\"$source\"}[5m])) / 1e9 * 100",
+          "legendFormat": "{{container_name}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Container memory",
+      "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 } },
+      "options": { "legend": { "displayMode": "table", "calcs": ["last", "max"] } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${ds_metrics}" },
+          "expr": "sum by (container_name) (container_memory_usage_total_bytes{source=\"$source\"})",
+          "legendFormat": "{{container_name}}" }
+      ]
+    },
+
+    { "type": "row", "title": "Logs", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 } },
+
+    {
+      "type": "timeseries",
+      "title": "Log volume by level",
+      "datasource": { "type": "loki", "uid": "${ds_logs}" },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 25 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "loki", "uid": "${ds_logs}" },
+          "expr": "sum by (detected_level) (count_over_time({service_name=\"$source\"} [$__auto]))",
+          "legendFormat": "{{detected_level}}" }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "Logs — $source",
+      "datasource": { "type": "loki", "uid": "${ds_logs}" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 31 },
+      "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "sortOrder": "Descending", "dedupStrategy": "none" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "loki", "uid": "${ds_logs}" }, "expr": "{service_name=\"$source\"}" }
+      ]
+    }
+  ]
+}

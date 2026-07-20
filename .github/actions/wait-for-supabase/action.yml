@@ -1,0 +1,25 @@
+name: Wait for Supabase to be ready
+description: Polls until the Supabase REST API and PostgreSQL are both accepting connections
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for Supabase to be ready ⏳
+      shell: bash
+      run: |
+        timeout=600
+        counter=0
+
+        # Sometimes the postgrest api and postgres are up, but individual postgrest endpoints are not ready yet.
+        # Therefore we check if a table (e.g. `application_admins`) is available in the postgrest api.
+
+        until curl -sf http://localhost:54321/rest/v1/application_admins && pg_isready -U postgres -h localhost -p 54322; do
+          if [ $counter -gt $timeout ]; then
+            echo "Timed out waiting for Supabase"
+            exit 1
+          fi
+          echo "Waiting for Supabase to be ready..."
+          sleep 1
+          counter=$((counter + 1))
+        done
+        echo "Supabase is ready!"

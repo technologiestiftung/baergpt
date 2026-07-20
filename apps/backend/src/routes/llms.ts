@@ -1,7 +1,42 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import type { ChatMessageBody } from "../types/common";
+import { config } from "../config";
+import type { ActiveTools, ChatMessageBody } from "../types/common";
 import type { ModelMessage } from "ai";
+
+const VALID_ACTIVE_TOOLS = new Set<ActiveTools>([
+	"ragSearchTool",
+	"webSearchTool",
+	"parlaMCPTools",
+	"datawrapperMCPTools",
+	"openDataMCPTools",
+]);
+
+export const EXTERNAL_TOOLS = new Set<ActiveTools>([
+	"webSearchTool",
+	"parlaMCPTools",
+	"datawrapperMCPTools",
+	"openDataMCPTools",
+]);
+
+function isValidActiveTool(value: unknown): value is ActiveTools {
+	if (
+		typeof value !== "string" ||
+		!VALID_ACTIVE_TOOLS.has(value as ActiveTools)
+	) {
+		return false;
+	}
+
+	if (value === "webSearchTool" && !config.featureFlagWebSearchAllowed) {
+		return false;
+	}
+
+	if (value === "parlaMCPTools" && !config.featureFlagMcpParlaAllowed) {
+		return false;
+	}
+
+	return true;
+}
 import { ModelService } from "../services/model-service";
 import { GenerationService } from "../services/generation-service";
 import { captureError } from "../monitoring/capture-error";
@@ -29,7 +64,6 @@ llms.post("/just-chatting", async (c: Context) => {
 		const allowedFolderIds = body.allowed_folder_ids || [];
 		const messages = body.messages as ModelMessage[];
 		const isAddressedFormal = body.is_addressed_formal;
-		const isBaseKnowledgeActive = body.is_base_knowledge_active;
 		if (messages.length === 0 || !messages.at(-1)?.content) {
 			return c.json(
 				{
@@ -40,20 +74,65 @@ llms.post("/just-chatting", async (c: Context) => {
 			);
 		}
 
-		const { messages: promptMessages, promptClient: langfusePrompt } =
-			await generationService.createPrompt(messages, isAddressedFormal);
-		const response = await generationService.generateTextStreamResponse(
-			llmHandler,
-			promptMessages,
-			{
-				userId: body.user_id,
-				sessionId: body.chat_id,
-				langfusePrompt: langfusePrompt,
-				allowedDocumentIds: allowedDocumentIds,
-				allowedFolderIds: allowedFolderIds,
-				isBaseKnowledgeActive: isBaseKnowledgeActive,
-			},
+		const rawActiveTools = body.active_tools ?? [];
+
+		if (
+			!Array.isArray(rawActiveTools) ||
+			!rawActiveTools.every(isValidActiveTool)
+		) {
+			return c.json(
+				{
+					error: `Invalid request: active_tools must be an array of valid tool names (${[...VALID_ACTIVE_TOOLS].join(", ")})`,
+				},
+				400,
+			);
+		}
+		const activeTools: ActiveTools[] = rawActiveTools;
+
+		const hasSelectedDocuments =
+			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
+		const hasExternalTool = activeTools.some((tool) =>
+			EXTERNAL_TOOLS.has(tool),
 		);
+		if (hasSelectedDocuments && hasExternalTool) {
+			return c.json(
+				{
+					error:
+						"Invalid request: document/folder search cannot be combined with external tools.",
+				},
+				400,
+			);
+		}
+
+		if (hasSelectedDocuments) {
+			activeTools.push("ragSearchTool");
+		}
+
+		const authenticatedUserId = c.get("authenticatedUserId");
+		if (!authenticatedUserId) {
+			return c.json({ error: "Unauthorized" }, 401);
+		}
+		let userSystemPrompt: string | null = null;
+		userSystemPrompt =
+			await userScopedDbService.getPersonalSystemPrompt(authenticatedUserId);
+
+		const { messages: promptMessages, promptClient: langfusePrompt } =
+			await generationService.createPrompt({
+				previousMessages: messages,
+				isAddressedFormal,
+				activeTools,
+				userSystemPrompt,
+			});
+		const response = await generationService.generateTextStreamResponse({
+			llmHandler,
+			messages: promptMessages,
+			userId: body.user_id,
+			sessionId: body.chat_id,
+			langfusePrompt: langfusePrompt,
+			allowedDocumentIds: allowedDocumentIds,
+			allowedFolderIds: allowedFolderIds,
+			activeTools,
+		});
 
 		response.headers.set("Content-Type", "text/event-stream; charset=utf-8");
 		response.headers.set("Transfer-Encoding", "chunked");

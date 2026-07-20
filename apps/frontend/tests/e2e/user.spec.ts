@@ -2,7 +2,6 @@ import { defaultUserFirstName, defaultUserLastName } from "../constants";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user";
 import { expect } from "@playwright/test";
 import Content from "../../src/content";
-
 testWithLoggedInUser.describe("User Profile", () => {
 	testWithLoggedInUser.describe("greeting messages", () => {
 		const testGreeting = (hour: number, expectedContent: string) =>
@@ -120,12 +119,143 @@ testWithLoggedInUser.describe("User Profile", () => {
 	);
 
 	testWithLoggedInUser(
+		"should allow user to update personal prompt",
+		async ({ page }) => {
+			await page.goto("/profile/");
+
+			await page.waitForResponse(
+				(res) =>
+					res.url().includes("/rest/v1/profiles") &&
+					res.request().method() === "GET" &&
+					res.ok(),
+			);
+
+			const newPrompt = "This is a new personal prompt for testing.";
+			const promptInput = page.locator("#personalPrompt");
+
+			await expect(promptInput).toBeVisible();
+
+			await promptInput.fill(newPrompt);
+			await expect(promptInput).toHaveValue(newPrompt);
+
+			const submitButton = page
+				.locator("form")
+				.filter({ has: promptInput })
+				.getByRole("button", { name: Content["profile.submitButton"] });
+
+			await expect(submitButton).toBeEnabled();
+
+			let updateRequestDetails: { personal_system_prompt?: string } | null =
+				null;
+			await page.route("**/rest/v1/profiles*", async (route) => {
+				if (route.request().method() === "PATCH") {
+					updateRequestDetails = route.request().postDataJSON();
+					await route.fulfill({
+						status: 200,
+						contentType: "application/json",
+						body: JSON.stringify([{ personal_system_prompt: newPrompt }]),
+					});
+				} else {
+					await route.fallback();
+				}
+			});
+
+			await Promise.all([
+				page.waitForResponse(
+					(res) =>
+						res.url().includes("/rest/v1/profiles") &&
+						res.request().method() === "PATCH",
+				),
+				submitButton.click(),
+			]);
+
+			expect(updateRequestDetails).toEqual(
+				expect.objectContaining({
+					personal_system_prompt: newPrompt,
+				}),
+			);
+
+			await expect(
+				page.getByText(
+					Content["profile.chatSettings.personalPromptUpdateSuccess"],
+				),
+			).toBeVisible();
+		},
+	);
+
+	testWithLoggedInUser(
+		"should respect max character limit for personal prompt",
+		async ({ page }) => {
+			await page.goto("/profile/");
+
+			await page.waitForResponse(
+				(res) =>
+					res.url().includes("/rest/v1/profiles") &&
+					res.request().method() === "GET" &&
+					res.ok(),
+			);
+
+			const promptInput = page.locator("#personalPrompt");
+			await expect(promptInput).toBeVisible();
+
+			await expect(promptInput).toHaveAttribute("maxLength", "500");
+
+			const longText = "a".repeat(505);
+			await promptInput.fill(longText);
+
+			const inputValue = await promptInput.inputValue();
+			expect(inputValue.length).toBe(500);
+
+			const counterText = page.locator("#personalPromptCounter");
+			await expect(counterText).toContainText("500 / 500");
+		},
+	);
+
+	testWithLoggedInUser(
+		"should stay on profile page when account deletion fails",
+		async ({ page, account }) => {
+			await page.goto("/profile/");
+			await page.getByTestId("delete-account-button").click();
+
+			const dialog = page.locator("#delete-account-dialog");
+			await expect(dialog).toBeVisible();
+
+			await page.fill("#currentPasswordValidation", account.password);
+
+			// Set up route interceptor just before submitting — delete_user is
+			// only called on confirm, so setting it up here avoids interfering
+			// with session refresh requests made during page load.
+			await page.route("**/rest/v1/rpc/delete_user", (route) =>
+				route.fulfill({
+					status: 500,
+					contentType: "application/json",
+					body: JSON.stringify({
+						code: "57014",
+						message: "canceling statement due to statement timeout",
+						details: null,
+						hint: null,
+					}),
+				}),
+			);
+
+			// Wait for the delete_user RPC to complete before asserting URL,
+			// otherwise the assertion races with the async navigation.
+			await Promise.all([
+				page.waitForResponse("**/rest/v1/rpc/delete_user"),
+				page.getByTestId("confirm-delete-account-button").click(),
+			]);
+
+			await expect(page).toHaveURL("/profile/");
+		},
+	);
+
+	testWithLoggedInUser(
 		"should allow user to delete account",
 		async ({ page, account }) => {
 			await page.goto("/profile/");
 
 			// Click the delete account button to open dialog
-			await page.click("#delete-account-button");
+			await page.getByTestId("delete-account-button").click();
 
 			// Dialog should be visible
 			const dialog = page.locator("#delete-account-dialog");
@@ -137,7 +267,7 @@ testWithLoggedInUser.describe("User Profile", () => {
 			await page.fill("#currentPasswordValidation", account.password);
 
 			// Click delete button in dialog to confirm
-			await page.click("#confirm-delete-account-button");
+			await page.getByTestId("confirm-delete-account-button").click();
 
 			// Should be redirected to account deleted page after account deletion
 			await page.waitForURL("/account-deleted/");

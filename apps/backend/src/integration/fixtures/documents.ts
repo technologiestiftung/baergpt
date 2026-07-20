@@ -3,7 +3,7 @@ import { serviceRoleDbClient } from "../../supabase";
 import { createClient } from "@supabase/supabase-js";
 import {
 	chunk_index,
-	chunk_jina_embedding,
+	chunk_mistral_embedding,
 	content,
 	created_at,
 	file_checksum,
@@ -14,7 +14,6 @@ import {
 	processing_finished_at,
 	short_summary,
 	summary,
-	summary_jina_embedding,
 	tags,
 } from "./constants";
 import { expect } from "vitest";
@@ -96,7 +95,6 @@ export async function mockDocumentUpload({
 			summary,
 			tags,
 			short_summary,
-			summary_jina_embedding,
 		});
 
 	expect(documentSummariesInsertError).toBeNull();
@@ -112,7 +110,7 @@ export async function mockDocumentUpload({
 				content,
 				page,
 				chunk_index,
-				chunk_jina_embedding,
+				chunk_mistral_embedding,
 			})
 			.select()
 			.single();
@@ -127,7 +125,7 @@ export async function cleanupDocuments(userId: string) {
 	const { error: deleteDocumentsError } = await serviceRoleDbClient
 		.from("documents")
 		.delete()
-		.eq("owned_by_user_id", userId);
+		.or(`owned_by_user_id.eq.${userId},uploaded_by_user_id.eq.${userId}`);
 	expect(deleteDocumentsError).toBeNull();
 
 	const { error: deleteFoldersError } = await serviceRoleDbClient

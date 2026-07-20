@@ -1,10 +1,8 @@
 import { supabase } from "../../../supabase-client";
-import type { DocumentFolder } from "../../common";
+import type { UserFolder } from "../../common";
 import { useErrorStore } from "../../store/error-store.ts";
 
-export async function getFolders(
-	signal: AbortSignal,
-): Promise<DocumentFolder[]> {
+export async function getFolders(signal: AbortSignal): Promise<UserFolder[]> {
 	const { data, error } = await supabase
 		.from("document_folders")
 		.select("*")

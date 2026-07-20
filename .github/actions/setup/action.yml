@@ -1,0 +1,46 @@
+name: Setup BaerGPT environment
+description: Installs Node.js, upgrades npm, caches and installs npm dependencies, and optionally installs the Supabase CLI and 1Password CLI
+
+inputs:
+  start-supabase:
+    description: Install the Supabase CLI via asdf and start it in the background
+    default: "false"
+  install-1password:
+    description: Install 1Password CLI
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    # Install Supabase CLI via asdf and start it right away so it boots in the
+    # background during Node setup and npm install.
+    - name: Install Supabase CLI via asdf ⚙️
+      if: inputs.start-supabase == 'true'
+      uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1, pinned to commit sha to avoid sha-hulud like attacks
+
+    - name: Start supabase ⚡️
+      if: inputs.start-supabase == 'true'
+      shell: bash
+      run: cd apps/backend && supabase start --exclude studio,realtime,imgproxy,edge-runtime,logflare,supavisor,postgres-meta &
+
+    - name: Setup Node.js using .nvmrc ⚙️
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0, pinned to commit sha to avoid sha-hulud like attacks
+      with:
+        node-version-file: ".nvmrc"
+
+    - name: Cache npm dependencies 💾
+      id: cache-npm-deps
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0, pinned to commit sha to avoid sha-hulud like attacks
+      with:
+        path: |
+          **/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+    - name: Install dependencies 📦
+      if: steps.cache-npm-deps.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm ci
+
+    - name: Install 1Password CLI 🔐
+      if: inputs.install-1password == 'true'
+      uses: 1password/install-cli-action@a5215d3a7f75c1629216c465ea9ab3ab399c4b71 # v4.0.0, pinned to commit sha to avoid sha-hulud like attacks

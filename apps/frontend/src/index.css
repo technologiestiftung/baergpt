@@ -3,12 +3,16 @@
 @tailwind utilities;
 
 @layer base {
+	body {
+		@apply text-dunkelblau-100;
+	}
+
 	html {
 		scroll-behavior: smooth;
 	}
 
 	.markdown-container p {
-		@apply my-3 hyphens-auto;
+		@apply my-1.5 hyphens-auto;
 		word-break: break-word;
 	}
 
@@ -34,7 +38,7 @@
 	.markdown-container h4,
 	.markdown-container h5,
 	.markdown-container h6 {
-		@apply font-bold pl-3 pt-2 text-dunkelblau-200;
+		@apply font-bold pt-2 text-dunkelblau-200;
 	}
 
 	.markdown-container h1 {
@@ -59,6 +63,15 @@
 
 	.markdown-container h6 {
 		@apply text-[12px];
+	}
+
+	.markdown-container h1 img,
+	.markdown-container h2 img,
+	.markdown-container h3 img,
+	.markdown-container h4 img,
+	.markdown-container h5 img,
+	.markdown-container h6 img {
+		@apply inline-block align-middle mr-2;
 	}
 
 	.markdown-container a {
@@ -130,7 +143,7 @@
 	.history-scrollbar {
 		/* Firefox */
 		scrollbar-width: auto;
-		scrollbar-color: theme('colors.dunkelblau-80') transparent;
+		scrollbar-color: theme("colors.dunkelblau-80") transparent;
 	}
 
 	/* WebKit browsers (Chrome, Edge, Safari) */
@@ -146,19 +159,19 @@
 	}
 
 	.history-scrollbar::-webkit-scrollbar-thumb {
-		background-color: theme('colors.dunkelblau-80');
+		background-color: theme("colors.dunkelblau-80");
 		border-radius: 100px;
 		border: none;
 	}
 
 	.history-scrollbar::-webkit-scrollbar-thumb:hover {
-		background-color: theme('colors.dunkelblau-70');
+		background-color: theme("colors.dunkelblau-70");
 	}
 
 	.filesection-scrollbar {
 		/* Firefox */
 		scrollbar-width: auto;
-		scrollbar-color: theme('colors.hellblau-110') transparent;
+		scrollbar-color: theme("colors.hellblau-110") transparent;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar {
@@ -174,14 +187,13 @@
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar-thumb {
-		background: theme('colors.hellblau-110');
+		background: theme("colors.hellblau-110");
 		border-radius: 100px;
 		border: none;
 		-webkit-appearance: none;
 	}
 
 	.filesection-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: theme('colors.hellblau-100');
+		background: theme("colors.hellblau-100");
 	}
-
 }

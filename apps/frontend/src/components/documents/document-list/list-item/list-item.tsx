@@ -1,36 +1,46 @@
 import React from "react";
 import { useDrop } from "react-dnd";
-import type { Document, DocumentFolder } from "../../../../common";
 import FolderItem from "./folder-item";
 import DocumentItem from "./document-item";
-import { useDocumentStore } from "../../../../store/document-store";
+import { useUserDocumentStore } from "../../../../store/use-user-document-store.ts";
 import { isDocument } from "./utils/is-document.ts";
 import type { ListItem as ListItemType } from "./utils/types.ts";
 import { getDragAndDropId } from "./utils/get-drag-and-drop-id.ts";
 import { useDragAndDropStore } from "../../../../store/drag-and-drop-store.ts";
+import { isUserFolder } from "./utils/is-user-folder.ts";
+import type { Document } from "../../../../common.ts";
 
 interface ListItemProps {
-	item: Document | DocumentFolder;
+	item: ListItemType;
 }
 
 export const ListItem: React.FC<ListItemProps> = ({ item }) => {
-	const { moveItemToFolder } = useDocumentStore();
-	const { setHoveredFolderId } = useDragAndDropStore();
+	const { moveItemsToFolder, unselectUserDocumentForAction } =
+		useUserDocumentStore();
+	const { setHoveredFolderId, hoveredFolderId } = useDragAndDropStore();
 
-	const [, dropRef] = useDrop({
+	const isHoveredForDrop = getDragAndDropId(item) === hoveredFolderId;
+
+	const [, dropRef] = useDrop<Document[], unknown, unknown>({
 		accept: "ITEM",
-		drop: async (draggedItem: ListItemType) => {
-			const isValidTarget = !isDocument(item) && isDocument(draggedItem);
+		drop: async (draggedItems: Document[]) => {
+			const documents = draggedItems.filter(isDocument);
+			const isValidTarget = !isDocument(item) && documents.length > 0;
 
 			if (isValidTarget) {
-				await moveItemToFolder(draggedItem.id, item.id);
-			}
+				const documentIds = documents.map((doc) => doc.id);
 
-			// Reset hovered folder when the drop is complete
-			setHoveredFolderId(null);
+				setHoveredFolderId(null);
+				await moveItemsToFolder(documentIds, item.id);
+
+				for (const id of documentIds) {
+					unselectUserDocumentForAction(id);
+				}
+			}
 		},
-		hover: (draggedItem: ListItemType) => {
-			const isValidTarget = !isDocument(item) && isDocument(draggedItem);
+		hover: (draggedItems: Document[]) => {
+			const documents = draggedItems.filter(isDocument);
+			const isValidTarget = !isDocument(item) && documents.length > 0;
 
 			if (isValidTarget) {
 				setHoveredFolderId(getDragAndDropId(item));
@@ -42,12 +52,12 @@ export const ListItem: React.FC<ListItemProps> = ({ item }) => {
 	});
 
 	return (
-		<li ref={dropRef} className="flex gap-x-2 items-center">
-			{isDocument(item) ? (
-				<DocumentItem item={item} />
-			) : (
-				<FolderItem item={item} />
-			)}
+		<li
+			ref={dropRef}
+			className={`hover:bg-hellblau-55 ${isHoveredForDrop ? "bg-hellblau-100 border border-dunkelblau-100 rounded-3px" : "border-b-[0.5px] border-y-hellblau-110"}`}
+		>
+			{isDocument(item) && <DocumentItem item={item} />}
+			{isUserFolder(item) && <FolderItem item={item} />}
 		</li>
 	);
 };

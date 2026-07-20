@@ -31,6 +31,7 @@ export function RequestPasswordReset() {
 						<EmailInput
 							id="email"
 							placeholder="vorname.name@subdomain.berlin.de"
+							useEmailAllowedCheck={false}
 						/>
 					</label>
 

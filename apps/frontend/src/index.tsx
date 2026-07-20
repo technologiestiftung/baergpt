@@ -1,12 +1,11 @@
 import "./monitoring/sentry";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { RouterProvider } from "react-router-dom";
 import "./index.css";
 import { IndexPage } from "./routes";
 import { RegisterPage } from "./routes/register-page";
 import { LoginPage } from "./routes/login-page";
-import { AccountActivated } from "./routes/account-activated";
 import { RequestResetPasswordPage } from "./routes/request-password-reset";
 import { ResetPasswordPage } from "./routes/reset-password";
 import { ConfirmOtpPage } from "./routes/confirm-otp";
@@ -16,8 +15,9 @@ import { AccountDeleted } from "./routes/account-deleted";
 import { PrivacyPolicyPage } from "./routes/privacy-policy";
 import { RegistrationError } from "./routes/registration-error";
 import { TermsOfUsePage } from "./routes/terms-of-use";
+import { sentryCreateBrowserRouter } from "./monitoring/sentry.ts";
 
-const router = createBrowserRouter([
+const router = sentryCreateBrowserRouter([
 	{
 		path: "/",
 		element: <IndexPage />,
@@ -29,10 +29,6 @@ const router = createBrowserRouter([
 	{
 		path: "/login/",
 		element: <LoginPage />,
-	},
-	{
-		path: "/account-activated/",
-		element: <AccountActivated />,
 	},
 	{
 		path: "/registration-error/",

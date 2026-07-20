@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import Content from "../../content.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { AppLayout } from "../../layouts/app-layout.tsx";
@@ -9,21 +8,10 @@ import { DeleteAccount } from "../../components/profile/delete-account/delete-ac
 import { useSessionRedirect } from "../../hooks/use-session-redirect.tsx";
 import { ChatSettings } from "../../components/profile/chat-settings/chat-settings.tsx";
 import { ChangePasswordForm } from "../../components/profile/edit-profile-forms/change-password-form.tsx";
-import { BaseKnowledgeSection } from "../../components/profile/base-knowledge-section/base-knowledge-section.tsx";
 
 export function ProfilePage() {
-	const { getAllowedEmailDomains } = useAuthStore();
 	const { session } = useAuthStore();
 	useSessionRedirect();
-
-	useEffect(() => {
-		const controller = new AbortController();
-		getAllowedEmailDomains(controller.signal);
-
-		return () => {
-			controller.abort();
-		};
-	}, []);
 
 	if (!session) {
 		return null;
@@ -76,7 +64,6 @@ export function ProfilePage() {
 					<ChangeEmailForm />
 					<ChangePasswordForm />
 					<ChatSettings />
-					<BaseKnowledgeSection />
 					<DeleteAccount />
 				</div>
 			</div>

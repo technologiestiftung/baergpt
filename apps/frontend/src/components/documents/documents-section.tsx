@@ -1,25 +1,28 @@
 import React from "react";
-import { useDocumentStore } from "../../store/document-store.ts";
-import { useFolderStore } from "../../store/folder-store.ts";
+import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
+import { useUserFolderStore } from "../../store/use-user-folder-store.ts";
 import { DesktopDocuments } from "./desktop-documents.tsx";
 import { MobileDocuments } from "./mobile-documents.tsx";
+import { DeleteItemDialog } from "./delete-item/delete-item-dialog.tsx";
+import { CreateFolderDialog } from "./create-folder/create-folder-dialog.tsx";
 
 export const DocumentsSection: React.FC = () => {
-	const { documents, deletedDefaultDocumentIds } = useDocumentStore();
-	const { folders } = useFolderStore();
+	const { userDocuments, deletedDefaultDocumentIds } = useUserDocumentStore();
+	const { userFolders } = useUserFolderStore();
 
 	// Filter out deleted default documents by ID
-	const filteredDocuments = documents.filter(
+	const filteredDocuments = userDocuments.filter(
 		(doc) => !deletedDefaultDocumentIds.includes(doc.id),
 	);
 
-	const hasItems = filteredDocuments.length > 0 || folders.length > 0;
+	const hasUserItems = filteredDocuments.length > 0 || userFolders.length > 0;
 
 	return (
 		<>
-			<DesktopDocuments hasItems={hasItems} />
-
-			<MobileDocuments hasItems={hasItems} />
+			<DesktopDocuments hasUserItems={hasUserItems} />
+			<MobileDocuments hasUserItems={hasUserItems} />
+			<DeleteItemDialog />
+			<CreateFolderDialog />
 		</>
 	);
 };

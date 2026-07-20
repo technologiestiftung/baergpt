@@ -1,4 +1,25 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+
+/**
+ * We rewrite some modules so we can mock them
+ * in specific test cases if needed.
+ */
+vi.mock("@ai-sdk/mcp", async () => {
+	const actual = await vi.importActual("@ai-sdk/mcp");
+	return {
+		...actual,
+	};
+});
+
+vi.mock("../monitoring/capture-error", async () => {
+	const actual = await vi.importActual("../monitoring/capture-error");
+	return {
+		...actual,
+	};
+});
+import * as mcpModule from "@ai-sdk/mcp";
+import * as captureErrorModule from "../monitoring/capture-error";
+
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import type { ParlaMCPToolsResult } from "../tools/mcp/parla-mcp-tools";
 import { z } from "zod";
@@ -39,18 +60,20 @@ describe("MCP Tools Integration", () => {
 	});
 
 	it("should handle initialization errors gracefully", async () => {
-		// Mock createMCPClient to throw an error
-		const consoleErrorSpy = vi
-			.spyOn(console, "error")
-			.mockImplementation(() => {});
+		const givenError = new Error("MCP server is down");
 
-		// This test verifies error handling by calling parlaMCPTools again
-		// In a real scenario where the MCP server is down, it should return null
-		// For now, we just verify the function doesn't throw
+		vi.spyOn(mcpModule, "createMCPClient").mockImplementation(() => {
+			throw givenError;
+		});
+
+		const captureErrorSpy = vi
+			.spyOn(captureErrorModule, "captureError")
+			.mockImplementationOnce(() => {});
+
 		const result = await parlaMCPTools();
-		expect(result).not.toBeUndefined();
+		expect(result).toBeNull();
 
-		consoleErrorSpy.mockRestore();
+		expect(captureErrorSpy).toHaveBeenNthCalledWith(1, givenError);
 	});
 
 	it("parla_vector_search tool should have execute function that can be called", async () => {
@@ -64,70 +87,62 @@ describe("MCP Tools Integration", () => {
 		) {
 			expect(typeof vectorSearchTool.execute).toBe("function");
 
-			try {
-				const mockParams = {
-					query: "test search query",
-					match_threshold: 0.7,
-					chunk_limit: 5,
-				};
+			const mockParams = {
+				query: "test search query",
+				match_threshold: 0.7,
+				chunk_limit: 5,
+			};
 
-				const result = await vectorSearchTool.execute(mockParams, {
-					abortSignal: new AbortController().signal,
-					toolCallId: "test-call-id",
-					messages: [],
-				});
-				expect(result).toBeDefined();
-			} catch (error) {
-				expect(error).toBeDefined();
-			}
+			const result = await vectorSearchTool.execute(mockParams, {
+				abortSignal: new AbortController().signal,
+				toolCallId: "test-call-id",
+				messages: [],
+			});
+			expect(result).toBeDefined();
 		}
 	}, 60_000);
 
 	it("should wrap tools with proper Zod validation for parla_vector_search", async () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
 		expect(vectorSearchTool).toBeDefined();
+		expect(vectorSearchTool).toHaveProperty("inputSchema");
 
-		if (vectorSearchTool && "inputSchema" in vectorSearchTool) {
-			const params =
-				vectorSearchTool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
+		const params =
+			vectorSearchTool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
 
-			expect(params).toBeDefined();
-			expect(params.shape).toBeDefined();
+		expect(params).toBeDefined();
+		expect(params.shape).toBeDefined();
 
-			expect(params.shape).toHaveProperty("query");
-			expect(params.shape).toHaveProperty("match_threshold");
-			expect(params.shape).toHaveProperty("num_probes_chunks");
-			expect(params.shape).toHaveProperty("num_probes_summaries");
-			expect(params.shape).toHaveProperty("chunk_limit");
-			expect(params.shape).toHaveProperty("summary_limit");
-			expect(params.shape).toHaveProperty("document_limit");
-		}
+		expect(params.shape).toHaveProperty("query");
+		expect(params.shape).toHaveProperty("match_threshold");
+		expect(params.shape).toHaveProperty("num_probes_chunks");
+		expect(params.shape).toHaveProperty("num_probes_summaries");
+		expect(params.shape).toHaveProperty("chunk_limit");
+		expect(params.shape).toHaveProperty("summary_limit");
+		expect(params.shape).toHaveProperty("document_limit");
 	});
 
 	it("should handle missing execute function gracefully", async () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
 
-		if (
-			vectorSearchTool &&
-			"execute" in vectorSearchTool &&
-			vectorSearchTool.execute
-		) {
-			// Create a scenario where execute would fail
-			// by passing invalid parameters that don't match the schema
-			try {
-				await vectorSearchTool.execute(
-					{ invalid: "params" } as unknown as Parameters<
-						typeof vectorSearchTool.execute
-					>[0],
-					{
-						abortSignal: new AbortController().signal,
-						toolCallId: "test-call-id",
-						messages: [],
-					},
-				);
-			} catch (error) {
-				expect(error).toBeDefined();
-			}
+		expect(vectorSearchTool).toBeDefined();
+		expect(vectorSearchTool.execute).toBeDefined();
+
+		// Create a scenario where execute would fail
+		// by passing invalid parameters that don't match the schema
+		try {
+			await vectorSearchTool.execute(
+				{ invalid: "params" } as unknown as Parameters<
+					typeof vectorSearchTool.execute
+				>[0],
+				{
+					abortSignal: new AbortController().signal,
+					toolCallId: "test-call-id",
+					messages: [],
+				},
+			);
+		} catch (error) {
+			expect(error).toBeDefined();
 		}
 	});
 

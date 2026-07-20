@@ -2,7 +2,7 @@ import React, { type ReactNode } from "react";
 import { FolderIcon } from "../../primitives/icons/folder-icon.tsx";
 import { useDropzone } from "react-dropzone";
 import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
-import { useFolderStore } from "../../../store/folder-store.ts";
+import { useCurrentFolderStore } from "../../../store/use-current-folder-store.ts";
 import Content from "../../../content.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
 
@@ -18,7 +18,7 @@ export function DropZoneWrapperDocuments({
 	style?: React.CSSProperties;
 	isDropZoneDisabled?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>) {
-	const { currentFolder } = useFolderStore();
+	const { currentFolder } = useCurrentFolderStore();
 	const { uploadFiles } = useFileUploadsStore();
 
 	const onDrop = (acceptedFiles: File[]) => {
@@ -53,8 +53,8 @@ export function DropZoneWrapperDocuments({
 					/>
 
 					<div
-						className={`absolute h-full text-lg w-full top-0 left-0 right-0 z-20 rounded-3px bg-hellblau-100/90 backdrop-blur-sm text-da flex flex-col items-center justify-center px-5 py-2 pointer-events-none 
-					transition-opacity duration-200 ${isDragActive ? "opacity-100" : "opacity-0"}`}
+						className={`absolute h-full text-lg w-full top-0 left-0 right-0 z-20 rounded-3px bg-hellblau-100/93 backdrop-blur-sm text-da flex flex-col items-center justify-center px-5 pointer-events-none 
+					transition-opacity duration-200 ${isDragActive ? "opacity-100" : "opacity-0"} text-dunkelblau-100`}
 					>
 						<img
 							src="/icons/upload-icon.svg"
@@ -63,10 +63,10 @@ export function DropZoneWrapperDocuments({
 							className="mb-3"
 							alt={Content["fileUpload.uploadButton.imgAlt"]}
 						/>
-						<span className="font-bold">
+						<span className="text-xl leading-7 font-semibold text-center">
 							{Content["fileUpload.dropZone.label"]}
 						</span>
-						<span className="flex gap-x-2">
+						<span className="flex gap-x-1.5 text-xl leading-7 font-normal">
 							<FolderIcon variant="darkblue" />
 							{currentFolder === null
 								? Content["documentsSection.mainFolder.label"]

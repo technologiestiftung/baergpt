@@ -16,17 +16,6 @@ export const Content = {
 	"header.navigation.landingPage.register.link": "/register/",
 
 	/* -------------------- Landing Page -------------------- */
-	"landingPage.banner.h2": "Sie haben noch mehr Fragen zu BärGPT?",
-	"landingPage.banner.p1":
-		"In der Online-Sprechstunde beantworten wir Ihre individuellen Fragen.",
-	"landingPage.banner.p2": "Dienstags und Donnerstags von 11-12 Uhr.",
-	"landingPage.banner.p.mobile":
-		"Online-Sprechstunde: Dienstags und Donnerstags von 11-12 Uhr.",
-	"landingPage.banner.link.label": "Termin im Intranet finden",
-	"landingPage.banner.link.ariaLabel": "Zur Intranet-Seite",
-	"landingPage.banner.link.href":
-		"https://b-intern.de/themen/kuenstliche-intelligenz-ki/",
-	"landingPage.banner.close.ariaLabel": "Banner schließen",
 	"landingPage.hero.h1": "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 	"landingPage.hero.h3": "Sicher. Datenschutzkonform. Open Source.",
 	"landingPage.hero.register.label": "Jetzt registrieren",
@@ -93,7 +82,7 @@ export const Content = {
 
 	/* -------------------- Privacy Policy Page -------------------- */
 	"privacyPolicyPage.h1": "Datenschutzerklärung",
-	"privacyPolicyPage.date": "Stand Oktober 2025",
+	"privacyPolicyPage.date": "Stand März 2026",
 	"privacyPolicyPage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"privacyPolicyPage.section1.title": "Einleitung und Anwendungsbereich",
@@ -192,7 +181,7 @@ export const Content = {
 		"Löschung nach Abschluss der Auswertung",
 	"privacyPolicyPage.section6.li5.title": "Backups: ",
 	"privacyPolicyPage.section6.li5.description":
-		"Löschung nach festem Rotationsplan (derzeit sieben Tage)",
+		"Löschung nach festem Rotationsplan (derzeit 30 Tage)",
 	//Section 7
 	"privacyPolicyPage.section7.title": "Empfänger und Weitergabe von Daten",
 	"privacyPolicyPage.section7.p1":
@@ -233,9 +222,9 @@ export const Content = {
 	/* -------------------- Terms of use Page -------------------- */
 	"termsOfUsePage.h1": "Nutzungsbedingungen für BärGPT",
 	"termsOfUsePage.date.label": "Stand ",
-	"termsOfUsePage.date": "November 2025",
+	"termsOfUsePage.date": "Mai 2026",
 	"termsOfUsePage.version.label": "Version ",
-	"termsOfUsePage.version": "1.0",
+	"termsOfUsePage.version": "1.1",
 	"termsOfUsePage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"termsOfUsePage.section1.title": "Begriffsbestimmungen",
@@ -269,7 +258,7 @@ export const Content = {
 	"termsOfUsePage.section1.li9.title":
 		"„Personenbezogene Daten“ / „Daten mit hohem Schutzbedarf“",
 	"termsOfUsePage.section1.li9.description":
-		" — die in den Datenschutzhinweisen näher beschriebenen Kategorien; derzeit ist die Verarbeitung personenbezogener Daten in BärGPT nicht gestattet.",
+		" — die in den Datenschutzhinweisen näher beschriebenen Kategorien.",
 	//Section 2
 	"termsOfUsePage.section2.title": "Geltungsbereich und Vertragsgegenstand",
 	//2.1
@@ -380,26 +369,26 @@ export const Content = {
 	"termsOfUsePage.section5.sub1.title": "Datenverarbeitung",
 	"termsOfUsePage.section5.sub1.p1.start":
 		"Für die Verarbeitung personenbezogener Daten gelten die separaten Datenschutzhinweise von BärGPT, die unter ",
-	"termsOfUsePage.section5.sub1.p1.link": "https://www.baergpt.berlin",
+	"termsOfUsePage.section5.sub1.p1.link":
+		"https://www.baergpt.berlin/privacy-policy/",
 	"termsOfUsePage.section5.sub1.p1.end":
 		" abrufbar sind. Diese sind Bestandteil dieser Nutzungsbedingungen.",
 	//5.2
 	"termsOfUsePage.section5.sub2.number": "5.2",
-	"termsOfUsePage.section5.sub2.title": "Verbot personenbezogener Daten",
-	"termsOfUsePage.section5.sub2.p1.title": "Wichtiger Hinweis: ",
+	"termsOfUsePage.section5.sub2.title": "Verarbeitung personenbezogener Daten",
 	"termsOfUsePage.section5.sub2.p1":
-		"Zum aktuellen Zeitpunkt (Stand: November 2025) ist die Verarbeitung von personenbezogenen Daten mit BärGPT noch nicht gestattet, da die Rechtsgrundlage hierfür noch nicht vorliegt.",
-	"termsOfUsePage.section5.sub2.p2": "Die Nutzenden verpflichten sich: ",
-	"termsOfUsePage.section5.sub2.li1.start": "Keine personenbezogenen Daten ",
-	"termsOfUsePage.section5.sub2.li1.end":
-		"in BärGPT einzugeben oder hochzuladen.",
-	"termsOfUsePage.section5.sub2.li2.start":
-		"Keine Daten mit hohem Schutzbedarf ",
-	"termsOfUsePage.section5.sub2.li2.end": "zu verarbeiten",
+		"Mit dem Inkrafttreten des §16a EGovG Berlin ist die Verarbeitung personenbezogener Daten in BärGPT nun unter bestimmten Voraussetzungen gestattet.",
+	"termsOfUsePage.section5.sub2.p2": "Die Nutzenden verpflichten sich:",
+	"termsOfUsePage.section5.sub2.li1":
+		"Personenbezogene Daten nur im Rahmen der eigenen Verwaltungsaufgabe und soweit erforderlich einzugeben.",
+	"termsOfUsePage.section5.sub2.li2":
+		"Keine personenbezogenen Daten zu verarbeiten, für die keine bestehende Verarbeitungsbefugnis vorliegen. §16a schafft keine neuen Befugnisse.",
 	"termsOfUsePage.section5.sub2.li3":
-		"Bei Unklarheit über die Klassifizierung von Daten vorab Rücksprache mit der zuständigen Datenschutzstelle zu halten",
-	"termsOfUsePage.section5.sub2.p3":
-		"Eine Aktualisierung des eGov-Gesetzes für Berlin, die die Verarbeitung personenbezogener Daten erlauben wird, ist derzeit in rechtlicher Prüfung und soll voraussichtlich Anfang 2026 in Kraft treten.",
+		"Sicherzustellen, dass die eingegebenen Daten nicht über das zur Aufgabenerfüllung notwendige Maß hinausgehen (Datensparsamkeit).",
+	"termsOfUsePage.section5.sub2.li4":
+		"Die Ausgaben von BärGPT eigenständig auf ihre Richtigkeit zu überprüfen.",
+	"termsOfUsePage.section5.sub2.li5":
+		"Bei Unklarheit über die Zulässigkeit der Verarbeitung bestimmter Daten vorab Rücksprache mit der zuständigen Datenschutzstelle zu halten.",
 	//5.3
 	"termsOfUsePage.section5.sub3.number": "5.3",
 	"termsOfUsePage.section5.sub3.title": "Löschpflichten",
@@ -523,7 +512,7 @@ export const Content = {
 	"termsOfUsePage.section9.sub1.p1.start":
 		"BärGPT wurde nach dem Prinzip „Public Money, Public Code“ entwickelt. Der Quellcode ist Open Source und öffentlich auf ",
 	"termsOfUsePage.section9.sub1.p1.link":
-		"https://github.com/technologiestiftung/baergpt)",
+		"https://github.com/technologiestiftung/baergpt",
 	"termsOfUsePage.section9.sub1.p1.link.label": "GitHub",
 	"termsOfUsePage.section9.sub1.p1.end": " verfügbar.",
 	//9.2
@@ -622,12 +611,10 @@ export const Content = {
 	"termsOfUsePage.consent.li3":
 		"Dass Sie zur Nutzung von BärGPT berechtigt sind (Beschäftigte/r der Berliner Verwaltung)",
 	"termsOfUsePage.consent.li4":
-		"Dass Sie sich verpflichten, keine personenbezogenen Daten oder Daten mit hohem Schutzbedarf zu verarbeiten (bis zur Inkraftsetzung der entsprechenden Rechtsgrundlage)",
-	"termsOfUsePage.consent.li5":
 		"Dass Sie die Datenschutzhinweise zur Kenntnis genommen haben",
-	"termsOfUsePage.consent.li6":
+	"termsOfUsePage.consent.li5":
 		"Dass Sie Ihre Zugangsdaten nicht an Dritte weitergeben werden",
-	"termsOfUsePage.consent.li7":
+	"termsOfUsePage.consent.li6":
 		"Dass Sie die Anwendung ausschließlich im Rahmen Ihrer beruflichen Tätigkeit nutzen werden",
 	"termsOfUsePage.contact.organisation": "Technologiestiftung Berlin",
 	"termsOfUsePage.contact.organisation.1": "CityLAB Berlin",
@@ -660,6 +647,8 @@ export const Content = {
 	"cookiesBanner.button.acceptSelection": "Auswahl bestätigen",
 	"cookiesBanner.thirdPartyCookies.label": "Externe Medien",
 	/* -------------------- Sidebar -------------------- */
+	"sidebar.navigation.news": "Neuigkeiten",
+	"sidebar.navigation.news.ariaLabel": "Neuigkeiten anzeigen",
 	"sidebar.ariaLabel": "Sidebar",
 	"sidebar.navigation.imprint": "Impressum",
 	"sidebar.navigation.imprint.link":
@@ -679,8 +668,6 @@ export const Content = {
 	/* -------------------- Tooltips -------------------- */
 	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
 	"sidebar.tooltip.newChatButton": "Neuen Chat beginnen",
-	"chat.selectedChatItems.questionmark.tooltip":
-		"Datei zum Chat hinzufügen und KI-Assistent Anweisung geben",
 
 	/* -------------------- Chat History -------------------- */
 	"chatHistory.title": "Chats",
@@ -690,6 +677,7 @@ export const Content = {
 	"chatHistory.fetchRetry.button.label": "Erneut versuchen",
 	"chatHistory.fetchRetry.button.ariaLabel":
 		"Erneut versuchen Chatverlauf zu laden",
+	"chatHistory.allLoaded": "Alle Chats geladen",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton
@@ -705,9 +693,11 @@ export const Content = {
 	"newChatButton.label": "Neuer Chat",
 	"newChatButton.ariaLabel": "Neuen Chat erstellen",
 	//createFolderButton
-	"createFolderButton.label": "Neuer Ordner",
+	"createFolderButton.label": "Ordner erstellen",
 	//deleteItemButton
-	"deleteItemButton.label": "Löschen",
+	"selectItemsButton.label": "Dateien auswählen",
+	"deleteItemButton.ariaLabel": "Button klicken, um Elemente zu löschen",
+	"multiSelectForAction.cancel.label": "Auswahl abbrechen",
 	//BottomMenuBar
 	"bottomMenuBar.arialabel": "Sidebar",
 	//indeterminateCheckbox
@@ -741,18 +731,19 @@ export const Content = {
 	"loadingSpinnerIcon.imgAlt": "Ein sich drehendes Spinner-Icon",
 	"previewIcon.imgAlt": "Preview-Icon",
 	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
-	"redErrorXIcon.imgAlt": "Ein Error Icon mit weißem X in rotem Kreis",
+	"redErrorIcon.imgAlt": "Ein Error Icon mit weißem ! in rotem Kreis",
+	"clockIcon.imgAlt": "Ein Uhr-Icon",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
 	"baerIcon.imgAlt": "Bär Icon",
 	"blackSquareIcon.imgAlt": "Black square icon",
-	"arrowWhiteRightIcon.imgAlt": "Ein weißer Pfeil nach rechts",
 	"arrowWhiteTopRightIcon.imgAlt": "Ein weißer Pfeil nach oben rechts",
 	"eyeIcon.imgAlt": "Ein Augen-Icon",
 	"eyeStruckThroughIcon.imgAlt": "Ein durchgestrichenes Augen-Icon",
-	"questionMarkIcon.imgAlt": "Ein Fragezeichen-Icon",
 
 	/* -------------------- DocumentsSection -------------------- */
 	"documentsSection.title": "Dateien",
+	"documentSection.publicFolder.label": "Bibliothek",
+	"documentSection.publicFolder.baseKnowledge.label": "Verwaltungswissen",
 	"documentsSection.mainFolder.label": "Meine Dateien",
 	"documentsSection.selectFiles": "Dateien auswählen",
 	"documentsSection.showFiles.ariaLabel": "Anzeigen der Dateien",
@@ -761,13 +752,28 @@ export const Content = {
 	"documentsSection.fetchRetry.button.label": "Erneut versuchen",
 	"documentsSection.fetchRetry.button.ariaLabel":
 		"Erneut versuchen Dokumente zu laden",
-	//documentsList
 	"documentsList.document.checkbox.ariaLabel":
 		"Dokument auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.folder.checkbox.ariaLabel":
 		"Ordner auswählen für eine Aktion (Löschen, Öffnen)",
 	"documentsList.name": "Name",
-	"documentsList.AddToChat": "Zum Chat hinzufügen",
+	"documentsList.selectedItemsCount.label.parenthesis.open": "(",
+	"documentsList.selectedItemsCount.label.parenthesis.close": ")",
+	"documentsList.selectedItemsCount.label": "ausgewählt",
+	"deleteItemButton.tooltip": "Löschen",
+	"documentsList.addToChat": "In den Chat",
+	"documentsList.removeFromChat": "Aus Chat entfernen",
+	"documentsList.removeFromChat.imgAlt": "Minus-Icon",
+	"documentsList.addToChat.imgAlt": "Plus-Icon",
+	"documentsList.view": "Dokument anzeigen",
+	"documentsList.view.imgAlt": "Auge-Icon",
+	"documentsList.delete": "Löschen",
+	"documentsList.delete.imgAlt": "Mülleimer-Icon",
+	"documentsList.deleteDocument": "Dokument löschen",
+	"documentsList.deleteFolder": "Ordner löschen",
+
+	"documentsList.menuIcon.imgAlt": "Menü-Icon",
+	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
 	//fileUpload
 	"fileUpload.uploadButton": "Datei hochladen",
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
@@ -775,29 +781,22 @@ export const Content = {
 	"fileUpload.cancel": "Abbrechen",
 	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
 	//fileUploadButtonStatus
-	"fileUploadButtonStatus.uploading": "Dateien werden verarbeitet",
-	"fileUploadButtonStatus.singleFileUploading": "Datei wird verarbeitet",
-	"fileUploadButtonStatus.uploaded": "Upload erfolgreich",
-	"fileUploadButtonStatus.failed": "Fehler beim Upload",
+	"fileUploadButtonStatus.uploading": "Hochladen läuft",
+	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
+	"fileUploadButtonStatus.failed": "Hochladen fehlgeschlagen",
 	//noFilesDropZone
-	"fileUpload.uploadInstructions.p1": "Dateien mit Drag and Drop hochladen ",
-	"fileUpload.uploadInstructions.p2": "oder ",
-	"fileUpload.searchComputerbutton.label": "Computer durchsuchen",
+	"fileUpload.uploadInstructions.p1": "Dateien hier ablegen oder ",
+	"fileUpload.searchComputerbutton.label": "Hochladen",
 	//fileupload help link
-	"fileUpload.helpLink.label": "Hilfe",
 	"fileUpload.helpLink.link":
 		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
 	// file upload counter message
-	"fileUpload.infoMessage.maxUpload.p1": `Pro Upload-Vorgang sind max.`,
-	"fileUpload.infoMessage.maxUpload.p2": `Dateien möglich.`,
 	"fileUpload.infoMessage.counter.p1": `von`,
 	"fileUpload.infoMessage.counter.p2": `möglichen Dateien hochgeladen.`,
 	"fileUpload.infoMessage.limitReached.p1": `Sie haben das Limit von`,
 	"fileUpload.infoMessage.limitReached.p2": `Dateien erreicht.`,
 	"fileUpload.infoMessage.limitReached.p3": `Löschen Sie eine Datei, um eine neue hochzuladen.`,
-	"fileUpload.maxFilesWarning.p1": `Max.`,
-	"fileUpload.maxFilesWarning.p2": `Dateien pro Upload.`,
 
 	/* -------------------- DocumentsPreviewSection -------------------- */
 	"documentsPreviewSection.downloadLink.label": "Herunterladen",
@@ -809,14 +808,16 @@ export const Content = {
 	"documentsPreviewSection.noPreviewAvailable":
 		"Die Vorschau von Excel-Dateien wird aktuell noch nicht unterstützt. Wir arbeiten daran, dieses Feature zu einem späteren Zeitpunkt anzubieten. Vielen Dank für Ihr Verständnis.",
 	"documentsPreviewSection.loadingPreview": "Die Vorschau wird geladen...",
+	"documentsPreviewSection.title": "Dokumentvorschau",
 
 	/* -------------------- Dialogs -------------------- */
 	//DeleteItemDialog
 	"deleteItemDialog.deleteFiles": "Elemente löschen?",
 	"deleteItemDialog.deleteFile": "Datei löschen?",
 	"deleteItemDialog.deleteFolder": "Ordner löschen?",
-	"deleteItemDialog.confirmation.singleItem":
-		"Folgendes Element wirklich aus Ihren Dateien löschen?",
+	"deleteItemDialog.confirmation.singleItem.p1": "Möchten Sie",
+	"deleteItemDialog.confirmation.singleItem.p2":
+		"wirklich aus Ihren Dateien löschen?",
 	"deleteItemDialog.confirmation.multipleItems":
 		"Folgende Elemente wirklich aus Ihren Dateien löschen?",
 	"deleteItemDialog.confirmation.folder": "Ordner",
@@ -824,7 +825,7 @@ export const Content = {
 	"deleteItemDialog.delete": "Löschen",
 	//CreateFolderDialog
 	"createFolderDialog.title": "Neuer Ordner",
-	"createFolderDialog.folderName": "Ordner Name",
+	"createFolderDialog.folderName": "Unbenannter Ordner",
 	"createFolderDialog.cancel": "Abbrechen",
 	"createFolderDialog.create": "Erstellen",
 	//DeleteHistoryEntryDialog
@@ -838,37 +839,31 @@ export const Content = {
 	//GetStarted
 	"chat.getStarted.h1": "Willkommen bei BärGPT, ",
 	"chat.getStarted.formal.p1":
-		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Ihnen dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
+		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Ihnen dabei Dokumente auszuwerten und Texte zu formulieren.",
 	"chat.getStarted.informal.p1":
-		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten, Texte zu formulieren und Informationen zu finden.",
+		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten und Texte zu formulieren.",
 
-	"chat.getStarted.li1.formal": "Stellen Sie mir eine Frage im Textfeld.",
-	"chat.getStarted.li1.informal": "Stelle mir eine Frage im Textfeld.",
-	"chat.getStarted.li2.formal":
-		"Laden Sie ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
-	"chat.getStarted.li2.informal":
-		"Lade ein Word, Excel oder PDF Dokument über „Datei hochladen“ oder per Drag & Drop hoch.",
-	"chat.getStarted.li3.p1": "Mit",
-	"chat.getStarted.li3.p2":
-		"-Button Dokument zum Chat hinzufügen und dann Fragen stellen.",
+	"chat.getStarted.li1.formal":
+		"Stellen Sie Ihre Frage im Textfeld oder laden Sie ein Dokument hoch (Word, Excel, PDF). Nutzen Sie den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
 
-	"chat.getStarted.h2": "Wichtig:",
-	"chat.getStarted.li4.formal":
-		"Hoher Andrang: Aktuell kann es zu Wartezeiten, Verzögerungen oder kurzfristigen Störungen kommen. Bitte versuchen Sie es ggf. später erneut.",
-	"chat.getStarted.li4.informal":
-		"Hoher Andrang: Aktuell kann es zu Wartezeiten, Verzögerungen oder kurzfristigen Störungen kommen. Bitte versuche es ggf. später erneut.",
-	"chat.getStarted.li5":
-		"Grenzen: Ich habe keinen Internetzugriff und kann keine aktuellen Webinhalte abrufen.",
-	"chat.getStarted.li6.formal":
-		"Qualität: Als KI kann ich Fehler machen. Bitte überprüfen Sie die Informationen.",
-	"chat.getStarted.li6.informal":
-		"Qualität: Als KI kann ich Fehler machen. Bitte überprüfe die Informationen.",
-	"chat.getStarted.li7.formal": "Tipps & Videos finden Sie im",
-	"chat.getStarted.li7.informal": "Tipps & Videos findest Du im",
+	"chat.getStarted.li1.informal":
+		"Stell Deine Frage im Textfeld oder lade ein Dokument hoch (Word, Excel, PDF). Nutze den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
 
-	"chat.getStarted.h3.4.link": "https://hilfe.baergpt.berlin/",
-	"chat.getStarted.h3.4.linkText": "Hilfecenter.",
-	"chat.getStarted.h3.4.link.ariaLabel": "Zum Hilfecenter von BärGPT",
+	"chat.getStarted.li2.formal.1": "Wichtig: ",
+	"chat.getStarted.li2.formal.2":
+		"Als KI kann ich Fehler machen. Überprüfen Sie wichtige Informationen. Ich habe keinen Internetzugriff.",
+	"chat.getStarted.li2.informal.1": "Wichtig: ",
+	"chat.getStarted.li2.informal.2":
+		"Als KI kann ich Fehler machen. Überprüfe wichtige Informationen. Ich habe keinen Internetzugriff.",
+
+	"chat.getStarted.li3.formal": "Tipps & Videos finden Sie im",
+	"chat.getStarted.li3.informal": "Tipps & Videos findest Du im",
+
+	"chat.getStarted.li3.link.href": "https://hilfe.baergpt.berlin/",
+	"chat.getStarted.li3.link.label": "Hilfecenter.",
+	"chat.getStarted.li3.link.ariaLabel": "Zum Hilfecenter von BärGPT",
+
+	"chat.messages.heading": "Chat-Nachrichten",
 
 	"chat.loadingText": "BärGPT überlegt...",
 	//Chat error text
@@ -879,32 +874,57 @@ export const Content = {
 	"chat.errorText.helpPage.linkText": "Hilfecenter.",
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
+	"chat.webSearch.infoText.title": "Websuche wurde automatisch deaktiviert.",
+	"chat.webSearch.infoText.p1":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Websuche deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Websuche wieder zu aktivieren, klicken Sie auf +.",
+	"chat.parla.infoText.title": "Parla wurde automatisch deaktiviert.",
+	"chat.parla.infoText.p1":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Parla deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Parla wieder zu aktivieren, klicken Sie auf +.",
+	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
+
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
-	"chat.selectedChatItems.noItems": "Keine Dateien in diesem Chat",
+	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
+	"chat.sendButton.ariaLabel": "Nachricht senden",
+	"chat.scrollToBottomButton.ariaLabel": "Zum Ende des Chats scrollen",
+	"chat.stopGeneratingButton.ariaLabel": "Textgenerierung stoppen",
+	"chatStopGeneratingIcon.imgAlt": "Generierung stoppen (Pause-Symbol)",
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
-	"chat.selectedChatItems.questionmark.arialabel": "Tooltip zeigen",
 	//Chat options dropdown
 	"chat.options.toggleButton.tooltip": "Weitere Funktionen aktivieren",
 	"chat.options.toggleButton.tooltip.ariaLabel":
 		"Weitere Funktionen aktivieren",
-	"chat.options.dropdown.title": "Wissen erweitern",
 	"chat.options.selected.icon.imgAlt": "Ein blaues Häkchen-Icon",
-	"chat.options.li1.label": "Verwaltungswissen",
-	"chat.options.li1.description": "Zugriff auf Verwaltungsdokumente",
-	"chat.options.li1.ariaLabel": "Verwaltungswissen auswählen",
+	"chat.options.li1.label": "Datei Hochladen",
+	"chat.options.li1.ariaLabel": "Datei zum Hochladen auswählen",
+	"chat.options.li2.label": "Konnektoren",
+	"chat.options.li2.ariaLabel": "Konnektoren auswählen",
+	"chat.options.li3.label": "Websuche",
+	"chat.options.li3.ariaLabel": "Websuche auswählen",
+	// MCP Options Dialog
+	"mcp.options.dialog.title": "MCP Server auswählen",
+	"mcp.options.dialog.confirmButton.label": "Bestätigen",
+	"mcp.options.dialog.confirmButton.ariaLabel": "Bestätigen",
+	"mcp.options.dialog.cancelButton.label": "Abbrechen",
+	"mcp.options.dialog.cancelButton.ariaLabel": "Abbrechen",
+	"mcp.options.dialog.option1.label": "Parla Berlin",
+	"mcp.options.dialog.option1.description":
+		"Schriftliche Anfragen des Abgh. Berlins",
+	"mcp.options.dialog.option1.ariaLabel": "Parla Berlin auswählen",
+
 	// Chat llm model dropdown
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
 	"chat.llmModel.dropdown.li1.label": "Schnell",
-	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small (schnell)",
+	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small 4 (schnell)",
 	"chat.llmModel.dropdown.li1.description": "Gut für alltägliche Aufgaben",
-	"chat.llmModel.dropdown.li1.ariaLabel": "Mistral Small (schnell) auswählen",
+	"chat.llmModel.dropdown.li1.ariaLabel": "Mistral Small 4 (schnell) auswählen",
 	"chat.llmModel.dropdown.li2.label": "Präzise",
-	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Large (präzise)",
+	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Medium 3.5 (präzise)",
 	"chat.llmModel.dropdown.li2.description":
 		"Leistungsstark für komplexe Aufgaben",
-	"chat.llmModel.dropdown.li2.ariaLabel": "Mistral Large (präzise) auswählen",
+	"chat.llmModel.dropdown.li2.ariaLabel":
+		"Mistral Medium 3.5 (präzise) auswählen",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
@@ -921,7 +941,7 @@ export const Content = {
 	"chat.citationsDialog.title": "Quellen",
 	"chat.citationsDialog.page": "Seite",
 	"chat.tooltipCitation.page": "Seite",
-	"chat.publicDocumentPill.label": "Verwaltungswissen",
+	"chat.citationsDialog.publicDocumentPill.label": "Verwaltungswissen",
 
 	"chat.exportChatTextButton.label": "Exportieren",
 	"chat.exportChatTextButton.ariaLabel": "Chat exportieren",
@@ -935,9 +955,12 @@ export const Content = {
 	"chat.contextPill.webSearch.label": "Websuche",
 	"chat.contextPill.webSearch.ariaLabel": "Websuche entfernen",
 	"chat.contextPill.webSearch.icon.alt": "Websuche icon",
-	"chat.contextPill.baseKnowledge.label": "Verwaltungswissen",
-	"chat.contextPill.baseKnowledge.ariaLabel": "Verwaltungswissen entfernen",
-	"chat.contextPill.baseKnowledge.icon.alt": "Verwaltungswissen icon",
+	"chat.contextPill.parla.label": "Parla Berlin",
+	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
+	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
+
+	"chat.externalTools.warningBanner.label":
+		"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 
 	/* -------------------- Profile -------------------- */
 	"profile.title": "Profil",
@@ -1006,23 +1029,17 @@ export const Content = {
 	"profile.chatSettings.ariaLabel": "Anrede ändern zu",
 	"profile.chatSettings.formal": "Siezen",
 	"profile.chatSettings.informal": "Duzen",
+	"profile.chatSettings.personalPrompt.title":
+		"Welche Präferenzen soll BärGPT berücksichtigen?",
+	"profile.chatSettings.personalPrompt.subtitle":
+		"Gilt für alle Unterhaltungen im Rahmen von",
+	"profile.chatSettings.personalPrompt.link": "BärGPTs Richtlinien.",
+	"profile.chatSettings.personalPrompt.placeholder":
+		"z.B. Antworte knapp und in einfacher Sprache.",
+	"profile.chatSettings.personalPrompt.characters": "Zeichen",
+	"profile.chatSettings.personalPromptUpdateSuccess":
+		"Persönliche Präferenzen wurden aktualisiert",
 
-	//Base knowledge documents
-	"profile.baseKnowledge.title": "Verwaltungswissen",
-	"profile.baseKnowledge.description":
-		"BärGPT greift für seine Antworten auf diese Dokumente zu.",
-	"profile.baseKnowledge.usage": "So nutzt BärGPT die Quellen. ",
-	"profile.baseKnowledge.link.label": "Mehr erfahren",
-	"profile.baseKnowledge.link.ariaLabel":
-		"Mehr erfahren über das Verwaltungswissen von BärGPT",
-	"profile.baseKnowledge.link.url":
-		"https://hilfe.baergpt.berlin//faq#wie-funktioniert-verwaltungswissen",
-	"profile.baseKnowledge.viewAll.label.start": "alle ",
-	"profile.baseKnowledge.viewAll.label.end": " Dokumente ansehen",
-	"profile.baseKnowledge.viewAll.ariaLabel":
-		"Alle Verwaltungswissen-Dokumente ansehen",
-	"profile.baseKnowledge.collapseList.label": "Liste einklappen",
-	"profile.baseKnowledge.collapseList.ariaLabel": "Liste einklappen",
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 	"emailChanged.buttonLink": "Zu BärGPT",
@@ -1110,8 +1127,12 @@ export const Content = {
 	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
 	"registerPage.passwordLabel": "Passwort",
 	"registerPage.passwordPlaceholder": "Passwort",
+	"registerPage.showPassword": "Passwort anzeigen",
+	"registerPage.hidePassword": "Passwort verstecken",
 	"registerPage.repeatPasswordLabel": "Passwort wiederholen",
 	"registerPage.repeatPasswordPlaceholder": "Passwort",
+	"registerPage.passwordTooltip.ariaLabel":
+		"Hinweis: Sichere Passwörter verwenden mindestens: 10 Zeichen, 1 Buchstabe, 1 Zahl, 1 Sonderzeichen",
 	"registerPage.passwordTooltip": `Sichere Passwörter verwenden mindestens:
 <ul class="list-disc pl-5">
 	<li>10 Zeichen</li>
@@ -1123,8 +1144,6 @@ export const Content = {
 	"registerPage.privacyText.p1": "und",
 	"registerPage.termsOfUse.label": "Nutzungsbedingungen",
 	"registerPage.privacyText.p2": "zustimmen",
-	"registerPage.personalData.label":
-		"Ich versichere, keine personenbezogenen Daten zu bearbeiten.",
 	"registerPage.submitButton": "Registrieren",
 	"registerPage.loginPrompt": "Sie haben bereits einen Account?",
 	"registerPage.loginLink": "Jetzt einloggen",
@@ -1190,7 +1209,7 @@ export const Content = {
 	"form.validation.general.valueMissing": "Bitte füllen Sie dieses Feld aus.",
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
 	"form.validation.email.customError":
-		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
+		"E-Mail nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
 	"form.validation.password.tooShort":
 		"Das Passwort muss mindestens 10 Zeichen lang sein.",
 	"form.validation.login.password.tooShort":
@@ -1200,16 +1219,13 @@ export const Content = {
 	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.privacy.required.error":
 		"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
-	"form.validation.personalData.required.error":
-		"Bitte stimmen Sie zu, keine personenbezogenen Daten zu bearbeiten.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
 	"form.validation.userAlreadyRegistered.error":
 		"Benutzer ist bereits registriert.",
 	"form.validation.password.shouldBeDifferent.error":
 		"Das neue Passwort muss sich vom alten Passwort unterscheiden.",
-	"form.validation.userDeactivated.error":
-		"Der Benutzeraccount wurde deaktiviert.",
+	"form.validation.userBanned.error": "Der Benutzeraccount wurde gesperrt.",
 
 	/* ---------------------- Footer ---------------------- */
 	"footer.baerLogo.alt": "Berliner Bär Logo",
@@ -1245,107 +1261,10 @@ export const Content = {
 
 	/* ---------------------- Admin ---------------------- */
 	"admin.button.link.label": "Adminbereich",
-	/* ---------------------- User Table ---------------------- */
-	"userTable.searchField.placeholder": "Suche nach Name oder E-Mail...",
-	"userTable.PageSizeDropdown.all.label": "Alle Benutzer",
-	"userTable.PageSizeDropdown.pageSize.label": "Anzeigen: ",
-	"userTable.PageSizeDropdown.perTable": "pro Seite",
-	"userTable.pagination.nextPage": "Weiter",
-	"userTable.pagination.previousPage": "Zurück",
-	"userTable.statusFilterDropdown.label": "Status filtern",
-	"userTable.statusFilterDropdown.all.label": "Status (alle)",
-	"userTable.noResults": "Keine Ergebnisse.",
-	"userTable.resultsCount.separator": "von",
-	"userTable.resultsCount.label": "Benutzer:innen",
-	// User Table Headers
-	"userTable.tableHeader.firstName": "Vorname",
-	"userTable.tableHeader.lastName": "Nachname",
-	"userTable.tableHeader.email": "E-Mail",
-	"userTable.tableHeader.registeredAt": "Registriert",
-	"userTable.tableHeader.lastLoginAt": "Zuletzt aktiv",
-	"userTable.tableHeader.inferences": "Inferenzen",
-	"userTable.tableHeader.documents": "Dokumente",
-	"userTable.tableHeader.status": "Status",
-	"userTable.tableHeader.actions": "Bearbeiten",
-	"userTable.tableHeader.actions.ariaLabel": "Benutzer bearbeiten",
 
-	/* ---------------------- User Edit Modal ---------------------- */
-
-	"userEditModal.title": "Benutzer bearbeiten",
-	"userEditModal.form.title": "Persönliche Daten",
-	"userEditModal.form.description":
-		"Bearbeiten Sie die Benutzerdaten und Einstellungen",
-	"userEditModal.form.titleLabel": "Titel",
-	"userEditModal.form.academicTitle.placeholder": "keine Angabe",
-	"userEditModal.form.academicTitle.defaultOption": "keine Angabe",
-	"userEditModal.form.academicTitle.options": ["Dr.", "Prof.", "Prof. Dr."],
-	"userEditModal.form.personalTitleLabel": "Anrede",
-	"userEditModal.form.personalTitle.options": ["Frau", "Herr"],
-	"userEditModal.form.personalTitle.placeholder": "keine Angabe",
-	"userEditModal.form.personalTitle.defaultOption": "keine Angabe",
-	"userEditModal.form.firstName": "Vorname",
-	"userEditModal.form.firstNamePlaceholder": "Vorname eingeben",
-	"userEditModal.form.lastName": "Nachname",
-	"userEditModal.form.lastNamePlaceholder": "Nachname eingeben",
-	"userEditModal.form.email": "E-Mail-Adresse",
-	"userEditModal.form.emailPlaceholder": "E-Mail-Adresse eingeben",
-	"userEditModal.form.isAdmin": "Admin",
-	"userEditModal.form.button.save": "Änderungen speichern",
-	"userEditModal.form.button.saved": "Änderungen gespeichert",
-
-	"userEditModal.userInformationCard.title": "Benutzerinformationen",
-	"userEditModal.userInformationCard.description":
-		"Schreibgeschützte Informationen über den Benutzer",
-	"userEditModal.userInformationCard.registeredAt": "Registriert seit",
-	"userEditModal.userInformationCard.lastLoginAt": "Zuletzt aktiv",
-	"userEditModal.userInformationCard.inferences": "Inferenzen",
-	"userEditModal.userInformationCard.documents": "Dokumente",
-	"userEditModal.userInformationCard.requests": "Anfragen",
-	"userEditModal.userInformationCard.accountStatus": "Status",
-	"userEditModal.userInformationCard.accountStatus.deactivated":
-		"Deaktiviert am",
-
-	"userEditModal.dangerZoneCard.title": "Gefahrenbereich",
-	"userEditModal.dangerZoneCard.description":
-		"Benutzer deaktivieren oder dauerhaft entfernen",
-	"userEditModal.dangerZoneCard.deleteUser.title": "Benutzer verwalten",
-	"userEditModal.dangerZoneCard.deleteUser.description":
-		"Benutzer deaktivieren (reversibel) oder permanent löschen (irreversibel).",
-	"userEditModal.dangerZoneCard.deleteUser.button": "Benutzer verwalten",
-
-	"userEditModal.dangerZoneCard.restoreUser.title": "Benutzer wiederherstellen",
-	"userEditModal.dangerZoneCard.restoreUser.description":
-		"Deaktivierten Benutzer wieder aktivieren und Zugang wiederherstellen.",
-	"userEditModal.dangerZoneCard.restoreUser.button": "Account wiederherstellen",
-
-	"userEditModal.restoreUserDialog.title": "Account wiederherstellen",
-	"userEditModal.restoreUserDialog.description.p1": "Möchten Sie den Account",
-	"userEditModal.restoreUserDialog.description.p2":
-		"wieder aktivieren? Der Account erhält dadurch wieder Zugang zum System.",
-	"userEditModal.restoreUserDialog.button.cancel": "Abbrechen",
-	"userEditModal.restoreUserDialog.button.restore": "Wiederherstellen",
-
-	"userEditModal.deleteUserDialog.title": "Account verwalten",
-	"userEditModal.deleteUserDialog.description.p1":
-		"Wählen Sie eine Aktion für:",
-	"userEditModal.deleteUserDialog.softDelete.label": "Account deaktivieren",
-	"userEditModal.deleteUserDialog.softDelete.description":
-		"Der Account wird deaktiviert, aber alle Daten bleiben erhalten und können wiederhergestellt werden. Nach 30 Tagen werden die Daten automatisch gelöscht.",
-	"userEditModal.deleteUserDialog.hardDelete.label": "Permanent löschen",
-	"userEditModal.deleteUserDialog.hardDelete.description":
-		"Der Account und alle zugehörigen Daten werden permanent gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-	"userEditModal.deleteUserDialog.button.cancel": "Abbrechen",
-	"userEditModal.deleteUserDialog.button.confirm": "Aktion ausführen",
-	"userEditModal.deleteUserDialog.button.softDelete": "Benutzer deaktivieren",
-	"userEditModal.deleteUserDialog.button.hardDelete": "Permanent löschen",
-	// User Edit Modal Form Validation
-	"userEditModal.form.emailUpdatedSuccess":
-		"E-Mail-Adresse erfolgreich aktualisiert",
-	"userEditModal.form.invalidEmailError":
-		"E-Mail-Format nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
-	"userEditModal.form.emailAlreadyInUseError":
-		"Diese E-Mail-Adresse ist bereits in Verwendung.",
-	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",
+	/* ---------------------- Splash Modal ---------------------- */
+	"splashModal.title": "Was ist neu?",
+	"splashModal.description": "Die wichtigsten Neuigkeiten im Überblick",
 } as const;
 
 export default Content;
