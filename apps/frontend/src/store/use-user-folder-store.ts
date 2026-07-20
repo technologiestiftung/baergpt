@@ -16,10 +16,7 @@ interface UserFolderStore {
 	getUserFolders: (signal: AbortSignal) => Promise<void>;
 	createUserFolder: (folderName: string) => Promise<void>;
 	deleteUserFolder: (folderId: number) => Promise<void>;
-	renameUserFolder: (
-		folderId: number,
-		newName: string,
-	) => Promise<Error | null>;
+	renameUserFolder: (folderId: number, newName: string) => Promise<unknown>;
 
 	selectedUserChatFolders: UserFolder[];
 	selectUserChatFolder: (folder: UserFolder) => void;
@@ -105,7 +102,7 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 			await renameFolder(folderId, newName);
 		} catch (error) {
 			captureError(error);
-			return error as Error;
+			return error;
 		}
 
 		// Keep every list holding this folder object in sync, not just userFolders

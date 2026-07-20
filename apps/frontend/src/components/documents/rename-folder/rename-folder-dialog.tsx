@@ -75,6 +75,7 @@ export const RenameFolderDialog: React.FC = () => {
 						name="folderName"
 						type="text"
 						defaultValue={folder?.name}
+						required
 						autoFocus
 						onFocus={({ currentTarget }) => currentTarget.select()}
 					/>

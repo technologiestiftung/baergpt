@@ -10,7 +10,6 @@ export async function renameFolder(
 		.eq("id", folderId);
 
 	if (renameFolderError) {
-		console.error("Error renaming folder:", renameFolderError);
 		throw renameFolderError;
 	}
 }
