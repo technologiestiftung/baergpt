@@ -1,10 +1,10 @@
 export const Content = {
 	/* -------------------- Header -------------------- */
 	"header.logo.alt": "BärGPT Logo",
-	"header.navigation.help.label": "Hilfecenter",
+	"header.navigation.help.label": "Hilfe und Tipps",
 	"header.navigation.help.mobileLabel": "Hilfe",
 	"header.navigation.profile": "Profil",
-	"header.navigation.help.ariaLabel": "Hilfecenter",
+	"header.navigation.help.ariaLabel": "Hilfe und Tipps",
 	"header.navigation.help.link": "https://hilfe.baergpt.berlin/",
 	"header.navigation.profile.ariaLabel": "Zur Profil-Seite",
 	"header.navigation.landingPage.login.label": "Anmelden",
@@ -597,7 +597,8 @@ export const Content = {
 		"Bei Fragen zu diesen Nutzungsbedingungen oder zu BärGPT wenden Sie sich bitte an:",
 	"termsOfUsePage.section12.sub4.p1.contact.email.label": "E-Mail: ",
 	"termsOfUsePage.section12.sub4.p1.contact.email": "support@baergpt.berlin",
-	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.label": "Hilfecenter: ",
+	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.label":
+		"Hilfe und Tipps: ",
 	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.link":
 		"https://hilfe.baergpt.berlin",
 	//consent
@@ -1260,7 +1261,7 @@ export const Content = {
 	"footer.support.link": "mailto:support@baergpt.berlin",
 	"footer.github": "GitHub",
 	"footer.github.link": "https://github.com/technologiestiftung/baergpt",
-	"footer.helpcenter": "Hilfecenter",
+	"footer.helpcenter": "Hilfe und Tipps",
 	"footer.helpcenter.link": "https://hilfe.baergpt.berlin/",
 	"footer.feedback": "Feedback geben",
 	"footer.feedback.link": "https://citylabberlin.typeform.com/to/GhoCHw0J",
