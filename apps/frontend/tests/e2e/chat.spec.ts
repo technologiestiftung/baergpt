@@ -779,7 +779,7 @@ test.describe("Chat", () => {
 		await expect(chatOptionsButton).toBeVisible();
 		await chatOptionsButton.click();
 
-		const connectorsOption = page.getByRole("option", {
+		const connectorsOption = page.getByRole("menuitem", {
 			name: "Konnektoren auswählen",
 		});
 
@@ -790,7 +790,7 @@ test.describe("Chat", () => {
 		await expect(connectorsSubmenu).toBeVisible();
 
 		// locate the Parla Berlin option inside the submenu
-		const parlaBerlinOption = connectorsSubmenu.getByRole("button", {
+		const parlaBerlinOption = connectorsSubmenu.getByRole("menuitemcheckbox", {
 			name: /Parla Berlin/,
 		});
 		await expect(parlaBerlinOption).toBeVisible();
@@ -841,7 +841,9 @@ test.describe("Chat", () => {
 			});
 			await chatOptionsButton.click();
 
-			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+			await page
+				.getByRole("menuitemcheckbox", { name: "Websuche auswählen" })
+				.click();
 
 			await expect(
 				page.getByText(
@@ -872,7 +874,9 @@ test.describe("Chat", () => {
 			});
 			await chatOptionsButton.click();
 
-			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+			await page
+				.getByRole("menuitemcheckbox", { name: "Websuche auswählen" })
+				.click();
 
 			const webSearchPill = page.getByRole("button", {
 				name: "Websuche entfernen",
@@ -924,7 +928,9 @@ test.describe("Chat", () => {
 			});
 			await chatOptionsButton.click();
 
-			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+			await page
+				.getByRole("menuitemcheckbox", { name: "Websuche auswählen" })
+				.click();
 
 			const webSearchPill = page.getByRole("button", {
 				name: "Websuche entfernen",

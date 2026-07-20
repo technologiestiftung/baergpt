@@ -50,15 +50,16 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 		<div
 			className={`z-50 rounded-3px bg-white border border-hellblau-50 shadow-md min-w-[200px] ${className}`}
 			onKeyDown={handleKeyDown}
-			role="listbox"
+			role="menu"
+			aria-label={Content["chat.options.li2.ariaLabel"]}
 			data-testid="chat-menu-connectors-submenu"
 		>
-			<ul className="flex flex-col">
+			<ul role="none" className="flex flex-col">
 				{connectorItems.map((item, index) => {
 					const isSelected = selectedChatTools.includes(item.value);
 
 					return (
-						<li key={item.value}>
+						<li key={item.value} role="none">
 							<button
 								type="button"
 								ref={(el) => {
@@ -71,8 +72,8 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 								className="flex items-center justify-between w-full px-1.5 py-0.5 text-left gap-6 hover:bg-hellblau-30 focus-visible:bg-hellblau-30 focus-visible:outline-default rounded-3px"
 								onClick={() => handleSelect(item)}
 								aria-label={item.ariaLabel}
-								role="option"
-								aria-selected={isSelected}
+								role="menuitemcheckbox"
+								aria-checked={isSelected}
 							>
 								<div className="flex items-center">
 									<img

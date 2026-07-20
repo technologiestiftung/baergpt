@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import Content from "../../../../content.ts";
-import { ChatMenuSection } from "./chat-menu-section.tsx";
+import { CHAT_TOOLS_MENU_ID, ChatMenuSection } from "./chat-menu-section.tsx";
 import { useClickOutside } from "../../../../hooks/use-click-outside.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
 
@@ -45,6 +45,9 @@ export const ChatMenuToggleButton: React.FC = () => {
 					className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center focus-visible:outline-default"
 					onClick={handleToggleDropdown}
 					aria-label={Content["chat.options.toggleButton.tooltip.ariaLabel"]}
+					aria-haspopup="menu"
+					aria-expanded={isDropdownOpen}
+					aria-controls={CHAT_TOOLS_MENU_ID}
 					onMouseEnter={handleShowTooltip}
 					onMouseLeave={hideTooltip}
 					onFocus={handleShowTooltip}

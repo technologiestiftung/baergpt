@@ -904,7 +904,7 @@ export const Content = {
 	"chat.options.toggleButton.tooltip.ariaLabel":
 		"Weitere Funktionen aktivieren",
 	"chat.options.selected.icon.imgAlt": "Ein blaues Häkchen-Icon",
-	"chat.options.li1.label": "Datei Hochladen",
+	"chat.options.li1.label": "Datei hochladen",
 	"chat.options.li1.ariaLabel": "Datei zum Hochladen auswählen",
 	"chat.options.li2.label": "Konnektoren",
 	"chat.options.li2.ariaLabel": "Konnektoren auswählen",
