@@ -678,6 +678,14 @@ export const Content = {
 	"chatHistory.fetchRetry.button.ariaLabel":
 		"Erneut versuchen Chatverlauf zu laden",
 	"chatHistory.allLoaded": "Alle Chats geladen",
+	"chatHistory.collapseToggle.collapseChats": "Chats zusammenklappen",
+	"chatHistory.collapseToggle.expandChats": "Chats aufklappen",
+	"chatHistory.groupBy.dropdown.ariaLabel":
+		"Dropdown-Menü zum Gruppieren von Chats",
+	"chatHistory.groupBy.dropdown.tooltip": "Gruppierung ändern",
+	"chatHistory.groupBy.dropdown.label": "Gruppieren nach..",
+	"chatHistory.groupBy.options.none": "Keine",
+	"chatHistory.groupBy.options.date": "Datum",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton

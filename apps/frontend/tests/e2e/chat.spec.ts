@@ -628,6 +628,55 @@ test.describe("Chat", () => {
 		await expect(allChatsLoadedMessage).toBeVisible();
 	});
 
+	testDesktopOnlyWithManyChats(
+		"History - Group By - switches grouping to 'Datum' then switch grouping back to 'Keine'",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Date-Groups should not be visible by default
+			const dateGroupHeader = page
+				.getByRole("complementary", { name: "Sidebar" })
+				.getByText("Heute");
+			await expect(dateGroupHeader).not.toBeVisible();
+
+			const groupByDropdown = page.getByRole("button", {
+				name: "Dropdown-Menü zum Gruppieren von Chats",
+			});
+			await groupByDropdown.click();
+
+			// "Keine" is default — it should have aria-checked="true"
+			const noneOption = page.getByRole("menuitemradio", { name: "Keine" });
+			await expect(noneOption).toHaveAttribute("aria-checked", "true");
+
+			const dateOption = page.getByRole("menuitemradio", { name: "Datum" });
+			await dateOption.click();
+
+			// Dropdown closes after selection
+			const openDropdownLabel = page.getByText("Gruppieren nach..");
+			await expect(openDropdownLabel).not.toBeVisible();
+
+			// At least one date group label should be visible (e.g. "Heute")
+			await expect(dateGroupHeader).toBeVisible();
+
+			// Reload to check localStorage persistence
+			await page.reload();
+
+			// check the preference is still active
+			await expect(dateGroupHeader).toBeVisible();
+
+			// Switch back to none
+			await groupByDropdown.click();
+
+			// The "Datum" option should now be selected
+			await expect(dateOption).toHaveAttribute("aria-checked", "true");
+
+			// Reset to "Keine"
+			await noneOption.click();
+
+			await expect(dateGroupHeader).not.toBeVisible();
+		},
+	);
+
 	testWithMockedLlm(
 		"Change LLM model from small to large and back",
 		async ({ page }) => {
