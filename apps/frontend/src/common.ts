@@ -1,9 +1,13 @@
 import type {
 	WebCitationSource,
 	ParlaCitationSource,
+	OpenDataCitationSource,
 } from "./api/chat/get-completion";
 
-export type { ParlaCitationSource } from "./api/chat/get-completion";
+export type {
+	ParlaCitationSource,
+	OpenDataCitationSource,
+} from "./api/chat/get-completion";
 
 export type NewChatMessage = Pick<
 	ChatMessage,
@@ -15,6 +19,7 @@ export type NewChatMessage = Pick<
 	| "citations"
 	| "web_citations"
 	| "parla_citations"
+	| "open_data_citations"
 >;
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
@@ -40,6 +45,7 @@ export type ChatMessage = {
 	citations: number[] | null;
 	web_citations: WebCitationSource[] | null;
 	parla_citations: ParlaCitationSource[] | null;
+	open_data_citations: OpenDataCitationSource[] | null;
 	created_at: string;
 	id: number;
 	role: string;
