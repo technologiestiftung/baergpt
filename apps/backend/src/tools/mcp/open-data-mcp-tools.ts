@@ -14,7 +14,7 @@ export const openDataMCPTools =
 			openDataHttpClient = await createMCPClient({
 				transport: {
 					type: "http",
-					url: "https://bod-mcp.up.railway.app/mcp",
+					url: "https://berlin-open-data-mcp.onrender.com/mcp",
 				},
 			});
 

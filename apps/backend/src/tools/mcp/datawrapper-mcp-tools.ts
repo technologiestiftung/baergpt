@@ -14,7 +14,7 @@ export const datawrapperMCPTools =
 			datawrapperHttpClient = await createMCPClient({
 				transport: {
 					type: "http",
-					url: "https://datawrapper-mcp.up.railway.app/mcp",
+					url: "https://datawrapper-mcp.onrender.com/mcp",
 				},
 			});
 
