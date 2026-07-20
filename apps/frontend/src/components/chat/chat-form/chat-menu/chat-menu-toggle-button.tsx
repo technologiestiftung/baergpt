@@ -1,9 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import Content from "../../../../content.ts";
-import {
-	CHAT_TOOLS_MENU_ID,
-	ChatMenuSection,
-} from "./chat-menu-section.tsx";
+import { CHAT_TOOLS_MENU_ID, ChatMenuSection } from "./chat-menu-section.tsx";
 import { useClickOutside } from "../../../../hooks/use-click-outside.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
 
