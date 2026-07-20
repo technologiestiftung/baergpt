@@ -1,10 +1,10 @@
 import React, { useMemo } from "react";
-import { HistoryEntry } from "./history-entry";
-import { useChatsStore } from "../../../store/use-chats-store";
+import { HistoryEntry } from "../history-entry.tsx";
+import { useChatsStore } from "../../../../store/use-chats-store.ts";
 import { subDays, format } from "date-fns";
 import { de } from "date-fns/locale";
-import Content from "../../../content.ts";
-import { LoadMoreChatsSpinner } from "./load-more-chats-spinner.tsx";
+import Content from "../../../../content.ts";
+import { LoadMoreChatsSpinner } from "../load-more-chats-spinner.tsx";
 
 const today = new Date();
 const sevenDaysAgo = subDays(today, 7);
@@ -79,10 +79,10 @@ export function HistoryGroupsByDate({
 	}, [chatsToday, chatsLastSevenDays, chatsByMonth]);
 
 	return (
-		<ul className={`w-full flex flex-col gap-6 mb-5`}>
+		<ul className={`w-full flex flex-col mb-5 -mt-1`}>
 			{chatGroups.map(({ label, chats: chatsInGroup }) => (
 				<li key={label} className="flex flex-col">
-					<div className="flex items-center truncate text-sm leading-5 font-bold text-hellblau-50 h-8 md:px-2">
+					<div className="flex items-center truncate text-xs leading-5 h-6 text-dunkelblau-40 md:px-2 first:mb-1">
 						{label}
 					</div>
 					<ul>

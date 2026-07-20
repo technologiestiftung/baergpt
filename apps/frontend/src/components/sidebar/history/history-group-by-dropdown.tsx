@@ -11,7 +11,7 @@ import {
 
 const options: GroupingOption[] = ["none", "date"];
 
-export function HistoryGroupedByDropdown() {
+export function HistoryGroupByDropdown() {
 	const { groupBy, setGroupBy } = useHistoryGroupByStore();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const selectButtonRef = useRef<HTMLButtonElement>(null);

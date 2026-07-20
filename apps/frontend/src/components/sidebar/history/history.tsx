@@ -1,10 +1,10 @@
 import React, { useRef, useState } from "react";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import { HistoryGroupsByDate } from "./history-groups-by-date.tsx";
+import { HistoryGroupsByDate } from "./history-groups/history-groups-by-date.tsx";
 import { Skeleton } from "../../primitives/skeletons/skeleton.tsx";
 import Content from "../../../content.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
-import { HistoryGroupedByDropdown } from "./history-grouped-by-dropdown.tsx";
+import { HistoryGroupByDropdown } from "./history-group-by-dropdown.tsx";
 import { useHistoryGroupByStore } from "../../../store/use-history-group-by-store.ts";
 import { HistoryGroupsByNone } from "./history-groups/history-groups-by-none.tsx";
 import { ChevronIcon } from "../../primitives/icons/chevron-icon.tsx";
@@ -30,10 +30,10 @@ export const History: React.FC = () => {
 
 	return (
 		<div
-			className={`flex flex-col gap-[18px] w-full min-h-0 ${errorMessage ? "h-full" : ""}`}
+			className={`flex flex-col w-full min-h-0 ${errorMessage ? "h-full" : ""}`}
 		>
-			<div className="flex justify-between">
-				<h2 className="text-base leading-6 font-semibold text-hellblau-50 md:px-2 px-5 whitespace-nowrap pt-1">
+			<div className="flex justify-between items-center md:px-2 px-5">
+				<h2 className="text-base font-semibold text-hellblau-50  whitespace-nowrap">
 					<button
 						className={
 							"flex items-center focus-visible:outline-default rounded-3px"
@@ -51,12 +51,12 @@ export const History: React.FC = () => {
 					</button>
 				</h2>
 
-				<HistoryGroupedByDropdown />
+				<HistoryGroupByDropdown />
 			</div>
 			{!isHistoryCollapsed && (
 				<div
 					ref={historyContainerRef}
-					className="flex flex-col grow min-h-0 overflow-y-auto px-5 md:px-0 md:pr-4 history-scrollbar"
+					className="flex flex-col grow min-h-0 overflow-y-auto pl-3 pr-6 md:px-0 md:pr-4 history-scrollbar"
 				>
 					<div className="w-full h-full">
 						<div
