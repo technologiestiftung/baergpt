@@ -19,10 +19,10 @@ export type NewChatMessage = Pick<
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
-export type McpOptions = "parla";
-export type ChatOption = "webSearch" | McpOptions;
+export type Connector = "parla";
+export type ChatTool = "webSearch" | Connector;
 
-export type ChatOptionsDropdownValue = ChatOption | "mcpServer";
+export type ChatToolsMenuItemId = ChatTool | "fileUpload" | "connectors";
 
 export type LlmModel = "mistral-small" | "mistral-large";
 

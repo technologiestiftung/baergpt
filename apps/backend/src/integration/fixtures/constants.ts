@@ -31,7 +31,7 @@ export const tags = [
 	"Tempor",
 ];
 export const short_summary = `Lorem Ipsum Platzhaltertext`;
-export const chunk_mistral_embedding = Array(1024).fill(0.0001);
+export const chunk_mistral_embedding = `[${Array(1024).fill(0.0001).join(",")}]`;
 
 // defaultDocument data for `document_chunks` table
 export const content = `# UI Test Doc 

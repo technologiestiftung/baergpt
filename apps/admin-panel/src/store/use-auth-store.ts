@@ -3,9 +3,6 @@ import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "../../supabase-client.ts";
 import { useAuthErrorStore } from "./use-auth-error-store.ts";
 import { handleSessionChange } from "../api/session/handle-session-change.ts";
-import { useUserStore } from "./use-user-store.ts";
-import { getIsActive } from "../api/user/get-is-active.ts";
-import { useIsActiveStore } from "./use-is-active-store.ts";
 
 let resendTime: number | null = null;
 
@@ -161,31 +158,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 				useAuthErrorStore.getState().handleError(new Error(error.message));
 				return;
 			}
-
-			// Check if the user account is active
-			const isActive = await getIsActive(new AbortController().signal);
-
-			// force logout if the user account is not active
-			if (!isActive) {
-				await supabase.auth.signOut();
-				useAuthErrorStore
-					.getState()
-					.handleError(new Error("User account has been deactivated."));
-				return;
-			}
-
-			// Check if user is an admin
-			await useUserStore
-				.getState()
-				.checkIsUserAdmin(new AbortController().signal);
-			const isAdmin = useUserStore.getState().isUserAdmin;
-			if (!isAdmin) {
-				await supabase.auth.signOut(); // Force logout
-				useAuthErrorStore
-					.getState()
-					.handleError(new Error("Access denied. Admin privileges required."));
-				return;
-			}
 		},
 
 		async logout() {
@@ -196,7 +168,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 				emailConfirmationStatus: "unknown",
 				isInitialized: true,
 			});
-			useIsActiveStore.getState().resetIsActive();
 		},
 	};
 });

@@ -2,11 +2,13 @@ import { create } from "zustand";
 import type { Document, UserDocument, UserFolder } from "../common";
 import { getFolders } from "../api/folders/get-folders";
 import { deleteFolder } from "../api/folders/delete-folder";
+import { renameFolder } from "../api/folders/rename-folder";
 import { useUserDocumentStore } from "./use-user-document-store.ts";
 import { createFolder } from "../api/folders/create-folder.ts";
 import { isDocument } from "../components/documents/document-list/list-item/utils/is-document.ts";
 import { useCurrentFolderStore } from "./use-current-folder-store.ts";
 import { useChatsStore } from "./use-chats-store.ts";
+import { captureError } from "../monitoring/capture-error.ts";
 
 interface UserFolderStore {
 	userFolders: UserFolder[];
@@ -14,6 +16,7 @@ interface UserFolderStore {
 	getUserFolders: (signal: AbortSignal) => Promise<void>;
 	createUserFolder: (folderName: string) => Promise<void>;
 	deleteUserFolder: (folderId: number) => Promise<void>;
+	renameUserFolder: (folderId: number, newName: string) => Promise<unknown>;
 
 	selectedUserChatFolders: UserFolder[];
 	selectUserChatFolder: (folder: UserFolder) => void;
@@ -61,6 +64,7 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 					.getState()
 					.deleteUserDocument(document.id);
 				if (error) {
+					captureError(error);
 					hasDocumentDeleteError = true;
 				}
 			}
@@ -91,6 +95,37 @@ export const useUserFolderStore = create<UserFolderStore>((set, get) => ({
 			selectedUserChatFolders: updatedSelectedChatFolders,
 			selectedUserFoldersForAction: updatedSelectedFoldersForAction,
 		}));
+	},
+
+	renameUserFolder: async (folderId: number, newName: string) => {
+		try {
+			await renameFolder(folderId, newName);
+		} catch (error) {
+			captureError(error);
+			return error;
+		}
+
+		// Keep every list holding this folder object in sync, not just userFolders
+		const withRenamedFolder = (folders: UserFolder[]) =>
+			folders.map((folder) =>
+				folder.id === folderId ? { ...folder, name: newName } : folder,
+			);
+
+		set(
+			({
+				userFolders,
+				selectedUserChatFolders,
+				selectedUserFoldersForAction,
+			}) => ({
+				userFolders: withRenamedFolder(userFolders),
+				selectedUserChatFolders: withRenamedFolder(selectedUserChatFolders),
+				selectedUserFoldersForAction: withRenamedFolder(
+					selectedUserFoldersForAction,
+				),
+			}),
+		);
+
+		return null;
 	},
 
 	selectedUserChatFolders: [],

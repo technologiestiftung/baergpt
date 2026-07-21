@@ -5,7 +5,6 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.ts";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
 import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
@@ -17,14 +16,12 @@ import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import { ChatOptionsToggleButton } from "./chat-options-toggle-button.tsx";
+import { ChatMenuToggleButton } from "./chat-menu/chat-menu-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
 import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
-
-const { setHasUserScrolledUp } = useChatScrollingStore.getState();
 
 export const chatFormId = "chat-form";
 
@@ -34,9 +31,9 @@ export const ChatForm: React.FC = () => {
 		useUserFolderStore();
 	const { getSelectedPublicChatDocumentIds } = usePublicDocumentsStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
-	const { getCurrentOrCreateChat, selectedChatOption, toggleChatOption } =
+	const { getCurrentOrCreateChat, selectedChatTools, toggleChatTool } =
 		useChatsStore();
-	const { setAutoDeactivatedExternalTool } = useChatsStore.getState();
+	const { setAutoDeactivatedExternalTools } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -68,7 +65,6 @@ export const ChatForm: React.FC = () => {
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		setHasUserScrolledUp(false);
 
 		const form = event.currentTarget;
 		const textarea = textareaRef.current;
@@ -82,7 +78,7 @@ export const ChatForm: React.FC = () => {
 		// Clear any previous errors
 		clearError();
 
-		setAutoDeactivatedExternalTool(null);
+		setAutoDeactivatedExternalTools([]);
 
 		// Clear textarea on submit
 		if (textarea) {
@@ -101,6 +97,7 @@ export const ChatForm: React.FC = () => {
 			content: messageText,
 			citations: null,
 			web_citations: null,
+			parla_citations: null,
 			allowed_document_ids,
 			allowed_folder_ids: selectedUserChatFolders.map((folder) => folder.id),
 		};
@@ -126,7 +123,7 @@ export const ChatForm: React.FC = () => {
 
 	const hasError = status === "error";
 
-	const isWebSearchActive = selectedChatOption === "webSearch";
+	const isWebSearchActive = selectedChatTools.includes("webSearch");
 	const textAreaPlaceholder = isWebSearchActive
 		? Content["chat.textarea.placeholder.webSearch"]
 		: Content["chat.textarea.placeholder"];
@@ -134,7 +131,7 @@ export const ChatForm: React.FC = () => {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className={`flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
+			className={`relative flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
 				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
@@ -156,7 +153,7 @@ export const ChatForm: React.FC = () => {
 								`}
 				>
 					<textarea
-						className={`w-full focus:outline-none min-h-6 max-h-44 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
+						className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
 						ref={textareaRef}
 						name="content"
 						rows={1}
@@ -168,14 +165,15 @@ export const ChatForm: React.FC = () => {
 				</div>
 				<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
 					<div className="flex items-center gap-3">
-						<ChatOptionsToggleButton />
+						<ChatMenuToggleButton />
 						<div className="items-center gap-2 hidden md:flex">
-							{selectedChatOption && (
+							{selectedChatTools.map((tool) => (
 								<ContextPill
-									option={selectedChatOption}
-									onClose={() => toggleChatOption(selectedChatOption)}
+									key={tool}
+									tool={tool}
+									onClose={() => toggleChatTool(tool)}
 								/>
-							)}
+							))}
 						</div>
 					</div>
 					<div className="flex items-center gap-3">

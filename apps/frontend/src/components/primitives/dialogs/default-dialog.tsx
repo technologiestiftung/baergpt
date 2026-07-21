@@ -5,7 +5,6 @@ interface DefaultDialogProps {
 	className?: string;
 	id?: string;
 	afterClose?: () => void;
-	isOpen?: boolean;
 }
 
 export const DefaultDialog: React.FC<DefaultDialogProps> = ({

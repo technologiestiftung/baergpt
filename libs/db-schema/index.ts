@@ -125,6 +125,27 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			allowed_individual_emails: {
+				Row: {
+					created_at: string;
+					created_by: string | null;
+					email: string;
+					id: number;
+				};
+				Insert: {
+					created_at?: string;
+					created_by?: string | null;
+					email: string;
+					id?: number;
+				};
+				Update: {
+					created_at?: string;
+					created_by?: string | null;
+					email?: string;
+					id?: number;
+				};
+				Relationships: [];
+			};
 			application_admins: {
 				Row: {
 					id: number;
@@ -471,27 +492,6 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			user_active_status: {
-				Row: {
-					deleted_at: string | null;
-					id: string;
-					is_active: boolean;
-					registration_finished_at: string | null;
-				};
-				Insert: {
-					deleted_at?: string | null;
-					id: string;
-					is_active?: boolean;
-					registration_finished_at?: string | null;
-				};
-				Update: {
-					deleted_at?: string | null;
-					id?: string;
-					is_active?: boolean;
-					registration_finished_at?: string | null;
-				};
-				Relationships: [];
-			};
 			user_hidden_default_documents: {
 				Row: {
 					created_at: string | null;
@@ -538,6 +538,10 @@ export type Database = {
 				Args: { p_domain: string };
 				Returns: undefined;
 			};
+			add_allowed_individual_email: {
+				Args: { p_email: string };
+				Returns: undefined;
+			};
 			change_value_for_user_by: {
 				Args: {
 					amount: number;
@@ -545,6 +549,10 @@ export type Database = {
 					user_id_to_update: string;
 				};
 				Returns: undefined;
+			};
+			check_email_allowed: {
+				Args: { p_email: string };
+				Returns: boolean;
 			};
 			deactivate_allowed_domain: {
 				Args: { p_domain: string };
@@ -570,10 +578,6 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			get_account_activation_timestamp: {
-				Args: Record<PropertyKey, never>;
-				Returns: string;
-			};
 			get_allowed_email_domains: {
 				Args: Record<PropertyKey, never>;
 				Returns: {
@@ -592,6 +596,16 @@ export type Database = {
 					last_status_change_at: string;
 					last_status_change_by: string;
 					user_count: number;
+				}[];
+			};
+			get_allowed_individual_emails: {
+				Args: Record<PropertyKey, never>;
+				Returns: {
+					created_at: string;
+					created_by: string;
+					email: string;
+					has_account: boolean;
+					id: number;
 				}[];
 			};
 			get_base_knowledge_documents: {
@@ -647,11 +661,10 @@ export type Database = {
 				Args: Record<PropertyKey, never>;
 				Returns: {
 					academic_title: string;
-					deleted_at: string;
+					banned_until: string;
 					email: string;
 					first_name: string;
 					invited_at: string;
-					is_active: boolean;
 					is_admin: boolean;
 					last_login_at: string;
 					last_name: string;
@@ -693,13 +706,9 @@ export type Database = {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
 			};
-			is_current_user_active: {
+			is_current_user_banned: {
 				Args: Record<PropertyKey, never>;
 				Returns: boolean;
-			};
-			log_account_activation: {
-				Args: Record<PropertyKey, never>;
-				Returns: undefined;
 			};
 			match_jina_document_chunks: {
 				Args: {
@@ -766,6 +775,10 @@ export type Database = {
 			};
 			regenerate_embedding_indices_for_summaries: {
 				Args: Record<PropertyKey, never>;
+				Returns: undefined;
+			};
+			remove_allowed_individual_email: {
+				Args: { p_email: string };
 				Returns: undefined;
 			};
 			update_user_email_confirmed_at: {

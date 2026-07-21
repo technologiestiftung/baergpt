@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type {
 	ChatWithMessages,
 	NewChatMessage,
-	ChatOption,
+	ChatTool,
 	LlmModel,
 } from "../common";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
@@ -31,10 +31,10 @@ interface ChatStore {
 	isLoading: boolean;
 	chats: ChatWithMessages[];
 	totalChatCount: number | null;
-	selectedChatOption: ChatOption | null;
+	selectedChatTools: ChatTool[];
 	selectedLlmModel: LlmModel;
-	resetToDefaultChatOptions(): void;
-	toggleChatOption(option: ChatOption): void;
+	resetToDefaultChatTools(): void;
+	toggleChatTool(tool: ChatTool): void;
 	setSelectedLlmModel(model: LlmModel): void;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
@@ -58,64 +58,72 @@ interface ChatStore {
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
 	}): void;
-	autoDeactivatedExternalTool: ChatOption | null;
-	setAutoDeactivatedExternalTool(tool: ChatOption | null): void;
+	autoDeactivatedExternalTools: ChatTool[];
+	setAutoDeactivatedExternalTools(tools: ChatTool[]): void;
 	deactivateExternalTools(): void;
 }
 
-const externalToolOptions: ChatOption[] = ["webSearch", "parla"];
+const externalChatTools: ChatTool[] = ["webSearch", "parla"];
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
 	isLoading: false,
 	chats: [],
 	totalChatCount: null,
-	selectedChatOption: null,
+	selectedChatTools: [],
 	selectedLlmModel: "mistral-small",
-	autoDeactivatedExternalTool: null,
+	autoDeactivatedExternalTools: [],
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
 	},
 
-	resetToDefaultChatOptions() {
-		set({ selectedChatOption: null });
+	resetToDefaultChatTools() {
+		set({ selectedChatTools: [], autoDeactivatedExternalTools: [] });
 	},
 
-	toggleChatOption(option: ChatOption) {
-		const { selectedChatOption } = get();
-		if (selectedChatOption === option) {
-			set({ selectedChatOption: null });
-		} else {
-			if (option === "webSearch") {
-				const { selectedUserChatDocuments, unselectUserChatDocument } =
-					useUserDocumentStore.getState();
-				selectedUserChatDocuments.forEach((document) =>
-					unselectUserChatDocument(document.id),
-				);
+	toggleChatTool(tool: ChatTool) {
+		const { selectedChatTools } = get();
 
-				const { selectedUserChatFolders, unselectUserChatFolder } =
-					useUserFolderStore.getState();
-				selectedUserChatFolders.forEach((folder) =>
-					unselectUserChatFolder(folder.id),
-				);
-
-				const {
-					selectedPublicChatDocuments,
-					selectedPublicChatFolders,
-					unselectPublicChatDocument,
-					unselectPublicChatFolder,
-				} = usePublicDocumentsStore.getState();
-				selectedPublicChatDocuments.forEach((document) =>
-					unselectPublicChatDocument(document.id),
-				);
-				selectedPublicChatFolders.forEach((folder) =>
-					unselectPublicChatFolder(folder.id),
-				);
-			}
-
-			set({ selectedChatOption: option });
+		if (selectedChatTools.includes(tool)) {
+			set({
+				selectedChatTools: selectedChatTools.filter(
+					(active) => active !== tool,
+				),
+			});
+			return;
 		}
+
+		// Activating any external tool clears selected documents/folders, because
+		// document/folder RAG is mutually exclusive with external tools.
+		if (externalChatTools.includes(tool)) {
+			const { selectedUserChatDocuments, unselectUserChatDocument } =
+				useUserDocumentStore.getState();
+			selectedUserChatDocuments.forEach((document) =>
+				unselectUserChatDocument(document.id),
+			);
+
+			const { selectedUserChatFolders, unselectUserChatFolder } =
+				useUserFolderStore.getState();
+			selectedUserChatFolders.forEach((folder) =>
+				unselectUserChatFolder(folder.id),
+			);
+
+			const {
+				selectedPublicChatDocuments,
+				selectedPublicChatFolders,
+				unselectPublicChatDocument,
+				unselectPublicChatFolder,
+			} = usePublicDocumentsStore.getState();
+			selectedPublicChatDocuments.forEach((document) =>
+				unselectPublicChatDocument(document.id),
+			);
+			selectedPublicChatFolders.forEach((folder) =>
+				unselectPublicChatFolder(folder.id),
+			);
+		}
+
+		set({ selectedChatTools: [...selectedChatTools, tool] });
 	},
 
 	/**
@@ -304,25 +312,29 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		}, 300);
 	},
 
-	setAutoDeactivatedExternalTool(tool) {
+	setAutoDeactivatedExternalTools(tools: ChatTool[]) {
 		if (autoDeactivateExternalToolTimeout) {
 			clearTimeout(autoDeactivateExternalToolTimeout);
 		}
-		set({ autoDeactivatedExternalTool: tool });
+		set({ autoDeactivatedExternalTools: tools });
 		autoDeactivateExternalToolTimeout = setTimeout(() => {
-			set({ autoDeactivatedExternalTool: null });
+			set({ autoDeactivatedExternalTools: [] });
 		}, 20_000);
 	},
 
 	deactivateExternalTools() {
-		const { selectedChatOption } = get();
-		if (
-			!selectedChatOption ||
-			!externalToolOptions.includes(selectedChatOption)
-		) {
+		const { selectedChatTools } = get();
+		const activeExternalTools = selectedChatTools.filter((tool) =>
+			externalChatTools.includes(tool),
+		);
+		if (activeExternalTools.length === 0) {
 			return;
 		}
-		get().toggleChatOption(selectedChatOption);
-		get().setAutoDeactivatedExternalTool(selectedChatOption);
+		set({
+			selectedChatTools: selectedChatTools.filter(
+				(tool) => !externalChatTools.includes(tool),
+			),
+		});
+		get().setAutoDeactivatedExternalTools(activeExternalTools);
 	},
 }));

@@ -1,31 +1,31 @@
 import type { JSX } from "react";
-import type { ChatOption } from "../../../common";
+import type { ChatTool } from "../../../common";
 import Content from "../../../content";
 import { WebSearchIcon } from "../icons/web-search-icon.tsx";
 import { ParlaIcon } from "../icons/parla-icon.tsx";
 
 interface ContextPillProps {
-	option: ChatOption;
+	tool: ChatTool;
 	onClose: () => void;
 }
 
-const icons: Record<ChatOption, JSX.Element> = {
-	webSearch: <WebSearchIcon />,
+const icons: Record<ChatTool, JSX.Element> = {
+	webSearch: <WebSearchIcon variant="active" />,
 	parla: <ParlaIcon />,
 };
 
-export function ContextPill({ option, onClose }: ContextPillProps) {
-	const label = Content[`chat.contextPill.${option}.label`];
+export function ContextPill({ tool, onClose }: ContextPillProps) {
+	const label = Content[`chat.contextPill.${tool}.label`];
 
 	return (
 		<button
 			type="button"
 			onClick={onClose}
 			className={`flex items-center gap-x-1 rounded-full px-2 py-1 focus-visible:outline-default bg-hellblau-30 hover:bg-hellblau-55 text-aktiv-blau-100`}
-			data-option={option}
-			aria-label={`${Content[`chat.contextPill.${option}.ariaLabel`]}`}
+			data-option={tool}
+			aria-label={`${Content[`chat.contextPill.${tool}.ariaLabel`]}`}
 		>
-			{icons[option]}
+			{icons[tool]}
 			<p className="text-sm leading-5 font-normal whitespace-nowrap shrink-0 relative">
 				{label}
 			</p>

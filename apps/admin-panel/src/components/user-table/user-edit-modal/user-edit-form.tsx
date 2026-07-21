@@ -10,7 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Save, RotateCw } from "lucide-react";
+import { Save } from "lucide-react";
 import { useUserStore } from "@/store/use-user-store";
 import Content from "../../../content";
 import { EmailInputField } from "./email-input-field";
@@ -35,7 +35,6 @@ export const UserEditForm: React.FC = () => {
 		getUsers,
 		updateUserProfile,
 		updateUserAdminStatus,
-		inviteUser,
 	} = useUserStore();
 
 	const initialFormData: FormData = useMemo(
@@ -53,11 +52,8 @@ export const UserEditForm: React.FC = () => {
 	const [formData, setFormData] = useState<FormData>(initialFormData);
 	const [originalEmail, setOriginalEmail] = useState(selectedUser?.email || "");
 	const [emailError, setEmailError] = useState("");
-	const [isInviteSent, setIsInviteSent] = useState(false);
 
 	const { error } = useUserErrorStore();
-	const [isErrorMessageVisible, setIsErrorMessageVisible] =
-		useState<boolean>(false);
 
 	const formRef = useRef<HTMLFormElement>(null);
 
@@ -159,35 +155,6 @@ export const UserEditForm: React.FC = () => {
 
 		//refresh user list after update
 		await getUsers(new AbortController().signal);
-	};
-
-	const handleResendInvite = async () => {
-		const email = selectedUser?.email;
-
-		if (!email) {
-			console.error("No email provided for user invite");
-			return;
-		}
-
-		// since user already exists, this will only resend the invite
-		await inviteUser(email);
-
-		if (error) {
-			setIsErrorMessageVisible(true);
-
-			setTimeout(() => {
-				setIsErrorMessageVisible(false);
-			}, 3000);
-			return;
-		}
-
-		setIsInviteSent(true);
-
-		setTimeout(() => {
-			setIsInviteSent(false);
-		}, 3000);
-
-		setIsErrorMessageVisible(false);
 	};
 
 	return (
@@ -296,27 +263,9 @@ export const UserEditForm: React.FC = () => {
 								? Content["userEditModal.form.button.saved"]
 								: Content["userEditModal.form.button.save"]}
 						</Button>
-						{selectedUser?.status === "invited" && (
-							<Button
-								className={`w-fit ${isInviteSent ? "bg-green-500 hover:bg-green-500" : ""}`}
-								type="button"
-								onClick={handleResendInvite}
-							>
-								{isInviteSent ? (
-									Content[
-										"userEditModal.userInformationCard.resendInvite.success"
-									]
-								) : (
-									<>
-										<RotateCw className="h-4 w-4 mr-2" />
-										{Content["userEditModal.userInformationCard.resendInvite"]}
-									</>
-								)}
-							</Button>
-						)}
 					</div>
 				</form>
-				{error && isErrorMessageVisible && (
+				{error && (
 					<div
 						className="text-berlin-rot mt-4 text-sm"
 						dangerouslySetInnerHTML={{ __html: error }}

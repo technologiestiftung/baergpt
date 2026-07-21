@@ -2,9 +2,14 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import app from "../../index";
 import { config } from "../../config";
-import { sign } from "hono/jwt";
 import { PDFDocument } from "pdf-lib";
 import { serviceRoleDbClient } from "../../supabase";
+import { Database } from "@repo/db-schema";
+
+const supabaseAnonClient = createClient<Database>(
+	config.supabaseUrl,
+	config.supabaseAnonKey,
+);
 
 let validToken: string;
 
@@ -154,13 +159,19 @@ const delay = (ms: number): Promise<void> => {
 /**
  * Create a test user in auth.users table
  */
-const createTestUser = async (userId: string, email: string) => {
+const createTestUser = async (args: {
+	userId: string;
+	email: string;
+	password: string;
+}) => {
+	const { userId, email, password } = args;
+
 	try {
 		const { error: createError } =
 			await serviceRoleDbClient.auth.admin.createUser({
 				id: userId,
-				email: email,
-				password: "SecureTestPassword123!",
+				email,
+				password,
 				email_confirm: true,
 			});
 
@@ -174,18 +185,17 @@ const createTestUser = async (userId: string, email: string) => {
 };
 
 const createValidJwtToken = async (
-	userId: string,
 	email: string,
+	password: string,
 ): Promise<string> => {
-	return await sign(
-		{
-			exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour from now
-			sub: userId,
-			email: email,
-			role: "authenticated",
-		},
-		config.supabaseJwtKey,
-	);
+	const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
+		email,
+		password,
+	});
+
+	expect(error).toBeNull();
+
+	return data.session.access_token;
 };
 
 /**
@@ -212,9 +222,10 @@ const deleteTestUser = async () => {
 describe("Integration Tests for Routes", () => {
 	beforeAll(async () => {
 		const email = "test@ts.berlin";
-		await createTestUser(OWNER_USER_ID, email);
+		const password = "SecureTestPassword123!";
+		await createTestUser({ userId: OWNER_USER_ID, email, password });
 		// Generate JWT token
-		validToken = await createValidJwtToken(OWNER_USER_ID, email);
+		validToken = await createValidJwtToken(email, password);
 
 		// Run a full cleanup before all tests
 		await cleanupTestDocuments();
@@ -513,12 +524,14 @@ describe("Integration Tests for Routes", () => {
 	it("should return error when deleting if user tries to delete another user's document", async () => {
 		// Create a document for a different user
 		const otherUserEmail = "test2@ts.berlin";
-		await createTestUser(OTHER_USER_ID, otherUserEmail);
+		const password = "SecureTestPassword123!";
+		await createTestUser({
+			userId: OTHER_USER_ID,
+			email: otherUserEmail,
+			password,
+		});
 
-		const validToken2 = await createValidJwtToken(
-			OTHER_USER_ID,
-			otherUserEmail,
-		);
+		const validToken2 = await createValidJwtToken(otherUserEmail, password);
 
 		const fileName = "delete-me-2.pdf";
 		const sourceUrl = `${OTHER_USER_ID}/${fileName}`;

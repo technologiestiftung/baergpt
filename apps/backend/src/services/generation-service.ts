@@ -25,7 +25,10 @@ import {
 	parseParlaToolOutput,
 	type ParlaChunkData,
 } from "../tools/mcp/parla-mcp-tools";
-import { webSearchTool } from "../tools/web-search";
+import {
+	extractWebSourcesFromToolOutput,
+	webSearchTool,
+} from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
 import {
 	citationAnswerSchema,
@@ -37,7 +40,6 @@ import {
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
-import type { WebSearchResult } from "../tools/web-search";
 
 const modelService = new ModelService();
 
@@ -68,6 +70,16 @@ type RelevantTools = {
 	toolChoice: ToolChoice<Record<string, Tool>>;
 	cleanup?: () => Promise<void>;
 };
+
+/**
+ * The base `free-chat-basic` prompt exposes a `{{toolInstructions}}`
+ * variable, into which we inject one instruction block per active tool.
+ */
+const TOOL_INSTRUCTION_PROMPTS: ReadonlyArray<[ActiveTools, string]> = [
+	["ragSearchTool", "tool-instruction-documents"],
+	["webSearchTool", "tool-instruction-web-search"],
+	["parlaMCPTools", "tool-instruction-parla"],
+];
 
 export class GenerationService {
 	private readonly dbService: BaseContentDbService;
@@ -383,33 +395,9 @@ export class GenerationService {
 						}
 
 						const allWebSources = steps.flatMap((step) =>
-							step.toolResults.flatMap((tr) => {
-								const generic = tr.output?.grounding
-									?.generic as WebSearchResult["grounding"]["generic"];
-								const sources = tr.output
-									?.sources as WebSearchResult["sources"];
-								if (!generic?.length || !sources) {
-									return [];
-								}
-								return (
-									generic
-										// Filter out items with no snippets
-										.filter(
-											(item) =>
-												item.snippets.find(
-													(s): s is string => typeof s === "string",
-												) !== undefined,
-										)
-										.map((item) => ({
-											url: item.url,
-											title: item.title,
-											snippet: item.snippets.find(
-												(s): s is string => typeof s === "string",
-											) as string,
-											age: sources[item.url]?.age,
-										}))
-								);
-							}),
+							step.toolResults.flatMap((tr) =>
+								extractWebSourcesFromToolOutput(tr.output),
+							),
 						);
 
 						if (allWebSources.length > 0) {
@@ -631,30 +619,27 @@ export class GenerationService {
 		});
 
 		const addressForm = isAddressedFormal ? "Sieze" : "Duze";
-		let freeChatPromptClient: TextPromptClient;
+		const label = config.nodeEnv === "test" ? "development" : config.nodeEnv;
 
-		if (
-			config.featureFlagWebSearchAllowed &&
-			activeTools.includes("webSearchTool")
-		) {
-			freeChatPromptClient = await getTextPrompt(
-				"free-chat-with-web-search-enabled",
-				{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
-			);
-		} else if (activeTools.includes("ragSearchTool")) {
-			freeChatPromptClient = await getTextPrompt("free-chat-with-documents", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			});
-		} else {
-			freeChatPromptClient = await getTextPrompt("free-chat", {
-				label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
-			});
+		const freeChatPromptClient = await getTextPrompt("free-chat-basic", {
+			label,
+		});
+		const activeToolSet = new Set(activeTools);
+		const toolInstructionBlocks: string[] = [];
+		for (const [tool, promptName] of TOOL_INSTRUCTION_PROMPTS) {
+			if (!activeToolSet.has(tool)) {
+				continue;
+			}
+			const blockClient = await getTextPrompt(promptName, { label });
+			toolInstructionBlocks.push(blockClient.compile({}));
 		}
+		const toolInstructions = toolInstructionBlocks.join("\n\n");
 
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
 			currentDate: currentDate,
 			addressForm: addressForm,
 			userSystemPrompt: buildUserSystemPromptBlock(userSystemPrompt),
+			toolInstructions: toolInstructions,
 		});
 
 		const freeChatPrompt: ModelMessage = {

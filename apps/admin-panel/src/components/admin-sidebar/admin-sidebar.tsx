@@ -40,6 +40,10 @@ const pages = {
 					title: Content["admin.sidebar.navigation.domainAllowlist"],
 					url: "/domain-allowlist/",
 				},
+				{
+					title: Content["admin.sidebar.navigation.individualEmailAllowlist"],
+					url: "/individual-email-allowlist/",
+				},
 			],
 		},
 	],

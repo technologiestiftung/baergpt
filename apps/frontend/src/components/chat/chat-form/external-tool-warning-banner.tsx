@@ -3,9 +3,9 @@ import Content from "../../../content.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 
 export const ExternalToolWarningBanner: React.FC = () => {
-	const { selectedChatOption } = useChatsStore();
+	const { selectedChatTools } = useChatsStore();
 
-	if (!selectedChatOption) {
+	if (selectedChatTools.length === 0) {
 		return null;
 	}
 
@@ -16,7 +16,7 @@ export const ExternalToolWarningBanner: React.FC = () => {
             bg-dunkelblau-100 rounded-t-2px text-sm leading-5 text-white font-normal
             focus-visible:outline-2px`}
 		>
-			{Content[`chat.${selectedChatOption}.warningBanner.label`]}
+			{Content["chat.externalTools.warningBanner.label"]}
 		</div>
 	);
 };

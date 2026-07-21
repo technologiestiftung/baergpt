@@ -628,6 +628,55 @@ test.describe("Chat", () => {
 		await expect(allChatsLoadedMessage).toBeVisible();
 	});
 
+	testDesktopOnlyWithManyChats(
+		"History - Group By - switches grouping to 'Datum' then switch grouping back to 'Keine'",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// Date-Groups should not be visible by default
+			const dateGroupHeader = page
+				.getByRole("complementary", { name: "Sidebar" })
+				.getByText("Heute");
+			await expect(dateGroupHeader).not.toBeVisible();
+
+			const groupByDropdown = page.getByRole("button", {
+				name: "Dropdown-Menü zum Gruppieren von Chats",
+			});
+			await groupByDropdown.click();
+
+			// "Keine" is default — it should have aria-checked="true"
+			const noneOption = page.getByRole("menuitemradio", { name: "Keine" });
+			await expect(noneOption).toHaveAttribute("aria-checked", "true");
+
+			const dateOption = page.getByRole("menuitemradio", { name: "Datum" });
+			await dateOption.click();
+
+			// Dropdown closes after selection
+			const openDropdownLabel = page.getByText("Gruppieren nach..");
+			await expect(openDropdownLabel).not.toBeVisible();
+
+			// At least one date group label should be visible (e.g. "Heute")
+			await expect(dateGroupHeader).toBeVisible();
+
+			// Reload to check localStorage persistence
+			await page.reload();
+
+			// check the preference is still active
+			await expect(dateGroupHeader).toBeVisible();
+
+			// Switch back to none
+			await groupByDropdown.click();
+
+			// The "Datum" option should now be selected
+			await expect(dateOption).toHaveAttribute("aria-checked", "true");
+
+			// Reset to "Keine"
+			await noneOption.click();
+
+			await expect(dateGroupHeader).not.toBeVisible();
+		},
+	);
+
 	testWithMockedLlm(
 		"Change LLM model from small to large and back",
 		async ({ page }) => {
@@ -730,24 +779,21 @@ test.describe("Chat", () => {
 		await expect(chatOptionsButton).toBeVisible();
 		await chatOptionsButton.click();
 
-		const mcpServerOption = page.getByRole("option", {
-			name: "MCP Server auswählen",
+		const connectorsOption = page.getByRole("menuitem", {
+			name: "Konnektoren auswählen",
 		});
 
-		// Open the MCP server selection dialog
-		await mcpServerOption.click();
+		// Open the connectors submenu via hover
+		await connectorsOption.hover();
 
-		const mcpDialog = page.locator("#mcp-options-dialog");
-		await expect(mcpDialog).toBeVisible();
+		const connectorsSubmenu = page.getByTestId("chat-menu-connectors-submenu");
+		await expect(connectorsSubmenu).toBeVisible();
 
-		// locate the Parla Berlin option inside the dialog
-		const parlaBerlinOption = mcpDialog.getByRole("button", {
+		// locate the Parla Berlin option inside the submenu
+		const parlaBerlinOption = connectorsSubmenu.getByRole("menuitemcheckbox", {
 			name: /Parla Berlin/,
 		});
 		await expect(parlaBerlinOption).toBeVisible();
-		await expect(
-			mcpDialog.getByText("Schriftliche Anfragen des Abgh. Berlins"),
-		).toBeVisible();
 
 		// Select Parla Berlin and assert the check icon is visible
 		await test.step("Select Parla Berlin", async () => {
@@ -757,7 +803,7 @@ test.describe("Chat", () => {
 			).toBeVisible();
 		});
 
-		// Deselect Parla Berlin in the dialog and assert the check icon is hidden
+		// Deselect Parla Berlin in the submenu and assert the check icon is hidden
 		await test.step("Deselect Parla Berlin", async () => {
 			await parlaBerlinOption.click();
 			await expect(
@@ -765,17 +811,9 @@ test.describe("Chat", () => {
 			).toBeHidden();
 		});
 
-		// Close the MCP options dialog
-		await test.step("Close MCP options dialog", async () => {
-			await page.getByTestId("mcp-options-dialog-close").click();
-			await expect(mcpDialog).not.toBeVisible();
-		});
-
-		// Re-select Parla Berlin via the dialog to verify the context pill
-		await chatOptionsButton.click();
-		await mcpServerOption.click();
+		// Re-select Parla Berlin via the submenu to verify the context pill
 		await parlaBerlinOption.click();
-		await page.getByTestId("mcp-options-dialog-close").click();
+		await page.locator("body").click({ position: { x: 0, y: 0 } });
 
 		// Verify the context pill appears with "Parla Berlin entfernen" (remove option)
 		const contextPill = page.getByRole("button", {
@@ -803,11 +841,13 @@ test.describe("Chat", () => {
 			});
 			await chatOptionsButton.click();
 
-			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+			await page
+				.getByRole("menuitemcheckbox", { name: "Websuche auswählen" })
+				.click();
 
 			await expect(
 				page.getByText(
-					"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+					"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 				),
 			).toBeVisible();
 
@@ -815,7 +855,7 @@ test.describe("Chat", () => {
 
 			await expect(
 				page.getByText(
-					"Websuche aktiv: Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
+					"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 				),
 			).not.toBeVisible();
 		},
@@ -834,7 +874,9 @@ test.describe("Chat", () => {
 			});
 			await chatOptionsButton.click();
 
-			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+			await page
+				.getByRole("menuitemcheckbox", { name: "Websuche auswählen" })
+				.click();
 
 			const webSearchPill = page.getByRole("button", {
 				name: "Websuche entfernen",
@@ -886,7 +928,9 @@ test.describe("Chat", () => {
 			});
 			await chatOptionsButton.click();
 
-			await page.getByRole("option", { name: "Websuche auswählen" }).click();
+			await page
+				.getByRole("menuitemcheckbox", { name: "Websuche auswählen" })
+				.click();
 
 			const webSearchPill = page.getByRole("button", {
 				name: "Websuche entfernen",
@@ -972,6 +1016,53 @@ test.describe("Chat", () => {
 	);
 
 	testWithMockedLlm(
+		"New message scrolls to top and scroll-to-bottom button works",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// A long answer so the conversation overflows the viewport, to
+			// make the scroll-to-top behavior and the scroll button observable.
+			const longAnswer = Array.from(
+				{ length: 80 },
+				(_, index) => `Absatz ${index + 1}: Lorem ipsum dolor sit amet.`,
+			).join("\n\n");
+			await mockLlmCompletion(page, { textDelta: longAnswer });
+
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
+
+			const messagesContainer = page.getByRole("log");
+			const question = page.getByTestId("user-message-markdown-container");
+
+			// The freshly sent question should be pinned near the top of the
+			// scrollable messages container rather than at the bottom.
+			await expect
+				.poll(async () => {
+					const containerBox = await messagesContainer.boundingBox();
+					const questionBox = await question.boundingBox();
+					if (!containerBox || !questionBox) {
+						return Number.POSITIVE_INFINITY;
+					}
+					return questionBox.y - containerBox.y;
+				})
+				.toBeLessThan(100);
+
+			// Because the answer overflows, the scroll-to-bottom button is shown.
+			const scrollToBottomButton = page.getByRole("button", {
+				name: "Zum Ende des Chats scrollen",
+			});
+			await expect(scrollToBottomButton).toBeVisible();
+
+			// Clicking it jumps to the bottom, which hides the button again.
+			await scrollToBottomButton.click();
+			await expect(scrollToBottomButton).toBeHidden();
+		},
+	);
+
+	testWithMockedLlm(
 		"Links in assistant messages open in new tab",
 		async ({ page }) => {
 			await page.goto("/");
@@ -991,6 +1082,52 @@ test.describe("Chat", () => {
 			await expect(link).toHaveAttribute("target", "_blank");
 			await expect(link).toHaveAttribute("rel", /(^|\s)noopener(\s|$)/);
 			await expect(link).toHaveAttribute("rel", /(^|\s)noreferrer(\s|$)/);
+		},
+	);
+
+	testDesktopOnly(
+		"Web and Parla citations render together in the sources dialog",
+		async ({ page }) => {
+			await page.goto("/");
+
+			// A single response carrying both web and Parla citations exercises the
+			// multi-tool path where all citation types are preserved simultaneously.
+			await mockLlmCompletion(page, {
+				textDelta: "Antwort mit gemischten Quellen.",
+				webCitations: [
+					{
+						url: "https://www.rbb24.de/berlin-baeume",
+						title: "Berliner Stadtbäume 2026",
+						snippet: "Aktuelle Zahlen zu Baumfällungen in Berlin.",
+					},
+				],
+				parlaCitations: [
+					{
+						url: "https://parla.berlin/dokument-123",
+						title: "Berliner Straßenbaumkonzept",
+						source_type: "Drucksache",
+						content: "Regelungen zur Pflanzung von Straßenbäumen.",
+						page: 4,
+					},
+				],
+			});
+
+			await page
+				.getByPlaceholder("Stellen Sie eine Frage")
+				.fill("Bäume in Berlin?");
+			await sendAndWaitForLLMResponse(page);
+
+			const allCitationsButton = page.getByRole("button", { name: "Quellen" });
+			await expect(allCitationsButton).toBeVisible();
+			await allCitationsButton.click();
+
+			// Both citation types are present in the same dialog.
+			await expect(
+				page.getByRole("link", { name: /Berliner Stadtbäume 2026/ }),
+			).toBeVisible();
+			await expect(
+				page.getByRole("link", { name: /Berliner Straßenbaumkonzept/ }),
+			).toBeVisible();
 		},
 	);
 });

@@ -5,8 +5,12 @@ import type { ActiveTools, ChatMessageBody } from "../types/common";
 import type { ModelMessage } from "ai";
 
 const VALID_ACTIVE_TOOLS = new Set<ActiveTools>([
-	"baseKnowledgeSearchTool",
 	"ragSearchTool",
+	"webSearchTool",
+	"parlaMCPTools",
+]);
+
+export const EXTERNAL_TOOLS = new Set<ActiveTools>([
 	"webSearchTool",
 	"parlaMCPTools",
 ]);
@@ -20,6 +24,10 @@ function isValidActiveTool(value: unknown): value is ActiveTools {
 	}
 
 	if (value === "webSearchTool" && !config.featureFlagWebSearchAllowed) {
+		return false;
+	}
+
+	if (value === "parlaMCPTools" && !config.featureFlagMcpParlaAllowed) {
 		return false;
 	}
 
@@ -77,7 +85,22 @@ llms.post("/just-chatting", async (c: Context) => {
 		}
 		const activeTools: ActiveTools[] = rawActiveTools;
 
-		if (allowedDocumentIds.length > 0 || allowedFolderIds.length > 0) {
+		const hasSelectedDocuments =
+			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
+		const hasExternalTool = activeTools.some((tool) =>
+			EXTERNAL_TOOLS.has(tool),
+		);
+		if (hasSelectedDocuments && hasExternalTool) {
+			return c.json(
+				{
+					error:
+						"Invalid request: document/folder search cannot be combined with external tools.",
+				},
+				400,
+			);
+		}
+
+		if (hasSelectedDocuments) {
 			activeTools.push("ragSearchTool");
 		}
 

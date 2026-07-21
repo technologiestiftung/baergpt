@@ -3,7 +3,7 @@ export type User = {
 	first_name: string;
 	last_name: string;
 	email: string;
-	is_active: boolean;
+	banned_until?: string | null;
 	is_admin?: boolean;
 	registered_at?: string | null;
 	last_login_at?: string | null;
@@ -14,8 +14,7 @@ export type User = {
 	num_embedding_tokens: number;
 	academic_title?: string | null;
 	personal_title?: string | null;
-	deleted_at?: string | null;
-	status?: "active" | "inactive" | "admin" | "invited";
+	status?: "active" | "banned" | "admin";
 };
 
 export type UserProfile = {
@@ -29,7 +28,6 @@ export type UserProfile = {
 	num_inference_tokens: number | null;
 	num_inferences: number | null;
 	personal_title: string | null;
-	deleted_at?: string | null;
 };
 
 export type Document = {
@@ -56,4 +54,12 @@ export type AllowedEmailDomain = {
 	last_status_change_at: string | null;
 	last_status_change_by: string | null;
 	user_count: number;
+};
+
+export type AllowedIndividualEmail = {
+	id: number;
+	email: string;
+	created_at: string;
+	created_by: string | null;
+	has_account: boolean;
 };

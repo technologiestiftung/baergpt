@@ -4,13 +4,15 @@ import Content from "../content";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+	loadSplashContent,
 	markVersionAsSeen,
 	useSplashScreenStore,
 } from "../store/splash-screen-store.ts";
 
 const splashModalId = "splash-modal";
 
-function showSplashModal() {
+export async function openSplashModal() {
+	await loadSplashContent();
 	(document.getElementById(splashModalId) as HTMLDialogElement).showModal();
 }
 
@@ -19,15 +21,15 @@ function hideSplashModal() {
 }
 
 export const SplashModal = () => {
-	const { isOpen, content } = useSplashScreenStore();
+	const { shouldOpenOnLoad, content } = useSplashScreenStore();
 
 	useEffect(() => {
-		if (!isOpen) {
+		if (!shouldOpenOnLoad) {
 			return;
 		}
 
-		showSplashModal();
-	}, [isOpen]);
+		openSplashModal();
+	}, [shouldOpenOnLoad]);
 
 	const handleClose = () => {
 		hideSplashModal();

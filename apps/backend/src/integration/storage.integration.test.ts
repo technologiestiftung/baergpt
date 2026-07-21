@@ -299,6 +299,76 @@ describe("Integration tests for Storage", async () => {
 				expect(signedUrlError).not.toBeNull();
 				expect(signedUrlData).toBeNull();
 			});
+
+			it("should forbid a banned user to list their own folder", async () => {
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: givenAdminEmail,
+					password: givenAdminPassword,
+				});
+
+				const { error: banError } =
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
+
+				try {
+					const { data: listData, error: listError } =
+						await supabaseAnonClient.storage
+							.from("documents")
+							.list(givenAdminId);
+
+					expect(listError).toBeNull();
+					// RLS filtering returns empty — same as when listing another user's folder
+					expect(listData).toEqual([]);
+				} finally {
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "none",
+					});
+				}
+			});
+
+			it("should forbid a banned user to download their own file", async () => {
+				// Upload the file first while user is not banned
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: givenAdminEmail,
+					password: givenAdminPassword,
+				});
+				const { error: uploadError } = await uploadTestFile({
+					client: supabaseAnonClient,
+					userId: givenAdminId,
+					fileName: defaultDocumentName,
+					filePath: defaultDocumentPath,
+				});
+				expect(uploadError).toBeNull();
+				await supabaseAnonClient.auth.signOut();
+
+				// Now ban the admin and try to download
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: givenAdminEmail,
+					password: givenAdminPassword,
+				});
+
+				const { error: banError } =
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
+
+				try {
+					const { data, error: downloadError } =
+						await supabaseAnonClient.storage
+							.from("documents")
+							.download(`${givenAdminId}/${defaultDocumentName}`);
+
+					expect(downloadError).not.toBeNull();
+					expect(data).toBeNull();
+				} finally {
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "none",
+					});
+				}
+			});
 		});
 
 		describe("INSERT policy", () => {
@@ -344,6 +414,34 @@ describe("Integration tests for Storage", async () => {
 
 				expect(downloadError).toBeNull();
 				expect(data).not.toBeNull();
+			});
+
+			it("should forbid a banned user to upload a file to their own folder", async () => {
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: givenUserEmail,
+					password: givenUserPassword,
+				});
+
+				const { error: banError } =
+					await supabaseAdminClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
+
+				try {
+					const { error: uploadError } = await uploadTestFile({
+						client: supabaseAnonClient,
+						userId: givenUserId,
+						fileName: defaultDocumentName,
+						filePath: defaultDocumentPath,
+					});
+
+					expect(uploadError).not.toBeNull();
+				} finally {
+					await supabaseAdminClient.auth.admin.updateUserById(givenUserId, {
+						ban_duration: "none",
+					});
+				}
 			});
 		});
 
@@ -437,6 +535,47 @@ describe("Integration tests for Storage", async () => {
 
 				expect(updateError).toBeNull();
 			});
+
+			it("should forbid a banned user to update their own file", async () => {
+				// Upload first while not banned
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: givenAdminEmail,
+					password: givenAdminPassword,
+				});
+				const { storagePath, error: uploadError } = await uploadTestFile({
+					client: supabaseAnonClient,
+					userId: givenAdminId,
+					fileName: defaultDocumentName,
+					filePath: defaultDocumentPath,
+				});
+				expect(uploadError).toBeNull();
+
+				// Ban and try to update
+				const { error: banError } =
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
+
+				try {
+					const file = new Uint8Array(readFileSync(defaultDocumentPath));
+					const { error: updateError } = await supabaseAnonClient.storage
+						.from("documents")
+						.update(
+							storagePath,
+							new File([file], defaultDocumentName, {
+								type: "application/pdf",
+							}),
+							{ upsert: false },
+						);
+
+					expect(updateError).not.toBeNull();
+				} finally {
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "none",
+					});
+				}
+			});
 		});
 
 		describe("DELETE policy", () => {
@@ -513,6 +652,57 @@ describe("Integration tests for Storage", async () => {
 
 				expect(downloadError).not.toBeNull();
 				expect(downloadData).toBeNull();
+			});
+
+			it("should forbid a banned user to delete their own file", async () => {
+				// Upload first while not banned
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: givenAdminEmail,
+					password: givenAdminPassword,
+				});
+				const { storagePath, error: uploadError } = await uploadTestFile({
+					client: supabaseAnonClient,
+					userId: givenAdminId,
+					fileName: defaultDocumentName,
+					filePath: defaultDocumentPath,
+				});
+				expect(uploadError).toBeNull();
+
+				// Ban and try to delete
+				const { error: banError } =
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "876000h",
+					});
+				expect(banError).toBeNull();
+
+				try {
+					await supabaseAnonClient.storage
+						.from("documents")
+						.remove([storagePath]);
+
+					// File should still exist — RLS silently filtered the delete
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "none",
+					});
+
+					await supabaseAnonClient.auth.signOut();
+					await supabaseAnonClient.auth.signInWithPassword({
+						email: givenAdminEmail,
+						password: givenAdminPassword,
+					});
+
+					const { data: downloadData, error: downloadError } =
+						await supabaseAnonClient.storage
+							.from("documents")
+							.download(storagePath);
+
+					expect(downloadError).toBeNull();
+					expect(downloadData).not.toBeNull();
+				} finally {
+					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
+						ban_duration: "none",
+					});
+				}
 			});
 		});
 	});

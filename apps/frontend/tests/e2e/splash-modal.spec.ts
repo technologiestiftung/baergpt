@@ -25,7 +25,7 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 
 			// Check modal description
 			await expect(
-				page.getByText("Die wichtigsten Neuerungen im Überblick"),
+				page.getByText("Die wichtigsten Neuigkeiten im Überblick"),
 			).toBeVisible();
 		},
 	);
@@ -174,6 +174,31 @@ testWithMockedSplashScreenContent.describe("Splash Modal", () => {
 				"splash-modal-markdown-container",
 			);
 			await expect(markdownContainer).not.toBeEmpty();
+		},
+	);
+
+	testWithMockedSplashScreenContent(
+		"should open and close splash modal via the Neuigkeiten button",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const modal = page.locator("#splash-modal");
+			await expect(modal).toBeVisible();
+
+			await page.getByTestId("close-splash-modal-button").click();
+			await expect(modal).toBeHidden();
+
+			await page.getByRole("button", { name: "Neuigkeiten anzeigen" }).click();
+			await expect(modal).toBeVisible();
+			await expect(
+				page.getByRole("heading", { name: "Was ist neu?" }),
+			).toBeVisible();
+			await expect(
+				page.getByTestId("splash-modal-markdown-container"),
+			).toContainText("Mock Content for Splash Screen");
+
+			await page.getByTestId("close-splash-modal-button").click();
+			await expect(modal).toBeHidden();
 		},
 	);
 });

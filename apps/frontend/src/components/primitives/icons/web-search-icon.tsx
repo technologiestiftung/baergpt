@@ -1,13 +1,30 @@
-import Content from "../../../content.ts";
+interface WebSearchIconProps {
+	width?: number;
+	height?: number;
+	variant?: "default" | "active";
+}
 
-export function WebSearchIcon() {
+export function WebSearchIcon({
+	width = 14,
+	height = 14,
+	variant = "default",
+}: WebSearchIconProps) {
 	return (
-		<img
-			src={`/icons/web-search-icon.svg`}
-			height={14}
-			width={12}
-			alt={Content["chat.contextPill.webSearch.icon.alt"]}
-			className="h-[14px] w-[12px] shrink-0 relative"
-		/>
+		<div>
+			<img
+				src="/icons/web-search-icon.svg"
+				alt="Web search"
+				width={width}
+				height={height}
+				className={`${variant === "default" ? "block" : "hidden"}`}
+			/>
+			<img
+				src="/icons/web-search-icon-blue.svg"
+				alt="Web search"
+				width={width}
+				height={height}
+				className={`${variant === "active" ? "block" : "hidden"}`}
+			/>
+		</div>
 	);
 }

@@ -7,11 +7,20 @@ export type LlmWebCitation = {
 	age?: string[] | null;
 };
 
+export type LlmParlaCitation = {
+	url: string;
+	title: string;
+	source_type: string;
+	content: string;
+	page: number;
+};
+
 /** Matches stream payloads consumed by `parseStream` in get-completion.ts */
 export type LlmStreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
 	| { type: "data-citations"; data: number[] }
-	| { type: "data-web-citations"; data: LlmWebCitation[] };
+	| { type: "data-web-citations"; data: LlmWebCitation[] }
+	| { type: "data-parla-citations"; data: LlmParlaCitation[] };
 
 export const DEFAULT_LLM_DELTA = "Test response.";
 
@@ -27,6 +36,7 @@ export type MockLlmCompletionOptions = {
 	textDelta?: string;
 	citations?: number[];
 	webCitations?: LlmWebCitation[];
+	parlaCitations?: LlmParlaCitation[];
 	delayMs?: number;
 	status?: number;
 };
@@ -43,6 +53,7 @@ export async function mockLlmCompletion(
 		textDelta = DEFAULT_LLM_DELTA,
 		citations,
 		webCitations,
+		parlaCitations,
 	} = options;
 
 	await page.unroute("**/llm/just-chatting");
@@ -74,6 +85,9 @@ export async function mockLlmCompletion(
 			}
 			if (webCitations !== undefined && webCitations.length > 0) {
 				evts.push({ type: "data-web-citations", data: webCitations });
+			}
+			if (parlaCitations !== undefined && parlaCitations.length > 0) {
+				evts.push({ type: "data-parla-citations", data: parlaCitations });
 			}
 			streamBody = buildSseStream(evts);
 		}

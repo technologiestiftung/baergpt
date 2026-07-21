@@ -70,5 +70,31 @@ describe("basic auth middleware", () => {
 			expect(response.status).toBe(404);
 			expect(actualResponse).toStrictEqual(expectedResponse);
 		});
+
+		it("GET / should return a 401 Unauthorized response with valid session but banned user", async () => {
+			const { error } = await serviceRoleDbClient.auth.admin.updateUserById(
+				session.user.id,
+				{
+					ban_duration: "876000h", // 100 years
+				},
+			);
+
+			expect(error).toBeNull();
+
+			const response = await app.request("http://localhost:3000/", {
+				method: "GET",
+				headers: new Headers({
+					authorization: `Bearer ${session.access_token}`,
+				}),
+			});
+
+			const actualResponse = await response.json();
+			const expectedResponse = {
+				error: "Unauthorized: Invalid or expired session",
+			};
+
+			expect(response.status).toBe(401);
+			expect(actualResponse).toStrictEqual(expectedResponse);
+		});
 	});
 });

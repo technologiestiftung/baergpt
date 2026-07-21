@@ -75,11 +75,7 @@ export type ChatMessageBody = {
 	llm_model: string;
 };
 
-export type ActiveTools =
-	| "baseKnowledgeSearchTool"
-	| "ragSearchTool"
-	| "webSearchTool"
-	| "parlaMCPTools";
+export type ActiveTools = "ragSearchTool" | "webSearchTool" | "parlaMCPTools";
 
 export type Embedding = {
 	content: string;

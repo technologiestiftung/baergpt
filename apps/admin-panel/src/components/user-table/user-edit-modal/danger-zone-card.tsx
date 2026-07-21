@@ -13,11 +13,10 @@ import { useUserStore } from "@/store/use-user-store";
 import Content from "../../../content";
 
 export const DangerZoneCard: React.FC = () => {
-	const { selectedUser, setDeleteUserDialogOpen, setRestoreUserDialogOpen } =
+	const { selectedUser, setDeleteUserDialogOpen, setUnbanUserDialogOpen } =
 		useUserStore();
 
-	const isUserDeactivated =
-		selectedUser && (!selectedUser.is_active || selectedUser.deleted_at);
+	const isUserBanned = selectedUser && selectedUser.banned_until;
 
 	return (
 		<Card className="border-red-200">
@@ -51,30 +50,30 @@ export const DangerZoneCard: React.FC = () => {
 					</Button>
 				</div>
 
-				{/* Restore User Section */}
-				{isUserDeactivated && (
+				{/* Unban User Section */}
+				{isUserBanned && (
 					<>
 						<Separator className="mb-4" />
 						<div className="flex flex-col md:flex-row gap-6 items-center justify-between">
 							<div>
 								<h4 className="font-medium text-green-600">
-									{Content["userEditModal.dangerZoneCard.restoreUser.title"]}
+									{Content["userEditModal.dangerZoneCard.unbanUser.title"]}
 								</h4>
 								<p className="text-sm text-muted-foreground">
 									{
 										Content[
-											"userEditModal.dangerZoneCard.restoreUser.description"
+											"userEditModal.dangerZoneCard.unbanUser.description"
 										]
 									}
 								</p>
 							</div>
 							<Button
 								variant="default"
-								onClick={() => setRestoreUserDialogOpen?.(true)}
+								onClick={() => setUnbanUserDialogOpen?.(true)}
 								className="ml-4 bg-green-600 hover:bg-green-700 text-white"
 							>
 								<RotateCcw className="h-4 w-4 mr-2" />
-								{Content["userEditModal.dangerZoneCard.restoreUser.button"]}
+								{Content["userEditModal.dangerZoneCard.unbanUser.button"]}
 							</Button>
 						</div>
 					</>

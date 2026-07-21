@@ -5,7 +5,7 @@ import { captureError } from "../monitoring/capture-error.ts";
 import { config } from "../config.ts";
 
 type SplashScreenStore = {
-	isOpen: boolean;
+	shouldOpenOnLoad: boolean;
 	content: string;
 };
 
@@ -17,7 +17,7 @@ export const useSplashScreenStore = create<SplashScreenStore>()(() => {
 	init().catch(captureError);
 
 	return {
-		isOpen: false,
+		shouldOpenOnLoad: false,
 		content: "",
 	};
 });
@@ -28,16 +28,22 @@ export async function init() {
 	}
 
 	const newVersionIdentifier = await getSplashReleaseCommitSha();
+	currentVersionIdentifier = newVersionIdentifier;
 
 	const lastSeenVersion = localStorage.getItem(STORAGE_KEY);
-	if (lastSeenVersion === newVersionIdentifier) {
+	const isNewVersion = lastSeenVersion !== newVersionIdentifier;
+
+	useSplashScreenStore.setState({ shouldOpenOnLoad: isNewVersion });
+}
+
+export async function loadSplashContent() {
+	if (useSplashScreenStore.getState().content) {
 		return;
 	}
 
 	try {
 		const content = await getSplashScreenContent();
-		currentVersionIdentifier = newVersionIdentifier;
-		useSplashScreenStore.setState({ content, isOpen: true });
+		useSplashScreenStore.setState({ content });
 	} catch (error) {
 		captureError(error);
 	}

@@ -6,6 +6,7 @@ import { testWithAdminUser } from "./test-with-admin-user.ts";
 type TestWithLoggedInAdminUser = {
 	session: Session;
 	testDomain: string;
+	testEmail: string;
 };
 
 export const testWithLoggedInAdminUser =
@@ -53,6 +54,22 @@ export const testWithLoggedInAdminUser =
 					.from("allowed_email_domains")
 					.delete()
 					.eq("domain", domain);
+				testWithAdminUser.expect(error).toBeNull();
+			},
+			{ scope: "test" },
+		],
+
+		testEmail: [
+			async ({}, use, testInfo) => {
+				const email = `e2e-${testInfo.project.name}-${testInfo.workerIndex}@extern-test.de`;
+
+				await use(email);
+
+				const { error } = await supabaseAdminClient
+					.from("allowed_individual_emails")
+					.delete()
+					.eq("email", email);
+
 				testWithAdminUser.expect(error).toBeNull();
 			},
 			{ scope: "test" },

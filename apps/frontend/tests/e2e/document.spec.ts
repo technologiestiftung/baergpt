@@ -28,7 +28,10 @@ import {
 	secondaryDocumentType,
 	seedDefaultDocumentName,
 } from "../constants.ts";
-import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { supabaseAdminClient } from "../supabase.ts";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@repo/db-schema";
+import { config } from "../config.ts";
 
 test.describe("Documents", () => {
 	testDesktopOnly(
@@ -154,20 +157,24 @@ test.describe("Documents", () => {
 				type: secondaryDocumentType,
 			});
 
-			// Set the session for the anon client to have access to the user's storage
-			const { error: sessionError } = await supabaseAnonClient.auth.setSession({
+			const localAnonClient = createClient<Database>(
+				config.supabaseUrl,
+				config.supabaseAnonKey,
+			);
+
+			const { error: sessionError } = await localAnonClient.auth.setSession({
 				access_token: session.access_token,
 				refresh_token: session.refresh_token,
 			});
 
 			expect(sessionError).toBeNull();
 
-			const { error: uploadError } = await supabaseAnonClient.storage
+			const { error: uploadError } = await localAnonClient.storage
 				.from("documents")
 				.upload(givenStoragePath, givenFile);
 
-			// Remove the session from the anon client to avoid side effects on other tests
-			await supabaseAnonClient.auth.signOut();
+			// Use scope local to avoid revoking the current access_token globally
+			await localAnonClient.auth.signOut({ scope: "local" });
 
 			expect(uploadError).toBeNull();
 
@@ -368,7 +375,7 @@ test.describe("Documents", () => {
 
 			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 			const enterMultiSelectButton = page.getByRole("button", {
-				name: "Checkbox-Icon (ausgewählt) Löschen",
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 			});
 			if (await enterMultiSelectButton.isVisible()) {
 				await enterMultiSelectButton.click();
@@ -382,7 +389,7 @@ test.describe("Documents", () => {
 			await folderCheckbox.click();
 
 			await page
-				.getByRole("button", { name: "Dialog öffnen, um Elemente zu löschen" })
+				.getByRole("button", { name: "Button klicken, um Elemente zu löschen" })
 				.click();
 
 			await page
@@ -394,6 +401,118 @@ test.describe("Documents", () => {
 			await expect(
 				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
 			).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Move two files to a folder via drag and drop and back to root",
+		async ({ page, account, session }) => {
+			const folderName = "test-folder-dnd-multi";
+
+			await mockDocumentUpload({
+				userId: account.id,
+				accessToken: session.access_token,
+				accessGroupId: null,
+				fileName: secondaryDocumentName,
+				filePath: secondaryDocumentPath,
+				sourceType: defaultSourceType,
+				bucketName: defaultBucketName,
+			});
+
+			await page.goto("/");
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(folderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			const desktopPanel = page.locator("#desktop-documents-panel");
+			const fileNames = [defaultDocumentName, secondaryDocumentName] as const;
+
+			// Enter multi-select mode
+			await page
+				.getByRole("button", {
+					name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
+				})
+				.click();
+
+			// Select both files via their checkboxes
+			for (const name of fileNames) {
+				await desktopPanel
+					.getByRole("listitem")
+					.filter({ hasText: name })
+					.locator("label")
+					.first()
+					.click();
+			}
+
+			// Drag one file onto the folder — both selected files move together
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await page
+				.getByRole("button", { name: `Ordner-Icon ${folderName}` })
+				.hover();
+			await page.mouse.up();
+
+			// Verify both files are no longer visible in the root folder
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).not.toBeVisible();
+			}
+
+			// Navigate into the folder and verify both files are visible
+			await page
+				.getByRole("button", { name: `Ordner-Icon ${folderName}` })
+				.click();
+
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).toBeVisible();
+			}
+
+			// Select both files again
+			for (const name of fileNames) {
+				await desktopPanel
+					.getByRole("listitem")
+					.filter({ hasText: name })
+					.locator("label")
+					.first()
+					.click();
+			}
+
+			// Drag one file onto the breadcrumb — both move back to root
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
+				.hover();
+			await page.mouse.down();
+			await page.getByRole("button", { name: "Meine Dateien" }).hover();
+			await page.mouse.up();
+
+			// Verify both files are no longer visible inside the folder
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).not.toBeVisible();
+			}
+
+			// Navigate back to root and verify both files are visible
+			await page.getByRole("button", { name: "Meine Dateien" }).click();
+
+			for (const name of fileNames) {
+				await expect(
+					page.getByRole("button", { name: `Dokumente-Icon ${name}` }),
+				).toBeVisible();
+			}
 		},
 	);
 
@@ -435,7 +554,7 @@ test.describe("Documents", () => {
 
 			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 			const enterMultiSelectButton = page.getByRole("button", {
-				name: "Checkbox-Icon (ausgewählt) Löschen",
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 			});
 			if (await enterMultiSelectButton.isVisible()) {
 				await enterMultiSelectButton.click();
@@ -450,7 +569,7 @@ test.describe("Documents", () => {
 
 			// Open the delete dialog
 			const deleteButton = page.getByRole("button", {
-				name: "Dialog öffnen, um Elemente zu löschen",
+				name: "Button klicken, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -513,7 +632,7 @@ test.describe("Documents", () => {
 
 			// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 			const enterMultiSelectButton = page.getByRole("button", {
-				name: "Checkbox-Icon (ausgewählt) Löschen",
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 			});
 			if (await enterMultiSelectButton.isVisible()) {
 				await enterMultiSelectButton.click();
@@ -527,7 +646,7 @@ test.describe("Documents", () => {
 			await folderCheckbox.click();
 
 			const deleteButton = page.getByRole("button", {
-				name: "Dialog öffnen, um Elemente zu löschen",
+				name: "Button klicken, um Elemente zu löschen",
 			});
 			await deleteButton.click();
 
@@ -625,6 +744,129 @@ test.describe("Documents", () => {
 			// Expect folder to be deleted
 			await expect(
 				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
+			).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly("Rename a folder via dropdown", async ({ page }) => {
+		const givenFolderName = "test-folder-rename";
+		const expectedFolderName = "test-folder-renamed";
+
+		await page.goto("/");
+
+		// Create a new folder
+		await page
+			.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+			.click();
+		await page
+			.getByRole("textbox", { name: "Neuer Ordner" })
+			.fill(givenFolderName);
+		await page.getByRole("button", { name: "Erstellen", exact: true }).click();
+
+		// Verify the folder is created
+		const folderElement = page.getByRole("button", {
+			name: `Ordner-Icon ${givenFolderName}`,
+			exact: true,
+		});
+		await expect(folderElement).toBeVisible();
+
+		const menuButtonFolder = page
+			.getByRole("listitem")
+			.filter({ hasText: givenFolderName })
+			.getByLabel("Menü öffnen");
+		await menuButtonFolder.click();
+
+		// Expect rename button in dropdown to be visible and click it
+		const renameOption = page.getByRole("option", {
+			name: "Ordner umbenennen",
+		});
+		await expect(renameOption).toBeVisible();
+		await renameOption.click();
+
+		// Expect the dialog to be prefilled with the current folder name
+		const renameInput = page.getByRole("textbox", {
+			name: "Ordner umbenennen",
+		});
+		await expect(renameInput).toBeVisible();
+		await expect(renameInput).toHaveValue(givenFolderName);
+
+		// Rename the folder and confirm
+		await renameInput.fill(expectedFolderName);
+		await page.getByRole("button", { name: "Umbenennen", exact: true }).click();
+
+		// Expect the folder to be renamed
+		await expect(
+			page.getByRole("button", {
+				name: `Ordner-Icon ${expectedFolderName}`,
+				exact: true,
+			}),
+		).toBeVisible();
+		await expect(folderElement).not.toBeVisible();
+	});
+
+	testDesktopOnly(
+		"Renaming a folder to an empty name is rejected",
+		async ({ page }) => {
+			const givenFolderName = "test-folder-empty-rename";
+
+			await page.goto("/");
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Open the rename dialog via the dropdown
+			const menuButtonFolder = page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Menü öffnen");
+			await menuButtonFolder.click();
+			await page.getByRole("option", { name: "Ordner umbenennen" }).click();
+
+			// Submit a name that only consists of whitespace
+			const renameInput = page.getByRole("textbox", {
+				name: "Ordner umbenennen",
+			});
+			await renameInput.fill("   ");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			// The dialog stays open so the name can be corrected
+			await expect(page.getByRole("dialog")).toBeVisible();
+
+			// The folder keeps its original name
+			await expect(
+				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Documents cannot be renamed via dropdown",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await menuButtonDocument.click();
+
+			await expect(
+				page.getByRole("option", { name: "Dokument anzeigen" }),
+			).toBeVisible();
+
+			// Renaming is only available for the user's own folders
+			await expect(
+				page.getByRole("option", { name: "Ordner umbenennen" }),
 			).not.toBeVisible();
 		},
 	);
@@ -1051,7 +1293,7 @@ test.describe("Documents", () => {
 			await page.goto("/");
 
 			const activateMultiSelectButton = page.getByRole("button", {
-				name: "Checkbox-Icon (ausgewählt) Löschen",
+				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
 			});
 			await activateMultiSelectButton.click();
 
