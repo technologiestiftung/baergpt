@@ -586,7 +586,7 @@ export async function uploadFileViaDragAndDropAndWait({
 	);
 
 	const dropZone = page.getByText(
-		"Dateien ablegen, um sie hochzuladen inMeine Dateien",
+		"Dateien ablegen, um sie zum Chat hinzuzufügen.",
 	);
 
 	await dropZone.dispatchEvent("dragenter", { dataTransfer });
