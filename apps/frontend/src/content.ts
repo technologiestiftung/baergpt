@@ -750,7 +750,6 @@ export const Content = {
 	"eyeStruckThroughIcon.imgAlt": "Ein durchgestrichenes Augen-Icon",
 
 	/* -------------------- DocumentsSection -------------------- */
-	"documentsSection.title": "Dateien",
 	"documentSection.publicFolder.label": "Bibliothek",
 	"documentSection.publicFolder.baseKnowledge.label": "Verwaltungswissen",
 	"documentsSection.mainFolder.label": "Meine Dateien",

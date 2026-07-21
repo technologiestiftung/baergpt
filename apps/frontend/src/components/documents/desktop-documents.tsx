@@ -143,27 +143,22 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 							}
 							onBlur={hideTooltip}
 						>
-							<DocumentIcon variant="black" />
+							<DocumentIcon variant="darkBlue" />
 						</button>
-						<h2
-							className={`text-dunkelblau-200 text-2xl font-bold flex gap-x-2 ${isCollapsed && "hidden"}`}
-						>
-							{Content["documentsSection.title"]}
-						</h2>
 					</div>
 					<button
 						className={`p-1 rounded-3px hover:bg-hellblau-60 focus-visible:outline-default ${isCollapsed && "hidden"}`}
 						onClick={() => setIsCollapsed(true)}
 						aria-label={Content["documentsSection.hideFiles.ariaLabel"]}
 					>
-						<CloseIcon />
+						<CloseIcon variant="darkBlue" />
 					</button>
 				</div>
 
 				{!isCollapsed && (
 					<>
 						{currentFolder && (
-							<div className="mt-8">
+							<div className="mt-4">
 								<DocumentBreadcrumbs />
 							</div>
 						)}
@@ -172,7 +167,7 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 							<>
 								<PublicFolders />
 
-								<h2 className="mt-8 leading-6 text-dunkelblau-100">
+								<h2 className="mt-5 leading-6 text-dunkelblau-100">
 									{Content["documentsSection.mainFolder.label"]}
 								</h2>
 							</>
