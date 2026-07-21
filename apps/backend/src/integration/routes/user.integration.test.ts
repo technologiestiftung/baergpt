@@ -353,7 +353,7 @@ describe("Integration Tests for Routes", () => {
 			search_type: "all_private",
 			allowed_document_ids: [],
 			allowed_folder_ids: [],
-			llm_model: config.smallModelIdentifier,
+			llm_model: "mistral-small",
 		};
 
 		const res = await app.request("/llm/just-chatting", {
@@ -364,7 +364,7 @@ describe("Integration Tests for Routes", () => {
 				authorization: `Bearer ${validToken}`,
 			}),
 		});
-		expect(res.status).not.toBe(401);
+		expect(res.status).toBe(200);
 	}, 80_000);
 
 	it("should return no errors when deleting a document with valid document ID", async () => {
