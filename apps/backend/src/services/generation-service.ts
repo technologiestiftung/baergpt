@@ -329,6 +329,7 @@ export class GenerationService {
 				const streamResponse = streamText({
 					model: llmHandler.languageModel,
 					messages: messages.filter(nonEmptyAssistantMessage),
+					allowSystemInMessages: true,
 					maxOutputTokens: 8192,
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
@@ -384,15 +385,19 @@ export class GenerationService {
 									await generateText({
 										model: llmHandler.languageModel,
 										messages: compiledDocumentCitationExtractionPrompts,
+										allowSystemInMessages: true,
 										temperature: LLM_PARAMETERS.temperature,
 										output: Output.object({
 											schema: citationAnswerSchema,
 										}),
-										experimental_telemetry: {
+										runtimeContext: {
+											sessionId: sessionId ? sessionId : "unknown",
+										},
+										telemetry: {
 											isEnabled: config.isTracingEnabled,
 											functionId: "citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
+											includeRuntimeContext: {
+												sessionId: true,
 											},
 										},
 									});
@@ -444,15 +449,19 @@ export class GenerationService {
 									await generateText({
 										model: llmHandler.languageModel,
 										messages: compiledWebCitationExtractionPrompts,
+										allowSystemInMessages: true,
 										temperature: LLM_PARAMETERS.temperature,
 										output: Output.object({
 											schema: webCitationAnswerSchema,
 										}),
-										experimental_telemetry: {
+										runtimeContext: {
+											sessionId: sessionId ? sessionId : "unknown",
+										},
+										telemetry: {
 											isEnabled: config.isTracingEnabled,
 											functionId: "web-citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
+											includeRuntimeContext: {
+												sessionId: true,
 											},
 										},
 									});
@@ -505,15 +514,19 @@ export class GenerationService {
 									await generateText({
 										model: llmHandler.languageModel,
 										messages: compiledParlaCitationPrompts,
+										allowSystemInMessages: true,
 										temperature: LLM_PARAMETERS.temperature,
 										output: Output.object({
 											schema: parlaCitationAnswerSchema,
 										}),
-										experimental_telemetry: {
+										runtimeContext: {
+											sessionId: sessionId ? sessionId : "unknown",
+										},
+										telemetry: {
 											isEnabled: config.isTracingEnabled,
 											functionId: "parla-citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
+											includeRuntimeContext: {
+												sessionId: true,
 											},
 										},
 									});
@@ -594,14 +607,16 @@ export class GenerationService {
 
 						await this.dbService.updateUsage(userId, usage.totalTokens);
 					},
-					experimental_telemetry: {
+					runtimeContext: {
+						sessionId: sessionId ? sessionId : "unknown",
+						langfusePrompt: langfusePrompt,
+					},
+					telemetry: {
 						isEnabled: config.isTracingEnabled,
 						functionId: "streamed-text-with-tool-calls",
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
+						includeRuntimeContext: {
+							sessionId: true,
+							langfusePrompt: true,
 						},
 					},
 					onError: (error) => {
@@ -630,6 +645,7 @@ export class GenerationService {
 		const { text, usage } = await generateText({
 			model: llmHandler.languageModel,
 			messages: messages,
+			allowSystemInMessages: true,
 			temperature: LLM_PARAMETERS.temperature,
 			providerOptions: {
 				mistral: {
@@ -637,11 +653,15 @@ export class GenerationService {
 					frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
 				},
 			},
-			experimental_telemetry: {
+			runtimeContext: {
+				sessionId: "unknown",
+				langfusePrompt: langfusePrompt,
+			},
+			telemetry: {
 				isEnabled: config.isTracingEnabled,
-				metadata: {
-					sessionId: "unknown",
-					langfusePrompt: langfusePrompt.toJSON(),
+				includeRuntimeContext: {
+					sessionId: true,
+					langfusePrompt: true,
 				},
 			},
 		});
@@ -820,13 +840,17 @@ export class GenerationService {
 				await generateText({
 					model: llmHandler.languageModel,
 					messages: compiledOpenDataCitationExtractionPrompts,
+					allowSystemInMessages: true,
 					temperature: LLM_PARAMETERS.temperature,
 					output: Output.object({ schema: openDataCitationAnswerSchema }),
-					experimental_telemetry: {
+					runtimeContext: {
+						sessionId: sessionId ? sessionId : "unknown",
+					},
+					telemetry: {
 						isEnabled: config.isTracingEnabled,
 						functionId: "open-data-citation-extraction",
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
+						includeRuntimeContext: {
+							sessionId: true,
 						},
 					},
 				});
