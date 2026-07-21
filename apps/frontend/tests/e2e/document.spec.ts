@@ -889,7 +889,7 @@ test.describe("Documents", () => {
 
 		// The panel should be open by default
 		const documentPanelHeading = page.getByRole("heading", {
-			name: "Dateien",
+			name: "Meine Dateien",
 			exact: true,
 		});
 		await expect(documentPanelHeading).toBeVisible();
