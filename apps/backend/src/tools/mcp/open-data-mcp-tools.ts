@@ -1,6 +1,7 @@
 import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
 import { tool, type Tool } from "ai";
 import { z } from "zod";
+import { config } from "../../config";
 
 export interface OpenDataMCPToolsResult {
 	tools: Record<string, Tool>;
@@ -246,7 +247,7 @@ export const openDataMCPTools =
 			openDataHttpClient = await createMCPClient({
 				transport: {
 					type: "http",
-					url: "https://berlin-open-data-mcp.onrender.com/mcp",
+					url: config.openDataMcpUrl,
 				},
 			});
 

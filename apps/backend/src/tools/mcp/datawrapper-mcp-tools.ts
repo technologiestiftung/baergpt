@@ -1,6 +1,7 @@
 import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
 import { tool, type Tool } from "ai";
 import { z } from "zod";
+import { config } from "../../config";
 
 export interface DatawrapperMCPToolsResult {
 	tools: Record<string, Tool>;
@@ -14,7 +15,7 @@ export const datawrapperMCPTools =
 			datawrapperHttpClient = await createMCPClient({
 				transport: {
 					type: "http",
-					url: "https://datawrapper-mcp.onrender.com/mcp",
+					url: config.datawrapperMcpUrl,
 				},
 			});
 
