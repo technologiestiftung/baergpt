@@ -33,7 +33,7 @@ export const History: React.FC = () => {
 			className={`flex flex-col w-full min-h-0 ${errorMessage ? "h-full" : ""}`}
 		>
 			<div className="flex justify-between items-center md:px-2 px-5">
-				<h2 className="text-base font-semibold text-hellblau-50  whitespace-nowrap">
+				<h2 className="text-sm font-semibold text-hellblau-50  whitespace-nowrap">
 					<button
 						className={
 							"flex items-center focus-visible:outline-default rounded-3px"
