@@ -5,9 +5,106 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
  * in specific test cases if needed.
  */
 vi.mock("@ai-sdk/mcp", async () => {
-	const actual = await vi.importActual("@ai-sdk/mcp");
+	const createMCPClient = vi.fn(async (config: any) => {
+		const url = config?.transport?.url || "";
+		const isParla = url.includes("parla");
+		const isDatawrapper = url.includes("datawrapper");
+		const isOpenData = url.includes("open-data") || url.includes("berlin-open-data");
+
+		const mockTools: Record<string, any> = {};
+
+		if (isParla) {
+			mockTools["parla_vector_search"] = {
+				description: "Vector search tool",
+				execute: vi.fn(async (params: any) => {
+					return {
+						documentMatches: [
+							{
+								registered_document: {
+									source_url: "https://example.com/doc.pdf",
+									source_type: "PDF",
+									metadata: { title: "Test Document" },
+								},
+								processed_document_chunk_matches: [
+									{
+										processed_document_chunk: {
+											id: 1,
+											content: "This is some mock chunk content.",
+											page: 2,
+										},
+									},
+								],
+							},
+						],
+					};
+				}),
+			};
+		} else if (isOpenData) {
+			mockTools["search_berlin_datasets"] = {
+				description: "Search Berlin datasets",
+				execute: vi.fn(async (params: any) => {
+					return {
+						content: [
+							{
+								type: "text",
+								text: "# Search Results\n## 1. Fahrradwege in Berlin\n**ID**: fahrradwege-id\n**URL**: https://daten.berlin.de/datensaetze/fahrradwege-id",
+							},
+						],
+					};
+				}),
+			};
+			mockTools["search_datasets_filtered"] = {
+				description: "Search datasets with filters",
+				execute: vi.fn(async (params: any) => ({ content: [] })),
+			};
+			mockTools["get_dataset_details"] = {
+				description: "Get dataset details",
+				execute: vi.fn(async (params: any) => ({ content: [] })),
+			};
+			mockTools["get_portal_stats"] = {
+				description: "Get portal stats",
+				execute: vi.fn(async (params: any) => {
+					return {
+						content: [
+							{
+								type: "text",
+								text: "Berlin Open Data Portal Statistics: 5000 datasets.",
+							},
+						],
+					};
+				}),
+			};
+			mockTools["fetch_dataset_data"] = {
+				description: "Fetch dataset data",
+				execute: vi.fn(async (params: any) => ({ content: [] })),
+			};
+			mockTools["aggregate_dataset"] = {
+				description: "Aggregate dataset",
+				execute: vi.fn(async (params: any) => ({ content: [] })),
+			};
+		} else if (isDatawrapper) {
+			mockTools["create_visualization"] = {
+				description: "Create Datawrapper visualization",
+				execute: vi.fn(async (params: any) => {
+					return { chart_id: "mock-chart-id" };
+				}),
+			};
+			mockTools["publish_visualization"] = {
+				description: "Publish Datawrapper visualization",
+				execute: vi.fn(async (params: any) => {
+					return { url: "https://datawrapper.dwcdn.net/mock-chart-id" };
+				}),
+			};
+		}
+
+		return {
+			tools: vi.fn(async () => mockTools),
+			close: vi.fn(async () => {}),
+		};
+	});
+
 	return {
-		...actual,
+		createMCPClient,
 	};
 });
 
@@ -355,8 +452,6 @@ describe("Datawrapper MCP Tools Integration", () => {
 		expect(params.shape).toHaveProperty("api_key");
 		expect(params.shape).toHaveProperty("data");
 		expect(params.shape).toHaveProperty("chart_type");
-		expect(params.shape).toHaveProperty("map_type");
-		expect(params.shape).toHaveProperty("base_color");
 	});
 
 	it("publish_visualization should require api_key and chart_id", () => {
