@@ -276,11 +276,6 @@ test.describe("Chat", () => {
 				.filter({ hasText: defaultDocumentName })
 				.getByLabel("In den Chat")
 				.click();
-			await page
-				.getByRole("listitem")
-				.filter({ hasText: secondaryDocumentName })
-				.getByLabel("In den Chat")
-				.click();
 
 			await expect(
 				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),

@@ -382,7 +382,10 @@ export async function uploadFileViaFileChooserAndWait({
 	await testWithDocuments.expect(uploadedFile).toBeVisible();
 
 	// Close the file upload dialog
-	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+	await page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", { name: "Ein blaues X-Icon" })
+		.click();
 
 	return uploadedFile;
 }
@@ -504,7 +507,10 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	}
 
 	// Close the file upload dialog
-	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+	await page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", { name: "Ein blaues X-Icon" })
+		.click();
 
 	return uploadedFiles;
 }
@@ -612,7 +618,10 @@ export async function uploadFileViaDragAndDropAndWait({
 	await testWithDocuments.expect(uploadedFile).toBeVisible();
 
 	// Close the file upload dialog
-	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+	await page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", { name: "Ein blaues X-Icon" })
+		.click();
 }
 
 /**
