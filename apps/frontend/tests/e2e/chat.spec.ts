@@ -790,36 +790,35 @@ test.describe("Chat", () => {
 		});
 		await expect(parlaBerlinOption).toBeVisible();
 
-		// Select Parla Berlin and assert the check icon is visible
+		// Assert the resulting context pill is visible
+		const contextPill = page.getByRole("button", {
+			name: /Parla Berlin entfernen/,
+		});
+
 		await test.step("Select Parla Berlin", async () => {
 			await parlaBerlinOption.click();
+			await expect(connectorsSubmenu).toBeHidden();
+			await expect(contextPill).toBeVisible();
+		});
+
+		// Re-open the menu + submenu to verify the persisted "checked" state.
+		await test.step("Re-opened submenu shows Parla Berlin as checked", async () => {
+			await chatOptionsButton.click();
+			await connectorsOption.hover();
+			await expect(connectorsSubmenu).toBeVisible();
+			await expect(parlaBerlinOption).toHaveAttribute("aria-checked", "true");
 			await expect(
 				parlaBerlinOption.getByAltText("Ein blaues Häkchen-Icon"),
 			).toBeVisible();
 		});
 
-		// Deselect Parla Berlin in the submenu and assert the check icon is hidden
+		// Toggling again in the submenu deselects it and closes the menu.
 		await test.step("Deselect Parla Berlin", async () => {
 			await parlaBerlinOption.click();
-			await expect(
-				parlaBerlinOption.getByAltText("Ein blaues Häkchen-Icon"),
-			).toBeHidden();
+			await expect(connectorsSubmenu).toBeHidden();
+			await expect(contextPill).not.toBeVisible();
+			await expect(page.getByText("Parla Berlin")).not.toBeVisible();
 		});
-
-		// Re-select Parla Berlin via the submenu to verify the context pill
-		await parlaBerlinOption.click();
-		await page.locator("body").click({ position: { x: 0, y: 0 } });
-
-		// Verify the context pill appears with "Parla Berlin entfernen" (remove option)
-		const contextPill = page.getByRole("button", {
-			name: /Parla Berlin entfernen/,
-		});
-		await expect(contextPill).toBeVisible();
-
-		// Deselect by clicking the pill; pill and label should disappear
-		await contextPill.click();
-		await expect(page.getByText("Parla Berlin")).not.toBeVisible();
-		await expect(contextPill).not.toBeVisible();
 	});
 
 	testDesktopOnly(

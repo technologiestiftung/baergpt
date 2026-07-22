@@ -129,10 +129,12 @@ test.describe("Documents", () => {
 			}
 
 			// Close the file upload dialog
-			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+			const desktopPanel = page.locator("#desktop-documents-panel");
+			await desktopPanel
+				.getByRole("button", { name: "Ein blaues X-Icon" })
+				.click();
 
 			// Verify all 6 files appear in the document list
-			const desktopPanel = page.locator("#desktop-documents-panel");
 			for (const file of allFiles) {
 				await expect(
 					desktopPanel.getByRole("button", {
