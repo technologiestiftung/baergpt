@@ -27,6 +27,7 @@ export interface Config {
 	frequencyPenalty: number;
 	featureFlagMcpParlaAllowed: boolean;
 	mcpParlaUrl?: string;
+	featureFlagMcpOpenDataAllowed: boolean;
 	datawrapperMcpUrl?: string;
 	openDataMcpUrl?: string;
 	braveSearchApiKey?: string;
@@ -178,6 +179,8 @@ export const config: Config = {
 	featureFlagMcpParlaAllowed:
 		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
+	featureFlagMcpOpenDataAllowed:
+		process.env.FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true",
 	datawrapperMcpUrl: process.env.DATAWRAPPER_MCP_URL,
 	openDataMcpUrl: process.env.OPEN_DATA_MCP_URL,
 	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
