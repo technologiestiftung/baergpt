@@ -39,6 +39,13 @@ function isValidActiveTool(value: unknown): value is ActiveTools {
 		return false;
 	}
 
+	if (
+		value === "datawrapperMCPTools" &&
+		!config.featureFlagMcpDatawrapperAllowed
+	) {
+		return false;
+	}
+
 	return true;
 }
 import { ModelService } from "../services/model-service";

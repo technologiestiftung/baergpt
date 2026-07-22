@@ -2,6 +2,7 @@ import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
 import { tool, type Tool } from "ai";
 import { z } from "zod";
 import { config } from "../../config";
+import { captureError } from "../../monitoring/capture-error";
 
 export interface OpenDataMCPToolsResult {
 	tools: Record<string, Tool>;
@@ -109,18 +110,18 @@ export const aggregateDatasetInputSchema = z.object({
 });
 
 export const openDataToolInputSchema = z.union([
-	searchBerlinDatasetsInputSchema,
-	searchDatasetsFilteredInputSchema,
 	getDatasetDetailsInputSchema,
 	fetchDatasetDataInputSchema,
-	listAllDatasetsInputSchema,
 	downloadDatasetInputSchema,
-	getPortalStatsInputSchema,
+	listGeoLayersInputSchema,
+	aggregateDatasetInputSchema,
+	fetchGeoFeaturesInputSchema,
+	searchBerlinDatasetsInputSchema,
+	searchDatasetsFilteredInputSchema,
 	getFacetsInputSchema,
 	listTagsInputSchema,
-	listGeoLayersInputSchema,
-	fetchGeoFeaturesInputSchema,
-	aggregateDatasetInputSchema,
+	listAllDatasetsInputSchema,
+	getPortalStatsInputSchema,
 ]);
 
 export type OpenDataToolInput = z.infer<typeof openDataToolInputSchema>;
@@ -396,7 +397,10 @@ export const openDataMCPTools =
 				},
 			};
 		} catch (error) {
-			console.error("Error initializing MCP client:", error);
+			if (openDataHttpClient) {
+				await openDataHttpClient.close().catch(() => {});
+			}
+			captureError(error);
 			return null;
 		}
 	};

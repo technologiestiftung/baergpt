@@ -2,6 +2,7 @@ import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
 import { tool, type Tool } from "ai";
 import { z } from "zod";
 import { config } from "../../config";
+import { captureError } from "../../monitoring/capture-error";
 
 export interface DatawrapperMCPToolsResult {
 	tools: Record<string, Tool>;
@@ -171,7 +172,10 @@ export const datawrapperMCPTools =
 				},
 			};
 		} catch (error) {
-			console.error("Error initializing MCP client:", error);
+			if (datawrapperHttpClient) {
+				await datawrapperHttpClient.close().catch(() => {});
+			}
+			captureError(error);
 			return null;
 		}
 	};
