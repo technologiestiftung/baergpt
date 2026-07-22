@@ -1,23 +1,32 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 
+type MockMCPClientConfig = {
+	transport?: { url?: string };
+};
+
+type MockMCPTool = {
+	description: string;
+	execute: ReturnType<typeof vi.fn>;
+};
+
 /**
  * We rewrite some modules so we can mock them
  * in specific test cases if needed.
  */
 vi.mock("@ai-sdk/mcp", async () => {
-	const createMCPClient = vi.fn(async (config: any) => {
+	const createMCPClient = vi.fn(async (config: MockMCPClientConfig) => {
 		const url = config?.transport?.url || "";
 		const isParla = url.includes("parla");
 		const isDatawrapper = url.includes("datawrapper");
 		const isOpenData =
 			url.includes("open-data") || url.includes("berlin-open-data");
 
-		const mockTools: Record<string, any> = {};
+		const mockTools: Record<string, MockMCPTool> = {};
 
 		if (isParla) {
 			mockTools["parla_vector_search"] = {
 				description: "Vector search tool",
-				execute: vi.fn(async (params: any) => {
+				execute: vi.fn(async () => {
 					return {
 						documentMatches: [
 							{
@@ -43,7 +52,7 @@ vi.mock("@ai-sdk/mcp", async () => {
 		} else if (isOpenData) {
 			mockTools["search_berlin_datasets"] = {
 				description: "Search Berlin datasets",
-				execute: vi.fn(async (params: any) => {
+				execute: vi.fn(async () => {
 					return {
 						content: [
 							{
@@ -56,15 +65,15 @@ vi.mock("@ai-sdk/mcp", async () => {
 			};
 			mockTools["search_datasets_filtered"] = {
 				description: "Search datasets with filters",
-				execute: vi.fn(async (params: any) => ({ content: [] })),
+				execute: vi.fn(async () => ({ content: [] })),
 			};
 			mockTools["get_dataset_details"] = {
 				description: "Get dataset details",
-				execute: vi.fn(async (params: any) => ({ content: [] })),
+				execute: vi.fn(async () => ({ content: [] })),
 			};
 			mockTools["get_portal_stats"] = {
 				description: "Get portal stats",
-				execute: vi.fn(async (params: any) => {
+				execute: vi.fn(async () => {
 					return {
 						content: [
 							{
@@ -77,22 +86,22 @@ vi.mock("@ai-sdk/mcp", async () => {
 			};
 			mockTools["fetch_dataset_data"] = {
 				description: "Fetch dataset data",
-				execute: vi.fn(async (params: any) => ({ content: [] })),
+				execute: vi.fn(async () => ({ content: [] })),
 			};
 			mockTools["aggregate_dataset"] = {
 				description: "Aggregate dataset",
-				execute: vi.fn(async (params: any) => ({ content: [] })),
+				execute: vi.fn(async () => ({ content: [] })),
 			};
 		} else if (isDatawrapper) {
 			mockTools["create_visualization"] = {
 				description: "Create Datawrapper visualization",
-				execute: vi.fn(async (params: any) => {
+				execute: vi.fn(async () => {
 					return { chart_id: "mock-chart-id" };
 				}),
 			};
 			mockTools["publish_visualization"] = {
 				description: "Publish Datawrapper visualization",
-				execute: vi.fn(async (params: any) => {
+				execute: vi.fn(async () => {
 					return { url: "https://datawrapper.dwcdn.net/mock-chart-id" };
 				}),
 			};
