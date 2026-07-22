@@ -131,7 +131,7 @@ test.describe("Documents", () => {
 			// Close the file upload dialog
 			const desktopPanel = page.locator("#desktop-documents-panel");
 			await desktopPanel
-				.getByRole("button", { name: "Ein blaues X-Icon" })
+				.getByRole("button", { name: "Hochladen-Status schließen" })
 				.click();
 
 			// Verify all 6 files appear in the document list

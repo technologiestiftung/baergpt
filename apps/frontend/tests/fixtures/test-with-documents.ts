@@ -384,7 +384,7 @@ export async function uploadFileViaFileChooserAndWait({
 	// Close the file upload dialog
 	await page
 		.locator("#desktop-documents-panel")
-		.getByRole("button", { name: "Ein blaues X-Icon" })
+		.getByRole("button", { name: "Hochladen-Status schließen" })
 		.click();
 
 	return uploadedFile;
@@ -509,7 +509,7 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	// Close the file upload dialog
 	await page
 		.locator("#desktop-documents-panel")
-		.getByRole("button", { name: "Ein blaues X-Icon" })
+		.getByRole("button", { name: "Hochladen-Status schließen" })
 		.click();
 
 	return uploadedFiles;
@@ -620,7 +620,7 @@ export async function uploadFileViaDragAndDropAndWait({
 	// Close the file upload dialog
 	await page
 		.locator("#desktop-documents-panel")
-		.getByRole("button", { name: "Ein blaues X-Icon" })
+		.getByRole("button", { name: "Hochladen-Status schließen" })
 		.click();
 }
 
