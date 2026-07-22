@@ -96,6 +96,8 @@ const TOOL_INSTRUCTION_PROMPTS: ReadonlyArray<[ActiveTools, string]> = [
 	["ragSearchTool", "tool-instruction-documents"],
 	["webSearchTool", "tool-instruction-web-search"],
 	["parlaMCPTools", "tool-instruction-parla"],
+	["openDataMCPTools", "tool-instruction-open-data"],
+	["datawrapperMCPTools", "tool-instruction-datawrapper"],
 ];
 
 export class GenerationService {
@@ -568,8 +570,9 @@ export class GenerationService {
 											return [];
 										}
 
-										const parsedInput =
-											openDataToolInputSchema.safeParse(tr.input);
+										const parsedInput = openDataToolInputSchema.safeParse(
+											tr.input,
+										);
 										const input: OpenDataToolInput = parsedInput.success
 											? parsedInput.data
 											: {};

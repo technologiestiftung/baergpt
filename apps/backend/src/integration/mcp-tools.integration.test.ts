@@ -9,7 +9,8 @@ vi.mock("@ai-sdk/mcp", async () => {
 		const url = config?.transport?.url || "";
 		const isParla = url.includes("parla");
 		const isDatawrapper = url.includes("datawrapper");
-		const isOpenData = url.includes("open-data") || url.includes("berlin-open-data");
+		const isOpenData =
+			url.includes("open-data") || url.includes("berlin-open-data");
 
 		const mockTools: Record<string, any> = {};
 
@@ -235,7 +236,10 @@ describe("Parla MCP Tools Integration", () => {
 				chunk_limit: 5,
 			};
 
-			const result = await vectorSearchTool.execute(mockParams, toolCallOptions);
+			const result = await vectorSearchTool.execute(
+				mockParams,
+				toolCallOptions,
+			);
 			expect(result).toBeDefined();
 		}
 	}, 60_000);
@@ -324,10 +328,7 @@ describe("Berlin Open Data MCP Tools Integration", () => {
 
 	it("search_berlin_datasets should have correct Zod schema properties", () => {
 		const searchTool = mcpResult?.tools["search_berlin_datasets"];
-		const params = requireZodObjectSchema(
-			searchTool,
-			"search_berlin_datasets",
-		);
+		const params = requireZodObjectSchema(searchTool, "search_berlin_datasets");
 
 		expect(params.shape).toHaveProperty("query");
 		expect(params.shape).toHaveProperty("limit");
@@ -348,7 +349,10 @@ describe("Berlin Open Data MCP Tools Integration", () => {
 			"search_berlin_datasets",
 		);
 
-		const result = await execute({ query: "Fahrrad", limit: 1 }, toolCallOptions);
+		const result = await execute(
+			{ query: "Fahrrad", limit: 1 },
+			toolCallOptions,
+		);
 
 		const parsedOutput = openDataMcpToolOutputSchema.safeParse(result);
 		expect(parsedOutput.success).toBe(true);
@@ -456,10 +460,7 @@ describe("Datawrapper MCP Tools Integration", () => {
 
 	it("publish_visualization should require api_key and chart_id", () => {
 		const publishTool = mcpResult?.tools["publish_visualization"];
-		const params = requireZodObjectSchema(
-			publishTool,
-			"publish_visualization",
-		);
+		const params = requireZodObjectSchema(publishTool, "publish_visualization");
 
 		expect(params.shape).toHaveProperty("api_key");
 		expect(params.shape).toHaveProperty("chart_id");

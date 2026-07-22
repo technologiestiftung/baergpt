@@ -18,7 +18,7 @@ export async function setup() {
 				resolve(serverInstance);
 			},
 		);
-		serverInstance.on('error', (err) => reject(err));
+		serverInstance.on("error", (err) => reject(err));
 	});
 }
 

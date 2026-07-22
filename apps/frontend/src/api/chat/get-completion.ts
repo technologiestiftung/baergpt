@@ -42,6 +42,7 @@ type StreamEvent =
 
 const activeToolsDict: Record<ChatTool, string[]> = {
 	parla: ["parlaMCPTools"],
+	openData: ["openDataMCPTools"],
 	webSearch: ["webSearchTool"],
 };
 

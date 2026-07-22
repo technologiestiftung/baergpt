@@ -37,6 +37,8 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 
 	const isMcpParlaAllowed =
 		import.meta.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true";
+	const isMcpOpenDataAllowed =
+		import.meta.env.VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true";
 	const isWebSearchAllowed =
 		import.meta.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true";
 
@@ -65,7 +67,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 			isSelected: false,
 			onSelect: () => fileInputRef.current?.click(),
 		},
-		...(isMcpParlaAllowed
+		...(isMcpParlaAllowed || isMcpOpenDataAllowed
 			? [
 					{
 						id: "connectors",

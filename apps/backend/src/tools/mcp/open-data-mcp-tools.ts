@@ -172,7 +172,9 @@ const SEARCH_RESULT_PATTERN =
 const DATASET_DETAILS_PATTERN =
 	/^#\s*(.+?)\n\n## Overview\n\*\*ID\*\*:\s*(\S+)\n\*\*Portal URL\*\*:\s*(https:\/\/daten\.berlin\.de\/datensaetze\/\S+)/;
 
-function extractTextFromMcpOutput(output: OpenDataMcpToolOutput): string | null {
+function extractTextFromMcpOutput(
+	output: OpenDataMcpToolOutput,
+): string | null {
 	const textPart = output.content.find((part) => part.type === "text");
 
 	return textPart?.text ?? null;

@@ -116,14 +116,10 @@ export function verifyConfig(): void {
 		);
 	}
 	if (!process.env.DATAWRAPPER_MCP_URL) {
-		throw new Error(
-			"DATAWRAPPER_MCP_URL must be defined",
-		);
+		throw new Error("DATAWRAPPER_MCP_URL must be defined");
 	}
 	if (!process.env.OPEN_DATA_MCP_URL) {
-		throw new Error(
-			"OPEN_DATA_MCP_URL must be defined",
-		);
+		throw new Error("OPEN_DATA_MCP_URL must be defined");
 	}
 	if (
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
