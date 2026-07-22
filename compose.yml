@@ -14,7 +14,8 @@ services:
       context: .
       dockerfile: apps/backend/Dockerfile
     ports:
-      - "3000:3000"
+      # Bind to loopback only — keep the dev backend (and its open /health) off the LAN.
+      - "127.0.0.1:3000:3000"
     volumes:
       - ./apps/backend/.env:/app/apps/backend/.env:ro
     # Required on Linux: let the container reach host services (the Supabase CLI) via host.docker.internal

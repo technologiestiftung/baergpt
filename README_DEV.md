@@ -251,9 +251,11 @@ cd apps/maintenance-mode && npm run dev
 
 Runs the built backend image (the exact artifact deployed to Cloud Foundry) to **validate the container** locally. Not for daily coding (use `turbo dev` for hot reload).
 
+Requires Supabase running first — `supabase start` from `apps/backend`. Then, **from the repo root**:
+
 ```bash
-supabase start            # start Supabase via the CLI first
 docker compose up --build  # backend container → http://localhost:3000
+docker compose down        # stop and remove the container when done
 ```
 
 Supabase stays on the CLI; the container reaches it via `host.docker.internal`. No hot reload — re-run with `--build` to pick up code changes.
