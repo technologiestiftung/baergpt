@@ -8,6 +8,7 @@ import { useErrorStore } from "../../../../store/error-store.ts";
 import { WebSearchIcon } from "../../../primitives/icons/web-search-icon.tsx";
 import type { ChatToolsMenuItemId } from "../../../../common.ts";
 import { ChatMenuRow } from "./chat-menu-row.tsx";
+import { config } from "../../../../config.ts";
 
 interface MenuItem {
 	id: ChatToolsMenuItemId;
@@ -35,12 +36,11 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 	const connectorsButtonRef = useRef<HTMLButtonElement | null>(null);
 	const [isConnectorsSubmenuOpen, setIsConnectorsSubmenuOpen] = useState(false);
 
-	const isMcpParlaAllowed =
-		import.meta.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true";
-	const isMcpOpenDataAllowed =
-		import.meta.env.VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true";
-	const isWebSearchAllowed =
-		import.meta.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true";
+	const isMcpParlaAllowed = config.featureFlagMcpParlaAllowed;
+	const isMcpOpenDataAllowed = config.featureFlagMcpOpenDataAllowed;
+	// unused for now
+	// const isMcpDatawrapperAllowed = config.featureFlagMcpDatawrapperAllowed;
+	const isWebSearchAllowed = config.featureFlagWebSearchAllowed;
 
 	const openConnectorsSubmenu = () => setIsConnectorsSubmenuOpen(true);
 	const closeConnectorsSubmenu = () => setIsConnectorsSubmenuOpen(false);

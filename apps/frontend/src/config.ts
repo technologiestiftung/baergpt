@@ -13,8 +13,10 @@ function parseConfig(env: Record<string, string>) {
 		"VITE_SENTRY_PROJECT",
 		"VITE_TRACE_PROPAGATION_TARGETS",
 		"VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL",
+		"VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED",
 		"VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED",
 		"VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED",
+		"VITE_FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED",
 		"VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED",
 		"VITE_SPLASH_CONTENT_URL",
 		"VITE_SPLASH_API_COMMIT_URL",
@@ -51,10 +53,14 @@ function parseConfig(env: Record<string, string>) {
 		matomoUrl: env.VITE_MATOMO_URL,
 		matomoSiteId: env.VITE_MATOMO_SITE_ID,
 		defaultDocumentProcessingModel: env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
+		featureFlagWebSearchAllowed:
+			env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 		featureFlagMcpParlaAllowed:
 			env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
 		featureFlagMcpOpenDataAllowed:
 			env.VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true",
+		featureFlagMcpDatawrapperAllowed:
+			env.VITE_FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED === "true",
 		featureFlagSplashScreenAllowed:
 			env.VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED === "true",
 		splashContentUrl: env.VITE_SPLASH_CONTENT_URL,
