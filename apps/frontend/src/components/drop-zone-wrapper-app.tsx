@@ -34,6 +34,13 @@ export function DropZoneWrapperApp({ children }: { children: ReactNode }) {
 		onDrop,
 		noClick: true,
 		disabled: isDropZoneDisabled,
+		accept: {
+			"application/pdf": [],
+			"application/msword": [],
+			"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+				[],
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [],
+		},
 	});
 
 	return (
@@ -46,9 +53,6 @@ export function DropZoneWrapperApp({ children }: { children: ReactNode }) {
 				<>
 					<input
 						{...getInputProps()}
-						accept={
-							"application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-						}
 						aria-label={Content["fileUpload.upload"]}
 						aria-hidden="true"
 					/>

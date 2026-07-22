@@ -4,7 +4,7 @@ import type { UserDocument } from "../../common.ts";
 import { useDrop } from "react-dnd";
 import { AddToChatIcon } from "../primitives/icons/add-to-chat-icon.tsx";
 import { isUserDocument } from "../documents/document-list/list-item/utils/is-user-document.ts";
-import Content from "../../content.ts";
+import { Content } from "../../content.ts";
 
 export function DropZoneWrapperChat({
 	children,
