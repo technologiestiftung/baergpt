@@ -65,7 +65,7 @@ interface ChatStore {
 	deactivateExternalTools(): void;
 }
 
-const externalChatTools: ChatTool[] = ["webSearch", "parla", "openData"];
+export const externalChatTools: ChatTool[] = ["webSearch", "parla", "openData"];
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,

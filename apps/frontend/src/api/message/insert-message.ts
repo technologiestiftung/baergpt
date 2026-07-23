@@ -16,6 +16,7 @@ export async function insertMessage(
 			allowed_document_ids: chatMessage.allowed_document_ids,
 			allowed_folder_ids: chatMessage.allowed_folder_ids,
 			citations: chatMessage.citations,
+			external_tool_context: chatMessage.external_tool_context,
 		})
 		.select("*")
 		.single();

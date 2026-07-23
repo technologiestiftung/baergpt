@@ -24,7 +24,11 @@ import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
-import type { ActiveTools, ParsedPage } from "../types/common";
+import type {
+	ActiveTools,
+	IncomingChatMessage,
+	ParsedPage,
+} from "../types/common";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import {
 	parlaMCPTools,
@@ -681,17 +685,30 @@ export class GenerationService {
 	 */
 
 	async createPrompt(args: {
-		previousMessages: ModelMessage[];
+		previousMessages: IncomingChatMessage[];
 		isAddressedFormal: boolean;
 		activeTools: ActiveTools[];
 		userSystemPrompt?: string | null;
+		isExternalToolActive: boolean;
 	}) {
 		const {
 			previousMessages,
 			isAddressedFormal,
 			activeTools,
 			userSystemPrompt,
+			isExternalToolActive,
 		} = args;
+
+		// The current (last) message is always included — it is the message triggering
+		// this turn, even though its own row is not yet flagged at request time.
+		const scopedMessages: IncomingChatMessage[] = isExternalToolActive
+			? [
+					...previousMessages
+						.slice(0, -1)
+						.filter(({ external_tool_context }) => external_tool_context),
+					...previousMessages.slice(-1),
+				]
+			: previousMessages;
 
 		const currentDate = new Date().toLocaleDateString("de-DE", {
 			year: "numeric",
@@ -729,7 +746,7 @@ export class GenerationService {
 		};
 
 		return {
-			messages: [freeChatPrompt, ...previousMessages],
+			messages: [freeChatPrompt, ...scopedMessages],
 			promptClient: freeChatPromptClient,
 		};
 	}
