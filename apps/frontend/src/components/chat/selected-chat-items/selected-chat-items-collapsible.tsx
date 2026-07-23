@@ -42,6 +42,7 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 				flex flex-col items-start justify-center gap-y-3 w-full px-3 py-1.5
 				bg-hellblau-30 rounded-t-3px text-sm leading-5 text-dunkelblau-80
 				focus-visible:outline-2px hover:bg-hellblau-50 ${isCollapsibleOpen && "pb-2.5"}`}
+			aria-expanded={isCollapsibleOpen}
 		>
 			{!isCollapsibleOpen && <SelectedChatItemsLabel />}
 
