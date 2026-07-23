@@ -731,6 +731,14 @@ export class GenerationService {
 			const blockClient = await getTextPrompt(promptName, { label });
 			toolInstructionBlocks.push(blockClient.compile({}));
 		}
+		// Block explaining the scoped (possibly gappy) message history with external tools being activated
+		if (isExternalToolActive) {
+			const externalContextBlockClient = await getTextPrompt(
+				"tool-instruction-external-context",
+				{ label },
+			);
+			toolInstructionBlocks.push(externalContextBlockClient.compile({}));
+		}
 		const toolInstructions = toolInstructionBlocks.join("\n\n");
 
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
