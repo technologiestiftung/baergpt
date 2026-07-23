@@ -741,10 +741,17 @@ test.describe("Chat", () => {
 		await expect(connectorsSubmenu).toBeVisible();
 
 		// locate the Parla Berlin option inside the submenu
-		const parlaBerlinOption = connectorsSubmenu.getByRole("button", {
+		const parlaBerlinOption = connectorsSubmenu.getByRole("option", {
 			name: /Parla Berlin/,
 		});
 		await expect(parlaBerlinOption).toBeVisible();
+
+		if (process.env.VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true") {
+			const openDataOption = connectorsSubmenu.getByRole("option", {
+				name: /Berlin Open Data/,
+			});
+			await expect(openDataOption).toBeVisible();
+		}
 
 		// Select Parla Berlin and assert the check icon is visible
 		await test.step("Select Parla Berlin", async () => {
