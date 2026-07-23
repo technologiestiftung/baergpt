@@ -29,3 +29,16 @@ export const parlaCitationAnswerSchema = z.object({
 			"Array der IDs von Parla-Quellen, die tatsächlich in der Antwort verwendet wurden.",
 		),
 });
+
+export const openDataCitationAnswerSchema = z.object({
+	citations: z
+		.array(
+			z.object({
+				url: z.string().describe("URL des Open-Data-Datensatzes"),
+				title: z.string().describe("Titel des Open-Data-Datensatzes"),
+			}),
+		)
+		.describe(
+			"Array der Open-Data-Datensätze, die tatsächlich in der Antwort verwendet wurden.",
+		),
+});

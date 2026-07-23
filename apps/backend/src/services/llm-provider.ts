@@ -1,4 +1,4 @@
-import type { EmbeddingModelV3, LanguageModelV3 } from "@ai-sdk/provider";
+import type { EmbeddingModel, LanguageModel } from "ai";
 import { mistral } from "@ai-sdk/mistral";
 import { config } from "../config";
 import { mockEmbeddingModel, mockLanguageModel } from "./external-mocks";
@@ -15,7 +15,7 @@ import { mockEmbeddingModel, mockLanguageModel } from "./external-mocks";
 
 const isTestMode = config.nodeEnv === "test";
 
-export function getLanguageModel(identifier: string): LanguageModelV3 {
+export function getLanguageModel(identifier: string): LanguageModel {
 	if (isTestMode) {
 		return mockLanguageModel();
 	}
@@ -23,7 +23,7 @@ export function getLanguageModel(identifier: string): LanguageModelV3 {
 	return mistral(identifier);
 }
 
-export function getEmbeddingModel(): EmbeddingModelV3 {
+export function getEmbeddingModel(): EmbeddingModel {
 	if (isTestMode) {
 		return mockEmbeddingModel();
 	}

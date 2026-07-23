@@ -170,6 +170,7 @@ export type Database = {
 					content: string;
 					created_at: string;
 					id: number;
+					open_data_citations: Json | null;
 					parla_citations: Json | null;
 					role: string;
 					type: string;
@@ -183,6 +184,7 @@ export type Database = {
 					content: string;
 					created_at?: string;
 					id?: number;
+					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role: string;
 					type: string;
@@ -196,6 +198,7 @@ export type Database = {
 					content?: string;
 					created_at?: string;
 					id?: number;
+					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role?: string;
 					type?: string;

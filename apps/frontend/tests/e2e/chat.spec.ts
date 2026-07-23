@@ -811,6 +811,14 @@ test.describe("Chat", () => {
 		});
 		await expect(parlaBerlinOption).toBeVisible();
 
+		if (process.env.VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true") {
+			const openDataOption = connectorsSubmenu.getByRole("menuitemcheckbox", {
+				name: /Berlin Open Data/,
+			});
+			await expect(openDataOption).toBeVisible();
+		}
+
+		// Select Parla Berlin and assert the check icon is visible
 		// Assert the resulting context pill is visible
 		const contextPill = page.getByRole("button", {
 			name: /Parla Berlin entfernen/,

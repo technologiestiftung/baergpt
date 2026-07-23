@@ -27,14 +27,22 @@ export type ParlaCitationSource = {
 	page: number;
 };
 
+export type OpenDataCitationSource = {
+	url: string;
+	title: string;
+	datasetId: string;
+};
+
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
 	| { type: "data-citations"; data: number[] }
 	| { type: "data-web-citations"; data: WebCitationSource[] }
-	| { type: "data-parla-citations"; data: ParlaCitationSource[] };
+	| { type: "data-parla-citations"; data: ParlaCitationSource[] }
+	| { type: "data-open-data-citations"; data: OpenDataCitationSource[] };
 
 const activeToolsDict: Record<ChatTool, string[]> = {
 	parla: ["parlaMCPTools"],
+	openData: ["openDataMCPTools"],
 	webSearch: ["webSearchTool"],
 };
 
@@ -134,12 +142,14 @@ export async function getCompletion(
 			citations: null,
 			web_citations: null,
 			parla_citations: null,
+			open_data_citations: null,
 		});
 
 		let currentText = "";
 		let documentCitations: number[] = [];
 		let webCitations: WebCitationSource[] = [];
 		let parlaCitations: ParlaCitationSource[] = [];
+		let openDataCitations: OpenDataCitationSource[] = [];
 
 		let hasReceivedText = false;
 
@@ -151,6 +161,9 @@ export async function getCompletion(
 				citations: documentCitations.length ? documentCitations : null,
 				web_citations: webCitations.length ? webCitations : null,
 				parla_citations: parlaCitations.length ? parlaCitations : null,
+				open_data_citations: openDataCitations.length
+					? openDataCitations
+					: null,
 			});
 
 		await parseStream(response.body, {
@@ -183,6 +196,10 @@ export async function getCompletion(
 				parlaCitations = sources;
 				writeMessage();
 			},
+			onOpenDataCitations: (sources: OpenDataCitationSource[]) => {
+				openDataCitations = sources;
+				writeMessage();
+			},
 			onFinish: () => {
 				setStatus("idle");
 				setStreamingAbortController(null);
@@ -210,6 +227,7 @@ function processStreamLine(
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
+		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -247,6 +265,11 @@ function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "data-open-data-citations") {
+			callbacks.onOpenDataCitations(event.data);
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -263,6 +286,7 @@ async function parseStream(
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
+		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ) {

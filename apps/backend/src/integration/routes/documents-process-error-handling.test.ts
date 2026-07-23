@@ -45,7 +45,7 @@ const VALID_PDF_BODY = {
 		source_type: "personal_document",
 		folder_id: null,
 	},
-	llm_model: config.smallModelIdentifier,
+	llm_model: config.defaultDocumentProcessingModel,
 };
 
 const VALID_WORD_BODY = {
@@ -54,7 +54,7 @@ const VALID_WORD_BODY = {
 		source_type: "personal_document",
 		folder_id: null,
 	},
-	llm_model: config.smallModelIdentifier,
+	llm_model: config.defaultDocumentProcessingModel,
 };
 
 const VALID_EXCEL_BODY = {
@@ -63,7 +63,7 @@ const VALID_EXCEL_BODY = {
 		source_type: "personal_document",
 		folder_id: null,
 	},
-	llm_model: config.smallModelIdentifier,
+	llm_model: config.defaultDocumentProcessingModel,
 };
 
 function createRequest(body: unknown): Request {
