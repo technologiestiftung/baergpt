@@ -5,6 +5,7 @@ import { SidebarNavigation } from "./sidebar-navigation.tsx";
 import { NewChatButton } from "./sidebar-buttons/new-chat-button.tsx";
 import Content from "../../content.ts";
 import { History } from "./history/history.tsx";
+import { ChatSearchButton } from "./sidebar-buttons/chat-search-button.tsx";
 
 export const DesktopSidebar: React.FC = () => {
 	const { openDrawerId } = useDrawerStore();
@@ -26,13 +27,16 @@ export const DesktopSidebar: React.FC = () => {
 					aria-label={Content["sidebar.ariaLabel"]}
 				>
 					{/* Top Section */}
-					<div className={`gap-3 flex flex-col items-start w-fit`}>
+					<div className={`gap-3 flex flex-col items-start w-full`}>
 						<HistoryToggleButton
 							isLabelVisible={isHistorySidebarOpen ? false : undefined}
 						/>
 
-						<div className={`${isHistorySidebarOpen && "pt-[1px]"}`}>
+						<div
+							className={`${isHistorySidebarOpen && "pt-[1px] w-full pr-5"}`}
+						>
 							<NewChatButton isExpanded={isHistorySidebarOpen} />
+							<ChatSearchButton isExpanded={isHistorySidebarOpen} />
 						</div>
 					</div>
 
