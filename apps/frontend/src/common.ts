@@ -19,7 +19,7 @@ export type NewChatMessage = Pick<
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
-export type Connector = "parla";
+export type Connector = "parla" | "openData";
 export type ChatTool = "webSearch" | Connector;
 
 export type ChatToolsMenuItemId = ChatTool | "fileUpload" | "connectors";
