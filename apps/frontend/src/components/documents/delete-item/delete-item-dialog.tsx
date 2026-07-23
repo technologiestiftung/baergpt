@@ -39,9 +39,13 @@ export const DeleteItemDialog: React.FC = () => {
 		selectedUserFoldersForAction,
 		deleteUserFolder,
 		unselectFolderForAction,
+		getUserItemsInCurrentFolder,
 	} = useUserFolderStore();
-	const { singleItemSelectedForAction, setSingleItemSelectedForAction } =
-		useDocumentsListStore();
+	const {
+		singleItemSelectedForAction,
+		setSingleItemSelectedForAction,
+		hideMultiSelectForAction,
+	} = useDocumentsListStore();
 
 	const itemsToDelete: (UserDocument | UserFolder)[] =
 		singleItemSelectedForAction !== null
@@ -78,6 +82,10 @@ export const DeleteItemDialog: React.FC = () => {
 			}
 		}
 		clearSelectionAfterDelete();
+
+		if (getUserItemsInCurrentFolder().length === 0) {
+			hideMultiSelectForAction();
+		}
 	};
 
 	return (
