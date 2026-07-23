@@ -27,6 +27,10 @@ export interface Config {
 	frequencyPenalty: number;
 	featureFlagMcpParlaAllowed: boolean;
 	mcpParlaUrl?: string;
+	featureFlagMcpOpenDataAllowed: boolean;
+	featureFlagMcpDatawrapperAllowed: boolean;
+	datawrapperMcpUrl?: string;
+	openDataMcpUrl?: string;
 	braveSearchApiKey?: string;
 	braveSearchApiUrl?: string;
 	featureFlagWebSearchAllowed: boolean;
@@ -113,7 +117,22 @@ export function verifyConfig(): void {
 			"MCP_PARLA_URL must be defined when FEATURE_FLAG_MCP_PARLA_ALLOWED is true",
 		);
 	}
-
+	if (
+		process.env.FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true" &&
+		!process.env.OPEN_DATA_MCP_URL
+	) {
+		throw new Error(
+			"OPEN_DATA_MCP_URL must be defined when FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED is true",
+		);
+	}
+	if (
+		process.env.FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED === "true" &&
+		!process.env.DATAWRAPPER_MCP_URL
+	) {
+		throw new Error(
+			"DATAWRAPPER_MCP_URL must be defined when FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED is true",
+		);
+	}
 	if (
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
 		!(
@@ -171,6 +190,12 @@ export const config: Config = {
 	featureFlagMcpParlaAllowed:
 		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
 	mcpParlaUrl: process.env.MCP_PARLA_URL,
+	featureFlagMcpOpenDataAllowed:
+		process.env.FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true",
+	featureFlagMcpDatawrapperAllowed:
+		process.env.FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED === "true",
+	datawrapperMcpUrl: process.env.DATAWRAPPER_MCP_URL,
+	openDataMcpUrl: process.env.OPEN_DATA_MCP_URL,
 	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
 	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,
 	featureFlagWebSearchAllowed:

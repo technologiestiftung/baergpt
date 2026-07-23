@@ -8,11 +8,15 @@ const VALID_ACTIVE_TOOLS = new Set<ActiveTools>([
 	"ragSearchTool",
 	"webSearchTool",
 	"parlaMCPTools",
+	"datawrapperMCPTools",
+	"openDataMCPTools",
 ]);
 
 export const EXTERNAL_TOOLS = new Set<ActiveTools>([
 	"webSearchTool",
 	"parlaMCPTools",
+	"datawrapperMCPTools",
+	"openDataMCPTools",
 ]);
 
 function isValidActiveTool(value: unknown): value is ActiveTools {
@@ -28,6 +32,17 @@ function isValidActiveTool(value: unknown): value is ActiveTools {
 	}
 
 	if (value === "parlaMCPTools" && !config.featureFlagMcpParlaAllowed) {
+		return false;
+	}
+
+	if (value === "openDataMCPTools" && !config.featureFlagMcpOpenDataAllowed) {
+		return false;
+	}
+
+	if (
+		value === "datawrapperMCPTools" &&
+		!config.featureFlagMcpDatawrapperAllowed
+	) {
 		return false;
 	}
 
