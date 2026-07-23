@@ -160,7 +160,9 @@ test.describe("Chat", () => {
 		await addButton.click();
 
 		// Verify the document is added to the chat
-		await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
+		await expect(
+			page.getByTestId(`remove-item-${defaultDocumentName}`),
+		).toBeVisible();
 
 		// Fill in the chat question
 		await page
@@ -198,7 +200,9 @@ test.describe("Chat", () => {
 			await page.getByRole("option", { name: "In den Chat" }).click();
 
 			// Verify the document is added to the chat
-			await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${defaultDocumentName}`),
+			).toBeVisible();
 
 			// Create a new folder
 			await page
@@ -230,8 +234,13 @@ test.describe("Chat", () => {
 			).toBeVisible();
 			await page.getByRole("option", { name: "In den Chat" }).click();
 
-			// Verify the folder is added to the chat
-			await expect(page.getByText("2 Elemente in diesem Chat")).toBeVisible();
+			// Verify the folder and document are added to the chat
+			await expect(
+				page.getByTestId(`remove-item-${givenFolderName}`),
+			).toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${defaultDocumentName}`),
+			).toBeVisible();
 		},
 	);
 
@@ -283,7 +292,13 @@ test.describe("Chat", () => {
 				.click();
 
 			await expect(
-				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
+				page.getByTestId(`remove-item-${givenFolderName}`),
+			).toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${defaultDocumentName}`),
+			).toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${secondaryDocumentName}`),
 			).toBeVisible();
 
 			// Remove the folder from the chat
@@ -293,7 +308,13 @@ test.describe("Chat", () => {
 
 			// Verify the folder and documents are removed from the chat
 			await expect(
-				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
+				page.getByTestId(`remove-item-${givenFolderName}`),
+			).not.toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${defaultDocumentName}`),
+			).not.toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${secondaryDocumentName}`),
 			).not.toBeVisible();
 		},
 	);
