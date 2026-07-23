@@ -25,6 +25,13 @@ export const DeleteItemButton: React.FC = () => {
 			offset: { top: 34, right: -42 },
 		});
 	};
+
+	const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+		hideTooltip();
+		event.currentTarget.blur();
+		showDeleteDialog();
+	};
+
 	return (
 		<>
 			{itemsToDelete.length > 0 && (
@@ -33,10 +40,7 @@ export const DeleteItemButton: React.FC = () => {
 				hover:bg-hellblau-100 disabled:text-dunkelblau-40 disabled:hover:bg-hellblau-60
 				focus-visible:outline-default text-dunkelblau-100`}
 					aria-label={Content["deleteItemButton.ariaLabel"]}
-					onClick={() => {
-						showDeleteDialog();
-						hideTooltip();
-					}}
+					onClick={handleClick}
 					onMouseEnter={handleShowTooltip}
 					onMouseLeave={hideTooltip}
 					onFocus={handleShowTooltip}

@@ -12,6 +12,8 @@ import { useDocumentsListStore } from "../../../../../store/use-documents-list-s
 import { useIsMobile } from "../../../../../hooks/use-mobile";
 import { isPublicFolder } from "../utils/is-public-folder.ts";
 import { isPublicDocument } from "../utils/is-public-document.ts";
+import { isUserFolder } from "../utils/is-user-folder.ts";
+import { showRenameFolderDialog } from "../../../rename-folder/rename-folder-dialog.tsx";
 
 interface ItemDropdownProps {
 	item: Document | UserFolder | PublicFolder;
@@ -94,6 +96,16 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		selectPreviewDocument(item as Document);
 	};
 
+	const handleRenameItem = () => {
+		if (!isUserFolder(item)) {
+			return;
+		}
+
+		onClose();
+		setSingleItemSelectedForAction(item);
+		showRenameFolderDialog();
+	};
+
 	const toggleContentKey = isSelectedForChat ? "removeFromChat" : "addToChat";
 	const deleteItemKey = isDoc ? "deleteDocument" : "deleteFolder";
 
@@ -133,6 +145,22 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		),
 	};
 
+	const renameItem = {
+		action: handleRenameItem,
+		label: Content["documentsList.rename"],
+		ariaLabel: Content["documentsList.renameFolder"],
+		style: "text-dunkelblau-80",
+		icon: (
+			<img
+				src="/icons/edit-dark-blue-icon.svg"
+				alt={Content["documentsList.rename.imgAlt"]}
+				className="size-5"
+				width={20}
+				height={20}
+			/>
+		),
+	};
+
 	const deleteItem = {
 		action: () => handleDeleteItem(item),
 		label: Content["documentsList.delete"],
@@ -143,6 +171,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	const dropdownItems = [
 		addToChatItem,
+		...(isUserFolder(item) ? [renameItem] : []),
 		...(isDoc ? [viewItem] : []),
 		...(isReadOnly ? [] : [deleteItem]),
 	];

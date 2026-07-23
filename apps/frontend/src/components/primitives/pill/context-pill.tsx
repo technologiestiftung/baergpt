@@ -11,7 +11,7 @@ interface ContextPillProps {
 }
 
 const icons: Record<ChatTool, JSX.Element> = {
-	webSearch: <WebSearchIcon />,
+	webSearch: <WebSearchIcon variant="active" />,
 	parla: <ParlaIcon />,
 	openData: <OpenDataIcon />,
 };

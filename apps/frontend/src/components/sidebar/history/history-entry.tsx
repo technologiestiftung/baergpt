@@ -22,15 +22,15 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 
 	return (
 		<div
-			className={`relative flex flex-row items-center justify-between w-full h-11 md:h-8 text-sm leading-5 font-normal md:px-2 rounded-[3px] md:hover:bg-dunkelblau-90 ${
-				isSelected && "bg-dunkelblau-90"
-			}`}
+			className={`relative flex flex-row items-center justify-between 
+				w-full h-8 text-sm leading-5 font-normal pl-2 pr-1 md:px-2 rounded-[3px] 
+				md:hover:bg-dunkelblau-90 ${isSelected && "bg-dunkelblau-90"}`}
 			tabIndex={-1}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 		>
 			<button
-				className="md:max-w-[200px] md:w-[200px] w-full mr-3 md:mr-0 truncate rounded-[3px] text-start text-hellblau-50 focus:outline-default focus-visible:outline-default"
+				className="md:max-w-[200px] md:w-[200px] h-full w-full mr-3 md:mr-0 truncate rounded-[3px] text-start text-hellblau-50 focus:outline-default focus-visible:outline-default"
 				onClick={() => {
 					if (typeof window !== "undefined" && window.innerWidth < 1024) {
 						setOpenDrawer(null); // Only close the drawer on mobile

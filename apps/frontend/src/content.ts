@@ -1,10 +1,10 @@
 export const Content = {
 	/* -------------------- Header -------------------- */
 	"header.logo.alt": "BärGPT Logo",
-	"header.navigation.help.label": "Hilfecenter",
+	"header.navigation.help.label": "Hilfe und Tipps",
 	"header.navigation.help.mobileLabel": "Hilfe",
 	"header.navigation.profile": "Profil",
-	"header.navigation.help.ariaLabel": "Hilfecenter",
+	"header.navigation.help.ariaLabel": "Hilfe und Tipps",
 	"header.navigation.help.link": "https://hilfe.baergpt.berlin/",
 	"header.navigation.profile.ariaLabel": "Zur Profil-Seite",
 	"header.navigation.landingPage.login.label": "Anmelden",
@@ -597,7 +597,8 @@ export const Content = {
 		"Bei Fragen zu diesen Nutzungsbedingungen oder zu BärGPT wenden Sie sich bitte an:",
 	"termsOfUsePage.section12.sub4.p1.contact.email.label": "E-Mail: ",
 	"termsOfUsePage.section12.sub4.p1.contact.email": "support@baergpt.berlin",
-	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.label": "Hilfecenter: ",
+	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.label":
+		"Hilfe und Tipps: ",
 	"termsOfUsePage.section12.sub4.p1.contact.helpcenter.link":
 		"https://hilfe.baergpt.berlin",
 	//consent
@@ -678,6 +679,14 @@ export const Content = {
 	"chatHistory.fetchRetry.button.ariaLabel":
 		"Erneut versuchen Chatverlauf zu laden",
 	"chatHistory.allLoaded": "Alle Chats geladen",
+	"chatHistory.collapseToggle.collapseChats": "Chats zusammenklappen",
+	"chatHistory.collapseToggle.expandChats": "Chats aufklappen",
+	"chatHistory.groupBy.dropdown.ariaLabel":
+		"Dropdown-Menü zum Gruppieren von Chats",
+	"chatHistory.groupBy.dropdown.tooltip": "Gruppierung ändern",
+	"chatHistory.groupBy.dropdown.label": "Gruppieren nach..",
+	"chatHistory.groupBy.options.none": "Keine",
+	"chatHistory.groupBy.options.date": "Datum",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton
@@ -741,7 +750,6 @@ export const Content = {
 	"eyeStruckThroughIcon.imgAlt": "Ein durchgestrichenes Augen-Icon",
 
 	/* -------------------- DocumentsSection -------------------- */
-	"documentsSection.title": "Dateien",
 	"documentSection.publicFolder.label": "Bibliothek",
 	"documentSection.publicFolder.baseKnowledge.label": "Verwaltungswissen",
 	"documentsSection.mainFolder.label": "Meine Dateien",
@@ -771,6 +779,9 @@ export const Content = {
 	"documentsList.delete.imgAlt": "Mülleimer-Icon",
 	"documentsList.deleteDocument": "Dokument löschen",
 	"documentsList.deleteFolder": "Ordner löschen",
+	"documentsList.rename": "Umbenennen",
+	"documentsList.rename.imgAlt": "Stift-Icon",
+	"documentsList.renameFolder": "Ordner umbenennen",
 
 	"documentsList.menuIcon.imgAlt": "Menü-Icon",
 	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
@@ -779,7 +790,8 @@ export const Content = {
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
-	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
+	"fileUpload.clearUploads.ariaLabel": "Hochladen-Status schließen",
+	"chat.dropZone.label": "Dateien ablegen, um sie zum Chat hinzuzufügen.",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Hochladen läuft",
 	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
@@ -828,6 +840,10 @@ export const Content = {
 	"createFolderDialog.folderName": "Unbenannter Ordner",
 	"createFolderDialog.cancel": "Abbrechen",
 	"createFolderDialog.create": "Erstellen",
+	//RenameFolderDialog
+	"renameFolderDialog.title": "Ordner umbenennen",
+	"renameFolderDialog.cancel": "Abbrechen",
+	"renameFolderDialog.rename": "Umbenennen",
 	//DeleteHistoryEntryDialog
 	"deleteHistoryEntryDialog.title": "Chat löschen?",
 	"deleteHistoryEntryDialog.confirmation.p1": "Möchten Sie",
@@ -896,7 +912,7 @@ export const Content = {
 	"chat.options.toggleButton.tooltip.ariaLabel":
 		"Weitere Funktionen aktivieren",
 	"chat.options.selected.icon.imgAlt": "Ein blaues Häkchen-Icon",
-	"chat.options.li1.label": "Datei Hochladen",
+	"chat.options.li1.label": "Datei hochladen",
 	"chat.options.li1.ariaLabel": "Datei zum Hochladen auswählen",
 	"chat.options.li2.label": "Konnektoren",
 	"chat.options.li2.ariaLabel": "Konnektoren auswählen",
@@ -1261,7 +1277,7 @@ export const Content = {
 	"footer.support.link": "mailto:support@baergpt.berlin",
 	"footer.github": "GitHub",
 	"footer.github.link": "https://github.com/technologiestiftung/baergpt",
-	"footer.helpcenter": "Hilfecenter",
+	"footer.helpcenter": "Hilfe und Tipps",
 	"footer.helpcenter.link": "https://hilfe.baergpt.berlin/",
 	"footer.feedback": "Feedback geben",
 	"footer.feedback.link": "https://citylabberlin.typeform.com/to/GhoCHw0J",

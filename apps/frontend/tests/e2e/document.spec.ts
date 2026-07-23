@@ -129,10 +129,12 @@ test.describe("Documents", () => {
 			}
 
 			// Close the file upload dialog
-			await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+			const desktopPanel = page.locator("#desktop-documents-panel");
+			await desktopPanel
+				.getByRole("button", { name: "Hochladen-Status schließen" })
+				.click();
 
 			// Verify all 6 files appear in the document list
-			const desktopPanel = page.locator("#desktop-documents-panel");
 			for (const file of allFiles) {
 				await expect(
 					desktopPanel.getByRole("button", {
@@ -748,6 +750,129 @@ test.describe("Documents", () => {
 		},
 	);
 
+	testDesktopOnly("Rename a folder via dropdown", async ({ page }) => {
+		const givenFolderName = "test-folder-rename";
+		const expectedFolderName = "test-folder-renamed";
+
+		await page.goto("/");
+
+		// Create a new folder
+		await page
+			.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+			.click();
+		await page
+			.getByRole("textbox", { name: "Neuer Ordner" })
+			.fill(givenFolderName);
+		await page.getByRole("button", { name: "Erstellen", exact: true }).click();
+
+		// Verify the folder is created
+		const folderElement = page.getByRole("button", {
+			name: `Ordner-Icon ${givenFolderName}`,
+			exact: true,
+		});
+		await expect(folderElement).toBeVisible();
+
+		const menuButtonFolder = page
+			.getByRole("listitem")
+			.filter({ hasText: givenFolderName })
+			.getByLabel("Menü öffnen");
+		await menuButtonFolder.click();
+
+		// Expect rename button in dropdown to be visible and click it
+		const renameOption = page.getByRole("option", {
+			name: "Ordner umbenennen",
+		});
+		await expect(renameOption).toBeVisible();
+		await renameOption.click();
+
+		// Expect the dialog to be prefilled with the current folder name
+		const renameInput = page.getByRole("textbox", {
+			name: "Ordner umbenennen",
+		});
+		await expect(renameInput).toBeVisible();
+		await expect(renameInput).toHaveValue(givenFolderName);
+
+		// Rename the folder and confirm
+		await renameInput.fill(expectedFolderName);
+		await page.getByRole("button", { name: "Umbenennen", exact: true }).click();
+
+		// Expect the folder to be renamed
+		await expect(
+			page.getByRole("button", {
+				name: `Ordner-Icon ${expectedFolderName}`,
+				exact: true,
+			}),
+		).toBeVisible();
+		await expect(folderElement).not.toBeVisible();
+	});
+
+	testDesktopOnly(
+		"Renaming a folder to an empty name is rejected",
+		async ({ page }) => {
+			const givenFolderName = "test-folder-empty-rename";
+
+			await page.goto("/");
+
+			// Create a new folder
+			await page
+				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
+				.click();
+			await page
+				.getByRole("textbox", { name: "Neuer Ordner" })
+				.fill(givenFolderName);
+			await page
+				.getByRole("button", { name: "Erstellen", exact: true })
+				.click();
+
+			// Open the rename dialog via the dropdown
+			const menuButtonFolder = page
+				.getByRole("listitem")
+				.filter({ hasText: givenFolderName })
+				.getByLabel("Menü öffnen");
+			await menuButtonFolder.click();
+			await page.getByRole("option", { name: "Ordner umbenennen" }).click();
+
+			// Submit a name that only consists of whitespace
+			const renameInput = page.getByRole("textbox", {
+				name: "Ordner umbenennen",
+			});
+			await renameInput.fill("   ");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			// The dialog stays open so the name can be corrected
+			await expect(page.getByRole("dialog")).toBeVisible();
+
+			// The folder keeps its original name
+			await expect(
+				page.getByRole("button", { name: `Ordner-Icon ${givenFolderName}` }),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Documents cannot be renamed via dropdown",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const menuButtonDocument = page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen");
+			await menuButtonDocument.click();
+
+			await expect(
+				page.getByRole("option", { name: "Dokument anzeigen" }),
+			).toBeVisible();
+
+			// Renaming is only available for the user's own folders
+			await expect(
+				page.getByRole("option", { name: "Ordner umbenennen" }),
+			).not.toBeVisible();
+		},
+	);
+
 	testDesktopOnly("Drag & drop document to upload", async ({ page }) => {
 		await page.goto("/");
 
@@ -766,7 +891,7 @@ test.describe("Documents", () => {
 
 		// The panel should be open by default
 		const documentPanelHeading = page.getByRole("heading", {
-			name: "Dateien",
+			name: "Meine Dateien",
 			exact: true,
 		});
 		await expect(documentPanelHeading).toBeVisible();
