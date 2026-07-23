@@ -77,7 +77,7 @@ $OP terraform workspace select staging       # switch state
 $OP terraform apply -var-file=staging.tfvars
 ```
 
-New env: `terraform workspace new production`, add `production.tfvars` (`env = "production"`),
+New env: `$OP terraform workspace new production`, add `production.tfvars` (`env = "production"`),
 then apply. `variables.tf` validates that `env` is a known environment and that
 `target_source` is `supabase-<env>`, so a typo fails at plan time rather than applying
 rules that silently never fire.
@@ -114,3 +114,8 @@ rule, apply, confirm the mail lands, delete, re-apply.
   `HostOrCollectorDown` can stay silent while the Kong rule goes blind. `absent_over_time`
   would cover it, but not at current traffic, where a quiet hour looks identical to a
   broken pipeline.
+- **No state locking** — STACKIT doesn't honor S3 conditional-write locks
+  ([stackitcloud/terraform-provider-stackit#1534]), so `use_lockfile` is off. Don't run
+  concurrent applies against one workspace.
+
+[stackitcloud/terraform-provider-stackit#1534]: https://github.com/stackitcloud/terraform-provider-stackit/issues/1534

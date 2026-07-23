@@ -10,13 +10,15 @@ resource "stackit_observability_alertgroup" "host" {
 
   rules = [
     # Push pipeline has no `up` metric, so absence of an always-present series is the signal.
+    # absent_over_time's own [5m] window is the detection delay, so for = "0s" (a plain
+    # absent() only flips true after staleness, and for = "5m" would then double the delay).
     {
       alert = "HostOrCollectorDown"
       expression = trimspace(<<-EOT
-        absent(system_memory_usage_bytes{source="${var.target_source}"})
+        absent_over_time(system_memory_usage_bytes{source="${var.target_source}"}[5m])
       EOT
       )
-      for = "5m"
+      for = "0s"
       labels = {
         severity = "critical"
         source   = var.target_source
@@ -57,14 +59,14 @@ resource "stackit_observability_alertgroup" "host" {
           > ${var.mem_used_ratio_max}
       EOT
       )
-      for = "10m"
+      for = "5m"
       labels = {
         severity = "warning"
         source   = var.target_source
       }
       annotations = {
         summary     = "Memory above ${var.mem_used_ratio_max} on ${var.target_source}"
-        description = "Used memory on {{ $labels.host }} has been over {{ $value | humanizePercentage }} for 10m."
+        description = "Used memory on {{ $labels.host }} has been over {{ $value | humanizePercentage }} for 5m."
       }
     },
 

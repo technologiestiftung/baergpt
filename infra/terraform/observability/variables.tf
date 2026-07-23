@@ -68,6 +68,11 @@ variable "cpu_load_15m_max" {
   type        = number
   default     = 4
   description = "Fire when the 15m load average exceeds this. Set to ~= number of vCPUs."
+
+  validation {
+    condition     = var.cpu_load_15m_max > 0
+    error_message = "cpu_load_15m_max must be positive."
+  }
 }
 
 variable "kong_5xx_ratio_max" {
@@ -85,4 +90,9 @@ variable "kong_5xx_min_errors_5m" {
   type        = number
   default     = 5
   description = "Floor: the ratio must also be backed by this many 5xx in the 5m window."
+
+  validation {
+    condition     = floor(var.kong_5xx_min_errors_5m) == var.kong_5xx_min_errors_5m && var.kong_5xx_min_errors_5m >= 1
+    error_message = "kong_5xx_min_errors_5m is a whole-number count >= 1."
+  }
 }

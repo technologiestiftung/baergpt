@@ -1,6 +1,5 @@
 terraform {
-  # 1.11 floor: S3-native `use_lockfile` (STACKIT has no DynamoDB) is GA there, not in 1.10.
-  # The CLI version the team runs is pinned in .tool-versions.
+  # Exact CLI version is pinned in .tool-versions.
   required_version = "~> 1.11"
 
   required_providers {
@@ -21,7 +20,8 @@ terraform {
     skip_requesting_account_id  = true
     skip_region_validation      = true
     skip_metadata_api_check     = true
-    use_lockfile                = true # conditional-PUT locking, unverified on STACKIT
+    skip_s3_checksum            = true # STACKIT's S3 API rejects the AWS SDK checksum header
+    # No use_lockfile: STACKIT doesn't honor S3 conditional-write locks (stackitcloud/terraform-provider-stackit#1534).
     # Backend creds are AWS_ACCESS_KEY_ID/SECRET (op run), separate from the provider's SA key.
   }
 }

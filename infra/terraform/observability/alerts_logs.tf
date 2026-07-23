@@ -21,8 +21,8 @@ resource "stackit_observability_logalertgroup" "kong" {
           / sum(rate({service_name="${var.target_source}"} |~ "\" \\d\\d\\d " [5m]))
           > ${var.kong_5xx_ratio_max}
         and
-        sum(rate({service_name="${var.target_source}"} |~ "\" 5\\d\\d " [5m]))
-          > ${format("%.5f", var.kong_5xx_min_errors_5m / 300)}
+        sum(count_over_time({service_name="${var.target_source}"} |~ "\" 5\\d\\d " [5m]))
+          >= ${var.kong_5xx_min_errors_5m}
       EOT
       )
       for = "2m"
