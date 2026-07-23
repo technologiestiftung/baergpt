@@ -1,0 +1,24 @@
+# Build context for the backend image is the repo ROOT (see apps/backend/Dockerfile), so this is the .dockerignore Docker applies to that build. Keep the context small and secret-free.
+
+# Dependencies and build outputs — reinstalled/rebuilt inside the image.
+**/node_modules
+**/dist
+**/.turbo
+**/.next
+
+# Test and coverage artifacts.
+**/coverage
+**/playwright-report
+**/test-results
+
+# VCS and CI metadata.
+.git
+.github
+
+# Never let environment secrets into an image.
+**/.env
+**/.env.*
+
+# Local Docker artifacts.
+**/Dockerfile
+**/.dockerignore

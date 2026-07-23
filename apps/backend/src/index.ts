@@ -32,6 +32,9 @@ app.use(
 	}),
 );
 
+// Unauthenticated liveness probe for Docker/CF health checks
+app.get("/health", (c) => c.json({ status: "ok" }));
+
 app.use("*", basicAuth);
 app.use("*", sentryTracing);
 

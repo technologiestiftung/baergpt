@@ -1,0 +1,42 @@
+# Local run of the built backend image for container validation
+#
+# Usage:
+#   supabase start            # start Supabase via the CLI first
+#   docker compose up --build # then the backend (reachable at http://localhost:3000)
+#
+# Note: this runs the production image (no hot reload). For backend
+# coding use `turbo dev`; use this to validate the container itself.
+
+services:
+  backend:
+    container_name: baergpt-backend
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      # Bind to loopback only — keep the dev backend (and its open /health) off the LAN.
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./apps/backend/.env:/app/apps/backend/.env:ro
+    # Required on Linux: let the container reach host services (the Supabase CLI) via host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Override host-specific URLs only when running via compose, so apps/backend/.env
+    # can keep localhost for `turbo dev`. A real env var beats the mounted .env
+    environment:
+      SUPABASE_URL: http://host.docker.internal:54321
+    # Liveness probe. Using fetch since the slim image ships no curl/wget.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    mem_limit: 2g
+    cpus: 1
