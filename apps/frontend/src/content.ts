@@ -790,7 +790,8 @@ export const Content = {
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
-	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
+	"fileUpload.clearUploads.ariaLabel": "Hochladen-Status schließen",
+	"chat.dropZone.label": "Dateien ablegen, um sie zum Chat hinzuzufügen.",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Hochladen läuft",
 	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
