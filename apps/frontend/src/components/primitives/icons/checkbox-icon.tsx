@@ -1,7 +1,11 @@
 import React from "react";
 import Content from "../../../content";
 
-export type CheckboxState = "checked" | "unchecked" | "indeterminate";
+export type CheckboxState =
+	| "checked"
+	| "unchecked"
+	| "indeterminate"
+	| "disabled";
 
 export const CheckboxIcon: React.FC<{ state: CheckboxState }> = ({ state }) => {
 	const uncheckedHoverClass =
@@ -41,6 +45,14 @@ export const CheckboxIcon: React.FC<{ state: CheckboxState }> = ({ state }) => {
 				width={20}
 				height={20}
 				className={`${state === "indeterminate" ? "block group-hover/checkbox:hidden" : "hidden"}`}
+			/>
+
+			<img
+				src="/icons/check-checked-icon-gray.svg"
+				alt={Content["checkboxIcon.indeterminate.imgAlt"]}
+				width={20}
+				height={20}
+				className={`${state === "disabled" ? "block" : "hidden"}`}
 			/>
 		</>
 	);
