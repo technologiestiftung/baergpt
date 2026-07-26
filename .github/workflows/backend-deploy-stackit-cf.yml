@@ -1,0 +1,119 @@
+name: Backend deploy to STACKIT Cloud Foundry
+
+on:
+  # Post-merge only: a push to staging/main only happens once a PR is actually
+  # merged (i.e. past review + branch protection), unlike a pull_request-triggered
+  # image build, which fires for any open PR before it's reviewed or merged.
+  # Gating the deployment on push (rather than on the PR build's workflow_run) means
+  # an unreviewed/unmerged PR can never get its image auto-deployed.
+  push:
+    branches: [staging, main]
+    paths:
+      - "apps/backend/**"
+      - "libs/db-schema/**"
+      - "libs/typescript-config/**"
+      - "turbo.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".dockerignore"
+      - "apps/backend/manifest.yml"
+      - ".github/workflows/backend-deploy-stackit-cf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/baergpt-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
+
+      - name: Setup environment ⚙️
+        uses: ./.github/actions/setup
+        with:
+          install-1password: "true"
+
+      # Same formula as backend-image-build-and-push.yml, so it resolves to the
+      # tag that workflow just built and pushed for this exact commit.
+      - name: Compute image tag 🏷️
+        id: tag
+        run: |
+          echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set 1Password item ID based on branch 🌿
+        id: env-config
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "env_item_id=${{ secrets.OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "env_item_id=${{ secrets.OP_CF_DEPLOY_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Expects a 1Password item with CF_API_ENDPOINT, CF_USERNAME, CF_PASSWORD,
+      # CF_ORG, CF_SPACE fields (one item per environment).
+      # TODO: create the OP_CF_DEPLOY_STAGING_ENV_ITEM_ID / OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID
+      # secrets and the corresponding 1Password items before enabling this workflow.
+      - name: Fetch STACKIT Cloud Foundry credentials from 1Password 🔑
+        run: |
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > cf.env
+          set -a
+          source cf.env
+          set +a
+          rm cf.env
+          {
+            echo "CF_API_ENDPOINT=$CF_API_ENDPOINT"
+            echo "CF_USERNAME=$CF_USERNAME"
+            echo "CF_ORG=$CF_ORG"
+            echo "CF_SPACE=$CF_SPACE"
+          } >> "$GITHUB_ENV"
+          echo "CF_PASSWORD=$CF_PASSWORD" >> "$GITHUB_ENV"
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      # This workflow doesn't build images itself — it deploys whatever
+      # backend-image-build-and-push.yml already pushed for this exact content
+      # (built and reviewed as part of the merged PR). Fail fast with a clear
+      # message if that image is missing instead of silently deploying nothing.
+      - name: Verify image exists in GHCR 🔍
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          if ! docker manifest inspect "${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" >/dev/null 2>&1; then
+            echo "::error::Image ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }} not found in GHCR." \
+              "Trigger 'Backend image build and push to registry' (workflow_dispatch) for this commit first."
+            exit 1
+          fi
+
+      - name: Install cf CLI ⚙️
+        run: |
+          curl -sL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" \
+            | tar -zx
+          sudo mv cf8 /usr/local/bin/cf
+
+      - name: Target STACKIT Cloud Foundry 🎯
+        run: |
+          cf api "$CF_API_ENDPOINT"
+          cf auth "$CF_USERNAME" "$CF_PASSWORD"
+          cf target -o "$CF_ORG" -s "$CF_SPACE"
+
+      - name: Push image to Cloud Foundry 🚀
+        working-directory: apps/backend
+        env:
+          CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          vars_file="vars-staging.yml"
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            vars_file="vars-production.yml"
+          fi
+          cf push \
+            -f manifest.yml \
+            --vars-file "$vars_file" \
+            --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
+            --docker-username "${{ github.actor }}"

@@ -1,0 +1,19 @@
+# Cloud Foundry manifest for the BärGPT backend on STACKIT Cloud Foundry.
+# The image is passed at push time via `cf push --var image=...` (so this file
+# never needs editing to bump the deployed version); instances/memory come
+# from vars-staging.yml / vars-production.yml via --vars-file, so the two
+# environments can scale independently — see backend-deploy-stackit-cf.yml.
+applications:
+  - name: baergpt-backend # TODO: confirm/replace with the actual STACKIT CF app name
+    docker:
+      image: ((image))
+    instances: ((instances))
+    memory: ((memory))
+    disk_quota: 1G
+    health-check-type: http
+    health-check-http-endpoint: /health
+    # routes: # TODO: uncomment and set once the STACKIT CF domain/route is known
+    #   - route: baergpt-backend.<space>.<stackit-cf-domain>
+    # env vars (API keys, DB URL, etc.) are set on the app directly in STACKIT CF
+    # (e.g. via `cf set-env` or the STACKIT console), not here, so the same image
+    # runs across environments — see apps/backend/Dockerfile.
