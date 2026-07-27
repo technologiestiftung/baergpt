@@ -902,6 +902,7 @@ export const Content = {
 	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
 	"chat.textarea.placeholder.parla": "Parla Berlin durchsuchen",
 	"chat.textarea.placeholder.openData": "Open Data Portal durchsuchen",
+	"chat.textarea.placeholder.datawrapper": "Datawrapper nutzen",
 	"chat.textarea.placeholder.multipleSources": "Externe Quellen durchsuchen",
 	"chat.sendButton.ariaLabel": "Nachricht senden",
 	"chat.scrollToBottomButton.ariaLabel": "Zum Ende des Chats scrollen",
@@ -935,6 +936,10 @@ export const Content = {
 	"mcp.options.dialog.option2.description":
 		"Datenbestände aus dem Berliner Datenportal",
 	"mcp.options.dialog.option2.ariaLabel": "Berlin Open Data auswählen",
+	"mcp.options.dialog.option3.label": "Datawrapper",
+	"mcp.options.dialog.option3.description":
+		"Datenvisualisierungen erstellen und veröffentlichen",
+	"mcp.options.dialog.option3.ariaLabel": "Datawrapper auswählen",
 
 	// Chat llm model dropdown
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
@@ -986,6 +991,9 @@ export const Content = {
 	"chat.contextPill.openData.label": "Open Data",
 	"chat.contextPill.openData.ariaLabel": "Open Data entfernen",
 	"chat.contextPill.openData.icon.alt": "Berlin Open Data Logo",
+	"chat.contextPill.datawrapper.label": "Datawrapper",
+	"chat.contextPill.datawrapper.ariaLabel": "Datawrapper entfernen",
+	"chat.contextPill.datawrapper.icon.alt": "Datawrapper Logo",
 
 	"chat.externalTools.warningBanner.label":
 		"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
