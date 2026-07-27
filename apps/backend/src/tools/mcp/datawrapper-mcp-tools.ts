@@ -37,6 +37,7 @@ export const datawrapperMCPTools =
 						inputSchema: z.object({
 							api_key: z
 								.string()
+								.min(1, "Datawrapper API key is required")
 								.describe(
 									"The user's Datawrapper API token. This server is stateless and requires it on every request, so ask the user for it in chat if it hasn't been provided yet.",
 								),
@@ -67,18 +68,18 @@ export const datawrapperMCPTools =
 									"table",
 									"map",
 								])
-								.describe("Type of visualization to create"),
+								.describe("Type of visualization to create. Scatter/range/arrow require 2+ numeric columns. Map requires map_type."),
 							variant: z
 								.enum(["basic", "stacked", "grouped", "split"])
 								.optional()
 								.describe(
-									"Chart variant. Bar: basic/stacked/split. Column: basic/grouped/stacked.",
+									"Chart variant. For bar: basic, stacked, split. For column: basic, grouped, stacked.",
 								),
 							map_type: z
 								.enum(["d3-maps-symbols", "d3-maps-choropleth"])
 								.optional()
 								.describe(
-									"Required when chart_type is map. Symbols for GeoJSON points, choropleth for regions.",
+									"Required when chart_type is 'map'. 'd3-maps-symbols' for point locations (GeoJSON), 'd3-maps-choropleth' for region comparisons.",
 								),
 							basemap: z
 								.enum([
@@ -102,38 +103,57 @@ export const datawrapperMCPTools =
 							base_color: z
 								.string()
 								.optional()
-								.describe('Optional base color for the chart, e.g. "#E63946".'),
+								.describe('Base color for the chart, e.g. "#E63946".'),
 							thick: z
 								.boolean()
 								.optional()
 								.describe(
-									"Optional Datawrapper thickness toggle for supported chart types.",
+									"Thickness toggle for supported chart types.",
 								),
 							value_label_format: z
 								.string()
 								.optional()
 								.describe(
-									'Optional Datawrapper number format for value labels, e.g. "0,0.[00]" or "0.0%".',
+									'Number format for value labels, e.g. "0,0.[00]" or "0.0%".',
 								),
 							visualize_overrides: z
 								.record(z.string(), z.unknown())
 								.optional()
 								.describe(
-									"Optional advanced Datawrapper visualize metadata overrides. Use for styling beyond base_color.",
+									"Advanced Datawrapper visualize metadata overrides. Use for styling beyond base_color.",
 								),
-							title: z.string().optional().describe("Optional chart title"),
+							title: z.string().optional().describe("Chart title"),
 							description: z
 								.string()
 								.optional()
-								.describe("Optional chart description/byline"),
-							source_dataset_id: z
+								.describe("Chart description/byline"),
+								source_dataset_id: z
 								.string()
 								.optional()
-								.describe("Optional Berlin dataset ID for tracking"),
+								.describe("Berlin dataset ID for tracking"),
+						}).superRefine((data, ctx) => {
+							if (data.chart_type === "map" && !data.map_type) {
+								ctx.addIssue({
+									code: "custom",
+									message: "map_type is required when chart_type is 'map'",
+									path: ["map_type"],
+								});
+							}
 						}),
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
-								return await mcpTool.execute(params, options);
+								console.log(`[Datawrapper MCP] Executing create_visualization with params:`, {
+									...params,
+									api_key: params.api_key ? "***REDACTED***" : undefined
+								});
+								try {
+									const result = await mcpTool.execute(params, options);
+									console.log(`[Datawrapper MCP] create_visualization result:`, result);
+									return result;
+								} catch (e) {
+									console.error(`[Datawrapper MCP] create_visualization error:`, e);
+									throw e;
+								}
 							}
 							throw new Error("MCP tool execute function not found");
 						},
@@ -145,11 +165,13 @@ export const datawrapperMCPTools =
 						inputSchema: z.object({
 							api_key: z
 								.string()
+								.min(1, "Datawrapper API key is required")
 								.describe(
 									"The user's Datawrapper API token. This server is stateless and requires it on every request, so ask the user for it in chat if it hasn't been provided yet.",
 								),
 							chart_id: z
 								.string()
+								.min(1, "Chart ID is required")
 								.describe("The chart ID returned from create_visualization"),
 						}),
 						execute: async (params, options) => {
