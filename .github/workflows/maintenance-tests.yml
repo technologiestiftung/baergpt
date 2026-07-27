@@ -46,17 +46,6 @@ jobs:
           cd apps/maintenance-mode
           npm run test:e2e -- --project="${{ matrix.browser }}"
 
-      - name: Capture backend logs after maintenance mode E2E test after failure 📋
-        if: failure()
-        run: |
-          if [ -f apps/backend/backend.log ]; then
-            echo "=== Backend server logs ==="
-            cat apps/backend/backend.log
-            echo "=== End backend logs ==="
-          else
-            echo "Backend log file not found"
-          fi
-
       - name: Upload maintenance mode E2E test results ⬆️
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
         if: ${{ failure() && !cancelled() }}
