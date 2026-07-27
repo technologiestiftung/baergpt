@@ -32,7 +32,7 @@ export const History: React.FC = () => {
 		<div
 			className={`flex flex-col w-full min-h-0 ${errorMessage ? "h-full" : ""}`}
 		>
-			<div className="flex justify-between items-center md:px-2 px-5">
+			<div className="flex justify-between items-center md:pl-2 md:pr-[18px] pb-2.5 px-5">
 				<h2 className="text-sm font-semibold text-hellblau-50  whitespace-nowrap">
 					<button
 						className={
@@ -45,7 +45,7 @@ export const History: React.FC = () => {
 						{Content["chatHistory.title"]}
 
 						<ChevronIcon
-							color={"hellblau-30"}
+							color={"dunkelblau-50"}
 							direction={isHistoryCollapsed ? "up" : "down"}
 						/>
 					</button>
@@ -56,7 +56,7 @@ export const History: React.FC = () => {
 			{!isHistoryCollapsed && (
 				<div
 					ref={historyContainerRef}
-					className="flex flex-col grow min-h-0 overflow-y-auto pl-3 pr-6 md:px-0 md:pr-4 history-scrollbar"
+					className="flex flex-col grow min-h-0 overflow-y-auto pl-3 pr-4 md:pl-0 md:pr-2.5 history-scrollbar"
 				>
 					<div className="w-full h-full">
 						<div
