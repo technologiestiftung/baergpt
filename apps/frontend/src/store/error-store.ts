@@ -24,7 +24,7 @@ const errorMessages: { [key: string]: string } = {
 	duplicate_file_upload: "Diese Datei wurde bereits hochgeladen.",
 	file_size_limit_exceeded: "Ihre Datei ist zu groß, das Limit beträgt 8 MB",
 	unsupported_filetype:
-		"Datei-Upload unterstützt nur die folgenden Dateitypen: .pdf, .docx und .xlsx",
+		"Datei-Upload unterstützt nur die folgenden Dateitypen: .pdf, .docx, .xlsx und .csv",
 	text_extraction_failed:
 		"Unerwarteter Fehler beim Extrahieren des Dokumentinhalts.",
 	inappropriate_content: "Die Nachricht enthält unangemessene Inhalte.",

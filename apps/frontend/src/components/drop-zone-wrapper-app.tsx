@@ -39,6 +39,7 @@ export function DropZoneWrapperApp({ children }: { children: ReactNode }) {
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
 				[],
 			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [],
+			"text/csv": [],
 		},
 	});
 

@@ -21,9 +21,7 @@ export class DocumentExtractionService {
 		const checksum = getHash(fileBytes);
 		const fileSize = fileBytes.byteLength;
 
-		if (
-			fileName.toLowerCase().endsWith(".docx")
-		) {
+		if (fileName.toLowerCase().endsWith(".docx")) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
 				createBufferView(fileBytes),
@@ -44,7 +42,10 @@ export class DocumentExtractionService {
 			};
 		}
 
-		if (fileName.toLowerCase().endsWith(".xlsx")) {
+		if (
+			fileName.toLowerCase().endsWith(".xlsx") ||
+			fileName.toLowerCase().endsWith(".csv")
+		) {
 			const excelExtractor = new ExcelExtractionService();
 			const parsedExcelPages =
 				await excelExtractor.extractExcelDocument(fileBytes);
@@ -102,12 +103,8 @@ export class DocumentExtractionService {
 
 export class WordDocumentExtractionService {
 	async extractWordDocument(wordDoc: Buffer): Promise<string> {
-		try {
-			const result = await mammoth.extractRawText({ buffer: wordDoc });
-			return result.value.trim();
-		} catch (mammothError) {
-			captureError(mammothError);
-		}
+		const result = await mammoth.extractRawText({ buffer: wordDoc });
+		return result.value.trim();
 	}
 
 	async convertWordToPdf(args: {
