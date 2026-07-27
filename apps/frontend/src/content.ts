@@ -896,7 +896,8 @@ export const Content = {
 	"chat.parla.infoText.title": "Parla wurde automatisch deaktiviert.",
 	"chat.parla.infoText.p1":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Parla deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Parla wieder zu aktivieren, klicken Sie auf +.",
-	"chat.datawrapper.infoText.title": "Datawrapper wurde automatisch deaktiviert.",
+	"chat.datawrapper.infoText.title":
+		"Datawrapper wurde automatisch deaktiviert.",
 	"chat.datawrapper.infoText.p1":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Datawrapper deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Datawrapper wieder zu aktivieren, klicken Sie auf +.",
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
