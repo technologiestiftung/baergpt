@@ -8,8 +8,8 @@ set -euo pipefail
 # Captures auth/storage customizations (RLS policies + triggers) from the live catalog.
 #
 # Usage:
-#   backup_env.sh configs/staging.env
-#   backup_env.sh configs/staging.env 2026-01-26_1500
+#   backup_env.sh configs/.staging.env
+#   backup_env.sh configs/.staging.env 2026-01-26_1500
 # =============================================================================
 
 CONFIG_FILE="${1:?Usage: backup_env.sh /path/to/envfile [TIMESTAMP]}"

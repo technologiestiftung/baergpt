@@ -23,70 +23,70 @@ jobs:
       - name: Checkout repository ⬇️
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
 
-      - name: Install tools via asdf ⚙️
-        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1, pinned to commit sha to avoid sha-hulud like attacks
-
-      - name: Setup SSH key 🔑
-        env:
-          SSH_PRIVATE_KEY_MIGRATIONS: ${{ secrets.SSH_PRIVATE_KEY_MIGRATIONS }}
-          SSH_HOST_PUBLIC_KEY: ${{ secrets.SSH_HOST_PUBLIC_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY_MIGRATIONS" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          echo "$SSH_HOST_PUBLIC_KEY" >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-      - name: Get database container IP 🔍
-        run: |
-          echo "Getting IP address of supabase-db container..."
-          DB_IP=$(ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
-            'sudo $HOME/bin/docker-inspect-db-ip')
-
-          if [ -z "$DB_IP" ]; then
-            echo "Failed to get database container IP"
-            exit 1
-          fi
-
-          echo "DB_IP=$DB_IP" >> $GITHUB_ENV
-
-      - name: Create SSH tunnel 🚇
-        run: |
-          ssh -f -N -T \
-            -p $SSH_PORT \
-            -L 5439:$DB_IP:5432 \
-            -o ExitOnForwardFailure=yes \
-            -o StrictHostKeyChecking=yes \
-            $SSH_USER@$SSH_HOST
-          # Wait and verify tunnel with longer timeout
-          echo "Waiting for SSH tunnel to establish..."
-          for i in {1..30}; do
-            if ss -tln | grep -q :5439; then
-              echo "SSH tunnel established successfully on port 5439 (attempt $i)"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "SSH tunnel failed to establish after 30 seconds"
-              exit 1
-            fi
-            sleep 1
-          done
-
-      - name: Apply Supabase migrations 🔄
-        working-directory: apps/backend/supabase
-        env:
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: |
-          TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres?sslmode=require"
-          supabase db push --include-all --db-url "$TUNNEL_URL"
-
-      - name: Restart the auth service to load latest email templates 🔄
-        run: |
-          ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
-            'sudo -n $HOME/bin/docker-restart-auth'
-
-      - name: Close SSH tunnel 🔒
-        if: always()
-        run: |
-          pkill -f "ssh.*$SSH_USER@$SSH_HOST" || true
-          rm -f ~/.ssh/id_rsa ~/.ssh/known_hosts
+#      - name: Install tools via asdf ⚙️
+#        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1, pinned to commit sha to avoid sha-hulud like attacks
+#
+#      - name: Setup SSH key 🔑
+#        env:
+#          SSH_PRIVATE_KEY_MIGRATIONS: ${{ secrets.SSH_PRIVATE_KEY_MIGRATIONS }}
+#          SSH_HOST_PUBLIC_KEY: ${{ secrets.SSH_HOST_PUBLIC_KEY }}
+#        run: |
+#          mkdir -p ~/.ssh
+#          echo "$SSH_PRIVATE_KEY_MIGRATIONS" > ~/.ssh/id_rsa
+#          chmod 600 ~/.ssh/id_rsa
+#          echo "$SSH_HOST_PUBLIC_KEY" >> ~/.ssh/known_hosts
+#          chmod 644 ~/.ssh/known_hosts
+#
+#      - name: Get database container IP 🔍
+#        run: |
+#          echo "Getting IP address of supabase-db container..."
+#          DB_IP=$(ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
+#            'sudo $HOME/bin/docker-inspect-db-ip')
+#
+#          if [ -z "$DB_IP" ]; then
+#            echo "Failed to get database container IP"
+#            exit 1
+#          fi
+#
+#          echo "DB_IP=$DB_IP" >> $GITHUB_ENV
+#
+#      - name: Create SSH tunnel 🚇
+#        run: |
+#          ssh -f -N -T \
+#            -p $SSH_PORT \
+#            -L 5439:$DB_IP:5432 \
+#            -o ExitOnForwardFailure=yes \
+#            -o StrictHostKeyChecking=yes \
+#            $SSH_USER@$SSH_HOST
+#          # Wait and verify tunnel with longer timeout
+#          echo "Waiting for SSH tunnel to establish..."
+#          for i in {1..30}; do
+#            if ss -tln | grep -q :5439; then
+#              echo "SSH tunnel established successfully on port 5439 (attempt $i)"
+#              break
+#            fi
+#            if [ $i -eq 30 ]; then
+#              echo "SSH tunnel failed to establish after 30 seconds"
+#              exit 1
+#            fi
+#            sleep 1
+#          done
+#
+#      - name: Apply Supabase migrations 🔄
+#        working-directory: apps/backend/supabase
+#        env:
+#          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+#        run: |
+#          TUNNEL_URL="postgresql://postgres:$DB_PASSWORD@127.0.0.1:5439/postgres?sslmode=require"
+#          supabase db push --include-all --db-url "$TUNNEL_URL"
+#
+#      - name: Restart the auth service to load latest email templates 🔄
+#        run: |
+#          ssh -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_USER@$SSH_HOST \
+#            'sudo -n $HOME/bin/docker-restart-auth'
+#
+#      - name: Close SSH tunnel 🔒
+#        if: always()
+#        run: |
+#          pkill -f "ssh.*$SSH_USER@$SSH_HOST" || true
+#          rm -f ~/.ssh/id_rsa ~/.ssh/known_hosts

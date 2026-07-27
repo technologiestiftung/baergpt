@@ -17,83 +17,83 @@ jobs:
       - name: Checkout code ⬇️
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
 
-      - name: Setup environment ⚙️
-        uses: ./.github/actions/setup
-        with:
-          install-1password: "true"
-
-      - name: Set environment item ID based on branch 🌿
-        id: env-config
-        run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
-          else
-            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Fetch backend .env from 1Password ⬇️
-        run: |
-          cd apps/backend
-          echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > .env
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Assess orphaned s3 files 🔬
-        id: check
-        working-directory: apps/backend
-        run: |
-          output=$(npm run s3:assess-orphans 2>&1)
-          echo "$output"
-          if echo "$output" | grep -q "No orphan(s) found."; then
-            echo "has_orphans=false" >> $GITHUB_OUTPUT
-          else
-            echo "has_orphans=true" >> $GITHUB_OUTPUT
-          fi
-
-  manual-approve:
-    name: Waiting for Approval to Cleanup
-    runs-on: ubuntu-latest
-    needs: assess-orphans
-    if: needs.assess-orphans.outputs.has_orphans == 'true'
-    environment: cleanup-approval
-    steps:
-      - name: Approval granted
-        run: |
-          echo "Approval received to cleanup orphaned files for target: s3. Proceeding with cleanup..."
-
-  cleanup-orphans:
-    name: Cleanup Orphaned Files
-    runs-on: ubuntu-latest
-    needs: [assess-orphans, manual-approve]
-    if: needs.assess-orphans.outputs.has_orphans == 'true'
-
-    steps:
-      - name: Checkout code ⬇️
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
-
-      - name: Setup environment ⚙️
-        uses: ./.github/actions/setup
-        with:
-          install-1password: "true"
-
-      - name: Set environment item ID based on branch 🌿
-        id: env-config
-        run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
-          else
-            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Fetch backend .env from 1Password ⬇️
-        run: |
-          cd apps/backend
-          echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > .env
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Cleanup orphaned s3 files 🗑️
-        working-directory: apps/backend
-        run: npm run s3:cleanup-orphans
+#      - name: Setup environment ⚙️
+#        uses: ./.github/actions/setup
+#        with:
+#          install-1password: "true"
+#
+#      - name: Set environment item ID based on branch 🌿
+#        id: env-config
+#        run: |
+#          if [[ "${{ github.ref_name }}" == "main" ]]; then
+#            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
+#          else
+#            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
+#          fi
+#
+#      - name: Fetch backend .env from 1Password ⬇️
+#        run: |
+#          cd apps/backend
+#          echo "Fetching backend .env from 1Password..."
+#          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > .env
+#        env:
+#          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+#
+#      - name: Assess orphaned s3 files 🔬
+#        id: check
+#        working-directory: apps/backend
+#        run: |
+#          output=$(npm run s3:assess-orphans 2>&1)
+#          echo "$output"
+#          if echo "$output" | grep -q "No orphan(s) found."; then
+#            echo "has_orphans=false" >> $GITHUB_OUTPUT
+#          else
+#            echo "has_orphans=true" >> $GITHUB_OUTPUT
+#          fi
+#
+#  manual-approve:
+#    name: Waiting for Approval to Cleanup
+#    runs-on: ubuntu-latest
+#    needs: assess-orphans
+#    if: needs.assess-orphans.outputs.has_orphans == 'true'
+#    environment: cleanup-approval
+#    steps:
+#      - name: Approval granted
+#        run: |
+#          echo "Approval received to cleanup orphaned files for target: s3. Proceeding with cleanup..."
+#
+#  cleanup-orphans:
+#    name: Cleanup Orphaned Files
+#    runs-on: ubuntu-latest
+#    needs: [assess-orphans, manual-approve]
+#    if: needs.assess-orphans.outputs.has_orphans == 'true'
+#
+#    steps:
+#      - name: Checkout code ⬇️
+#        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
+#
+#      - name: Setup environment ⚙️
+#        uses: ./.github/actions/setup
+#        with:
+#          install-1password: "true"
+#
+#      - name: Set environment item ID based on branch 🌿
+#        id: env-config
+#        run: |
+#          if [[ "${{ github.ref_name }}" == "main" ]]; then
+#            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
+#          else
+#            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
+#          fi
+#
+#      - name: Fetch backend .env from 1Password ⬇️
+#        run: |
+#          cd apps/backend
+#          echo "Fetching backend .env from 1Password..."
+#          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > .env
+#        env:
+#          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+#
+#      - name: Cleanup orphaned s3 files 🗑️
+#        working-directory: apps/backend
+#        run: npm run s3:cleanup-orphans

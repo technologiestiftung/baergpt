@@ -6,7 +6,7 @@ on:
   # image build, which fires for any open PR before it's reviewed or merged.
   # Gating the deployment on push (rather than on the PR build's workflow_run) means
   # an unreviewed/unmerged PR can never get its image auto-deployed.
-  push:
+  pull_request:
     branches: [staging, main]
     paths:
       - "apps/backend/**"
@@ -26,6 +26,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/baergpt-backend
+  APP_NAME: baergpt-backend # keep in sync with apps/backend/manifest.yml
 
 jobs:
   deploy:
@@ -48,13 +49,15 @@ jobs:
         run: |
           echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
 
-      - name: Set 1Password item ID based on branch 🌿
+      - name: Set 1Password item IDs based on branch 🌿
         id: env-config
         run: |
           if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "env_item_id=${{ secrets.OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "app_item_id=${{ secrets.OP_BACKEND_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
           else
-            echo "env_item_id=${{ secrets.OP_CF_DEPLOY_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "app_item_id=${{ secrets.OP_BACKEND_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
           fi
 
       # Expects a 1Password item with CF_API_ENDPOINT, CF_USERNAME, CF_PASSWORD,
@@ -63,7 +66,7 @@ jobs:
       # secrets and the corresponding 1Password items before enabling this workflow.
       - name: Fetch STACKIT Cloud Foundry credentials from 1Password 🔑
         run: |
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > cf.env
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.cf_item_id }}/notesPlain" > cf.env
           set -a
           source cf.env
           set +a
@@ -103,6 +106,9 @@ jobs:
           cf auth "$CF_USERNAME" "$CF_PASSWORD"
           cf target -o "$CF_ORG" -s "$CF_SPACE"
 
+      # --no-start: stage the new droplet without starting it, so the app boots
+      # for the first time only once the correct env vars are already set below
+      # (otherwise it'd start once with stale/missing env, then restart).
       - name: Push image to Cloud Foundry 🚀
         working-directory: apps/backend
         env:
@@ -116,4 +122,29 @@ jobs:
             -f manifest.yml \
             --vars-file "$vars_file" \
             --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
-            --docker-username "${{ github.actor }}"
+            --docker-username "${{ github.actor }}" \
+            --no-start
+
+      # Expects a 1Password item holding the backend's runtime env vars
+      # (API keys, DB URL, etc.) as a plain KEY=VALUE-per-line document —
+      # the same item used to generate apps/backend/.env for tests, or a
+      # dedicated one. Every deploy re-syncs the app's env vars to match
+      # 1Password exactly, so it's the single source of truth.
+      # TODO: create the OP_BACKEND_STAGING_ENV_ITEM_ID / OP_BACKEND_PRODUCTION_ENV_ITEM_ID
+      # secrets and the corresponding 1Password items before enabling this workflow.
+      - name: Sync backend env vars from 1Password 🔄
+        run: |
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.app_item_id }}/notesPlain" > backend.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            cf set-env "${{ env.APP_NAME }}" "$key" "$value" >/dev/null
+          done < backend.env
+          rm backend.env
+          cf restage "${{ env.APP_NAME }}"
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Start app 🟢
+        run: cf start "${{ env.APP_NAME }}"

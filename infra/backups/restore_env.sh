@@ -8,8 +8,8 @@ set -euo pipefail
 # Automatically applies auth/storage customizations captured during backup.
 #
 # Usage:
-#   restore_env.sh configs/staging.env 2026-01-26_1500
-#   restore_env.sh configs/staging.env latest
+#   restore_env.sh configs/.staging.env 2026-01-26_1500
+#   restore_env.sh configs/.staging.env latest
 # =============================================================================
 
 CONFIG_FILE="${1:?Usage: restore_env.sh /path/to/envfile SNAPSHOT}"

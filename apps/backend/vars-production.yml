@@ -1,2 +1,3 @@
-instances: 3
-memory: 4G
+instances: 2
+memory: 2G
+disk_quota: 2G

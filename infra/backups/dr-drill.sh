@@ -7,7 +7,7 @@ set -euo pipefail
 # first.) NEVER run against production — guarded to ENV=staging.
 #
 # Usage:
-#   ./dr-drill.sh ./configs/staging.env [SNAPSHOT]           # SNAPSHOT default: latest
+#   ./dr-drill.sh ./configs/.staging.env [SNAPSHOT]           # SNAPSHOT default: latest
 #   DRILL_ASSUME_YES=1 ...  # skip the WIPE-staging confirmation prompt
 
 CONFIG_FILE="${1:?Usage: dr-drill.sh /path/to/staging.env [SNAPSHOT]}"

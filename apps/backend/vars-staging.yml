@@ -1,2 +1,3 @@
 instances: 1
-memory: 4G
+memory: 2G
+disk_quota: 1G
