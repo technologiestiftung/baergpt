@@ -699,8 +699,7 @@ export class GenerationService {
 			isExternalToolActive,
 		} = args;
 
-		// The current (last) message is always included — it is the message triggering
-		// this turn, even though its own row is not yet flagged at request time.
+		// The current (last) message is always included as the message triggering this turn
 		const scopedMessages: IncomingChatMessage[] = isExternalToolActive
 			? [
 					...previousMessages
