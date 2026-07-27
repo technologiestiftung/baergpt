@@ -239,7 +239,6 @@ export type Database = {
 				Row: {
 					access_group_id: string | null;
 					chunk_index: number;
-					chunk_jina_embedding: string | null;
 					chunk_mistral_embedding: string | null;
 					content: string;
 					document_id: number | null;
@@ -252,7 +251,6 @@ export type Database = {
 				Insert: {
 					access_group_id?: string | null;
 					chunk_index: number;
-					chunk_jina_embedding?: string | null;
 					chunk_mistral_embedding?: string | null;
 					content: string;
 					document_id?: number | null;
@@ -265,7 +263,6 @@ export type Database = {
 				Update: {
 					access_group_id?: string | null;
 					chunk_index?: number;
-					chunk_jina_embedding?: string | null;
 					chunk_mistral_embedding?: string | null;
 					content?: string;
 					document_id?: number | null;
