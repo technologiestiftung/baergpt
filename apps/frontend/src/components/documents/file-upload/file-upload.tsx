@@ -65,7 +65,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 						ref={fileInputRef}
 						onChange={handleFileSelect}
 						accept={
-							"application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+							"application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
 						}
 						aria-label={Content["fileUpload.upload"]}
 						style={{ display: "none" }}
@@ -93,7 +93,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 									ref={fileInputRef}
 									onChange={handleFileSelect}
 									accept={
-										"application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+										"application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
 									}
 									aria-label={Content["fileUpload.upload"]}
 									style={{ display: "none" }}

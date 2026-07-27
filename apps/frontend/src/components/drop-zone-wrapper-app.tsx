@@ -36,10 +36,10 @@ export function DropZoneWrapperApp({ children }: { children: ReactNode }) {
 		disabled: isDropZoneDisabled,
 		accept: {
 			"application/pdf": [],
-			"application/msword": [],
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
 				[],
 			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [],
+			"text/csv": [],
 		},
 	});
 

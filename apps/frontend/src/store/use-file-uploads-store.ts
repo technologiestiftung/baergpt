@@ -81,13 +81,13 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 			if (
 				!file.type.includes("pdf") &&
-				!file.type.includes("msword") &&
 				!file.type.includes(
 					"vnd.openxmlformats-officedocument.wordprocessingml.document",
 				) &&
 				!file.type.includes(
 					"vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-				)
+				) &&
+				!file.type.includes("csv")
 			) {
 				throw new Error("failed.format");
 			}

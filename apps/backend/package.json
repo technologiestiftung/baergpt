@@ -51,7 +51,6 @@
 		"mistral-tokenizer-ts": "2.2.1",
 		"pdf-lib": "1.17.1",
 		"unpdf": "1.4.0",
-		"word-extractor": "1.0.4",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
 		"zod": "4.4.3"
 	},
