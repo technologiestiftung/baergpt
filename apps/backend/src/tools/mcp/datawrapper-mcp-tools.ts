@@ -142,18 +142,7 @@ export const datawrapperMCPTools =
 						}),
 						execute: async (params, options) => {
 							if (mcpTool.execute) {
-								console.log(`[Datawrapper MCP] Executing create_visualization with params:`, {
-									...params,
-									api_key: params.api_key ? "***REDACTED***" : undefined
-								});
-								try {
-									const result = await mcpTool.execute(params, options);
-									console.log(`[Datawrapper MCP] create_visualization result:`, result);
-									return result;
-								} catch (e) {
-									console.error(`[Datawrapper MCP] create_visualization error:`, e);
-									throw e;
-								}
+								return await mcpTool.execute(params, options);
 							}
 							throw new Error("MCP tool execute function not found");
 						},
