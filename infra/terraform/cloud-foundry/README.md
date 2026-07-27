@@ -14,6 +14,20 @@ Provisions one CF org (`baergpt`) with `staging` and `prod` spaces in the
 | `spaces.tf`    | spaces, space quotas, org/space roles                                |
 | `outputs.tf`   | api_url                                                              |
 
+## Quotas
+
+`var.quota_id` is the org-wide plan ("Kontingent"); `var.spaces` subdivides it. The org
+quota always binds, so raising a space beyond it silently does nothing.
+
+The portal shows plan names but not their ids, and the `stackit` CLI has no SCF commands.
+`quota_id` is the CF org-quota GUID:
+
+```sh
+cf curl /v3/organization_quotas | jq '.resources[] | {name, guid, memory_mb: .apps.total_memory_in_mb}'
+```
+
+Switch plans in the portal, then update `quota_id` to match.
+
 ## Auth
 
 Auth is injected from 1Password via `op run`, like the observability module. The
