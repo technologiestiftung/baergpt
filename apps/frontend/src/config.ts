@@ -1,48 +1,33 @@
 function parseConfig(env: Record<string, string>) {
-	if (!env.VITE_VERCEL_ENV) {
-		throw new Error("Environment variable VITE_VERCEL_ENV is missing");
+	const requiredKeys = [
+		"VITE_VERCEL_ENV",
+		"VITE_SUPABASE_URL",
+		"VITE_SUPABASE_ANON_KEY",
+		"VITE_API_URL",
+		"VITE_MAX_TOTAL_FILES_UPLOADED",
+		"VITE_UPLOAD_FILE_SIZE_LIMIT_MB",
+		"VITE_MAX_PARALLEL_FILE_UPLOADS",
+		"VITE_ADMIN_URL",
+		"VITE_SENTRY_DSN",
+		"VITE_SENTRY_ORG",
+		"VITE_SENTRY_PROJECT",
+		"VITE_TRACE_PROPAGATION_TARGETS",
+		"VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL",
+		"VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED",
+		"VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED",
+		"VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED",
+		"VITE_FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED",
+		"VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED",
+		"VITE_SPLASH_CONTENT_URL",
+		"VITE_SPLASH_API_COMMIT_URL",
+	];
+
+	for (const key of requiredKeys) {
+		if (!env[key]) {
+			throw new Error(`Environment variable ${key} is missing`);
+		}
 	}
-	if (!env.VITE_SUPABASE_URL) {
-		throw new Error("Environment variable VITE_SUPABASE_URL is missing");
-	}
-	if (!env.VITE_SUPABASE_ANON_KEY) {
-		throw new Error("Environment variable VITE_SUPABASE_ANON_KEY is missing");
-	}
-	if (!env.VITE_API_URL) {
-		throw new Error("Environment variable VITE_API_URL is missing");
-	}
-	if (!env.VITE_MAX_TOTAL_FILES_UPLOADED) {
-		throw new Error(
-			"Environment variable VITE_MAX_TOTAL_FILES_UPLOADED is missing",
-		);
-	}
-	if (!env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB) {
-		throw new Error(
-			"Environment variable VITE_UPLOAD_FILE_SIZE_LIMIT_MB is missing",
-		);
-	}
-	if (!env.VITE_MAX_PARALLEL_FILE_UPLOADS) {
-		throw new Error(
-			"Environment variable VITE_MAX_PARALLEL_FILE_UPLOADS is missing",
-		);
-	}
-	if (!env.VITE_ADMIN_URL) {
-		throw new Error("Environment variable VITE_ADMIN_URL is missing");
-	}
-	if (!env.VITE_SENTRY_DSN) {
-		throw new Error("Environment variable VITE_SENTRY_DSN is missing");
-	}
-	if (!env.VITE_SENTRY_ORG) {
-		throw new Error("Environment variable VITE_SENTRY_ORG is missing");
-	}
-	if (!env.VITE_SENTRY_PROJECT) {
-		throw new Error("Environment variable VITE_SENTRY_PROJECT is missing");
-	}
-	if (!env.VITE_TRACE_PROPAGATION_TARGETS) {
-		throw new Error(
-			"Environment variable VITE_TRACE_PROPAGATION_TARGETS is missing",
-		);
-	}
+
 	// Note: VITE_MATOMO_URL can be an empty string e.g. in testing environments
 	if (typeof env.VITE_MATOMO_URL !== "string") {
 		throw new Error("Environment variable VITE_MATOMO_URL is missing");
@@ -50,29 +35,6 @@ function parseConfig(env: Record<string, string>) {
 	// Note: VITE_MATOMO_SITE_ID can be an empty string e.g. in testing environments
 	if (typeof env.VITE_MATOMO_SITE_ID !== "string") {
 		throw new Error("Environment variable VITE_MATOMO_SITE_ID is missing");
-	}
-	if (!env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL) {
-		throw new Error(
-			"Environment variable VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL is missing",
-		);
-	}
-	if (!env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED) {
-		throw new Error(
-			"Environment variable VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED is missing",
-		);
-	}
-	if (!env.VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED) {
-		throw new Error(
-			"Environment variable VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED is missing",
-		);
-	}
-	if (!env.VITE_SPLASH_CONTENT_URL) {
-		throw new Error("Environment variable VITE_SPLASH_CONTENT_URL is missing");
-	}
-	if (!env.VITE_SPLASH_API_COMMIT_URL) {
-		throw new Error(
-			"Environment variable VITE_SPLASH_API_COMMIT_URL is missing",
-		);
 	}
 
 	return {
@@ -91,8 +53,14 @@ function parseConfig(env: Record<string, string>) {
 		matomoUrl: env.VITE_MATOMO_URL,
 		matomoSiteId: env.VITE_MATOMO_SITE_ID,
 		defaultDocumentProcessingModel: env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
+		featureFlagWebSearchAllowed:
+			env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
 		featureFlagMcpParlaAllowed:
 			env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
+		featureFlagMcpOpenDataAllowed:
+			env.VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true",
+		featureFlagMcpDatawrapperAllowed:
+			env.VITE_FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED === "true",
 		featureFlagSplashScreenAllowed:
 			env.VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED === "true",
 		splashContentUrl: env.VITE_SPLASH_CONTENT_URL,

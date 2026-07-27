@@ -160,7 +160,9 @@ test.describe("Chat", () => {
 		await addButton.click();
 
 		// Verify the document is added to the chat
-		await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
+		await expect(
+			page.getByTestId(`remove-item-${defaultDocumentName}`),
+		).toBeVisible();
 
 		// Fill in the chat question
 		await page
@@ -198,7 +200,9 @@ test.describe("Chat", () => {
 			await page.getByRole("option", { name: "In den Chat" }).click();
 
 			// Verify the document is added to the chat
-			await expect(page.getByText("1 Datei in diesem Chat")).toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${defaultDocumentName}`),
+			).toBeVisible();
 
 			// Create a new folder
 			await page
@@ -230,8 +234,13 @@ test.describe("Chat", () => {
 			).toBeVisible();
 			await page.getByRole("option", { name: "In den Chat" }).click();
 
-			// Verify the folder is added to the chat
-			await expect(page.getByText("2 Elemente in diesem Chat")).toBeVisible();
+			// Verify the folder and document are added to the chat
+			await expect(
+				page.getByTestId(`remove-item-${givenFolderName}`),
+			).toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${defaultDocumentName}`),
+			).toBeVisible();
 		},
 	);
 
@@ -276,14 +285,15 @@ test.describe("Chat", () => {
 				.filter({ hasText: defaultDocumentName })
 				.getByLabel("In den Chat")
 				.click();
-			await page
-				.getByRole("listitem")
-				.filter({ hasText: secondaryDocumentName })
-				.getByLabel("In den Chat")
-				.click();
 
 			await expect(
-				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
+				page.getByTestId(`remove-item-${givenFolderName}`),
+			).toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${defaultDocumentName}`),
+			).toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${secondaryDocumentName}`),
 			).toBeVisible();
 
 			// Remove the folder from the chat
@@ -293,7 +303,13 @@ test.describe("Chat", () => {
 
 			// Verify the folder and documents are removed from the chat
 			await expect(
-				page.getByRole("button", { name: "3 Elemente in diesem Chat" }),
+				page.getByTestId(`remove-item-${givenFolderName}`),
+			).not.toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${defaultDocumentName}`),
+			).not.toBeVisible();
+			await expect(
+				page.getByTestId(`remove-item-${secondaryDocumentName}`),
 			).not.toBeVisible();
 		},
 	);
@@ -795,36 +811,43 @@ test.describe("Chat", () => {
 		});
 		await expect(parlaBerlinOption).toBeVisible();
 
+		if (process.env.VITE_FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true") {
+			const openDataOption = connectorsSubmenu.getByRole("menuitemcheckbox", {
+				name: /Berlin Open Data/,
+			});
+			await expect(openDataOption).toBeVisible();
+		}
+
 		// Select Parla Berlin and assert the check icon is visible
+		// Assert the resulting context pill is visible
+		const contextPill = page.getByRole("button", {
+			name: /Parla Berlin entfernen/,
+		});
+
 		await test.step("Select Parla Berlin", async () => {
 			await parlaBerlinOption.click();
+			await expect(connectorsSubmenu).toBeHidden();
+			await expect(contextPill).toBeVisible();
+		});
+
+		// Re-open the menu + submenu to verify the persisted "checked" state.
+		await test.step("Re-opened submenu shows Parla Berlin as checked", async () => {
+			await chatOptionsButton.click();
+			await connectorsOption.hover();
+			await expect(connectorsSubmenu).toBeVisible();
+			await expect(parlaBerlinOption).toHaveAttribute("aria-checked", "true");
 			await expect(
 				parlaBerlinOption.getByAltText("Ein blaues Häkchen-Icon"),
 			).toBeVisible();
 		});
 
-		// Deselect Parla Berlin in the submenu and assert the check icon is hidden
+		// Toggling again in the submenu deselects it and closes the menu.
 		await test.step("Deselect Parla Berlin", async () => {
 			await parlaBerlinOption.click();
-			await expect(
-				parlaBerlinOption.getByAltText("Ein blaues Häkchen-Icon"),
-			).toBeHidden();
+			await expect(connectorsSubmenu).toBeHidden();
+			await expect(contextPill).not.toBeVisible();
+			await expect(page.getByText("Parla Berlin")).not.toBeVisible();
 		});
-
-		// Re-select Parla Berlin via the submenu to verify the context pill
-		await parlaBerlinOption.click();
-		await page.locator("body").click({ position: { x: 0, y: 0 } });
-
-		// Verify the context pill appears with "Parla Berlin entfernen" (remove option)
-		const contextPill = page.getByRole("button", {
-			name: /Parla Berlin entfernen/,
-		});
-		await expect(contextPill).toBeVisible();
-
-		// Deselect by clicking the pill; pill and label should disappear
-		await contextPill.click();
-		await expect(page.getByText("Parla Berlin")).not.toBeVisible();
-		await expect(contextPill).not.toBeVisible();
 	});
 
 	testDesktopOnly(

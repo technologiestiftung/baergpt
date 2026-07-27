@@ -10,6 +10,7 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { LandingPage } from "../components/landing-page/landing-page.tsx";
 import { SplashModal } from "../components/splash-modal.tsx";
+import { DropZoneWrapperApp } from "../components/drop-zone-wrapper-app.tsx";
 import { config } from "../config.ts";
 
 export const IndexPage: React.FC = () => {
@@ -30,18 +31,20 @@ export const IndexPage: React.FC = () => {
 
 	return (
 		<AppLayout>
-			<div className="relative flex flex-row h-full w-full">
-				<DndProvider backend={HTML5Backend}>
-					<MobileHistoryDrawer />
-					<DocumentsSection />
-					<MobileProfileDrawer />
-					<div className="relative flex-1">
-						<ChatSection />
-						<DocumentPreviewSection />
-					</div>
-				</DndProvider>
-				{config.featureFlagSplashScreenAllowed && <SplashModal />}
-			</div>
+			<DropZoneWrapperApp>
+				<div className="relative flex flex-row h-full w-full">
+					<DndProvider backend={HTML5Backend}>
+						<MobileHistoryDrawer />
+						<DocumentsSection />
+						<MobileProfileDrawer />
+						<div className="relative flex-1">
+							<ChatSection />
+							<DocumentPreviewSection />
+						</div>
+					</DndProvider>
+					{config.featureFlagSplashScreenAllowed && <SplashModal />}
+				</div>
+			</DropZoneWrapperApp>
 		</AppLayout>
 	);
 };

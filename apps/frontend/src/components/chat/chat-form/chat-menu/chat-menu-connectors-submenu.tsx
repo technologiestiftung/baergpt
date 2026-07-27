@@ -3,19 +3,19 @@ import Content from "../../../../content.ts";
 import { useChatsStore } from "../../../../store/use-chats-store.ts";
 import type { Connector } from "../../../../common.ts";
 import { useDropdownKeyboard } from "../../../../hooks/use-dropdown-keyboard.ts";
+import { config } from "../../../../config.ts";
 
 export const CONNECTOR_VALUES: Record<string, Connector> = {
 	parla: "parla",
+	openData: "openData",
 };
 
-const connectorItems = [
-	{
-		label: Content["mcp.options.dialog.option1.label"],
-		value: CONNECTOR_VALUES.parla,
-		ariaLabel: Content["mcp.options.dialog.option1.ariaLabel"],
-		logo: "/icons/parla-logo-icon.svg",
-	},
-];
+interface ConnectorItem {
+	label: string;
+	value: Connector;
+	ariaLabel: string;
+	logo: string;
+}
 
 interface ChatMenuConnectorsSubmenuProps {
 	isOpen: boolean;
@@ -30,7 +30,30 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 > = ({ isOpen, onClose, onItemSelect, connectorsButtonRef, className }) => {
 	const { selectedChatTools, toggleChatTool } = useChatsStore();
 
-	const handleSelect = (item: (typeof connectorItems)[number]) => {
+	const connectorItems: ConnectorItem[] = [
+		...(config.featureFlagMcpParlaAllowed
+			? [
+					{
+						label: Content["mcp.options.dialog.option1.label"],
+						value: CONNECTOR_VALUES.parla,
+						ariaLabel: Content["mcp.options.dialog.option1.ariaLabel"],
+						logo: "/icons/parla-logo-icon.svg",
+					},
+				]
+			: []),
+		...(config.featureFlagMcpOpenDataAllowed
+			? [
+					{
+						label: Content["mcp.options.dialog.option2.label"],
+						value: CONNECTOR_VALUES.openData,
+						ariaLabel: Content["mcp.options.dialog.option2.ariaLabel"],
+						logo: "/icons/berlin-open-data-logo-icon.svg",
+					},
+				]
+			: []),
+	];
+
+	const handleSelect = (item: ConnectorItem) => {
 		toggleChatTool(item.value);
 		onItemSelect();
 	};

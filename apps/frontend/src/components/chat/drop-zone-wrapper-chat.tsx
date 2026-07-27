@@ -4,6 +4,7 @@ import type { UserDocument } from "../../common.ts";
 import { useDrop } from "react-dnd";
 import { AddToChatIcon } from "../primitives/icons/add-to-chat-icon.tsx";
 import { isUserDocument } from "../documents/document-list/list-item/utils/is-user-document.ts";
+import { Content } from "../../content.ts";
 
 export function DropZoneWrapperChat({
 	children,
@@ -62,7 +63,7 @@ export function DropZoneWrapperChat({
 				<AddToChatIcon size={48} />
 
 				<span className="font-bold mt-3 text-lg">
-					Datei ablegen, um BärGPT dazu eine Frage zu stellen
+					{Content["chat.dropZone.label"]}
 				</span>
 			</div>
 

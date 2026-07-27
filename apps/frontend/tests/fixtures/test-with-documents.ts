@@ -382,7 +382,10 @@ export async function uploadFileViaFileChooserAndWait({
 	await testWithDocuments.expect(uploadedFile).toBeVisible();
 
 	// Close the file upload dialog
-	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+	await page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", { name: "Hochladen-Status schließen" })
+		.click();
 
 	return uploadedFile;
 }
@@ -504,7 +507,10 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	}
 
 	// Close the file upload dialog
-	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+	await page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", { name: "Hochladen-Status schließen" })
+		.click();
 
 	return uploadedFiles;
 }
@@ -585,9 +591,7 @@ export async function uploadFileViaDragAndDropAndWait({
 		},
 	);
 
-	const dropZone = page.getByText(
-		"Dateien ablegen, um sie hochzuladen inMeine Dateien",
-	);
+	const dropZone = page.locator("#drop-zone-file-upload");
 
 	await dropZone.dispatchEvent("dragenter", { dataTransfer });
 	await dropZone.dispatchEvent("dragover", { dataTransfer });
@@ -614,7 +618,10 @@ export async function uploadFileViaDragAndDropAndWait({
 	await testWithDocuments.expect(uploadedFile).toBeVisible();
 
 	// Close the file upload dialog
-	await page.getByRole("button", { name: "Ein blaues X-Icon" }).click();
+	await page
+		.locator("#desktop-documents-panel")
+		.getByRole("button", { name: "Hochladen-Status schließen" })
+		.click();
 }
 
 /**

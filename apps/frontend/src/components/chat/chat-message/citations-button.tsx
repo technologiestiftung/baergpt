@@ -10,13 +10,17 @@ import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.
 import { useCitationsStore } from "../../../store/use-citations-store.ts";
 import type { CitationWithDetails } from "../../../common.ts";
 import type { WebCitationSource } from "../../../api/chat/get-completion.ts";
-import type { ParlaCitationSource } from "../../../common.ts";
+import type {
+	ParlaCitationSource,
+	OpenDataCitationSource,
+} from "../../../common.ts";
 
 interface CitationsButtonProps {
 	messageId: number;
 	citations: number[] | null;
 	webCitations: WebCitationSource[] | null;
 	parlaCitations: ParlaCitationSource[] | null;
+	openDataCitations: OpenDataCitationSource[] | null;
 	isLastMessage: boolean;
 }
 
@@ -25,6 +29,7 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	citations,
 	webCitations,
 	parlaCitations,
+	openDataCitations,
 	isLastMessage,
 }) => {
 	const { status } = useInferenceLoadingStatusStore();
@@ -34,6 +39,9 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 	const hasWebCitations = Boolean(webCitations && webCitations.length > 0);
 	const hasParlaCitations = Boolean(
 		parlaCitations && parlaCitations.length > 0,
+	);
+	const hasOpenDataCitations = Boolean(
+		openDataCitations && openDataCitations.length > 0,
 	);
 	const { getCitation } = useCitationsStore();
 	const hasDocumentCitations =
@@ -45,6 +53,7 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 		hasDocumentCitations ||
 		hasWebCitations ||
 		hasParlaCitations ||
+		hasOpenDataCitations ||
 		isLoadingLastCitations;
 
 	if (!isCitationsButtonVisible) {
@@ -83,12 +92,16 @@ export const CitationsButton: React.FC<CitationsButtonProps> = ({
 					</>
 				)}
 			</ChatButton>
-			{(hasDocumentCitations || hasWebCitations || hasParlaCitations) && (
+			{(hasDocumentCitations ||
+				hasWebCitations ||
+				hasParlaCitations ||
+				hasOpenDataCitations) && (
 				<CitationsDialog
 					messageId={messageId}
 					citations={citations}
 					webCitations={webCitations}
 					parlaCitations={parlaCitations}
+					openDataCitations={openDataCitations}
 				/>
 			)}
 		</>

@@ -750,7 +750,6 @@ export const Content = {
 	"eyeStruckThroughIcon.imgAlt": "Ein durchgestrichenes Augen-Icon",
 
 	/* -------------------- DocumentsSection -------------------- */
-	"documentsSection.title": "Dateien",
 	"documentSection.publicFolder.label": "Bibliothek",
 	"documentSection.publicFolder.baseKnowledge.label": "Verwaltungswissen",
 	"documentsSection.mainFolder.label": "Meine Dateien",
@@ -791,7 +790,8 @@ export const Content = {
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
-	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
+	"fileUpload.clearUploads.ariaLabel": "Hochladen-Status schließen",
+	"chat.dropZone.label": "Dateien ablegen, um sie zum Chat hinzuzufügen.",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Hochladen läuft",
 	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
@@ -900,6 +900,9 @@ export const Content = {
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
 	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
+	"chat.textarea.placeholder.parla": "Parla Berlin durchsuchen",
+	"chat.textarea.placeholder.openData": "Open Data Portal durchsuchen",
+	"chat.textarea.placeholder.multipleSources": "Externe Quellen durchsuchen",
 	"chat.sendButton.ariaLabel": "Nachricht senden",
 	"chat.scrollToBottomButton.ariaLabel": "Zum Ende des Chats scrollen",
 	"chat.stopGeneratingButton.ariaLabel": "Textgenerierung stoppen",
@@ -928,6 +931,10 @@ export const Content = {
 	"mcp.options.dialog.option1.description":
 		"Schriftliche Anfragen des Abgh. Berlins",
 	"mcp.options.dialog.option1.ariaLabel": "Parla Berlin auswählen",
+	"mcp.options.dialog.option2.label": "Berlin Open Data",
+	"mcp.options.dialog.option2.description":
+		"Datenbestände aus dem Berliner Datenportal",
+	"mcp.options.dialog.option2.ariaLabel": "Berlin Open Data auswählen",
 
 	// Chat llm model dropdown
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
@@ -958,6 +965,8 @@ export const Content = {
 	"chat.citationsDialog.page": "Seite",
 	"chat.tooltipCitation.page": "Seite",
 	"chat.citationsDialog.publicDocumentPill.label": "Verwaltungswissen",
+	"chat.citationsDialog.openData.datasetLabel": "Berlin Open Data Datensatz",
+	"chat.citationsDialog.openData.icon.alt": "Berlin Open Data Logo",
 
 	"chat.exportChatTextButton.label": "Exportieren",
 	"chat.exportChatTextButton.ariaLabel": "Chat exportieren",
@@ -974,6 +983,9 @@ export const Content = {
 	"chat.contextPill.parla.label": "Parla Berlin",
 	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
+	"chat.contextPill.openData.label": "Open Data",
+	"chat.contextPill.openData.ariaLabel": "Open Data entfernen",
+	"chat.contextPill.openData.icon.alt": "Berlin Open Data Logo",
 
 	"chat.externalTools.warningBanner.label":
 		"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
