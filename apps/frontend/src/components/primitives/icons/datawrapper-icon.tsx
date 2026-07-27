@@ -3,7 +3,7 @@ import Content from "../../../content.ts";
 export function DatawrapperIcon() {
 	return (
 		<img
-			src="/icons/datawrapper-icon-alt.jpg"
+			src="/icons/datawrapper-icon.svg"
 			height={16}
 			width={16}
 			alt={Content["chat.contextPill.datawrapper.icon.alt"]}
