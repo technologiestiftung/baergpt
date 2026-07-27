@@ -860,6 +860,11 @@ export const Content = {
 	"chatSearchDialog.lastChats": "Letzte Chats",
 	"chatSearchDialog.results": "Ergebnisse",
 	"chatSearchDialog.result.icon.alt": "Chat-Bubble-Icon",
+	"chatSearchDialog.noResults.title.prefix": "Keine Chats für ",
+	"chatSearchDialog.noResults.title.suffix": " gefunden",
+	"chatSearchDialog.noResults.subtitle":
+		"Bitte überprüfen Sie Ihre Schreibweise oder versuchen Sie einen anderen Suchbegriff.",
+	"chatSearchDialog.noResults.icon.alt": "Keine Suchergebnisse-Icon",
 
 	/* -------------------- ChatSection -------------------- */
 	//GetStarted
