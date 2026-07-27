@@ -25,7 +25,12 @@ import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
-let autoDeactivateExternalToolTimeout: ReturnType<typeof setTimeout>;
+let visibleInfoMessageTimeout: ReturnType<typeof setTimeout>;
+
+export type VisibleChatInfoMessage =
+	| { type: "toolDeactivated"; tools: ChatTool[] }
+	| { type: "historyScoped" }
+	| null;
 
 interface ChatStore {
 	isFirstLoad: boolean;
@@ -60,8 +65,8 @@ interface ChatStore {
 		parla_citations: ParlaCitationSource[] | null;
 		open_data_citations: OpenDataCitationSource[] | null;
 	}): void;
-	autoDeactivatedExternalTools: ChatTool[];
-	setAutoDeactivatedExternalTools(tools: ChatTool[]): void;
+	visibleInfoMessage: VisibleChatInfoMessage;
+	showInfoMessage(infoMessage: VisibleChatInfoMessage): void;
 	deactivateExternalTools(): void;
 }
 
@@ -74,25 +79,35 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	totalChatCount: null,
 	selectedChatTools: [],
 	selectedLlmModel: "mistral-small",
-	autoDeactivatedExternalTools: [],
+	visibleInfoMessage: null,
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
 	},
 
 	resetToDefaultChatTools() {
-		set({ selectedChatTools: [], autoDeactivatedExternalTools: [] });
+		get().showInfoMessage(null);
+		set({ selectedChatTools: [] });
 	},
 
 	toggleChatTool(tool: ChatTool) {
-		const { selectedChatTools } = get();
+		const { selectedChatTools, visibleInfoMessage } = get();
 
 		if (selectedChatTools.includes(tool)) {
-			set({
-				selectedChatTools: selectedChatTools.filter(
-					(active) => active !== tool,
-				),
-			});
+			const remainingSelected = selectedChatTools.filter(
+				(active) => active !== tool,
+			);
+			set({ selectedChatTools: remainingSelected });
+
+			const hasRemainingExternalTool = remainingSelected.some((active) =>
+				externalChatTools.includes(active),
+			);
+			if (
+				visibleInfoMessage?.type === "historyScoped" &&
+				!hasRemainingExternalTool
+			) {
+				get().showInfoMessage(null);
+			}
 			return;
 		}
 
@@ -123,6 +138,28 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 			selectedPublicChatFolders.forEach((folder) =>
 				unselectPublicChatFolder(folder.id),
 			);
+
+			// Drop "XY wurde deaktiviert" info if tool gets reactivated
+			const currentInfoMessage = get().visibleInfoMessage;
+			if (currentInfoMessage?.type === "toolDeactivated") {
+				const remainingTools = currentInfoMessage.tools.filter(
+					(deactivatedTool) => deactivatedTool !== tool,
+				);
+				set({
+					visibleInfoMessage:
+						remainingTools.length > 0
+							? { type: "toolDeactivated", tools: remainingTools }
+							: null,
+				});
+			}
+
+			const currentChat = get().getCurrentChat();
+			const hasNonToolMessage = currentChat?.messages.some(
+				({ external_tool_context }) => !external_tool_context,
+			);
+			if (hasNonToolMessage) {
+				get().showInfoMessage({ type: "historyScoped" });
+			}
 		}
 
 		set({ selectedChatTools: [...selectedChatTools, tool] });
@@ -317,14 +354,14 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		}, 300);
 	},
 
-	setAutoDeactivatedExternalTools(tools: ChatTool[]) {
-		if (autoDeactivateExternalToolTimeout) {
-			clearTimeout(autoDeactivateExternalToolTimeout);
+	showInfoMessage(infoMessage: VisibleChatInfoMessage) {
+		clearTimeout(visibleInfoMessageTimeout);
+		set({ visibleInfoMessage: infoMessage });
+		if (infoMessage !== null) {
+			visibleInfoMessageTimeout = setTimeout(() => {
+				set({ visibleInfoMessage: null });
+			}, 20_000);
 		}
-		set({ autoDeactivatedExternalTools: tools });
-		autoDeactivateExternalToolTimeout = setTimeout(() => {
-			set({ autoDeactivatedExternalTools: [] });
-		}, 20_000);
 	},
 
 	deactivateExternalTools() {
@@ -340,6 +377,9 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				(tool) => !externalChatTools.includes(tool),
 			),
 		});
-		get().setAutoDeactivatedExternalTools(activeExternalTools);
+		get().showInfoMessage({
+			type: "toolDeactivated",
+			tools: activeExternalTools,
+		});
 	},
 }));

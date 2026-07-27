@@ -36,7 +36,7 @@ export const ChatForm: React.FC = () => {
 	const { selectedUserChatDocuments } = useUserDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatTools, toggleChatTool } =
 		useChatsStore();
-	const { setAutoDeactivatedExternalTools } = useChatsStore.getState();
+	const { showInfoMessage } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -81,7 +81,7 @@ export const ChatForm: React.FC = () => {
 		// Clear any previous errors
 		clearError();
 
-		setAutoDeactivatedExternalTools([]);
+		showInfoMessage(null);
 
 		// Clear textarea on submit
 		if (textarea) {
