@@ -143,7 +143,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 				ref={fileInputRef}
 				onChange={handleFileSelect}
 				accept={
-					"application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+					"application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 				}
 				aria-label={Content["chat.options.li1.ariaLabel"]}
 				className="hidden"
