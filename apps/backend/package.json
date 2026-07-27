@@ -27,8 +27,8 @@
 		"s3:cleanup-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/mcp": "1.0.36",
-		"@ai-sdk/mistral": "3.0.30",
+		"@ai-sdk/mcp": "2.0.15",
+		"@ai-sdk/mistral": "4.0.13",
 		"@dqbd/tiktoken": "1.0.17",
 		"@hono/node-server": "1.19.13",
 		"@langfuse/client": "4.2.0",
@@ -42,7 +42,7 @@
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/node": "10.38.0",
 		"@supabase/supabase-js": "2.81.1",
-		"ai": "6.0.168",
+		"ai": "7.0.32",
 		"dotenv": "16.4.7",
 		"hono": "4.12.27",
 		"ioredis": "5.8.2",
@@ -51,7 +51,6 @@
 		"mistral-tokenizer-ts": "2.2.1",
 		"pdf-lib": "1.17.1",
 		"unpdf": "1.4.0",
-		"word-extractor": "1.0.4",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
 		"zod": "4.4.3"
 	},

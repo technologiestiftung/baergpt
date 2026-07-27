@@ -9,8 +9,15 @@ STACKIT Observability: **metrics** via Prometheus remote-write, **logs** via OTL
   (1Password), per-env metadata from `monitoring.env` (rendered from the inventory).
 - Grafana dashboard: [`grafana/supabase-vm-dashboard.json`](./grafana/supabase-vm-dashboard.json)
   (import it; pick the Thanos + Loki datasources, switch `$source` for staging/prod).
+- Alert rules: [`infra/terraform/observability`](../terraform/observability/)
 
 All telemetry is tagged `source=supabase-<env>` and `host=<hostname>`.
+
+> **These label values are load-bearing.** The alert rules select on `source` (metrics)
+> and `service_name` (logs). Changing `BAERGPT_ENV` or the processors that set them
+> breaks every alert silently — rules with no matching series apply cleanly and simply
+> never fire. After any collector change, re-run the verification queries in the
+> alerting module's README.
 
 ## Metrics
 

@@ -3,7 +3,6 @@ import { config } from "../config";
 import { Mistral } from "@mistralai/mistralai";
 import { createBufferView, getHash } from "../utils";
 import { countTokens } from "./token-utils";
-import WordExtractor from "word-extractor";
 import mammoth from "mammoth";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
@@ -22,10 +21,7 @@ export class DocumentExtractionService {
 		const checksum = getHash(fileBytes);
 		const fileSize = fileBytes.byteLength;
 
-		if (
-			fileName.toLowerCase().endsWith(".doc") ||
-			fileName.toLowerCase().endsWith(".docx")
-		) {
+		if (fileName.toLowerCase().endsWith(".docx")) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
 				createBufferView(fileBytes),
@@ -46,7 +42,10 @@ export class DocumentExtractionService {
 			};
 		}
 
-		if (fileName.toLowerCase().endsWith(".xlsx")) {
+		if (
+			fileName.toLowerCase().endsWith(".xlsx") ||
+			fileName.toLowerCase().endsWith(".csv")
+		) {
 			const excelExtractor = new ExcelExtractionService();
 			const parsedExcelPages =
 				await excelExtractor.extractExcelDocument(fileBytes);
@@ -104,21 +103,8 @@ export class DocumentExtractionService {
 
 export class WordDocumentExtractionService {
 	async extractWordDocument(wordDoc: Buffer): Promise<string> {
-		try {
-			/**
-			 * We need to await the mammoth extraction to make sure any errors
-			 * are caught by the local try/catch. If we don't await here, and
-			 * it fails, the error will be caught further up the call stack,
-			 * and we won't be able to use the WordExtractor fallback.
-			 * (Typically, mammoth fails on older .doc files, while WordExtractor can handle them.)
-			 */
-			const text = await this.extractWithMammoth(wordDoc);
-			return text;
-		} catch (mammothError) {
-			captureError(mammothError);
-
-			return this.extractWithWordExtractor(wordDoc);
-		}
+		const result = await mammoth.extractRawText({ buffer: wordDoc });
+		return result.value.trim();
 	}
 
 	async convertWordToPdf(args: {
@@ -160,20 +146,6 @@ export class WordDocumentExtractionService {
 			throw new Error(`HTTP ${res.status} ${await res.text()}`);
 		}
 		return new Uint8Array(await res.arrayBuffer());
-	}
-
-	private async extractWithMammoth(wordDoc: Buffer): Promise<string> {
-		const result = await mammoth.extractRawText({ buffer: wordDoc });
-
-		return result.value.trim();
-	}
-
-	private async extractWithWordExtractor(wordDoc: Buffer): Promise<string> {
-		const extractor = new WordExtractor();
-		const extracted = await extractor.extract(wordDoc);
-		const body = extracted.getBody();
-
-		return body.trim();
 	}
 }
 

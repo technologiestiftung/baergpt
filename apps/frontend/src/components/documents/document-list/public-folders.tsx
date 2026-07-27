@@ -15,13 +15,13 @@ export function PublicFolders() {
 
 	return (
 		<>
-			<h2 className="md:mt-9 pl-0.5 leading-6 text-dunkelblau-100">
+			<h2 className="md:mt-4 pl-0.5 leading-6 text-dunkelblau-100">
 				{Content["documentSection.publicFolder.label"]}
 			</h2>
 			<ul
 				className={`mt-2 flex items-center w-full hover:bg-hellblau-55 group`}
 			>
-				<li className="flex items-center w-full border-b-[0.5px] border-y-hellblau-110">
+				<li className="flex items-center w-full border-y-[0.5px] border-y-hellblau-110">
 					<button
 						className={`flex h-11 pl-5 md:pl-2.5 w-0 items-center grow gap-x-1 rounded-3px focus-visible:outline-default`}
 						onClick={() => setCurrentFolder(baseKnowledgeFolder)}

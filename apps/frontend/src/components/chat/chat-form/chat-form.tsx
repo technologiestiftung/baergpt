@@ -98,6 +98,7 @@ export const ChatForm: React.FC = () => {
 			citations: null,
 			web_citations: null,
 			parla_citations: null,
+			open_data_citations: null,
 			allowed_document_ids,
 			allowed_folder_ids: selectedUserChatFolders.map((folder) => folder.id),
 		};
@@ -124,9 +125,28 @@ export const ChatForm: React.FC = () => {
 	const hasError = status === "error";
 
 	const isWebSearchActive = selectedChatTools.includes("webSearch");
-	const textAreaPlaceholder = isWebSearchActive
-		? Content["chat.textarea.placeholder.webSearch"]
-		: Content["chat.textarea.placeholder"];
+	const isParlaActive = selectedChatTools.includes("parla");
+	const isOpenDataActive = selectedChatTools.includes("openData");
+	const areMultipleSourcesActive =
+		(isWebSearchActive && isParlaActive) ||
+		(isWebSearchActive && isOpenDataActive) ||
+		(isParlaActive && isOpenDataActive);
+
+	const getTextAreaPlaceholder = () => {
+		if (areMultipleSourcesActive) {
+			return Content["chat.textarea.placeholder.multipleSources"];
+		}
+		if (isParlaActive) {
+			return Content["chat.textarea.placeholder.parla"];
+		}
+		if (isOpenDataActive) {
+			return Content["chat.textarea.placeholder.openData"];
+		}
+		if (isWebSearchActive) {
+			return Content["chat.textarea.placeholder.webSearch"];
+		}
+		return Content["chat.textarea.placeholder"];
+	};
 
 	return (
 		<form
@@ -158,7 +178,7 @@ export const ChatForm: React.FC = () => {
 						name="content"
 						rows={1}
 						required={true}
-						placeholder={textAreaPlaceholder}
+						placeholder={getTextAreaPlaceholder()}
 						onKeyDown={handleTextAreaKeyDown}
 						onInput={handleTextAreaInput}
 					/>

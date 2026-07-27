@@ -1,5 +1,5 @@
 import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
-import { type Tool } from "ai";
+import { tool, type Tool } from "ai";
 import { z } from "zod";
 import { captureError } from "../../monitoring/capture-error";
 import { config } from "../../config";
@@ -49,13 +49,16 @@ export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
 			},
 		});
 
-		// Schema mode (vs "automatic") makes the client validate against
-		// outputSchema and expose the server's structuredContent as the tool
-		// output. Caveat: only the listed tools are returned — others (e.g.
-		// health_check) are dropped.
-		const tools = await parlaHttpClient.tools({
-			schemas: {
-				parla_vector_search: {
+		const parlaHttpClientToolSet = await parlaHttpClient.tools();
+
+		// Wrap MCP tools with proper Zod validation
+		// The MCP SDK returns tools with JSON Schema, but the AI SDK needs proper Zod schemas
+		const wrappedTools: Record<string, Tool> = {};
+
+		for (const [toolName, mcpTool] of Object.entries(parlaHttpClientToolSet)) {
+			if (toolName === "parla_vector_search") {
+				wrappedTools[toolName] = tool({
+					description: mcpTool.description || "Vector search tool",
 					inputSchema: z.object({
 						query: z.string().describe("The search query"),
 						match_threshold: z
@@ -86,13 +89,22 @@ export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
 							.optional()
 							.describe("Maximum documents to return (default 3)"),
 					}),
-					outputSchema: parlaResponseSchema,
-				},
-			},
-		});
+					execute: async (params, options) => {
+						if (mcpTool.execute) {
+							return mcpTool.execute(params, options);
+						}
+						throw new Error("MCP tool execute function not found");
+					},
+				});
+			} else {
+				// For other tools, use them as-is
+				wrappedTools[toolName] = mcpTool as Tool;
+			}
+		}
 
+		// Return tools and cleanup function instead of closing immediately
 		return {
-			tools,
+			tools: wrappedTools,
 			cleanup: async () => await parlaHttpClient?.close(),
 		};
 	} catch (error) {

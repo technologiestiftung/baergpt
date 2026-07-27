@@ -1,3 +1,7 @@
 # Exclude migrations applied before January 2026
 apps/backend/supabase/migrations/2024*.sql
 apps/backend/supabase/migrations/2025*.sql
+
+# Prettier formats dot-ignore files as Markdown and escapes their glob
+# asterisks (**/.env.* -> **/.env.\*), which silently breaks the patterns.
+.dockerignore
