@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        browser: [chromium, firefox, webkit]
+        browser: [chromium, firefox] # webkit was too flaky recently: `Error: page.reload: WebKit encountered an internal error`
 
     steps:
       - name: Checkout code ⬇️
