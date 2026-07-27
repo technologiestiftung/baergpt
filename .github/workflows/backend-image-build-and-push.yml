@@ -43,6 +43,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Runner's default docker driver can't export cache (type=gha); switches
+      # to the docker-container driver, which supports --cache-to.
+      - name: Set up Docker Buildx ⚙️
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0, pinned to commit sha to avoid sha-hulud like attacks
+
       - name: Check if image already exists in GHCR 🔍
         id: check
         run: |
