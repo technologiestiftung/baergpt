@@ -1,0 +1,194 @@
+name: Backend deploy to STACKIT Cloud Foundry
+
+on:
+  # Post-merge only: a push to staging/main only happens once a PR is actually
+  # merged (i.e. past review + branch protection), unlike a pull_request-triggered
+  # image build, which fires for any open PR before it's reviewed or merged.
+  # Gating the deployment on push (rather than on the PR build's workflow_run) means
+  # an unreviewed/unmerged PR can never get its image auto-deployed.
+  push:
+    branches: [staging, main]
+    paths:
+      - "apps/backend/**"
+      - "libs/db-schema/**"
+      - "libs/typescript-config/**"
+      - "turbo.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".dockerignore"
+      - "apps/backend/manifest.yml"
+      - ".github/workflows/backend-deploy-stackit-cf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/baergpt-backend
+  APP_NAME: baergpt-backend # keep in sync with apps/backend/manifest.yml
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: backend-deploy-${{ github.ref }}
+      cancel-in-progress: false
+    # workflow_dispatch has no branches filter, so a manual run can target
+    # any branch by default — reject anything other than staging/main here.
+    if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
+    environment: ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          persist-credentials: "false"
+
+      - name: Setup environment ⚙️
+        uses: ./.github/actions/setup
+        with:
+          install-1password: "true"
+
+      # Same formula as backend-image-build-and-push.yml, so it resolves to the
+      # tag that workflow just built and pushed for this exact commit.
+      - name: Compute image tag 🏷️
+        id: tag
+        run: |
+          echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set 1Password item IDs based on branch 🌿
+        id: env-config
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "app_item_id=${{ secrets.OP_BACKEND_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "app_item_id=${{ secrets.OP_BACKEND_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Expects a 1Password item with CF_API_ENDPOINT, CF_USERNAME, CF_PASSWORD,
+      # CF_ORG, CF_SPACE fields (one item per environment).
+      - name: Fetch STACKIT Cloud Foundry credentials from 1Password 🔑
+        run: |
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.cf_item_id }}/notesPlain" > cf.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < cf.env
+          rm cf.env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      # This workflow doesn't build images itself — it deploys whatever
+      # backend-image-build-and-push.yml already pushed for this exact content
+      # (built and reviewed as part of the merged PR). Fail fast with a clear
+      # message if that image is missing instead of silently deploying nothing.
+      - name: Verify image exists in GHCR 🔍
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          if ! docker manifest inspect "${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" >/dev/null 2>&1; then
+            echo "::error::Image ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }} not found in GHCR." \
+              "Trigger 'Backend image build and push to registry' (workflow_dispatch) for this commit first."
+            exit 1
+          fi
+
+      - name: Install cf CLI ⚙️
+        run: |
+          curl -sL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" \
+            | tar -zx
+          sudo mv cf8 /usr/local/bin/cf
+
+      - name: Target STACKIT Cloud Foundry 🎯
+        run: |
+          cf api "$CF_API_ENDPOINT"
+          cf auth
+          cf target -o "$CF_ORG" -s "$CF_SPACE"
+
+      # Expects a 1Password item holding the backend's runtime env vars
+      # (API keys, DB URL, etc.) as a plain KEY=VALUE-per-line document.
+      # CF_-prefixed keys (CF_INSTANCES, CF_MEMORY, CF_DISK_QUOTA) are cf push
+      # scaling vars, not app env vars — they're exported to $GITHUB_ENV for
+      # the bootstrap/push steps below.
+      - name: Fetch backend env vars from 1Password 🔑
+        run: |
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.app_item_id }}/notesPlain" > backend.env
+          : > apps/backend/app.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            if [[ "$key" == CF_* ]]; then
+              echo "$key=$value" >> "$GITHUB_ENV"
+            else
+              echo "$key=$value" >> apps/backend/app.env
+            fi
+          done < backend.env
+          rm backend.env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      # cf set-env needs the app to exist first, so on the very first deploy
+      # (app not created yet) push once with --no-start to create it.
+      # Then unset every currently-set app var and re-set them all from
+      # 1Password, so removed keys don't linger and 1Password stays the
+      # single source of truth.
+      - name: Sync backend env vars 🔄
+        id: sync
+        working-directory: apps/backend
+        env:
+          CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! cf app "${{ env.APP_NAME }}" >/dev/null 2>&1; then
+            # First deploy: no running version exists yet, so a rolling deploy
+            # has nothing to roll over. Flag it so the push step does a plain
+            # cold start instead of --strategy rolling.
+            echo "bootstrapped=true" >> "$GITHUB_OUTPUT"
+            cf push \
+              -f manifest.yml \
+              --no-start \
+              --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
+              --var docker_username="${{ github.actor }}" \
+              --var instances="$CF_INSTANCES" \
+              --var memory="$CF_MEMORY" \
+              --var disk_quota="$CF_DISK_QUOTA"
+          fi
+
+          guid=$(cf app "${{ env.APP_NAME }}" --guid)
+          for key in $(cf curl "/v3/apps/$guid/environment_variables" | jq -r '.var | keys[]'); do
+            cf unset-env "${{ env.APP_NAME }}" "$key" >/dev/null
+          done
+
+          while IFS= read -r line || [ -n "$line" ]; do
+            key="${line%%=*}"
+            value="${line#*=}"
+            cf set-env "${{ env.APP_NAME }}" "$key" "$value" >/dev/null
+          done < app.env
+
+          rm -f app.env
+
+      # --strategy rolling keeps the previous version running. If cf push fails
+      # the old version stays live (instead of the backend going down). On the
+      # very first deploy there's no running version to roll over, so the sync
+      # step flags it, and we do a plain cold start instead (empty = no flag).
+      - name: Push image to Cloud Foundry 🚀
+        working-directory: apps/backend
+        env:
+          CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cf push \
+            -f manifest.yml \
+            ${{ steps.sync.outputs.bootstrapped != 'true' && '--strategyrolling' || '' }} \
+            --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
+            --var docker_username="${{ github.actor }}" \
+            --var instances="$CF_INSTANCES" \
+            --var memory="$CF_MEMORY" \
+            --var disk_quota="$CF_DISK_QUOTA" \
+          || { cf cancel-deployment "${{ env.APP_NAME }}" 2>/dev/null || true; exit 1; }
+
+      - name: Dump recent app logs on failure 🪵
+        if: ${{ failure() && !cancelled() }}
+        run: cf logs "${{ env.APP_NAME }}" --recent
