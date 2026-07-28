@@ -1231,12 +1231,9 @@ export const Content = {
 	"resetPasswordSuccessful.buttonLink": "Zum Login",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
-	"unconfirmedEmail.h1": "Registrierung fast abgeschlossen",
-	"unconfirmedEmail.h2": "Sie erhalten in Kürze eine E-Mail",
-	"unconfirmedEmail.list.li.1":
-		"Prüfen Sie den Posteingang Ihres E-Mail-Postfaches",
-	"unconfirmedEmail.list.li.2":
-		"Klicken Sie auf den Link in der E-Mail, um die Registrierung abzuschließen",
+	"unconfirmedEmail.h2": "Fast geschafft!",
+	"unconfirmedEmail.text":
+		"Sie erhalten in Kürze eine E-Mail. Prüfen Sie den Posteingang Ihres E-Mail-Postfaches und klicken Sie auf den Link.",
 	"unconfirmedEmail.p": "Keine E-Mail bekommen?",
 	"unconfirmedEmail.list1.li1": "Bitte prüfen Sie auch Ihren Spam-Ordner",
 	"unconfirmedEmail.list1.li2":
@@ -1285,8 +1282,6 @@ export const Content = {
 		"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
 	"form.validation.invalidCredentials.error":
 		"Benutzername oder Passwort inkorrekt",
-	"form.validation.userAlreadyRegistered.error":
-		"Benutzer ist bereits registriert.",
 	"form.validation.password.shouldBeDifferent.error":
 		"Das neue Passwort muss sich vom alten Passwort unterscheiden.",
 	"form.validation.userBanned.error": "Der Benutzeraccount wurde gesperrt.",

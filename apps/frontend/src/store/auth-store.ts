@@ -9,12 +9,13 @@ import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
 import { registerUser } from "../api/auth/register-user.ts";
-import { resendEmailConfirmation } from "../api/auth/resend-email-confirmation.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
 import type { Span } from "@sentry/react";
 import { getIsUserBanned } from "../api/auth/get-is-user-banned.ts";
 
 let resendTime: number | null = null;
+
+const UNCONFIRMED_EMAIL_STORAGE_KEY = "baergpt:unconfirmedEmail";
 
 type EmailConfirmationStatus = "unknown" | "confirmed" | "unconfirmed";
 
@@ -96,6 +97,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 				newUnconfirmedEmail = null;
 			}
 
+			if (newEmailConfirmationStatus !== "unconfirmed") {
+				sessionStorage.removeItem(UNCONFIRMED_EMAIL_STORAGE_KEY);
+			}
+
 			const newState: Partial<AuthStore> = {
 				unconfirmedEmail: newUnconfirmedEmail,
 				emailConfirmationStatus: newEmailConfirmationStatus,
@@ -143,9 +148,15 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		}
 	});
 
+	const storedUnconfirmedEmail = sessionStorage.getItem(
+		UNCONFIRMED_EMAIL_STORAGE_KEY,
+	);
+
 	return {
-		unconfirmedEmail: null,
-		emailConfirmationStatus: "unknown" as EmailConfirmationStatus,
+		unconfirmedEmail: storedUnconfirmedEmail,
+		emailConfirmationStatus: (storedUnconfirmedEmail
+			? "unconfirmed"
+			: "unknown") as EmailConfirmationStatus,
 		session: undefined,
 		isInitialized: false,
 		isPasswordResetEmailSent: false,
@@ -157,26 +168,24 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isBanned: null,
 
 		async register({ firstName, lastName, email, password, span }) {
-			const { data, error } = await registerUser({
-				email,
-				password,
-				firstName,
-				lastName,
-			});
-
-			if (error) {
+			try {
+				await registerUser({ email, password, firstName, lastName });
+			} catch (error) {
 				useAuthErrorStore.getState().handleError(error, span);
 				return;
 			}
 
-			if (data.user && !data.user.email_confirmed_at) {
-				// Explicitly set the unconfirmed email here in addition to relying on onAuthStateChange
-				// This helps if there's any delay in the event firing.
-				set({
-					unconfirmedEmail: email,
-					emailConfirmationStatus: "unconfirmed",
-				});
-			}
+			/**
+			 * The backend always returns the same generic response regardless of
+			 * whether it created a new account, resent a confirmation email, or
+			 * sent a password reset email, so we always show the same
+			 * "check your email" screen here.
+			 */
+			sessionStorage.setItem(UNCONFIRMED_EMAIL_STORAGE_KEY, email);
+			set({
+				unconfirmedEmail: email,
+				emailConfirmationStatus: "unconfirmed",
+			});
 		},
 		async updatePassword(newPassword) {
 			try {
@@ -233,9 +242,9 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 
 			resendTime = Date.now();
 
-			const { error } = await resendEmailConfirmation(unconfirmedEmail);
-
-			if (error) {
+			try {
+				await registerUser({ email: unconfirmedEmail });
+			} catch (error) {
 				useAuthErrorStore.getState().handleError(error);
 			}
 		},

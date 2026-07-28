@@ -8,6 +8,7 @@ import documents from "./routes/documents";
 import llms from "./routes/llms";
 import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
+import auth from "./routes/auth";
 import favicon from "./routes/favicon";
 import { captureError } from "./monitoring/capture-error";
 import { logMemory } from "./monitoring/memory-logger";
@@ -34,6 +35,8 @@ app.use(
 
 // Unauthenticated liveness probe for Docker/CF health checks
 app.get("/health", (c) => c.json({ status: "ok" }));
+
+app.route("/auth", auth);
 
 app.use("*", basicAuth);
 app.use("*", sentryTracing);
