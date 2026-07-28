@@ -15,6 +15,11 @@ variable "org_name" {
   description = "Name of the Cloud Foundry organization. Must be unique across the platform."
 }
 
+variable "quota_id" {
+  type        = string
+  description = "CF org-quota GUID (\"Kontingent\")."
+}
+
 variable "operators" {
   type        = list(string)
   default     = []
@@ -31,7 +36,7 @@ variable "spaces" {
   }))
   default = {
     staging = { allow_ssh = true, total_memory = 4096, total_app_instances = 10, total_routes = 10 }
-    prod    = { allow_ssh = false, total_memory = 8192, total_app_instances = 20, total_routes = 20 }
+    prod    = { allow_ssh = false, total_memory = 18432, total_app_instances = 20, total_routes = 20 }
   }
 
   validation {

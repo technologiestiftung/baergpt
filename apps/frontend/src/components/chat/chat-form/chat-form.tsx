@@ -15,7 +15,10 @@ import { useUserDocumentStore } from "../../../store/use-user-document-store.ts"
 import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
-import { useChatsStore } from "../../../store/use-chats-store.ts";
+import {
+	useChatsStore,
+	externalChatTools,
+} from "../../../store/use-chats-store.ts";
 import { ChatMenuToggleButton } from "./chat-menu/chat-menu-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
@@ -33,7 +36,7 @@ export const ChatForm: React.FC = () => {
 	const { selectedUserChatDocuments } = useUserDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatTools, toggleChatTool } =
 		useChatsStore();
-	const { setAutoDeactivatedExternalTools } = useChatsStore.getState();
+	const { showInfoMessage } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -78,7 +81,7 @@ export const ChatForm: React.FC = () => {
 		// Clear any previous errors
 		clearError();
 
-		setAutoDeactivatedExternalTools([]);
+		showInfoMessage(null);
 
 		// Clear textarea on submit
 		if (textarea) {
@@ -101,6 +104,9 @@ export const ChatForm: React.FC = () => {
 			open_data_citations: null,
 			allowed_document_ids,
 			allowed_folder_ids: selectedUserChatFolders.map((folder) => folder.id),
+			external_tool_context: selectedChatTools.some((tool) =>
+				externalChatTools.includes(tool),
+			),
 		};
 
 		const model = useChatsStore.getState().selectedLlmModel;

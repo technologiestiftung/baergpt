@@ -169,6 +169,7 @@ export type Database = {
 					citations: Json | null;
 					content: string;
 					created_at: string;
+					external_tool_context: boolean;
 					id: number;
 					open_data_citations: Json | null;
 					parla_citations: Json | null;
@@ -183,6 +184,7 @@ export type Database = {
 					citations?: Json | null;
 					content: string;
 					created_at?: string;
+					external_tool_context?: boolean;
 					id?: number;
 					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
@@ -197,6 +199,7 @@ export type Database = {
 					citations?: Json | null;
 					content?: string;
 					created_at?: string;
+					external_tool_context?: boolean;
 					id?: number;
 					open_data_citations?: Json | null;
 					parla_citations?: Json | null;

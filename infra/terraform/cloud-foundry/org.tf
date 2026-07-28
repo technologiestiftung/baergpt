@@ -2,6 +2,7 @@ resource "stackit_scf_organization" "org" {
   project_id = var.project_id
   name       = var.org_name
   region     = var.region
+  quota_id   = var.quota_id
 }
 
 # Machine user the CF provider authenticates as.

@@ -890,12 +890,21 @@ export const Content = {
 	"chat.errorText.helpPage.linkText": "Hilfecenter.",
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
+	// Chat info text for paused chat history when external sources are active
+	"chat.chatHistoryPaused.infoText.title": "Chatverlauf pausiert",
+	"chat.chatHistoryPaused.infoText.p1":
+		"Solange externe Datenquellen aktiv sind, kann das Modell aus Datenschutzgründen nicht auf vorherige Nachrichten und Dokumente zurückgreifen. Nach dem Deaktivieren ist der Chatverlauf wieder verfügbar und Dokumente können wieder hinzugefügt werden.",
+	// Chat info texts for automated deactivation of external sources
 	"chat.webSearch.infoText.title": "Websuche wurde automatisch deaktiviert.",
 	"chat.webSearch.infoText.p1":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Websuche deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Websuche wieder zu aktivieren, klicken Sie auf +.",
 	"chat.parla.infoText.title": "Parla wurde automatisch deaktiviert.",
 	"chat.parla.infoText.p1":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Parla deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Parla wieder zu aktivieren, klicken Sie auf +.",
+	"chat.openData.infoText.title":
+		"Berlin Open Data wurde automatisch deaktiviert.",
+	"chat.openData.infoText.p1":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Berlin Open Data deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Open Data wieder zu aktivieren, klicken Sie auf +.",
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
