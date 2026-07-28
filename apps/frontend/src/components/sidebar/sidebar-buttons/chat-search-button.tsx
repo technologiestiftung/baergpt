@@ -37,7 +37,7 @@ export const ChatSearchButton: React.FC<ChatSearchButtonProps> = ({
 						? "text-hellblau-50 max-w-[230px] hover:bg-dunkelblau-90 focus-visible:outline-default"
 						: "relative self-center flex-row gap-1 bg-transparent hover:bg-dunkelblau-90 focus-visible:outline-default"
 				}`}
-				onClick={openChatSearchDialog()}
+				onClick={openChatSearchDialog}
 				onMouseEnter={handleInteractionStart}
 				onMouseLeave={hideTooltip}
 				onFocus={handleInteractionStart}

@@ -23,19 +23,30 @@ export function formatChatSearchDate(createdAt: string): string {
 	return format(date, "dd.MM.yyyy", { locale: de });
 }
 
+let inFlightChatId: number | null = null;
+
 export async function openChatFromSearch(
 	chat: Chat,
 	messageId?: number,
 	query?: string,
 ): Promise<void> {
+	inFlightChatId = chat.id;
 	const { chats, syncChats } = useChatsStore.getState();
 	const loadedChat = chats.find((storedChat) => storedChat.id === chat.id);
 	const targetMessageLoaded =
 		loadedChat?.messages.some((m) => m.id === messageId) ?? false;
 
 	if (!loadedChat || !targetMessageLoaded) {
-		const messages = await getMessages(chat.id, new AbortController().signal);
-		syncChats([{ ...chat, messages }]);
+		try {
+			const messages = await getMessages(chat.id, new AbortController().signal);
+			if (inFlightChatId !== chat.id) {
+				return;
+			}
+			syncChats([{ ...chat, messages }]);
+		} catch {
+			// keeping the dialog open for retry
+			return;
+		}
 	}
 
 	if (messageId !== undefined) {
@@ -46,5 +57,5 @@ export async function openChatFromSearch(
 	}
 
 	useCurrentChatIdStore.getState().setCurrentChatId(chat.id);
-	closeChatSearchDialog()();
+	closeChatSearchDialog();
 }
