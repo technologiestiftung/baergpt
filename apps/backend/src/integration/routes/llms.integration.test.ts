@@ -21,8 +21,7 @@ const externalToolEnabled: Partial<Record<ActiveTools, boolean>> = {
 	webSearchTool: config.featureFlagWebSearchAllowed,
 	parlaMCPTools: config.featureFlagMcpParlaAllowed,
 	openDataMCPTools: config.featureFlagMcpOpenDataAllowed,
-	// Not feature-flagged (yet) and not surfaced in the frontend.
-	datawrapperMCPTools: false,
+	datawrapperMCPTools: config.featureFlagMcpDatawrapperAllowed,
 };
 const enabledExternalTool =
 	[...EXTERNAL_TOOLS].find((tool) => externalToolEnabled[tool]) ?? null;

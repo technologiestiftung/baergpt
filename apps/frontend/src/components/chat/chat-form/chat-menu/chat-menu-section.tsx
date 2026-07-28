@@ -41,8 +41,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 
 	const isMcpParlaAllowed = config.featureFlagMcpParlaAllowed;
 	const isMcpOpenDataAllowed = config.featureFlagMcpOpenDataAllowed;
-	// unused for now
-	// const isMcpDatawrapperAllowed = config.featureFlagMcpDatawrapperAllowed;
+	const isMcpDatawrapperAllowed = config.featureFlagMcpDatawrapperAllowed;
 	const isWebSearchAllowed = config.featureFlagWebSearchAllowed;
 
 	const openConnectorsSubmenu = () => setIsConnectorsSubmenuOpen(true);
@@ -72,7 +71,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 			isSelected: false,
 			onSelect: () => fileInputRef.current?.click(),
 		},
-		...(isMcpParlaAllowed || isMcpOpenDataAllowed
+		...(isMcpParlaAllowed || isMcpOpenDataAllowed || isMcpDatawrapperAllowed
 			? [
 					{
 						id: "connectors",

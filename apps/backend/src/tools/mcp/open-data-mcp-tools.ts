@@ -274,6 +274,17 @@ export const openDataMCPTools =
 							throw new Error("MCP tool execute function not found");
 						},
 					});
+				} else if (toolName === "search_datasets_filtered") {
+					wrappedTools[toolName] = tool({
+						description: mcpTool.description,
+						inputSchema: searchDatasetsFilteredInputSchema,
+						execute: async (params, options) => {
+							if (mcpTool.execute) {
+								return await mcpTool.execute(params, options);
+							}
+							throw new Error("MCP tool execute function not found");
+						},
+					});
 				} else if (toolName === "get_dataset_details") {
 					wrappedTools[toolName] = tool({
 						description: mcpTool.description,

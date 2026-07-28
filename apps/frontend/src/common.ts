@@ -25,7 +25,7 @@ export type NewChatMessage = Pick<
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
-export type Connector = "parla" | "openData";
+export type Connector = "parla" | "openData" | "datawrapper";
 export type ChatTool = "webSearch" | Connector;
 
 export type ChatToolsMenuItemId = ChatTool | "fileUpload" | "connectors";

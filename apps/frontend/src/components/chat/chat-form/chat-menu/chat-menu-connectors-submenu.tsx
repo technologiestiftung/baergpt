@@ -8,6 +8,7 @@ import { config } from "../../../../config.ts";
 export const CONNECTOR_VALUES: Record<string, Connector> = {
 	parla: "parla",
 	openData: "openData",
+	datawrapper: "datawrapper",
 };
 
 interface ConnectorItem {
@@ -48,6 +49,16 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 						value: CONNECTOR_VALUES.openData,
 						ariaLabel: Content["mcp.options.dialog.option2.ariaLabel"],
 						logo: "/icons/berlin-open-data-logo-icon.svg",
+					},
+				]
+			: []),
+		...(config.featureFlagMcpDatawrapperAllowed
+			? [
+					{
+						label: Content["mcp.options.dialog.option3.label"],
+						value: CONNECTOR_VALUES.datawrapper,
+						ariaLabel: Content["mcp.options.dialog.option3.ariaLabel"],
+						logo: "/icons/datawrapper-icon.png",
 					},
 				]
 			: []),

@@ -133,10 +133,14 @@ export const ChatForm: React.FC = () => {
 	const isWebSearchActive = selectedChatTools.includes("webSearch");
 	const isParlaActive = selectedChatTools.includes("parla");
 	const isOpenDataActive = selectedChatTools.includes("openData");
-	const areMultipleSourcesActive =
-		(isWebSearchActive && isParlaActive) ||
-		(isWebSearchActive && isOpenDataActive) ||
-		(isParlaActive && isOpenDataActive);
+	const isDatawrapperActive = selectedChatTools.includes("datawrapper");
+	const activeToolsCount = [
+		isWebSearchActive,
+		isParlaActive,
+		isOpenDataActive,
+		isDatawrapperActive,
+	].filter(Boolean).length;
+	const areMultipleSourcesActive = activeToolsCount > 1;
 
 	const getTextAreaPlaceholder = () => {
 		if (areMultipleSourcesActive) {
@@ -147,6 +151,9 @@ export const ChatForm: React.FC = () => {
 		}
 		if (isOpenDataActive) {
 			return Content["chat.textarea.placeholder.openData"];
+		}
+		if (isDatawrapperActive) {
+			return Content["chat.textarea.placeholder.datawrapper"];
 		}
 		if (isWebSearchActive) {
 			return Content["chat.textarea.placeholder.webSearch"];
