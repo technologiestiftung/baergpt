@@ -2,6 +2,7 @@ import type { Chat } from "../../../common";
 import { getMessages } from "../../../api/message/get-messages";
 import { useCurrentChatIdStore } from "../../../store/current-chat-id-store";
 import { useChatsStore } from "../../../store/use-chats-store";
+import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store";
 import Content from "../../../content";
 import { isToday, format, isThisYear } from "date-fns";
 import { de } from "date-fns/locale";
@@ -22,13 +23,26 @@ export function formatChatSearchDate(createdAt: string): string {
 	return format(date, "dd.MM.yyyy", { locale: de });
 }
 
-export async function openChatFromSearch(chat: Chat): Promise<void> {
+export async function openChatFromSearch(
+	chat: Chat,
+	messageId?: number,
+	query?: string,
+): Promise<void> {
 	const { chats, syncChats } = useChatsStore.getState();
 	const loadedChat = chats.find((storedChat) => storedChat.id === chat.id);
+	const targetMessageLoaded =
+		loadedChat?.messages.some((m) => m.id === messageId) ?? false;
 
-	if (!loadedChat) {
+	if (!loadedChat || !targetMessageLoaded) {
 		const messages = await getMessages(chat.id, new AbortController().signal);
 		syncChats([{ ...chat, messages }]);
+	}
+
+	if (messageId !== undefined) {
+		useChatScrollingStore.getState().setPendingScrollToMessage({
+			messageId,
+			query: query?.trim() ?? "",
+		});
 	}
 
 	useCurrentChatIdStore.getState().setCurrentChatId(chat.id);
