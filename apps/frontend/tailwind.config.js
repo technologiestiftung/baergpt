@@ -18,6 +18,7 @@ export default {
 				"schwarz-100": "#000000",
 				"dunkelblau-200": "#030812",
 				"dunkelblau-100": "#0C2753",
+				"dunkelblau-95": "#18325C",
 				"dunkelblau-90": "#243D64",
 				"dunkelblau-80": "#3d5275",
 				"dunkelblau-70": "#556887",

@@ -22,7 +22,7 @@ export const DeleteHistoryEntryButton: React.FC<
 			<button
 				type="button"
 				aria-label={Content["deleteHistoryEntryButton.arialabel"]}
-				className="rounded-3px w-fit focus-visible:outline-default transition-opacity duration-200"
+				className="rounded-3px size-5 flex items-center justify-center focus-visible:outline-default transition-opacity duration-200 hover:bg-dunkelblau-95"
 				onClick={() => {
 					showDeleteHistoryEntryDialog();
 					setHistoryEntryToDeleteId(chat.id);

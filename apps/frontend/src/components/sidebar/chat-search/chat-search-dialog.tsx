@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Content from "../../../content";
 import { useChatsStore } from "../../../store/use-chats-store";
 import { DefaultDialog } from "../../primitives/dialogs/default-dialog";
@@ -69,68 +69,22 @@ export const ChatSearchDialog: React.FC = () => {
 		}
 	};
 
-	const renderBody = () => {
-		if (!hasQuery) {
-			return (
-				<>
-					<p className="text-dunkelblau-70 text-xs leading-4 pl-3">
-						{Content["chatSearchDialog.lastChats"]}
-					</p>
-					<ul className="flex flex-col">
-						{lastChats.map((chat) => (
-							<li key={chat.id}>
-								<ChatSearchLastResultButton chat={chat} />
-							</li>
-						))}
-					</ul>
-				</>
-			);
-		}
+	const isLoadingResults = hasQuery && isLoading;
+	const hasResults = hasQuery && !isLoading && results.length > 0;
+	const hasNoResults = hasQuery && !isLoading && results.length === 0;
 
-		if (isLoading) {
-			return <ChatSearchSkeleton />;
-		}
+	const [areResultsScrolled, setAreResultsScrolled] = useState(false);
 
-		if (results.length === 0) {
-			return <ChatSearchEmptyState query={query.trim()} />;
-		}
-
-		return (
-			<>
-				<p
-					className="text-dunkelblau-70 text-xs leading-4 pl-3"
-					id={`${chatSearchListboxId}-label`}
-				>
-					{Content["chatSearchDialog.results"]}
-				</p>
-				<ul
-					className="flex flex-col"
-					role="listbox"
-					id={chatSearchListboxId}
-					aria-labelledby={`${chatSearchListboxId}-label`}
-				>
-					{results.map((result, index) => (
-						<li key={result.messageId} role="presentation">
-							<ChatSearchResultButton
-								chat={result.chat}
-								messageId={result.messageId}
-								snippet={result.snippet}
-								query={query}
-								optionId={getChatSearchOptionId(result.messageId)}
-								isSelected={index === selectedIndex}
-								onSelect={() => setSelectedIndex(index)}
-							/>
-						</li>
-					))}
-				</ul>
-			</>
-		);
+	const handleResultsScroll = (event: React.UIEvent<HTMLDivElement>) => {
+		setAreResultsScrolled(event.currentTarget.scrollTop > 0);
 	};
 
 	return (
 		<DefaultDialog id={chatSearchDialogId} afterClose={reset}>
-			<div className="bg-white rounded-sm w-full md:w-[720px] md:h-[460px] flex flex-col gap-[15px]">
-				<div className="sticky top-0 bg-white flex flex-row items-center justify-between p-[18px] pl-3 gap-1">
+			<div className="bg-white rounded-sm w-full md:w-[720px] md:h-[460px] flex flex-col">
+				<div
+					className={`sticky top-0 bg-white flex flex-row items-center justify-between p-[18px] pl-3 gap-1 border-b-[0.5px] ${areResultsScrolled ? "border-dunkelblau-50" : "border-transparent"}`}
+				>
 					<img
 						src="/icons/chat-search-dark-icon.svg"
 						alt={Content["chatSearchButton.icon.alt"]}
@@ -172,8 +126,56 @@ export const ChatSearchDialog: React.FC = () => {
 						/>
 					</button>
 				</div>
-				<div className="flex flex-col px-3 overflow-y-auto gap-2">
-					{renderBody()}
+				<div
+					onScroll={handleResultsScroll}
+					className="flex flex-col px-3 overflow-y-auto chatsearch-scrollbar gap-2 pt-[15px]"
+				>
+					{!hasQuery && (
+						<>
+							<p className="text-dunkelblau-70 text-xs leading-4 pl-3">
+								{Content["chatSearchDialog.lastChats"]}
+							</p>
+							<ul className="flex flex-col">
+								{lastChats.map((chat) => (
+									<li key={chat.id}>
+										<ChatSearchLastResultButton chat={chat} />
+									</li>
+								))}
+							</ul>
+						</>
+					)}
+					{isLoadingResults && <ChatSearchSkeleton />}
+					{hasNoResults && <ChatSearchEmptyState query={query.trim()} />}
+					{hasResults && (
+						<>
+							<p
+								className="text-dunkelblau-70 text-xs leading-4 pl-3"
+								id={`${chatSearchListboxId}-label`}
+							>
+								{Content["chatSearchDialog.results"]}
+							</p>
+							<ul
+								className="flex flex-col"
+								role="listbox"
+								id={chatSearchListboxId}
+								aria-labelledby={`${chatSearchListboxId}-label`}
+							>
+								{results.map((result, index) => (
+									<li key={result.messageId} role="presentation">
+										<ChatSearchResultButton
+											chat={result.chat}
+											messageId={result.messageId}
+											snippet={result.snippet}
+											query={query}
+											optionId={getChatSearchOptionId(result.messageId)}
+											isSelected={index === selectedIndex}
+											onSelect={() => setSelectedIndex(index)}
+										/>
+									</li>
+								))}
+							</ul>
+						</>
+					)}
 				</div>
 			</div>
 		</DefaultDialog>

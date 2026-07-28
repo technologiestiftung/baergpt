@@ -196,4 +196,33 @@
 	.filesection-scrollbar::-webkit-scrollbar-thumb:hover {
 		background: theme("colors.hellblau-100");
 	}
+
+	.chatsearch-scrollbar {
+		/* Firefox */
+		scrollbar-width: auto;
+		scrollbar-color: theme("colors.hellblau-110") transparent;
+	}
+
+	.chatsearch-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+		-webkit-appearance: none;
+	}
+
+	.chatsearch-scrollbar::-webkit-scrollbar-track {
+		border-radius: 100px;
+		background: transparent;
+		border: none;
+	}
+
+	.chatsearch-scrollbar::-webkit-scrollbar-thumb {
+		background: white;
+		border-radius: 100px;
+		border: none;
+		-webkit-appearance: none;
+	}
+
+	.chatsearch-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: theme("colors.dunkelblau-40");
+	}
 }
