@@ -3,15 +3,8 @@ name: Backend image build and push to registry
 on:
   pull_request:
     branches: [staging, main]
-    paths:
-      - "apps/backend/**"
-      - "libs/db-schema/**"
-      - "libs/typescript-config/**"
-      - "turbo.json"
-      - "package.json"
-      - "package-lock.json"
-      - ".dockerignore"
-      - ".github/workflows/backend-image-build-and-push.yml"
+  push:
+    branches: [staging, main]
   workflow_dispatch:
 
 permissions:
