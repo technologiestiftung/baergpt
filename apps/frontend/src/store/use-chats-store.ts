@@ -70,7 +70,7 @@ interface ChatStore {
 	deactivateExternalTools(): void;
 }
 
-const externalChatTools: ChatTool[] = [
+export const externalChatTools: ChatTool[] = [
 	"webSearch",
 	"parla",
 	"openData",
