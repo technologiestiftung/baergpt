@@ -64,19 +64,19 @@ export function useChatSearch() {
 	}, [query]);
 
 	const moveSelection = useCallback(
-		(direction: "up" | "down") => {
-			if (results.length === 0) {
+		(direction: "up" | "down", itemCount: number) => {
+			if (itemCount === 0) {
 				return;
 			}
 
 			setSelectedIndex((currentIndex) => {
 				if (direction === "down") {
-					return Math.min(currentIndex + 1, results.length - 1);
+					return Math.min(currentIndex + 1, itemCount - 1);
 				}
 				return Math.max(currentIndex - 1, 0);
 			});
 		},
-		[results.length],
+		[],
 	);
 
 	return {

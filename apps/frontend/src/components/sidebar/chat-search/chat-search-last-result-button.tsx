@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Content from "../../../content";
 import type { Chat } from "../../../common";
 import {
@@ -7,16 +7,39 @@ import {
 	removeMarkdownStyling,
 } from "./chat-search-utils";
 
-export const ChatSearchLastResultButton: React.FC<{ chat: Chat }> = ({
-	chat,
-}) => {
+interface ChatSearchLastResultButtonProps {
+	chat: Chat;
+	optionId: string;
+	isSelected: boolean;
+	onSelect: () => void;
+}
+
+export const ChatSearchLastResultButton: React.FC<
+	ChatSearchLastResultButtonProps
+> = ({ chat, optionId, isSelected, onSelect }) => {
+	const buttonRef = useRef<HTMLButtonElement>(null);
+
+	useEffect(() => {
+		if (isSelected) {
+			buttonRef.current?.scrollIntoView({ block: "nearest" });
+		}
+	}, [isSelected]);
+
 	return (
 		<button
+			ref={buttonRef}
 			type="button"
-			className="w-full flex items-center justify-between gap-3 p-3 rounded-sm text-sm leading-5 hover:bg-hellblau-30 focus-visible:outline-default"
+			id={optionId}
+			role="option"
+			aria-selected={isSelected}
+			tabIndex={-1}
+			className={`w-full flex items-center justify-between gap-3 p-3 rounded-sm text-sm leading-5 focus-visible:outline-default ${
+				isSelected ? "bg-hellblau-30" : "hover:bg-hellblau-30"
+			}`}
 			onClick={() => {
 				void openChatFromSearch(chat);
 			}}
+			onMouseEnter={onSelect}
 		>
 			<div className="flex items-center gap-3 min-w-0">
 				<img
