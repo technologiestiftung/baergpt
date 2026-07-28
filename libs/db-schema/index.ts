@@ -246,7 +246,7 @@ export type Database = {
 					content: string;
 					document_id: number | null;
 					folder_id: number | null;
-					full_text_search: unknown;
+					full_text_search: unknown | null;
 					id: number;
 					owned_by_user_id: string | null;
 					page: number;
@@ -258,7 +258,7 @@ export type Database = {
 					content: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown;
+					full_text_search?: unknown | null;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page: number;
@@ -270,7 +270,7 @@ export type Database = {
 					content?: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown;
+					full_text_search?: unknown | null;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page?: number;
@@ -537,7 +537,10 @@ export type Database = {
 				Args: { p_domain: string };
 				Returns: undefined;
 			};
-			add_allowed_domain: { Args: { p_domain: string }; Returns: undefined };
+			add_allowed_domain: {
+				Args: { p_domain: string };
+				Returns: undefined;
+			};
 			add_allowed_individual_email: {
 				Args: { p_email: string };
 				Returns: undefined;
@@ -550,14 +553,27 @@ export type Database = {
 				};
 				Returns: undefined;
 			};
-			check_email_allowed: { Args: { p_email: string }; Returns: boolean };
+			check_email_allowed: {
+				Args: { p_email: string };
+				Returns: boolean;
+			};
+			check_email_registration_status: {
+				Args: { p_email: string };
+				Returns: {
+					is_confirmed: boolean;
+					user_exists: boolean;
+				}[];
+			};
 			deactivate_allowed_domain: {
 				Args: { p_domain: string };
 				Returns: number;
 			};
-			delete_user: { Args: never; Returns: undefined };
+			delete_user: {
+				Args: Record<PropertyKey, never>;
+				Returns: undefined;
+			};
 			find_unprocessed_documents: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					created_at: string;
 					file_checksum: string;
@@ -573,14 +589,14 @@ export type Database = {
 				}[];
 			};
 			get_allowed_email_domains: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					domain: string;
 					id: number;
 				}[];
 			};
 			get_allowed_email_domains_admin: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					created_at: string;
 					created_by: string;
@@ -593,7 +609,7 @@ export type Database = {
 				}[];
 			};
 			get_allowed_individual_emails: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					created_at: string;
 					created_by: string;
@@ -643,10 +659,16 @@ export type Database = {
 					storage_version: string;
 				}[];
 			};
-			get_maintenance_mode_status: { Args: never; Returns: boolean };
-			get_product_dashboard_stats: { Args: never; Returns: Json };
+			get_maintenance_mode_status: {
+				Args: Record<PropertyKey, never>;
+				Returns: boolean;
+			};
+			get_product_dashboard_stats: {
+				Args: Record<PropertyKey, never>;
+				Returns: Json;
+			};
 			get_users: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					academic_title: string;
 					banned_until: string;
@@ -690,8 +712,14 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			is_application_admin: { Args: never; Returns: boolean };
-			is_current_user_banned: { Args: never; Returns: boolean };
+			is_application_admin: {
+				Args: Record<PropertyKey, never>;
+				Returns: boolean;
+			};
+			is_current_user_banned: {
+				Args: Record<PropertyKey, never>;
+				Returns: boolean;
+			};
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];
@@ -752,11 +780,11 @@ export type Database = {
 				}[];
 			};
 			regenerate_embedding_indices_for_chunks: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: undefined;
 			};
 			regenerate_embedding_indices_for_summaries: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: undefined;
 			};
 			remove_allowed_individual_email: {

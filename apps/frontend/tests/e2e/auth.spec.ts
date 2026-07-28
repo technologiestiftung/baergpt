@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import {
 	confirmOtp,
@@ -7,6 +8,7 @@ import { supabaseAdminClient } from "../supabase.ts";
 import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
+import Content from "../../src/content.ts";
 
 test.describe("Login", () => {
 	testWithRegisteredUser("User Login and Logout", async ({ page, account }) => {
@@ -232,6 +234,60 @@ test.describe("Password Reset", () => {
 	});
 });
 
+async function fillAndSubmitRegistrationForm(
+	page: Page,
+	{
+		email,
+		password,
+		firstName,
+		lastName,
+	}: { email: string; password: string; firstName: string; lastName: string },
+) {
+	await page.goto("/register/");
+
+	const firstNameInput = page.getByRole("textbox", { name: "Vorname" });
+	await firstNameInput.fill(firstName);
+
+	const lastNameInput = page.getByRole("textbox", { name: "Nachname" });
+	await lastNameInput.fill(lastName);
+
+	const emailInput = page.getByRole("textbox", {
+		name: "E-Mail-Adresse Nur",
+	});
+	await emailInput.fill(email);
+
+	// Wait for check email allowed to be loaded before proceeding
+	await page
+		.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
+			timeout: 10_000,
+		})
+		.catch(() => {}); // Ignore if already completed
+
+	const passwordInput = page.getByRole("textbox", {
+		name: "Passwort",
+		exact: true,
+	});
+	await passwordInput.fill(password);
+
+	const passwordRepeatInput = page.getByRole("textbox", {
+		name: "Passwort wiederholen",
+	});
+	await passwordRepeatInput.fill(password);
+
+	const privacyCheckboxInput = page.locator(
+		'[data-testid="label-has-accepted-privacy-checkbox"]',
+	);
+	await privacyCheckboxInput.check();
+
+	// Wait for the registration request to complete
+	await Promise.all([
+		page.waitForResponse(
+			(resp) => resp.url().includes("/auth/register") && resp.status() === 200,
+		),
+		page.getByRole("button", { name: "Registrieren" }).click(),
+	]);
+}
+
 test.describe("User Registration (uses different user to prevent side-effects on other tests)", () => {
 	const givenUserEmail = "user.registration@ts.berlin";
 	const givenUserPassword = "123456789!";
@@ -262,58 +318,16 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	});
 
 	testWithoutSplashScreen("Default Registration Flow", async ({ page }) => {
-		// Go to the registration page
-		await page.goto("/register/");
-
-		// Fill in the registration form
-		const firstNameInput = page.getByRole("textbox", {
-			name: "Vorname",
+		await fillAndSubmitRegistrationForm(page, {
+			email: givenUserEmail,
+			password: givenUserPassword,
+			firstName: givenUserFirstName,
+			lastName: givenUserLastName,
 		});
-		await firstNameInput.fill(givenUserFirstName);
-
-		const lastNameInput = page.getByRole("textbox", { name: "Nachname" });
-		await lastNameInput.fill(givenUserLastName);
-
-		const emailInput = page.getByRole("textbox", {
-			name: "E-Mail-Adresse Nur",
-		});
-		await emailInput.fill(givenUserEmail);
-
-		// Wait for check email allowed to be loaded before proceeding
-		await page
-			.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
-				timeout: 10_000,
-			})
-			.catch(() => {}); // Ignore if already completed
-
-		const passwordInput = page.getByRole("textbox", {
-			name: "Passwort",
-			exact: true,
-		});
-		await passwordInput.fill(givenUserPassword);
-
-		const passwordRepeatInput = page.getByRole("textbox", {
-			name: "Passwort wiederholen",
-		});
-		await passwordRepeatInput.fill(givenUserPassword);
-
-		const privacyCheckboxInput = page.locator(
-			'[data-testid="label-has-accepted-privacy-checkbox"]',
-		);
-		await privacyCheckboxInput.check();
-
-		// Wait for the registration request to complete
-		await Promise.all([
-			page.waitForResponse(
-				(resp) =>
-					resp.url().includes("/auth/v1/signup") && resp.status() === 200,
-			),
-			page.getByRole("button", { name: "Registrieren" }).click(),
-		]);
 
 		// Info message about confirmation mail should be visible
 		await expect(
-			page.getByRole("heading", { name: "Registrierung fast abgeschlossen" }),
+			page.getByRole("heading", { name: "Fast geschafft!" }),
 		).toBeVisible({ timeout: 10_000 });
 
 		const page1 = await confirmOtp({
@@ -333,6 +347,107 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			}),
 		).toBeVisible();
 	});
+
+	testWithoutSplashScreen(
+		"Registering with an existing confirmed email shows the same generic screen",
+		async ({ page }) => {
+			const { error: createUserError } =
+				await supabaseAdminClient.auth.admin.createUser({
+					email: givenUserEmail,
+					password: givenUserPassword,
+					email_confirm: true,
+				});
+
+			expect(createUserError).toBeNull();
+
+			await fillAndSubmitRegistrationForm(page, {
+				email: givenUserEmail,
+				password: givenUserPassword,
+				firstName: givenUserFirstName,
+				lastName: givenUserLastName,
+			});
+
+			// The uniform "check your email" screen must be shown -
+			// never an error revealing that the account already exists.
+			await expect(
+				page.getByRole("heading", {
+					name: "Fast geschafft!",
+				}),
+			).toBeVisible({ timeout: 10_000 });
+			await expect(
+				page.getByText("Benutzer ist bereits registriert."),
+			).not.toBeVisible();
+		},
+	);
+
+	testWithoutSplashScreen(
+		"Registering with an existing unconfirmed email shows the same generic screen",
+		async ({ page }) => {
+			const { error: createUserError } =
+				await supabaseAdminClient.auth.admin.createUser({
+					email: givenUserEmail,
+					password: givenUserPassword,
+					email_confirm: false,
+				});
+
+			expect(createUserError).toBeNull();
+
+			await fillAndSubmitRegistrationForm(page, {
+				email: givenUserEmail,
+				password: givenUserPassword,
+				firstName: givenUserFirstName,
+				lastName: givenUserLastName,
+			});
+
+			// Behaviorally indistinguishable from the "new user" case from the UI -
+			// that's expected, the whole point is uniformity.
+			await expect(
+				page.getByRole("heading", {
+					name: "Fast geschafft!",
+				}),
+			).toBeVisible({ timeout: 10_000 });
+			await expect(
+				page.getByText("Benutzer ist bereits registriert."),
+			).not.toBeVisible();
+		},
+	);
+
+	testWithoutSplashScreen(
+		"Resend button re-submits the registration endpoint with just the email",
+		async ({ page }) => {
+			await fillAndSubmitRegistrationForm(page, {
+				email: givenUserEmail,
+				password: givenUserPassword,
+				firstName: givenUserFirstName,
+				lastName: givenUserLastName,
+			});
+
+			await expect(
+				page.getByRole("heading", {
+					name: "Fast geschafft!",
+				}),
+			).toBeVisible({ timeout: 10_000 });
+
+			const resendButton = page.getByRole("button", {
+				name: "E-Mail erneut senden",
+			});
+
+			const [resendRequest] = await Promise.all([
+				page.waitForRequest(
+					(request) =>
+						request.url().includes("/auth/register") &&
+						request.method() === "POST",
+				),
+				resendButton.click(),
+			]);
+
+			expect(resendRequest.postDataJSON()).toEqual({ email: givenUserEmail });
+
+			await expect(
+				page.getByText(Content["unconfirmedEmail.resend.success"]),
+			).toBeVisible();
+		},
+	);
 });
 
 testWithoutSplashScreen(

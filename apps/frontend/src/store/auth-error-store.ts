@@ -10,8 +10,6 @@ interface AuthErrorStore {
 
 const errorMessages: { [key: string]: string } = {
 	wrong_password: content["form.validation.password.wrong.error"],
-	"User already registered":
-		content["form.validation.userAlreadyRegistered.error"],
 	"Invalid login credentials":
 		content["form.validation.invalidCredentials.error"],
 	privacy_not_accepted: content["form.validation.privacy.required.error"],

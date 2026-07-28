@@ -74,9 +74,10 @@
 								</h1>
 
 								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Sie haben eine Zurücksetzung Ihres Passworts angefordert.
-									Bitte bestätigen Sie Ihre Identität und wählen anschließend
-									ein neues Passwort.
+									Sie haben eine Zurücksetzung Ihres Passworts angefordert oder
+									versucht, sich mit einer bereits registrierten Email-Adresse
+									erneut zu registrieren. Bitte bestätigen Sie Ihre Identität
+									und wählen anschließend ein neues Passwort.
 								</p>
 
 								<p style="font-size: 14px; color: #000000; line-height: 1.5">
@@ -153,7 +154,8 @@
 										rel="noopener noreferrer"
 										style="color: #0c2753; word-break: break-word"
 									>
-										{{ .SiteURL }}/confirm-otp/?type=recovery&email={{ .Email }}&
+										{{ .SiteURL }}/confirm-otp/?type=recovery&email={{ .Email
+										}}&
 									</a>
 									<br /><br />
 									Ihr Code (bitte im Formular eingeben):
