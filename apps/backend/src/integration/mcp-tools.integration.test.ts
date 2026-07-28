@@ -117,14 +117,10 @@ vi.mock("@ai-sdk/mcp", async () => {
 
 		return {
 			tools: vi.fn(
-				async (options?: {
-					schemas?: Record<string, MockMCPToolSchema>;
-				}) => {
+				async (options?: { schemas?: Record<string, MockMCPToolSchema> }) => {
 					if (options?.schemas) {
 						const schemaTools: Record<string, MockMCPTool> = {};
-						for (const [toolName, schema] of Object.entries(
-							options.schemas,
-						)) {
+						for (const [toolName, schema] of Object.entries(options.schemas)) {
 							if (mockTools[toolName]) {
 								schemaTools[toolName] = {
 									...mockTools[toolName],

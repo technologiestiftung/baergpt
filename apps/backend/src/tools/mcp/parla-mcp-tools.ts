@@ -72,7 +72,9 @@ export const parlaVectorSearchInputSchema = z.object({
 		.describe("Maximum documents to return (default 3)"),
 });
 
-export type ParlaVectorSearchInput = z.infer<typeof parlaVectorSearchInputSchema>;
+export type ParlaVectorSearchInput = z.infer<
+	typeof parlaVectorSearchInputSchema
+>;
 
 export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
 	let parlaHttpClient: MCPClient | undefined;
