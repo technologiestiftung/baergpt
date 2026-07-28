@@ -1,6 +1,5 @@
 import React from "react";
 import Content from "../../../content";
-import type { Chat } from "../../../common";
 import { useChatsStore } from "../../../store/use-chats-store";
 import { DefaultDialog } from "../../primitives/dialogs/default-dialog";
 import { ChatSearchEmptyState } from "./chat-search-empty-state";
@@ -22,8 +21,8 @@ export {
 
 const chatSearchListboxId = "chat-search-listbox";
 
-const getChatSearchOptionId = (chatId: Chat["id"]): string =>
-	`chat-search-option-${chatId}`;
+const getChatSearchOptionId = (messageId: number): string =>
+	`chat-search-option-${messageId}`;
 
 export const ChatSearchDialog: React.FC = () => {
 	const { chats } = useChatsStore();
@@ -61,7 +60,11 @@ export const ChatSearchDialog: React.FC = () => {
 			event.preventDefault();
 			const selectedResult = results[selectedIndex];
 			if (selectedResult) {
-				void openChatFromSearch(selectedResult.chat);
+				void openChatFromSearch(
+					selectedResult.chat,
+					selectedResult.messageId,
+					query,
+				);
 			}
 		}
 	};
@@ -94,7 +97,10 @@ export const ChatSearchDialog: React.FC = () => {
 
 		return (
 			<>
-				<p className="text-dunkelblau-70 text-xs leading-4 pl-3" id={`${chatSearchListboxId}-label`}>
+				<p
+					className="text-dunkelblau-70 text-xs leading-4 pl-3"
+					id={`${chatSearchListboxId}-label`}
+				>
 					{Content["chatSearchDialog.results"]}
 				</p>
 				<ul
@@ -104,12 +110,13 @@ export const ChatSearchDialog: React.FC = () => {
 					aria-labelledby={`${chatSearchListboxId}-label`}
 				>
 					{results.map((result, index) => (
-						<li key={result.chat.id} role="presentation">
+						<li key={result.messageId} role="presentation">
 							<ChatSearchResultButton
 								chat={result.chat}
+								messageId={result.messageId}
 								snippet={result.snippet}
 								query={query}
-								optionId={getChatSearchOptionId(result.chat.id)}
+								optionId={getChatSearchOptionId(result.messageId)}
 								isSelected={index === selectedIndex}
 								onSelect={() => setSelectedIndex(index)}
 							/>
@@ -147,7 +154,7 @@ export const ChatSearchDialog: React.FC = () => {
 						aria-controls={chatSearchListboxId}
 						aria-activedescendant={
 							results.length > 0 && results[selectedIndex]
-								? getChatSearchOptionId(results[selectedIndex].chat.id)
+								? getChatSearchOptionId(results[selectedIndex].messageId)
 								: undefined
 						}
 					/>

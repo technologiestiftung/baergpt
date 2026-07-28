@@ -9,6 +9,7 @@ import {
 
 interface ChatSearchResultButtonProps {
 	chat: Chat;
+	messageId: number;
 	snippet: string;
 	query: string;
 	optionId: string;
@@ -18,6 +19,7 @@ interface ChatSearchResultButtonProps {
 
 export const ChatSearchResultButton: React.FC<ChatSearchResultButtonProps> = ({
 	chat,
+	messageId,
 	snippet,
 	query,
 	optionId,
@@ -44,7 +46,7 @@ export const ChatSearchResultButton: React.FC<ChatSearchResultButtonProps> = ({
 				isSelected ? "bg-hellblau-30" : "hover:bg-hellblau-30"
 			}`}
 			onClick={() => {
-				void openChatFromSearch(chat);
+				void openChatFromSearch(chat, messageId, query);
 			}}
 			onMouseEnter={onSelect}
 		>

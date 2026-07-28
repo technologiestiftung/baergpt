@@ -5,9 +5,13 @@ import { useErrorStore } from "../../store/error-store.ts";
 
 const { handleError } = useErrorStore.getState();
 
+const SEARCH_RESULT_LIMIT = 50;
+
 export type ChatSearchResult = {
 	chat: Chat;
+	messageId: number;
 	snippet: string;
+	createdAt: string;
 };
 
 /**
@@ -24,8 +28,8 @@ function escapeIlikeQuery(query: string): string {
 
 /**
  * Searches the current user's chats by message content.
- * Returns one result per chat (with the first matching message as snippet),
- * sorted by chat created_at descending.
+ * Returns one result per matching message, sorted by message created_at
+ * descending, capped at SEARCH_RESULT_LIMIT.
  */
 export async function searchChats(
 	query: string,
@@ -46,9 +50,10 @@ export async function searchChats(
 
 	const { data: matchingMessages, error: messageError } = await supabase
 		.from("chat_messages")
-		.select("chat_id, content, created_at")
+		.select("id, chat_id, content, created_at")
 		.ilike("content", pattern)
-		.order("created_at", { ascending: true })
+		.order("created_at", { ascending: false })
+		.limit(SEARCH_RESULT_LIMIT)
 		.abortSignal(signal);
 
 	if (signal.aborted) {
@@ -60,17 +65,12 @@ export async function searchChats(
 		return [];
 	}
 
-	const snippetByChatId = new Map<number, string>();
-	for (const message of matchingMessages ?? []) {
-		if (!snippetByChatId.has(message.chat_id)) {
-			snippetByChatId.set(message.chat_id, message.content);
-		}
-	}
-
-	const chatIds = [...snippetByChatId.keys()];
-	if (chatIds.length === 0) {
+	const messages = matchingMessages ?? [];
+	if (messages.length === 0) {
 		return [];
 	}
+
+	const chatIds = [...new Set(messages.map((message) => message.chat_id))];
 
 	const { data: chats, error: chatsError } = await supabase
 		.from("chats")
@@ -88,19 +88,20 @@ export async function searchChats(
 		return [];
 	}
 
-	const results: ChatSearchResult[] = (chats ?? []).flatMap((chat) => {
-		const snippet = snippetByChatId.get(chat.id);
-		if (!snippet) {
+	const chatById = new Map((chats ?? []).map((chat) => [chat.id, chat]));
+
+	return messages.flatMap((message) => {
+		const chat = chatById.get(message.chat_id);
+		if (!chat) {
 			return [];
 		}
-		return [{ chat, snippet }];
+		return [
+			{
+				chat,
+				messageId: message.id,
+				snippet: message.content,
+				createdAt: message.created_at,
+			},
+		];
 	});
-
-	results.sort(
-		(a, b) =>
-			new Date(b.chat.created_at).getTime() -
-			new Date(a.chat.created_at).getTime(),
-	);
-
-	return results;
 }
