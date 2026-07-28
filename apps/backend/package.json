@@ -30,7 +30,7 @@
 		"@ai-sdk/mcp": "1.0.36",
 		"@ai-sdk/mistral": "3.0.30",
 		"@dqbd/tiktoken": "1.0.17",
-		"@hono/node-server": "1.19.13",
+		"@hono/node-server": "2.0.5",
 		"@langfuse/client": "4.2.0",
 		"@langfuse/core": "4.2.0",
 		"@langfuse/otel": "4.2.0",
