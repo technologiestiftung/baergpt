@@ -97,6 +97,20 @@ export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
 			},
 		});
 
+		for (const tool of Object.values(tools)) {
+			const originalExecute = tool.execute;
+			if (originalExecute) {
+				tool.execute = (async (...args: Parameters<typeof originalExecute>) => {
+					try {
+						return await originalExecute(...args);
+					} catch (error) {
+						captureError(error);
+						return { documentMatches: [] };
+					}
+				}) as typeof originalExecute;
+			}
+		}
+
 		return {
 			tools,
 			cleanup: async () => await parlaHttpClient?.close(),

@@ -155,7 +155,10 @@ import * as mcpModule from "@ai-sdk/mcp";
 import * as captureErrorModule from "../monitoring/capture-error";
 
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
-import type { ParlaMCPToolsResult } from "../tools/mcp/parla-mcp-tools";
+import type {
+	ParlaMCPToolsResult,
+	ParlaResponse,
+} from "../tools/mcp/parla-mcp-tools";
 import { parseParlaToolOutput } from "../tools/mcp/parla-mcp-tools";
 import {
 	openDataMCPTools,
@@ -338,23 +341,50 @@ describe("Parla MCP Tools Integration", () => {
 		});
 	});
 
-	it("should handle missing execute function gracefully", async () => {
-		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
-		const { execute } = requireToolExecute(
-			vectorSearchTool,
-			"parla_vector_search",
+	it("should handle execute errors gracefully and return fallback output", async () => {
+		const captureErrorSpy = vi
+			.spyOn(captureErrorModule, "captureError")
+			.mockImplementationOnce(() => {});
+
+		const mockError = new Error(
+			"MCP schema validation failed / response malformed",
 		);
 
-		// Create a scenario where execute would fail
-		// by passing invalid parameters that don't match the schema
-		try {
-			await execute(
-				{ invalid: "params" } as unknown as Parameters<typeof execute>[0],
-				toolCallOptions,
+		const mockMcpClient = {
+			tools: vi.fn().mockResolvedValue({
+				parla_vector_search: {
+					description: "Vector search tool",
+					execute: vi.fn().mockRejectedValue(mockError),
+				},
+			}),
+			close: vi.fn(),
+		};
+
+		const createMCPClientSpy = vi
+			.spyOn(mcpModule, "createMCPClient")
+			.mockResolvedValue(
+				mockMcpClient as unknown as ReturnType<
+					typeof mcpModule.createMCPClient
+				>,
 			);
-		} catch (error) {
-			expect(error).toBeDefined();
-		}
+
+		const testResult = await parlaMCPTools();
+		expect(testResult).not.toBeNull();
+
+		const tool = testResult?.tools["parla_vector_search"];
+		const executeResult = await tool?.execute?.(
+			{ query: "test" },
+			toolCallOptions,
+		);
+
+		expect(executeResult).toEqual({ documentMatches: [] });
+		expect(captureErrorSpy).toHaveBeenCalledWith(mockError);
+
+		const parsedFallback = parseParlaToolOutput(executeResult as ParlaResponse);
+		expect(parsedFallback).toEqual([]);
+
+		createMCPClientSpy.mockRestore();
+		captureErrorSpy.mockRestore();
 	});
 
 	it("cleanup function should be callable multiple times", async () => {
