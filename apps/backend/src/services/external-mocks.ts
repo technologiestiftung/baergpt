@@ -1,14 +1,13 @@
 import type {
-	EmbeddingModelV3,
-	EmbeddingModelV3Result,
-	LanguageModelV3,
-	LanguageModelV3FinishReason,
-	LanguageModelV3GenerateResult,
-	LanguageModelV3StreamPart,
-	LanguageModelV3StreamResult,
-	LanguageModelV3Usage,
+	EmbeddingModelV4Result,
+	LanguageModelV4FinishReason,
+	LanguageModelV4GenerateResult,
+	LanguageModelV4StreamPart,
+	LanguageModelV4StreamResult,
+	LanguageModelV4Usage,
 } from "@ai-sdk/provider";
-import { MockEmbeddingModelV3, MockLanguageModelV3 } from "ai/test";
+import type { EmbeddingModel, LanguageModel } from "ai";
+import { MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 import { simulateReadableStream } from "ai";
 import { ChatPromptClient, TextPromptClient } from "@langfuse/client";
 import { config } from "../config";
@@ -24,12 +23,12 @@ import { countTokens } from "./token-utils";
  * paths running without external calls.
  */
 
-const MOCK_USAGE: LanguageModelV3Usage = {
+const MOCK_USAGE: LanguageModelV4Usage = {
 	inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
 	outputTokens: { total: 1, text: 1, reasoning: 0 },
 };
 
-const MOCK_FINISH_REASON: LanguageModelV3FinishReason = {
+const MOCK_FINISH_REASON: LanguageModelV4FinishReason = {
 	unified: "stop",
 	raw: "stop",
 };
@@ -47,9 +46,9 @@ function mockGenerateText(isJsonResponse: boolean): string {
 	return isJsonResponse ? "{}" : '{"tags":["mock-tag"]}';
 }
 
-export function mockLanguageModel(): LanguageModelV3 {
-	return new MockLanguageModelV3({
-		doGenerate: async (options): Promise<LanguageModelV3GenerateResult> => ({
+export function mockLanguageModel(): LanguageModel {
+	return new MockLanguageModelV4({
+		doGenerate: async (options): Promise<LanguageModelV4GenerateResult> => ({
 			content: [
 				{
 					type: "text",
@@ -60,8 +59,8 @@ export function mockLanguageModel(): LanguageModelV3 {
 			usage: MOCK_USAGE,
 			warnings: [],
 		}),
-		doStream: async (): Promise<LanguageModelV3StreamResult> => ({
-			stream: simulateReadableStream<LanguageModelV3StreamPart>({
+		doStream: async (): Promise<LanguageModelV4StreamResult> => ({
+			stream: simulateReadableStream<LanguageModelV4StreamPart>({
 				chunks: [
 					{ type: "stream-start", warnings: [] },
 					{ type: "text-start", id: "0" },
@@ -78,9 +77,9 @@ export function mockLanguageModel(): LanguageModelV3 {
 	});
 }
 
-export function mockEmbeddingModel(): EmbeddingModelV3 {
-	return new MockEmbeddingModelV3({
-		doEmbed: async ({ values }): Promise<EmbeddingModelV3Result> => ({
+export function mockEmbeddingModel(): EmbeddingModel {
+	return new MockEmbeddingModelV4({
+		doEmbed: async ({ values }): Promise<EmbeddingModelV4Result> => ({
 			embeddings: values.map(() =>
 				new Array(config.mistralEmbeddingDimensions).fill(0),
 			),

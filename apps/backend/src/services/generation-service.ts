@@ -1,7 +1,13 @@
 import crypto from "crypto";
 import { enc } from "../constants";
 import { config } from "../config";
-import { isLoopFinished, ModelMessage, Tool, ToolChoice } from "ai";
+import {
+	isLoopFinished,
+	ModelMessage,
+	Tool,
+	ToolChoice,
+	UIMessageStreamWriter,
+} from "ai";
 import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
@@ -18,7 +24,11 @@ import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { LLM_PARAMETERS } from "../constants";
-import type { ActiveTools, ParsedPage } from "../types/common";
+import type {
+	ActiveTools,
+	IncomingChatMessage,
+	ParsedPage,
+} from "../types/common";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import {
 	parlaMCPTools,
@@ -34,12 +44,23 @@ import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
 	parlaCitationAnswerSchema,
+	openDataCitationAnswerSchema,
 } from "../schemas/citation-answer-schema";
 import {
 	countTokens,
 	computeSafePayload,
 	trimToTokenLimitByWords,
 } from "./token-utils";
+import {
+	openDataMCPTools,
+	extractOpenDataSourcesFromToolOutput,
+	OPEN_DATA_DATASET_TOOL_NAMES,
+	openDataMcpToolOutputSchema,
+	openDataToolInputSchema,
+	type OpenDataCitationSource,
+	type OpenDataToolInput,
+} from "../tools/mcp/open-data-mcp-tools";
+import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
 
 const modelService = new ModelService();
 
@@ -79,6 +100,8 @@ const TOOL_INSTRUCTION_PROMPTS: ReadonlyArray<[ActiveTools, string]> = [
 	["ragSearchTool", "tool-instruction-documents"],
 	["webSearchTool", "tool-instruction-web-search"],
 	["parlaMCPTools", "tool-instruction-parla"],
+	["openDataMCPTools", "tool-instruction-open-data"],
+	["datawrapperMCPTools", "tool-instruction-datawrapper"],
 ];
 
 export class GenerationService {
@@ -312,6 +335,7 @@ export class GenerationService {
 				const streamResponse = streamText({
 					model: llmHandler.languageModel,
 					messages: messages.filter(nonEmptyAssistantMessage),
+					allowSystemInMessages: true,
 					maxOutputTokens: 8192,
 					temperature: LLM_PARAMETERS.temperature,
 					tools,
@@ -367,15 +391,19 @@ export class GenerationService {
 									await generateText({
 										model: llmHandler.languageModel,
 										messages: compiledDocumentCitationExtractionPrompts,
+										allowSystemInMessages: true,
 										temperature: LLM_PARAMETERS.temperature,
 										output: Output.object({
 											schema: citationAnswerSchema,
 										}),
-										experimental_telemetry: {
+										runtimeContext: {
+											sessionId: sessionId ? sessionId : "unknown",
+										},
+										telemetry: {
 											isEnabled: config.isTracingEnabled,
 											functionId: "citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
+											includeRuntimeContext: {
+												sessionId: true,
 											},
 										},
 									});
@@ -427,15 +455,19 @@ export class GenerationService {
 									await generateText({
 										model: llmHandler.languageModel,
 										messages: compiledWebCitationExtractionPrompts,
+										allowSystemInMessages: true,
 										temperature: LLM_PARAMETERS.temperature,
 										output: Output.object({
 											schema: webCitationAnswerSchema,
 										}),
-										experimental_telemetry: {
+										runtimeContext: {
+											sessionId: sessionId ? sessionId : "unknown",
+										},
+										telemetry: {
 											isEnabled: config.isTracingEnabled,
 											functionId: "web-citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
+											includeRuntimeContext: {
+												sessionId: true,
 											},
 										},
 									});
@@ -488,15 +520,19 @@ export class GenerationService {
 									await generateText({
 										model: llmHandler.languageModel,
 										messages: compiledParlaCitationPrompts,
+										allowSystemInMessages: true,
 										temperature: LLM_PARAMETERS.temperature,
 										output: Output.object({
 											schema: parlaCitationAnswerSchema,
 										}),
-										experimental_telemetry: {
+										runtimeContext: {
+											sessionId: sessionId ? sessionId : "unknown",
+										},
+										telemetry: {
 											isEnabled: config.isTracingEnabled,
 											functionId: "parla-citation-extraction",
-											metadata: {
-												sessionId: sessionId ? sessionId : "unknown",
+											includeRuntimeContext: {
+												sessionId: true,
 											},
 										},
 									});
@@ -526,6 +562,48 @@ export class GenerationService {
 							}
 						}
 
+						const allOpenDataSources: OpenDataCitationSource[] = steps.flatMap(
+							(step) =>
+								step.toolResults
+									.filter((tr) => OPEN_DATA_DATASET_TOOL_NAMES.has(tr.toolName))
+									.flatMap((tr) => {
+										const parsedOutput = openDataMcpToolOutputSchema.safeParse(
+											tr.output,
+										);
+										if (!parsedOutput.success) {
+											return [];
+										}
+
+										const parsedInput = openDataToolInputSchema.safeParse(
+											tr.input,
+										);
+										const input: OpenDataToolInput = parsedInput.success
+											? parsedInput.data
+											: {};
+
+										return extractOpenDataSourcesFromToolOutput(
+											input,
+											parsedOutput.data,
+										);
+									}),
+						);
+						const uniqueOpenDataSources = Array.from(
+							new Map(
+								allOpenDataSources.map((source) => [source.url, source]),
+							).values(),
+						);
+
+						if (uniqueOpenDataSources.length > 0) {
+							await this.extractAndWriteOpenDataCitations({
+								sources: uniqueOpenDataSources,
+								text,
+								llmHandler,
+								sessionId,
+								userId,
+								writer,
+							});
+						}
+
 						logMemory("chat:onFinish-complete", memoryLogId);
 						updateActiveTrace({
 							name: "streamed-text-generation",
@@ -536,14 +614,16 @@ export class GenerationService {
 
 						await this.dbService.updateUsage(userId, usage.totalTokens);
 					},
-					experimental_telemetry: {
+					runtimeContext: {
+						sessionId: sessionId ? sessionId : "unknown",
+						langfusePrompt: langfusePrompt,
+					},
+					telemetry: {
 						isEnabled: config.isTracingEnabled,
 						functionId: "streamed-text-with-tool-calls",
-						metadata: {
-							sessionId: sessionId ? sessionId : "unknown",
-							langfusePrompt: langfusePrompt
-								? langfusePrompt.toJSON()
-								: undefined,
+						includeRuntimeContext: {
+							sessionId: true,
+							langfusePrompt: true,
 						},
 					},
 					onError: (error) => {
@@ -572,6 +652,7 @@ export class GenerationService {
 		const { text, usage } = await generateText({
 			model: llmHandler.languageModel,
 			messages: messages,
+			allowSystemInMessages: true,
 			temperature: LLM_PARAMETERS.temperature,
 			providerOptions: {
 				mistral: {
@@ -579,11 +660,15 @@ export class GenerationService {
 					frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
 				},
 			},
-			experimental_telemetry: {
+			runtimeContext: {
+				sessionId: "unknown",
+				langfusePrompt: langfusePrompt,
+			},
+			telemetry: {
 				isEnabled: config.isTracingEnabled,
-				metadata: {
-					sessionId: "unknown",
-					langfusePrompt: langfusePrompt.toJSON(),
+				includeRuntimeContext: {
+					sessionId: true,
+					langfusePrompt: true,
 				},
 			},
 		});
@@ -600,17 +685,29 @@ export class GenerationService {
 	 */
 
 	async createPrompt(args: {
-		previousMessages: ModelMessage[];
+		previousMessages: IncomingChatMessage[];
 		isAddressedFormal: boolean;
 		activeTools: ActiveTools[];
 		userSystemPrompt?: string | null;
+		isExternalToolActive: boolean;
 	}) {
 		const {
 			previousMessages,
 			isAddressedFormal,
 			activeTools,
 			userSystemPrompt,
+			isExternalToolActive,
 		} = args;
+
+		// The current (last) message is always included as the message triggering this turn
+		const scopedMessages: IncomingChatMessage[] = isExternalToolActive
+			? [
+					...previousMessages
+						.slice(0, -1)
+						.filter(({ external_tool_context }) => external_tool_context),
+					...previousMessages.slice(-1),
+				]
+			: previousMessages;
 
 		const currentDate = new Date().toLocaleDateString("de-DE", {
 			year: "numeric",
@@ -633,6 +730,14 @@ export class GenerationService {
 			const blockClient = await getTextPrompt(promptName, { label });
 			toolInstructionBlocks.push(blockClient.compile({}));
 		}
+		// Block explaining the scoped (possibly gappy) message history with external tools being activated
+		if (isExternalToolActive) {
+			const externalContextBlockClient = await getTextPrompt(
+				"tool-instruction-external-context",
+				{ label },
+			);
+			toolInstructionBlocks.push(externalContextBlockClient.compile({}));
+		}
 		const toolInstructions = toolInstructionBlocks.join("\n\n");
 
 		const compiledFreeChatPrompt = freeChatPromptClient.compile({
@@ -648,7 +753,7 @@ export class GenerationService {
 		};
 
 		return {
-			messages: [freeChatPrompt, ...previousMessages],
+			messages: [freeChatPrompt, ...scopedMessages],
 			promptClient: freeChatPromptClient,
 		};
 	}
@@ -667,6 +772,7 @@ export class GenerationService {
 			toolChoice: "none",
 			cleanup: async () => {},
 		};
+		const cleanupFns: Array<() => Promise<void>> = [];
 
 		const hasAllowedDocumentsOrFolders =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
@@ -694,10 +800,105 @@ export class GenerationService {
 					...parlaMCPToolsResponse.tools,
 				};
 				relevantTools.toolChoice = "auto";
-				relevantTools.cleanup = parlaMCPToolsResponse.cleanup;
+				cleanupFns.push(parlaMCPToolsResponse.cleanup);
 			}
 		}
 
+		if (activeTools.includes("datawrapperMCPTools")) {
+			const datawrapperMCPToolsResponse = await datawrapperMCPTools();
+			if (datawrapperMCPToolsResponse) {
+				relevantTools.tools = {
+					...relevantTools.tools,
+					...datawrapperMCPToolsResponse.tools,
+				};
+				relevantTools.toolChoice = "auto";
+				cleanupFns.push(datawrapperMCPToolsResponse.cleanup);
+			}
+		}
+
+		if (activeTools.includes("openDataMCPTools")) {
+			const openDataMCPToolsResponse = await openDataMCPTools();
+			if (openDataMCPToolsResponse) {
+				relevantTools.tools = {
+					...relevantTools.tools,
+					...openDataMCPToolsResponse.tools,
+				};
+				relevantTools.toolChoice = "auto";
+				cleanupFns.push(openDataMCPToolsResponse.cleanup);
+			}
+		}
+
+		if (cleanupFns.length > 0) {
+			relevantTools.cleanup = async () => {
+				await Promise.all(cleanupFns.map((cleanupFn) => cleanupFn()));
+			};
+		}
+
 		return relevantTools;
+	}
+
+	private async extractAndWriteOpenDataCitations(args: {
+		sources: OpenDataCitationSource[];
+		text: string;
+		llmHandler: LLMHandler;
+		sessionId: string;
+		userId: string;
+		writer: UIMessageStreamWriter;
+	}): Promise<void> {
+		const { sources, text, llmHandler, sessionId, userId, writer } = args;
+
+		try {
+			const openDataCitationPromptClient = await getChatPrompt(
+				"web-citation-extraction",
+				{
+					label: config.nodeEnv === "test" ? "development" : config.nodeEnv,
+				},
+			);
+
+			const compiledOpenDataCitationExtractionPrompts =
+				openDataCitationPromptClient.compile({
+					generatedAnswer: text,
+					availableSources: sources
+						.map((s) => `[URL: ${s.url}]\n Titel: ${s.title}`)
+						.join("\n\n"),
+				}) as ModelMessage[];
+
+			const { output: openDataObject, usage: openDataCitationUsage } =
+				await generateText({
+					model: llmHandler.languageModel,
+					messages: compiledOpenDataCitationExtractionPrompts,
+					allowSystemInMessages: true,
+					temperature: LLM_PARAMETERS.temperature,
+					output: Output.object({ schema: openDataCitationAnswerSchema }),
+					runtimeContext: {
+						sessionId: sessionId ? sessionId : "unknown",
+					},
+					telemetry: {
+						isEnabled: config.isTracingEnabled,
+						functionId: "open-data-citation-extraction",
+						includeRuntimeContext: {
+							sessionId: true,
+						},
+					},
+				});
+
+			const citedOpenDataSources = sources.filter((s) =>
+				openDataObject.citations.some((c) => c.url === s.url),
+			);
+
+			if (citedOpenDataSources.length > 0) {
+				writer.write({
+					type: "data-open-data-citations",
+					data: citedOpenDataSources,
+				});
+			}
+
+			await this.dbService.updateUsage(
+				userId,
+				openDataCitationUsage.totalTokens,
+			);
+		} catch (error) {
+			captureError(error);
+		}
 	}
 }

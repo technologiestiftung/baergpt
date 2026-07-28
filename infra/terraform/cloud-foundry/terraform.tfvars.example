@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+project_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # baergpt-berlin-prod
+org_name   = "baergpt"
+region     = "eu01"
+quota_id   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Accounts granted organization_user + space_developer on both spaces (must exist in UAA):
+operators = ["you@example.org"]
+
+# Override per-space caps to fit the org quota if needed:
+# spaces = {
+#   staging = { allow_ssh = true,  total_memory = 4096,  total_app_instances = 10, total_routes = 10 }
+#   prod    = { allow_ssh = false, total_memory = 18432, total_app_instances = 20, total_routes = 20 }
+# }

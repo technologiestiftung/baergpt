@@ -61,8 +61,16 @@ export type GenerateAnswerBody = {
 	documentMatches: Array<ResponseDocumentMatch>;
 };
 
+/**
+ * Carries the persisted `external_tool_context` flag alongside the base `ModelMessage` from
+ * the frontend so the backend can scope which messages reach an external tool.
+ */
+export type IncomingChatMessage = ModelMessage & {
+	external_tool_context?: boolean;
+};
+
 export type ChatMessageBody = {
-	messages: ModelMessage[];
+	messages: IncomingChatMessage[];
 	user_id: string;
 	chat_id: string;
 	search_type: string;
@@ -75,7 +83,12 @@ export type ChatMessageBody = {
 	llm_model: string;
 };
 
-export type ActiveTools = "ragSearchTool" | "webSearchTool" | "parlaMCPTools";
+export type ActiveTools =
+	| "ragSearchTool"
+	| "webSearchTool"
+	| "parlaMCPTools"
+	| "datawrapperMCPTools"
+	| "openDataMCPTools";
 
 export type Embedding = {
 	content: string;

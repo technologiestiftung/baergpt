@@ -8,7 +8,7 @@ export async function setup() {
 		return;
 	}
 
-	server = await new Promise((resolve) => {
+	server = await new Promise((resolve, reject) => {
 		const serverInstance = serve(
 			{
 				fetch: app.fetch,
@@ -18,6 +18,7 @@ export async function setup() {
 				resolve(serverInstance);
 			},
 		);
+		serverInstance.on("error", (err) => reject(err));
 	});
 }
 

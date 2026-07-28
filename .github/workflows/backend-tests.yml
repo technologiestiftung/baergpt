@@ -26,20 +26,6 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
-      - name: Cache backend build 💾
-        id: cache-backend-build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0, pinned to commit sha to avoid sha-hulud like attacks
-        with:
-          path: |
-            ./apps/backend/dist
-          key: ${{ runner.os }}-node-backend-${{ hashFiles('./apps/backend/**/*', '!./apps/backend/node_modules/**/*', '**/package-lock.json') }}
-
-      - name: Check Build 🏗️
-        if: steps.cache-backend-build.outputs.cache-hit != 'true'
-        run: |
-          cd apps/backend
-          npm run build
-
       - name: Wait for Supabase to be ready ⏳
         uses: ./.github/actions/wait-for-supabase
 

@@ -9,15 +9,12 @@ import { CloseIcon } from "../primitives/icons/close-icon.tsx";
 import { Content } from "../../content.ts";
 import { Resizer } from "./resizer.tsx";
 import { useTooltipStore } from "../../store/tooltip-store.ts";
-import { DropZoneWrapperDocuments } from "./document-list/drop-zone-wrapper-documents.tsx";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
-import { useFileUploadsStore } from "../../store/use-file-uploads-store.ts";
 import { MultiSelectForActionButton } from "./document-list/multi-select-for-action/multi-select-for-action-button.tsx";
 import { useCurrentFolderStore } from "../../store/use-current-folder-store.ts";
 import { isPublicFolder } from "./document-list/list-item/utils/is-public-folder.ts";
 import { isUserFolder } from "./document-list/list-item/utils/is-user-folder.ts";
-import type { Document, PublicFolder, UserFolder } from "../../common.ts";
 import { PublicFolders } from "./document-list/public-folders.tsx";
 
 const MIN_WIDTH = 350;
@@ -32,14 +29,8 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 	const { showTooltip, hideTooltip } = useTooltipStore();
 	const documentButtonRef = useRef<HTMLButtonElement>(null);
 	const { getUIError } = useErrorStore();
-	const {
-		getUserDocuments,
-		isLoading,
-		userDocuments,
-		deletedDefaultDocumentIds,
-	} = useUserDocumentStore();
+	const { getUserDocuments, isLoading } = useUserDocumentStore();
 	const { currentFolder } = useCurrentFolderStore();
-	const { hasAvailableUploadSlots } = useFileUploadsStore();
 
 	const errorMessage = getUIError("documents-fetch");
 
@@ -68,16 +59,9 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 		getUserDocuments(abortController.signal);
 	};
 
-	const isDropZoneDisabled = isUploadDisabled({
-		userDocuments,
-		deletedDefaultDocumentIds,
-		hasAvailableUploadSlots,
-		currentFolder,
-	});
-
 	return (
 		<>
-			<DropZoneWrapperDocuments
+			<div
 				className={`hidden md:flex flex-col h-full pt-5 pb-5 bg-hellblau-50 will-change-[width] transition-[width] duration-300 ease-in-out
 					${isResizing && "transition-none"} ${isCollapsed ? "px-4 hover:bg-hellblau-60 cursor-pointer" : "px-6"}
 				`}
@@ -85,7 +69,6 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 				style={{
 					width: isCollapsed ? COLLAPSED_WIDTH : `${width}px`,
 				}}
-				isDropZoneDisabled={isDropZoneDisabled}
 				{...(isCollapsed && {
 					onClick: () => {
 						hideTooltip();
@@ -143,27 +126,22 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 							}
 							onBlur={hideTooltip}
 						>
-							<DocumentIcon variant="black" />
+							<DocumentIcon variant="darkBlue" />
 						</button>
-						<h2
-							className={`text-dunkelblau-200 text-2xl font-bold flex gap-x-2 ${isCollapsed && "hidden"}`}
-						>
-							{Content["documentsSection.title"]}
-						</h2>
 					</div>
 					<button
 						className={`p-1 rounded-3px hover:bg-hellblau-60 focus-visible:outline-default ${isCollapsed && "hidden"}`}
 						onClick={() => setIsCollapsed(true)}
 						aria-label={Content["documentsSection.hideFiles.ariaLabel"]}
 					>
-						<CloseIcon />
+						<CloseIcon variant="darkBlue" />
 					</button>
 				</div>
 
 				{!isCollapsed && (
 					<>
 						{currentFolder && (
-							<div className="mt-8">
+							<div className="mt-4">
 								<DocumentBreadcrumbs />
 							</div>
 						)}
@@ -172,7 +150,7 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 							<>
 								<PublicFolders />
 
-								<h2 className="mt-8 leading-6 text-dunkelblau-100">
+								<h2 className="mt-5 leading-6 text-dunkelblau-100">
 									{Content["documentsSection.mainFolder.label"]}
 								</h2>
 							</>
@@ -220,7 +198,7 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 						)}
 					</>
 				)}
-			</DropZoneWrapperDocuments>
+			</div>
 			{!isCollapsed && (
 				<Resizer
 					currentWidth={width}
@@ -231,31 +209,5 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 				/>
 			)}
 		</>
-	);
-}
-
-function isUploadDisabled(args: {
-	userDocuments: Document[];
-	deletedDefaultDocumentIds: number[];
-	hasAvailableUploadSlots: () => boolean;
-	currentFolder: UserFolder | PublicFolder | null;
-}) {
-	const {
-		userDocuments,
-		deletedDefaultDocumentIds,
-		hasAvailableUploadSlots,
-		currentFolder,
-	} = args;
-
-	const numberOfUploads =
-		userDocuments.filter((doc) => !deletedDefaultDocumentIds.includes(doc.id))
-			.length || 0;
-	const hasReachedTotalUploadLimit =
-		numberOfUploads >= Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED);
-
-	return (
-		hasReachedTotalUploadLimit ||
-		!hasAvailableUploadSlots() ||
-		isPublicFolder(currentFolder)
 	);
 }

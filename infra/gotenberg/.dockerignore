@@ -1,0 +1,4 @@
+# Build context is infra/gotenberg/. The wrapper copies nothing in;
+# keep the context empty apart from the Dockerfile itself.
+*
+!Dockerfile

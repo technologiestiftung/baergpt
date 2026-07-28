@@ -2,16 +2,21 @@ import React from "react";
 import { Content } from "../../../../content";
 import { DefaultDialog } from "../../../primitives/dialogs/default-dialog.tsx";
 import type { WebCitationSource } from "../../../../api/chat/get-completion.ts";
-import type { ParlaCitationSource } from "../../../../common.ts";
+import type {
+	ParlaCitationSource,
+	OpenDataCitationSource,
+} from "../../../../common.ts";
 import { CitationItem } from "./citation-item.tsx";
 import { WebCitationItem } from "./web-citation-item.tsx";
 import { ParlaCitationItem } from "./parla-citation-item.tsx";
+import { OpenDataCitationItem } from "./open-data-citation-item.tsx";
 
 interface CitationsDialogProps {
 	messageId: number;
 	citations: number[] | null;
 	webCitations: WebCitationSource[] | null;
 	parlaCitations: ParlaCitationSource[] | null;
+	openDataCitations: OpenDataCitationSource[] | null;
 }
 
 export const citationsDialogId = "citations-dialog";
@@ -39,10 +44,12 @@ export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 	citations,
 	webCitations,
 	parlaCitations,
+	openDataCitations,
 }) => {
 	const documentChunkIds = citations ?? [];
 	const webCitationSources = webCitations ?? [];
 	const parlaCitationSources = parlaCitations ?? [];
+	const openDataCitationSources = openDataCitations ?? [];
 
 	return (
 		<DefaultDialog id={`${citationsDialogId}-${messageId}`}>
@@ -76,6 +83,13 @@ export const CitationsDialog: React.FC<CitationsDialogProps> = ({
 							<ParlaCitationItem
 								source={source}
 								key={`${source.url}-${source.page}-${index}`}
+							/>
+						))}
+					{openDataCitationSources.length > 0 &&
+						openDataCitationSources.map((source, index) => (
+							<OpenDataCitationItem
+								source={source}
+								key={`${source.url}-${index}`}
 							/>
 						))}
 				</div>

@@ -169,7 +169,9 @@ export type Database = {
 					citations: Json | null;
 					content: string;
 					created_at: string;
+					external_tool_context: boolean;
 					id: number;
+					open_data_citations: Json | null;
 					parla_citations: Json | null;
 					role: string;
 					type: string;
@@ -182,7 +184,9 @@ export type Database = {
 					citations?: Json | null;
 					content: string;
 					created_at?: string;
+					external_tool_context?: boolean;
 					id?: number;
+					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role: string;
 					type: string;
@@ -195,7 +199,9 @@ export type Database = {
 					citations?: Json | null;
 					content?: string;
 					created_at?: string;
+					external_tool_context?: boolean;
 					id?: number;
+					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role?: string;
 					type?: string;
@@ -236,7 +242,6 @@ export type Database = {
 				Row: {
 					access_group_id: string | null;
 					chunk_index: number;
-					chunk_jina_embedding: string | null;
 					chunk_mistral_embedding: string | null;
 					content: string;
 					document_id: number | null;
@@ -249,7 +254,6 @@ export type Database = {
 				Insert: {
 					access_group_id?: string | null;
 					chunk_index: number;
-					chunk_jina_embedding?: string | null;
 					chunk_mistral_embedding?: string | null;
 					content: string;
 					document_id?: number | null;
@@ -262,7 +266,6 @@ export type Database = {
 				Update: {
 					access_group_id?: string | null;
 					chunk_index?: number;
-					chunk_jina_embedding?: string | null;
 					chunk_mistral_embedding?: string | null;
 					content?: string;
 					document_id?: number | null;

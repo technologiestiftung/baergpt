@@ -750,7 +750,6 @@ export const Content = {
 	"eyeStruckThroughIcon.imgAlt": "Ein durchgestrichenes Augen-Icon",
 
 	/* -------------------- DocumentsSection -------------------- */
-	"documentsSection.title": "Dateien",
 	"documentSection.publicFolder.label": "Bibliothek",
 	"documentSection.publicFolder.baseKnowledge.label": "Verwaltungswissen",
 	"documentsSection.mainFolder.label": "Meine Dateien",
@@ -791,7 +790,8 @@ export const Content = {
 	"fileUpload.uploadButton.imgAlt": "Hochladen-Icon",
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
-	"fileUpload.dropZone.label": "Dateien ablegen, um sie hochzuladen in",
+	"fileUpload.clearUploads.ariaLabel": "Hochladen-Status schließen",
+	"chat.dropZone.label": "Dateien ablegen, um sie zum Chat hinzuzufügen.",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Hochladen läuft",
 	"fileUploadButtonStatus.uploaded": "Hochladen abgeschlossen",
@@ -890,16 +890,33 @@ export const Content = {
 	"chat.errorText.helpPage.linkText": "Hilfecenter.",
 	"chat.errorIcon.imgAlt": "Ein rotes Ausrufezeichen-Icon",
 
+	// Chat info text for paused chat history when external sources are active
+	"chat.chatHistoryPaused.infoText.title": "Chatverlauf pausiert",
+	"chat.chatHistoryPaused.infoText.p1":
+		"Solange externe Datenquellen aktiv sind, kann das Modell aus Datenschutzgründen nicht auf vorherige Nachrichten und Dokumente zurückgreifen. Nach dem Deaktivieren ist der Chatverlauf wieder verfügbar und Dokumente können wieder hinzugefügt werden.",
+	// Chat info texts for automated deactivation of external sources
 	"chat.webSearch.infoText.title": "Websuche wurde automatisch deaktiviert.",
 	"chat.webSearch.infoText.p1":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird die Websuche deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Websuche wieder zu aktivieren, klicken Sie auf +.",
 	"chat.parla.infoText.title": "Parla wurde automatisch deaktiviert.",
 	"chat.parla.infoText.p1":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Parla deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Parla wieder zu aktivieren, klicken Sie auf +.",
+	"chat.datawrapper.infoText.title":
+		"Datawrapper wurde automatisch deaktiviert.",
+	"chat.datawrapper.infoText.p1":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Datawrapper deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Datawrapper wieder zu aktivieren, klicken Sie auf +.",
+	"chat.openData.infoText.title":
+		"Berlin Open Data wurde automatisch deaktiviert.",
+	"chat.openData.infoText.p1":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Berlin Open Data deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Open Data wieder zu aktivieren, klicken Sie auf +.",
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
 	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
+	"chat.textarea.placeholder.parla": "Parla Berlin durchsuchen",
+	"chat.textarea.placeholder.openData": "Open Data Portal durchsuchen",
+	"chat.textarea.placeholder.datawrapper": "Datawrapper nutzen",
+	"chat.textarea.placeholder.multipleSources": "Externe Quellen durchsuchen",
 	"chat.sendButton.ariaLabel": "Nachricht senden",
 	"chat.scrollToBottomButton.ariaLabel": "Zum Ende des Chats scrollen",
 	"chat.stopGeneratingButton.ariaLabel": "Textgenerierung stoppen",
@@ -928,6 +945,14 @@ export const Content = {
 	"mcp.options.dialog.option1.description":
 		"Schriftliche Anfragen des Abgh. Berlins",
 	"mcp.options.dialog.option1.ariaLabel": "Parla Berlin auswählen",
+	"mcp.options.dialog.option2.label": "Berlin Open Data",
+	"mcp.options.dialog.option2.description":
+		"Datenbestände aus dem Berliner Datenportal",
+	"mcp.options.dialog.option2.ariaLabel": "Berlin Open Data auswählen",
+	"mcp.options.dialog.option3.label": "Datawrapper",
+	"mcp.options.dialog.option3.description":
+		"Datenvisualisierungen erstellen und veröffentlichen",
+	"mcp.options.dialog.option3.ariaLabel": "Datawrapper auswählen",
 
 	// Chat llm model dropdown
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
@@ -958,6 +983,8 @@ export const Content = {
 	"chat.citationsDialog.page": "Seite",
 	"chat.tooltipCitation.page": "Seite",
 	"chat.citationsDialog.publicDocumentPill.label": "Verwaltungswissen",
+	"chat.citationsDialog.openData.datasetLabel": "Berlin Open Data Datensatz",
+	"chat.citationsDialog.openData.icon.alt": "Berlin Open Data Logo",
 
 	"chat.exportChatTextButton.label": "Exportieren",
 	"chat.exportChatTextButton.ariaLabel": "Chat exportieren",
@@ -974,6 +1001,12 @@ export const Content = {
 	"chat.contextPill.parla.label": "Parla Berlin",
 	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",
+	"chat.contextPill.openData.label": "Open Data",
+	"chat.contextPill.openData.ariaLabel": "Open Data entfernen",
+	"chat.contextPill.openData.icon.alt": "Berlin Open Data Logo",
+	"chat.contextPill.datawrapper.label": "Datawrapper",
+	"chat.contextPill.datawrapper.ariaLabel": "Datawrapper entfernen",
+	"chat.contextPill.datawrapper.icon.alt": "Datawrapper Logo",
 
 	"chat.externalTools.warningBanner.label":
 		"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",

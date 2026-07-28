@@ -20,6 +20,8 @@ const USER_PASSWORD = "SecurePassword789!";
 const externalToolEnabled: Partial<Record<ActiveTools, boolean>> = {
 	webSearchTool: config.featureFlagWebSearchAllowed,
 	parlaMCPTools: config.featureFlagMcpParlaAllowed,
+	openDataMCPTools: config.featureFlagMcpOpenDataAllowed,
+	datawrapperMCPTools: config.featureFlagMcpDatawrapperAllowed,
 };
 const enabledExternalTool =
 	[...EXTERNAL_TOOLS].find((tool) => externalToolEnabled[tool]) ?? null;
