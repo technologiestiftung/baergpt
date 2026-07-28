@@ -20,14 +20,15 @@ test.describe("Chat search", () => {
 			await expect(searchInput).toBeFocused();
 
 			await expect(page.getByText("Letzte Chats")).toBeVisible();
-			await expect(page.getByRole("listbox")).toHaveCount(0);
+			await expect(page.getByRole("listbox")).toBeVisible();
 
-			const lastChats = page.getByRole("dialog").getByRole("button", {
+			const lastChats = page.getByRole("option", {
 				name: /Testchat/,
 			});
 			await expect(lastChats).toHaveCount(2);
 			await expect(lastChats.nth(0)).toContainText("Neuerer Testchat");
 			await expect(lastChats.nth(1)).toContainText("Älterer Testchat");
+			await expect(lastChats.nth(0)).toHaveAttribute("aria-selected", "true");
 		},
 	);
 

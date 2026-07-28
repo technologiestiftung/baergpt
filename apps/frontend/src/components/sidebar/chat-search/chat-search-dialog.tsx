@@ -10,8 +10,8 @@ import {
 	chatSearchDialogId,
 	closeChatSearchDialog,
 } from "./chat-search-dialog-controls";
-import { openChatFromSearch } from "./chat-search-utils";
 import { useChatSearch } from "./use-chat-search";
+import { useChatSearchKeyboard } from "./use-chat-search-keyboard";
 
 export {
 	chatSearchDialogId,
@@ -23,6 +23,9 @@ const chatSearchListboxId = "chat-search-listbox";
 
 const getChatSearchOptionId = (messageId: number): string =>
 	`chat-search-option-${messageId}`;
+
+const getChatSearchLastOptionId = (chatId: number): string =>
+	`chat-search-last-option-${chatId}`;
 
 export const ChatSearchDialog: React.FC = () => {
 	const { chats } = useChatsStore();
@@ -39,39 +42,40 @@ export const ChatSearchDialog: React.FC = () => {
 		hasQuery,
 	} = useChatSearch();
 
-	const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-		if (!hasQuery || isLoading || results.length === 0) {
-			return;
-		}
-
-		if (event.key === "ArrowDown") {
-			event.preventDefault();
-			moveSelection("down");
-			return;
-		}
-
-		if (event.key === "ArrowUp") {
-			event.preventDefault();
-			moveSelection("up");
-			return;
-		}
-
-		if (event.key === "Enter") {
-			event.preventDefault();
-			const selectedResult = results[selectedIndex];
-			if (selectedResult) {
-				void openChatFromSearch(
-					selectedResult.chat,
-					selectedResult.messageId,
-					query,
-				);
-			}
-		}
-	};
+	const {
+		inputRef,
+		closeButtonRef,
+		handleInputKeyDown,
+		handleCloseButtonKeyDown,
+	} = useChatSearchKeyboard({
+		query,
+		hasQuery,
+		isLoading,
+		results,
+		lastChats,
+		selectedIndex,
+		moveSelection,
+	});
 
 	const isLoadingResults = hasQuery && isLoading;
 	const hasResults = hasQuery && !isLoading && results.length > 0;
 	const hasNoResults = hasQuery && !isLoading && results.length === 0;
+	const showLastChats = !hasQuery && lastChats.length > 0;
+	let activeOptionId: string | undefined;
+
+	if (hasQuery) {
+		const selectedResult = results[selectedIndex];
+		activeOptionId = selectedResult
+			? getChatSearchOptionId(selectedResult.messageId)
+			: undefined;
+	}
+
+	if (!hasQuery) {
+		const selectedLastChat = lastChats[selectedIndex];
+		activeOptionId = selectedLastChat
+			? getChatSearchLastOptionId(selectedLastChat.id)
+			: undefined;
+	}
 
 	const [areResultsScrolled, setAreResultsScrolled] = useState(false);
 
@@ -93,10 +97,11 @@ export const ChatSearchDialog: React.FC = () => {
 						className="m-1"
 					/>
 					<input
+						ref={inputRef}
 						type="text"
 						value={query}
 						onChange={(event) => setQuery(event.target.value)}
-						onKeyDown={handleKeyDown}
+						onKeyDown={handleInputKeyDown}
 						placeholder={Content["chatSearchDialog.placeholder"]}
 						className="w-full placeholder:text-dunkelblau-80 pl-1 text-dunkelblau-100 text-sm leading-5 focus:outline-none"
 						aria-label={Content["chatSearchDialog.placeholder"]}
@@ -104,18 +109,16 @@ export const ChatSearchDialog: React.FC = () => {
 						autoFocus
 						role="combobox"
 						aria-autocomplete="list"
-						aria-expanded={results.length > 0}
+						aria-expanded={showLastChats || hasResults}
 						aria-controls={chatSearchListboxId}
-						aria-activedescendant={
-							results.length > 0 && results[selectedIndex]
-								? getChatSearchOptionId(results[selectedIndex].messageId)
-								: undefined
-						}
+						aria-activedescendant={activeOptionId}
 					/>
 					<button
+						ref={closeButtonRef}
 						type="button"
 						className="size-8 p-1 rounded-3px focus-visible:outline-default hover:bg-hellblau-50 flex items-center justify-center"
 						onClick={closeChatSearchDialog}
+						onKeyDown={handleCloseButtonKeyDown}
 						data-testid="close-chat-search-dialog-button"
 					>
 						<img
@@ -128,17 +131,31 @@ export const ChatSearchDialog: React.FC = () => {
 				</div>
 				<div
 					onScroll={handleResultsScroll}
+					tabIndex={-1}
 					className="flex flex-col px-3 overflow-y-auto chatsearch-scrollbar gap-2 pt-[15px]"
 				>
 					{!hasQuery && (
 						<>
-							<p className="text-dunkelblau-70 text-xs leading-4 pl-3">
+							<p
+								className="text-dunkelblau-70 text-xs leading-4 pl-3"
+								id={`${chatSearchListboxId}-label`}
+							>
 								{Content["chatSearchDialog.lastChats"]}
 							</p>
-							<ul className="flex flex-col">
-								{lastChats.map((chat) => (
-									<li key={chat.id}>
-										<ChatSearchLastResultButton chat={chat} />
+							<ul
+								className="flex flex-col"
+								role="listbox"
+								id={chatSearchListboxId}
+								aria-labelledby={`${chatSearchListboxId}-label`}
+							>
+								{lastChats.map((chat, index) => (
+									<li key={chat.id} role="presentation">
+										<ChatSearchLastResultButton
+											chat={chat}
+											optionId={getChatSearchLastOptionId(chat.id)}
+											isSelected={index === selectedIndex}
+											onSelect={() => setSelectedIndex(index)}
+										/>
 									</li>
 								))}
 							</ul>
