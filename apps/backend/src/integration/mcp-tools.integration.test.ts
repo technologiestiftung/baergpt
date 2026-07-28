@@ -1,13 +1,20 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import type { FlexibleSchema, Tool } from "ai";
+import type { JSONObject } from "@ai-sdk/provider";
 
 type MockMCPClientConfig = {
 	transport?: { url?: string };
 };
 
+type MockMCPToolSchema = {
+	inputSchema?: FlexibleSchema<JSONObject>;
+	outputSchema?: FlexibleSchema<JSONObject>;
+};
+
 type MockMCPTool = {
 	description: string;
 	execute: ReturnType<typeof vi.fn>;
-	inputSchema?: unknown;
+	inputSchema?: FlexibleSchema<JSONObject>;
 };
 
 /**
@@ -111,7 +118,7 @@ vi.mock("@ai-sdk/mcp", async () => {
 		return {
 			tools: vi.fn(
 				async (options?: {
-					schemas?: Record<string, { inputSchema?: unknown }>;
+					schemas?: Record<string, MockMCPToolSchema>;
 				}) => {
 					if (options?.schemas) {
 						const schemaTools: Record<string, MockMCPTool> = {};
@@ -163,13 +170,23 @@ import type { OpenDataMCPToolsResult } from "../tools/mcp/open-data-mcp-tools";
 import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
 import type { DatawrapperMCPToolsResult } from "../tools/mcp/datawrapper-mcp-tools";
 import { z } from "zod";
-import type { Tool } from "ai";
 
 const toolCallOptions = {
 	abortSignal: new AbortController().signal,
 	toolCallId: "test-call-id",
 	messages: [],
 };
+
+function isZodObjectSchema(
+	schema: Tool["inputSchema"],
+): schema is z.ZodObject<z.ZodRawShape> {
+	return (
+		schema != null &&
+		typeof schema === "object" &&
+		"shape" in schema &&
+		typeof schema.shape === "object"
+	);
+}
 
 function requireToolExecute(tool: Tool | undefined, toolName: string) {
 	expect(tool).toBeDefined();
@@ -193,7 +210,11 @@ function requireZodObjectSchema(
 		throw new Error(`${toolName} tool not found`);
 	}
 
-	return tool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
+	if (!isZodObjectSchema(tool.inputSchema)) {
+		throw new Error(`${toolName} inputSchema is not a Zod object`);
+	}
+
+	return tool.inputSchema;
 }
 
 describe("Parla MCP Tools Integration", () => {

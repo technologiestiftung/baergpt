@@ -39,7 +39,9 @@ export const parlaResponseSchema = z.object({
 	),
 });
 
-const parlaVectorSearchInputSchema = z.object({
+export type ParlaResponse = z.infer<typeof parlaResponseSchema>;
+
+export const parlaVectorSearchInputSchema = z.object({
 	query: z.string().describe("The search query"),
 	match_threshold: z
 		.number()
@@ -69,6 +71,8 @@ const parlaVectorSearchInputSchema = z.object({
 		.optional()
 		.describe("Maximum documents to return (default 3)"),
 });
+
+export type ParlaVectorSearchInput = z.infer<typeof parlaVectorSearchInputSchema>;
 
 export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
 	let parlaHttpClient: MCPClient | undefined;
@@ -112,7 +116,7 @@ export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
 	}
 };
 
-export function parseParlaToolOutput(output: unknown): ParlaChunkData[] {
+export function parseParlaToolOutput(output: ParlaResponse): ParlaChunkData[] {
 	const parsed = parlaResponseSchema.safeParse(output);
 	if (!parsed.success) {
 		captureError(parsed.error);
