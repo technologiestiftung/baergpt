@@ -58,7 +58,7 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 						label: Content["mcp.options.dialog.option3.label"],
 						value: CONNECTOR_VALUES.datawrapper,
 						ariaLabel: Content["mcp.options.dialog.option3.ariaLabel"],
-						logo: "/icons/datawrapper-icon.svg",
+						logo: "/icons/datawrapper-icon.png",
 					},
 				]
 			: []),
