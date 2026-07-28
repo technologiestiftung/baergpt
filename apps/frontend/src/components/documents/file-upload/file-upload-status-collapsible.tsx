@@ -28,7 +28,7 @@ export function FileUploadStatusCollapsible() {
 					<span className="p-1">
 						<ChevronIcon
 							direction={isOpen ? "down" : "up"}
-							color="hellblau-30"
+							color="dunkelblau-50"
 							classname="size-6"
 						/>
 					</span>
