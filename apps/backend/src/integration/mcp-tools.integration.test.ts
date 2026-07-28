@@ -73,7 +73,16 @@ vi.mock("@ai-sdk/mcp", async () => {
 			};
 			mockTools["search_datasets_filtered"] = {
 				description: "Search datasets with filters",
-				execute: vi.fn(async () => ({ content: [] })),
+				execute: vi.fn(async () => {
+					return {
+						content: [
+							{
+								type: "text",
+								text: '# Filtered Search: "Fahrrad"\n\n## 1. Fahrradwege in Berlin\n**ID**: fahrradwege-id\n**Organization**: SenMVKU',
+							},
+						],
+					};
+				}),
 			};
 			mockTools["get_dataset_details"] = {
 				description: "Get dataset details",
@@ -482,6 +491,27 @@ describe("Berlin Open Data MCP Tools Integration", () => {
 			url: expect.stringContaining("https://daten.berlin.de/datensaetze/"),
 			title: expect.any(String),
 			datasetId: expect.any(String),
+		});
+	}, 60_000);
+
+	it("extractOpenDataSourcesFromToolOutput should parse filtered search results without URLs", async () => {
+		const searchTool = mcpResult?.tools["search_datasets_filtered"];
+		const { execute } = requireToolExecute(
+			searchTool,
+			"search_datasets_filtered",
+		);
+
+		const input = { query: "Fahrrad", rows: 1 };
+		const result = await execute(input, toolCallOptions);
+		const parsedOutput = openDataMcpToolOutputSchema.parse(result);
+
+		const sources = extractOpenDataSourcesFromToolOutput(input, parsedOutput);
+
+		expect(sources).toHaveLength(1);
+		expect(sources[0]).toMatchObject({
+			title: "Fahrradwege in Berlin",
+			datasetId: "fahrradwege-id",
+			url: "https://daten.berlin.de/datensaetze/fahrradwege-id",
 		});
 	}, 60_000);
 

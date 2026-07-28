@@ -571,6 +571,7 @@ export class GenerationService {
 											tr.output,
 										);
 										if (!parsedOutput.success) {
+											captureError(parsedOutput.error);
 											return [];
 										}
 
@@ -857,7 +858,7 @@ export class GenerationService {
 
 			const compiledOpenDataCitationExtractionPrompts =
 				openDataCitationPromptClient.compile({
-					generatedAnswer: text,
+					generatedText: text,
 					availableSources: sources
 						.map((s) => `[URL: ${s.url}]\n Titel: ${s.title}`)
 						.join("\n\n"),

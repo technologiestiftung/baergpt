@@ -154,13 +154,18 @@ export const OPEN_DATA_DATASET_TOOL_NAMES = new Set([
 const DATASET_URL_PREFIX = "https://daten.berlin.de/datensaetze/";
 
 /**
- * `search_berlin_datasets` / `search_datasets_filtered` render one markdown block per result, e.g.:
+ * `search_berlin_datasets` renders one markdown block per result with an explicit URL, e.g.:
  *   ## 1. Some Dataset Title
  *   **ID**: some-dataset-id
  *   **URL**: https://daten.berlin.de/datensaetze/some-dataset-id
+ *
+ * `search_datasets_filtered` omits the URL line; only ID and metadata follow the title.
  */
-const SEARCH_RESULT_PATTERN =
+const SEARCH_RESULT_WITH_URL_PATTERN =
 	/##\s*\d+\.\s*(.+?)\n\*\*ID\*\*:\s*(\S+)\n\*\*URL\*\*:\s*(https:\/\/daten\.berlin\.de\/datensaetze\/\S+)/g;
+
+const SEARCH_RESULT_ID_ONLY_PATTERN =
+	/##\s*\d+\.\s*(.+?)\n\*\*ID\*\*:\s*(\S+)/g;
 
 /**
  * `get_dataset_details` renders a single markdown block, e.g.:
@@ -190,6 +195,36 @@ function extractDatasetIdFromInput(input: OpenDataToolInput): string | null {
 	return datasetId.length > 0 ? datasetId : null;
 }
 
+function extractSearchResultSources(text: string): OpenDataCitationSource[] {
+	const byUrl = new Map<string, OpenDataCitationSource>();
+
+	for (const match of text.matchAll(SEARCH_RESULT_WITH_URL_PATTERN)) {
+		const datasetId = match[2].trim();
+		const url = match[3].trim();
+		byUrl.set(url, {
+			title: match[1].trim(),
+			datasetId,
+			url,
+		});
+	}
+
+	for (const match of text.matchAll(SEARCH_RESULT_ID_ONLY_PATTERN)) {
+		const datasetId = match[2].trim();
+		const url = `${DATASET_URL_PREFIX}${datasetId}`;
+		if (byUrl.has(url)) {
+			continue;
+		}
+
+		byUrl.set(url, {
+			title: match[1].trim(),
+			datasetId,
+			url,
+		});
+	}
+
+	return [...byUrl.values()];
+}
+
 /**
  * Extracts the Berlin Open Data dataset(s) referenced by a tool call so they
  * can be surfaced as sources. The upstream MCP server returns plain markdown text
@@ -204,13 +239,7 @@ export function extractOpenDataSourcesFromToolOutput(
 ): OpenDataCitationSource[] {
 	const text = extractTextFromMcpOutput(output);
 
-	const searchMatches = text
-		? [...text.matchAll(SEARCH_RESULT_PATTERN)].map((match) => ({
-				title: match[1].trim(),
-				datasetId: match[2].trim(),
-				url: match[3].trim(),
-			}))
-		: [];
+	const searchMatches = text ? extractSearchResultSources(text) : [];
 
 	if (searchMatches.length > 0) {
 		return searchMatches;
