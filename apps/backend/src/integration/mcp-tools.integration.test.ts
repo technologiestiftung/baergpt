@@ -7,6 +7,7 @@ type MockMCPClientConfig = {
 type MockMCPTool = {
 	description: string;
 	execute: ReturnType<typeof vi.fn>;
+	inputSchema?: unknown;
 };
 
 /**
@@ -108,7 +109,30 @@ vi.mock("@ai-sdk/mcp", async () => {
 		}
 
 		return {
-			tools: vi.fn(async () => mockTools),
+			tools: vi.fn(
+				async (options?: {
+					schemas?: Record<string, { inputSchema?: unknown }>;
+				}) => {
+					if (options?.schemas) {
+						const schemaTools: Record<string, MockMCPTool> = {};
+						for (const [toolName, schema] of Object.entries(
+							options.schemas,
+						)) {
+							if (mockTools[toolName]) {
+								schemaTools[toolName] = {
+									...mockTools[toolName],
+									...(schema.inputSchema
+										? { inputSchema: schema.inputSchema }
+										: {}),
+								};
+							}
+						}
+						return schemaTools;
+					}
+
+					return mockTools;
+				},
+			),
 			close: vi.fn(async () => {}),
 		};
 	});
@@ -129,6 +153,7 @@ import * as captureErrorModule from "../monitoring/capture-error";
 
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
 import type { ParlaMCPToolsResult } from "../tools/mcp/parla-mcp-tools";
+import { parseParlaToolOutput } from "../tools/mcp/parla-mcp-tools";
 import {
 	openDataMCPTools,
 	extractOpenDataSourcesFromToolOutput,
@@ -270,6 +295,30 @@ describe("Parla MCP Tools Integration", () => {
 		expect(params.shape).toHaveProperty("chunk_limit");
 		expect(params.shape).toHaveProperty("summary_limit");
 		expect(params.shape).toHaveProperty("document_limit");
+	});
+
+	it("parla_vector_search execute output should be parseable for citations", async () => {
+		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
+		const { execute } = requireToolExecute(
+			vectorSearchTool,
+			"parla_vector_search",
+		);
+
+		const result = await execute(
+			{ query: "test search query", chunk_limit: 5 },
+			toolCallOptions,
+		);
+
+		const chunks = parseParlaToolOutput(result);
+		expect(chunks.length).toBeGreaterThan(0);
+		expect(chunks[0]).toMatchObject({
+			id: expect.any(Number),
+			content: expect.any(String),
+			page: expect.any(Number),
+			url: expect.any(String),
+			title: expect.any(String),
+			source_type: expect.any(String),
+		});
 	});
 
 	it("should handle missing execute function gracefully", async () => {
