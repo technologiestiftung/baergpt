@@ -50,7 +50,7 @@ export const ChatSearchResultButton: React.FC<ChatSearchResultButtonProps> = ({
 			}}
 			onMouseEnter={onSelect}
 		>
-			<div className="flex items-start gap-3 min-w-0 w-full">
+			<div className="flex items-center gap-3 min-w-0 w-full">
 				<img
 					src="/icons/chat-bubble-light-icon.svg"
 					alt={Content["chatSearchDialog.result.icon.alt"]}

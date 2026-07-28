@@ -650,7 +650,8 @@ test.describe("Chat", () => {
 			// Date-Groups should not be visible by default
 			const dateGroupHeader = page
 				.getByRole("complementary", { name: "Sidebar" })
-				.getByText("Heute");
+				.getByTestId("history-date-group-label")
+				.filter({ hasText: "Heute" });
 			await expect(dateGroupHeader).not.toBeVisible();
 
 			const groupByDropdown = page.getByRole("button", {
