@@ -1,4 +1,7 @@
-import { useChatsStore } from "../../store/use-chats-store.ts";
+import {
+	useChatsStore,
+	externalChatTools,
+} from "../../store/use-chats-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import type { ChatTool, ChatWithMessages } from "../../common.ts";
@@ -72,6 +75,10 @@ export async function getCompletion(
 	const { setStreamingAbortController, abortStreaming } =
 		useChatStreamingStore.getState();
 
+	const isExternalToolContext = selectedChatTools.some((tool) =>
+		externalChatTools.includes(tool),
+	);
+
 	try {
 		// Abort any existing stream before starting a new one
 		abortStreaming();
@@ -79,10 +86,13 @@ export async function getCompletion(
 		// Initialize a new AbortController for this stream
 		const abortController = new AbortController();
 		setStreamingAbortController(abortController);
-		const messages = currentChat.messages.map(({ role, content }) => ({
-			role,
-			content,
-		}));
+		const messages = currentChat.messages.map(
+			({ role, content, external_tool_context }) => ({
+				role,
+				content,
+				external_tool_context,
+			}),
+		);
 
 		const selectedDocumentIds = getSelectedUserChatDocumentIds();
 		const selectedFolderIds = getSelectedUserChatFolderIds();
@@ -144,6 +154,7 @@ export async function getCompletion(
 			web_citations: null,
 			parla_citations: null,
 			open_data_citations: null,
+			external_tool_context: isExternalToolContext,
 		});
 
 		let currentText = "";

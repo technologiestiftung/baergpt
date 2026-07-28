@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.ts";
+import { useChatsStore } from "../../../store/use-chats-store.ts";
 
 export function useChatScrolling(
 	currentChatId: number | null,
@@ -16,8 +17,29 @@ export function useChatScrolling(
 		scrollToBottom,
 	} = useChatScrollingStore();
 
+	const { visibleInfoMessage } = useChatsStore();
+
 	const previousChatId = useRef(currentChatId);
 	const previousUserMessageCount = useRef(userMessageCount);
+
+	//Jump to the bottom when a transient info message (tool deactivated / history scoped) appears.
+	useLayoutEffect(() => {
+		const container = containerRef.current;
+		if (!visibleInfoMessage || !container) {
+			return () => {};
+		}
+		scrollToBottom("smooth");
+		let isInitialCallback = true;
+		const observer = new ResizeObserver(() => {
+			if (isInitialCallback) {
+				isInitialCallback = false;
+				return;
+			}
+			scrollToBottom("smooth");
+		});
+		observer.observe(container);
+		return () => observer.disconnect();
+	}, [visibleInfoMessage, containerRef, scrollToBottom]);
 
 	/**
 	 * Jump to the last message when a chat is opened or switched.

@@ -20,6 +20,7 @@ export type NewChatMessage = Pick<
 	| "web_citations"
 	| "parla_citations"
 	| "open_data_citations"
+	| "external_tool_context"
 >;
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
@@ -47,6 +48,7 @@ export type ChatMessage = {
 	parla_citations: ParlaCitationSource[] | null;
 	open_data_citations: OpenDataCitationSource[] | null;
 	created_at: string;
+	external_tool_context: boolean;
 	id: number;
 	role: string;
 	type: string;
