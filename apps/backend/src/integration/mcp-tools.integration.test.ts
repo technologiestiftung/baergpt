@@ -177,7 +177,7 @@ function isZodObjectSchema(
 	schema: Tool["inputSchema"],
 ): schema is z.ZodObject<z.ZodRawShape> {
 	return (
-		schema != null &&
+		schema !== null &&
 		typeof schema === "object" &&
 		"shape" in schema &&
 		typeof schema.shape === "object"
