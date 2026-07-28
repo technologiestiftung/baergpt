@@ -161,7 +161,7 @@ export const ChatSearchDialog: React.FC = () => {
 					<button
 						type="button"
 						className="size-8 p-1 rounded-3px focus-visible:outline-default hover:bg-hellblau-50 flex items-center justify-center"
-						onClick={closeChatSearchDialog()}
+						onClick={closeChatSearchDialog}
 						data-testid="close-chat-search-dialog-button"
 					>
 						<img
