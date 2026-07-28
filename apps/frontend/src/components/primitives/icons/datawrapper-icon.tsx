@@ -1,4 +1,4 @@
-import Content from "../../../content.ts";
+import { Content } from "../../../content.ts";
 
 export function DatawrapperIcon() {
 	return (
