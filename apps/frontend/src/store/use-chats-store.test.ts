@@ -28,8 +28,9 @@ describe("useChatsStore - Datawrapper integration", () => {
 		expect(useChatsStore.getState().selectedChatTools).not.toContain(
 			"datawrapper",
 		);
-		expect(useChatsStore.getState().autoDeactivatedExternalTools).toContain(
-			"datawrapper",
-		);
+		expect(useChatsStore.getState().visibleInfoMessage).toEqual({
+			type: "toolDeactivated",
+			tools: ["datawrapper"],
+		});
 	});
 });
