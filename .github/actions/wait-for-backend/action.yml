@@ -5,6 +5,9 @@ inputs:
   github-token:
     description: The github token of the current organisation
     required: true
+  image:
+    description: Full backend image ref (ghcr.io/<owner>/baergpt-backend:content-sha-<hash>)
+    required: true
 
 runs:
   using: composite
@@ -17,27 +20,21 @@ runs:
         username: ${{ github.actor }}
         password: ${{ inputs.github-token }}
 
-    - name: Compute backend image name with latest tag 🏷️
-      id: image
-      shell: bash
-      run: |
-        echo "image=ghcr.io/${{ github.repository_owner }}/baergpt-backend:content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
-
     - name: Wait for image and pull it 🐳
       shell: bash
       run: |
         timeout=600
         counter=0
-        until docker pull "${{ steps.image.outputs.image }}" >/dev/null 2>&1; do
+        until docker pull "${{ inputs.image }}" >/dev/null 2>&1; do
           if [ $counter -gt $timeout ]; then
-            echo "Timed out waiting for image ${{ steps.image.outputs.image }}"
+            echo "Timed out waiting for image ${{ inputs.image }}"
             exit 1
           fi
-          echo "Waiting for ${{ steps.image.outputs.image }} to be available on GHCR..."
+          echo "Waiting for ${{ inputs.image }} to be available on GHCR..."
           sleep 5
           counter=$((counter + 5))
         done
-        echo "Image ${{ steps.image.outputs.image }} pulled successfully!"
+        echo "Image ${{ inputs.image }} pulled successfully!"
 
     - name: Run Backend in container 🖥️
       shell: bash
@@ -45,7 +42,7 @@ runs:
         docker run -d --name backend-container \
           --network host \
           --env-file "$RUNNER_TEMP/backend.env" \
-          ${{ steps.image.outputs.image }}
+          ${{ inputs.image }}
 
     - name: Wait for Backend to be ready ⏳
       shell: bash
