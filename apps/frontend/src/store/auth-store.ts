@@ -17,6 +17,38 @@ let resendTime: number | null = null;
 
 const UNCONFIRMED_EMAIL_STORAGE_KEY = "baergpt:unconfirmedEmail";
 
+/**
+ * sessionStorage isn't defined in every environment this module gets
+ * imported into (e.g. Vitest's default "node" test environment), and can
+ * also throw even when defined (e.g. Safari private browsing), why every
+ * access needs to be guarded, not just checked for existence.
+ */
+function readUnconfirmedEmail(): string | null {
+	try {
+		return typeof sessionStorage !== "undefined"
+			? sessionStorage.getItem(UNCONFIRMED_EMAIL_STORAGE_KEY)
+			: null;
+	} catch {
+		return null;
+	}
+}
+
+function writeUnconfirmedEmail(email: string): void {
+	try {
+		sessionStorage?.setItem(UNCONFIRMED_EMAIL_STORAGE_KEY, email);
+	} catch {
+		// sessionStorage unavailable or blocked, ignore.
+	}
+}
+
+function clearUnconfirmedEmail(): void {
+	try {
+		sessionStorage?.removeItem(UNCONFIRMED_EMAIL_STORAGE_KEY);
+	} catch {
+		// sessionStorage unavailable or blocked, ignore.
+	}
+}
+
 type EmailConfirmationStatus = "unknown" | "confirmed" | "unconfirmed";
 
 interface AuthStore {
@@ -98,7 +130,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			}
 
 			if (newEmailConfirmationStatus !== "unconfirmed") {
-				sessionStorage.removeItem(UNCONFIRMED_EMAIL_STORAGE_KEY);
+				clearUnconfirmedEmail();
 			}
 
 			const newState: Partial<AuthStore> = {
@@ -148,9 +180,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		}
 	});
 
-	const storedUnconfirmedEmail = sessionStorage.getItem(
-		UNCONFIRMED_EMAIL_STORAGE_KEY,
-	);
+	const storedUnconfirmedEmail = readUnconfirmedEmail();
 
 	return {
 		unconfirmedEmail: storedUnconfirmedEmail,
@@ -181,7 +211,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			 * sent a password reset email, so we always show the same
 			 * "check your email" screen here.
 			 */
-			sessionStorage.setItem(UNCONFIRMED_EMAIL_STORAGE_KEY, email);
+			writeUnconfirmedEmail(email);
 			set({
 				unconfirmedEmail: email,
 				emailConfirmationStatus: "unconfirmed",
