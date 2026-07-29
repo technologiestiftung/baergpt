@@ -1,7 +1,7 @@
 -- Create a function to validate email against allowed_email_domains table
 CREATE OR REPLACE FUNCTION public.validate_email_domain () returns trigger language plpgsql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 DECLARE
     email_domain TEXT;
     domain_pattern TEXT;
@@ -52,13 +52,14 @@ BEGIN
 END;
 $$;
 
-comment ON function public.validate_email_domain () IS 'Validates that new user emails have domains in the allowed_email_domains table. Supports wildcards (*.domain.tld) and exact matches.';
+COMMENT ON function public.validate_email_domain () IS 'Validates that new user emails have domains in the allowed_email_domains table. Supports wildcards (*.domain.tld) and exact matches.';
 
 -- Create a trigger that validates email BEFORE INSERT on auth.users
-CREATE OR REPLACE TRIGGER trigger_validate_email_domain_before_insert_auth_users before insert ON auth.users FOR each ROW
-EXECUTE function public.validate_email_domain ();
+CREATE OR REPLACE TRIGGER trigger_validate_email_domain_before_insert_auth_users
+BEFORE INSERT ON auth.users FOR EACH ROW
+EXECUTE FUNCTION public.validate_email_domain ();
 
 -- Also validate on UPDATE in case email is changed
-CREATE OR REPLACE TRIGGER trigger_validate_email_domain_on_update_auth_users before
-UPDATE of email ON auth.users FOR each ROW WHEN (old.email IS DISTINCT FROM new.email)
-EXECUTE function public.validate_email_domain ();
+CREATE OR REPLACE TRIGGER trigger_validate_email_domain_on_update_auth_users
+BEFORE UPDATE OF email ON auth.users FOR EACH ROW WHEN (old.email IS DISTINCT FROM new.email)
+EXECUTE FUNCTION public.validate_email_domain ();

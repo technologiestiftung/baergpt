@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION verify_own_password ("plain_password" TEXT) returns BOOLEAN language plpgsql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 DECLARE 
   stored_password auth.users.encrypted_password %TYPE;
   current_user_id UUID;

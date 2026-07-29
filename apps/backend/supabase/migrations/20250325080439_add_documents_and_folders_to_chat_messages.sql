@@ -45,9 +45,11 @@ END;
 $$ language plpgsql;
 
 -- Create triggers to maintain document references
-CREATE TRIGGER trg_maintain_chat_messages_document_references before delete ON registered_documents FOR each ROW
-EXECUTE function maintain_chat_messages_document_references ();
+CREATE TRIGGER trg_maintain_chat_messages_document_references
+BEFORE DELETE ON registered_documents FOR EACH ROW
+EXECUTE FUNCTION maintain_chat_messages_document_references ();
 
 -- Create triggers to maintain folder references
-CREATE TRIGGER trg_maintain_chat_messages_folder_references before delete ON document_folders FOR each ROW
-EXECUTE function maintain_chat_messages_folder_references ();
+CREATE TRIGGER trg_maintain_chat_messages_folder_references
+BEFORE DELETE ON document_folders FOR EACH ROW
+EXECUTE FUNCTION maintain_chat_messages_folder_references ();

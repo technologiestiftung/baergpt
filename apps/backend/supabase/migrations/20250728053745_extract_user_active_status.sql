@@ -1,12 +1,12 @@
 -- Create a new table to store user active status
 CREATE TABLE user_active_status (
-	id UUID NOT NULL PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-	is_active BOOLEAN DEFAULT TRUE NOT NULL,
-	deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    id UUID NOT NULL PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 -- Add a comment to the table
-comment ON TABLE user_active_status IS 'Stores user active status and deletion information';
+COMMENT ON TABLE user_active_status IS 'Stores user active status and deletion information';
 
 -- Enable row-level security on the new table; no user should be able to access this table directly
 ALTER TABLE user_active_status enable ROW level security;
@@ -14,7 +14,7 @@ ALTER TABLE user_active_status enable ROW level security;
 -- Update the handle_new_user function to insert the new user into the user_active_status table
 CREATE OR REPLACE FUNCTION public.handle_new_user () returns trigger language plpgsql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     -- Insert into profiles table
     INSERT INTO public.profiles (id, first_name, last_name)
@@ -31,7 +31,7 @@ $$;
 -- Create function to check if the current user is active
 CREATE OR REPLACE FUNCTION public.is_current_user_active () returns BOOLEAN language plpgsql
 SET
-	search_path = '' security definer AS $$
+    search_path = '' security definer AS $$
 DECLARE
     isActive BOOLEAN;
 BEGIN
@@ -44,30 +44,30 @@ BEGIN
 END;
 $$;
 
-comment ON function is_current_user_active IS 'Returns whether the current user is active based on their is_active status';
+COMMENT ON function is_current_user_active IS 'Returns whether the current user is active based on their is_active status';
 
 -- Copy existing data from profiles table to the new table
 INSERT INTO
-	user_active_status (id, is_active, deleted_at)
+    user_active_status (id, is_active, deleted_at)
 SELECT
-	id,
-	is_active,
-	deleted_at
+    id,
+    is_active,
+    deleted_at
 FROM
-	profiles;
+    profiles;
 
 -- Update the profiles policy to no longer use deleted_at
 ALTER POLICY "Allow authenticated users to access own profile" ON profiles USING (
-	(
-		(
-			SELECT
-				auth.uid ()
-		) = id
-	)
-	AND (
-		SELECT
-			is_current_user_active () IS TRUE
-	)
+    (
+        (
+            SELECT
+                auth.uid ()
+        ) = id
+    )
+    AND (
+        SELECT
+            is_current_user_active () IS TRUE
+    )
 );
 
 -- Remove columns from profiles table
@@ -83,13 +83,13 @@ CREATE INDEX idx_user_active_status_deleted_at ON user_active_status (deleted_at
 
 -- Update the cronjob to delete soft-deleted profiles after 30 days using the new user_active_status table
 SELECT
-	cron.unschedule ('delete-expired-users');
+    cron.unschedule ('delete-expired-users');
 
 SELECT
-	cron.schedule (
-		'delete-expired-users',
-		'0 3 * * *', -- Daily at 3 AM
-		$$ DELETE FROM auth.users
+    cron.schedule (
+        'delete-expired-users',
+        '0 3 * * *', -- Daily at 3 AM
+        $$ DELETE FROM auth.users
       WHERE id IN (
         SELECT id
         FROM public.user_active_status
@@ -97,4 +97,4 @@ SELECT
         AND deleted_at < NOW() - INTERVAL '30 days'
       );
     $$
-	);
+    );

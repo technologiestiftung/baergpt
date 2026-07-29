@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION public.maintain_chat_messages_document_references () returns trigger language plpgsql
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     -- Only proceed if this is a DELETE operation
     IF TG_OP = 'DELETE' THEN
@@ -29,7 +29,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.maintain_chat_messages_folder_references () returns trigger language plpgsql
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
     -- Only proceed if this is a DELETE operation
     IF TG_OP = 'DELETE' THEN

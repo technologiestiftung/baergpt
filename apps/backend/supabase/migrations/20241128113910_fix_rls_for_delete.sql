@@ -1,9 +1,9 @@
 CREATE POLICY "Users can delete their own document." ON storage.objects FOR delete USING (
-	(
-		SELECT
-			auth.uid ()
-	) = owner
-	AND bucket_id = 'documents'
+    (
+        SELECT
+            auth.uid ()
+    ) = owner
+    AND bucket_id = 'documents'
 );
 
 CREATE POLICY "Allow authenticated users to delete own registered_documents" ON "public"."registered_documents" FOR delete TO authenticated USING (owned_by_user_id = auth.uid ());

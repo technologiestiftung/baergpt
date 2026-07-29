@@ -9,5 +9,6 @@ END;
 $$ language plpgsql;
 
 -- Create a trigger that uses the above function before INSERT operations
-CREATE TRIGGER trigger_validate_email_before_insert before insert ON auth.users FOR each ROW
-EXECUTE function validate_email_on_insert ();
+CREATE TRIGGER trigger_validate_email_before_insert
+BEFORE INSERT ON auth.users FOR EACH ROW
+EXECUTE FUNCTION validate_email_on_insert ();

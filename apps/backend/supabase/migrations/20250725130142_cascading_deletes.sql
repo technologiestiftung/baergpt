@@ -24,10 +24,10 @@ END;
 $$ language plpgsql security definer;
 
 CREATE TRIGGER trigger_document_deletion_cleanup
-AFTER delete ON documents FOR each ROW
-EXECUTE function handle_document_deletion ();
+AFTER DELETE ON documents FOR EACH ROW
+EXECUTE FUNCTION handle_document_deletion ();
 
-comment ON trigger trigger_document_deletion_cleanup ON documents IS 'Automatically handles file storage cleanup when a document is deleted';
+COMMENT ON trigger trigger_document_deletion_cleanup ON documents IS 'Automatically handles file storage cleanup when a document is deleted';
 
-comment ON function handle_document_deletion () IS 'Cleans up storage files when a document is deleted. 
+COMMENT ON function handle_document_deletion () IS 'Cleans up storage files when a document is deleted. 
 Called automatically by trigger_document_deletion_cleanup.';

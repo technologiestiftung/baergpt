@@ -1,16 +1,16 @@
 DROP FUNCTION if EXISTS get_citation_details;
 
 CREATE OR REPLACE FUNCTION get_citation_details (chunk_ids INTEGER[]) returns TABLE (
-	chunk_id INTEGER,
-	file_name TEXT,
-	source_url TEXT,
-	page INT,
-	created_at TIMESTAMPTZ,
-	source_type TEXT,
-	snippet TEXT
+    chunk_id INTEGER,
+    file_name TEXT,
+    source_url TEXT,
+    page INT,
+    created_at TIMESTAMPTZ,
+    source_type TEXT,
+    snippet TEXT
 ) language plpgsql security invoker
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
 BEGIN
 	RETURN QUERY
 		SELECT

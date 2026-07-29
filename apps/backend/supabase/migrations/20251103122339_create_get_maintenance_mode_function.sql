@@ -1,7 +1,7 @@
 -- Create function to get maintenance mode status
 CREATE OR REPLACE FUNCTION public.get_maintenance_mode_status () returns BOOLEAN language sql security definer
 SET
-	search_path = '' AS $$
+    search_path = '' AS $$
     SELECT COALESCE(is_enabled, FALSE)
     FROM public.maintenance_mode 
     WHERE onerow_id = true;
@@ -14,4 +14,4 @@ EXECUTE ON function public.get_maintenance_mode_status () TO anon;
 GRANT
 EXECUTE ON function public.get_maintenance_mode_status () TO authenticated;
 
-comment ON function public.get_maintenance_mode_status () IS 'Returns the current maintenance mode status. Can be called by anyone including unauthenticated users.';
+COMMENT ON function public.get_maintenance_mode_status () IS 'Returns the current maintenance mode status. Can be called by anyone including unauthenticated users.';

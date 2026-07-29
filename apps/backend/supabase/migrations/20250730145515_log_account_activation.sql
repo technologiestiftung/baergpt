@@ -3,7 +3,7 @@ ADD COLUMN IF NOT EXISTS registration_finished_at TIMESTAMP WITH TIME ZONE NULL;
 
 CREATE OR REPLACE FUNCTION public.log_account_activation () returns void language plpgsql
 SET
-	search_path = '' security definer AS $$
+    search_path = '' security definer AS $$
 BEGIN
     UPDATE public.user_active_status 
     SET 
@@ -14,7 +14,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.get_account_activation_timestamp () returns TIMESTAMP WITH TIME ZONE language plpgsql
 SET
-	search_path = '' security definer AS $$
+    search_path = '' security definer AS $$
 DECLARE
     activation_timestamp TIMESTAMP WITH TIME ZONE;
 BEGIN
@@ -27,4 +27,4 @@ BEGIN
 END;
 $$;
 
-comment ON function get_account_activation_timestamp IS 'Returns the registration_finished_at timestamp for the current user, or NULL if not activated';
+COMMENT ON function get_account_activation_timestamp IS 'Returns the registration_finished_at timestamp for the current user, or NULL if not activated';
