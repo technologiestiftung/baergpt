@@ -11,4 +11,10 @@ export default defineConfig(({ mode }) => ({
 		},
 	},
 	server: mode === "development" ? { port: 5174 } : undefined,
+	build: {
+		// Vite 8 defaults to Lightning CSS for CSS minification, which does not yet
+		// understand Tailwind v4 at-rules like @theme / @utility / @custom-variant.
+		// Keep esbuild minification until Tailwind / Lightning CSS are aligned.
+		cssMinify: "esbuild",
+	},
 }));
