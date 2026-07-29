@@ -1,0 +1,11 @@
+{
+	"name": "@repo/oxlint",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"main": "index.ts",
+	"dependencies": {
+		"@technologiestiftung/oxlint-config": "file:../../../oxlint-config",
+		"oxlint": "1.76.0"
+	}
+}

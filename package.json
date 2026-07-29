@@ -9,8 +9,8 @@
 		"check-types": "turbo run check-types",
 		"lint:check": "turbo run lint:check",
 		"lint:write": "turbo run lint:write",
-		"format:check": "oxfmt --config ./libs/oxfmt/index.js --check .",
-		"format:write": "oxfmt --config ./libs/oxfmt/index.js --write .",
+		"format:check": "oxfmt --config ./libs/oxfmt/index.ts --check .",
+		"format:write": "oxfmt --config ./libs/oxfmt/index.ts --write .",
 		"sql:format:check": "node scripts/check-sql-format.mjs",
 		"sql:format:write": "node scripts/check-sql-format.mjs --write",
 		"dev": "turbo run dev"

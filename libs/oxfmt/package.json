@@ -1,0 +1,11 @@
+{
+	"name": "@repo/oxfmt",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"main": "index.ts",
+	"dependencies": {
+		"@technologiestiftung/oxfmt-config": "file:../../../oxfmt-config",
+		"oxfmt": "0.61.0"
+	}
+}
