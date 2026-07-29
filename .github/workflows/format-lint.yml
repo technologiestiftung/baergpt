@@ -1,10 +1,10 @@
-name: prettier-eslint.yml
+name: format-lint.yml
 on:
   pull_request:
     branches: [main, staging]
 
 jobs:
-  prettier-eslint:
+  format-lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,8 +14,11 @@ jobs:
       - name: Setup environment ⚙️
         uses: ./.github/actions/setup
 
-      - name: Check Prettier 🧹
-        run: npm run prettier:check
+      - name: Check formatting �
+        run: npm run format:check
 
-      - name: Check ESLint 🔎
+      - name: Check SQL formatting 📊
+        run: npm run sql:format:check
+
+      - name: Check linting 🔎
         run: npm run lint:check

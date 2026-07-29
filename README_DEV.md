@@ -111,8 +111,8 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 ### 📦 Shared Libraries
 
 - **Database Schema** (`libs/db-schema`): Shared TypeScript types generated from Supabase
-- **ESLint Config** (`libs/eslint`): Shared linting rules
-- **Prettier Config** (`libs/prettier`): Shared formatting rules
+- **Oxlint Config** (`libs/oxlint`): Shared linting rules
+- **Oxfmt Config** (`libs/oxfmt`): Shared formatting rules for JS/TS/Markdown/etc.
 - **TypeScript Config** (`libs/typescript-config`): Shared TypeScript configurations
 
 ### 🏗️ Infrastructure
@@ -317,11 +317,13 @@ npm run test:e2e
 
 ```bash
 # From root
-turbo lint:check      # Check linting
-turbo lint:write      # Fix linting issues
-npm run prettier:write # Check formatting
-npm run prettier:check # Fix formatting issues
-turbo check-types     # Type check all packages
+turbo lint:check       # Check linting (oxlint)
+turbo lint:write       # Fix linting issues (oxlint)
+npm run format:check       # Check formatting (oxfmt)
+npm run format:write       # Fix formatting issues (oxfmt)
+npm run sql:format:check   # Check SQL formatting (sql-formatter)
+npm run sql:format:write   # Fix SQL formatting issues (sql-formatter)
+turbo check-types          # Type check all packages
 ```
 
 ## 🏗️ Building for Production
@@ -439,8 +441,8 @@ baergpt/
 │   └── maintenance-mode/  # Maintenance page
 ├── libs/
 │   ├── db-schema/         # Generated Supabase types
-│   ├── eslint/            # Shared ESLint config
-│   ├── prettier/          # Shared Prettier config
+│   ├── oxlint/            # Shared Oxlint config
+│   ├── oxfmt/             # Shared Oxfmt config
 │   └── typescript-config/ # Shared TS configs
 ├── docs/
 │   └── adr/               # Architecture Decision Records

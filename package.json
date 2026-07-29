@@ -9,8 +9,10 @@
 		"check-types": "turbo run check-types",
 		"lint:check": "turbo run lint:check",
 		"lint:write": "turbo run lint:write",
-		"prettier:check": "prettier --check \"**/*.{ts,tsx,md,sql}\"",
-		"prettier:write": "prettier --write \"**/*.{ts,tsx,md,sql}\"",
+		"format:check": "oxfmt --config ./libs/oxfmt/index.js --check .",
+		"format:write": "oxfmt --config ./libs/oxfmt/index.js --write .",
+		"sql:format:check": "node scripts/check-sql-format.mjs",
+		"sql:format:write": "node scripts/check-sql-format.mjs --write",
 		"dev": "turbo run dev"
 	},
 	"repository": {
@@ -24,15 +26,17 @@
 		"url": "https://github.com/technologiestiftung/baergpt/issues"
 	},
 	"homepage": "https://github.com/technologiestiftung/baergpt#readme",
+	"packageManager": "npm@11.17.0",
 	"workspaces": [
 		"apps/*",
 		"libs/*"
 	],
 	"devDependencies": {
-		"@repo/eslint": "file:libs/eslint",
-		"@repo/prettier": "file:libs/prettier",
+		"@repo/oxfmt": "file:libs/oxfmt",
+		"@repo/oxlint": "file:libs/oxlint",
 		"oxfmt": "0.61.0",
 		"oxlint": "1.76.0",
+		"sql-formatter": "15.8.2",
 		"supabase": "2.40.7",
 		"turbo": "2.9.14"
 	}
