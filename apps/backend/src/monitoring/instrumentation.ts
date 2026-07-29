@@ -1,5 +1,6 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
-import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
+import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
 import { LangfuseSpanProcessor, ShouldExportSpan } from "@langfuse/otel";
 import * as Sentry from "@sentry/node";
 import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
@@ -26,7 +27,10 @@ const sdk = new NodeSDK({
 	sampler: sentryClient ? new SentrySampler(sentryClient) : undefined,
 	contextManager: new Sentry.SentryContextManager(),
 	textMapPropagator: new SentryPropagator(),
-	instrumentations: [getNodeAutoInstrumentations()],
+	instrumentations: [
+		new HttpInstrumentation(),
+		new UndiciInstrumentation(),
+	],
 });
 
 sdk.start();

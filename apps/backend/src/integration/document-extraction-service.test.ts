@@ -8,15 +8,18 @@ const { uploadMock, ocrProcessMock, deleteMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("@mistralai/mistralai", () => ({
-	Mistral: vi.fn().mockImplementation(() => ({
-		files: {
-			upload: uploadMock,
-			delete: deleteMock,
-		},
-		ocr: {
-			process: ocrProcessMock,
-		},
-	})),
+	// Vitest 4 requires constructor mocks to use `function` or `class` so `new Mistral()` works.
+	Mistral: vi.fn().mockImplementation(function () {
+		return {
+			files: {
+				upload: uploadMock,
+				delete: deleteMock,
+			},
+			ocr: {
+				process: ocrProcessMock,
+			},
+		};
+	}),
 }));
 
 vi.mock("../monitoring/capture-error", () => ({
