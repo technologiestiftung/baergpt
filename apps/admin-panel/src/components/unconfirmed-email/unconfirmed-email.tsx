@@ -3,7 +3,7 @@ import { useAuthStore } from "../../store/use-auth-store.ts";
 import Content from "../../content.ts";
 
 export function UnconfirmedEmail() {
-	const { resendConfirmationEmail } = useAuthStore();
+	const { resendConfirmationEmail, unconfirmedEmail } = useAuthStore();
 	const [emailSent, setEmailSent] = useState(false);
 
 	const handleResendEmail = async () => {
@@ -28,7 +28,10 @@ export function UnconfirmedEmail() {
 				</h1>
 
 				<p className="leading-6 md:text-xl md:leading-7 max-w-[170rem] mt-4 md:mt-8">
-					{Content["unconfirmedEmail.text"]}
+					{Content["unconfirmedEmail.text.beforeEmail"]}{" "}
+					<strong>{unconfirmedEmail}</strong>
+					<br />
+					{Content["unconfirmedEmail.text.afterEmail"]}
 				</p>
 				<div className="mt-10 md:mt-16 w-full">
 					<span className="text-lg leading-7 font-semibold">
