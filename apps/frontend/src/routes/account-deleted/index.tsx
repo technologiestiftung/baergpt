@@ -1,6 +1,6 @@
 import { AppLayout } from "../../layouts/app-layout.tsx";
 import Content from "../../content.ts";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 export function AccountDeleted() {
 	return (

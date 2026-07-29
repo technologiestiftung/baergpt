@@ -3,7 +3,7 @@ import { DefaultDialog } from "../../primitives/dialogs/default-dialog.tsx";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
 import Content from "../../../content.ts";
 import { useUserStore } from "../../../store/user-store.ts";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { PasswordInput } from "../../primitives/text-inputs/password-input.tsx";
 import { verifyPassword } from "../../../api/auth/verify-password.ts";
 import { WarningButton } from "../../primitives/buttons/warning-button.tsx";

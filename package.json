@@ -28,10 +28,15 @@
     "apps/*",
     "libs/*"
   ],
+  "overrides": {
+    "esbuild": "0.28.1",
+    "minimatch": "10.2.6",
+    "brace-expansion": "5.0.8"
+  },
   "devDependencies": {
     "@repo/eslint": "file:libs/eslint",
     "@repo/prettier": "file:libs/prettier",
-    "supabase": "2.40.7",
+    "supabase": "2.110.0",
     "turbo": "2.9.14"
   },
   "packageManager": "npm@11.4.2"
