@@ -19,7 +19,7 @@ type TestWithRegisteredUser = {
 export const testWithRegisteredUser =
 	testWithoutSplashScreen.extend<TestWithRegisteredUser>({
 		account: [
-			async ({}, use) => {
+			async (_, use) => {
 				/**
 				 * This happens before each test that uses this fixture.
 				 */

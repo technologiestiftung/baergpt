@@ -9,7 +9,7 @@ type UserManagementFixtures = { testUser: TestUser };
 
 export const testWithUser = test.extend<UserManagementFixtures>({
 	testUser: [
-		async ({}, use, testInfo) => {
+		async (_, use, testInfo) => {
 			const user = await createTestUser(
 				testInfo.workerIndex,
 				testInfo.project.name,

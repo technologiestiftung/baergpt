@@ -21,7 +21,7 @@ export const testWithAdminUser = baseTest.extend<
 	AdminWorkerFixtures
 >({
 	adminAccount: [
-		async ({}, use, workerInfo) => {
+		async (_, use, workerInfo) => {
 			const email = `domain-admin+${workerInfo.workerIndex}+${workerInfo.project.name}@ts.berlin`;
 
 			const { data: existingUsers, error: listUsersError } =

@@ -45,7 +45,7 @@ export const testWithLoggedInAdminUser =
 		},
 
 		testDomain: [
-			async ({}, use, testInfo) => {
+			async (_, use, testInfo) => {
 				const domain = `e2e-${testInfo.project.name}-${testInfo.workerIndex}.berlin.de`;
 
 				await use(domain);
@@ -60,7 +60,7 @@ export const testWithLoggedInAdminUser =
 		],
 
 		testEmail: [
-			async ({}, use, testInfo) => {
+			async (_, use, testInfo) => {
 				const email = `e2e-${testInfo.project.name}-${testInfo.workerIndex}@extern-test.de`;
 
 				await use(email);

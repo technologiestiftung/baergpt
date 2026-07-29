@@ -81,7 +81,7 @@ export function mockEmbeddingModel(): EmbeddingModel {
 	return new MockEmbeddingModelV4({
 		doEmbed: async ({ values }): Promise<EmbeddingModelV4Result> => ({
 			embeddings: values.map(() =>
-				new Array(config.mistralEmbeddingDimensions).fill(0),
+				Array.from({ length: config.mistralEmbeddingDimensions }, () => 0),
 			),
 			usage: { tokens: values.length },
 			warnings: [],

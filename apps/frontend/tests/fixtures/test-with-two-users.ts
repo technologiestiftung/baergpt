@@ -159,7 +159,7 @@ async function cleanupUser(id: string) {
  */
 export const testWithTwoUsers = baseTest.extend<TwoUserTestFixtures>({
 	primaryAccount: [
-		async ({}, use) => {
+		async (_, use) => {
 			const account = await createUser("primary.user");
 			await use(account);
 			await cleanupUser(account.id);
@@ -176,7 +176,7 @@ export const testWithTwoUsers = baseTest.extend<TwoUserTestFixtures>({
 	],
 
 	secondaryAccount: [
-		async ({}, use) => {
+		async (_, use) => {
 			const account = await createUser("secondary.user");
 			await use(account);
 			await cleanupUser(account.id);

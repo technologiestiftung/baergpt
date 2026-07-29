@@ -34,7 +34,9 @@ export function EmailInput({
 	useEffect(() => {
 		// Clean up on unmount
 		return () => {
-			debounceTimer && clearTimeout(debounceTimer);
+			if (debounceTimer) {
+				clearTimeout(debounceTimer);
+			}
 			abortController?.abort();
 		};
 	}, []);

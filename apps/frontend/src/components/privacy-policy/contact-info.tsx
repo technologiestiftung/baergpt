@@ -42,7 +42,7 @@ export const ContactInfo = ({ data }: { data: ContactInfoData }) => (
 					<br />
 				</>
 			)}
-			{data.address?.city && data.address.city}
+			{data.address?.city}
 		</span>
 		{data.phone && (
 			<span>
