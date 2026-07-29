@@ -27,10 +27,7 @@ const sdk = new NodeSDK({
 	sampler: sentryClient ? new SentrySampler(sentryClient) : undefined,
 	contextManager: new Sentry.SentryContextManager(),
 	textMapPropagator: new SentryPropagator(),
-	instrumentations: [
-		new HttpInstrumentation(),
-		new UndiciInstrumentation(),
-	],
+	instrumentations: [new HttpInstrumentation(), new UndiciInstrumentation()],
 });
 
 sdk.start();
