@@ -1232,14 +1232,18 @@ export const Content = {
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
 	"unconfirmedEmail.h2": "Fast geschafft!",
-	"unconfirmedEmail.text":
-		"Sie erhalten in Kürze eine E-Mail. Prüfen Sie den Posteingang Ihres E-Mail-Postfaches und klicken Sie auf den Link.",
+	"unconfirmedEmail.text.beforeEmail":
+		"Sie erhalten in Kürze eine E-Mail an die folgende Adresse:",
+	"unconfirmedEmail.text.afterEmail":
+		"Prüfen Sie den Posteingang Ihres Postfaches und klicken Sie auf den Link in der E-Mail.",
 	"unconfirmedEmail.p": "Keine E-Mail bekommen?",
 	"unconfirmedEmail.list1.li1": "Bitte prüfen Sie auch Ihren Spam-Ordner",
 	"unconfirmedEmail.list1.li2":
 		"Falls nach fünf Minuten keine E-Mail angekommen ist, können Sie sie erneut senden",
 	"unconfirmedEmail.resendButton": "E-Mail erneut senden",
 	"unconfirmedEmail.resend.success": "E-Mail wurde versendet",
+	"unconfirmedEmail.wrongEmail.question": "Falsche E-Mail-Adresse?",
+	"unconfirmedEmail.wrongEmail.link": "Erneut registrieren",
 	"unconfirmedEmail.otp.resend":
 		"Falls der Code nicht mehr gültig ist, können Sie einen neuen anfordern:",
 

@@ -73,6 +73,7 @@ interface AuthStore {
 	updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
 	updatePassword: (newPassword: string) => Promise<void>;
 	resendConfirmationEmail: () => Promise<void>;
+	resetUnconfirmedEmail: () => void;
 	resendOtpEmail: (args: {
 		email: string;
 		otpType: "email" | "email_change" | "recovery";
@@ -234,6 +235,11 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		async updateEmail(newEmail: string) {
 			const { error } = await updateEmail(newEmail);
 			return { error };
+		},
+
+		resetUnconfirmedEmail: () => {
+			clearUnconfirmedEmail();
+			set({ unconfirmedEmail: null, emailConfirmationStatus: "unknown" });
 		},
 
 		/**
