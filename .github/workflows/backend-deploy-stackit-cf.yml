@@ -67,6 +67,7 @@ jobs:
             [[ -z "$line" || "$line" == \#* ]] && continue
             key="${line%%=*}"
             value="${line#*=}"
+            echo "::add-mask::$value"
             echo "$key=$value" >> "$GITHUB_ENV"
           done < cf.env
           rm cf.env
@@ -121,6 +122,7 @@ jobs:
             [[ -z "$line" || "$line" == \#* ]] && continue
             key="${line%%=*}"
             value="${line#*=}"
+            echo "::add-mask::$value"
             if [[ "$key" == CF_* ]]; then
               echo "$key=$value" >> "$GITHUB_ENV"
             else
