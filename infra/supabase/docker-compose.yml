@@ -135,6 +135,10 @@ services:
       GOTRUE_MAILER_TEMPLATES_RECOVERY: ${MAILER_TEMPLATES_RECOVERY_URL}
       # Email change - provide a URL to a HTML or Text template
       GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: ${MAILER_TEMPLATES_EMAIL_CHANGE_URL}
+
+      # Without this, GoTrue falls back to its built-in default magic link template, which contains
+      # a real one-click auto-login link instead of a code the user must enter manually.
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: ${MAILER_TEMPLATES_MAGIC_LINK_URL}
       # Subjects
       GOTRUE_MAILER_SUBJECTS_CONFIRMATION: ${MAILER_SUBJECTS_CONFIRMATION}
       GOTRUE_MAILER_SUBJECTS_RECOVERY: ${MAILER_SUBJECTS_RECOVERY}
@@ -447,8 +451,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXP: ${JWT_EXPIRY}
-    command:
-      [
+    command: [
         "postgres",
         "-c",
         "config_file=/etc/postgresql/postgresql.conf",
