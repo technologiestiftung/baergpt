@@ -30,8 +30,7 @@ export const chatFormId = "chat-form";
 
 export const ChatForm: React.FC = () => {
 	const { status, clearError, isLoading } = useInferenceLoadingStatusStore();
-	const { selectedUserChatFolders: selectedUserChatFolders } =
-		useUserFolderStore();
+	const { selectedUserChatFolders } = useUserFolderStore();
 	const { getSelectedPublicChatDocumentIds } = usePublicDocumentsStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatTools, toggleChatTool } =

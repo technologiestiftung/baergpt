@@ -8,10 +8,8 @@ import { getListItemName } from "../../documents/document-list/list-item/utils/g
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
 export const SelectedChatItemsCollapsible: React.FC = () => {
-	const {
-		selectedUserChatFolders: selectedUserChatFolders,
-		unselectUserChatFolder: unselectUserChatFolder,
-	} = useUserFolderStore();
+	const { selectedUserChatFolders, unselectUserChatFolder } =
+		useUserFolderStore();
 	const {
 		selectedPublicChatDocuments,
 		unselectPublicChatDocument,

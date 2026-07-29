@@ -11,7 +11,8 @@ export default {
 	dataTypeCase: "upper",
 	functionCase: "upper",
 	expressionWidth: 100,
-	overrides: [ // use default of sql plugin: https://github.com/sql-formatter-org/sql-formatter/blob/master/docs/useTabs.md
+	overrides: [
+		// use default of sql plugin: https://github.com/sql-formatter-org/sql-formatter/blob/master/docs/useTabs.md
 		{
 			files: "**/*.sql",
 			options: {

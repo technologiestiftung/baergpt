@@ -433,7 +433,7 @@ export const openDataMCPTools =
 			return {
 				tools: wrappedTools,
 				cleanup: async () => {
-					await Promise.all([openDataHttpClient?.close()]);
+					await openDataHttpClient?.close();
 				},
 			};
 		} catch (error) {

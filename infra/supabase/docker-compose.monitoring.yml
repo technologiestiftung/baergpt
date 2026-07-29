@@ -8,7 +8,7 @@ services:
     container_name: supabase-otel-collector
     image: otel/opentelemetry-collector-contrib:0.119.0
     restart: unless-stopped
-    user: "0:0"  # root needed for /proc, /sys, docker.sock, /var/lib/docker/containers
+    user: "0:0" # root needed for /proc, /sys, docker.sock, /var/lib/docker/containers
     command: ["--config=/etc/otel/config.yml"]
     env_file:
       - ./monitoring.env
@@ -27,5 +27,5 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M  # above otel-config memory_limiter (256MiB) so the limiter sheds load before the kernel OOM-kills
+          memory: 384M # above otel-config memory_limiter (256MiB) so the limiter sheds load before the kernel OOM-kills
           cpus: "0.5"

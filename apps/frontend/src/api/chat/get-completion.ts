@@ -283,7 +283,7 @@ function processStreamLine(
 		}
 
 		return false;
-	} catch (_e) {
+	} catch {
 		useErrorStore
 			.getState()
 			.handleError(new Error("Failed to parse SSE event"));

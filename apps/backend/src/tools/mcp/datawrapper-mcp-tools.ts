@@ -183,7 +183,7 @@ export const datawrapperMCPTools =
 			return {
 				tools: wrappedTools,
 				cleanup: async () => {
-					await Promise.all([datawrapperHttpClient?.close()]);
+					await datawrapperHttpClient?.close();
 				},
 			};
 		} catch (error) {

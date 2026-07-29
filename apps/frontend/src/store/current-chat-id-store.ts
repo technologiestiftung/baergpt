@@ -17,10 +17,8 @@ interface CurrentChatIdStore {
 const resetPreviousChatState = () => {
 	const { selectedUserChatDocuments, unselectUserChatDocument } =
 		useUserDocumentStore.getState();
-	const {
-		selectedUserChatFolders: selectedUserChatFolders,
-		unselectUserChatFolder: unselectUserChatFolder,
-	} = useUserFolderStore.getState();
+	const { selectedUserChatFolders, unselectUserChatFolder } =
+		useUserFolderStore.getState();
 	const {
 		selectedPublicChatFolders,
 		unselectPublicChatFolder,
