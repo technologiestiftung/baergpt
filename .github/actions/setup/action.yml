@@ -22,10 +22,6 @@ runs:
       if: inputs.start-supabase == 'true'
       shell: bash
       working-directory: apps/backend
-      env:
-        # Disable analytics so the logflare/vector containers are not started.
-        # This avoids an unhealthy vector container in CLI 2.110.0+.
-        SUPABASE_ANALYTICS_ENABLED: "false"
       run: |
         # Run supabase start in the background with nohup so it survives the
         # GitHub Actions step closing its stdout/stderr. Redirect output to a log
