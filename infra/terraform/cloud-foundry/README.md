@@ -5,14 +5,15 @@ Provisions one CF org (`baergpt`) with `staging` and `prod` spaces in the
 
 ## Layout
 
-| File           | Manages                                                              |
-| -------------- | -------------------------------------------------------------------- |
-| `versions.tf`  | Terraform + provider pins; S3 remote-state backend                   |
-| `provider.tf`  | `stackit` + `cloudfoundry` providers (CF wired from the org-manager) |
-| `variables.tf` | project id, org name, region, operators, per-space quota + ssh       |
-| `org.tf`       | CF org + technical org-manager + platform data source                |
-| `spaces.tf`    | spaces, space quotas, org/space roles                                |
-| `outputs.tf`   | api_url                                                              |
+| File                  | Manages                                                              |
+| --------------------- | -------------------------------------------------------------------- |
+| `versions.tf`         | Terraform + provider pins; S3 remote-state backend                   |
+| `provider.tf`         | `stackit` + `cloudfoundry` providers (CF wired from the org-manager) |
+| `variables.tf`        | project id, org name, region, operators, per-space quota + ssh       |
+| `org.tf`              | CF org + technical org-manager + platform data source                |
+| `spaces.tf`           | spaces, space quotas, org/space roles                                |
+| `service-accounts.tf` | per-space CI service accounts + their keys                           |
+| `outputs.tf`          | api_url, CI credentials                                              |
 
 ## Quotas
 
@@ -64,6 +65,15 @@ Every later change is a plain `$OP terraform apply` — no `-target`.
 > concurrent applies against this state.
 
 [stackitcloud/terraform-provider-stackit#1534]: https://github.com/stackitcloud/terraform-provider-stackit/issues/1534
+
+## CI credentials
+
+Each space has a `space-deployer` service account for CI pipelines (SpaceDeveloper) in that
+space only. Read a login out and put it in the pipeline's secret store:
+
+```sh
+$OP terraform output -json deployer_credentials | jq '.prod'
+```
 
 ## SSH access
 
