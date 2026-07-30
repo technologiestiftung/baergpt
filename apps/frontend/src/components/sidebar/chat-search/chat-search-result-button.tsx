@@ -83,7 +83,7 @@ function buildHighlightedSnippet(
 	query: string,
 ): React.ReactNode {
 	const cleanedSnippet = removeMarkdownStyling(snippet).replace(/\s+/g, " ");
-	const trimmedQuery = query.trim();
+	const trimmedQuery = removeMarkdownStyling(query).replace(/\s+/g, " ").trim();
 
 	const matchIndex = cleanedSnippet
 		.toLowerCase()

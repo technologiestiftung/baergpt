@@ -1,6 +1,5 @@
 import { supabase } from "../../../supabase-client.ts";
 import type { Chat } from "../../common.ts";
-import { useAuthStore } from "../../store/auth-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 
 const { handleError } = useErrorStore.getState();
@@ -12,6 +11,16 @@ export type ChatSearchResult = {
 	messageId: number;
 	snippet: string;
 	createdAt: string;
+};
+
+type ChatSearchRow = {
+	chat_id: number;
+	chat_name: string;
+	chat_user_id: string;
+	chat_created_at: string;
+	message_id: number;
+	message_content: string;
+	message_created_at: string;
 };
 
 /**
@@ -35,12 +44,6 @@ export async function searchChats(
 	query: string,
 	signal: AbortSignal,
 ): Promise<ChatSearchResult[]> {
-	const { session } = useAuthStore.getState();
-
-	if (!session?.user.id) {
-		return [];
-	}
-
 	const trimmedQuery = query.trim();
 	if (!trimmedQuery) {
 		return [];
@@ -48,60 +51,31 @@ export async function searchChats(
 
 	const pattern = `%${escapeIlikeQuery(trimmedQuery)}%`;
 
-	const { data: matchingMessages, error: messageError } = await supabase
-		.from("chat_messages")
-		.select("id, chat_id, content, created_at")
-		.ilike("content", pattern)
-		.order("created_at", { ascending: false })
-		.limit(SEARCH_RESULT_LIMIT)
+	const { data, error } = await supabase
+		.rpc("search_chat_messages", {
+			search_pattern: pattern,
+			result_limit: SEARCH_RESULT_LIMIT,
+		})
 		.abortSignal(signal);
 
 	if (signal.aborted) {
 		return [];
 	}
 
-	if (messageError) {
-		handleError(messageError);
+	if (error) {
+		handleError(error);
 		return [];
 	}
 
-	const messages = matchingMessages ?? [];
-	if (messages.length === 0) {
-		return [];
-	}
-
-	const chatIds = [...new Set(messages.map((message) => message.chat_id))];
-
-	const { data: chats, error: chatsError } = await supabase
-		.from("chats")
-		.select("*")
-		.eq("user_id", session.user.id)
-		.in("id", chatIds)
-		.abortSignal(signal);
-
-	if (signal.aborted) {
-		return [];
-	}
-
-	if (chatsError) {
-		handleError(chatsError);
-		return [];
-	}
-
-	const chatById = new Map((chats ?? []).map((chat) => [chat.id, chat]));
-
-	return messages.flatMap((message) => {
-		const chat = chatById.get(message.chat_id);
-		if (!chat) {
-			return [];
-		}
-		return [
-			{
-				chat,
-				messageId: message.id,
-				snippet: message.content,
-				createdAt: message.created_at,
-			},
-		];
-	});
+	return ((data ?? []) as ChatSearchRow[]).map((row) => ({
+		chat: {
+			id: row.chat_id,
+			name: row.chat_name,
+			user_id: row.chat_user_id,
+			created_at: row.chat_created_at,
+		},
+		messageId: row.message_id,
+		snippet: row.message_content,
+		createdAt: row.message_created_at,
+	}));
 }
