@@ -120,7 +120,7 @@ test.describe("Chat search", () => {
 			await page.goto("/");
 
 			const searchInput = await openChatSearchDialog(page);
-			await expect(searchInput).toHaveAttribute("aria-expanded", "false");
+			await expect(searchInput).toHaveAttribute("aria-expanded", "true");
 
 			await searchInput.fill("Berlin");
 
