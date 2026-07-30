@@ -3,8 +3,7 @@
 # independently of any app deploy. The *policy* (min/max instances + scaling
 # rules) is NOT set here — it's attached per-app by the deploy workflow from a
 # committed JSON file, because the apps themselves are created by `cf push` in
-# CI, not by Terraform (see backend-deploy-stackit-cf.yml and the repo-root
-# autoscaler-policy-*.json files).
+# CI, not by Terraform (see backend-deploy-stackit-cf.yml and gotenberg-deploy-stackit-cf.yml).
 
 # The free autoscaler plan offered by the STACKIT marketplace ("autoscaler"
 # broker). allow_paid_service_plans stays false on the space quota because this

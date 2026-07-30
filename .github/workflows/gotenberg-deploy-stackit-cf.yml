@@ -8,6 +8,7 @@ on:
     # (or manually via workflow_dispatch)
     paths:
       - "infra/gotenberg/manifest.yml"
+      - "infra/gotenberg/autoscaler-policy-production.json"
       - ".github/workflows/gotenberg-deploy-stackit-cf.yml"
   workflow_dispatch:
 

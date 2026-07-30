@@ -13,6 +13,7 @@ Provisions one CF org (`baergpt`) with `staging` and `prod` spaces in the
 | `org.tf`              | CF org + technical org-manager + platform data source                |
 | `spaces.tf`           | spaces, space quotas, org/space roles                                |
 | `service-accounts.tf` | per-space CI service accounts + their keys                           |
+| `autoscaler.tf`       | per-space App-Autoscaler service instance (`<space>-autoscaler`)     |
 | `outputs.tf`          | api_url, CI credentials                                              |
 
 ## Quotas
@@ -28,6 +29,23 @@ cf curl /v3/organization_quotas | jq '.resources[] | {name, guid, memory_mb: .ap
 ```
 
 Switch plans in the portal, then update `quota_id` to match.
+
+## Autoscaling
+
+`autoscaler.tf` provisions **one App-Autoscaler service instance per space**
+(`<space>-autoscaler`, e.g. `staging-autoscaler`, `prod-autoscaler`) from the free
+`autoscaler-free-plan` in the STACKIT marketplace. This is deliberately split from the
+scaling policy:
+
+- **The service instance** is the durable half — provisioned once by Terraform, it lives
+  independently of any app deploy. One instance is shared by every app in the space.
+- **The policy** (min/max instances + scaling rules) is _not_ in Terraform. The apps
+  themselves are created by `cf push` in CI, not here, so each deploy workflow attaches a
+  committed policy JSON to its app by binding it to the space's autoscaler instance. See
+  `autoscaler-policy-*.json` and the "Attach autoscaling policy" step in
+  `backend-deploy-stackit-cf.yml` / `gotenberg-deploy-stackit-cf.yml`.
+
+Because the plan is free, `allow_paid_service_plans` stays `false` on the space quota.
 
 ## Auth
 
