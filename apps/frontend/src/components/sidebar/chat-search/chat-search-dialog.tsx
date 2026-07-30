@@ -36,7 +36,8 @@ export const ChatSearchDialog: React.FC = () => {
 		results,
 		isLoading,
 		selectedIndex,
-		setSelectedIndex,
+		selectIndex,
+		isKeyboardSelection,
 		moveSelection,
 		reset,
 		hasQuery,
@@ -154,7 +155,8 @@ export const ChatSearchDialog: React.FC = () => {
 											chat={chat}
 											optionId={getChatSearchLastOptionId(chat.id)}
 											isSelected={index === selectedIndex}
-											onSelect={() => setSelectedIndex(index)}
+											isKeyboardSelection={isKeyboardSelection}
+											onSelect={() => selectIndex(index)}
 										/>
 									</li>
 								))}
@@ -186,7 +188,8 @@ export const ChatSearchDialog: React.FC = () => {
 											query={query}
 											optionId={getChatSearchOptionId(result.messageId)}
 											isSelected={index === selectedIndex}
-											onSelect={() => setSelectedIndex(index)}
+											isKeyboardSelection={isKeyboardSelection}
+											onSelect={() => selectIndex(index)}
 										/>
 									</li>
 								))}

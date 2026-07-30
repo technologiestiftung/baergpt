@@ -14,6 +14,7 @@ interface ChatSearchResultButtonProps {
 	query: string;
 	optionId: string;
 	isSelected: boolean;
+	isKeyboardSelection: boolean;
 	onSelect: () => void;
 }
 
@@ -24,6 +25,7 @@ export const ChatSearchResultButton: React.FC<ChatSearchResultButtonProps> = ({
 	query,
 	optionId,
 	isSelected,
+	isKeyboardSelection,
 	onSelect,
 }) => {
 	const buttonRef = useRef<HTMLButtonElement>(null);
@@ -42,8 +44,10 @@ export const ChatSearchResultButton: React.FC<ChatSearchResultButtonProps> = ({
 			role="option"
 			aria-selected={isSelected}
 			tabIndex={-1}
-			className={`w-full flex items-start justify-between gap-3 p-3 rounded-sm text-sm leading-5 focus-visible:outline-default ${
-				isSelected ? "bg-hellblau-30" : "hover:bg-hellblau-30"
+			className={`w-full flex items-start justify-between gap-3 p-3 rounded-sm text-sm leading-5 ${
+				isSelected
+					? `bg-hellblau-30${isKeyboardSelection ? " outline-default" : ""}`
+					: "hover:bg-hellblau-30"
 			}`}
 			onClick={() => {
 				void openChatFromSearch(chat, messageId, query);
@@ -88,8 +92,9 @@ function buildHighlightedSnippet(
 	if (matchIndex === -1) {
 		return cleanedSnippet;
 	}
-
-	const before = cleanedSnippet.slice(0, matchIndex);
+	const CONTEXT_CHARS = 40;
+	const windowStart = Math.max(0, matchIndex - CONTEXT_CHARS);
+	const before = cleanedSnippet.slice(windowStart, matchIndex);
 	const match = cleanedSnippet.slice(
 		matchIndex,
 		matchIndex + trimmedQuery.length,
@@ -98,7 +103,7 @@ function buildHighlightedSnippet(
 
 	return (
 		<>
-			{`...`}
+			{windowStart > 0 && "..."}
 			{before}
 			<span className="font-semibold text-dunkelblau-100">{match}</span>
 			{after}
