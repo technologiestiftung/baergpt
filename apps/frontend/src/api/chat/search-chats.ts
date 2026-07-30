@@ -13,16 +13,6 @@ export type ChatSearchResult = {
 	createdAt: string;
 };
 
-type ChatSearchRow = {
-	chat_id: number;
-	chat_name: string;
-	chat_user_id: string;
-	chat_created_at: string;
-	message_id: number;
-	message_content: string;
-	message_created_at: string;
-};
-
 /**
  * Escapes characters that have special meaning in Postgres LIKE/ILIKE patterns
  * and commas used by PostgREST filter parsing.
@@ -67,7 +57,7 @@ export async function searchChats(
 		return [];
 	}
 
-	return ((data ?? []) as ChatSearchRow[]).map((row) => ({
+	return data.map((row) => ({
 		chat: {
 			id: row.chat_id,
 			name: row.chat_name,
