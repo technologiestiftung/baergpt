@@ -133,6 +133,32 @@ jobs:
             ${{ steps.sync.outputs.bootstrapped != 'true' && '--strategy rolling' || '' }} \
           || { cf cancel-deployment "${{ env.APP_NAME }}" 2>/dev/null || true; exit 1; }
 
+      # Prod only: autoscale gotenberg 1→3 instances (conversions are CPU-bound).
+      # Staging stays at the manifest's fixed single instance, so no policy there.
+      # Binds to the shared "<space>-autoscaler" service instance provisioned by
+      # Terraform (infra/terraform/cloud-foundry) — one instance, many apps. cf v8
+      # has no update-binding, so unbind + rebind with the committed policy (-c).
+      - name: Attach autoscaling policy 📈
+        if: ${{ github.ref_name == 'main' }}
+        working-directory: infra/gotenberg
+        run: |
+          service="${CF_SPACE}-autoscaler"
+          policy="autoscaler-policy-production.json"
+          cf unbind-service "${{ env.APP_NAME }}" "$service" --wait 2>/dev/null || true
+          # The unbind above detached the previous policy, so a failed rebind
+          # would leave the app with no autoscaling. Retry with backoff; the
+          # committed policy file is the source of truth, so re-binding it is
+          # the recovery path. Fail the deploy if it never attaches.
+          for attempt in 1 2 3; do
+            cf bind-service "${{ env.APP_NAME }}" "$service" --wait -c "$policy" && break
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Failed to attach autoscaling policy after $attempt attempts; app left without a policy" >&2
+              exit 1
+            fi
+            echo "bind-service failed (attempt $attempt), retrying in $((attempt * 10))s…" >&2
+            sleep $((attempt * 10))
+          done
+
       - name: Dump recent app logs on failure 🪵
         if: ${{ failure() && !cancelled() }}
         run: cf logs "${{ env.APP_NAME }}" --recent

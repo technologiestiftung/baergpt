@@ -1,0 +1,22 @@
+{
+	"instance_min_count": 1,
+	"instance_max_count": 3,
+	"scaling_rules": [
+		{
+			"metric_type": "cpu",
+			"operator": ">=",
+			"threshold": 80,
+			"adjustment": "+1",
+			"breach_duration_secs": 120,
+			"cool_down_secs": 120
+		},
+		{
+			"metric_type": "cpu",
+			"operator": "<=",
+			"threshold": 25,
+			"adjustment": "-1",
+			"breach_duration_secs": 300,
+			"cool_down_secs": 300
+		}
+	]
+}
