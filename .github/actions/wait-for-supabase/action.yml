@@ -21,11 +21,24 @@ runs:
         fi
 
         # Sometimes the postgrest api and postgres are up, but individual postgrest endpoints are not ready yet.
-        # Therefore we check if a table (e.g. `application_admins`) is available in the postgrest api.
+        # Therefore we check the PostgREST root/OpenAPI endpoint, which does not depend on row-level
+        # permissions for any particular table.
 
-        until curl -sf "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/application_admins >/dev/null && pg_isready -U postgres -h localhost -p 54322; do
+        until \
+          HTTP_STATUS=$(curl -s -o /tmp/supabase-health.body -w "%{http_code}" "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/) && \
+          [ "$HTTP_STATUS" = "200" ] && \
+          pg_isready -U postgres -h localhost -p 54322 >/tmp/pg_isready.out 2>&1; do
           if [ $counter -gt $timeout ]; then
             echo "Timed out waiting for Supabase"
+            echo "=== PostgREST health check (http://localhost:54321/rest/v1/) ==="
+            echo "HTTP status: ${HTTP_STATUS:-<failed>}"
+            if [ -f /tmp/supabase-health.body ]; then
+              echo "Response body (first 500 chars):"
+              head -c 500 /tmp/supabase-health.body || true
+              echo
+            fi
+            echo "=== PostgreSQL readiness (pg_isready -U postgres -h localhost -p 54322) ==="
+            cat /tmp/pg_isready.out 2>/dev/null || echo "pg_isready output unavailable"
             if command -v docker >/dev/null 2>&1; then
               echo "=== Docker status (running) ==="
               docker ps
@@ -39,7 +52,7 @@ runs:
             fi
             exit 1
           fi
-          echo "Waiting for Supabase to be ready..."
+          echo "Waiting for Supabase to be ready... (POSTGREST status: ${HTTP_STATUS:-<failed>})"
           sleep 1
           counter=$((counter + 1))
         done
