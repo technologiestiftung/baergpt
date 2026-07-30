@@ -1,8 +1,8 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA extensions;
 
 -- Leading-wildcard ILIKE (search_chat_messages below) can't use a btree
 -- index; the trigram GIN index keeps it fast as chat_messages grows.
-CREATE INDEX IF NOT EXISTS idx_chat_messages_content_trgm ON public.chat_messages USING gin (content gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_content_trgm ON public.chat_messages USING gin (content extensions.gin_trgm_ops);
 
 CREATE OR REPLACE FUNCTION public.search_chat_messages (search_pattern TEXT, result_limit INTEGER DEFAULT 50) returns TABLE (
     chat_id INTEGER,
