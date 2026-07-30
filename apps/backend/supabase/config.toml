@@ -14,6 +14,16 @@ extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
+# Restore the pre-CLI-2.102 behavior of auto-granting Data API privileges on new entities in the
+# public schema. Our migrations contain no table-level GRANTs and rely on this. Without it, the CLI
+# revokes anon/authenticated/service_role privileges on every public table after applying
+# migrations, and every PostgREST query fails with `42501 permission denied for table ...`.
+# Deprecated: the CLI removes this flag on 2026-10-30, at which point we must add an explicit GRANT
+# migration instead.
+# NOTE: this only takes effect when the database is created, i.e. on a fresh volume. If you change
+# it on an existing stack, run `supabase stop --no-backup` before `supabase start` — otherwise the
+# old privileges persist and every query fails with `42501 permission denied for table ...`.
+auto_expose_new_tables = true
 
 [api.tls]
 enabled = false
@@ -197,7 +207,9 @@ policy = "oneshot"
 inspector_port = 8083
 
 [analytics]
-enabled = true
+# Disabled so the logflare/vector containers are not started. Avoids an unhealthy vector container
+# in CLI 2.110.0+, and we never read local analytics in CI or local dev.
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
