@@ -1,4 +1,4 @@
-export async function registerUser({
+export async function registerOrRecoverUser({
 	email,
 	password,
 	firstName,

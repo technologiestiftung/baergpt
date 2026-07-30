@@ -25,5 +25,15 @@ EXECUTE ON FUNCTION public.check_email_registration_status (TEXT)
 FROM
     PUBLIC;
 
+REVOKE
+EXECUTE ON FUNCTION public.check_email_registration_status (TEXT)
+FROM
+    anon;
+
+REVOKE
+EXECUTE ON FUNCTION public.check_email_registration_status (TEXT)
+FROM
+    authenticated;
+
 GRANT
 EXECUTE ON FUNCTION public.check_email_registration_status (TEXT) TO service_role;
