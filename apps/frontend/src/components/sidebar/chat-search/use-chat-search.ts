@@ -11,6 +11,7 @@ export function useChatSearch() {
 	const [results, setResults] = useState<ChatSearchResult[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const [isKeyboardSelection, setIsKeyboardSelection] = useState(false);
 
 	const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 	const abortControllerRef = useRef<AbortController | null>(null);
@@ -23,6 +24,7 @@ export function useChatSearch() {
 		setResults([]);
 		setIsLoading(false);
 		setSelectedIndex(0);
+		setIsKeyboardSelection(false);
 	}, []);
 
 	useEffect(() => {
@@ -34,6 +36,7 @@ export function useChatSearch() {
 			setResults([]);
 			setIsLoading(false);
 			setSelectedIndex(0);
+			setIsKeyboardSelection(false);
 			return () => {};
 		}
 
@@ -54,6 +57,7 @@ export function useChatSearch() {
 
 			setResults(searchResults);
 			setSelectedIndex(0);
+			setIsKeyboardSelection(false);
 			setIsLoading(false);
 		}, SEARCH_DEBOUNCE_MS);
 
@@ -69,6 +73,7 @@ export function useChatSearch() {
 				return;
 			}
 
+			setIsKeyboardSelection(true);
 			setSelectedIndex((currentIndex) => {
 				if (direction === "down") {
 					return Math.min(currentIndex + 1, itemCount - 1);
@@ -79,13 +84,19 @@ export function useChatSearch() {
 		[],
 	);
 
+	const selectIndex = useCallback((index: number) => {
+		setIsKeyboardSelection(false);
+		setSelectedIndex(index);
+	}, []);
+
 	return {
 		query,
 		setQuery,
 		results,
 		isLoading,
 		selectedIndex,
-		setSelectedIndex,
+		selectIndex,
+		isKeyboardSelection,
 		moveSelection,
 		reset,
 		hasQuery: query.trim().length > 0,

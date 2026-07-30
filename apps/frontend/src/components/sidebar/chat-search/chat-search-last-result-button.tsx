@@ -11,12 +11,13 @@ interface ChatSearchLastResultButtonProps {
 	chat: Chat;
 	optionId: string;
 	isSelected: boolean;
+	isKeyboardSelection: boolean;
 	onSelect: () => void;
 }
 
 export const ChatSearchLastResultButton: React.FC<
 	ChatSearchLastResultButtonProps
-> = ({ chat, optionId, isSelected, onSelect }) => {
+> = ({ chat, optionId, isSelected, isKeyboardSelection, onSelect }) => {
 	const buttonRef = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
@@ -33,8 +34,10 @@ export const ChatSearchLastResultButton: React.FC<
 			role="option"
 			aria-selected={isSelected}
 			tabIndex={-1}
-			className={`w-full flex items-center justify-between gap-3 p-3 rounded-sm text-sm leading-5 focus-visible:outline-default ${
-				isSelected ? "bg-hellblau-30" : "hover:bg-hellblau-30"
+			className={`w-full flex items-center justify-between gap-3 p-3 rounded-sm text-sm leading-5 ${
+				isSelected
+					? `bg-hellblau-30${isKeyboardSelection ? " outline-default" : ""}`
+					: "hover:bg-hellblau-30"
 			}`}
 			onClick={() => {
 				void openChatFromSearch(chat);

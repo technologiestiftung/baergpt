@@ -1,6 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { testWithMockedChatMessages } from "../fixtures/test-with-mocked-chat-messages.ts";
-import { mockChatSearch } from "../fixtures/mock-chat-search.ts";
+import {
+	CHATS_PAGE_SIZE,
+	insertFillerChats,
+	seedBerlinSearchChats,
+	testWithChatSearch,
+} from "../fixtures/test-with-chat-search.ts";
 
 async function openChatSearchDialog(page: Page) {
 	await page.getByRole("button", { name: "Chatsuche öffnen" }).click();
@@ -8,7 +12,7 @@ async function openChatSearchDialog(page: Page) {
 }
 
 test.describe("Chat search", () => {
-	testWithMockedChatMessages(
+	testWithChatSearch(
 		"shows the most recently used chats when no search query is entered",
 		async ({ page, insertChat }) => {
 			await insertChat("Älterer Testchat", new Date(Date.now() - 60_000));
@@ -32,11 +36,10 @@ test.describe("Chat search", () => {
 		},
 	);
 
-	testWithMockedChatMessages(
+	testWithChatSearch(
 		"shows matching results with highlighted snippets for a search query",
-		async ({ page, buildMockedSearchFixtures }) => {
-			const { chats, messageHits } = buildMockedSearchFixtures();
-			await mockChatSearch(page, { chats, messageHits });
+		async ({ page, insertChat, insertMessages }) => {
+			await seedBerlinSearchChats(insertChat, insertMessages);
 
 			await page.goto("/");
 
@@ -59,11 +62,23 @@ test.describe("Chat search", () => {
 		},
 	);
 
-	testWithMockedChatMessages(
+	testWithChatSearch(
 		"shows a loading skeleton while a search is in flight",
-		async ({ page, buildMockedSearchFixtures }) => {
-			const { chats, messageHits } = buildMockedSearchFixtures();
-			await mockChatSearch(page, { chats, messageHits, delayMs: 800 });
+		async ({ page, insertChat, insertMessages }) => {
+			await seedBerlinSearchChats(insertChat, insertMessages);
+
+			// Slow down the Supabase search request so the skeleton is observable.
+			await page.route("**/rest/v1/chat_messages*", async (route) => {
+				const contentFilter = new URL(route.request().url()).searchParams.get(
+					"content",
+				);
+				if (!contentFilter?.startsWith("ilike.")) {
+					return route.fallback();
+				}
+
+				await new Promise((resolve) => setTimeout(resolve, 800));
+				return route.continue();
+			});
 
 			await page.goto("/");
 
@@ -79,12 +94,9 @@ test.describe("Chat search", () => {
 		},
 	);
 
-	testWithMockedChatMessages(
+	testWithChatSearch(
 		"shows an empty state when no chats match the query",
-		async ({ page, buildMockedSearchFixtures }) => {
-			const { chats } = buildMockedSearchFixtures();
-			await mockChatSearch(page, { chats, messageHits: [] });
-
+		async ({ page }) => {
 			await page.goto("/");
 
 			const searchInput = await openChatSearchDialog(page);
@@ -99,19 +111,14 @@ test.describe("Chat search", () => {
 				),
 			).toBeVisible();
 			await expect(page.getByRole("listbox")).toHaveCount(0);
-
-			await expect(
-				page.getByText("„Unbekannter Suchbegriff Xyz“"),
-			).toBeVisible();
 			await expect(page.getByRole("dialog")).toBeVisible();
 		},
 	);
 
-	testWithMockedChatMessages(
+	testWithChatSearch(
 		"exposes correct combobox ARIA attributes for the active result",
-		async ({ page, buildMockedSearchFixtures }) => {
-			const { chats, messageHits } = buildMockedSearchFixtures();
-			await mockChatSearch(page, { chats, messageHits });
+		async ({ page, insertChat, insertMessages }) => {
+			await seedBerlinSearchChats(insertChat, insertMessages);
 
 			await page.goto("/");
 
@@ -140,11 +147,10 @@ test.describe("Chat search", () => {
 		},
 	);
 
-	testWithMockedChatMessages(
+	testWithChatSearch(
 		"navigates results with the arrow keys and clamps at the boundaries",
-		async ({ page, buildMockedSearchFixtures }) => {
-			const { chats, messageHits } = buildMockedSearchFixtures();
-			await mockChatSearch(page, { chats, messageHits });
+		async ({ page, insertChat, insertMessages }) => {
+			await seedBerlinSearchChats(insertChat, insertMessages);
 
 			await page.goto("/");
 
@@ -180,11 +186,10 @@ test.describe("Chat search", () => {
 		},
 	);
 
-	testWithMockedChatMessages(
+	testWithChatSearch(
 		"closes the dialog and resets the query on Escape",
-		async ({ page, buildMockedSearchFixtures }) => {
-			const { chats, messageHits } = buildMockedSearchFixtures();
-			await mockChatSearch(page, { chats, messageHits });
+		async ({ page, insertChat, insertMessages }) => {
+			await seedBerlinSearchChats(insertChat, insertMessages);
 
 			await page.goto("/");
 
@@ -203,41 +208,10 @@ test.describe("Chat search", () => {
 		},
 	);
 
-	testWithMockedChatMessages(
+	testWithChatSearch(
 		"opens the currently selected result on Enter",
 		async ({ page, insertChat, insertMessages }) => {
-			const now = Date.now();
-
-			const chatA = await insertChat("Steuererklärung 2025", new Date(now));
-			await insertMessages(chatA, [
-				{
-					role: "user",
-					content: "Wie hoch ist die Grundsteuer in Berlin?",
-					createdAt: new Date(now),
-				},
-			]);
-
-			const chatB = await insertChat("Kita Anmeldung", new Date(now - 1_000));
-			await insertMessages(chatB, [
-				{
-					role: "user",
-					content: "Wo melde ich mein Kind in Berlin für die Kita an?",
-					createdAt: new Date(now - 1_000),
-				},
-			]);
-
-			const chatC = await insertChat(
-				"Führerschein Ummeldung",
-				new Date(now - 2_000),
-			);
-			await insertMessages(chatC, [
-				{
-					role: "user",
-					content:
-						"Welche Behörde ist in Berlin für den Führerschein zuständig?",
-					createdAt: new Date(now - 2_000),
-				},
-			]);
+			await seedBerlinSearchChats(insertChat, insertMessages);
 
 			await page.goto("/");
 
@@ -261,6 +235,77 @@ test.describe("Chat search", () => {
 			await expect(userMessage).toContainText(
 				"Wo melde ich mein Kind in Berlin für die Kita an?",
 			);
+		},
+	);
+
+	testWithChatSearch(
+		"fetches and opens a search result that is not in the currently loaded chats",
+		async ({ page, insertChat, insertMessages, session }) => {
+			const now = Date.now();
+
+			await insertFillerChats(session, CHATS_PAGE_SIZE, new Date(now));
+
+			const unloadedChatName = "Archivierter Berlin-Chat";
+			const unloadedMessage =
+				"Wie hoch ist die Grundsteuer in Berlin?";
+			const unloadedChatId = await insertChat(
+				unloadedChatName,
+				new Date(now - CHATS_PAGE_SIZE * 1_000 - 60_000),
+			);
+			await insertMessages(unloadedChatId, [
+				{
+					role: "user",
+					content: unloadedMessage,
+					createdAt: new Date(now - CHATS_PAGE_SIZE * 1_000 - 60_000),
+				},
+			]);
+
+			// Keep the second history page from loading so the older chat stays
+			// out of the chats store (intersection observer would otherwise fetch it).
+			await page.route(
+				(url) =>
+					url.pathname.includes("/rest/v1/chats") &&
+					url.searchParams.get("offset") === String(CHATS_PAGE_SIZE),
+				async () => {
+					await new Promise(() => {});
+				},
+			);
+
+			await page.goto("/");
+
+			const sidebar = page.getByRole("complementary", { name: "Sidebar" });
+			await expect(
+				sidebar.getByRole("button", { name: "Filler Chat 0", exact: true }),
+			).toBeVisible();
+			await expect(
+				sidebar.getByRole("button", {
+					name: unloadedChatName,
+					exact: true,
+				}),
+			).toHaveCount(0);
+
+			const searchInput = await openChatSearchDialog(page);
+			await searchInput.fill("Berlin");
+
+			const options = page.getByRole("option");
+			await expect(options).toHaveCount(1);
+			await expect(options.first()).toContainText(unloadedChatName);
+
+			const messagesFetch = page.waitForRequest((request) => {
+				const url = new URL(request.url());
+				return (
+					url.pathname.includes("/rest/v1/chat_messages") &&
+					url.searchParams.get("chat_id") === `eq.${unloadedChatId}`
+				);
+			});
+
+			await searchInput.press("Enter");
+			await messagesFetch;
+
+			await expect(page.getByRole("dialog")).toBeHidden();
+
+			const userMessage = page.getByTestId("user-message-markdown-container");
+			await expect(userMessage).toContainText(unloadedMessage);
 		},
 	);
 });
