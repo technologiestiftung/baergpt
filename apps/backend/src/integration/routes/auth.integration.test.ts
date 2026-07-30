@@ -56,7 +56,11 @@ describe("/auth/register", () => {
 			(user) => user.email === givenNewEmail,
 		);
 		if (leftoverNewUser) {
-			await serviceRoleDbClient.auth.admin.deleteUser(leftoverNewUser.id);
+			const { error: deleteError } =
+				await serviceRoleDbClient.auth.admin.deleteUser(leftoverNewUser.id);
+			if (deleteError) {
+				throw deleteError;
+			}
 		}
 	});
 
