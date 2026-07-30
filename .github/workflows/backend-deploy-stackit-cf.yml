@@ -199,6 +199,21 @@ jobs:
             --var disk_quota="$CF_DISK_QUOTA" \
           || { cf cancel-deployment "${{ env.APP_NAME }}" 2>/dev/null || true; exit 1; }
 
+      # Autoscaling: re-attach the committed policy on every deploy so the repo
+      # stays the single source of truth (same philosophy as the env-var sync
+      # above). The autoscaler *service instance* ("<space>-autoscaler") is
+      # provisioned once by Terraform — see infra/terraform/cloud-foundry. cf v8
+      # has no update-binding, so we unbind + rebind, passing the policy as the
+      # binding's config (-c). Unbind is best-effort: on the first attach there's
+      # nothing bound yet.
+      - name: Attach autoscaling policy 📈
+        working-directory: apps/backend
+        run: |
+          service="${CF_SPACE}-autoscaler"
+          policy="autoscaler-policy-${{ github.ref_name == 'main' && 'production' || 'staging' }}.json"
+          cf unbind-service "${{ env.APP_NAME }}" "$service" --wait 2>/dev/null || true
+          cf bind-service "${{ env.APP_NAME }}" "$service" --wait -c "$policy"
+
       - name: Dump recent app logs on failure 🪵
         if: ${{ failure() && !cancelled() }}
         run: cf logs "${{ env.APP_NAME }}" --recent
