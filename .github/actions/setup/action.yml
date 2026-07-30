@@ -21,7 +21,25 @@ runs:
     - name: Start supabase ⚡️
       if: inputs.start-supabase == 'true'
       shell: bash
-      run: cd apps/backend && supabase start --exclude studio,realtime,imgproxy,edge-runtime,logflare,supavisor,postgres-meta &
+      working-directory: apps/backend
+      env:
+        # Disable analytics so the logflare/vector containers are not started.
+        # This avoids an unhealthy vector container in CLI 2.110.0+.
+        SUPABASE_ANALYTICS_ENABLED: "false"
+      run: |
+        # Run supabase start in the background with nohup so it survives the
+        # GitHub Actions step closing its stdout/stderr. Redirect output to a log
+        # file so we can inspect it if the wait action times out.
+        nohup supabase start --exclude studio,realtime,imgproxy,edge-runtime,supavisor,postgres-meta > /tmp/supabase-start.log 2>&1 &
+        echo $! > /tmp/supabase-start.pid
+
+        # Fail fast if the process died immediately (e.g. config error).
+        sleep 2
+        if ! kill -0 "$(cat /tmp/supabase-start.pid)" 2>/dev/null; then
+          echo "supabase start exited immediately:"
+          cat /tmp/supabase-start.log
+          exit 1
+        fi
 
     - name: Setup Node.js using .nvmrc ⚙️
       uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0, pinned to commit sha to avoid sha-hulud like attacks

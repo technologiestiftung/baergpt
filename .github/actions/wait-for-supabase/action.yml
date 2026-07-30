@@ -27,8 +27,15 @@ runs:
           if [ $counter -gt $timeout ]; then
             echo "Timed out waiting for Supabase"
             if command -v docker >/dev/null 2>&1; then
-              echo "=== Docker status ==="
+              echo "=== Docker status (running) ==="
               docker ps
+              echo "=== Docker status (all) ==="
+              docker ps -a
+            fi
+            if [ -f /tmp/supabase-start.log ]; then
+              echo "=== Supabase start log ==="
+              cat /tmp/supabase-start.log
+              echo "=== End Supabase start log ==="
             fi
             exit 1
           fi
