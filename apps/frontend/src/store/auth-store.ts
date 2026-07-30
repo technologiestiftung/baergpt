@@ -8,46 +8,12 @@ import { requestPasswordResetByEmail } from "../api/auth/request-password-reset-
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
-import { registerUser } from "../api/auth/register-user.ts";
+import { registerOrRecoverUser } from "../api/auth/register-user.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
 import type { Span } from "@sentry/react";
 import { getIsUserBanned } from "../api/auth/get-is-user-banned.ts";
 
 let resendTime: number | null = null;
-
-const UNCONFIRMED_EMAIL_STORAGE_KEY = "baergpt:unconfirmedEmail";
-
-/**
- * sessionStorage isn't defined in every environment this module gets
- * imported into (e.g. Vitest's default "node" test environment), and can
- * also throw even when defined (e.g. Safari private browsing), why every
- * access needs to be guarded, not just checked for existence.
- */
-function readUnconfirmedEmail(): string | null {
-	try {
-		return typeof sessionStorage !== "undefined"
-			? sessionStorage.getItem(UNCONFIRMED_EMAIL_STORAGE_KEY)
-			: null;
-	} catch {
-		return null;
-	}
-}
-
-function writeUnconfirmedEmail(email: string): void {
-	try {
-		sessionStorage?.setItem(UNCONFIRMED_EMAIL_STORAGE_KEY, email);
-	} catch {
-		// sessionStorage unavailable or blocked, ignore.
-	}
-}
-
-function clearUnconfirmedEmail(): void {
-	try {
-		sessionStorage?.removeItem(UNCONFIRMED_EMAIL_STORAGE_KEY);
-	} catch {
-		// sessionStorage unavailable or blocked, ignore.
-	}
-}
 
 type EmailConfirmationStatus = "unknown" | "confirmed" | "unconfirmed";
 
@@ -130,10 +96,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 				newUnconfirmedEmail = null;
 			}
 
-			if (newEmailConfirmationStatus !== "unconfirmed") {
-				clearUnconfirmedEmail();
-			}
-
 			const newState: Partial<AuthStore> = {
 				unconfirmedEmail: newUnconfirmedEmail,
 				emailConfirmationStatus: newEmailConfirmationStatus,
@@ -181,13 +143,9 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		}
 	});
 
-	const storedUnconfirmedEmail = readUnconfirmedEmail();
-
 	return {
-		unconfirmedEmail: storedUnconfirmedEmail,
-		emailConfirmationStatus: (storedUnconfirmedEmail
-			? "unconfirmed"
-			: "unknown") as EmailConfirmationStatus,
+		unconfirmedEmail: null,
+		emailConfirmationStatus: "unknown" as EmailConfirmationStatus,
 		session: undefined,
 		isInitialized: false,
 		isPasswordResetEmailSent: false,
@@ -200,7 +158,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 
 		async register({ firstName, lastName, email, password, span }) {
 			try {
-				await registerUser({ email, password, firstName, lastName });
+				await registerOrRecoverUser({ email, password, firstName, lastName });
 			} catch (error) {
 				useAuthErrorStore.getState().handleError(error, span);
 				return;
@@ -212,7 +170,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			 * sent a password reset email, so we always show the same
 			 * "check your email" screen here.
 			 */
-			writeUnconfirmedEmail(email);
 			set({
 				unconfirmedEmail: email,
 				emailConfirmationStatus: "unconfirmed",
@@ -238,7 +195,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		},
 
 		resetUnconfirmedEmail: () => {
-			clearUnconfirmedEmail();
 			set({ unconfirmedEmail: null, emailConfirmationStatus: "unknown" });
 		},
 
@@ -279,7 +235,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			resendTime = Date.now();
 
 			try {
-				await registerUser({ email: unconfirmedEmail });
+				await registerOrRecoverUser({ email: unconfirmedEmail });
 			} catch (error) {
 				useAuthErrorStore.getState().handleError(error);
 			}

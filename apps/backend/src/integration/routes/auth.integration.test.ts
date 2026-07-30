@@ -9,47 +9,56 @@ describe("/auth/register", () => {
 		"auth-register-test-suite-unconfirmed@ts.berlin";
 	const givenPassword = "SecurePassword123!";
 
-	const userIds: Record<string, string> = {};
+	// Fixed IDs for users we create via admin.createUser below;
+	// givenNewEmail's user is created indirectly through the real signUp()
+	// call inside the endpoint, which never returns its ID (deliberately,
+	// per the uniform-response design), so that one still needs a lookup.
+	const givenConfirmedUserId = "a1a1a1a1-0000-4000-8000-000000000001";
+	const givenUnconfirmedUserId = "a1a1a1a1-0000-4000-8000-000000000002";
 
-	async function deleteTestUsersIfAny(): Promise<void> {
-		const { data, error } = await serviceRoleDbClient.auth.admin.listUsers();
-		expect(error).toBeNull();
-
-		for (const user of data.users) {
-			if (
-				![givenNewEmail, givenConfirmedEmail, givenUnconfirmedEmail].includes(
-					user.email,
-				)
-			) {
-				continue;
-			}
-			await serviceRoleDbClient.auth.admin.deleteUser(user.id);
-		}
-	}
+	const userIds: Record<string, string> = {
+		[givenConfirmedEmail]: givenConfirmedUserId,
+		[givenUnconfirmedEmail]: givenUnconfirmedUserId,
+	};
 
 	beforeAll(async () => {
-		await deleteTestUsersIfAny();
-
-		const { data: confirmedData, error: confirmedError } =
+		const { error: confirmedError } =
 			await serviceRoleDbClient.auth.admin.createUser({
+				id: givenConfirmedUserId,
 				email: givenConfirmedEmail,
 				password: givenPassword,
 				email_confirm: true,
 			});
 		expect(confirmedError).toBeNull();
-		userIds[givenConfirmedEmail] = confirmedData.user.id;
 
-		const { data: unconfirmedData, error: unconfirmedError } =
+		const { error: unconfirmedError } =
 			await serviceRoleDbClient.auth.admin.createUser({
+				id: givenUnconfirmedUserId,
 				email: givenUnconfirmedEmail,
 				password: givenPassword,
 				email_confirm: false,
 			});
 		expect(unconfirmedError).toBeNull();
-		userIds[givenUnconfirmedEmail] = unconfirmedData.user.id;
 	});
 
-	afterAll(deleteTestUsersIfAny);
+	afterAll(async () => {
+		for (const id of [givenConfirmedUserId, givenUnconfirmedUserId]) {
+			const { error } = await serviceRoleDbClient.auth.admin.deleteUser(id);
+			if (error && error.status !== 404) {
+				throw error;
+			}
+		}
+
+		const { data, error } = await serviceRoleDbClient.auth.admin.listUsers();
+		expect(error).toBeNull();
+
+		const leftoverNewUser = data.users.find(
+			(user) => user.email === givenNewEmail,
+		);
+		if (leftoverNewUser) {
+			await serviceRoleDbClient.auth.admin.deleteUser(leftoverNewUser.id);
+		}
+	});
 
 	it("creates a new user for an email that doesn't exist yet", async () => {
 		const response = await app.request("/auth/register", {
