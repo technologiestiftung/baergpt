@@ -680,6 +680,26 @@ export type Database = {
 					user_id: string;
 				}[];
 			};
+			gtrgm_compress: {
+				Args: { "": unknown };
+				Returns: unknown;
+			};
+			gtrgm_decompress: {
+				Args: { "": unknown };
+				Returns: unknown;
+			};
+			gtrgm_in: {
+				Args: { "": unknown };
+				Returns: unknown;
+			};
+			gtrgm_options: {
+				Args: { "": unknown };
+				Returns: undefined;
+			};
+			gtrgm_out: {
+				Args: { "": unknown };
+				Returns: unknown;
+			};
 			hybrid_chunk_search: {
 				Args: {
 					allowed_document_ids?: number[];
@@ -783,6 +803,30 @@ export type Database = {
 			remove_allowed_individual_email: {
 				Args: { p_email: string };
 				Returns: undefined;
+			};
+			search_chat_messages: {
+				Args: { result_limit?: number; search_pattern: string };
+				Returns: {
+					chat_created_at: string;
+					chat_id: number;
+					chat_name: string;
+					chat_user_id: string;
+					message_content: string;
+					message_created_at: string;
+					message_id: number;
+				}[];
+			};
+			set_limit: {
+				Args: { "": number };
+				Returns: number;
+			};
+			show_limit: {
+				Args: Record<PropertyKey, never>;
+				Returns: number;
+			};
+			show_trgm: {
+				Args: { "": string };
+				Returns: string[];
 			};
 			update_user_email_confirmed_at: {
 				Args: { new_email_confirmed_at: string; user_id: string };

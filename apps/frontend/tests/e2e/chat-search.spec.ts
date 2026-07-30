@@ -68,11 +68,8 @@ test.describe("Chat search", () => {
 			await seedBerlinSearchChats(insertChat, insertMessages);
 
 			// Slow down the Supabase search request so the skeleton is observable.
-			await page.route("**/rest/v1/chat_messages*", async (route) => {
-				const contentFilter = new URL(route.request().url()).searchParams.get(
-					"content",
-				);
-				if (!contentFilter?.startsWith("ilike.")) {
+			await page.route("**/rest/v1/rpc/search_chat_messages", async (route) => {
+				if (route.request().method() !== "POST") {
 					return route.fallback();
 				}
 
@@ -246,8 +243,7 @@ test.describe("Chat search", () => {
 			await insertFillerChats(session, CHATS_PAGE_SIZE, new Date(now));
 
 			const unloadedChatName = "Archivierter Berlin-Chat";
-			const unloadedMessage =
-				"Wie hoch ist die Grundsteuer in Berlin?";
+			const unloadedMessage = "Wie hoch ist die Grundsteuer in Berlin?";
 			const unloadedChatId = await insertChat(
 				unloadedChatName,
 				new Date(now - CHATS_PAGE_SIZE * 1_000 - 60_000),
