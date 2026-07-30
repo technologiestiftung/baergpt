@@ -680,26 +680,6 @@ export type Database = {
 					user_id: string;
 				}[];
 			};
-			gtrgm_compress: {
-				Args: { "": unknown };
-				Returns: unknown;
-			};
-			gtrgm_decompress: {
-				Args: { "": unknown };
-				Returns: unknown;
-			};
-			gtrgm_in: {
-				Args: { "": unknown };
-				Returns: unknown;
-			};
-			gtrgm_options: {
-				Args: { "": unknown };
-				Returns: undefined;
-			};
-			gtrgm_out: {
-				Args: { "": unknown };
-				Returns: unknown;
-			};
 			hybrid_chunk_search: {
 				Args: {
 					allowed_document_ids?: number[];
@@ -815,18 +795,6 @@ export type Database = {
 					message_created_at: string;
 					message_id: number;
 				}[];
-			};
-			set_limit: {
-				Args: { "": number };
-				Returns: number;
-			};
-			show_limit: {
-				Args: Record<PropertyKey, never>;
-				Returns: number;
-			};
-			show_trgm: {
-				Args: { "": string };
-				Returns: string[];
 			};
 			update_user_email_confirmed_at: {
 				Args: { new_email_confirmed_at: string; user_id: string };
