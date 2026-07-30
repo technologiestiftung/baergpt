@@ -21,16 +21,17 @@ runs:
         fi
 
         # Sometimes the postgrest api and postgres are up, but individual postgrest endpoints are not ready yet.
-        # Therefore we check the PostgREST root/OpenAPI endpoint, which does not depend on row-level
-        # permissions for any particular table.
+        # Therefore we check that a real table (e.g. `application_admins`) is queryable, not just the
+        # PostgREST root/OpenAPI endpoint — the root answers even when table privileges are missing,
+        # which lets a broken stack look healthy here and only fail several steps later.
 
         until \
-          HTTP_STATUS=$(curl -s -o /tmp/supabase-health.body -w "%{http_code}" "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/) && \
+          HTTP_STATUS=$(curl -s -o /tmp/supabase-health.body -w "%{http_code}" "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/application_admins) && \
           [ "$HTTP_STATUS" = "200" ] && \
           pg_isready -U postgres -h localhost -p 54322 >/tmp/pg_isready.out 2>&1; do
           if [ $counter -gt $timeout ]; then
             echo "Timed out waiting for Supabase"
-            echo "=== PostgREST health check (http://localhost:54321/rest/v1/) ==="
+            echo "=== PostgREST health check (http://localhost:54321/rest/v1/application_admins) ==="
             echo "HTTP status: ${HTTP_STATUS:-<failed>}"
             if [ -f /tmp/supabase-health.body ]; then
               echo "Response body (first 500 chars):"
