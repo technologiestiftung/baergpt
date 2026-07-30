@@ -35,7 +35,7 @@ variable "spaces" {
     total_routes        = number
   }))
   default = {
-    staging = { allow_ssh = true, total_memory = 4096, total_app_instances = 10, total_routes = 10 }
+    staging = { allow_ssh = true, total_memory = 8192, total_app_instances = 10, total_routes = 10 }
     prod    = { allow_ssh = false, total_memory = 18432, total_app_instances = 20, total_routes = 20 }
   }
 
