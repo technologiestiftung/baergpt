@@ -1,0 +1,131 @@
+name: Gotenberg deploy to STACKIT Cloud Foundry
+
+on:
+  push:
+    branches: [staging, main]
+    # Gotenberg won't change much, so we're letting
+    # this workflow only run when these paths change
+    # (or manually via workflow_dispatch)
+    paths:
+      - "infra/gotenberg/manifest.yml"
+      - ".github/workflows/gotenberg-deploy-stackit-cf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  APP_NAME: baergpt-gotenberg # keep in sync with infra/gotenberg/manifest.yml
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: gotenberg-deploy-${{ github.ref }}
+      cancel-in-progress: false
+    if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
+    environment: ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          persist-credentials: "false"
+
+      - name: Install 1Password CLI 🔐
+        uses: 1password/install-cli-action@a5215d3a7f75c1629216c465ea9ab3ab399c4b71 # v4.0.0, pinned to commit sha to avoid sha-hulud like attacks
+
+      - name: Set 1Password item IDs based on branch 🌿
+        id: env-config
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "app_item_id=${{ secrets.OP_BACKEND_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "app_item_id=${{ secrets.OP_BACKEND_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Same 1Password item the backend deploy uses — same CF org/space.
+      - name: Fetch STACKIT Cloud Foundry credentials from 1Password 🔑
+        run: |
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.cf_item_id }}/notesPlain" > cf.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < cf.env
+          rm cf.env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Install cf CLI ⚙️
+        run: |
+          curl -sL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" \
+            | tar -zx
+          sudo mv cf8 /usr/local/bin/cf
+
+      - name: Target STACKIT Cloud Foundry 🎯
+        run: |
+          cf api "$CF_API_ENDPOINT"
+          cf auth
+          cf target -o "$CF_ORG" -s "$CF_SPACE"
+
+      # Expects a 1Password item holding GOTENBERG_API_BASIC_AUTH_USERNAME/PASSWORD
+      # (and anything else the app needs) as a plain KEY=VALUE-per-line document.
+      - name: Fetch gotenberg env vars from 1Password 🔑
+        run: |
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.app_item_id }}/notesPlain" > gotenberg.env
+          : > infra/gotenberg/app.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            [[ "$key" != GOTENBERG_* ]] && continue
+            echo "::add-mask::$value"
+            if [[ "$key" == "GOTENBERG_MEMORY" ]]; then
+              echo "$key=$value" >> "$GITHUB_ENV"
+            else
+              echo "$key=$value" >> infra/gotenberg/app.env
+            fi
+          done < gotenberg.env
+          rm gotenberg.env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Sync gotenberg env vars 🔄
+        id: sync
+        working-directory: infra/gotenberg
+        run: |
+          if ! cf app "${{ env.APP_NAME }}" >/dev/null 2>&1; then
+            echo "bootstrapped=true" >> "$GITHUB_OUTPUT"
+            cf push -f manifest.yml --no-start --var memory="$GOTENBERG_MEMORY" 
+          fi
+
+          guid=$(cf app "${{ env.APP_NAME }}" --guid)
+          for key in $(cf curl "/v3/apps/$guid/environment_variables" | jq -r '.var | keys[]'); do
+            cf unset-env "${{ env.APP_NAME }}" "$key" >/dev/null
+          done
+
+          while IFS= read -r line || [ -n "$line" ]; do
+            key="${line%%=*}"
+            value="${line#*=}"
+            cf set-env "${{ env.APP_NAME }}" "$key" "$value" >/dev/null
+          done < app.env
+
+          rm -f app.env
+
+      - name: Push to Cloud Foundry 🚀
+        working-directory: infra/gotenberg
+        run: |
+          cf push \
+            -f manifest.yml \
+            --var memory="$GOTENBERG_MEMORY" \
+            ${{ steps.sync.outputs.bootstrapped != 'true' && '--strategy rolling' || '' }} \
+          || { cf cancel-deployment "${{ env.APP_NAME }}" 2>/dev/null || true; exit 1; }
+
+      - name: Dump recent app logs on failure 🪵
+        if: ${{ failure() && !cancelled() }}
+        run: cf logs "${{ env.APP_NAME }}" --recent
