@@ -26,7 +26,7 @@ runs:
         # which lets a broken stack look healthy here and only fail several steps later.
 
         until \
-          HTTP_STATUS=$(curl -s -o /tmp/supabase-health.body -w "%{http_code}" "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/application_admins) && \
+          HTTP_STATUS=$(curl -s --connect-timeout 5 --max-time 10 -o /tmp/supabase-health.body -w "%{http_code}" "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/application_admins) && \
           [ "$HTTP_STATUS" = "200" ] && \
           pg_isready -U postgres -h localhost -p 54322 >/tmp/pg_isready.out 2>&1; do
           if [ $counter -gt $timeout ]; then

@@ -29,12 +29,20 @@ runs:
         nohup supabase start --exclude studio,realtime,imgproxy,edge-runtime,supavisor,postgres-meta > /tmp/supabase-start.log 2>&1 &
         echo $! > /tmp/supabase-start.pid
 
-        # Fail fast if the process died immediately (e.g. config error).
+        # Fail fast if the process died immediately (e.g. config error). If it is already
+        # gone we cannot tell success from failure by existence alone, so reap it with `wait`
+        # to read the real exit status: a clean exit just means the stack was already up.
         sleep 2
-        if ! kill -0 "$(cat /tmp/supabase-start.pid)" 2>/dev/null; then
-          echo "supabase start exited immediately:"
-          cat /tmp/supabase-start.log
-          exit 1
+        SUPABASE_PID="$(cat /tmp/supabase-start.pid)"
+        if ! kill -0 "$SUPABASE_PID" 2>/dev/null; then
+          if wait "$SUPABASE_PID"; then
+            echo "supabase start already finished successfully:"
+            cat /tmp/supabase-start.log
+          else
+            echo "supabase start exited immediately with status $?:"
+            cat /tmp/supabase-start.log
+            exit 1
+          fi
         fi
 
     - name: Setup Node.js using .nvmrc ⚙️
