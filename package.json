@@ -42,7 +42,7 @@
     "supabase": "2.71.0",
     "turbo": "2.10.7"
   },
-  "packageManager": "npm@11.4.2",
+  "packageManager": "npm@11.16.0",
   "allowScripts": {
     "fsevents@2.3.2": true,
     "fsevents@2.3.3": true,
