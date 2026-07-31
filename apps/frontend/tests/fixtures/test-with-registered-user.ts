@@ -209,7 +209,9 @@ export async function confirmOtp({
 		data: { IDs: [id] },
 	});
 	if (!deletion.ok()) {
-		throw new Error(`Could not delete Mailpit message ${id}: ${deletion.status()} ${deletion.statusText()}`);
+		throw new Error(
+			`Could not delete Mailpit message ${id}: ${deletion.status()} ${deletion.statusText()}`,
+		);
 	}
 
 	// The mail's button targets a new tab, so keep `page` on the app and confirm in a second one.
