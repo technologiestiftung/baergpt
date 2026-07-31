@@ -14,16 +14,6 @@ extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
-# Restore the pre-CLI-2.102 behavior of auto-granting Data API privileges on new entities in the
-# public schema. Our migrations contain no table-level GRANTs and rely on this. Without it, the CLI
-# revokes anon/authenticated/service_role privileges on every public table after applying
-# migrations, and every PostgREST query fails with `42501 permission denied for table ...`.
-# Deprecated: the CLI removes this flag on 2026-10-30, at which point we must add an explicit GRANT
-# migration instead.
-# NOTE: this only takes effect when the database is created, i.e. on a fresh volume. If you change
-# it on an existing stack, run `supabase stop --no-backup` before `supabase start` — otherwise the
-# old privileges persist and every query fails with `42501 permission denied for table ...`.
-auto_expose_new_tables = true
 
 [api.tls]
 enabled = false
@@ -65,7 +55,7 @@ api_url = "http://127.0.0.1"
 
 # Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
 # are monitored, and you can view the emails that would have been sent from the web interface.
-[local_smtp]
+[inbucket]
 enabled = true
 # Port to use for the email testing server web interface.
 port = 54324
@@ -207,8 +197,8 @@ policy = "oneshot"
 inspector_port = 8083
 
 [analytics]
-# Disabled so the logflare/vector containers are not started. Avoids an unhealthy vector container
-# in CLI 2.110.0+, and we never read local analytics in CI or local dev.
+# Disabled so the logflare/vector containers are not started. We never read local analytics in CI or
+# local dev, and the vector container has a history of coming up unhealthy on newer CLI versions.
 enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
