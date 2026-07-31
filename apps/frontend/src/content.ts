@@ -669,6 +669,7 @@ export const Content = {
 	/* -------------------- Tooltips -------------------- */
 	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
 	"sidebar.tooltip.newChatButton": "Neuen Chat beginnen",
+	"sidebar.tooltip.chatSearchButton": "Chatsuche öffnen",
 
 	/* -------------------- Chat History -------------------- */
 	"chatHistory.title": "Chats",
@@ -701,6 +702,10 @@ export const Content = {
 	//newChatButton
 	"newChatButton.label": "Neuer Chat",
 	"newChatButton.ariaLabel": "Neuen Chat erstellen",
+	//chatSearchButton
+	"chatSearchButton.label": "Chatsuche",
+	"chatSearchButton.icon.alt": "Chatsuche-Icon",
+	"chatSearchButton.ariaLabel": "Chatsuche öffnen",
 	//createFolderButton
 	"createFolderButton.label": "Ordner erstellen",
 	//deleteItemButton
@@ -850,6 +855,16 @@ export const Content = {
 	"deleteHistoryEntryDialog.confirmation.p2": "wirklich löschen?",
 	"deleteHistoryEntryDialog.delete": "Löschen",
 	"deleteHistoryEntryDialog.cancel": "Abbrechen",
+	//ChatSearchDialog
+	"chatSearchDialog.placeholder": "Chats durchsuchen...",
+	"chatSearchDialog.lastChats": "Letzte Chats",
+	"chatSearchDialog.results": "Ergebnisse",
+	"chatSearchDialog.result.icon.alt": "Chat-Bubble-Icon",
+	"chatSearchDialog.noResults.title.prefix": "Keine Chats für ",
+	"chatSearchDialog.noResults.title.suffix": " gefunden",
+	"chatSearchDialog.noResults.subtitle":
+		"Bitte überprüfen Sie Ihre Schreibweise oder versuchen Sie einen anderen Suchbegriff.",
+	"chatSearchDialog.noResults.icon.alt": "Keine Suchergebnisse-Icon",
 
 	/* -------------------- ChatSection -------------------- */
 	//GetStarted

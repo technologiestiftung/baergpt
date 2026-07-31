@@ -20,7 +20,7 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 	const { role, content } = message;
 
 	return (
-		<div className="flex flex-col">
+		<div className="flex flex-col" data-message-id={message.id}>
 			{role === "assistant" && content !== "" && (
 				<div className="mb-8">
 					<AssistantMessage message={message}>

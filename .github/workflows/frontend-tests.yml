@@ -24,6 +24,16 @@ jobs:
           start-supabase: "true"
           install-1password: "true"
 
+      # Computed here — before any build step — so it hashes pristine, committed
+      # content and matches the tag backend-image-build-and-push.yml produced.
+      # Computing it later (e.g. inside wait-for-backend) risks the frontend
+      # build first writing artifacts into the hashed libs/**, yielding a tag for
+      # an image that was never built.
+      - name: Compute backend image tag 🏷️
+        id: backend-image
+        run: |
+          echo "image=ghcr.io/${{ github.repository_owner }}/baergpt-backend:content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+
       - name: Fetch frontend .env from 1Password ⬇️
         run: |
           cd apps/frontend
@@ -74,6 +84,7 @@ jobs:
         uses: ./.github/actions/wait-for-backend
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          image: ${{ steps.backend-image.outputs.image }}
 
       - name: Wait for Supabase to be ready ⏳
         uses: ./.github/actions/wait-for-supabase

@@ -5,6 +5,7 @@ import { SidebarNavigation } from "./sidebar-navigation.tsx";
 import { NewChatButton } from "./sidebar-buttons/new-chat-button.tsx";
 import Content from "../../content.ts";
 import { History } from "./history/history.tsx";
+import { ChatSearchButton } from "./sidebar-buttons/chat-search-button.tsx";
 
 export const DesktopSidebar: React.FC = () => {
 	const { openDrawerId } = useDrawerStore();
@@ -20,19 +21,18 @@ export const DesktopSidebar: React.FC = () => {
 				}`}
 			>
 				<aside
-					className={`flex flex-col justify-between h-full px-2.5 pt-5 pb-3.5 ${
-						isHistorySidebarOpen ? "pr-1 gap-10" : "items-left"
-					}`}
+					className={`flex flex-col justify-between h-full px-2.5 pt-5 pb-3.5`}
 					aria-label={Content["sidebar.ariaLabel"]}
 				>
 					{/* Top Section */}
-					<div className={`gap-3 flex flex-col items-start w-fit`}>
+					<div className="gap-1 flex flex-col items-start w-full mb-5">
 						<HistoryToggleButton
 							isLabelVisible={isHistorySidebarOpen ? false : undefined}
 						/>
 
-						<div className={`${isHistorySidebarOpen && "pt-[1px]"}`}>
+						<div className={`h-16 w-full`}>
 							<NewChatButton isExpanded={isHistorySidebarOpen} />
+							<ChatSearchButton isExpanded={isHistorySidebarOpen} />
 						</div>
 					</div>
 
@@ -43,21 +43,20 @@ export const DesktopSidebar: React.FC = () => {
 						</div>
 					)}
 					<div>
-						<div className="h-[155px] flex flex-col">
+						<div className="h-[169px] flex flex-col">
 							{/* Full-width border */}
-							{isHistorySidebarOpen && (
-								<span className="block w-[calc(100%+14px)] ml-[-10px] h-px bg-dunkelblau-80" />
-							)}
+							<span
+								className={`block w-[calc(100%+14px)] ml-[-10px] h-[1px] ${isHistorySidebarOpen ? "bg-dunkelblau-90" : "bg-dunkelblau-100"}`}
+							/>
 
 							{/* Navigation */}
 							<div className="w-full py-2">
 								<SidebarNavigation />
 							</div>
-
 							{/* Full-width border */}
-							{isHistorySidebarOpen && (
-								<span className="block w-[calc(100%+14px)] ml-[-10px] h-px bg-dunkelblau-80" />
-							)}
+							<span
+								className={`block w-[calc(100%+14px)] ml-[-10px] h-[1px] ${isHistorySidebarOpen ? "bg-dunkelblau-90" : "bg-dunkelblau-100"}`}
+							/>
 						</div>
 
 						{/* CityLAB Logo */}

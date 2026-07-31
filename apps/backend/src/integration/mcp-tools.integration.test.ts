@@ -1,12 +1,20 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import type { FlexibleSchema, Tool } from "ai";
+import type { JSONObject } from "@ai-sdk/provider";
 
 type MockMCPClientConfig = {
 	transport?: { url?: string };
 };
 
+type MockMCPToolSchema = {
+	inputSchema?: FlexibleSchema<JSONObject>;
+	outputSchema?: FlexibleSchema<JSONObject>;
+};
+
 type MockMCPTool = {
 	description: string;
 	execute: ReturnType<typeof vi.fn>;
+	inputSchema?: FlexibleSchema<JSONObject>;
 };
 
 /**
@@ -65,7 +73,16 @@ vi.mock("@ai-sdk/mcp", async () => {
 			};
 			mockTools["search_datasets_filtered"] = {
 				description: "Search datasets with filters",
-				execute: vi.fn(async () => ({ content: [] })),
+				execute: vi.fn(async () => {
+					return {
+						content: [
+							{
+								type: "text",
+								text: '# Filtered Search: "Fahrrad"\n\n## 1. Fahrradwege in Berlin\n**ID**: fahrradwege-id\n**Organization**: SenMVKU',
+							},
+						],
+					};
+				}),
 			};
 			mockTools["get_dataset_details"] = {
 				description: "Get dataset details",
@@ -108,7 +125,26 @@ vi.mock("@ai-sdk/mcp", async () => {
 		}
 
 		return {
-			tools: vi.fn(async () => mockTools),
+			tools: vi.fn(
+				async (options?: { schemas?: Record<string, MockMCPToolSchema> }) => {
+					if (options?.schemas) {
+						const schemaTools: Record<string, MockMCPTool> = {};
+						for (const [toolName, schema] of Object.entries(options.schemas)) {
+							if (mockTools[toolName]) {
+								schemaTools[toolName] = {
+									...mockTools[toolName],
+									...(schema.inputSchema
+										? { inputSchema: schema.inputSchema }
+										: {}),
+								};
+							}
+						}
+						return schemaTools;
+					}
+
+					return mockTools;
+				},
+			),
 			close: vi.fn(async () => {}),
 		};
 	});
@@ -128,7 +164,11 @@ import * as mcpModule from "@ai-sdk/mcp";
 import * as captureErrorModule from "../monitoring/capture-error";
 
 import { parlaMCPTools } from "../tools/mcp/parla-mcp-tools";
-import type { ParlaMCPToolsResult } from "../tools/mcp/parla-mcp-tools";
+import type {
+	ParlaMCPToolsResult,
+	ParlaResponse,
+} from "../tools/mcp/parla-mcp-tools";
+import { parseParlaToolOutput } from "../tools/mcp/parla-mcp-tools";
 import {
 	openDataMCPTools,
 	extractOpenDataSourcesFromToolOutput,
@@ -138,13 +178,23 @@ import type { OpenDataMCPToolsResult } from "../tools/mcp/open-data-mcp-tools";
 import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
 import type { DatawrapperMCPToolsResult } from "../tools/mcp/datawrapper-mcp-tools";
 import { z } from "zod";
-import type { Tool } from "ai";
 
 const toolCallOptions = {
 	abortSignal: new AbortController().signal,
 	toolCallId: "test-call-id",
 	messages: [],
 };
+
+function isZodObjectSchema(
+	schema: Tool["inputSchema"],
+): schema is z.ZodObject<z.ZodRawShape> {
+	return (
+		schema !== null &&
+		typeof schema === "object" &&
+		"shape" in schema &&
+		typeof schema.shape === "object"
+	);
+}
 
 function requireToolExecute(tool: Tool | undefined, toolName: string) {
 	expect(tool).toBeDefined();
@@ -168,7 +218,11 @@ function requireZodObjectSchema(
 		throw new Error(`${toolName} tool not found`);
 	}
 
-	return tool.inputSchema as unknown as z.ZodObject<z.ZodRawShape>;
+	if (!isZodObjectSchema(tool.inputSchema)) {
+		throw new Error(`${toolName} inputSchema is not a Zod object`);
+	}
+
+	return tool.inputSchema;
 }
 
 describe("Parla MCP Tools Integration", () => {
@@ -272,23 +326,74 @@ describe("Parla MCP Tools Integration", () => {
 		expect(params.shape).toHaveProperty("document_limit");
 	});
 
-	it("should handle missing execute function gracefully", async () => {
+	it("parla_vector_search execute output should be parseable for citations", async () => {
 		const vectorSearchTool = mcpResult?.tools["parla_vector_search"];
 		const { execute } = requireToolExecute(
 			vectorSearchTool,
 			"parla_vector_search",
 		);
 
-		// Create a scenario where execute would fail
-		// by passing invalid parameters that don't match the schema
-		try {
-			await execute(
-				{ invalid: "params" } as unknown as Parameters<typeof execute>[0],
-				toolCallOptions,
+		const result = await execute(
+			{ query: "test search query", chunk_limit: 5 },
+			toolCallOptions,
+		);
+
+		const chunks = parseParlaToolOutput(result);
+		expect(chunks.length).toBeGreaterThan(0);
+		expect(chunks[0]).toMatchObject({
+			id: expect.any(Number),
+			content: expect.any(String),
+			page: expect.any(Number),
+			url: expect.any(String),
+			title: expect.any(String),
+			source_type: expect.any(String),
+		});
+	});
+
+	it("should handle execute errors gracefully and return fallback output", async () => {
+		const captureErrorSpy = vi
+			.spyOn(captureErrorModule, "captureError")
+			.mockImplementationOnce(() => {});
+
+		const mockError = new Error(
+			"MCP schema validation failed / response malformed",
+		);
+
+		const mockMcpClient = {
+			tools: vi.fn().mockResolvedValue({
+				parla_vector_search: {
+					description: "Vector search tool",
+					execute: vi.fn().mockRejectedValue(mockError),
+				},
+			}),
+			close: vi.fn(),
+		};
+
+		const createMCPClientSpy = vi
+			.spyOn(mcpModule, "createMCPClient")
+			.mockResolvedValue(
+				mockMcpClient as unknown as ReturnType<
+					typeof mcpModule.createMCPClient
+				>,
 			);
-		} catch (error) {
-			expect(error).toBeDefined();
-		}
+
+		const testResult = await parlaMCPTools();
+		expect(testResult).not.toBeNull();
+
+		const tool = testResult?.tools["parla_vector_search"];
+		const executeResult = await tool?.execute?.(
+			{ query: "test" },
+			toolCallOptions,
+		);
+
+		expect(executeResult).toEqual({ documentMatches: [] });
+		expect(captureErrorSpy).toHaveBeenCalledWith(mockError);
+
+		const parsedFallback = parseParlaToolOutput(executeResult as ParlaResponse);
+		expect(parsedFallback).toEqual([]);
+
+		createMCPClientSpy.mockRestore();
+		captureErrorSpy.mockRestore();
 	});
 
 	it("cleanup function should be callable multiple times", async () => {
@@ -386,6 +491,27 @@ describe("Berlin Open Data MCP Tools Integration", () => {
 			url: expect.stringContaining("https://daten.berlin.de/datensaetze/"),
 			title: expect.any(String),
 			datasetId: expect.any(String),
+		});
+	}, 60_000);
+
+	it("extractOpenDataSourcesFromToolOutput should parse filtered search results without URLs", async () => {
+		const searchTool = mcpResult?.tools["search_datasets_filtered"];
+		const { execute } = requireToolExecute(
+			searchTool,
+			"search_datasets_filtered",
+		);
+
+		const input = { query: "Fahrrad", rows: 1 };
+		const result = await execute(input, toolCallOptions);
+		const parsedOutput = openDataMcpToolOutputSchema.parse(result);
+
+		const sources = extractOpenDataSourcesFromToolOutput(input, parsedOutput);
+
+		expect(sources).toHaveLength(1);
+		expect(sources[0]).toMatchObject({
+			title: "Fahrradwege in Berlin",
+			datasetId: "fahrradwege-id",
+			url: "https://daten.berlin.de/datensaetze/fahrradwege-id",
 		});
 	}, 60_000);
 

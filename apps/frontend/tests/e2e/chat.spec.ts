@@ -611,25 +611,25 @@ test.describe("Chat", () => {
 
 		await page.goto("/");
 
-		const firstChatInHistory = page
-			.getByRole("complementary")
-			.locator("div")
-			.filter({ hasText: /^Test Chat 30$/ });
+		const sidebar = page.getByRole("complementary", { name: "Sidebar" });
+
+		const firstChatInHistory = sidebar.getByRole("button", {
+			name: "Test Chat 30",
+			exact: true,
+		});
 
 		await expect(firstChatInHistory).toBeVisible();
 
-		const loadingSpinner = page
-			.getByRole("complementary", { name: "Sidebar" })
-			.getByTestId("load-more-chats-spinner");
+		const loadingSpinner = sidebar.getByTestId("load-more-chats-spinner");
 
 		await expect(loadingSpinner).toBeVisible();
 
 		resolveDeferredPromise();
 
-		const lastChatInHistory = page
-			.getByRole("complementary")
-			.locator("div")
-			.filter({ hasText: /^Test Chat 11$/ });
+		const lastChatInHistory = sidebar.getByRole("button", {
+			name: "Test Chat 11",
+			exact: true,
+		});
 
 		await lastChatInHistory.scrollIntoViewIfNeeded();
 
@@ -637,9 +637,7 @@ test.describe("Chat", () => {
 
 		await expect(loadingSpinner).not.toBeVisible();
 
-		const allChatsLoadedMessage = page
-			.getByRole("complementary")
-			.getByText("Alle Chats geladen");
+		const allChatsLoadedMessage = sidebar.getByText("Alle Chats geladen");
 
 		await expect(allChatsLoadedMessage).toBeVisible();
 	});
@@ -652,7 +650,8 @@ test.describe("Chat", () => {
 			// Date-Groups should not be visible by default
 			const dateGroupHeader = page
 				.getByRole("complementary", { name: "Sidebar" })
-				.getByText("Heute");
+				.getByTestId("history-date-group-label")
+				.filter({ hasText: "Heute" });
 			await expect(dateGroupHeader).not.toBeVisible();
 
 			const groupByDropdown = page.getByRole("button", {
