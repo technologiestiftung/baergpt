@@ -8,6 +8,8 @@ on:
   # an unreviewed/unmerged PR can never get its image auto-deployed.
   push:
     branches: [staging, main]
+  pull_request:
+    branches: [staging]
   workflow_dispatch:
 
 permissions:
@@ -26,9 +28,12 @@ jobs:
       cancel-in-progress: false
     # workflow_dispatch has no branches filter, so a manual run can target
     # any branch by default — reject anything other than staging/main here.
-    if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
+    if: >-
+      ${{
+        github.ref_name == 'staging' || github.ref_name == 'main' ||
+        github.base_ref == 'staging'
+      }}
     environment: ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
-
     steps:
       - name: Checkout code ⬇️
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
@@ -67,7 +72,7 @@ jobs:
             [[ -z "$line" || "$line" == \#* ]] && continue
             key="${line%%=*}"
             value="${line#*=}"
-            echo "::add-mask::$value"
+            [[ "$key" == "CF_PASSWORD" ]] && echo "::add-mask::$value"
             echo "$key=$value" >> "$GITHUB_ENV"
           done < cf.env
           rm cf.env
