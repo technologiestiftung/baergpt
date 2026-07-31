@@ -1,5 +1,5 @@
 name: Wait for Supabase to be ready
-description: Polls until the Supabase REST API and PostgreSQL are both accepting connections
+description: Polls until the Supabase REST API and PostgreSQL are both accepting connections, then reloads GoTrue's custom email templates
 
 runs:
   using: composite
@@ -57,3 +57,50 @@ runs:
           sleep 1
         done
         echo "Supabase is ready!"
+
+    # GoTrue reads the custom email templates configured under [auth.email.template.*] over HTTP
+    # from a static file server that Kong exposes on port 8088. It fetches them once, when its
+    # template cache worker boots, and never retries on failure. Because `supabase start` brings
+    # auth and kong up in parallel, auth regularly wins the race, gets ECONNREFUSED on :8088, and
+    # then silently serves GoTrue's built-in English templates for the rest of its lifetime. Those
+    # defaults carry no `{{ .Token }}` on a line of its own, so every test that reads a security
+    # code out of a mail fails with a confusing "could not read a security code" error.
+    #
+    # The readiness loop above already proves Kong is routing (it answers on :54321), so restarting
+    # auth here makes the second template fetch succeed deterministically. Costs a few seconds.
+    - name: Reload GoTrue email templates 📧
+      shell: bash
+      run: |
+        AUTH_CONTAINER="$(docker ps --filter "name=supabase_auth_" --format '{{.Names}}' | head -n1)"
+        if [ -z "$AUTH_CONTAINER" ]; then
+          echo "No supabase_auth_* container found — cannot reload email templates."
+          docker ps -a
+          exit 1
+        fi
+
+        echo "Restarting $AUTH_CONTAINER so it re-fetches the custom email templates from Kong..."
+        docker restart "$AUTH_CONTAINER" >/dev/null
+        RESTARTED_AT="$(docker inspect -f '{{.State.StartedAt}}' "$AUTH_CONTAINER")"
+
+        timeout=60
+        deadline=$((SECONDS + timeout))
+        until curl -s --connect-timeout 5 --max-time 10 -o /dev/null -f http://localhost:54321/auth/v1/health; do
+          if [ "$SECONDS" -ge "$deadline" ]; then
+            echo "Timed out waiting for GoTrue to come back after ${SECONDS}s (limit ${timeout}s)"
+            docker logs --since "$RESTARTED_AT" "$AUTH_CONTAINER" 2>&1 | tail -50
+            exit 1
+          fi
+          echo "Waiting for GoTrue to be ready again... (${SECONDS}s/${timeout}s)"
+          sleep 1
+        done
+
+        # Assert the reload actually worked. Without this the run would carry on with default
+        # templates and fail much later, in a test whose error says nothing about email templates.
+        if docker logs --since "$RESTARTED_AT" "$AUTH_CONTAINER" 2>&1 \
+          | grep -q "templatemailer_template_body_http_error"; then
+          echo "GoTrue still could not fetch its custom email templates from Kong:"
+          docker logs --since "$RESTARTED_AT" "$AUTH_CONTAINER" 2>&1 \
+            | grep "templatemailer_template_body_http_error"
+          exit 1
+        fi
+        echo "GoTrue reloaded its custom email templates!"
