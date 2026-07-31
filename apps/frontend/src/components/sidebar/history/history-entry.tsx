@@ -30,7 +30,7 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 			onMouseLeave={() => setIsHovered(false)}
 		>
 			<button
-				className="md:w-full h-full w-full mr-3 md:mr-0 truncate rounded-[3px] text-start text-hellblau-50 focus:outline-default focus-visible:outline-default"
+				className="md:w-full h-full w-full mr-3 md:mr-0 truncate rounded-[3px] text-start text-hellblau-50 focus-visible:outline-default"
 				onClick={() => {
 					if (typeof window !== "undefined" && window.innerWidth < 1024) {
 						setOpenDrawer(null); // Only close the drawer on mobile
