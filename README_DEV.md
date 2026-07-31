@@ -188,7 +188,7 @@ This starts local Supabase services:
 
 - **API URL**: http://localhost:54321
 - **Studio (Database UI)**: http://localhost:54323
-- **Inbucket (Email Testing)**: http://localhost:54324
+- **Mailpit (Email Testing)**: http://localhost:54324
 
 ⚠️ **Save the output** - you'll need the `anon key`, `service_role key`, and `JWT secret`.
 
@@ -410,7 +410,7 @@ supabase status  # Check if running
 ```
 
 **Email Confirmation in Development**
-View test emails at: http://localhost:54324 (Inbucket)
+View test emails at: http://localhost:54324 (Mailpit)
 
 **TypeScript Errors After Schema Changes**
 

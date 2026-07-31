@@ -68,6 +68,63 @@ async function cleanup(id: string) {
 	}
 }
 
+const mailpitUrl = process.env.MAILPIT_URL ?? "http://localhost:54324";
+
+type MailpitSummary = {
+	ID: string;
+	Created: string;
+	To: { Address: string }[];
+};
+
+/**
+ * Polls Mailpit for the most recent message addressed to `recipient` and returns its plain
+ * text body, which carries both the security code and the confirmation link.
+ */
+async function waitForLatestMessageTo(
+	page: Page,
+	recipient: string,
+	timeoutMs = 30_000,
+) {
+	const wanted = recipient.toLowerCase();
+	const deadline = Date.now() + timeoutMs;
+	let mailboxSize = 0;
+
+	while (Date.now() < deadline) {
+		const list = await page.request.get(
+			`${mailpitUrl}/api/v1/messages?limit=200`,
+		);
+
+		if (list.ok()) {
+			const { messages } = (await list.json()) as {
+				messages: MailpitSummary[];
+			};
+			mailboxSize = messages.length;
+
+			const newest = messages
+				.filter((message) =>
+					message.To.some((to) => to.Address.toLowerCase() === wanted),
+				)
+				.sort((a, b) => Date.parse(b.Created) - Date.parse(a.Created))[0];
+
+			if (newest) {
+				const detail = await page.request.get(
+					`${mailpitUrl}/api/v1/message/${newest.ID}`,
+				);
+				if (detail.ok()) {
+					const { Text } = (await detail.json()) as { Text: string };
+					return { id: newest.ID, text: Text };
+				}
+			}
+		}
+
+		await page.waitForTimeout(500);
+	}
+
+	throw new Error(
+		`Timed out after ${timeoutMs}ms waiting for a Mailpit message addressed to ${recipient} (${mailboxSize} message(s) in the mailbox at ${mailpitUrl})`,
+	);
+}
+
 export async function confirmOtp({
 	page,
 	account,
@@ -75,37 +132,26 @@ export async function confirmOtp({
 	page: Page;
 	account: TestWithRegisteredUser["account"];
 }) {
-	await page.goto("http://localhost:54324/"); // Inbucket URL
+	const { id, text } = await waitForLatestMessageTo(page, account.email);
 
-	// Wait for the email to appear and click on the first (most recent) email
-	await page.waitForTimeout(3_000);
+	// The security code sits on its own line; the button's href is the first confirm-otp link.
+	const recoveryOtp = text.match(/^\s*(\d{6})\s*$/m)?.[1];
+	const confirmUrl = text.match(/(https?:\/\/\S*?\/confirm-otp\/\S*)/)?.[1];
 
-	const emailLinks = page.getByRole("link", {
-		name: `Admin To: ${account.email}`,
-	});
-	await emailLinks.first().click();
-
-	// Confirm via OTP flow
-	const popupEvent = page.waitForEvent("popup");
-	const emailFrame = await page.locator("#preview-html").contentFrame();
-	if (!emailFrame) {
-		throw new Error("Email preview frame not available");
+	if (!recoveryOtp || !confirmUrl) {
+		throw new Error(
+			`Could not read a security code and confirmation link from Mailpit message ${id}:\n${text}`,
+		);
 	}
 
-	const recoveryOtp = (
-		await emailFrame
-			.locator("p")
-			.filter({ hasText: /^\d{6}$/ })
-			.first()
-			.innerText()
-	).trim();
+	// Drop the consumed mail so a later confirmOtp in the same run cannot re-read it.
+	await page.request.delete(`${mailpitUrl}/api/v1/messages`, {
+		data: { IDs: [id] },
+	});
 
-	await emailFrame.getByRole("link", { name: /Identität bestätigen/ }).click();
-
-	const page1 = await popupEvent;
-
-	await page1.waitForLoadState("networkidle");
-	await page1.waitForTimeout(2000);
+	// The mail's button targets a new tab, so keep `page` on the app and confirm in a second one.
+	const page1 = await page.context().newPage();
+	await page1.goto(confirmUrl);
 
 	await expect(
 		page1.getByRole("heading", { name: "Aktion bestätigen" }),
