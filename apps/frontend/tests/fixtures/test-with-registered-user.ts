@@ -205,9 +205,12 @@ export async function confirmOtp({
 	}
 
 	// Drop the consumed mail so a later confirmOtp in the same run cannot re-read it.
-	await page.request.delete(`${mailpitUrl}/api/v1/messages`, {
+	const deletion = await page.request.delete(`${mailpitUrl}/api/v1/messages`, {
 		data: { IDs: [id] },
 	});
+	if (!deletion.ok()) {
+		throw new Error(`Could not delete Mailpit message ${id}: ${deletion.status()} ${deletion.statusText()}`);
+	}
 
 	// The mail's button targets a new tab, so keep `page` on the app and confirm in a second one.
 	const page1 = await page.context().newPage();
