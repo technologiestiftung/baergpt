@@ -45,7 +45,7 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.10.2",
-		"@playwright/test": "1.55.1",
+		"@playwright/test": "1.62.1",
 		"@repo/typescript-config": "file:../../libs/typescript-config",
 		"@types/dotenv": "6.1.1",
 		"@types/node": "22.14.0",

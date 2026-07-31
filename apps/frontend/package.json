@@ -43,7 +43,7 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.10.2",
-		"@playwright/test": "1.56.0",
+		"@playwright/test": "1.62.1",
 		"@repo/typescript-config": "file:../../libs/typescript-config",
 		"@sentry/vite-plugin": "5.4.0",
 		"@types/node": "22.14.0",
