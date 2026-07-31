@@ -25,6 +25,14 @@ export const testWithRegisteredUser =
 				 */
 				const email = defaultUserEmail;
 
+				// A run that is cut short — Playwright's `maxFailures` aborting mid-test, or Ctrl-C —
+				// never reaches the teardown below, so the user and its mails survive into the next
+				// run. The address is a constant, so that leftover state is not harmless: creating the
+				// user fails outright with "A user with this email address has already been
+				// registered", and a stale mail would be picked up as if it were freshly sent.
+				await deleteLeftoverUsers(email);
+				await deleteLeftoverMails(email);
+
 				const { data, error: createUserError } =
 					await supabaseAdminClient.auth.admin.createUser({
 						email,
@@ -68,7 +76,59 @@ async function cleanup(id: string) {
 	}
 }
 
-const mailpitUrl = process.env.MAILPIT_URL ?? "http://localhost:54324";
+/**
+ * Removes any account left over from an earlier run so `createUser` below starts from a clean slate.
+ */
+async function deleteLeftoverUsers(email: string) {
+	const wanted = email.toLowerCase();
+	const { data, error } = await supabaseAdminClient.auth.admin.listUsers({
+		perPage: 1000,
+	});
+
+	if (error) {
+		throw new Error(`Failed to list users: ${error.message}`);
+	}
+
+	for (const user of data.users) {
+		if (user.email?.toLowerCase() === wanted) {
+			await cleanup(user.id);
+		}
+	}
+}
+
+const mailpitUrl = "http://localhost:54324";
+
+/**
+ * Empties the mailbox for `recipient` so `waitForLatestMessageTo` cannot return a mail — and with it
+ * an already-expired security code — that an earlier run left behind.
+ */
+async function deleteLeftoverMails(recipient: string) {
+	const wanted = recipient.toLowerCase();
+	const list = await fetch(`${mailpitUrl}/api/v1/messages?limit=200`);
+
+	if (!list.ok) {
+		throw new Error(
+			`Failed to list Mailpit messages at ${mailpitUrl}: ${list.status} ${list.statusText}`,
+		);
+	}
+
+	const { messages } = (await list.json()) as { messages: MailpitSummary[] };
+	const ids = messages
+		.filter((message) =>
+			message.To.some((to) => to.Address.toLowerCase() === wanted),
+		)
+		.map((message) => message.ID);
+
+	if (ids.length === 0) {
+		return;
+	}
+
+	await fetch(`${mailpitUrl}/api/v1/messages`, {
+		method: "DELETE",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ IDs: ids }),
+	});
+}
 
 type MailpitSummary = {
 	ID: string;
