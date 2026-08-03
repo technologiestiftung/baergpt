@@ -7,7 +7,7 @@
 				{ "key": "X-Frame-Options", "value": "DENY" },
 				{
 					"key": "Content-Security-Policy",
-					"value": "frame-ancestors 'none'; img-src 'self' data: blob: https://logos.citylab-berlin.org"
+					"value": "frame-ancestors 'none'; img-src 'self' blob: https://logos.citylab-berlin.org"
 				}
 			]
 		}
