@@ -112,7 +112,24 @@ if (require.main === module) {
 				() => logMemory("periodic"),
 				30_000,
 			);
-			process.on("SIGTERM", () => clearInterval(memoryLogInterval));
+			process.on("SIGTERM", () => {
+				clearInterval(memoryLogInterval);
+
+				server.close((error) => {
+					if (error) {
+						captureError(error);
+					}
+					process.exit(error ? 1 : 0);
+				});
+
+				// Safety net: force-exit if close() hangs (e.g. lingering keep-alive sockets)
+				setTimeout(() => {
+					captureError(
+						new Error("server did not close after SIGTERM, force killing"),
+					);
+					process.exit(1);
+				}, 8_000).unref();
+			});
 		} catch (error) {
 			captureError(error);
 			process.exit(1);
