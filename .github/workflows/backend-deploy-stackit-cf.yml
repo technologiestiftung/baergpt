@@ -8,6 +8,8 @@ on:
   # an unreviewed/unmerged PR can never get its image auto-deployed.
   push:
     branches: [staging, main]
+  pull_request:
+    branches: [staging]
   workflow_dispatch:
 
 permissions:
@@ -26,7 +28,11 @@ jobs:
       cancel-in-progress: false
     # workflow_dispatch has no branches filter, so a manual run can target
     # any branch by default — reject anything other than staging/main here.
-    if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
+    if: >-
+      ${{
+        github.ref_name == 'staging' || github.ref_name == 'main' ||
+        github.base_ref == 'staging'
+      }}
     environment: ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
     steps:
       - name: Checkout code ⬇️

@@ -15,6 +15,18 @@ import { logMemory } from "./monitoring/memory-logger";
 
 verifyConfig();
 
+// Catch async errors that escape the synchronous try/catch around serve()
+// (e.g. OTel/Sentry SDK init, unhandled rejections, server bind errors).
+process.on("uncaughtException", (error) => {
+	captureError(error);
+	process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+	captureError(reason);
+	process.exit(1);
+});
+
 const app = new Hono();
 
 // Global middleware
@@ -57,12 +69,25 @@ app.onError((error, c) => {
 if (require.main === module) {
 	(async () => {
 		try {
-			serve({
-				fetch: app.fetch,
-				port: config.port,
+			const server = serve(
+				{
+					fetch: app.fetch,
+					port: config.port,
+				},
+				(info) => {
+					/* eslint-disable-next-line no-console */
+					console.info(`Server is running on port ${info.port}...`);
+				},
+			);
+
+			// serve() binds the port asynchronously, so a bind failure
+			// (e.g. EADDRINUSE) is emitted here as an 'error' event AFTER
+			// serve() returns — the surrounding try/catch cannot see it.
+			server.on("error", (error) => {
+				captureError(error);
+				process.exit(1);
 			});
-			/* eslint-disable-next-line no-console */
-			console.info(`Server is running on port ${config.port}...`);
+
 			const memoryLogInterval = setInterval(
 				() => logMemory("periodic"),
 				30_000,
