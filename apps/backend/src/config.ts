@@ -44,9 +44,6 @@ export interface Config {
 
 /* eslint-disable-next-line complexity */
 export function verifyConfig(): void {
-	if (!process.env.PORT) {
-		throw new Error("PORT must be defined");
-	}
 	if (!process.env.MISTRAL_API_KEY) {
 		throw new Error("MISTRAL_API_KEY must be defined");
 	}
@@ -151,6 +148,12 @@ export function verifyConfig(): void {
 			"BRAVE_SEARCH_API_KEY, BRAVE_SEARCH_API_URL and BRAVE_SEARCH_MAX_RPS or STAAN_SEARCH_API_KEY, STAAN_SEARCH_API_URL and STAAN_SEARCH_MAX_RPS must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
 		);
 	}
+
+	if (process.env.PORT.length > 0) {
+		console.log(`Port set via env, value: ${process.env.PORT}`);
+	} else {
+		console.log("No port set via env, will default to value: 3000");
+	}
 }
 
 export const config: Config = {
@@ -177,7 +180,7 @@ export const config: Config = {
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
 	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
-	port: parseInt(process.env.PORT),
+	port: parseInt(process.env.PORT) || 3000,
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),

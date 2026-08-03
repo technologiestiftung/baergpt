@@ -122,6 +122,20 @@ jobs:
           cf auth
           cf target -o "$CF_ORG" -s "$CF_SPACE"
 
+      # Autoscaling: re-attach the committed policy on every deploy so the repo
+      # stays the single source of truth (same philosophy as the env-var sync
+      # above). The autoscaler *service instance* ("<space>-autoscaler") is
+      # provisioned once by Terraform — see infra/terraform/cloud-foundry. cf v8
+      # has no update-binding, so we unbind + rebind, passing the policy as the
+      # binding's config (-c). Unbind is best-effort: on the first attach there's
+      # nothing bound yet.
+      - name: Unbind autoscaling service ⛓️‍💥
+        working-directory: apps/backend
+        run: |
+          set -euo pipefail
+          service="${CF_SPACE}-autoscaler"
+          cf unbind-service "$CF_APP_NAME" "$service" --wait 2>/dev/null || true
+
       # Expects a 1Password item holding the backend's runtime env vars
       # (API keys, DB URL, etc.) as a plain KEY=VALUE-per-line document.
       # CF_-prefixed keys (CF_INSTANCES, CF_MEMORY, CF_DISK_QUOTA) are cf push
@@ -216,7 +230,6 @@ jobs:
           set -euo pipefail
           service="$CF_SPACE-autoscaler"
           policy="autoscaler-policy-${{ github.ref_name == 'main' && 'production' || 'staging' }}.json"
-          cf unbind-service "$CF_APP_NAME" "$service" --wait 2>/dev/null || true
           cf bind-service "$CF_APP_NAME" "$service" --wait -c "$policy"
 
       - name: Dump recent app logs on failure 🪵
