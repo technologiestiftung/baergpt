@@ -38,6 +38,7 @@ jobs:
       - name: Set 1Password item IDs based on branch 🌿
         id: env-config
         run: |
+          set -euo pipefail
           if [[ "${{ github.ref_name }}" == "main" ]]; then
             echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
             echo "app_item_id=${{ secrets.OP_BACKEND_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
@@ -49,6 +50,7 @@ jobs:
       # Same 1Password item the backend deploy uses — same CF org/space.
       - name: Fetch STACKIT Cloud Foundry credentials from 1Password 🔑
         run: |
+          set -euo pipefail
           op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.cf_item_id }}/notesPlain" > cf.env
           while IFS= read -r line || [ -n "$line" ]; do
             [[ -z "$line" || "$line" == \#* ]] && continue
@@ -63,12 +65,14 @@ jobs:
 
       - name: Install cf CLI ⚙️
         run: |
+          set -euo pipefail
           curl -sL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" \
             | tar -zx
           sudo mv cf8 /usr/local/bin/cf
 
       - name: Target STACKIT Cloud Foundry 🎯
         run: |
+          set -euo pipefail
           cf api "$CF_API_ENDPOINT"
           cf auth
           cf target -o "$CF_ORG" -s "$CF_SPACE"
@@ -77,6 +81,7 @@ jobs:
       # (and anything else the app needs) as a plain KEY=VALUE-per-line document.
       - name: Fetch gotenberg env vars from 1Password 🔑
         run: |
+          set -euo pipefail
           op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.app_item_id }}/notesPlain" > gotenberg.env
           : > infra/gotenberg/app.env
           while IFS= read -r line || [ -n "$line" ]; do
@@ -99,6 +104,7 @@ jobs:
         id: sync
         working-directory: infra/gotenberg
         run: |
+          set -euo pipefail
           if ! cf app "${{ env.APP_NAME }}" >/dev/null 2>&1; then
             echo "bootstrapped=true" >> "$GITHUB_OUTPUT"
             cf push -f manifest.yml --no-start --var memory="$GOTENBERG_MEMORY" 
@@ -120,6 +126,7 @@ jobs:
       - name: Push to Cloud Foundry 🚀
         working-directory: infra/gotenberg
         run: |
+          set -euo pipefail
           cf push \
             -f manifest.yml \
             --var memory="$GOTENBERG_MEMORY" \
