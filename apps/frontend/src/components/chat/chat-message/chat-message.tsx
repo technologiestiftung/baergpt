@@ -14,6 +14,7 @@ interface ChatMessageProps {
 const customComponents = {
 	table: MarkdownWrapperScrollableTable,
 	a: AnchorLinkTargetBlank,
+	img: () => null,
 };
 
 export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
