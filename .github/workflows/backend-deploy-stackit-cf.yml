@@ -209,6 +209,7 @@ jobs:
       - name: Attach autoscaling policy 📈
         working-directory: apps/backend
         run: |
+          set -euo pipefail
           service="${CF_SPACE}-autoscaler"
           policy="autoscaler-policy-${{ github.ref_name == 'main' && 'production' || 'staging' }}.json"
           cf unbind-service "${{ env.APP_NAME }}" "$service" --wait 2>/dev/null || true
