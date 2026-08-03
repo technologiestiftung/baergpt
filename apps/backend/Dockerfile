@@ -35,4 +35,5 @@ WORKDIR /app/apps/backend
 # for documentation only, does not publish the port. Locally use `-p 3000:3000`.
 # CF ignores this and injects its own PORT.
 EXPOSE 3000
+#CMD ["node", "--max-old-space-size=1536", "dist/src/index.js"]
 CMD ["node", "dist/src/index.js"]

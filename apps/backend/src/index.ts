@@ -1,3 +1,18 @@
+import v8 from "node:v8";
+
+const heapStats = v8.getHeapStatistics();
+
+/* eslint-disable-next-line no-console */
+console.info("[STARTUP] Memory config", {
+	nodeOptions: process.env.NODE_OPTIONS ?? "(none)",
+	memoryLimitEnv: process.env.MEMORY_LIMIT ?? "(none)",
+	execArgv: process.execArgv, // shows args passed directly to `node`, e.g. via CMD
+	v8HeapSizeLimitMB: Math.round(heapStats.heap_size_limit / 1024 / 1024),
+	v8TotalAvailableSizeMB: Math.round(
+		heapStats.total_available_size / 1024 / 1024,
+	),
+});
+
 import "./monitoring/instrumentation";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
@@ -13,7 +28,11 @@ import favicon from "./routes/favicon";
 import { captureError } from "./monitoring/capture-error";
 import { logMemory } from "./monitoring/memory-logger";
 
+logMemory("boot:start");
+
 verifyConfig();
+
+logMemory("boot:after-config");
 
 // Catch async errors that escape the synchronous try/catch around serve()
 // (e.g. OTel/Sentry SDK init, unhandled rejections, server bind errors).
@@ -77,6 +96,7 @@ if (require.main === module) {
 				(info) => {
 					/* eslint-disable-next-line no-console */
 					console.info(`Server is running on port ${info.port}...`);
+					logMemory("boot:ready");
 				},
 			);
 

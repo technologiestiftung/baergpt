@@ -44,6 +44,9 @@ export interface Config {
 
 /* eslint-disable-next-line complexity */
 export function verifyConfig(): void {
+	if (!process.env.PORT) {
+		throw new Error("PORT must be defined");
+	}
 	if (!process.env.MISTRAL_API_KEY) {
 		throw new Error("MISTRAL_API_KEY must be defined");
 	}
@@ -174,7 +177,7 @@ export const config: Config = {
 	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
 	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
-	port: parseInt(process.env.PORT, 10) || 3000,
+	port: parseInt(process.env.PORT),
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
