@@ -50,6 +50,7 @@ jobs:
       - name: Set 1Password item IDs based on branch 🌿
         id: env-config
         run: |
+          set -euo pipefail
           if [[ "${{ github.ref_name }}" == "main" ]]; then
             echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
             echo "app_item_id=${{ secrets.OP_BACKEND_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
@@ -62,6 +63,7 @@ jobs:
       # CF_ORG, CF_SPACE fields (one item per environment).
       - name: Fetch STACKIT Cloud Foundry credentials from 1Password 🔑
         run: |
+          set -euo pipefail
           op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.cf_item_id }}/notesPlain" > cf.env
           while IFS= read -r line || [ -n "$line" ]; do
             [[ -z "$line" || "$line" == \#* ]] && continue
@@ -81,6 +83,7 @@ jobs:
       # failing on the first miss.
       - name: Wait for image to exist in GHCR 🔍
         run: |
+          set -euo pipefail
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}"
           timeout=600
@@ -99,12 +102,14 @@ jobs:
 
       - name: Install cf CLI ⚙️
         run: |
+          set -euo pipefail
           curl -sL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" \
             | tar -zx
           sudo mv cf8 /usr/local/bin/cf
 
       - name: Target STACKIT Cloud Foundry 🎯
         run: |
+          set -euo pipefail
           cf api "$CF_API_ENDPOINT"
           cf auth
           cf target -o "$CF_ORG" -s "$CF_SPACE"
@@ -116,6 +121,7 @@ jobs:
       # the bootstrap/push steps below.
       - name: Fetch backend env vars from 1Password 🔑
         run: |
+          set -euo pipefail
           op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.app_item_id }}/notesPlain" > backend.env
           : > apps/backend/app.env
           while IFS= read -r line || [ -n "$line" ]; do
@@ -144,6 +150,7 @@ jobs:
         env:
           CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           if ! cf app "${{ env.APP_NAME }}" >/dev/null 2>&1; then
             # First deploy: no running version exists yet, so a rolling deploy
             # has nothing to roll over. Flag it so the push step does a plain
@@ -181,6 +188,7 @@ jobs:
         env:
           CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           cf push \
             -f manifest.yml \
             ${{ steps.sync.outputs.bootstrapped != 'true' && '--strategy rolling' || '' }} \
@@ -190,6 +198,22 @@ jobs:
             --var memory="$CF_MEMORY" \
             --var disk_quota="$CF_DISK_QUOTA" \
           || { cf cancel-deployment "${{ env.APP_NAME }}" 2>/dev/null || true; exit 1; }
+
+      # Autoscaling: re-attach the committed policy on every deploy so the repo
+      # stays the single source of truth (same philosophy as the env-var sync
+      # above). The autoscaler *service instance* ("<space>-autoscaler") is
+      # provisioned once by Terraform — see infra/terraform/cloud-foundry. cf v8
+      # has no update-binding, so we unbind + rebind, passing the policy as the
+      # binding's config (-c). Unbind is best-effort: on the first attach there's
+      # nothing bound yet.
+      - name: Attach autoscaling policy 📈
+        working-directory: apps/backend
+        run: |
+          set -euo pipefail
+          service="${CF_SPACE}-autoscaler"
+          policy="autoscaler-policy-${{ github.ref_name == 'main' && 'production' || 'staging' }}.json"
+          cf unbind-service "${{ env.APP_NAME }}" "$service" --wait 2>/dev/null || true
+          cf bind-service "${{ env.APP_NAME }}" "$service" --wait -c "$policy"
 
       - name: Dump recent app logs on failure 🪵
         if: ${{ failure() && !cancelled() }}

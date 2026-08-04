@@ -70,10 +70,10 @@ export const ChatSearchResultButton: React.FC<ChatSearchResultButtonProps> = ({
 						{buildHighlightedSnippet(snippet, query)}
 					</span>
 				</div>
+				<span className="shrink-0 text-dunkelblau-70 text-xs pt-0.5">
+					{formatChatSearchDate(chat.created_at)}
+				</span>
 			</div>
-			<span className="shrink-0 text-dunkelblau-70 text-xs pt-0.5">
-				{formatChatSearchDate(chat.created_at)}
-			</span>
 		</button>
 	);
 };

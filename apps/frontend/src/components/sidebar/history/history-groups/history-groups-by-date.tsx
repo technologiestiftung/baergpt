@@ -83,7 +83,7 @@ export function HistoryGroupsByDate({
 			{chatGroups.map(({ label, chats: chatsInGroup }) => (
 				<li key={label} className="flex flex-col">
 					<div
-						className="flex items-center truncate text-sm leading-5 h-6 text-dunkelblau-40 md:px-2 mt-2"
+						className="flex items-center truncate text-sm leading-5 h-6 text-dunkelblau-50 md:px-2 mt-2"
 						data-testid="history-date-group-label"
 					>
 						{label}
