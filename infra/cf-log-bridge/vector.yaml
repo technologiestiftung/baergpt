@@ -1,0 +1,136 @@
+# CF syslog drain to STACKIT Observability: logs to Loki, container metrics to
+# Prometheus remote-write.
+#
+# Env: BAERGPT_ENV, DRAIN_{USERNAME,PASSWORD},
+#      STACKIT_OBSERVABILITY_{USERNAME,PASSWORD,LOGS_ENDPOINT,METRICS_ENDPOINT}
+#
+# Env vars below are substituted only because the Dockerfile passes
+# --dangerously-allow-env-var-interpolation. That substitution runs over the whole file,
+# comments included, so a reference written in a comment is resolved too and aborts
+# startup if the name is unset. Escape with a double dollar to mention one: $${EXAMPLE}.
+
+sources:
+  drain:
+    type: http_server
+    address: 0.0.0.0:${PORT:-8080}
+    # CF authenticates with the userinfo from the drain URL.
+    auth:
+      strategy: basic
+      username: ${DRAIN_USERNAME:?drain username is required}
+      password: ${DRAIN_PASSWORD:?drain password is required}
+    decoding:
+      codec: syslog
+
+transforms:
+  # Metric frames carry a gauge/counter element and an empty message. Log frames carry
+  # neither. Both arrive over the same connection.
+  logs_only:
+    type: filter
+    inputs: [drain]
+    condition: '!exists(."gauge@47450") && !exists(."counter@47450")'
+
+  metrics_only:
+    type: filter
+    inputs: [drain]
+    condition: 'exists(."gauge@47450") || exists(."counter@47450")'
+
+  label:
+    type: remap
+    inputs: [logs_only]
+    source: |
+      tags = object(."tags@47450") ?? {}
+
+      .source      = "cf-${BAERGPT_ENV:?BAERGPT_ENV is required}"
+      .app_name    = string(tags.app_name)   ?? "unknown"
+      .space_name  = string(tags.space_name) ?? "unknown"
+      .instance_id = string(tags.instance_id) ?? "0"
+      .level       = string(.severity) ?? "info"
+
+      # Vector owns the top-level source_type field, so CF's is renamed in the sink.
+      .cf_source_type = string(tags.source_type) ?? "unknown"
+
+      # Not promoted to labels: per-container and per-cell, unbounded cardinality.
+      .process_instance_id = string(tags.process_instance_id) ?? ""
+      .cell_index          = string(tags.index) ?? ""
+
+      del(."tags@47450")
+
+  metric_fields:
+    type: remap
+    inputs: [metrics_only]
+    source: |
+      tags = object(."tags@47450") ?? {}
+      gauge = object(."gauge@47450") ?? {}
+      counter = object(."counter@47450") ?? {}
+
+      .metric_name = string(gauge.name) ?? string(counter.name) ?? "unknown"
+
+      # Values live in the structured-data element as strings; log_to_metric does not
+      # coerce. to_float! drops the event on failure rather than falling back to 0,
+      # which would read as a healthy container and never alert.
+      raw = string(gauge.value) ?? string(counter.total) ?? ""
+      .metric_value = to_float!(raw)
+
+      .source      = "cf-${BAERGPT_ENV:?BAERGPT_ENV is required}"
+      .app_name    = string(tags.app_name) ?? "unknown"
+      .space_name  = string(tags.space_name) ?? "unknown"
+      .instance_id = string(tags.instance_id) ?? "0"
+
+  to_metric:
+    type: log_to_metric
+    inputs: [metric_fields]
+    metrics:
+      # Gauges throughout, including the cumulative rx_bytes/tx_bytes. rate() works over
+      # those, but a container restart appears as a drop, not a counter reset.
+      - type: gauge
+        field: metric_value
+        name: "cf_{{ metric_name }}"
+        tags:
+          source: "{{ source }}"
+          app_name: "{{ app_name }}"
+          space_name: "{{ space_name }}"
+          instance_id: "{{ instance_id }}"
+
+sinks:
+  loki:
+    type: loki
+    inputs: [label]
+    # Base URL only. Vector appends /loki/api/v1/push.
+    endpoint: ${STACKIT_OBSERVABILITY_LOGS_ENDPOINT:?logs endpoint is required}
+    auth:
+      strategy: basic
+      user: ${STACKIT_OBSERVABILITY_USERNAME:?observability username is required}
+      password: ${STACKIT_OBSERVABILITY_PASSWORD:?observability password is required}
+    # Label values come wholly from received fields, which Vector rejects by default.
+    # Acceptable only while the drain endpoint is authenticated.
+    dangerously_allow_unconfined_template_resolution: true
+    labels:
+      source: "{{ source }}"
+      app_name: "{{ app_name }}"
+      space_name: "{{ space_name }}"
+      source_type: "{{ cf_source_type }}"
+      instance_id: "{{ instance_id }}"
+      level: "{{ level }}"
+    encoding:
+      codec: text
+    out_of_order_action: accept
+    request:
+      retry_attempts: 5
+    buffer:
+      type: memory
+      max_events: 5000
+      when_full: drop_newest
+
+  metrics:
+    type: prometheus_remote_write
+    inputs: [to_metric]
+    # Used verbatim, including /api/v1/receive.
+    endpoint: ${STACKIT_OBSERVABILITY_METRICS_ENDPOINT:?metrics endpoint is required}
+    # STACKIT answers 405 to Vector's probe, so the check can never pass. Writes are
+    # unaffected, and the Loki healthcheck validates the same credentials.
+    healthcheck:
+      enabled: false
+    auth:
+      strategy: basic
+      user: ${STACKIT_OBSERVABILITY_USERNAME:?observability username is required}
+      password: ${STACKIT_OBSERVABILITY_PASSWORD:?observability password is required}

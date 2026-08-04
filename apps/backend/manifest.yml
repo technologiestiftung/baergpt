@@ -17,6 +17,9 @@ applications:
     health-check-http-endpoint: /health
     health-check-invocation-timeout: 10
     default-route: true
+    # Created by infra/terraform/cloud-foundry/log-drain.tf
+    services:
+      - stackit-drain
     # env vars (API keys, DB URL, etc.) aren't set here — the deployment workflow
     # syncs them onto the app via `cf set-env` from a 1Password item on every
     # deploy, so the same image runs across environments — see
