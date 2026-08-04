@@ -237,7 +237,9 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			try {
 				await registerOrRecoverUser({ email: unconfirmedEmail });
 			} catch (error) {
+				resendTime = null;
 				useAuthErrorStore.getState().handleError(error);
+				throw error;
 			}
 		},
 
