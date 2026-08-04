@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ClipboardEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import Content from "../../content";
 import { ConfirmationLayout } from "../../layouts/confirmation-layout.tsx";
 import { supabase } from "../../../supabase-client";

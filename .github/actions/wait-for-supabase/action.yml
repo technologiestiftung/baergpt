@@ -1,5 +1,5 @@
 name: Wait for Supabase to be ready
-description: Polls until the Supabase REST API and PostgreSQL are both accepting connections
+description: Polls until the Supabase REST API and PostgreSQL are both accepting connections, then reloads GoTrue's custom email templates
 
 runs:
   using: composite
@@ -8,18 +8,99 @@ runs:
       shell: bash
       run: |
         timeout=600
-        counter=0
+        deadline=$((SECONDS + timeout))
+
+        ANON_KEY="${SUPABASE_ANON_KEY:-}"
+        if [ -z "$ANON_KEY" ]; then
+          ANON_KEY=$(grep -h '^SUPABASE_ANON_KEY=' apps/backend/.env "$RUNNER_TEMP/backend.env" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -n1 || true)
+        fi
+
+        HEADER_ARG=()
+        if [ -n "$ANON_KEY" ]; then
+          HEADER_ARG=(-H "apikey: $ANON_KEY")
+        fi
 
         # Sometimes the postgrest api and postgres are up, but individual postgrest endpoints are not ready yet.
-        # Therefore we check if a table (e.g. `application_admins`) is available in the postgrest api.
+        # Therefore we check that a real table (e.g. `application_admins`) is queryable, not just the
+        # PostgREST root/OpenAPI endpoint — the root answers even when table privileges are missing,
+        # which lets a broken stack look healthy here and only fail several steps later.
 
-        until curl -sf http://localhost:54321/rest/v1/application_admins && pg_isready -U postgres -h localhost -p 54322; do
-          if [ $counter -gt $timeout ]; then
-            echo "Timed out waiting for Supabase"
+        until \
+          HTTP_STATUS=$(curl -s --connect-timeout 5 --max-time 10 -o /tmp/supabase-health.body -w "%{http_code}" "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/application_admins) && \
+          [ "$HTTP_STATUS" = "200" ] && \
+          pg_isready -U postgres -h localhost -p 54322 >/tmp/pg_isready.out 2>&1; do
+          if [ "$SECONDS" -ge "$deadline" ]; then
+            echo "Timed out waiting for Supabase after ${SECONDS}s (limit ${timeout}s)"
+            echo "=== PostgREST health check (http://localhost:54321/rest/v1/application_admins) ==="
+            echo "HTTP status: ${HTTP_STATUS:-<failed>}"
+            if [ -f /tmp/supabase-health.body ]; then
+              echo "Response body (first 500 chars):"
+              head -c 500 /tmp/supabase-health.body || true
+              echo
+            fi
+            echo "=== PostgreSQL readiness (pg_isready -U postgres -h localhost -p 54322) ==="
+            cat /tmp/pg_isready.out 2>/dev/null || echo "pg_isready output unavailable"
+            if command -v docker >/dev/null 2>&1; then
+              echo "=== Docker status (running) ==="
+              docker ps
+              echo "=== Docker status (all) ==="
+              docker ps -a
+            fi
+            if [ -f /tmp/supabase-start.log ]; then
+              echo "=== Supabase start log ==="
+              cat /tmp/supabase-start.log
+              echo "=== End Supabase start log ==="
+            fi
             exit 1
           fi
-          echo "Waiting for Supabase to be ready..."
+          echo "Waiting for Supabase to be ready... (${SECONDS}s/${timeout}s, POSTGREST status: ${HTTP_STATUS:-<failed>})"
           sleep 1
-          counter=$((counter + 1))
         done
         echo "Supabase is ready!"
+
+    # GoTrue reads the custom email templates configured under [auth.email.template.*] over HTTP
+    # from a static file server that Kong exposes on port 8088. It fetches them once, when its
+    # template cache worker boots, and never retries on failure. Because `supabase start` brings
+    # auth and kong up in parallel, auth regularly wins the race, gets ECONNREFUSED on :8088, and
+    # then silently serves GoTrue's built-in English templates for the rest of its lifetime. Those
+    # defaults carry no `{{ .Token }}` on a line of its own, so every test that reads a security
+    # code out of a mail fails with a confusing "could not read a security code" error.
+    #
+    # The readiness loop above already proves Kong is routing (it answers on :54321), so restarting
+    # auth here makes the second template fetch succeed deterministically. Costs a few seconds.
+    - name: Reload GoTrue email templates 📧
+      shell: bash
+      run: |
+        AUTH_CONTAINER="$(docker ps --filter "name=supabase_auth_" --format '{{.Names}}' | head -n1)"
+        if [ -z "$AUTH_CONTAINER" ]; then
+          echo "No supabase_auth_* container found — cannot reload email templates."
+          docker ps -a
+          exit 1
+        fi
+
+        echo "Restarting $AUTH_CONTAINER so it re-fetches the custom email templates from Kong..."
+        docker restart "$AUTH_CONTAINER" >/dev/null
+        RESTARTED_AT="$(docker inspect -f '{{.State.StartedAt}}' "$AUTH_CONTAINER")"
+
+        timeout=60
+        deadline=$((SECONDS + timeout))
+        until curl -s --connect-timeout 5 --max-time 10 -o /dev/null -f http://localhost:54321/auth/v1/health; do
+          if [ "$SECONDS" -ge "$deadline" ]; then
+            echo "Timed out waiting for GoTrue to come back after ${SECONDS}s (limit ${timeout}s)"
+            docker logs --since "$RESTARTED_AT" "$AUTH_CONTAINER" 2>&1 | tail -50
+            exit 1
+          fi
+          echo "Waiting for GoTrue to be ready again... (${SECONDS}s/${timeout}s)"
+          sleep 1
+        done
+
+        # Assert the reload actually worked. Without this the run would carry on with default
+        # templates and fail much later, in a test whose error says nothing about email templates.
+        if docker logs --since "$RESTARTED_AT" "$AUTH_CONTAINER" 2>&1 \
+          | grep -q "templatemailer_template_body_http_error"; then
+          echo "GoTrue still could not fetch its custom email templates from Kong:"
+          docker logs --since "$RESTARTED_AT" "$AUTH_CONTAINER" 2>&1 \
+            | grep "templatemailer_template_body_http_error"
+          exit 1
+        fi
+        echo "GoTrue reloaded its custom email templates!"

@@ -197,7 +197,9 @@ policy = "oneshot"
 inspector_port = 8083
 
 [analytics]
-enabled = true
+# Disabled so the logflare/vector containers are not started. We never read local analytics in CI or
+# local dev, and the vector container has a history of coming up unhealthy on newer CLI versions.
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
