@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { useAuthStore } from "../../store/auth-store.ts";
 import Content from "../../content.ts";
 import { useErrorStore } from "../../store/error-store.ts";
