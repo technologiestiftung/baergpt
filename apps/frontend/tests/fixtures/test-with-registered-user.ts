@@ -139,11 +139,14 @@ type MailpitSummary = {
 /**
  * Polls Mailpit for the most recent message addressed to `recipient` and returns its plain
  * text body, which carries both the security code and the confirmation link.
+ *
+ * @param cutoffTime Only consider messages created after this UTC timestamp (ms-since-epoch).
  */
 async function waitForLatestMessageTo(
 	page: Page,
 	recipient: string,
 	timeoutMs = 30_000,
+	cutoffTime?: number,
 ) {
 	const wanted = recipient.toLowerCase();
 	const deadline = Date.now() + timeoutMs;
@@ -160,11 +163,20 @@ async function waitForLatestMessageTo(
 			};
 			mailboxSize = messages.length;
 
-			const newest = messages
-				.filter((message) =>
-					message.To.some((to) => to.Address.toLowerCase() === wanted),
-				)
-				.sort((a, b) => Date.parse(b.Created) - Date.parse(a.Created))[0];
+			const filtered = messages.filter((message) => {
+				const matchesRecipient = message.To.some(
+					(to) => to.Address.toLowerCase() === wanted,
+				);
+				const afterCutoff =
+					cutoffTime === undefined
+						? true
+						: Date.parse(message.Created) > cutoffTime;
+				return matchesRecipient && afterCutoff;
+			});
+
+			const newest = filtered.sort(
+				(a, b) => Date.parse(b.Created) - Date.parse(a.Created),
+			)[0];
 
 			if (newest) {
 				const detail = await page.request.get(
