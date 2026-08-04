@@ -147,8 +147,6 @@ jobs:
       - name: Sync backend env vars 🔄
         id: sync
         working-directory: apps/backend
-        env:
-          CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           if ! cf app "${{ env.APP_NAME }}" >/dev/null 2>&1; then
@@ -160,7 +158,6 @@ jobs:
               -f manifest.yml \
               --no-start \
               --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
-              --var docker_username="${{ github.actor }}" \
               --var instances="$CF_INSTANCES" \
               --var memory="$CF_MEMORY" \
               --var disk_quota="$CF_DISK_QUOTA"
@@ -185,15 +182,12 @@ jobs:
       # step flags it, and we do a plain cold start instead (empty = no flag).
       - name: Push image to Cloud Foundry 🚀
         working-directory: apps/backend
-        env:
-          CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           cf push \
             -f manifest.yml \
             ${{ steps.sync.outputs.bootstrapped != 'true' && '--strategy rolling' || '' }} \
             --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
-            --var docker_username="${{ github.actor }}" \
             --var instances="$CF_INSTANCES" \
             --var memory="$CF_MEMORY" \
             --var disk_quota="$CF_DISK_QUOTA" \
