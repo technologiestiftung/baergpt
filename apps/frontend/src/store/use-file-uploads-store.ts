@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { useUserDocumentStore } from "./use-user-document-store.ts";
 import { useAuthStore } from "./auth-store.ts";
-import slugify from "slugify";
 import {
 	uploadFileToDb,
 	processDocument,
@@ -65,15 +64,15 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			useUserDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
-		const slugifiedFilename = slugify(file.name, { lower: true });
-		const filePath = `${session?.user.id}/${slugifiedFilename}`;
+		const fileExtension = file.name.split(".").pop();
+		const filePath = `${session?.user.id}/${crypto.randomUUID()}.${fileExtension}`;
 		try {
 			if (file.size > uploadFileSizeLimit * 1024 * 1024) {
 				throw new Error("failed.size");
 			}
 
 			const fileExists = userDocuments.some(
-				(doc) => doc.source_url === filePath,
+				(doc) => doc.file_name === file.name,
 			);
 			if (fileExists) {
 				throw new Error("failed.duplicate");
