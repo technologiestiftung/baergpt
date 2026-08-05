@@ -1,7 +1,9 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
-import { LangfuseSpanProcessor, ShouldExportSpan } from "@langfuse/otel";
+import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
+import { registerTelemetry } from "ai";
 import * as Sentry from "@sentry/node";
 import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
 import { config } from "../config";
@@ -14,12 +16,8 @@ export const sentryClient = Sentry.init({
 	skipOpenTelemetrySetup: true,
 });
 
-const shouldExportSpan: ShouldExportSpan = ({ otelSpan }) =>
-	["langfuse-sdk", "ai"].includes(otelSpan.instrumentationScope.name);
-
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({
 	environment: config.nodeEnv,
-	shouldExportSpan: shouldExportSpan,
 });
 
 const sdk = new NodeSDK({
@@ -32,6 +30,7 @@ const sdk = new NodeSDK({
 
 sdk.start();
 Sentry.validateOpenTelemetrySetup();
+registerTelemetry(new LangfuseVercelAiSdkIntegration());
 
 if (config.nodeEnv === "development") {
 	process.on("SIGTERM", () => process.exit(0));
