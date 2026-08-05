@@ -8,7 +8,6 @@ applications:
   - name: baergpt-backend
     docker:
       image: ((image))
-      username: ((docker_username))
     instances: ((instances))
     memory: ((memory))
     disk_quota: ((disk_quota))
