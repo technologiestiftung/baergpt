@@ -5,7 +5,7 @@
 # app's runtime env vars, so the two environments can scale independently —
 # see backend-deploy-stackit-cf.yml.
 applications:
-  - name: baergpt-backend
+  - name: baergpt-backend-((space))
     docker:
       image: ((image))
     instances: ((instances))

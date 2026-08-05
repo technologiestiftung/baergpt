@@ -108,7 +108,7 @@ jobs:
           set -euo pipefail
           if ! cf app "${{ env.APP_NAME }}" >/dev/null 2>&1; then
             echo "bootstrapped=true" >> "$GITHUB_OUTPUT"
-            cf push -f manifest.yml --no-start --var memory="$GOTENBERG_MEMORY" 
+            cf push -f manifest.yml --no-start --var space="$CF_SPACE" --var memory="$GOTENBERG_MEMORY" 
           fi
 
           guid=$(cf app "${{ env.APP_NAME }}" --guid)
@@ -130,6 +130,7 @@ jobs:
           set -euo pipefail
           cf push \
             -f manifest.yml \
+            --var space="$CF_SPACE" \
             --var memory="$GOTENBERG_MEMORY" \
             ${{ steps.sync.outputs.bootstrapped != 'true' && '--strategy rolling' || '' }} \
           || { cf cancel-deployment "${{ env.APP_NAME }}" 2>/dev/null || true; exit 1; }
