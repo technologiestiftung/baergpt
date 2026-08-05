@@ -442,7 +442,7 @@ export class GenerationService {
 
 								const compiledWebCitationExtractionPrompts =
 									webCitationPromptClient.compile({
-										generatedAnswer: text,
+										generatedText: text,
 										availableSources: allWebSources
 											.map(
 												(s) =>
