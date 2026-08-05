@@ -14,12 +14,13 @@ import {
 	generateText,
 	Output,
 	streamText,
+	toUIMessageStream,
 } from "ai";
 import { ModelService } from "./model-service";
 import { logMemory } from "../monitoring/memory-logger";
 import { EmbeddingService } from "./embedding-service";
 import type { ChatPromptClient, TextPromptClient } from "@langfuse/client";
-import { updateActiveTrace } from "@langfuse/tracing";
+import { propagateAttributes } from "@langfuse/tracing";
 import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
@@ -332,308 +333,311 @@ export class GenerationService {
 
 		const stream = createUIMessageStream({
 			execute: async ({ writer }) => {
-				const streamResponse = streamText({
-					model: llmHandler.languageModel,
-					messages: messages.filter(nonEmptyAssistantMessage),
-					allowSystemInMessages: true,
-					maxOutputTokens: 8192,
-					temperature: LLM_PARAMETERS.temperature,
-					tools,
-					toolChoice,
-					stopWhen: isLoopFinished(),
-					providerOptions: {
-						mistral: {
-							presencePenalty: LLM_PARAMETERS.presencePenalty,
-							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-						},
-					},
-					onFinish: async ({ text, usage, steps }) => {
-						logMemory(
-							`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
-							memoryLogId,
-						);
-
-						if (typeof toolsCleanup === "function") {
-							await toolsCleanup();
-						}
-
-						const allChunkMatches = steps.flatMap((step) =>
-							step.toolResults.flatMap((tr) => tr.output?.chunkMatches || []),
-						);
-
-						if (allChunkMatches.length > 0) {
-							const availableSources = allChunkMatches.map(
-								(match: { chunkId: number; snippet: string }) => ({
-									id: match.chunkId,
-									snippet: match.snippet,
-								}),
-							);
-							try {
-								const citationPromptClient = await getChatPrompt(
-									"document-citation-extraction",
-									{
-										label:
-											config.nodeEnv === "test"
-												? "development"
-												: config.nodeEnv,
-									},
+				const streamResponse = propagateAttributes(
+					{ traceName: "streamed-text-generation", userId, sessionId },
+					() =>
+						streamText({
+							model: llmHandler.languageModel,
+							messages: messages.filter(nonEmptyAssistantMessage),
+							allowSystemInMessages: true,
+							maxOutputTokens: 8192,
+							temperature: LLM_PARAMETERS.temperature,
+							tools,
+							toolChoice,
+							stopWhen: isLoopFinished(),
+							providerOptions: {
+								mistral: {
+									presencePenalty: LLM_PARAMETERS.presencePenalty,
+									frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+								},
+							},
+							onFinish: async ({ text, usage, steps }) => {
+								logMemory(
+									`chat:onFinish (textLen=${text.length}, tokens=${usage?.totalTokens ?? 0})`,
+									memoryLogId,
 								);
 
-								const compiledDocumentCitationExtractionPrompts =
-									citationPromptClient.compile({
-										generatedAnswer: text,
-										availableSources: availableSources
-											.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
-											.join("\n\n"),
-									}) as ModelMessage[];
+								if (typeof toolsCleanup === "function") {
+									await toolsCleanup();
+								}
 
-								const { output: citationObject, usage: generateObjectUsage } =
-									await generateText({
-										model: llmHandler.languageModel,
-										messages: compiledDocumentCitationExtractionPrompts,
-										allowSystemInMessages: true,
-										temperature: LLM_PARAMETERS.temperature,
-										output: Output.object({
-											schema: citationAnswerSchema,
+								const allChunkMatches = steps.flatMap((step) =>
+									step.toolResults.flatMap(
+										(tr) => tr.output?.chunkMatches || [],
+									),
+								);
+
+								if (allChunkMatches.length > 0) {
+									const availableSources = allChunkMatches.map(
+										(match: { chunkId: number; snippet: string }) => ({
+											id: match.chunkId,
+											snippet: match.snippet,
 										}),
-										runtimeContext: {
-											sessionId: sessionId ? sessionId : "unknown",
-										},
-										telemetry: {
-											isEnabled: config.isTracingEnabled,
-											functionId: "citation-extraction",
-											includeRuntimeContext: {
-												sessionId: true,
+									);
+									try {
+										const citationPromptClient = await getChatPrompt(
+											"document-citation-extraction",
+											{
+												label:
+													config.nodeEnv === "test"
+														? "development"
+														: config.nodeEnv,
 											},
-										},
-									});
+										);
 
-								writer.write({
-									type: "data-citations",
-									data: citationObject.citations,
-								});
+										const compiledDocumentCitationExtractionPrompts =
+											citationPromptClient.compile({
+												generatedAnswer: text,
+												availableSources: availableSources
+													.map((s) => `[ID: ${s.id}]\n Snippet: ${s.snippet}`)
+													.join("\n\n"),
+											}) as ModelMessage[];
 
-								await this.dbService.updateUsage(
-									userId,
-									generateObjectUsage.totalTokens,
+										const {
+											output: citationObject,
+											usage: generateObjectUsage,
+										} = await generateText({
+											model: llmHandler.languageModel,
+											messages: compiledDocumentCitationExtractionPrompts,
+											allowSystemInMessages: true,
+											temperature: LLM_PARAMETERS.temperature,
+											output: Output.object({
+												schema: citationAnswerSchema,
+											}),
+											runtimeContext: {
+												sessionId: sessionId ? sessionId : "unknown",
+											},
+											telemetry: {
+												isEnabled: config.isTracingEnabled,
+												functionId: "citation-extraction",
+												includeRuntimeContext: {
+													sessionId: true,
+												},
+											},
+										});
+
+										writer.write({
+											type: "data-citations",
+											data: citationObject.citations,
+										});
+
+										await this.dbService.updateUsage(
+											userId,
+											generateObjectUsage.totalTokens,
+										);
+									} catch (error) {
+										captureError(error);
+									}
+								}
+
+								const allWebSources = steps.flatMap((step) =>
+									step.toolResults.flatMap((tr) =>
+										extractWebSourcesFromToolOutput(tr.output),
+									),
 								);
-							} catch (error) {
-								captureError(error);
-							}
-						}
 
-						const allWebSources = steps.flatMap((step) =>
-							step.toolResults.flatMap((tr) =>
-								extractWebSourcesFromToolOutput(tr.output),
-							),
-						);
+								if (allWebSources.length > 0) {
+									try {
+										const webCitationPromptClient = await getChatPrompt(
+											"web-citation-extraction",
+											{
+												label:
+													config.nodeEnv === "test"
+														? "development"
+														: config.nodeEnv,
+											},
+										);
 
-						if (allWebSources.length > 0) {
-							try {
-								const webCitationPromptClient = await getChatPrompt(
-									"web-citation-extraction",
-									{
-										label:
-											config.nodeEnv === "test"
-												? "development"
-												: config.nodeEnv,
-									},
+										const compiledWebCitationExtractionPrompts =
+											webCitationPromptClient.compile({
+												generatedText: text,
+												availableSources: allWebSources
+													.map(
+														(s) =>
+															`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+													)
+													.join("\n\n"),
+											}) as ModelMessage[];
+
+										const { output: webObject, usage: webCitationUsage } =
+											await generateText({
+												model: llmHandler.languageModel,
+												messages: compiledWebCitationExtractionPrompts,
+												allowSystemInMessages: true,
+												temperature: LLM_PARAMETERS.temperature,
+												output: Output.object({
+													schema: webCitationAnswerSchema,
+												}),
+												runtimeContext: {
+													sessionId: sessionId ? sessionId : "unknown",
+												},
+												telemetry: {
+													isEnabled: config.isTracingEnabled,
+													functionId: "web-citation-extraction",
+													includeRuntimeContext: {
+														sessionId: true,
+													},
+												},
+											});
+
+										const citedSources = allWebSources.filter((s) =>
+											webObject.citations.some((c) => c.url === s.url),
+										);
+
+										writer.write({
+											type: "data-web-citations",
+											data: citedSources,
+										});
+
+										await this.dbService.updateUsage(
+											userId,
+											webCitationUsage.totalTokens,
+										);
+									} catch (error) {
+										captureError(error);
+									}
+								}
+
+								const allParlaChunks: ParlaChunkData[] = steps.flatMap((step) =>
+									step.toolResults
+										.filter((tr) => tr.toolName === "parla_vector_search")
+										.flatMap((tr) => parseParlaToolOutput(tr.output)),
 								);
 
-								const compiledWebCitationExtractionPrompts =
-									webCitationPromptClient.compile({
-										generatedText: text,
-										availableSources: allWebSources
-											.map(
-												(s) =>
-													`[URL: ${s.url}]\n Snippet: ${s.snippet}\n Titel: ${s.title}`,
+								if (allParlaChunks.length > 0) {
+									try {
+										const parlaCitationPromptClient = await getChatPrompt(
+											"document-citation-extraction",
+											{
+												label:
+													config.nodeEnv === "test"
+														? "development"
+														: config.nodeEnv,
+											},
+										);
+
+										const compiledParlaCitationPrompts =
+											parlaCitationPromptClient.compile({
+												generatedAnswer: text,
+												availableSources: allParlaChunks
+													.map((c) => `[ID: ${c.id}]\n Snippet: ${c.content}`)
+													.join("\n\n"),
+											}) as ModelMessage[];
+
+										const { output: parlaObject, usage: parlaCitationUsage } =
+											await generateText({
+												model: llmHandler.languageModel,
+												messages: compiledParlaCitationPrompts,
+												allowSystemInMessages: true,
+												temperature: LLM_PARAMETERS.temperature,
+												output: Output.object({
+													schema: parlaCitationAnswerSchema,
+												}),
+												runtimeContext: {
+													sessionId: sessionId ? sessionId : "unknown",
+												},
+												telemetry: {
+													isEnabled: config.isTracingEnabled,
+													functionId: "parla-citation-extraction",
+													includeRuntimeContext: {
+														sessionId: true,
+													},
+												},
+											});
+
+										const citedParlaChunks = allParlaChunks
+											.filter((c) => parlaObject.citations.includes(c.id))
+											.map(({ content, page, url, title, source_type }) => ({
+												content,
+												page,
+												url,
+												title,
+												source_type,
+											}));
+
+										if (citedParlaChunks.length > 0) {
+											writer.write({
+												type: "data-parla-citations",
+												data: citedParlaChunks,
+											});
+										}
+										await this.dbService.updateUsage(
+											userId,
+											parlaCitationUsage.totalTokens,
+										);
+									} catch (error) {
+										captureError(error);
+									}
+								}
+
+								const allOpenDataSources: OpenDataCitationSource[] =
+									steps.flatMap((step) =>
+										step.toolResults
+											.filter((tr) =>
+												OPEN_DATA_DATASET_TOOL_NAMES.has(tr.toolName),
 											)
-											.join("\n\n"),
-									}) as ModelMessage[];
+											.flatMap((tr) => {
+												const parsedOutput =
+													openDataMcpToolOutputSchema.safeParse(tr.output);
+												if (!parsedOutput.success) {
+													captureError(parsedOutput.error);
+													return [];
+												}
 
-								const { output: webObject, usage: webCitationUsage } =
-									await generateText({
-										model: llmHandler.languageModel,
-										messages: compiledWebCitationExtractionPrompts,
-										allowSystemInMessages: true,
-										temperature: LLM_PARAMETERS.temperature,
-										output: Output.object({
-											schema: webCitationAnswerSchema,
-										}),
-										runtimeContext: {
-											sessionId: sessionId ? sessionId : "unknown",
-										},
-										telemetry: {
-											isEnabled: config.isTracingEnabled,
-											functionId: "web-citation-extraction",
-											includeRuntimeContext: {
-												sessionId: true,
-											},
-										},
-									});
+												const parsedInput = openDataToolInputSchema.safeParse(
+													tr.input,
+												);
+												const input: OpenDataToolInput = parsedInput.success
+													? parsedInput.data
+													: {};
 
-								const citedSources = allWebSources.filter((s) =>
-									webObject.citations.some((c) => c.url === s.url),
+												return extractOpenDataSourcesFromToolOutput(
+													input,
+													parsedOutput.data,
+												);
+											}),
+									);
+								const uniqueOpenDataSources = Array.from(
+									new Map(
+										allOpenDataSources.map((source) => [source.url, source]),
+									).values(),
 								);
 
-								writer.write({
-									type: "data-web-citations",
-									data: citedSources,
-								});
-
-								await this.dbService.updateUsage(
-									userId,
-									webCitationUsage.totalTokens,
-								);
-							} catch (error) {
-								captureError(error);
-							}
-						}
-
-						const allParlaChunks: ParlaChunkData[] = steps.flatMap((step) =>
-							step.toolResults
-								.filter((tr) => tr.toolName === "parla_vector_search")
-								.flatMap((tr) => parseParlaToolOutput(tr.output)),
-						);
-
-						if (allParlaChunks.length > 0) {
-							try {
-								const parlaCitationPromptClient = await getChatPrompt(
-									"document-citation-extraction",
-									{
-										label:
-											config.nodeEnv === "test"
-												? "development"
-												: config.nodeEnv,
-									},
-								);
-
-								const compiledParlaCitationPrompts =
-									parlaCitationPromptClient.compile({
-										generatedAnswer: text,
-										availableSources: allParlaChunks
-											.map((c) => `[ID: ${c.id}]\n Snippet: ${c.content}`)
-											.join("\n\n"),
-									}) as ModelMessage[];
-
-								const { output: parlaObject, usage: parlaCitationUsage } =
-									await generateText({
-										model: llmHandler.languageModel,
-										messages: compiledParlaCitationPrompts,
-										allowSystemInMessages: true,
-										temperature: LLM_PARAMETERS.temperature,
-										output: Output.object({
-											schema: parlaCitationAnswerSchema,
-										}),
-										runtimeContext: {
-											sessionId: sessionId ? sessionId : "unknown",
-										},
-										telemetry: {
-											isEnabled: config.isTracingEnabled,
-											functionId: "parla-citation-extraction",
-											includeRuntimeContext: {
-												sessionId: true,
-											},
-										},
-									});
-
-								const citedParlaChunks = allParlaChunks
-									.filter((c) => parlaObject.citations.includes(c.id))
-									.map(({ content, page, url, title, source_type }) => ({
-										content,
-										page,
-										url,
-										title,
-										source_type,
-									}));
-
-								if (citedParlaChunks.length > 0) {
-									writer.write({
-										type: "data-parla-citations",
-										data: citedParlaChunks,
+								if (uniqueOpenDataSources.length > 0) {
+									await this.extractAndWriteOpenDataCitations({
+										sources: uniqueOpenDataSources,
+										text,
+										llmHandler,
+										sessionId,
+										userId,
+										writer,
 									});
 								}
-								await this.dbService.updateUsage(
-									userId,
-									parlaCitationUsage.totalTokens,
-								);
-							} catch (error) {
+
+								logMemory("chat:onFinish-complete", memoryLogId);
+
+								await this.dbService.updateUsage(userId, usage.totalTokens);
+							},
+							runtimeContext: {
+								sessionId: sessionId ? sessionId : "unknown",
+								langfusePrompt: langfusePrompt,
+							},
+							telemetry: {
+								isEnabled: config.isTracingEnabled,
+								functionId: "streamed-text-with-tool-calls",
+								includeRuntimeContext: {
+									sessionId: true,
+									langfusePrompt: true,
+								},
+							},
+							onError: (error) => {
+								logMemory("chat:onError", memoryLogId);
 								captureError(error);
-							}
-						}
+							},
+						}),
+				);
 
-						const allOpenDataSources: OpenDataCitationSource[] = steps.flatMap(
-							(step) =>
-								step.toolResults
-									.filter((tr) => OPEN_DATA_DATASET_TOOL_NAMES.has(tr.toolName))
-									.flatMap((tr) => {
-										const parsedOutput = openDataMcpToolOutputSchema.safeParse(
-											tr.output,
-										);
-										if (!parsedOutput.success) {
-											captureError(parsedOutput.error);
-											return [];
-										}
-
-										const parsedInput = openDataToolInputSchema.safeParse(
-											tr.input,
-										);
-										const input: OpenDataToolInput = parsedInput.success
-											? parsedInput.data
-											: {};
-
-										return extractOpenDataSourcesFromToolOutput(
-											input,
-											parsedOutput.data,
-										);
-									}),
-						);
-						const uniqueOpenDataSources = Array.from(
-							new Map(
-								allOpenDataSources.map((source) => [source.url, source]),
-							).values(),
-						);
-
-						if (uniqueOpenDataSources.length > 0) {
-							await this.extractAndWriteOpenDataCitations({
-								sources: uniqueOpenDataSources,
-								text,
-								llmHandler,
-								sessionId,
-								userId,
-								writer,
-							});
-						}
-
-						logMemory("chat:onFinish-complete", memoryLogId);
-						updateActiveTrace({
-							name: "streamed-text-generation",
-							output: text,
-							userId,
-							sessionId,
-						});
-
-						await this.dbService.updateUsage(userId, usage.totalTokens);
-					},
-					runtimeContext: {
-						sessionId: sessionId ? sessionId : "unknown",
-						langfusePrompt: langfusePrompt,
-					},
-					telemetry: {
-						isEnabled: config.isTracingEnabled,
-						functionId: "streamed-text-with-tool-calls",
-						includeRuntimeContext: {
-							sessionId: true,
-							langfusePrompt: true,
-						},
-					},
-					onError: (error) => {
-						logMemory("chat:onError", memoryLogId);
-						captureError(error);
-					},
-				});
-
-				writer.merge(streamResponse.toUIMessageStream());
+				writer.merge(toUIMessageStream({ stream: streamResponse.stream }));
 			},
 		});
 		return createUIMessageStreamResponse({ stream });
@@ -650,29 +654,31 @@ export class GenerationService {
 		langfusePrompt: TextPromptClient | ChatPromptClient;
 	}): Promise<string> {
 		const { llmHandler, messages, userId, langfusePrompt } = args;
-		const { text, usage } = await generateText({
-			model: llmHandler.languageModel,
-			messages: messages,
-			allowSystemInMessages: true,
-			temperature: LLM_PARAMETERS.temperature,
-			providerOptions: {
-				mistral: {
-					presencePenalty: LLM_PARAMETERS.presencePenalty,
-					frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
-				},
-			},
-			runtimeContext: {
-				sessionId: "unknown",
-				langfusePrompt: langfusePrompt,
-			},
-			telemetry: {
-				isEnabled: config.isTracingEnabled,
-				includeRuntimeContext: {
-					sessionId: true,
-					langfusePrompt: true,
-				},
-			},
-		});
+		const { text, usage } = await propagateAttributes(
+			{ traceName: "generate-text-content", userId },
+			() =>
+				generateText({
+					model: llmHandler.languageModel,
+					messages: messages,
+					allowSystemInMessages: true,
+					temperature: LLM_PARAMETERS.temperature,
+					providerOptions: {
+						mistral: {
+							presencePenalty: LLM_PARAMETERS.presencePenalty,
+							frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+						},
+					},
+					runtimeContext: {
+						langfusePrompt: langfusePrompt,
+					},
+					telemetry: {
+						isEnabled: config.isTracingEnabled,
+						includeRuntimeContext: {
+							langfusePrompt: true,
+						},
+					},
+				}),
+		);
 
 		if (userId) {
 			await this.dbService.updateUsage(userId, usage.totalTokens);

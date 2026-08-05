@@ -33,7 +33,7 @@ export class EmbeddingService {
 		const { embedding, usage } = await embed({
 			model: getEmbeddingModel(),
 			value: input,
-			experimental_telemetry: {
+			telemetry: {
 				isEnabled: config.isTracingEnabled,
 			},
 		});
@@ -96,7 +96,7 @@ export class EmbeddingService {
 			const { embeddings, usage } = await embedMany({
 				model: getEmbeddingModel(),
 				values: subBatch,
-				experimental_telemetry: {
+				telemetry: {
 					isEnabled: config.isTracingEnabled,
 				},
 			});
