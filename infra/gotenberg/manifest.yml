@@ -1,5 +1,5 @@
 applications:
-  - name: baergpt-gotenberg
+  - name: baergpt-gotenberg-((space))
     docker:
       image: gotenberg/gotenberg:8.34.0
     command: gotenberg --api-enable-basic-auth
