@@ -13,6 +13,7 @@ export type Document = {
 	processing_finished_at?: string;
 	created_at: string;
 	uploaded_by_user_id?: string;
+	preview_source_url?: string | null;
 };
 
 export type DocumentSummary = {
@@ -123,6 +124,7 @@ export type ExtractionResult = {
 	numPages: number;
 	checksum: string;
 	parsedPages: ParsedPage[];
+	previewSourceUrl?: string;
 };
 
 export type SummarizeResult = {

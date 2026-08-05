@@ -27,6 +27,7 @@ documents.post("/process", async (c: Context) => {
 
 	let sourceUrl: string | null = null;
 	let bucket: string | null = null;
+	let previewSourceUrl: string | null = null;
 	const authenticatedUserId = c.get("authenticatedUserId");
 	const reqId =
 		config.nodeEnv === "production"
@@ -62,6 +63,7 @@ documents.post("/process", async (c: Context) => {
 		const extractionResult = await userScopedDbService.extractDocument(
 			documentForExtraction,
 		);
+		previewSourceUrl = extractionResult.previewSourceUrl ?? null;
 		logMemory(
 			`doc:after-extract (pages=${extractionResult.numPages}, size=${extractionResult.fileSize})`,
 			reqId,
@@ -82,6 +84,7 @@ documents.post("/process", async (c: Context) => {
 					? authenticatedUserId
 					: undefined,
 			source_url: sourceUrl,
+			preview_source_url: previewSourceUrl,
 			source_type: inputDocument.source_type,
 			file_checksum: extractionResult.checksum,
 			file_size: extractionResult.fileSize,
@@ -123,7 +126,11 @@ documents.post("/process", async (c: Context) => {
 		// If processing failed, clean up the storage file
 		if (sourceUrl !== null && bucket !== null) {
 			try {
-				await userScopedDbService.deleteFileFromStorage(sourceUrl, bucket);
+				await userScopedDbService.deleteFileFromStorage(
+					sourceUrl,
+					bucket,
+					previewSourceUrl,
+				);
 			} catch (cleanupError) {
 				captureError(cleanupError);
 			}

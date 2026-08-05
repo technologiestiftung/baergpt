@@ -42,6 +42,7 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 		const previewUrl = await getDocumentObjectUrl({
 			sourceUrl: document.source_url,
 			sourceType: document.source_type,
+			previewSourceUrl: document.preview_source_url,
 		});
 
 		set({ selectedPreviewDocumentPreviewUrl: previewUrl });

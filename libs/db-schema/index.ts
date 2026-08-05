@@ -375,6 +375,7 @@ export type Database = {
 					id: number;
 					num_pages: number | null;
 					owned_by_user_id: string | null;
+					preview_source_url: string | null;
 					processing_finished_at: string | null;
 					source_type: string;
 					source_url: string;
@@ -390,6 +391,7 @@ export type Database = {
 					id?: number;
 					num_pages?: number | null;
 					owned_by_user_id?: string | null;
+					preview_source_url?: string | null;
 					processing_finished_at?: string | null;
 					source_type: string;
 					source_url: string;
@@ -405,6 +407,7 @@ export type Database = {
 					id?: number;
 					num_pages?: number | null;
 					owned_by_user_id?: string | null;
+					preview_source_url?: string | null;
 					processing_finished_at?: string | null;
 					source_type?: string;
 					source_url?: string;

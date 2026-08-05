@@ -82,6 +82,7 @@ export type UserDocument = {
 	id: number;
 	num_pages: number | null;
 	owned_by_user_id: string | null;
+	preview_source_url: string | null;
 	processing_finished_at: string | null;
 	source_type: "personal_document" | "default_document";
 	source_url: string;
@@ -96,6 +97,7 @@ export type PublicDocument = {
 	id: number;
 	num_pages: number | null;
 	owned_by_user_id: string | null;
+	preview_source_url: string | null;
 	processing_finished_at: string | null;
 	source_type: "public_document";
 	source_url: string;

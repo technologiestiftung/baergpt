@@ -157,7 +157,7 @@ export class PrivilegedDbService extends BaseContentDbService {
 		// Get all documents for the user with storage info
 		const { data: documents, error: documentsError } = await this.client
 			.from("documents")
-			.select("source_url, source_type")
+			.select("source_url, source_type, preview_source_url")
 			.eq("owned_by_user_id", userId);
 
 		if (documentsError) {
@@ -182,7 +182,11 @@ export class PrivilegedDbService extends BaseContentDbService {
 					: "documents";
 
 				try {
-					await this.deleteFileFromStorage(doc.source_url, bucket);
+					await this.deleteFileFromStorage(
+						doc.source_url,
+						bucket,
+						doc.preview_source_url,
+					);
 				} catch (storageError) {
 					captureError(storageError);
 				}

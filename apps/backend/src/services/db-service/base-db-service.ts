@@ -18,6 +18,7 @@ import {
 	WordDocumentExtractionService,
 } from "../document-extraction-service";
 import { captureError } from "../../monitoring/capture-error";
+import { buildPreviewSourceUrl } from "../build-preview-source-url";
 const documentExtraction = new DocumentExtractionService();
 const wordExtractionService = new WordDocumentExtractionService();
 
@@ -105,10 +106,11 @@ export abstract class BaseContentDbService {
 	async deleteFileFromStorage(
 		source_url: string,
 		bucket: string,
+		previewSourceUrl?: string | null,
 	): Promise<void> {
 		const pathsToRemove = [source_url];
-		if (/\.(docx?)$/i.test(source_url)) {
-			pathsToRemove.push(source_url.replace(/\.(docx?)$/i, ".pdf"));
+		if (previewSourceUrl) {
+			pathsToRemove.push(previewSourceUrl);
 		}
 		const { error: deletionError } = await this.client.storage
 			.from(bucket)
@@ -170,6 +172,7 @@ export abstract class BaseContentDbService {
 				processing_finished_at: new Date().toISOString(),
 				folder_id: document.folder_id || null,
 				source_url: document.source_url,
+				preview_source_url: document.preview_source_url ?? null,
 				source_type: document.source_type,
 				file_name: document.source_url?.split("/").pop(),
 				created_at: document.created_at || new Date().toISOString(),
@@ -214,9 +217,9 @@ export abstract class BaseContentDbService {
 	 * Only logs errors rather than throwing them to avoid masking the original error.
 	 */
 	async deleteDocumentById(documentId: number): Promise<void> {
-		const { bucket, sourceUrl } =
+		const { bucket, sourceUrl, previewSourceUrl } =
 			await this.getStorageInformationForDocumentId(documentId);
-		await this.deleteFileFromStorage(sourceUrl, bucket);
+		await this.deleteFileFromStorage(sourceUrl, bucket, previewSourceUrl);
 
 		const { error } = await this.client
 			.from("documents")
@@ -266,8 +269,13 @@ export abstract class BaseContentDbService {
 			document.source_url,
 		);
 
+		let previewSourceUrl: string | undefined;
 		if (/\.(docx?)$/i.test(document.source_url)) {
-			await this.savePdfPreview({ fileBytes, bucket, document });
+			previewSourceUrl = await this.savePdfPreview({
+				fileBytes,
+				bucket,
+				document,
+			});
 		}
 
 		const extractionResult = await documentExtraction.extractDocument(
@@ -275,7 +283,7 @@ export abstract class BaseContentDbService {
 			document,
 		);
 
-		return extractionResult;
+		return { ...extractionResult, previewSourceUrl };
 	}
 
 	async savePdfPreview({
@@ -286,8 +294,8 @@ export abstract class BaseContentDbService {
 		fileBytes: Uint8Array;
 		bucket: string;
 		document: Document;
-	}) {
-		const pdfPreviewUrl = document.source_url.replace(/\.(docx?)$/i, ".pdf");
+	}): Promise<string> {
+		const previewSourceUrl = buildPreviewSourceUrl(document.source_url);
 		const fileName = document.source_url.split("/").pop();
 
 		const pdfBuffer = await wordExtractionService.convertWordToPdf({
@@ -296,12 +304,14 @@ export abstract class BaseContentDbService {
 		});
 
 		await this.uploadFileToStorage(
-			pdfPreviewUrl,
+			previewSourceUrl,
 			new File([pdfBuffer], fileName, {
 				type: "application/pdf",
 			}),
 			bucket,
 		);
+
+		return previewSourceUrl;
 	}
 
 	/**
@@ -371,7 +381,7 @@ export abstract class BaseContentDbService {
 
 		let selectQuery = this.client
 			.from("documents")
-			.select("source_url, source_type, owned_by_user_id")
+			.select("source_url, source_type, owned_by_user_id, preview_source_url")
 			.eq("id", documentId);
 
 		// This security check is added in addition to an existing RLS policy which enforces this as well to make the logic more explicit
@@ -432,7 +442,11 @@ export abstract class BaseContentDbService {
 			: "documents";
 
 		if ((isAdmin && bucket === "public_documents") || bucket === "documents") {
-			await this.deleteFileFromStorage(documentData.source_url, bucket);
+			await this.deleteFileFromStorage(
+				documentData.source_url,
+				bucket,
+				documentData.preview_source_url,
+			);
 		}
 
 		// Update the user's document count
@@ -539,12 +553,14 @@ export abstract class BaseContentDbService {
 		return data?.some((file) => file.name === fileName) ?? false;
 	}
 
-	async getStorageInformationForDocumentId(
-		documentId: number,
-	): Promise<{ bucket: string; sourceUrl: string }> {
+	async getStorageInformationForDocumentId(documentId: number): Promise<{
+		bucket: string;
+		sourceUrl: string;
+		previewSourceUrl: string | null;
+	}> {
 		const { data, error } = await this.client
 			.from("documents")
-			.select("source_url, source_type")
+			.select("source_url, source_type, preview_source_url")
 			.eq("id", documentId)
 			.single();
 		if (error) {
@@ -557,6 +573,10 @@ export abstract class BaseContentDbService {
 			? "public_documents"
 			: "documents";
 
-		return { bucket, sourceUrl: data.source_url };
+		return {
+			bucket,
+			sourceUrl: data.source_url,
+			previewSourceUrl: data.preview_source_url,
+		};
 	}
 }
