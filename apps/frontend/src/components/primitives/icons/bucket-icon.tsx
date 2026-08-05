@@ -11,24 +11,24 @@ export const BucketIcon: React.FC<{
 			<img
 				src="/icons/bucket-enabled-icon.svg"
 				alt={Content["bucketIcon.imgAlt"]}
-				width={24}
-				height={24}
+				width={16}
+				height={16}
 				className={`${className} ${!disabled && !isLight ? "block" : "hidden"}`}
 			/>
 
 			<img
 				src="/icons/bucket-disabled-icon.svg"
 				alt={Content["bucketIcon.imgAlt"]}
-				width={24}
-				height={24}
+				width={16}
+				height={16}
 				className={`${className} ${disabled ? "block" : "hidden"}`}
 			/>
 
 			<img
 				src="/icons/bucket-light-icon.svg"
 				alt={Content["bucketIcon.imgAlt"]}
-				width={24}
-				height={24}
+				width={16}
+				height={16}
 				className={`${className} ${isLight && !disabled ? "block" : "hidden"}`}
 			/>
 		</>

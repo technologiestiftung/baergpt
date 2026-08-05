@@ -15,7 +15,10 @@ import { useUserDocumentStore } from "../../../store/use-user-document-store.ts"
 import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
-import { useChatsStore } from "../../../store/use-chats-store.ts";
+import {
+	useChatsStore,
+	externalChatTools,
+} from "../../../store/use-chats-store.ts";
 import { ChatMenuToggleButton } from "./chat-menu/chat-menu-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
@@ -33,7 +36,7 @@ export const ChatForm: React.FC = () => {
 	const { selectedUserChatDocuments } = useUserDocumentStore();
 	const { getCurrentOrCreateChat, selectedChatTools, toggleChatTool } =
 		useChatsStore();
-	const { setAutoDeactivatedExternalTools } = useChatsStore.getState();
+	const { showInfoMessage } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -78,7 +81,7 @@ export const ChatForm: React.FC = () => {
 		// Clear any previous errors
 		clearError();
 
-		setAutoDeactivatedExternalTools([]);
+		showInfoMessage(null);
 
 		// Clear textarea on submit
 		if (textarea) {
@@ -98,8 +101,12 @@ export const ChatForm: React.FC = () => {
 			citations: null,
 			web_citations: null,
 			parla_citations: null,
+			open_data_citations: null,
 			allowed_document_ids,
 			allowed_folder_ids: selectedUserChatFolders.map((folder) => folder.id),
+			external_tool_context: selectedChatTools.some((tool) =>
+				externalChatTools.includes(tool),
+			),
 		};
 
 		const model = useChatsStore.getState().selectedLlmModel;
@@ -124,9 +131,35 @@ export const ChatForm: React.FC = () => {
 	const hasError = status === "error";
 
 	const isWebSearchActive = selectedChatTools.includes("webSearch");
-	const textAreaPlaceholder = isWebSearchActive
-		? Content["chat.textarea.placeholder.webSearch"]
-		: Content["chat.textarea.placeholder"];
+	const isParlaActive = selectedChatTools.includes("parla");
+	const isOpenDataActive = selectedChatTools.includes("openData");
+	const isDatawrapperActive = selectedChatTools.includes("datawrapper");
+	const activeToolsCount = [
+		isWebSearchActive,
+		isParlaActive,
+		isOpenDataActive,
+		isDatawrapperActive,
+	].filter(Boolean).length;
+	const areMultipleSourcesActive = activeToolsCount > 1;
+
+	const getTextAreaPlaceholder = () => {
+		if (areMultipleSourcesActive) {
+			return Content["chat.textarea.placeholder.multipleSources"];
+		}
+		if (isParlaActive) {
+			return Content["chat.textarea.placeholder.parla"];
+		}
+		if (isOpenDataActive) {
+			return Content["chat.textarea.placeholder.openData"];
+		}
+		if (isDatawrapperActive) {
+			return Content["chat.textarea.placeholder.datawrapper"];
+		}
+		if (isWebSearchActive) {
+			return Content["chat.textarea.placeholder.webSearch"];
+		}
+		return Content["chat.textarea.placeholder"];
+	};
 
 	return (
 		<form
@@ -158,7 +191,7 @@ export const ChatForm: React.FC = () => {
 						name="content"
 						rows={1}
 						required={true}
-						placeholder={textAreaPlaceholder}
+						placeholder={getTextAreaPlaceholder()}
 						onKeyDown={handleTextAreaKeyDown}
 						onInput={handleTextAreaInput}
 					/>

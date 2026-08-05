@@ -17,6 +17,7 @@ import { useErrorStore } from "./error-store.ts";
 import type {
 	WebCitationSource,
 	ParlaCitationSource,
+	OpenDataCitationSource,
 } from "../api/chat/get-completion.ts";
 import { useUserDocumentStore } from "./use-user-document-store.ts";
 import { useUserFolderStore } from "./use-user-folder-store.ts";
@@ -24,7 +25,12 @@ import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
 let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
-let autoDeactivateExternalToolTimeout: ReturnType<typeof setTimeout>;
+let visibleInfoMessageTimeout: ReturnType<typeof setTimeout>;
+
+export type VisibleChatInfoMessage =
+	| { type: "toolDeactivated"; tools: ChatTool[] }
+	| { type: "historyScoped" }
+	| null;
 
 interface ChatStore {
 	isFirstLoad: boolean;
@@ -57,13 +63,19 @@ interface ChatStore {
 		citations: number[] | null;
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
+		open_data_citations: OpenDataCitationSource[] | null;
 	}): void;
-	autoDeactivatedExternalTools: ChatTool[];
-	setAutoDeactivatedExternalTools(tools: ChatTool[]): void;
+	visibleInfoMessage: VisibleChatInfoMessage;
+	showInfoMessage(infoMessage: VisibleChatInfoMessage): void;
 	deactivateExternalTools(): void;
 }
 
-const externalChatTools: ChatTool[] = ["webSearch", "parla"];
+export const externalChatTools: ChatTool[] = [
+	"webSearch",
+	"parla",
+	"openData",
+	"datawrapper",
+];
 
 export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
@@ -72,25 +84,35 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	totalChatCount: null,
 	selectedChatTools: [],
 	selectedLlmModel: "mistral-small",
-	autoDeactivatedExternalTools: [],
+	visibleInfoMessage: null,
 
 	setSelectedLlmModel(model: LlmModel) {
 		set({ selectedLlmModel: model });
 	},
 
 	resetToDefaultChatTools() {
-		set({ selectedChatTools: [], autoDeactivatedExternalTools: [] });
+		get().showInfoMessage(null);
+		set({ selectedChatTools: [] });
 	},
 
 	toggleChatTool(tool: ChatTool) {
-		const { selectedChatTools } = get();
+		const { selectedChatTools, visibleInfoMessage } = get();
 
 		if (selectedChatTools.includes(tool)) {
-			set({
-				selectedChatTools: selectedChatTools.filter(
-					(active) => active !== tool,
-				),
-			});
+			const remainingSelected = selectedChatTools.filter(
+				(active) => active !== tool,
+			);
+			set({ selectedChatTools: remainingSelected });
+
+			const hasRemainingExternalTool = remainingSelected.some((active) =>
+				externalChatTools.includes(active),
+			);
+			if (
+				visibleInfoMessage?.type === "historyScoped" &&
+				!hasRemainingExternalTool
+			) {
+				get().showInfoMessage(null);
+			}
 			return;
 		}
 
@@ -121,6 +143,28 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 			selectedPublicChatFolders.forEach((folder) =>
 				unselectPublicChatFolder(folder.id),
 			);
+
+			// Drop "XY wurde deaktiviert" info if tool gets reactivated
+			const currentInfoMessage = get().visibleInfoMessage;
+			if (currentInfoMessage?.type === "toolDeactivated") {
+				const remainingTools = currentInfoMessage.tools.filter(
+					(deactivatedTool) => deactivatedTool !== tool,
+				);
+				set({
+					visibleInfoMessage:
+						remainingTools.length > 0
+							? { type: "toolDeactivated", tools: remainingTools }
+							: null,
+				});
+			}
+
+			const currentChat = get().getCurrentChat();
+			const hasNonToolMessage = currentChat?.messages.some(
+				({ external_tool_context }) => !external_tool_context,
+			);
+			if (hasNonToolMessage) {
+				get().showInfoMessage({ type: "historyScoped" });
+			}
 		}
 
 		set({ selectedChatTools: [...selectedChatTools, tool] });
@@ -286,6 +330,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		citations,
 		web_citations,
 		parla_citations,
+		open_data_citations,
 	}) => {
 		clearTimeout(updateMessageDebounceTimeout);
 
@@ -300,6 +345,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		foundMessage.citations = citations;
 		foundMessage.web_citations = web_citations;
 		foundMessage.parla_citations = parla_citations;
+		foundMessage.open_data_citations = open_data_citations;
 		get().updateChats(chat);
 
 		updateMessageDebounceTimeout = setTimeout(async () => {
@@ -308,18 +354,19 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				citations,
 				web_citations,
 				parla_citations,
+				open_data_citations,
 			});
 		}, 300);
 	},
 
-	setAutoDeactivatedExternalTools(tools: ChatTool[]) {
-		if (autoDeactivateExternalToolTimeout) {
-			clearTimeout(autoDeactivateExternalToolTimeout);
+	showInfoMessage(infoMessage: VisibleChatInfoMessage) {
+		clearTimeout(visibleInfoMessageTimeout);
+		set({ visibleInfoMessage: infoMessage });
+		if (infoMessage !== null) {
+			visibleInfoMessageTimeout = setTimeout(() => {
+				set({ visibleInfoMessage: null });
+			}, 20_000);
 		}
-		set({ autoDeactivatedExternalTools: tools });
-		autoDeactivateExternalToolTimeout = setTimeout(() => {
-			set({ autoDeactivatedExternalTools: [] });
-		}, 20_000);
 	},
 
 	deactivateExternalTools() {
@@ -335,6 +382,9 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				(tool) => !externalChatTools.includes(tool),
 			),
 		});
-		get().setAutoDeactivatedExternalTools(activeExternalTools);
+		get().showInfoMessage({
+			type: "toolDeactivated",
+			tools: activeExternalTools,
+		});
 	},
 }));

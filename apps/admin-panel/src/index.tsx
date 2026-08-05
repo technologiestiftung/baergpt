@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router";
 import "./index.css";
 import { IndexPage } from "./routes";
 import { BaseKnowledgePage } from "./routes/base-knowledge/index";

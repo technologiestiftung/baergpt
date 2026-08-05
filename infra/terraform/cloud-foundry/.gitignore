@@ -1,0 +1,14 @@
+# Local state (remote backend is authoritative)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.tfstate.lock.info
+
+# Secrets / local values
+*.tfvars
+*.tfvars.json
+.op.env.cloud-foundry
+
+# Crash logs
+crash.log
+crash.*.log

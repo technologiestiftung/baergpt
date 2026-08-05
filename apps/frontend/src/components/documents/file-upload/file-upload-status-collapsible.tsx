@@ -4,6 +4,7 @@ import { CloseIcon } from "../../primitives/icons/close-icon.tsx";
 import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
 import { FileUploadList } from "./file-upload-list.tsx";
 import { FileUploadButtonStatus } from "./file-upload-button-status.tsx";
+import Content from "../../../content.ts";
 
 export function FileUploadStatusCollapsible() {
 	const { fileUploads, clearFileUploads } = useFileUploadsStore();
@@ -27,7 +28,7 @@ export function FileUploadStatusCollapsible() {
 					<span className="p-1">
 						<ChevronIcon
 							direction={isOpen ? "down" : "up"}
-							color="hellblau-30"
+							color="dunkelblau-50"
 							classname="size-6"
 						/>
 					</span>
@@ -37,6 +38,7 @@ export function FileUploadStatusCollapsible() {
 					<button
 						onClick={clearFileUploads}
 						className="p-1 rounded-3px focus-visible:outline-default"
+						aria-label={Content["fileUpload.clearUploads.ariaLabel"]}
 					>
 						<CloseIcon variant="white" />
 					</button>

@@ -1,10 +1,13 @@
 name: Admin Panel Tests
+
 permissions:
-  contents: write
-  packages: write
+  contents: read
+  packages: read
+
 on:
   pull_request:
     branches: [main, staging]
+
 jobs:
   admin-panel-tests:
     runs-on: ubuntu-latest
@@ -12,7 +15,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        browser: [chromium, firefox, webkit]
+        browser: [chromium, firefox] # webkit was too flaky recently: `Error: page.reload: WebKit encountered an internal error`
 
     steps:
       - name: Checkout code ⬇️
@@ -24,6 +27,16 @@ jobs:
           start-supabase: "true"
           install-1password: "true"
 
+      # Computed here — before any build step — so it hashes pristine, committed
+      # content and matches the tag backend-image-build-and-push.yml produced.
+      # Computing it later (e.g. inside wait-for-backend) risks the frontend
+      # build first writing artifacts into the hashed libs/**, yielding a tag for
+      # an image that was never built.
+      - name: Compute backend image tag 🏷️
+        id: backend-image
+        run: |
+          echo "image=ghcr.io/${{ github.repository_owner }}/baergpt-backend:content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+
       - name: Fetch admin-panel .env from 1Password ⬇️
         run: |
           cd apps/admin-panel
@@ -34,36 +47,10 @@ jobs:
 
       - name: Fetch backend .env from 1Password ⬇️
         run: |
-          cd apps/backend
           echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > "$RUNNER_TEMP/backend.env"
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Cache backend build 💾
-        id: cache-backend-build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0, pinned to commit sha to avoid sha-hulud like attacks
-        with:
-          path: |
-            ./apps/backend/dist
-          key: ${{ runner.os }}-node-backend-${{ hashFiles('./apps/backend/**/*', '!./apps/backend/node_modules/**/*', '**/package-lock.json') }}
-
-      - name: Build backend 🏗️
-        if: steps.cache-backend-build.outputs.cache-hit != 'true'
-        run: |
-          cd apps/backend
-          npm run check-types
-          npm run build
-
-      # You might wonder why we are running the backend with `&` at the end.
-      # This will allow the backend to start in the background while other steps can
-      # be done in parallel. This saves time in the CI process.
-      - name: Start backend server 🖥️
-        run: |
-          cd apps/backend
-          set -a && . .env && set +a
-          nohup npm run start > backend.log 2>&1 &
-          echo $! > backend.pid
 
       - name: Install Playwright Browser 🧭
         run: |
@@ -87,6 +74,9 @@ jobs:
 
       - name: Wait for Backend to be ready ⏳
         uses: ./.github/actions/wait-for-backend
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image: ${{ steps.backend-image.outputs.image }}
 
       - name: Wait for Supabase to be ready ⏳
         uses: ./.github/actions/wait-for-supabase
@@ -99,12 +89,12 @@ jobs:
       - name: Capture backend logs after admin panel E2E test after failure 📋
         if: failure()
         run: |
-          if [ -f apps/backend/backend.log ]; then
-            echo "=== Backend server logs ==="
-            cat apps/backend/backend.log
+          if docker inspect backend-container >/dev/null 2>&1; then
+            echo "=== Backend container logs ==="
+            docker logs backend-container
             echo "=== End backend logs ==="
           else
-            echo "Backend log file not found"
+            echo "backend-container not found"
           fi
 
       - name: Upload admin-panel E2E test results ⬆️

@@ -1,0 +1,20 @@
+# Terraform working files
+.terraform/
+.terraform.tfstate.lock.info
+
+# State is remote; these catch local leftovers, which can contain resolved secrets.
+*.tfstate
+*.tfstate.*
+
+# Real variable files (commit only the *.example templates)
+*.tfvars
+!*.tfvars.example
+
+# `op run` env files: op:// references, not secrets, but they encode internal vault ids.
+.op.env.observability.*
+!.op.env.observability.*.example
+
+# STACKIT service-account key pulled from 1Password
+sa-key.json
+
+# DO commit .terraform.lock.hcl — it pins the provider version for the team.

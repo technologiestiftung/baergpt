@@ -169,7 +169,9 @@ export type Database = {
 					citations: Json | null;
 					content: string;
 					created_at: string;
+					external_tool_context: boolean;
 					id: number;
+					open_data_citations: Json | null;
 					parla_citations: Json | null;
 					role: string;
 					type: string;
@@ -182,7 +184,9 @@ export type Database = {
 					citations?: Json | null;
 					content: string;
 					created_at?: string;
+					external_tool_context?: boolean;
 					id?: number;
+					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role: string;
 					type: string;
@@ -195,7 +199,9 @@ export type Database = {
 					citations?: Json | null;
 					content?: string;
 					created_at?: string;
+					external_tool_context?: boolean;
 					id?: number;
+					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role?: string;
 					type?: string;
@@ -236,12 +242,11 @@ export type Database = {
 				Row: {
 					access_group_id: string | null;
 					chunk_index: number;
-					chunk_jina_embedding: string | null;
 					chunk_mistral_embedding: string | null;
 					content: string;
 					document_id: number | null;
 					folder_id: number | null;
-					full_text_search: unknown | null;
+					full_text_search: unknown;
 					id: number;
 					owned_by_user_id: string | null;
 					page: number;
@@ -249,12 +254,11 @@ export type Database = {
 				Insert: {
 					access_group_id?: string | null;
 					chunk_index: number;
-					chunk_jina_embedding?: string | null;
 					chunk_mistral_embedding?: string | null;
 					content: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown | null;
+					full_text_search?: unknown;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page: number;
@@ -262,12 +266,11 @@ export type Database = {
 				Update: {
 					access_group_id?: string | null;
 					chunk_index?: number;
-					chunk_jina_embedding?: string | null;
 					chunk_mistral_embedding?: string | null;
 					content?: string;
 					document_id?: number | null;
 					folder_id?: number | null;
-					full_text_search?: unknown | null;
+					full_text_search?: unknown;
 					id?: number;
 					owned_by_user_id?: string | null;
 					page?: number;
@@ -534,10 +537,7 @@ export type Database = {
 				Args: { p_domain: string };
 				Returns: undefined;
 			};
-			add_allowed_domain: {
-				Args: { p_domain: string };
-				Returns: undefined;
-			};
+			add_allowed_domain: { Args: { p_domain: string }; Returns: undefined };
 			add_allowed_individual_email: {
 				Args: { p_email: string };
 				Returns: undefined;
@@ -550,20 +550,21 @@ export type Database = {
 				};
 				Returns: undefined;
 			};
-			check_email_allowed: {
+			check_email_allowed: { Args: { p_email: string }; Returns: boolean };
+			check_email_registration_status: {
 				Args: { p_email: string };
-				Returns: boolean;
+				Returns: {
+					is_confirmed: boolean;
+					user_exists: boolean;
+				}[];
 			};
 			deactivate_allowed_domain: {
 				Args: { p_domain: string };
 				Returns: number;
 			};
-			delete_user: {
-				Args: Record<PropertyKey, never>;
-				Returns: undefined;
-			};
+			delete_user: { Args: never; Returns: undefined };
 			find_unprocessed_documents: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					created_at: string;
 					file_checksum: string;
@@ -579,14 +580,14 @@ export type Database = {
 				}[];
 			};
 			get_allowed_email_domains: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					domain: string;
 					id: number;
 				}[];
 			};
 			get_allowed_email_domains_admin: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					created_at: string;
 					created_by: string;
@@ -599,7 +600,7 @@ export type Database = {
 				}[];
 			};
 			get_allowed_individual_emails: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					created_at: string;
 					created_by: string;
@@ -649,16 +650,10 @@ export type Database = {
 					storage_version: string;
 				}[];
 			};
-			get_maintenance_mode_status: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
-			get_product_dashboard_stats: {
-				Args: Record<PropertyKey, never>;
-				Returns: Json;
-			};
+			get_maintenance_mode_status: { Args: never; Returns: boolean };
+			get_product_dashboard_stats: { Args: never; Returns: Json };
 			get_users: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: {
 					academic_title: string;
 					banned_until: string;
@@ -702,14 +697,8 @@ export type Database = {
 					source_url: string;
 				}[];
 			};
-			is_application_admin: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
-			is_current_user_banned: {
-				Args: Record<PropertyKey, never>;
-				Returns: boolean;
-			};
+			is_application_admin: { Args: never; Returns: boolean };
+			is_current_user_banned: { Args: never; Returns: boolean };
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];
@@ -770,16 +759,28 @@ export type Database = {
 				}[];
 			};
 			regenerate_embedding_indices_for_chunks: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: undefined;
 			};
 			regenerate_embedding_indices_for_summaries: {
-				Args: Record<PropertyKey, never>;
+				Args: never;
 				Returns: undefined;
 			};
 			remove_allowed_individual_email: {
 				Args: { p_email: string };
 				Returns: undefined;
+			};
+			search_chat_messages: {
+				Args: { result_limit?: number; search_pattern: string };
+				Returns: {
+					chat_created_at: string;
+					chat_id: number;
+					chat_name: string;
+					chat_user_id: string;
+					message_content: string;
+					message_created_at: string;
+					message_id: number;
+				}[];
 			};
 			update_user_email_confirmed_at: {
 				Args: { new_email_confirmed_at: string; user_id: string };

@@ -46,7 +46,7 @@ export function HistoryGroupByDropdown() {
 
 	return (
 		<>
-			<div className="p-1 relative">
+			<div className="relative">
 				<button
 					ref={selectButtonRef}
 					type="button"

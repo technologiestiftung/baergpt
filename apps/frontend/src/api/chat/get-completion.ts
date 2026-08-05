@@ -1,4 +1,7 @@
-import { useChatsStore } from "../../store/use-chats-store.ts";
+import {
+	useChatsStore,
+	externalChatTools,
+} from "../../store/use-chats-store.ts";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import type { ChatTool, ChatWithMessages } from "../../common.ts";
@@ -27,14 +30,23 @@ export type ParlaCitationSource = {
 	page: number;
 };
 
+export type OpenDataCitationSource = {
+	url: string;
+	title: string;
+	datasetId: string;
+};
+
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
 	| { type: "data-citations"; data: number[] }
 	| { type: "data-web-citations"; data: WebCitationSource[] }
-	| { type: "data-parla-citations"; data: ParlaCitationSource[] };
+	| { type: "data-parla-citations"; data: ParlaCitationSource[] }
+	| { type: "data-open-data-citations"; data: OpenDataCitationSource[] };
 
 const activeToolsDict: Record<ChatTool, string[]> = {
 	parla: ["parlaMCPTools"],
+	openData: ["openDataMCPTools"],
+	datawrapper: ["datawrapperMCPTools"],
 	webSearch: ["webSearchTool"],
 };
 
@@ -63,6 +75,10 @@ export async function getCompletion(
 	const { setStreamingAbortController, abortStreaming } =
 		useChatStreamingStore.getState();
 
+	const isExternalToolContext = selectedChatTools.some((tool) =>
+		externalChatTools.includes(tool),
+	);
+
 	try {
 		// Abort any existing stream before starting a new one
 		abortStreaming();
@@ -70,10 +86,13 @@ export async function getCompletion(
 		// Initialize a new AbortController for this stream
 		const abortController = new AbortController();
 		setStreamingAbortController(abortController);
-		const messages = currentChat.messages.map(({ role, content }) => ({
-			role,
-			content,
-		}));
+		const messages = currentChat.messages.map(
+			({ role, content, external_tool_context }) => ({
+				role,
+				content,
+				external_tool_context,
+			}),
+		);
 
 		const selectedDocumentIds = getSelectedUserChatDocumentIds();
 		const selectedFolderIds = getSelectedUserChatFolderIds();
@@ -134,12 +153,15 @@ export async function getCompletion(
 			citations: null,
 			web_citations: null,
 			parla_citations: null,
+			open_data_citations: null,
+			external_tool_context: isExternalToolContext,
 		});
 
 		let currentText = "";
 		let documentCitations: number[] = [];
 		let webCitations: WebCitationSource[] = [];
 		let parlaCitations: ParlaCitationSource[] = [];
+		let openDataCitations: OpenDataCitationSource[] = [];
 
 		let hasReceivedText = false;
 
@@ -151,6 +173,9 @@ export async function getCompletion(
 				citations: documentCitations.length ? documentCitations : null,
 				web_citations: webCitations.length ? webCitations : null,
 				parla_citations: parlaCitations.length ? parlaCitations : null,
+				open_data_citations: openDataCitations.length
+					? openDataCitations
+					: null,
 			});
 
 		await parseStream(response.body, {
@@ -183,6 +208,10 @@ export async function getCompletion(
 				parlaCitations = sources;
 				writeMessage();
 			},
+			onOpenDataCitations: (sources: OpenDataCitationSource[]) => {
+				openDataCitations = sources;
+				writeMessage();
+			},
 			onFinish: () => {
 				setStatus("idle");
 				setStreamingAbortController(null);
@@ -210,6 +239,7 @@ function processStreamLine(
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
+		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ): boolean {
@@ -247,6 +277,11 @@ function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "data-open-data-citations") {
+			callbacks.onOpenDataCitations(event.data);
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -263,6 +298,7 @@ async function parseStream(
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
+		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
 		onFinish: () => void;
 	},
 ) {

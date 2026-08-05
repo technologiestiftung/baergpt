@@ -8,15 +8,18 @@ const { uploadMock, ocrProcessMock, deleteMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("@mistralai/mistralai", () => ({
-	Mistral: vi.fn().mockImplementation(() => ({
-		files: {
-			upload: uploadMock,
-			delete: deleteMock,
-		},
-		ocr: {
-			process: ocrProcessMock,
-		},
-	})),
+	// Vitest 4 requires constructor mocks to use `function` or `class` so `new Mistral()` works.
+	Mistral: vi.fn().mockImplementation(function () {
+		return {
+			files: {
+				upload: uploadMock,
+				delete: deleteMock,
+			},
+			ocr: {
+				process: ocrProcessMock,
+			},
+		};
+	}),
 }));
 
 vi.mock("../monitoring/capture-error", () => ({
@@ -28,6 +31,7 @@ import {
 	MistralOCRService,
 } from "../services/document-extraction-service";
 import { captureError } from "../monitoring/capture-error";
+import type { Document } from "../types/common";
 
 describe("MistralOCRService cleanup on OCR failure", () => {
 	const captureErrorMock = captureError as ReturnType<typeof vi.fn>;
@@ -123,5 +127,28 @@ describe("MistralOCRService cleanup on OCR failure", () => {
 
 		expect(deleteMock).toHaveBeenCalledOnce();
 		expect(captureErrorMock).toHaveBeenCalledWith(givenDeleteError);
+	});
+});
+
+describe("DocumentExtractionService CSV extraction", () => {
+	const service = new DocumentExtractionService();
+
+	it("extracts a CSV file into a Markdown table", async () => {
+		const csvText = "Name,Age,City\nAlice,30,Berlin\nBob,25,Hamburg";
+		const csvBytes = new TextEncoder().encode(csvText);
+		const document: Document = {
+			id: 1,
+			source_url: "user-123/data.csv",
+			source_type: "personal_document",
+			created_at: new Date().toISOString(),
+		};
+
+		const result = await service.extractDocument(csvBytes, document);
+
+		expect(result.numPages).toBe(1);
+		expect(result.parsedPages).toHaveLength(1);
+		expect(result.parsedPages[0].content).toContain("| Name | Age | City |");
+		expect(result.parsedPages[0].content).toContain("| Alice | 30 | Berlin |");
+		expect(result.parsedPages[0].content).toContain("| Bob | 25 | Hamburg |");
 	});
 });

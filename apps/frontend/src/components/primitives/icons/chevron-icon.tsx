@@ -2,7 +2,11 @@ import React from "react";
 import Content from "../../../content";
 
 type ChevronIconProps = {
-	color: "dunkelblau-200" | "dunkelblau-100" | "dunkelblau-80" | "hellblau-30";
+	color:
+		| "dunkelblau-200"
+		| "dunkelblau-100"
+		| "dunkelblau-80"
+		| "dunkelblau-50";
 	direction?: "up" | "down";
 	classname?: string;
 };
@@ -40,7 +44,7 @@ export const ChevronIcon: React.FC<ChevronIconProps> = ({
 				alt={Content["chevronIcon.up.imgAlt"]}
 				width={20}
 				height={20}
-				className={`${color === "hellblau-30" && direction === "up" ? `block p-1 ${classname}` : "hidden"}`}
+				className={`${color === "dunkelblau-50" && direction === "up" ? `block p-1 ${classname}` : "hidden"}`}
 			/>
 
 			<img
@@ -69,7 +73,7 @@ export const ChevronIcon: React.FC<ChevronIconProps> = ({
 				alt={Content["chevronIcon.down.imgAlt"]}
 				width={20}
 				height={20}
-				className={`${color === "hellblau-30" && direction === "down" ? `block p-1 ${classname}` : "hidden"}`}
+				className={`${color === "dunkelblau-50" && direction === "down" ? `block p-1 ${classname}` : "hidden"}`}
 			/>
 		</>
 	);

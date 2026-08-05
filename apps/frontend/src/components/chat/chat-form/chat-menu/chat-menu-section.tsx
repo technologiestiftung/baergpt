@@ -8,6 +8,7 @@ import { useErrorStore } from "../../../../store/error-store.ts";
 import { WebSearchIcon } from "../../../primitives/icons/web-search-icon.tsx";
 import type { ChatToolsMenuItemId } from "../../../../common.ts";
 import { ChatMenuRow } from "./chat-menu-row.tsx";
+import { config } from "../../../../config.ts";
 
 export const CHAT_TOOLS_MENU_ID = "chat-tools-menu";
 
@@ -38,10 +39,10 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 	const connectorsButtonRef = useRef<HTMLButtonElement | null>(null);
 	const [isConnectorsSubmenuOpen, setIsConnectorsSubmenuOpen] = useState(false);
 
-	const isMcpParlaAllowed =
-		import.meta.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true";
-	const isWebSearchAllowed =
-		import.meta.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true";
+	const isMcpParlaAllowed = config.featureFlagMcpParlaAllowed;
+	const isMcpOpenDataAllowed = config.featureFlagMcpOpenDataAllowed;
+	const isMcpDatawrapperAllowed = config.featureFlagMcpDatawrapperAllowed;
+	const isWebSearchAllowed = config.featureFlagWebSearchAllowed;
 
 	const openConnectorsSubmenu = () => setIsConnectorsSubmenuOpen(true);
 	const closeConnectorsSubmenu = () => setIsConnectorsSubmenuOpen(false);
@@ -70,7 +71,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 			isSelected: false,
 			onSelect: () => fileInputRef.current?.click(),
 		},
-		...(isMcpParlaAllowed
+		...(isMcpParlaAllowed || isMcpOpenDataAllowed || isMcpDatawrapperAllowed
 			? [
 					{
 						id: "connectors",
@@ -141,7 +142,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 				ref={fileInputRef}
 				onChange={handleFileSelect}
 				accept={
-					"application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+					"application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
 				}
 				aria-label={Content["chat.options.li1.ariaLabel"]}
 				className="hidden"

@@ -1,13 +1,53 @@
-name: Wait for backend server to be ready
-description: Polls until the backend server at localhost:3000 is accepting connections
+name: Wait for backend
+description: Polls GHCR until the given image tag is available, then pulls it, runs it in a container and waits until it's running
+
+inputs:
+  github-token:
+    description: The github token of the current organisation
+    required: true
+  image:
+    description: Full backend image ref (ghcr.io/<owner>/baergpt-backend:content-sha-<hash>)
+    required: true
 
 runs:
   using: composite
+
   steps:
-    - name: Wait for Backend to be ready ⏳
+    - name: Log in to GitHub Container Registry 🔑
+      uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0, pinned to commit sha to avoid sha-hulud like attacks
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.github-token }}
+
+    - name: Wait for image and pull it 🐳
       shell: bash
       run: |
         timeout=600
+        counter=0
+        until docker pull "${{ inputs.image }}" >/dev/null 2>&1; do
+          if [ $counter -gt $timeout ]; then
+            echo "Timed out waiting for image ${{ inputs.image }}"
+            exit 1
+          fi
+          echo "Waiting for ${{ inputs.image }} to be available on GHCR..."
+          sleep 5
+          counter=$((counter + 5))
+        done
+        echo "Image ${{ inputs.image }} pulled successfully!"
+
+    - name: Run Backend in container 🖥️
+      shell: bash
+      run: |
+        docker run -d --name backend-container \
+          --network host \
+          --env-file "$RUNNER_TEMP/backend.env" \
+          ${{ inputs.image }}
+
+    - name: Wait for Backend to be ready ⏳
+      shell: bash
+      run: |
+        timeout=60
         counter=0
         until curl -s http://localhost:3000/ >/dev/null; do
           if [ $counter -gt $timeout ]; then

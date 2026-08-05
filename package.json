@@ -28,11 +28,26 @@
     "apps/*",
     "libs/*"
   ],
+  "overrides": {
+    "esbuild": "0.28.1",
+    "minimatch": "10.2.6",
+    "brace-expansion": "5.0.8",
+    "protobufjs": "8.7.1",
+    "tar": "7.5.22",
+    "playwright-core": "1.62.1"
+  },
   "devDependencies": {
     "@repo/eslint": "file:libs/eslint",
     "@repo/prettier": "file:libs/prettier",
-    "supabase": "2.40.7",
-    "turbo": "2.9.14"
+    "supabase": "2.71.0",
+    "turbo": "2.10.7"
   },
-  "packageManager": "npm@11.4.2"
+  "packageManager": "npm@11.16.0",
+  "allowScripts": {
+    "fsevents@2.3.2": true,
+    "fsevents@2.3.3": true,
+    "@sentry/cli@2.58.6": true,
+    "esbuild@0.28.1": true,
+    "supabase@2.71.0": true
+  }
 }

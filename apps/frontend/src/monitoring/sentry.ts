@@ -7,14 +7,14 @@ import {
 	matchRoutes,
 	useLocation,
 	useNavigationType,
-} from "react-router-dom";
+} from "react-router";
 import { NON_REPORTABLE_ERRORS } from "./capture-error.ts";
 import { config } from "../config.ts";
 
 Sentry.init({
 	dsn: config.sentryDsn,
 	integrations: [
-		Sentry.reactRouterV6BrowserTracingIntegration({
+		Sentry.reactRouterBrowserTracingIntegration({
 			useEffect: React.useEffect,
 			useLocation,
 			useNavigationType,
@@ -37,4 +37,4 @@ Sentry.init({
 
 // Call this AFTER Sentry.init()
 export const sentryCreateBrowserRouter =
-	Sentry.wrapCreateBrowserRouterV6(createBrowserRouter);
+	Sentry.wrapCreateBrowserRouter(createBrowserRouter);

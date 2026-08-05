@@ -1,0 +1,22 @@
+# Cloud Foundry manifest for the BärGPT backend on STACKIT Cloud Foundry.
+# All ((vars)) are injected at push time via `cf push --var ...` (so this file
+# never needs editing to change them). instances/memory/disk_quota come from
+# CF_INSTANCES/CF_MEMORY/CF_DISK_QUOTA in the same 1Password item used for the
+# app's runtime env vars, so the two environments can scale independently —
+# see backend-deploy-stackit-cf.yml.
+applications:
+  - name: baergpt-backend
+    docker:
+      image: ((image))
+    instances: ((instances))
+    memory: ((memory))
+    disk_quota: ((disk_quota))
+    timeout: 180
+    health-check-type: http
+    health-check-http-endpoint: /health
+    health-check-invocation-timeout: 10
+    default-route: true
+    # env vars (API keys, DB URL, etc.) aren't set here — the deployment workflow
+    # syncs them onto the app via `cf set-env` from a 1Password item on every
+    # deploy, so the same image runs across environments — see
+    # apps/backend/Dockerfile and backend-deploy-stackit-cf.yml.

@@ -26,8 +26,8 @@ It allows for using the `mistral-small` LLM via Mistral API.
   - After running `supabase start`, several local services will be available:
     - **API**: http://localhost:54321
     - **Supabase Studio**: http://localhost:54323
-    - **Inbucket (Email Testing Server)**: http://localhost:54324
-      - When registering a new user in development, confirmation and password reset emails are sent to Inbucket instead of a real email address. Open [http://localhost:54324](http://localhost:54324) in your browser to view and access these emails, including registration confirmation links.
+    - **Mailpit (Email Testing Server)**: http://localhost:54324
+      - When registering a new user in development, confirmation and password reset emails are sent to Mailpit instead of a real email address. Open [http://localhost:54324](http://localhost:54324) in your browser to view and access these emails, including registration confirmation links. Mailpit also exposes a JSON API on the same port (`/api/v1/messages`), which the e2e tests use to read the confirmation code.
 - Manually enable _Database Publications_: Go to http://localhost:54323/project/default/database/publications -> on _Source_, enable the following tables:
   - `document_folders`
   - `documents`

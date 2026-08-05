@@ -24,12 +24,10 @@ export const Content = {
 	"loginPage.submitButton": "Anmelden",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
-	"unconfirmedEmail.h1": "Registrierung fast abgeschlossen",
 	"unconfirmedEmail.h2": "Sie erhalten in Kürze eine E-Mail",
-	"unconfirmedEmail.list.li.1":
-		"Prüfen Sie den Posteingang Ihres E-Mail-Postfaches",
-	"unconfirmedEmail.list.li.2":
-		"Klicken Sie auf den Link in der E-Mail, um die Registrierung abzuschließen",
+	"unconfirmedEmail.text.beforeEmail":
+		"Prüfen Sie den Posteingang folgender Adresse:",
+	"unconfirmedEmail.text.afterEmail": "Klicken Sie auf den Link in der E-Mail.",
 	"unconfirmedEmail.p": "Keine E-Mail bekommen?",
 	"unconfirmedEmail.list1.li1": "Bitte prüfen Sie auch Ihren Spam-Ordner",
 	"unconfirmedEmail.list1.li2":

@@ -8,8 +8,7 @@ import { requestPasswordResetByEmail } from "../api/auth/request-password-reset-
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
-import { registerUser } from "../api/auth/register-user.ts";
-import { resendEmailConfirmation } from "../api/auth/resend-email-confirmation.ts";
+import { registerOrRecoverUser } from "../api/auth/register-user.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
 import type { Span } from "@sentry/react";
 import { getIsUserBanned } from "../api/auth/get-is-user-banned.ts";
@@ -40,6 +39,7 @@ interface AuthStore {
 	updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
 	updatePassword: (newPassword: string) => Promise<void>;
 	resendConfirmationEmail: () => Promise<void>;
+	resetUnconfirmedEmail: () => void;
 	resendOtpEmail: (args: {
 		email: string;
 		otpType: "email" | "email_change" | "recovery";
@@ -157,26 +157,23 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isBanned: null,
 
 		async register({ firstName, lastName, email, password, span }) {
-			const { data, error } = await registerUser({
-				email,
-				password,
-				firstName,
-				lastName,
-			});
-
-			if (error) {
+			try {
+				await registerOrRecoverUser({ email, password, firstName, lastName });
+			} catch (error) {
 				useAuthErrorStore.getState().handleError(error, span);
 				return;
 			}
 
-			if (data.user && !data.user.email_confirmed_at) {
-				// Explicitly set the unconfirmed email here in addition to relying on onAuthStateChange
-				// This helps if there's any delay in the event firing.
-				set({
-					unconfirmedEmail: email,
-					emailConfirmationStatus: "unconfirmed",
-				});
-			}
+			/**
+			 * The backend always returns the same generic response regardless of
+			 * whether it created a new account, resent a confirmation email, or
+			 * sent a password reset email, so we always show the same
+			 * "check your email" screen here.
+			 */
+			set({
+				unconfirmedEmail: email,
+				emailConfirmationStatus: "unconfirmed",
+			});
 		},
 		async updatePassword(newPassword) {
 			try {
@@ -195,6 +192,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		async updateEmail(newEmail: string) {
 			const { error } = await updateEmail(newEmail);
 			return { error };
+		},
+
+		resetUnconfirmedEmail: () => {
+			set({ unconfirmedEmail: null, emailConfirmationStatus: "unknown" });
 		},
 
 		/**
@@ -233,10 +234,12 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 
 			resendTime = Date.now();
 
-			const { error } = await resendEmailConfirmation(unconfirmedEmail);
-
-			if (error) {
+			try {
+				await registerOrRecoverUser({ email: unconfirmedEmail });
+			} catch (error) {
+				resendTime = null;
 				useAuthErrorStore.getState().handleError(error);
+				throw error;
 			}
 		},
 

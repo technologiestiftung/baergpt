@@ -14,9 +14,8 @@ $$;
 
 DROP TRIGGER IF EXISTS normalize_personal_system_prompt_trigger ON public.profiles;
 
-CREATE TRIGGER normalize_personal_system_prompt_trigger BEFORE INSERT
-OR
-UPDATE OF personal_system_prompt ON public.profiles FOR EACH ROW
+CREATE TRIGGER normalize_personal_system_prompt_trigger
+BEFORE INSERT OR UPDATE OF personal_system_prompt ON public.profiles FOR EACH ROW
 EXECUTE FUNCTION public.normalize_personal_system_prompt ();
 
 -- Backfill existing rows to the normalized form.

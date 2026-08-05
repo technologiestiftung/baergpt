@@ -15,20 +15,42 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 
 ## Table of Contents
 
-- [🧰 Tech Stack](#-tech-stack)
-- [📋 Prerequisites](#-prerequisites)
-- [💿 Installation](#-installation)
-- [✅ Setup](#-setup)
-- [💻 Development](#-development)
-- [🧪 Tests](#-tests)
-- [🔍 Linting & Formatting](#-linting--formatting)
-- [🏗️ Building for Production](#️-building-for-production)
-- [🗄️ Database Management](#️-database-management)
-- [🏠 Self-Hosting Supabase](#-self-hosting-supabase)
-- [🚨 Troubleshooting](#-troubleshooting)
-- [📁 Project Structure](#-project-structure)
-- [Contributing](#contributing)
-- [Credits](#credits)
+- [](#)
+- [BärGPT Dev Documentation](#bärgpt-dev-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [🧰 Tech Stack](#-tech-stack)
+    - [🎨 Frontend](#-frontend)
+    - [⚙️ Backend](#️-backend)
+    - [👥 Admin Panel](#-admin-panel)
+    - [🚧 Maintenance Mode](#-maintenance-mode)
+    - [📦 Shared Libraries](#-shared-libraries)
+    - [🏗️ Infrastructure](#️-infrastructure)
+  - [📋 Prerequisites](#-prerequisites)
+    - [Required](#required)
+    - [🔑 API Keys \& Services](#-api-keys--services)
+      - [Required for Backend](#required-for-backend)
+      - [Optional for Backend](#optional-for-backend)
+      - [Optional for Frontend/Admin Panel](#optional-for-frontendadmin-panel)
+  - [💿 Installation](#-installation)
+  - [✅ Setup](#-setup)
+    - [1. ⚙️ Backend Setup](#1-️-backend-setup)
+      - [Start Local Supabase](#start-local-supabase)
+      - [📡 Enable Database Publications](#-enable-database-publications)
+      - [🔧 Configure Backend Environment](#-configure-backend-environment)
+      - [🗄️ Initialize Database](#️-initialize-database)
+    - [2. 🎨 Frontend Setup](#2--frontend-setup)
+    - [3. 👥 Admin Panel Setup](#3--admin-panel-setup)
+    - [4. 🚧 Maintenance Mode Setup](#4--maintenance-mode-setup)
+  - [💻 Development](#-development)
+  - [🧪 Tests](#-tests)
+  - [🔍 Linting \& Formatting](#-linting--formatting)
+  - [🏗️ Building for Production](#️-building-for-production)
+  - [🗄️ Database Management](#️-database-management)
+  - [🏠 Self-Hosting Supabase](#-self-hosting-supabase)
+  - [🚨 Troubleshooting](#-troubleshooting)
+  - [📁 Project Structure](#-project-structure)
+  - [Contributing](#contributing)
+  - [Credits](#credits)
 
 ## 🧰 Tech Stack
 
@@ -58,7 +80,6 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 - **Document Processing**:
   - [Gotenberg](https://github.com/gotenberg/gotenberg) (PDF conversion)
   - [mammoth](https://github.com/mwilliamson/mammoth.js) (DOCX parsing)
-  - [word-extractor](https://github.com/morungos/node-word-extractor) (DOC parsing)
   - [xlsx](https://github.com/SheetJS/sheetjs) (Excel parsing)
   - [@opendocsg/pdf2md](https://github.com/opendocsg/pdf2md) (PDF to Markdown)
 - **Observability**:
@@ -167,7 +188,7 @@ This starts local Supabase services:
 
 - **API URL**: http://localhost:54321
 - **Studio (Database UI)**: http://localhost:54323
-- **Inbucket (Email Testing)**: http://localhost:54324
+- **Mailpit (Email Testing)**: http://localhost:54324
 
 ⚠️ **Save the output** - you'll need the `anon key`, `service_role key`, and `JWT secret`.
 
@@ -246,6 +267,19 @@ cd apps/admin-panel && npm run dev
 # Maintenance Mode (http://localhost:5175)
 cd apps/maintenance-mode && npm run dev
 ```
+
+**Backend in a container (Docker Compose):**
+
+Runs the built backend image (the exact artifact deployed to Cloud Foundry) to **validate the container** locally. Not for daily coding (use `turbo dev` for hot reload).
+
+Requires Supabase running first — `supabase start` from `apps/backend`. Then, **from the repo root**:
+
+```bash
+docker compose up --build  # backend container → http://localhost:3000
+docker compose down        # stop and remove the container when done
+```
+
+Supabase stays on the CLI; the container reaches it via `host.docker.internal`. No hot reload — re-run with `--build` to pick up code changes.
 
 ## 🧪 Tests
 
@@ -376,7 +410,7 @@ supabase status  # Check if running
 ```
 
 **Email Confirmation in Development**
-View test emails at: http://localhost:54324 (Inbucket)
+View test emails at: http://localhost:54324 (Mailpit)
 
 **TypeScript Errors After Schema Changes**
 

@@ -9,17 +9,23 @@ import { CloseIcon } from "../../../primitives/icons/close-icon.tsx";
 import { CheckboxIcon } from "../../../primitives/icons/checkbox-icon.tsx";
 
 export const MultiSelectForActionButton: React.FC = () => {
-	const { unselectAllItemsForActionInCurrentFolder } = useUserFolderStore();
+	const {
+		unselectAllItemsForActionInCurrentFolder,
+		getUserItemsInCurrentFolder,
+	} = useUserFolderStore();
 	const {
 		showMultiSelectForAction,
 		hideMultiSelectForAction,
 		isMultiSelectForActionVisible,
 	} = useDocumentsListStore();
 
+	const hasItemsInCurrentFolder = getUserItemsInCurrentFolder().length > 0;
+
 	return (
 		<>
 			{isMultiSelectForActionVisible ? (
 				<PrimaryButton
+					disabled={!hasItemsInCurrentFolder}
 					onClick={() => {
 						unselectAllItemsForActionInCurrentFolder();
 						hideMultiSelectForAction();
@@ -30,8 +36,13 @@ export const MultiSelectForActionButton: React.FC = () => {
 					<CloseIcon variant="white" className="size-5" />
 				</PrimaryButton>
 			) : (
-				<SecondaryButton onClick={() => showMultiSelectForAction()}>
-					<CheckboxIcon state="checked" />
+				<SecondaryButton
+					disabled={!hasItemsInCurrentFolder}
+					onClick={() => showMultiSelectForAction()}
+				>
+					<CheckboxIcon
+						state={hasItemsInCurrentFolder ? "checked" : "disabled"}
+					/>
 					{Content["selectItemsButton.label"]}
 				</SecondaryButton>
 			)}

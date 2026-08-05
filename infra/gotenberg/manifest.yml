@@ -1,0 +1,13 @@
+applications:
+  - name: baergpt-gotenberg
+    docker:
+      image: gotenberg/gotenberg:8.34.0
+    command: gotenberg --api-enable-basic-auth
+    instances: 1
+    memory: ((memory))
+    disk_quota: 2G
+    timeout: 180
+    health-check-type: http
+    health-check-http-endpoint: /health
+    health-check-invocation-timeout: 10
+    default-route: true

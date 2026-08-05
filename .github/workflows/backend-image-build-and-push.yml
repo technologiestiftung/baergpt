@@ -1,0 +1,65 @@
+name: Backend image build and push to registry
+
+on:
+  pull_request:
+    branches: [staging, main]
+  push:
+    branches: [staging, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/baergpt-backend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          fetch-depth: "2"
+
+      - name: Compute image tag 🏷️
+        id: tag
+        run: |
+          echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry 🔑
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Runner's default docker driver can't export cache (type=gha); switches
+      # to the docker-container driver, which supports --cache-to.
+      - name: Set up Docker Buildx ⚙️
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0, pinned to commit sha to avoid sha-hulud like attacks
+
+      - name: Check if image already exists in GHCR 🔍
+        id: check
+        run: |
+          if docker manifest inspect ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }} >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push image 🐳
+        if: steps.check.outputs.exists != 'true'
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+            ${{ env.IMAGE_NAME }}:commit-${{ github.sha }}

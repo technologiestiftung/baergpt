@@ -2,17 +2,20 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { config } from "../config";
 import type { ActiveTools, ChatMessageBody } from "../types/common";
-import type { ModelMessage } from "ai";
 
 const VALID_ACTIVE_TOOLS = new Set<ActiveTools>([
 	"ragSearchTool",
 	"webSearchTool",
 	"parlaMCPTools",
+	"datawrapperMCPTools",
+	"openDataMCPTools",
 ]);
 
 export const EXTERNAL_TOOLS = new Set<ActiveTools>([
 	"webSearchTool",
 	"parlaMCPTools",
+	"datawrapperMCPTools",
+	"openDataMCPTools",
 ]);
 
 function isValidActiveTool(value: unknown): value is ActiveTools {
@@ -28,6 +31,17 @@ function isValidActiveTool(value: unknown): value is ActiveTools {
 	}
 
 	if (value === "parlaMCPTools" && !config.featureFlagMcpParlaAllowed) {
+		return false;
+	}
+
+	if (value === "openDataMCPTools" && !config.featureFlagMcpOpenDataAllowed) {
+		return false;
+	}
+
+	if (
+		value === "datawrapperMCPTools" &&
+		!config.featureFlagMcpDatawrapperAllowed
+	) {
 		return false;
 	}
 
@@ -58,7 +72,7 @@ llms.post("/just-chatting", async (c: Context) => {
 		const llmHandler = modelService.resolveLlmHandler(llmModelName);
 		const allowedDocumentIds = body.allowed_document_ids || [];
 		const allowedFolderIds = body.allowed_folder_ids || [];
-		const messages = body.messages as ModelMessage[];
+		const messages = body.messages;
 		const isAddressedFormal = body.is_addressed_formal;
 		if (messages.length === 0 || !messages.at(-1)?.content) {
 			return c.json(
@@ -87,10 +101,10 @@ llms.post("/just-chatting", async (c: Context) => {
 
 		const hasSelectedDocuments =
 			allowedDocumentIds.length > 0 || allowedFolderIds.length > 0;
-		const hasExternalTool = activeTools.some((tool) =>
+		const isExternalToolActive = activeTools.some((tool) =>
 			EXTERNAL_TOOLS.has(tool),
 		);
-		if (hasSelectedDocuments && hasExternalTool) {
+		if (hasSelectedDocuments && isExternalToolActive) {
 			return c.json(
 				{
 					error:
@@ -118,6 +132,7 @@ llms.post("/just-chatting", async (c: Context) => {
 				isAddressedFormal,
 				activeTools,
 				userSystemPrompt,
+				isExternalToolActive,
 			});
 		const response = await generationService.generateTextStreamResponse({
 			llmHandler,
