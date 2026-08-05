@@ -26,7 +26,6 @@ jobs:
       cancel-in-progress: false
     if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
     environment: ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
-
     steps:
       - name: Checkout code ⬇️
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
@@ -59,6 +58,9 @@ jobs:
             value="${line#*=}"
             echo "::add-mask::$value"
             echo "$key=$value" >> "$GITHUB_ENV"
+            if [[ "$key" == "CF_SPACE" ]]; then
+              echo "CF_APP_NAME=${{ env.APP_NAME }}-$value" >> "$GITHUB_ENV"
+            fi
           done < cf.env
           rm cf.env
         env:
@@ -106,20 +108,20 @@ jobs:
         working-directory: infra/gotenberg
         run: |
           set -euo pipefail
-          if ! cf app "${{ env.APP_NAME }}" >/dev/null 2>&1; then
+          if ! cf app "$CF_APP_NAME" >/dev/null 2>&1; then
             echo "bootstrapped=true" >> "$GITHUB_OUTPUT"
             cf push -f manifest.yml --no-start --var space="$CF_SPACE" --var memory="$GOTENBERG_MEMORY" 
           fi
 
-          guid=$(cf app "${{ env.APP_NAME }}" --guid)
+          guid=$(cf app "$CF_APP_NAME" --guid)
           for key in $(cf curl "/v3/apps/$guid/environment_variables" | jq -r '.var | keys[]'); do
-            cf unset-env "${{ env.APP_NAME }}" "$key" >/dev/null
+            cf unset-env "$CF_APP_NAME" "$key" >/dev/null
           done
 
           while IFS= read -r line || [ -n "$line" ]; do
             key="${line%%=*}"
             value="${line#*=}"
-            cf set-env "${{ env.APP_NAME }}" "$key" "$value" >/dev/null
+            cf set-env "$CF_APP_NAME" "$key" "$value" >/dev/null
           done < app.env
 
           rm -f app.env
@@ -133,7 +135,7 @@ jobs:
             --var space="$CF_SPACE" \
             --var memory="$GOTENBERG_MEMORY" \
             ${{ steps.sync.outputs.bootstrapped != 'true' && '--strategy rolling' || '' }} \
-          || { cf cancel-deployment "${{ env.APP_NAME }}" 2>/dev/null || true; exit 1; }
+          || { cf cancel-deployment "$CF_APP_NAME" 2>/dev/null || true; exit 1; }
 
       # Prod only: autoscale gotenberg 1→3 instances (conversions are CPU-bound).
       # Staging stays at the manifest's fixed single instance, so no policy there.
@@ -145,15 +147,15 @@ jobs:
         working-directory: infra/gotenberg
         run: |
           set -euo pipefail
-          service="${CF_SPACE}-autoscaler"
+          service="$CF_SPACE-autoscaler"
           policy="autoscaler-policy-production.json"
-          cf unbind-service "${{ env.APP_NAME }}" "$service" --wait 2>/dev/null || true
+          cf unbind-service "$CF_APP_NAME" "$service" --wait 2>/dev/null || true
           # The unbind above detached the previous policy, so a failed rebind
           # would leave the app with no autoscaling. Retry with backoff; the
           # committed policy file is the source of truth, so re-binding it is
           # the recovery path. Fail the deploy if it never attaches.
           for attempt in 1 2 3; do
-            cf bind-service "${{ env.APP_NAME }}" "$service" --wait -c "$policy" && break
+            cf bind-service "$CF_APP_NAME" "$service" --wait -c "$policy" && break
             if [ "$attempt" -eq 3 ]; then
               echo "::error::Failed to attach autoscaling policy after $attempt attempts; app left without a policy" >&2
               exit 1
@@ -164,4 +166,4 @@ jobs:
 
       - name: Dump recent app logs on failure 🪵
         if: ${{ failure() && !cancelled() }}
-        run: cf logs "${{ env.APP_NAME }}" --recent
+        run: cf logs "$CF_APP_NAME" --recent
