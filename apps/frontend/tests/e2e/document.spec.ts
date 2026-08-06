@@ -29,9 +29,6 @@ import {
 	seedDefaultDocumentName,
 } from "../constants.ts";
 import { supabaseAdminClient } from "../supabase.ts";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@repo/db-schema";
-import { config } from "../config.ts";
 
 test.describe("Documents", () => {
 	testDesktopOnly(
@@ -152,42 +149,23 @@ test.describe("Documents", () => {
 
 	testDesktopOnly(
 		"Should delete the file from storage when the processing fails",
-		async ({ page, account, browserName, session }) => {
-			const givenStoragePath = `${account.id}/${secondaryDocumentName}`;
-
-			const givenFile = new File(["test content"], secondaryDocumentName, {
-				type: secondaryDocumentType,
+		async ({ page, browserName }) => {
+			// Force the process step to fail after the file has already reached
+			// storage, so we can verify the frontend cleans up the now-orphaned
+			// storage object.
+			await page.route("**/documents/process", async (route) => {
+				return route.fulfill({ status: 500 });
 			});
 
-			const localAnonClient = createClient<Database>(
-				config.supabaseUrl,
-				config.supabaseAnonKey,
+			// Storage paths are UUID-based now, so we need to capture the path
+			// from the actual upload request instead of predicting it. Both
+			// listeners are set up before triggering the upload so neither can
+			// fire and resolve before we start waiting for it.
+			const waitForUpload = page.waitForResponse(
+				(response) =>
+					response.url().includes("/storage/v1/object/documents/") &&
+					response.request().method() === "POST",
 			);
-
-			const { error: sessionError } = await localAnonClient.auth.setSession({
-				access_token: session.access_token,
-				refresh_token: session.refresh_token,
-			});
-
-			expect(sessionError).toBeNull();
-
-			const { error: uploadError } = await localAnonClient.storage
-				.from("documents")
-				.upload(givenStoragePath, givenFile);
-
-			// Use scope local to avoid revoking the current access_token globally
-			await localAnonClient.auth.signOut({ scope: "local" });
-
-			expect(uploadError).toBeNull();
-
-			const { data: exists1, error: existsError1 } =
-				await supabaseAdminClient.storage
-					.from(defaultBucketName)
-					.exists(givenStoragePath);
-
-			expect(existsError1).toBeNull();
-			expect(exists1).toBe(true);
-
 			const waitForDeletion = page.waitForResponse(
 				(response) =>
 					response.url().includes("/storage/v1/object/documents") &&
@@ -201,20 +179,55 @@ test.describe("Documents", () => {
 				uploadButtonName: "Datei hochladen",
 			});
 
+			const uploadResponse = await waitForUpload;
+			const uploadedPath = decodeURIComponent(
+				uploadResponse.url().split("/storage/v1/object/documents/")[1],
+			);
+
 			await waitForDeletion;
 
-			const { data: exists2, error: existsError2 } =
+			const { data: exists, error: existsError } =
 				await supabaseAdminClient.storage
 					.from(defaultBucketName)
-					.exists(givenStoragePath);
+					.exists(uploadedPath);
 
 			/**
 			 * If the file does not exist, supabase returns false + an error:
 			 * https://github.com/supabase/supabase-js/issues/1363
 			 * So we expect an error to be defined, but we also expect exists to be false.
 			 */
-			expect(existsError2).toBeDefined();
-			expect(exists2).toBe(false);
+			expect(existsError).toBeDefined();
+			expect(exists).toBe(false);
+		},
+	);
+
+	testDesktopOnly(
+		"Should reject uploading a file with a name that already exists",
+		async ({ page, browserName }) => {
+			await uploadFileViaFileChooserAndWait({
+				page,
+				fileName: secondaryDocumentName,
+				filePath: secondaryDocumentPath,
+				browserName,
+				uploadButtonName: "Datei hochladen",
+			});
+
+			await attemptFileUploadViaFileChooser({
+				page,
+				filePath: secondaryDocumentPath,
+				browserName,
+				uploadButtonName: "Datei hochladen",
+			});
+
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText(`${secondaryDocumentName}Datei existiert bereits`, {
+						exact: true,
+					}),
+			).toBeVisible();
+
+			await deleteFileViaUI({ page, fileName: secondaryDocumentName });
 		},
 	);
 
