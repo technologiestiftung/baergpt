@@ -988,7 +988,7 @@ export const Content = {
 	"chat.disclaimer.p1": "BärGPT kann",
 	"chat.disclaimer.p2": "Fehler",
 	"chat.disclaimer.p2.link":
-		"https://hilfe.baergpt.berlin/faq#warum-kann-baergpt-fehler-machen",
+		"https://hilfe.baergpt.berlin/faq#wie-zuverlaessig-sind-die-antworten-von-baergpt",
 	"chat.disclaimer.p3": "machen. Bitte überprüfen Sie die Informationen.",
 
 	"chat.citationsButton.label": "Quellen",
