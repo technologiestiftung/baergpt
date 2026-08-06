@@ -158,7 +158,7 @@ jobs:
               -f manifest.yml \
               --no-start \
               --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
-              --var space="$CF_SPACE"
+              --var space="$CF_SPACE" \
               --var instances="$CF_INSTANCES" \
               --var memory="$CF_MEMORY" \
               --var disk_quota="$CF_DISK_QUOTA"
