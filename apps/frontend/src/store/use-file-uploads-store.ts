@@ -9,6 +9,7 @@ import { useErrorStore } from "./error-store.ts";
 import * as Sentry from "@sentry/react";
 import type { Span } from "@sentry/react";
 import { deleteFileFromStorage } from "../api/documents/delete-file-from-storage.ts";
+import { isDocumentInDatabase } from "../api/documents/is-document-in-database.ts";
 
 export const UPLOAD_STATUS_MAP = {
 	waiting: "Warte",
@@ -119,14 +120,23 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		} catch (error) {
 			useErrorStore.getState().handleError(error, span);
 
-			// The upload reached storage but never finished being processed into
-			// a document — clean up the file we just wrote, since no document
-			// row for it will ever be created.
+			// Storage succeeded, but /documents/process failed or its response
+			// never arrived. That doesn't guarantee no document was created,
+			// so confirm with the server before deleting the file.
 			if (storageUploadSucceeded && !documentCreated) {
-				const { error: deleteFileError } =
-					await deleteFileFromStorage(filePath);
-				if (deleteFileError) {
-					useErrorStore.getState().handleError(deleteFileError, span);
+				const { data: documentExists, error: checkError } =
+					await isDocumentInDatabase(filePath);
+
+				if (checkError) {
+					useErrorStore.getState().handleError(checkError, span);
+				}
+
+				if (!documentExists) {
+					const { error: deleteFileError } =
+						await deleteFileFromStorage(filePath);
+					if (deleteFileError) {
+						useErrorStore.getState().handleError(deleteFileError, span);
+					}
 				}
 			}
 
