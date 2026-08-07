@@ -63,10 +63,8 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			useUserDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
-		const fileExtension = file.name.split(".").pop();
-		const filePath = `${session?.user.id}/${crypto.randomUUID()}.${fileExtension}`;
-		let storageUploadSucceeded = false;
-		let documentCreated = false;
+		const slugifiedFilename = slugify(file.name, { lower: true });
+		const filePath = `${session?.user.id}/${slugifiedFilename}`;
 		try {
 			if (file.size > uploadFileSizeLimit * 1024 * 1024) {
 				throw new Error("failed.size");
@@ -99,12 +97,6 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 			updateFileUploadStatus(file, "processing");
 			await processDocument(file, filePath);
-			documentCreated = true;
-			updateFileUploadStatus(file, "successful");
-
-			setTimeout(() => {
-				get().removeFileUpload(file.name);
-			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 
 			await getUserDocuments(new AbortController().signal);
 
@@ -117,6 +109,12 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 					selectUserChatDocument(uploadedDocument);
 				}
 			}
+
+			updateFileUploadStatus(file, "successful");
+
+			setTimeout(() => {
+				get().removeFileUpload(file.name);
+			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 		} catch (error) {
 			useErrorStore.getState().handleError(error, span);
 
