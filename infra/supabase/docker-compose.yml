@@ -545,7 +545,7 @@ services:
 
   kongredis:
     container_name: supabase-redis
-    image: valkey/valkey:7.2.5
+    image: valkey/valkey:7.2.14
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
