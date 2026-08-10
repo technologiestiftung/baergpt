@@ -33,7 +33,7 @@ jobs:
           persist-credentials: "false"
 
       - name: Install 1Password CLI 🔐
-        uses: 1password/install-cli-action@a5215d3a7f75c1629216c465ea9ab3ab399c4b71 # v4.0.0, pinned to commit sha to avoid sha-hulud like attacks
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0, pinned to commit sha to avoid sha-hulud like attacks
 
       - name: Set 1Password item IDs based on branch 🌿
         id: env-config
