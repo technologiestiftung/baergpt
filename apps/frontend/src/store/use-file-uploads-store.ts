@@ -131,7 +131,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 					useErrorStore.getState().handleError(checkError, span);
 				}
 
-				if (!documentExists) {
+				if (!checkError && documentExists === false) {
 					const { error: deleteFileError } =
 						await deleteFileFromStorage(filePath);
 					if (deleteFileError) {
