@@ -1,5 +1,6 @@
 import { captureError } from "../../monitoring/capture-error";
 import type { ServiceRoleDbClient } from "../../supabase";
+import type { TablesUpdate } from "@repo/db-schema";
 import { BaseContentDbService } from "./base-db-service";
 import { TablesUpdate } from "@repo/db-schema";
 /**
