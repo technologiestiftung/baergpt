@@ -1,6 +1,7 @@
 import { captureError } from "../../monitoring/capture-error";
 import type { ServiceRoleDbClient } from "../../supabase";
 import { BaseContentDbService } from "./base-db-service";
+import { TablesUpdate } from "@repo/db-schema";
 /**
  * AdminService handles operations that require the Supabase service role key.
  *
@@ -67,8 +68,7 @@ export class PrivilegedDbService extends BaseContentDbService {
 			}
 		}
 
-		// Update first_name, last_name, academic_title and personal_title in profiles table
-		const updateData = Object.fromEntries(
+		const updateData: TablesUpdate<"profiles"> = Object.fromEntries(
 			Object.entries({
 				first_name: firstName,
 				last_name: lastName,
