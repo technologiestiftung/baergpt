@@ -3,10 +3,7 @@ import Content from "../../../content";
 
 type ChevronIconProps = {
 	color:
-		| "dunkelblau-200"
-		| "dunkelblau-100"
-		| "dunkelblau-80"
-		| "dunkelblau-50";
+		"dunkelblau-200" | "dunkelblau-100" | "dunkelblau-80" | "dunkelblau-50";
 	direction?: "up" | "down";
 	classname?: string;
 };

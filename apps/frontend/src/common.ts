@@ -67,9 +67,7 @@ export type PublicFolder = {
 };
 
 export type SourceType =
-	| "public_document"
-	| "personal_document"
-	| "default_document";
+	"public_document" | "personal_document" | "default_document";
 
 export type Document = UserDocument | PublicDocument;
 

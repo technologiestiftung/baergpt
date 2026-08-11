@@ -2,10 +2,7 @@ import React from "react";
 import Content from "../../../content";
 
 export type CheckboxState =
-	| "checked"
-	| "unchecked"
-	| "indeterminate"
-	| "disabled";
+	"checked" | "unchecked" | "indeterminate" | "disabled";
 
 export const CheckboxIcon: React.FC<{ state: CheckboxState }> = ({ state }) => {
 	const uncheckedHoverClass =
