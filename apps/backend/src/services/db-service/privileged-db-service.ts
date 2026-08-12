@@ -2,7 +2,6 @@ import { captureError } from "../../monitoring/capture-error";
 import type { ServiceRoleDbClient } from "../../supabase";
 import type { TablesUpdate } from "@repo/db-schema";
 import { BaseContentDbService } from "./base-db-service";
-import { TablesUpdate } from "@repo/db-schema";
 /**
  * AdminService handles operations that require the Supabase service role key.
  *
@@ -63,7 +62,6 @@ export class PrivilegedDbService extends BaseContentDbService {
 				userId,
 				authUpdateData,
 			);
-
 			if (authError) {
 				throw authError;
 			}
