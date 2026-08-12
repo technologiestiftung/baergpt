@@ -23,7 +23,7 @@
 		"@react-pdf/renderer": "4.5.1",
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/react": "10.68.0",
-		"@supabase/supabase-js": "2.110.9",
+		"@supabase/supabase-js": "2.81.1",
 		"date-fns": "3.6.0",
 		"dotenv": "16.6.1",
 		"js-tiktoken": "1.0.21",
