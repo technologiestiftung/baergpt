@@ -82,6 +82,7 @@ documents.post("/process", async (c: Context) => {
 					? authenticatedUserId
 					: undefined,
 			source_url: sourceUrl,
+			file_name: inputDocument.file_name,
 			source_type: inputDocument.source_type,
 			file_checksum: extractionResult.checksum,
 			file_size: extractionResult.fileSize,

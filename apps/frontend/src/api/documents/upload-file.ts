@@ -46,6 +46,7 @@ export async function processDocument(
 			created_at: new Date().toISOString(),
 			source_type: "personal_document",
 			source_url: filePath,
+			file_name: file.name,
 			metadata: {
 				mimeType: file.type,
 				size: file.size,
