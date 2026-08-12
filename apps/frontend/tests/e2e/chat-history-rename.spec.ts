@@ -2,7 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { testWithChatSearch } from "../fixtures/test-with-chat-search.ts";
 
 function getChatRow(page: Page, chatName: string) {
-	return page.getByRole("button", { name: chatName, exact: true }).locator("..");
+	return page
+		.getByRole("button", { name: chatName, exact: true })
+		.locator("..");
 }
 
 test.describe("Chat history rename", () => {
