@@ -18,12 +18,6 @@ jobs:
       - name: Checkout code ⬇️
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
 
-      - name: Setup environment ⚙️
-        uses: ./.github/actions/setup
-        with:
-          start-supabase: "true"
-          install-1password: "true"
-
       # Computed here — before any build step — so it hashes pristine, committed
       # content and matches the tag backend-image-build-and-push.yml produced.
       # Computing it later (e.g. inside wait-for-backend) risks the frontend
@@ -33,6 +27,12 @@ jobs:
         id: backend-image
         run: |
           echo "image=ghcr.io/${{ github.repository_owner }}/baergpt-backend:content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup environment ⚙️
+        uses: ./.github/actions/setup
+        with:
+          start-supabase: "true"
+          install-1password: "true"
 
       - name: Fetch frontend .env from 1Password ⬇️
         run: |

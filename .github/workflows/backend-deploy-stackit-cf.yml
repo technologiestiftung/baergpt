@@ -34,17 +34,17 @@ jobs:
         with:
           persist-credentials: "false"
 
-      - name: Setup environment ⚙️
-        uses: ./.github/actions/setup
-        with:
-          install-1password: "true"
-
       # Same formula as backend-image-build-and-push.yml, so it resolves to the
       # tag that workflow just built and pushed for this exact commit.
       - name: Compute image tag 🏷️
         id: tag
         run: |
           echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup environment ⚙️
+        uses: ./.github/actions/setup
+        with:
+          install-1password: "true"
 
       - name: Set 1Password item IDs based on branch 🌿
         id: env-config
