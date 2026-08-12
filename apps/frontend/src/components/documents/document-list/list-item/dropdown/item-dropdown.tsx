@@ -19,7 +19,7 @@ interface ItemDropdownProps {
 	item: Document | UserFolder | PublicFolder;
 	isOpen: boolean;
 	onClose: () => void;
-	triggerRef: React.RefObject<HTMLButtonElement>;
+	triggerRef: React.RefObject<HTMLButtonElement | null>;
 }
 
 export const ItemDropdown: React.FC<ItemDropdownProps> = ({
