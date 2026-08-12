@@ -171,7 +171,7 @@ export abstract class BaseContentDbService {
 				folder_id: document.folder_id || null,
 				source_url: document.source_url,
 				source_type: document.source_type,
-				file_name: document.source_url?.split("/").pop(),
+				file_name: document.file_name ?? document.source_url?.split("/").pop(),
 				created_at: document.created_at || new Date().toISOString(),
 				access_group_id: document.access_group_id || null,
 				uploaded_by_user_id: document.uploaded_by_user_id || null,
