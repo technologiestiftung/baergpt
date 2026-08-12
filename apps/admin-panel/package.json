@@ -27,7 +27,7 @@
 		"@radix-ui/react-switch": "1.3.7",
 		"@radix-ui/react-tooltip": "1.2.16",
 		"@repo/db-schema": "file:../../libs/db-schema",
-		"@supabase/supabase-js": "2.110.9",
+		"@supabase/supabase-js": "2.81.1",
 		"@tanstack/react-table": "8.21.3",
 		"class-variance-authority": "0.7.1",
 		"clsx": "2.1.1",
