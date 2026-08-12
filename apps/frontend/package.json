@@ -19,7 +19,7 @@
 		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts"
 	},
 	"dependencies": {
-		"@mohtasham/md-to-docx": "2.18.0",
+		"@mohtasham/md-to-docx": "3.0.1",
 		"@react-pdf/renderer": "4.5.1",
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/react": "10.68.0",
