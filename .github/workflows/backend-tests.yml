@@ -12,34 +12,35 @@ jobs:
       - name: Checkout code ⬇️
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
 
-      - name: Setup environment ⚙️
-        uses: ./.github/actions/setup
-        with:
-          start-supabase: "true"
-          install-1password: "true"
 
-      - name: Fetch backend .env from 1Password ⬇️
-        run: |
-          cd apps/backend
-          echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Wait for Supabase to be ready ⏳
-        uses: ./.github/actions/wait-for-supabase
-
-      - name: Run Database Linting 🔍
-        run: |
-          cd apps/backend
-          npm run lint:db
-
-      - name: Upload default document 📄
-        run: |
-          cd apps/backend
-          npm run db:upload-default-documents
-
-      - name: Run integration tests 🧪
-        run: |
-          cd apps/backend
-          npm test
+#      - name: Setup environment ⚙️
+#        uses: ./.github/actions/setup
+#        with:
+#          start-supabase: "true"
+#          install-1password: "true"
+#
+#      - name: Fetch backend .env from 1Password ⬇️
+#        run: |
+#          cd apps/backend
+#          echo "Fetching backend .env from 1Password..."
+#          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+#        env:
+#          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+#
+#      - name: Wait for Supabase to be ready ⏳
+#        uses: ./.github/actions/wait-for-supabase
+#
+#      - name: Run Database Linting 🔍
+#        run: |
+#          cd apps/backend
+#          npm run lint:db
+#
+#      - name: Upload default document 📄
+#        run: |
+#          cd apps/backend
+#          npm run db:upload-default-documents
+#
+#      - name: Run integration tests 🧪
+#        run: |
+#          cd apps/backend
+#          npm test

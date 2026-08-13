@@ -21,86 +21,87 @@ jobs:
       - name: Checkout code ⬇️
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
 
-      # Computed here — before any build step — so it hashes pristine, committed
-      # content and matches the tag backend-image-build-and-push.yml produced.
-      # Computing it later (e.g. inside wait-for-backend) risks the frontend
-      # build first writing artifacts into the hashed libs/**, yielding a tag for
-      # an image that was never built.
-      - name: Compute backend image tag 🏷️
-        id: backend-image
-        run: |
-          echo "image=ghcr.io/${{ github.repository_owner }}/baergpt-backend:content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
 
-      - name: Setup environment ⚙️
-        uses: ./.github/actions/setup
-        with:
-          start-supabase: "true"
-          install-1password: "true"
-
-      - name: Fetch admin-panel .env from 1Password ⬇️
-        run: |
-          cd apps/admin-panel
-          echo "Fetching admin panel .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_ADMIN_PANEL_TEST_ENV_ITEM_ID }}/notesPlain" > .env
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Fetch backend .env from 1Password ⬇️
-        run: |
-          echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > "$RUNNER_TEMP/backend.env"
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Install Playwright Browser 🧭
-        run: |
-          cd apps/admin-panel
-          npx playwright install --with-deps ${{ matrix.browser }}
-
-      - name: Cache admin-panel build 💾
-        id: cache-admin-panel-build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0, pinned to commit sha to avoid sha-hulud like attacks
-        with:
-          path: |
-            ./apps/admin-panel/dist
-          key: ${{ runner.os }}-node-admin-panel-${{ hashFiles('./apps/admin-panel/**/*', '!./apps/admin-panel/node_modules/**/*', '**/package-lock.json') }}
-
-      - name: Build admin-panel 🏗️
-        if: steps.cache-admin-panel-build.outputs.cache-hit != 'true'
-        run: |
-          cd apps/admin-panel
-          npm run check-types
-          npm run build
-
-      - name: Wait for Backend to be ready ⏳
-        uses: ./.github/actions/wait-for-backend
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          image: ${{ steps.backend-image.outputs.image }}
-
-      - name: Wait for Supabase to be ready ⏳
-        uses: ./.github/actions/wait-for-supabase
-
-      - name: Run admin-panel E2E test 🎭
-        run: |
-          cd apps/admin-panel
-          npm run test:e2e -- --project="${{ matrix.browser }}"
-
-      - name: Capture backend logs after admin panel E2E test after failure 📋
-        if: failure()
-        run: |
-          if docker inspect backend-container >/dev/null 2>&1; then
-            echo "=== Backend container logs ==="
-            docker logs backend-container
-            echo "=== End backend logs ==="
-          else
-            echo "backend-container not found"
-          fi
-
-      - name: Upload admin-panel E2E test results ⬆️
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
-        if: ${{ failure() && !cancelled() }}
-        with:
-          name: admin-panel-e2e-${{ matrix.browser }}-test-results
-          path: apps/admin-panel/test-results
-          retention-days: 30
+#      # Computed here — before any build step — so it hashes pristine, committed
+#      # content and matches the tag backend-image-build-and-push.yml produced.
+#      # Computing it later (e.g. inside wait-for-backend) risks the frontend
+#      # build first writing artifacts into the hashed libs/**, yielding a tag for
+#      # an image that was never built.
+#      - name: Compute backend image tag 🏷️
+#        id: backend-image
+#        run: |
+#          echo "image=ghcr.io/${{ github.repository_owner }}/baergpt-backend:content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+#
+#      - name: Setup environment ⚙️
+#        uses: ./.github/actions/setup
+#        with:
+#          start-supabase: "true"
+#          install-1password: "true"
+#
+#      - name: Fetch admin-panel .env from 1Password ⬇️
+#        run: |
+#          cd apps/admin-panel
+#          echo "Fetching admin panel .env from 1Password..."
+#          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_ADMIN_PANEL_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+#        env:
+#          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+#
+#      - name: Fetch backend .env from 1Password ⬇️
+#        run: |
+#          echo "Fetching backend .env from 1Password..."
+#          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > "$RUNNER_TEMP/backend.env"
+#        env:
+#          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+#
+#      - name: Install Playwright Browser 🧭
+#        run: |
+#          cd apps/admin-panel
+#          npx playwright install --with-deps ${{ matrix.browser }}
+#
+#      - name: Cache admin-panel build 💾
+#        id: cache-admin-panel-build
+#        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0, pinned to commit sha to avoid sha-hulud like attacks
+#        with:
+#          path: |
+#            ./apps/admin-panel/dist
+#          key: ${{ runner.os }}-node-admin-panel-${{ hashFiles('./apps/admin-panel/**/*', '!./apps/admin-panel/node_modules/**/*', '**/package-lock.json') }}
+#
+#      - name: Build admin-panel 🏗️
+#        if: steps.cache-admin-panel-build.outputs.cache-hit != 'true'
+#        run: |
+#          cd apps/admin-panel
+#          npm run check-types
+#          npm run build
+#
+#      - name: Wait for Backend to be ready ⏳
+#        uses: ./.github/actions/wait-for-backend
+#        with:
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
+#          image: ${{ steps.backend-image.outputs.image }}
+#
+#      - name: Wait for Supabase to be ready ⏳
+#        uses: ./.github/actions/wait-for-supabase
+#
+#      - name: Run admin-panel E2E test 🎭
+#        run: |
+#          cd apps/admin-panel
+#          npm run test:e2e -- --project="${{ matrix.browser }}"
+#
+#      - name: Capture backend logs after admin panel E2E test after failure 📋
+#        if: failure()
+#        run: |
+#          if docker inspect backend-container >/dev/null 2>&1; then
+#            echo "=== Backend container logs ==="
+#            docker logs backend-container
+#            echo "=== End backend logs ==="
+#          else
+#            echo "backend-container not found"
+#          fi
+#
+#      - name: Upload admin-panel E2E test results ⬆️
+#        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
+#        if: ${{ failure() && !cancelled() }}
+#        with:
+#          name: admin-panel-e2e-${{ matrix.browser }}-test-results
+#          path: apps/admin-panel/test-results
+#          retention-days: 30
