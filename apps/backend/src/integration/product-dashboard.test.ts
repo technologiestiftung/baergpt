@@ -303,6 +303,86 @@ describe("get_product_dashboard_stats", () => {
 	});
 });
 
+// These SECURITY DEFINER helpers write directly to auth.users and have no
+// internal authorization guard, so their only protection is that EXECUTE is
+// revoked from every role except service_role.
+describe("auth.users helper functions are restricted to the service role", () => {
+	const givenUserId = crypto.randomUUID();
+	const givenUserEmail = "user-test-suite-auth-helpers@ts.berlin";
+	const givenUserPassword = "SecurePassword123!";
+	const givenTimestamp = subDays(new Date(), 5).toISOString();
+
+	const anonDbClient = createClient<Database>(
+		config.supabaseUrl,
+		config.supabaseAnonKey,
+	);
+	const authenticatedDbClient = createClient<Database>(
+		config.supabaseUrl,
+		config.supabaseAnonKey,
+	);
+
+	const helperFunctions = [
+		{
+			name: "update_user_email_confirmed_at",
+			args: {
+				user_id: givenUserId,
+				new_email_confirmed_at: givenTimestamp,
+			},
+		},
+		{
+			name: "update_user_last_sign_in_at",
+			args: {
+				user_id: givenUserId,
+				new_last_sign_in_at: givenTimestamp,
+			},
+		},
+	] as const;
+
+	beforeAll(async () => {
+		await registerNonAdminUser({
+			id: givenUserId,
+			email: givenUserEmail,
+			password: givenUserPassword,
+		});
+
+		const { error } = await authenticatedDbClient.auth.signInWithPassword({
+			email: givenUserEmail,
+			password: givenUserPassword,
+		});
+		expect(error).toBeNull();
+	}, TIMEOUT);
+
+	afterAll(async () => {
+		const { error } =
+			await serviceRoleDbClient.auth.admin.deleteUser(givenUserId);
+		expect(error).toBeNull();
+	}, TIMEOUT);
+
+	describe.each(helperFunctions)("$name", ({ name, args }) => {
+		it("rejects the anonymous role with permission denied", async () => {
+			const { error } = await anonDbClient.rpc(name, args);
+
+			expect(error).not.toBeNull();
+			expect(error?.code).toBe("42501");
+			expect(error?.message).toContain("permission denied");
+		});
+
+		it("rejects the authenticated role with permission denied", async () => {
+			const { error } = await authenticatedDbClient.rpc(name, args);
+
+			expect(error).not.toBeNull();
+			expect(error?.code).toBe("42501");
+			expect(error?.message).toContain("permission denied");
+		});
+
+		it("allows the service role to execute the function", async () => {
+			const { error } = await serviceRoleDbClient.rpc(name, args);
+
+			expect(error).toBeNull();
+		});
+	});
+});
+
 async function registerAdmin(params: {
 	id: string;
 	email: string;
