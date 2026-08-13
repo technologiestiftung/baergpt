@@ -5,6 +5,7 @@ import { HistoryEntryDropdownButton } from "./history-entry-dropdown/history-ent
 import { useDrawerStore } from "../../../store/drawer-store.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 import Content from "../../../content.ts";
+import { captureError } from "../../../monitoring/capture-error.ts";
 
 const removeMarkdownStyling = (name: string): string => {
 	return name.replace(/[#`>*]/g, "");
@@ -19,6 +20,7 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 	const { renameChat } = useChatsStore();
 	const [isEditing, setIsEditing] = useState(false);
 	const [pendingName, setPendingName] = useState<string | null>(null);
+	const [isRenamePending, setIsRenamePending] = useState(false);
 	const { setOpenDrawer } = useDrawerStore();
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,9 +36,14 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 		}
 
 		setPendingName(trimmedName);
+		setIsRenamePending(true);
 		renameChat(chat.id, trimmedName)
 			.then(() => setPendingName(null))
-			.catch(() => setPendingName(null));
+			.catch((error) => {
+				captureError(error);
+				setPendingName(null);
+			})
+			.finally(() => setIsRenamePending(false));
 	};
 
 	const cancelRename = () => {
@@ -87,7 +94,12 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 
 			<HistoryEntryDropdownButton
 				chat={chat}
-				onRename={() => setIsEditing(true)}
+				onRename={() => {
+					if (isRenamePending) {
+						return;
+					}
+					setIsEditing(true);
+				}}
 			/>
 		</div>
 	);

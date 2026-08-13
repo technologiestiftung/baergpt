@@ -7,7 +7,9 @@ export async function renameChat(
 	const { error: renameChatError } = await supabase
 		.from("chats")
 		.update({ name: newName })
-		.eq("id", chatId);
+		.eq("id", chatId)
+		.select("id")
+		.single();
 
 	if (renameChatError) {
 		throw renameChatError;

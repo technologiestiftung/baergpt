@@ -28,11 +28,34 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 		right: 0,
 	});
 
-	useEffect(() => {
-		if (isOpen && triggerRef.current) {
+	const calculatePosition = () => {
+		if (triggerRef.current) {
 			const rect = triggerRef.current.getBoundingClientRect();
-			setPosition({ top: rect.bottom, right: window.innerWidth - rect.right });
+			return { top: rect.bottom, right: window.innerWidth - rect.right };
 		}
+		return { top: 0, right: 0 };
+	};
+
+	useEffect(() => {
+		if (isOpen) {
+			setPosition(calculatePosition());
+
+			const handleScroll = () => {
+				setPosition(calculatePosition());
+			};
+
+			const scrollContainer = document.querySelector(".history-scrollbar");
+			if (scrollContainer) {
+				scrollContainer.addEventListener("scroll", handleScroll);
+			}
+
+			return () => {
+				if (scrollContainer) {
+					scrollContainer.removeEventListener("scroll", handleScroll);
+				}
+			};
+		}
+		return undefined;
 	}, [isOpen, triggerRef]);
 
 	const handleRename = () => {
