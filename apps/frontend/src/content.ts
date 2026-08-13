@@ -717,8 +717,14 @@ export const Content = {
 	//indeterminateCheckbox
 	"indeterminateCheckbox.ariaLabel":
 		"Alle Dokumente aus diesem Ordner auswählen für eine Aktion (Löschen, Öffnen)",
-	//DeleteHistoryEntryButton
-	"deleteHistoryEntryButton.arialabel": "Historyeintrag löschen",
+	//HistoryEntryDropdown
+	"historyEntryDropdown.menuIcon.ariaLabel": "Chat-Optionen",
+	"historyEntryDropdown.menuIcon.imgAlt": "Menü-Icon",
+	"historyEntryDropdown.rename": "Umbenennen",
+	"historyEntryDropdown.rename.imgAlt": "Stift-Icon",
+	"historyEntryDropdown.delete": "Löschen",
+	"historyEntryDropdown.delete.imgAlt": "Mülleimer-Icon",
+	"historyEntryDropdown.renameInput.ariaLabel": "Chat umbenennen",
 	//profileButton
 	"profile.button.ariaLabel": "Profil öffnen",
 	"profile.button.mobile": "Profileinstellungen",
