@@ -34,7 +34,7 @@ export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
 				onClick={handleOpenMenu}
 			>
 				<img
-					src="/icons/dot-menu-icon.svg"
+					src="/icons/dot-menu-icon-blue.svg"
 					alt={Content["documentsList.menuIcon.imgAlt"]}
 					width={18}
 					height={18}

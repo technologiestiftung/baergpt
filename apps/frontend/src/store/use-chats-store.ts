@@ -9,6 +9,7 @@ import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
 import { getChats as getChatsFromDb } from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";
 import { deleteChat as deleteChatFromDb } from "../api/chat/delete-chat.ts";
+import { renameChat as renameChatInDb } from "../api/chat/rename-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
 import { updateMessage as updateMessageInDb } from "../api/message/update-message.ts";
@@ -52,6 +53,7 @@ interface ChatStore {
 	): Promise<ChatWithMessages>;
 	createChat(firstMessage: NewChatMessage): Promise<ChatWithMessages>;
 	deleteChat(chatId: number): Promise<void>;
+	renameChat(chatId: number, newName: string): Promise<void>;
 	addMessageToChat(
 		chat: ChatWithMessages,
 		chatMessage: NewChatMessage,
@@ -304,6 +306,19 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		set({ chats: updatedChats });
 
 		await deleteChatFromDb(chatId);
+	},
+
+	/**
+	 * Renames the chat with the given id
+	 */
+	async renameChat(chatId, newName) {
+		await renameChatInDb(chatId, newName);
+
+		const updatedChats = get().chats.map((chat) =>
+			chat.id === chatId ? { ...chat, name: newName } : chat,
+		);
+
+		set({ chats: updatedChats });
 	},
 
 	/**
