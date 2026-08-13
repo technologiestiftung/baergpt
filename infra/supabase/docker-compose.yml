@@ -163,6 +163,11 @@ services:
       GOTRUE_EXTERNAL_PHONE_ENABLED: ${ENABLE_PHONE_SIGNUP}
       GOTRUE_SMS_AUTOCONFIRM: ${ENABLE_PHONE_AUTOCONFIRM}
       GOTRUE_RATE_LIMIT_EMAIL_SENT: 10000
+      # Rate-limit the OTP/verify endpoint. GoTrue only enforces the verify
+      # limiter when it can identify the client, which requires RATE_LIMIT_HEADER.
+      GOTRUE_RATE_LIMIT_HEADER: X-Forwarded-For
+      GOTRUE_RATE_LIMIT_VERIFY: ${GOTRUE_RATE_LIMIT_VERIFY}
+      GOTRUE_MAILER_OTP_EXP: ${GOTRUE_MAILER_OTP_EXP}
       # Uncomment to enable custom access token hook. Please see: https://supabase.com/docs/guides/auth/auth-hooks for full list of hooks and additional details about custom_access_token_hook
 
       # GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED: "true"
@@ -447,8 +452,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXP: ${JWT_EXPIRY}
-    command:
-      [
+    command: [
         "postgres",
         "-c",
         "config_file=/etc/postgresql/postgresql.conf",
