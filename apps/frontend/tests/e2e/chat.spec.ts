@@ -1,5 +1,6 @@
 import { Readable } from "node:stream";
 import {
+	mockDocumentProcessing,
 	mockDocumentUpload,
 	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
@@ -177,6 +178,81 @@ test.describe("Chat", () => {
 		const answer = page.getByTestId("assistant-message-markdown-container");
 		await expect(answer).not.toBeEmpty();
 	});
+
+	testDesktopOnly(
+		"Chat submit is disabled while a newly attached document is still processing",
+		async ({ page, account }) => {
+			await page.goto("/");
+			await page.waitForLoadState("networkidle");
+
+			// Hold /documents/process open so we can control exactly when processing "finishes",
+			// and capture the real (randomUUID-based) source_url the client generated for this upload.
+			let releaseProcessing: (() => void) | undefined;
+			let capturedSourceUrl: string | undefined;
+			await page.route("**/documents/process", async (route) => {
+				const body = route.request().postDataJSON();
+				capturedSourceUrl = body.document.source_url;
+				await new Promise<void>((resolve) => {
+					releaseProcessing = resolve;
+				});
+				await route.fulfill({ status: 204 });
+			});
+
+			// Attach a brand-new file via the chat input's own "+" menu,
+			// the same path a user takes when attaching a document directly to a message.
+			await page
+				.getByRole("button", { name: "Weitere Funktionen aktivieren" })
+				.click();
+			await page
+				.locator("#chat-form input[type='file']")
+				.setInputFiles(secondaryDocumentPath);
+
+			// Wait until the upload is in flight (storage upload done, /documents/process held)
+			await expect
+				.poll(() => releaseProcessing !== undefined, { timeout: 15_000 })
+				.toBe(true);
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("Worum geht es?");
+
+			const sendButton = page.getByRole("button", { name: "Nachricht senden" });
+
+			// Submit must be blocked while the document is still processing
+			await expect(sendButton).toBeDisabled();
+
+			await chatInput.press("Enter");
+			await expect(
+				page.getByTestId("user-message-markdown-container"),
+			).not.toBeVisible();
+
+			// Simulate the backend finishing processing (insert matching document rows),
+			// then let the held /documents/process request resolve.
+			if (!capturedSourceUrl) {
+				throw new Error("capturedSourceUrl was not set by the route handler");
+			}
+			await mockDocumentProcessing({
+				userId: account.id,
+				sourceUrl: capturedSourceUrl,
+				accessGroupId: null,
+				fileName: secondaryDocumentName,
+				sourceType: "personal_document",
+			});
+			releaseProcessing?.();
+
+			// Once processing settles, the document is auto-selected into the chat
+			await expect(
+				page.getByTestId(`remove-item-${secondaryDocumentName}`),
+			).toBeVisible();
+
+			// Submit is unblocked again
+			await expect(sendButton).toBeEnabled();
+
+			await sendAndWaitForLLMResponse(page);
+			await expect(
+				page.getByTestId("user-message-markdown-container"),
+			).toBeVisible();
+		},
+	);
 
 	testDesktopOnly(
 		"Add document and user folder to chat via dropdown",

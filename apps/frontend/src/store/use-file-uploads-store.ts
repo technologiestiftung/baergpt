@@ -100,11 +100,6 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			updateFileUploadStatus(file, "processing");
 			await processDocument(file, filePath);
 			documentCreated = true;
-			updateFileUploadStatus(file, "successful");
-
-			setTimeout(() => {
-				get().removeFileUpload(file.name);
-			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 
 			await getUserDocuments(new AbortController().signal);
 
@@ -117,6 +112,12 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 					selectUserChatDocument(uploadedDocument);
 				}
 			}
+
+			updateFileUploadStatus(file, "successful");
+
+			setTimeout(() => {
+				get().removeFileUpload(file.name);
+			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 		} catch (error) {
 			useErrorStore.getState().handleError(error, span);
 
