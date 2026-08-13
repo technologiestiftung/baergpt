@@ -12,6 +12,7 @@ import { ChatStopGeneratingIcon } from "../../primitives/icons/chat-stop-generat
 import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
+import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
 import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
@@ -38,6 +39,7 @@ export const ChatForm: React.FC = () => {
 		useChatsStore();
 	const { showInfoMessage } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
+	const { isUploadingOver } = useFileUploadsStore();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
@@ -60,7 +62,9 @@ export const ChatForm: React.FC = () => {
 		}
 
 		const isSubmitEnabled =
-			!isLoading() && event.currentTarget.value.trim().length > 0;
+			!isLoading() &&
+			isUploadingOver() &&
+			event.currentTarget.value.trim().length > 0;
 		if (isEnterWithoutShiftPressed && isSubmitEnabled) {
 			event.currentTarget.form?.requestSubmit();
 		}
@@ -223,7 +227,7 @@ export const ChatForm: React.FC = () => {
 						) : (
 							<button
 								type="submit"
-								disabled={!textareaContent.trim()}
+								disabled={!textareaContent.trim() || !isUploadingOver()}
 								aria-label={Content["chat.sendButton.ariaLabel"]}
 								className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
 							>
