@@ -106,7 +106,7 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 
 	return (
 		<div
-			className="fixed z-50 w-[143px] bg-hellblau-30 rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1"
+			className="fixed z-50 w-fit bg-white rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1"
 			style={{ top: `${position.top}px`, right: `${position.right}px` }}
 			onKeyDown={handleKeyDown}
 			role="listbox"
