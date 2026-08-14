@@ -13,6 +13,36 @@ const sourceType = "default_document";
 const bucketName = "public_documents";
 const defaultDocumentsDir = resolve(process.cwd(), "./src/default_documents");
 
+function assertTargetAllowed(): void {
+	let host: string;
+	try {
+		host = new URL(config.supabaseUrl).hostname;
+	} catch {
+		throw new Error(`SUPABASE_URL is not a valid URL: "${config.supabaseUrl}"`);
+	}
+
+	const localHosts = ["localhost", "127.0.0.1", "0.0.0.0", "::1"];
+	if (localHosts.includes(host)) {
+		console.log(
+			`Uploading default documents to local Supabase at ${config.supabaseUrl}`,
+		);
+		return;
+	}
+
+	if (process.env.ALLOW_REMOTE_UPLOAD !== "true") {
+		throw new Error(
+			`Refusing to upload: SUPABASE_URL points to a non-local target ("${config.supabaseUrl}"). ` +
+				`Your environment variables may be pointing at staging/production. ` +
+				`If this is intentional, re-run with ALLOW_REMOTE_UPLOAD=true.`,
+		);
+	}
+
+	console.warn(
+		`⚠️  Uploading default documents to a NON-LOCAL target ("${config.supabaseUrl}") ` +
+			`because ALLOW_REMOTE_UPLOAD=true was set.`,
+	);
+}
+
 // eslint-disable-next-line consistent-return
 async function getPdfFiles(): Promise<string[]> {
 	try {
@@ -163,6 +193,8 @@ async function processDocument(
 
 async function uploadDefaultDocument() {
 	try {
+		assertTargetAllowed();
+
 		const pdfFiles = await getPdfFiles();
 
 		if (pdfFiles.length === 0) {

@@ -1,7 +1,31 @@
-import { serviceRoleDbClient as supabase } from "../src/supabase";
+import { serviceRoleDbClient as supabase } from "../../src/supabase";
 import type { User } from "@supabase/supabase-js";
+import { config } from "../../src/config";
+
+function assertLocalTarget() {
+	let host: string;
+	try {
+		host = new URL(config.supabaseUrl).hostname;
+	} catch {
+		throw new Error(`SUPABASE_URL is not a valid URL: "${config.supabaseUrl}"`);
+	}
+
+	const localHosts = ["localhost", "127.0.0.1", "0.0.0.0", "::1"];
+	if (!localHosts.includes(host)) {
+		throw new Error(
+			`Refusing to seed: SUPABASE_URL points to a non-local target ("${config.supabaseUrl}"). ` +
+				`This script is only meant to run against a local Supabase instance. ` +
+				`Check your environment variables — they may be pointing at staging/production.`,
+		);
+	}
+
+	/* eslint-disable-next-line no-console */
+	console.log(`Seeding admin for local Supabase at ${config.supabaseUrl}`);
+}
 
 export async function seedLocalAdmin() {
+	assertLocalTarget();
+
 	const id = crypto.randomUUID();
 	const email = "local.admin@ts.berlin";
 	const password = "123456789!";

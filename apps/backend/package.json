@@ -17,7 +17,7 @@
 		"prettier:write": "prettier --write src supabase",
 		"db:reset": "supabase db reset && npm run db:typegen && npm run db:upload-default-documents && npm run db:localseed",
 		"db:typegen": "supabase gen types --lang typescript --local > ../../libs/db-schema/index.ts && prettier --write ../../libs/db-schema/index.ts && ESLINT_USE_FLAT_CONFIG=true eslint --fix ../../libs/db-schema/index.ts",
-		"db:localseed": "tsx ./supabase/local-seed.ts",
+		"db:localseed": "tsx supabase/scripts/local-seed.ts",
 		"db:upload-default-documents": "tsx ./supabase/scripts/upload-default-documents.ts",
 		"db:backfill-mistral": "tsx ./supabase/backfill-mistral-embeddings.ts",
 		"db:up": "supabase migration up --local && npm run db:typegen",
