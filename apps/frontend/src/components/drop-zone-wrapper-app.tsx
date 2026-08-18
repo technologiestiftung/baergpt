@@ -25,9 +25,7 @@ export function DropZoneWrapperApp({ children }: { children: ReactNode }) {
 		if (isDropZoneDisabled) {
 			return;
 		}
-		uploadFiles(acceptedFiles, { selectInChatOnSuccess: true }).catch(
-			useErrorStore.getState().handleError,
-		);
+		uploadFiles(acceptedFiles).catch(useErrorStore.getState().handleError);
 	};
 
 	const { getRootProps, getInputProps, isDragActive } = useDropzone({
