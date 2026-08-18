@@ -13,6 +13,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../../config";
 import { GenerationService } from "../../services/generation-service";
+import { UserScopedDbService } from "../../services/db-service/user-scoped-db-service";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -55,62 +56,65 @@ describe("Documents Route Integration", () => {
 		accessToken = data.session?.access_token || "";
 	});
 
-	it("should remove storage file if processing fails", async () => {
-		// 1. Upload file to storage
-		const sourceUrl = `${givenUserId}/${defaultDocumentName}`;
-		const file = readFileSync(defaultDocumentPath);
-		const { error: uploadError } = await supabaseAnonClient.storage
-			.from("documents")
-			.upload(sourceUrl, file, {
-				contentType: "application/pdf",
-				upsert: true,
-			});
-		expect(uploadError).toBeNull();
+	it("should not leave an orphaned storage file when processing fails", async () => {
+		// The route uploads to storage only as the LAST step (after logging the
+		// document). If processing fails before that, nothing should have been
+		// written to storage.
 
-		// Verify it exists
+		// Baseline: whatever is already in the user's folder.
 		const { data: listBefore } = await serviceRoleDbClient.storage
 			.from("documents")
 			.list(givenUserId);
-		expect(
-			listBefore?.find((f) => f.name === defaultDocumentName),
-		).toBeDefined();
+		const countBefore = listBefore?.length ?? 0;
 
-		// 2. Mock GenerationService to fail
-		// We use spyOn on the prototype because the service is instantiated inside the route module
+		// Mock extraction (avoid real OCR) and force summarize to fail.
+		const extractSpy = vi
+			.spyOn(UserScopedDbService.prototype, "extractDocument")
+			.mockResolvedValue({
+				parsedPages: [{ content: "content", tokenCount: 1, pageNumber: 1 }],
+				checksum: "checksum",
+				fileSize: 1,
+				numPages: 1,
+			} as never);
 		const summarizeSpy = vi
 			.spyOn(GenerationService.prototype, "summarize")
 			.mockRejectedValue(new Error("Forced Failure"));
 
-		// 3. Call /process
-		const req = new Request("http://localhost/documents/process", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${accessToken}`,
-			},
-			body: JSON.stringify({
-				document: {
-					source_url: sourceUrl,
-					source_type: "personal_document",
-					folder_id: null,
-					owned_by_user_id: givenUserId,
-					created_at: new Date().toISOString(),
-				},
-				llm_model: config.defaultDocumentProcessingModel,
+		// Send the file through the combined upload+process route (multipart).
+		const file = new File(
+			[new Uint8Array(readFileSync(defaultDocumentPath))],
+			defaultDocumentName,
+			{ type: "application/pdf" },
+		);
+		const form = new FormData();
+		form.append("file", file);
+		form.append(
+			"metadata",
+			JSON.stringify({
+				document: { folderId: null, sourceType: "personal_document" },
+				llmModel: config.defaultDocumentProcessingModel,
 			}),
-		});
+		);
 
-		const res = await app.fetch(req);
-		expect(res.status).toBe(500);
+		const res = await app.fetch(
+			new Request("http://localhost/documents/process", {
+				method: "POST",
+				headers: { Authorization: `Bearer ${accessToken}` },
+				body: form,
+			}),
+		);
 
-		// 4. Verify file is gone
+		// Failure is delivered in-band as an SSE event, not an HTTP error code.
+		const text = await res.text();
+		expect(text).toContain("failed.generic");
 
+		// No new file should have been written to storage.
 		const { data: listAfter } = await serviceRoleDbClient.storage
 			.from("documents")
 			.list(givenUserId);
-		const found = listAfter?.find((f) => f.name === defaultDocumentName);
-		expect(found).toBeUndefined();
+		expect(listAfter?.length ?? 0).toBe(countBefore);
 
+		extractSpy.mockRestore();
 		summarizeSpy.mockRestore();
-	}, 30_000);
+	}, 20_000);
 });

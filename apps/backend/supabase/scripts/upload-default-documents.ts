@@ -112,7 +112,7 @@ async function processDocument(
 		access_group_id: accessGroupId,
 	};
 	try {
-		const extractionResult = await dbService.extractDocument(document);
+		const extractionResult = await dbService.extractDocument(document, file);
 
 		const documentForProcessing: Document = {
 			...document,

@@ -39,42 +39,73 @@ import { config } from "../../config";
 
 const BASE_URL = "http://localhost/documents/process";
 
-const VALID_PDF_BODY = {
+// The route now derives the file extension / source_url server-side from the
+// uploaded file's mime type, so the metadata no longer carries a source_url.
+const VALID_METADATA = {
 	document: {
-		source_url: "test-user-id/some-document.pdf",
-		source_type: "personal_document",
-		folder_id: null,
+		folderId: null,
+		sourceType: "personal_document",
 	},
-	llm_model: config.defaultDocumentProcessingModel,
+	llmModel: config.defaultDocumentProcessingModel,
 };
 
-const VALID_WORD_BODY = {
-	document: {
-		source_url: "test-user-id/some-document.docx",
-		source_type: "personal_document",
-		folder_id: null,
-	},
-	llm_model: config.defaultDocumentProcessingModel,
-};
+// Kept as aliases so existing tests read the same; the file (not the metadata)
+// now decides pdf/docx/xlsx.
+const VALID_PDF_BODY = VALID_METADATA;
+const VALID_WORD_BODY = VALID_METADATA;
+const VALID_EXCEL_BODY = VALID_METADATA;
 
-const VALID_EXCEL_BODY = {
-	document: {
-		source_url: "test-user-id/some-document.xlsx",
-		source_type: "personal_document",
-		folder_id: null,
-	},
-	llm_model: config.defaultDocumentProcessingModel,
-};
+const DUMMY_BYTES = new Uint8Array([1, 2, 3]);
 
-function createRequest(body: unknown): Request {
+function pdfFile(): File {
+	return new File([DUMMY_BYTES], "some-document.pdf", {
+		type: "application/pdf",
+	});
+}
+
+function wordFile(): File {
+	return new File([DUMMY_BYTES], "some-document.docx", {
+		type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	});
+}
+
+function excelFile(): File {
+	return new File([DUMMY_BYTES], "some-document.xlsx", {
+		type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	});
+}
+
+function createRequest(metadata: unknown, file: File = pdfFile()): Request {
+	const form = new FormData();
+	form.append("file", file);
+	form.append(
+		"metadata",
+		typeof metadata === "string" ? metadata : JSON.stringify(metadata),
+	);
+
+	// No Content-Type header: FormData sets the multipart boundary itself.
 	return new Request(BASE_URL, {
 		method: "POST",
 		headers: {
-			"Content-Type": "application/json",
 			Authorization: "Bearer mock-token",
 		},
-		body: JSON.stringify(body),
+		body: form,
 	});
+}
+
+/**
+ * The route always responds 200 with an SSE stream; failures are delivered
+ * in-band as `{ status: "failed.*" }` events. This reads the whole stream and
+ * returns the emitted status strings (heartbeat pings are empty and skipped).
+ */
+async function getStatuses(response: Response): Promise<string[]> {
+	const text = await response.text();
+	return text
+		.split("\n")
+		.filter((line) => line.startsWith("data: "))
+		.map((line) => line.slice(6).trim())
+		.filter((payload) => payload.length > 0)
+		.map((payload) => JSON.parse(payload).status as string);
 }
 
 /** A minimal extraction result so the happy-path stubs pass validation */
@@ -99,23 +130,22 @@ const MOCK_EMBEDDINGS = [
 describe("POST /documents/process – captureError is called for every error case", () => {
 	const captureErrorMock = captureError as ReturnType<typeof vi.fn>;
 
-	// Spies that represent the happy-path baseline; individual tests override them
-	let validateDocumentRequestSpy: ReturnType<typeof vi.spyOn>;
+	// Spies that represent the happy-path baseline; individual tests override them.
+	// NOTE: validateDocumentRequest is intentionally NOT mocked — it parses
+	// and validates the whole multipart request (file/size/format/metadata/path)
+	// and returns { sourceUrl, file, bucket, ... }. The real implementation works
+	// for the happy-path request built by createRequest(), and the request-level
+	// tests rely on it actually throwing.
 	let extractDocumentSpy: ReturnType<typeof vi.spyOn>;
 	let extractWordDocumentSpy: ReturnType<typeof vi.spyOn>;
 	let summarizeSpy: ReturnType<typeof vi.spyOn>;
 	let batchEmbedSpy: ReturnType<typeof vi.spyOn>;
 	let logProcessedDocumentSpy: ReturnType<typeof vi.spyOn>;
-	let deleteFileFromStorageSpy: ReturnType<typeof vi.spyOn>;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 
 		// Default: happy-path stubs for all service methods
-		validateDocumentRequestSpy = vi
-			.spyOn(ValidationService.prototype, "validateDocumentRequest")
-			.mockResolvedValue({ success: true, bucket: "documents" });
-
 		extractDocumentSpy = vi
 			.spyOn(UserScopedDbService.prototype, "extractDocument")
 			.mockResolvedValue(MOCK_EXTRACTION_RESULT as never);
@@ -134,30 +164,95 @@ describe("POST /documents/process – captureError is called for every error cas
 
 		logProcessedDocumentSpy = vi
 			.spyOn(UserScopedDbService.prototype, "logProcessedDocument")
-			.mockResolvedValue(undefined);
+			.mockResolvedValue(123);
 
-		deleteFileFromStorageSpy = vi
-			.spyOn(UserScopedDbService.prototype, "deleteFileFromStorage")
-			.mockResolvedValue(undefined);
+		// Stub the cleanup calls so the route's cleanup() (deleteDocument +
+		// deleteFileFromStorage) is a no-op by default and doesn't add spurious
+		// captureError calls. Individual tests override these when they assert on
+		// cleanup behaviour.
+		vi.spyOn(UserScopedDbService.prototype, "deleteDocument").mockResolvedValue(
+			undefined,
+		);
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"deleteFileFromStorage",
+		).mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
 
-	it("calls captureError when request body is not valid JSON", async () => {
+	it("calls captureError when the metadata is not valid JSON", async () => {
+		// Valid file, but metadata is a malformed JSON string → JSON.parse throws.
+		const givenRequest = createRequest("{ not json !!!");
+
+		const actualResponse = await app.fetch(givenRequest);
+
+		expect(await getStatuses(actualResponse)).toContain("failed.generic");
+		expect(captureErrorMock).toHaveBeenCalledOnce();
+	});
+
+	it("emits failed.format when the file part is missing", async () => {
+		// validateDocumentRequest throws Error("failed.format") when the `file`
+		// part is not a File, so a missing file surfaces as failed.format.
+		const form = new FormData();
+		form.append("metadata", JSON.stringify(VALID_METADATA));
 		const givenRequest = new Request(BASE_URL, {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: "Bearer mock-token",
-			},
-			body: "{ not json !!!",
+			headers: { Authorization: "Bearer mock-token" },
+			body: form,
 		});
 
 		const actualResponse = await app.fetch(givenRequest);
 
-		expect(actualResponse.status).toBe(500);
+		expect(await getStatuses(actualResponse)).toContain("failed.format");
+		expect(captureErrorMock).toHaveBeenCalledOnce();
+	});
+
+	it("emits failed.generic when the metadata part is missing", async () => {
+		const form = new FormData();
+		form.append("file", pdfFile());
+		const givenRequest = new Request(BASE_URL, {
+			method: "POST",
+			headers: { Authorization: "Bearer mock-token" },
+			body: form,
+		});
+
+		const actualResponse = await app.fetch(givenRequest);
+
+		expect(await getStatuses(actualResponse)).toContain("failed.generic");
+		expect(captureErrorMock).toHaveBeenCalledOnce();
+	});
+
+	it("emits failed.size when the file exceeds the size limit", async () => {
+		// The route reads the size off the File that parseBody() reconstructs, so
+		// shrink the limit instead of trying to send an oversized file.
+		const originalLimit = config.fileUploadLimitMb;
+		config.fileUploadLimitMb = 0;
+
+		try {
+			const actualResponse = await app.fetch(
+				createRequest(VALID_PDF_BODY, pdfFile()),
+			);
+
+			expect(await getStatuses(actualResponse)).toContain("failed.size");
+			expect(captureErrorMock).toHaveBeenCalledOnce();
+		} finally {
+			config.fileUploadLimitMb = originalLimit;
+		}
+	});
+
+	it("emits failed.format for an unsupported mime type", async () => {
+		const pngFile = new File([DUMMY_BYTES], "some-image.png", {
+			type: "image/png",
+		});
+
+		const actualResponse = await app.fetch(
+			createRequest(VALID_PDF_BODY, pngFile),
+		);
+
+		expect(await getStatuses(actualResponse)).toContain("failed.format");
 		expect(captureErrorMock).toHaveBeenCalledOnce();
 	});
 
@@ -172,35 +267,23 @@ describe("POST /documents/process – captureError is called for every error cas
 
 		const actualResponse = await app.fetch(givenRequest);
 
-		expect(actualResponse.status).toBe(400);
+		expect(await getStatuses(actualResponse)).toContain("failed.generic");
 		expect(captureErrorMock).toHaveBeenCalledOnce();
 		const [capturedArg] = captureErrorMock.mock.calls[0];
 		expect(capturedArg.name).toBe("ZodError");
 	});
 
-	it("calls captureError when validateDocumentRequest returns a failure result", async () => {
-		validateDocumentRequestSpy.mockResolvedValue({
-			success: false,
-			error: "File not found in storage at the specified source_url",
-			status: 404,
-		});
-
-		const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
-
-		expect(actualResponse.status).toBe(404);
-		expect(captureErrorMock).toHaveBeenCalledOnce();
-		const [capturedArg] = captureErrorMock.mock.calls[0];
-		expect(capturedArg).toBeInstanceOf(Error);
-		expect(capturedArg.message).toContain("File not found");
-	});
-
 	it("calls captureError when validateDocumentRequest throws", async () => {
+		// validateDocumentRequest no longer returns failure results — it throws.
 		const givenError = new Error("Unexpected DB error during validation");
-		validateDocumentRequestSpy.mockRejectedValue(givenError);
+		vi.spyOn(
+			ValidationService.prototype,
+			"validateDocumentRequest",
+		).mockRejectedValue(givenError);
 
 		const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-		expect(actualResponse.status).toBe(500);
+		expect(await getStatuses(actualResponse)).toContain("failed.generic");
 		expect(captureErrorMock).toHaveBeenCalledOnce();
 		expect(captureErrorMock).toHaveBeenCalledWith(givenError);
 	});
@@ -211,26 +294,12 @@ describe("POST /documents/process – captureError is called for every error cas
 		let givenExcelRequest: Request;
 
 		beforeEach(() => {
-			givenPdfRequest = createRequest(VALID_PDF_BODY);
-			givenWordRequest = createRequest(VALID_WORD_BODY);
-			givenExcelRequest = createRequest(VALID_EXCEL_BODY);
+			givenPdfRequest = createRequest(VALID_PDF_BODY, pdfFile());
+			givenWordRequest = createRequest(VALID_WORD_BODY, wordFile());
+			givenExcelRequest = createRequest(VALID_EXCEL_BODY, excelFile());
 			// For these tests, we want to test sub-functions of extractDocument,
 			// so we restore the original implementation of extractDocument
 			extractDocumentSpy.mockRestore();
-		});
-
-		it("calls captureError when getDocumentBufferFromSupabase throws", async () => {
-			const givenError = new Error("Some Error");
-			vi.spyOn(
-				UserScopedDbService.prototype,
-				"getDocumentBufferFromSupabase",
-			).mockRejectedValueOnce(givenError);
-
-			const actualResponse = await app.fetch(givenPdfRequest);
-
-			expect(actualResponse.status).toBe(500);
-			expect(captureErrorMock).toHaveBeenCalledOnce();
-			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
 		});
 
 		it("calls captureError when savePdfPreview throws", async () => {
@@ -239,14 +308,10 @@ describe("POST /documents/process – captureError is called for every error cas
 				UserScopedDbService.prototype,
 				"savePdfPreview",
 			).mockRejectedValue(givenError);
-			vi.spyOn(
-				UserScopedDbService.prototype,
-				"getDocumentBufferFromSupabase",
-			).mockResolvedValueOnce(new Uint8Array() as never);
 
 			const res = await app.fetch(givenWordRequest);
 
-			expect(res.status).toBe(500);
+			expect(await getStatuses(res)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledOnce();
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
 		});
@@ -255,17 +320,13 @@ describe("POST /documents/process – captureError is called for every error cas
 			const givenError = new Error("Some Error");
 			vi.spyOn(
 				UserScopedDbService.prototype,
-				"getDocumentBufferFromSupabase",
-			).mockResolvedValueOnce(new Uint8Array() as never);
-			vi.spyOn(
-				UserScopedDbService.prototype,
 				"savePdfPreview",
 			).mockResolvedValueOnce();
 			extractWordDocumentSpy.mockRejectedValueOnce(givenError);
 
 			const actualResponse = await app.fetch(givenWordRequest);
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledOnce();
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
 		});
@@ -273,17 +334,13 @@ describe("POST /documents/process – captureError is called for every error cas
 		it("calls captureError when extractExcelDocument throws", async () => {
 			const givenError = new Error("Some Error");
 			vi.spyOn(
-				UserScopedDbService.prototype,
-				"getDocumentBufferFromSupabase",
-			).mockResolvedValueOnce(new Uint8Array() as never);
-			vi.spyOn(
 				ExcelExtractionService.prototype,
 				"extractExcelDocument",
 			).mockRejectedValueOnce(givenError);
 
 			const actualResponse = await app.fetch(givenExcelRequest);
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledOnce();
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
 		});
@@ -291,27 +348,19 @@ describe("POST /documents/process – captureError is called for every error cas
 		it("calls captureError when getPdfPageCount throws", async () => {
 			const givenError = new Error("Some Error");
 			vi.spyOn(
-				UserScopedDbService.prototype,
-				"getDocumentBufferFromSupabase",
-			).mockResolvedValueOnce(new Uint8Array() as never);
-			vi.spyOn(
 				DocumentExtractionService.prototype,
 				"getPdfPageCount",
 			).mockRejectedValueOnce(givenError);
 
 			const actualResponse = await app.fetch(givenPdfRequest);
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledOnce();
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
 		});
 
 		it("calls captureError when extractPdfAsMarkdownPages throws", async () => {
 			const givenError = new Error("Some Error");
-			vi.spyOn(
-				UserScopedDbService.prototype,
-				"getDocumentBufferFromSupabase",
-			).mockResolvedValueOnce(new Uint8Array() as never);
 			vi.spyOn(
 				DocumentExtractionService.prototype,
 				"getPdfPageCount",
@@ -323,7 +372,7 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(givenPdfRequest);
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledOnce();
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
 		});
@@ -361,9 +410,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 
 		it("calls captureError when generateSummary throws", async () => {
@@ -373,9 +421,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 
 		it("calls captureError when generateOneSentenceSummary throws", async () => {
@@ -386,9 +433,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 
 		it("calls captureError when generateTags throws", async () => {
@@ -400,9 +446,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 	});
 
@@ -432,9 +477,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 
 		it("calls captureError when generateMistralBatchEmbeddings throws", async () => {
@@ -443,9 +487,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 	});
 
@@ -495,9 +538,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 
 		it("calls captureError when logSummarizedDocument throws", async () => {
@@ -511,9 +553,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 
 		it("calls captureError when logEmbeddings throws", async () => {
@@ -528,9 +569,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 
 		it("calls captureError when updateUserDocumentCount throws", async () => {
@@ -546,9 +586,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
 
 		it("calls captureError when deleteDocumentById throws", async () => {
@@ -565,22 +604,60 @@ describe("POST /documents/process – captureError is called for every error cas
 
 			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-			expect(actualResponse.status).toBe(500);
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError2);
-			expect(deleteFileFromStorageSpy).toHaveBeenCalledOnce();
 		});
+	});
+
+	it("emits canceled and cleans up when the request is aborted after upload", async () => {
+		const controller = new AbortController();
+
+		// Abort right after the document is logged and the file is uploaded, so
+		// the post-upload `signal.aborted` check fires.
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"uploadFileToStorage",
+		).mockImplementation(async () => {
+			controller.abort();
+		});
+		const deleteDocumentSpy = vi
+			.spyOn(UserScopedDbService.prototype, "deleteDocument")
+			.mockResolvedValue(undefined);
+
+		const form = new FormData();
+		form.append("file", pdfFile());
+		form.append("metadata", JSON.stringify(VALID_METADATA));
+		const givenRequest = new Request(BASE_URL, {
+			method: "POST",
+			headers: { Authorization: "Bearer mock-token" },
+			body: form,
+			signal: controller.signal,
+		});
+
+		const actualResponse = await app.fetch(givenRequest);
+
+		expect(await getStatuses(actualResponse)).toContain("canceled");
+		expect(deleteDocumentSpy).toHaveBeenCalledWith(123, "test-user-id");
 	});
 
 	it("calls captureError twice when both processing and cleanup fail", async () => {
 		const givenProcessingError = new Error("Given Processing Error");
 		const givenCleanupError = new Error("Given Cleanup Error");
 
-		summarizeSpy.mockRejectedValue(givenProcessingError);
-		deleteFileFromStorageSpy.mockRejectedValue(givenCleanupError);
+		// Cleanup (deleteDocument) only runs once a documentId exists, i.e. after
+		// logProcessedDocument succeeds. So fail on the storage upload (the step
+		// after logging) and then fail the cleanup itself.
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"uploadFileToStorage",
+		).mockRejectedValue(givenProcessingError);
+		vi.spyOn(UserScopedDbService.prototype, "deleteDocument").mockRejectedValue(
+			givenCleanupError,
+		);
 
 		const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
 
-		expect(actualResponse.status).toBe(500);
+		expect(await getStatuses(actualResponse)).toContain("failed.generic");
 		expect(captureErrorMock).toHaveBeenCalledTimes(2);
 
 		expect(captureErrorMock).toHaveBeenNthCalledWith(1, givenProcessingError);

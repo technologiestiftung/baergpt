@@ -1,69 +1,41 @@
-import { StorageApiError } from "@supabase/storage-js";
 import { useAuthStore } from "../../store/auth-store";
 import { useCurrentFolderStore } from "../../store/use-current-folder-store.ts";
-import { supabase } from "../../../supabase-client";
+import {
+	UPLOAD_STATUS_MAP,
+	type UploadStatusKeys,
+} from "../../store/use-file-uploads-store.ts";
+import { captureError } from "../../monitoring/capture-error.ts";
 
-/**
- * Uploads the file directly to Supabase Storage.
- */
-export async function uploadFileToDb(
+export async function uploadAndProcessDocument(
 	file: File,
-	filePath: string,
-): Promise<void> {
-	try {
-		const { error: uploadError } = await supabase.storage
-			.from("documents")
-			.upload(filePath, file);
-
-		if (uploadError) {
-			throw uploadError;
-		}
-	} catch (error) {
-		if (error instanceof StorageApiError && error.status === 409) {
-			throw new Error("failed.duplicate");
-		} else {
-			throw new Error("failed.generic");
-		}
-	}
-}
-
-/**
- * Process: metadata only; backend loads file bytes by sourceUrl
- */
-export async function processDocument(
-	file: File,
-	filePath: string,
-): Promise<void> {
+	updateFileUploadStatusCallback: (status: UploadStatusKeys) => void,
+): Promise<number> {
 	const { session } = useAuthStore.getState();
 	const { currentFolder } = useCurrentFolderStore.getState();
 
 	// Create document metadata
 	const documentData = {
 		document: {
-			id: null,
-			folder_id: currentFolder?.id || null,
-			owned_by_user_id: session?.user.id,
-			created_at: new Date().toISOString(),
-			source_type: "personal_document",
-			source_url: filePath,
-			file_name: file.name,
-			metadata: {
-				mimeType: file.type,
-				size: file.size,
-			},
+			folderId: currentFolder?.id || null,
+			sourceType: "personal_document",
 		},
-		llm_model: import.meta.env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
+		llmModel: import.meta.env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
 	};
+
+	const form = new FormData();
+	form.append("file", file);
+	form.append("metadata", JSON.stringify(documentData));
+
+	updateFileUploadStatusCallback("uploading");
 
 	const url = `${import.meta.env.VITE_API_URL}/documents/process`;
 
 	const response = await fetch(url, {
 		method: "POST",
 		headers: {
-			"Content-Type": "application/json",
 			Authorization: `Bearer ${session?.access_token}`,
 		},
-		body: JSON.stringify(documentData),
+		body: form,
 	});
 
 	if (!response.ok) {
@@ -71,12 +43,75 @@ export async function processDocument(
 			.json()
 			.catch(() => ({ message: "Unknown error" }));
 
-		// Handle specific backend error codes
-		if (response.status === 409) {
-			throw new Error("failed.duplicate");
-		}
-
-		console.error("Document processing failed:", errorResponse);
-		throw new Error("failed.generic");
+		throw new Error(
+			`Document processing failed: ${JSON.stringify(errorResponse)}`,
+		);
 	}
+
+	if (!response.body) {
+		throw new Error("Document processing response has no body");
+	}
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+	let documentId: number | null = null;
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+
+			if (done) {
+				break;
+			}
+
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split("\n");
+			buffer = lines.pop() ?? ""; // last line may be incomplete — keep i
+
+			for (const line of lines) {
+				if (!line.startsWith("data: ")) {
+					continue;
+				}
+
+				const payload = line.slice(6).trim();
+				if (!payload) {
+					continue;
+				}
+
+				let event;
+				try {
+					event = JSON.parse(payload);
+				} catch {
+					continue; // ignore anything unparseable, it can be just a heartbeat
+				}
+
+				const status: unknown = event?.status;
+
+				if (typeof status !== "string" || !(status in UPLOAD_STATUS_MAP)) {
+					continue;
+				}
+
+				updateFileUploadStatusCallback(status as UploadStatusKeys);
+
+				if (status.startsWith("failed")) {
+					throw new Error(status);
+				}
+
+				updateFileUploadStatusCallback(event.status);
+
+				if (event.status === "successful") {
+					documentId = event.documentId;
+				}
+			}
+		}
+	} finally {
+		reader.cancel().catch((error) => captureError(error));
+	}
+
+	if (documentId === null) {
+		throw new Error("Stream finished without receiving a documentId");
+	}
+
+	return documentId;
 }

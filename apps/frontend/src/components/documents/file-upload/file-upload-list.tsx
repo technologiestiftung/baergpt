@@ -46,9 +46,7 @@ export function FileUploadList() {
 									</span>
 								)}
 								{/* Icons */}
-								{(status === "uploading" ||
-									status === "processing" ||
-									status === "uploaded") && (
+								{(status === "uploading" || status === "processing") && (
 									<LoadingSpinnerIcon variant="disabled" size="small" />
 								)}
 								{status === "successful" && <GreenCheckIcon size="small" />}

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { config } from "../config";
@@ -11,6 +11,29 @@ import { serviceRoleDbClient } from "../supabase";
 const DEFAULT_DOCUMENT_FILE_NAME = "BaerGPT-Handbuch.pdf";
 const DEFAULT_DOCUMENT_SOURCE_TYPE = "default_document";
 const PUBLIC_DOCUMENTS_BUCKET = "public_documents";
+
+// Mocked processing outputs so the test exercises real storage + DB writes
+// without hitting the (flaky) Mistral OCR / summary / embedding APIs. The chunk
+// embedding must match the vector(1024) column, or the real insert fails.
+const MOCK_EXTRACTION_RESULT = {
+	parsedPages: [{ content: "page content", tokenCount: 10, pageNumber: 1 }],
+	checksum: "test-checksum",
+	fileSize: 1234,
+	numPages: 1,
+};
+const MOCK_SUMMARY_DATA = {
+	summary: "A summary",
+	shortSummary: "Short",
+	tags: ["tag"],
+};
+const MOCK_EMBEDDINGS = [
+	{
+		content: "chunk",
+		embedding: new Array(config.mistralEmbeddingDimensions).fill(0),
+		chunkIndex: 0,
+		page: 1,
+	},
+];
 
 const cleanupDefaultDocuments = async (accessGroupId: string) => {
 	try {
@@ -92,11 +115,25 @@ describe("Default Document Integration Tests", () => {
 	});
 
 	afterAll(async () => {
+		vi.restoreAllMocks();
 		// Run cleanup after all tests
 		await cleanupDefaultDocuments(accessGroupId);
 	});
 
 	it("should upload and process default document with correct properties", async () => {
+		// Mock the expensive/flaky processing steps; logProcessedDocument still
+		// runs for real so the DB assertions below (and in the next test) hold.
+		vi.spyOn(
+			PrivilegedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue(MOCK_EXTRACTION_RESULT as never);
+		vi.spyOn(GenerationService.prototype, "summarize").mockResolvedValue(
+			MOCK_SUMMARY_DATA as never,
+		);
+		vi.spyOn(EmbeddingService.prototype, "batchEmbed").mockResolvedValue(
+			MOCK_EMBEDDINGS as never,
+		);
+
 		// Read file from disk
 		const filePath = resolve(
 			process.cwd(),
@@ -135,7 +172,7 @@ describe("Default Document Integration Tests", () => {
 			access_group_id: accessGroupId,
 		};
 
-		const extractionResult = await dbService.extractDocument(document);
+		const extractionResult = await dbService.extractDocument(document, file);
 
 		const documentForProcessing: Document = {
 			...document,
@@ -196,7 +233,7 @@ describe("Default Document Integration Tests", () => {
 		// Verify it's associated with the default access group
 		expect(verifiedDoc?.access_group_id).toBe(accessGroupId);
 		expect(verifiedDoc?.owned_by_user_id).toBeNull(); // Default documents are not owned by users
-	}, 400_000);
+	}, 20_000);
 
 	it("should create document summary and chunks after processing", async () => {
 		// Verify summary was created
@@ -220,7 +257,7 @@ describe("Default Document Integration Tests", () => {
 		expect(chunksError).toBeNull();
 		expect(chunks).toBeDefined();
 		expect(chunks?.length).toBeGreaterThan(0);
-	}, 400_000);
+	}, 20_000);
 
 	it("should have file available in storage", async () => {
 		// Read file from disk
@@ -273,5 +310,5 @@ describe("Default Document Integration Tests", () => {
 
 		expect(downloadError).toBeNull();
 		expect(downloadedFile).toBeDefined();
-	}, 60_000);
+	}, 20_000);
 });
