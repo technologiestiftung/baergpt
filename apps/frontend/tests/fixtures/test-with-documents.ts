@@ -1,6 +1,6 @@
 import { supabaseAdminClient } from "../supabase.ts";
 import { testWithMockedLlm } from "./test-with-mocked-llm.ts";
-import { expect, Page } from "@playwright/test";
+import { expect, Page, type Route } from "@playwright/test";
 import { createClient, Session } from "@supabase/supabase-js";
 import { config } from "../config.ts";
 import type { Database } from "@repo/db-schema";
@@ -316,6 +316,35 @@ export async function mockDocumentProcessing({
 }
 
 /**
+ * The combined upload+process route responds with a 200 SSE stream; a success
+ * is delivered in-band as a `successful` event carrying the document id. This
+ * fulfills a mocked `/documents/process` route with that shape so the client's
+ * stream reader resolves with a document id.
+ */
+export function fulfillProcessedDocumentSse(route: Route, documentId: number) {
+	return route.fulfill({
+		status: 200,
+		headers: { "content-type": "text/event-stream; charset=utf-8" },
+		body: `data: ${JSON.stringify({ status: "successful", documentId })}\n\n`,
+	});
+}
+
+/**
+ * Waits for a POST to `/documents/process`. The combined route flushes its 200
+ * SSE headers immediately (before processing finishes), so this MUST be called
+ * before the upload is triggered — otherwise the response can arrive first and
+ * be missed.
+ */
+export function waitForProcessResponse(page: Page) {
+	return page.waitForResponse(
+		(response) =>
+			response.url().includes("/documents/process") &&
+			response.request().method() === "POST",
+		{ timeout: 60_000 },
+	);
+}
+
+/**
  * Makes a real file upload of a single file via the file chooser and waits for
  * the file to be fully processed and appear in the document list.
  */
@@ -335,6 +364,11 @@ export async function uploadFileViaFileChooserAndWait({
 	await page.goto("/");
 
 	await page.waitForLoadState("networkidle");
+
+	// Register the response waiter BEFORE triggering the upload: the combined
+	// route flushes its 200 SSE headers immediately, so the response can arrive
+	// before we'd otherwise start listening and be missed (→ timeout).
+	const responsePromise = waitForProcessResponse(page);
 
 	if (browserName === "firefox") {
 		// Firefox: setup file chooser handler and use input element directly
@@ -361,16 +395,9 @@ export async function uploadFileViaFileChooserAndWait({
 		)
 		.toBeVisible();
 
-	const response = await page.waitForResponse(
-		(givenResponse) =>
-			givenResponse.url().includes("/documents/process") &&
-			givenResponse.request().method() === "POST",
-		{
-			timeout: 60_000,
-		},
-	);
+	const response = await responsePromise;
 
-	expect(response.status()).toBe(204);
+	expect(response.status()).toBe(200);
 
 	// Wait for the file to appear in the document list (scope to desktop panel)
 	const uploadedFile = page
@@ -451,6 +478,20 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 
 	const filePaths = files.map((file) => file.path);
 
+	// Collect the process responses via a listener registered BEFORE the upload:
+	// the route flushes its 200 SSE headers immediately, and several uploads run
+	// in parallel, so N separate waitForResponse() calls after the fact would
+	// race (and would all resolve to the same first response).
+	const uploadResponses: Array<import("@playwright/test").Response> = [];
+	page.on("response", (response) => {
+		if (
+			response.url().includes("/documents/process") &&
+			response.request().method() === "POST"
+		) {
+			uploadResponses.push(response);
+		}
+	});
+
 	if (browserName === "firefox") {
 		// Firefox: setup file chooser handler and use input element directly
 		page.on("filechooser", async (fileChooser) => {
@@ -479,19 +520,12 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 			.toBeVisible();
 	}
 
-	// Wait for all upload responses
-	const uploadResponses = [];
-	for (let i = 0; i < files.length; i++) {
-		const response = await page.waitForResponse(
-			(givenResponse) =>
-				givenResponse.url().includes("/documents/process") &&
-				givenResponse.request().method() === "POST",
-			{
-				timeout: 60_000,
-			},
-		);
-		uploadResponses.push(response);
-		expect(response.status()).toBe(204);
+	// Wait until every upload's response has been observed
+	await expect
+		.poll(() => uploadResponses.length, { timeout: 60_000 })
+		.toBe(files.length);
+	for (const response of uploadResponses) {
+		expect(response.status()).toBe(200);
 	}
 
 	// Wait for all files to appear in the document list (scope to desktop panel)
@@ -593,20 +627,17 @@ export async function uploadFileViaDragAndDropAndWait({
 
 	const dropZone = page.locator("#drop-zone-file-upload");
 
+	// Register the waiter before the drop that triggers the upload (the route's
+	// 200 SSE headers arrive immediately).
+	const responsePromise = waitForProcessResponse(page);
+
 	await dropZone.dispatchEvent("dragenter", { dataTransfer });
 	await dropZone.dispatchEvent("dragover", { dataTransfer });
 	await dropZone.dispatchEvent("drop", { dataTransfer });
 
-	const response = await page.waitForResponse(
-		(givenResponse) =>
-			givenResponse.url().includes("/documents/process") &&
-			givenResponse.request().method() === "POST",
-		{
-			timeout: 60_000,
-		},
-	);
+	const response = await responsePromise;
 
-	expect(response.status()).toBe(204);
+	expect(response.status()).toBe(200);
 
 	// Wait for the file to appear in the document list (scope to desktop panel)
 	const uploadedFile = page

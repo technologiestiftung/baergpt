@@ -1,5 +1,7 @@
 import { Readable } from "node:stream";
+import { randomUUID } from "node:crypto";
 import {
+	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
 	uploadFileViaDragAndDropAndWait,
@@ -185,17 +187,21 @@ test.describe("Chat", () => {
 			await page.goto("/");
 			await page.waitForLoadState("networkidle");
 
-			// Hold /documents/process open so we can control exactly when processing "finishes",
-			// and capture the real (randomUUID-based) source_url the client generated for this upload.
+			// The server generates the storage path now, so we fabricate one to key
+			// the mocked document rows on; the client no longer sends a source_url.
+			const sourceUrl = `${account.id}/${randomUUID()}.pdf`;
+
+			// Hold /documents/process open so we can control exactly when processing
+			// "finishes". The route responds with a 200 SSE stream ending in a
+			// `successful` event whose documentId must match the inserted row so the
+			// client can auto-select the freshly uploaded document into the chat.
 			let releaseProcessing: (() => void) | undefined;
-			let capturedSourceUrl: string | undefined;
+			let processedDocumentId: number | undefined;
 			await page.route("**/documents/process", async (route) => {
-				const body = route.request().postDataJSON();
-				capturedSourceUrl = body.document.source_url;
 				await new Promise<void>((resolve) => {
 					releaseProcessing = resolve;
 				});
-				await route.fulfill({ status: 204 });
+				await fulfillProcessedDocumentSse(route, processedDocumentId ?? 0);
 			});
 
 			// Attach a brand-new file via the chat input's own "+" menu,
@@ -207,7 +213,7 @@ test.describe("Chat", () => {
 				.locator("#chat-form input[type='file']")
 				.setInputFiles(secondaryDocumentPath);
 
-			// Wait until the upload is in flight (storage upload done, /documents/process held)
+			// Wait until the upload is in flight (/documents/process request held)
 			await expect
 				.poll(() => releaseProcessing !== undefined, { timeout: 15_000 })
 				.toBe(true);
@@ -225,18 +231,24 @@ test.describe("Chat", () => {
 				page.getByTestId("user-message-markdown-container"),
 			).not.toBeVisible();
 
-			// Simulate the backend finishing processing (insert matching document rows),
-			// then let the held /documents/process request resolve.
-			if (!capturedSourceUrl) {
-				throw new Error("capturedSourceUrl was not set by the route handler");
-			}
+			// Simulate the backend finishing processing (insert matching document
+			// rows), then let the held request resolve with the new document's id so
+			// the client's post-success refetch can find and auto-select it.
 			await mockDocumentProcessing({
 				userId: account.id,
-				sourceUrl: capturedSourceUrl,
+				sourceUrl,
 				accessGroupId: null,
 				fileName: secondaryDocumentName,
 				sourceType: "personal_document",
 			});
+			const { data: insertedDocument, error: insertedDocumentError } =
+				await supabaseAdminClient
+					.from("documents")
+					.select("id")
+					.eq("source_url", sourceUrl)
+					.single();
+			expect(insertedDocumentError).toBeNull();
+			processedDocumentId = insertedDocument?.id;
 			releaseProcessing?.();
 
 			// Once processing settles, the document is auto-selected into the chat

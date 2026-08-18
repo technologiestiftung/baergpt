@@ -1,6 +1,14 @@
-import { DocumentProcessInput } from "../schemas/document-process-schema";
-import { ValidationResult } from "../types/common";
+import { documentProcessSchema } from "../schemas/document-process-schema";
 import { BaseContentDbService } from "./db-service/base-db-service";
+import { config } from "../config";
+
+const EXTENSION_BY_MIME: Record<string, string> = {
+	"application/pdf": "pdf",
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+		"docx",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+	"text/csv": "csv",
+};
 
 export class ValidationService {
 	private readonly dbService: BaseContentDbService;
@@ -37,71 +45,101 @@ export class ValidationService {
 		}
 		return { valid: true };
 	}
-	async validateDocumentRequest(
-		inputDocument: DocumentProcessInput["document"],
-		authenticatedUserId: string,
-	): Promise<ValidationResult> {
-		const sourceUrl = inputDocument.source_url;
+	async validateDocumentRequest({
+		body,
+		userId,
+	}: {
+		body: Record<string, string | File>;
+		userId: string;
+	}) {
+		const file = body["file"];
+
+		if (!(file instanceof File)) {
+			throw new Error("failed.format", { cause: "file not instance of File" });
+		}
+
+		const maxSize = config.fileUploadLimitMb * 1024 * 1024;
+
+		if (file.size > maxSize) {
+			throw new Error("failed.size", {
+				cause: `File is too big ${file.size} (max allowed is ${maxSize})`,
+			});
+		}
+
+		const fileExtension = EXTENSION_BY_MIME[file.type];
+
+		if (!fileExtension) {
+			throw new Error("failed.format", {
+				cause: `file extension ${file.type} not supported`,
+			});
+		}
+
+		const metadata = body["metadata"];
+
+		if (typeof metadata !== "string") {
+			throw new Error("metadata not a string");
+		}
+
+		const parseResult = documentProcessSchema.parse(JSON.parse(metadata));
+
+		const {
+			document: { sourceType, accessGroupId, folderId },
+			llmModel,
+		} = parseResult;
+
+		const prefix = sourceType === "personal_document" ? userId : accessGroupId;
+		const sourceUrl = `${prefix}/${crypto.randomUUID()}.${fileExtension}`;
+		const createdAt = new Date().toISOString();
+
 		const bucket =
-			inputDocument.source_type === "personal_document"
-				? "documents"
-				: "public_documents";
+			sourceType === "personal_document" ? "documents" : "public_documents";
 
 		// Path validation
-		if (inputDocument.source_type === "personal_document") {
+		if (sourceType === "personal_document") {
 			const pathValidation = this.validatePersonalSourceUrlPath(
 				sourceUrl,
-				authenticatedUserId,
+				userId,
 			);
 			if (!pathValidation.valid) {
-				return { success: false, error: pathValidation.error, status: 403 };
+				throw new Error(pathValidation.error);
 			}
 		} else {
-			if (!inputDocument.access_group_id) {
-				return {
-					success: false,
-					error: "access_group_id is required for public/default documents",
-					status: 400,
-				};
+			if (!accessGroupId) {
+				throw new Error(
+					"access_group_id is required for public/default documents",
+				);
 			}
 			const pathValidation = this.validatePublicSourceUrlPath(
 				sourceUrl,
-				inputDocument.access_group_id,
+				accessGroupId,
 			);
 			if (!pathValidation.valid) {
-				return { success: false, error: pathValidation.error, status: 403 };
+				throw new Error(pathValidation.error);
 			}
 		}
 
 		// Folder ownership validation
-		if (inputDocument.folder_id !== null) {
+		if (folderId !== null) {
 			const folderBelongsToUser = await this.dbService.validateFolderOwnership(
-				inputDocument.folder_id,
-				authenticatedUserId,
+				folderId,
+				userId,
 			);
 			if (!folderBelongsToUser) {
-				return {
-					success: false,
-					error:
-						"Unauthorized: folder_id does not belong to the authenticated user",
-					status: 403,
-				};
+				throw new Error(
+					"Unauthorized: folder_id does not belong to the authenticated user",
+				);
 			}
 		}
 
-		// File existence validation
-		const fileExists = await this.dbService.validateFileExistsInStorage(
+		return {
 			sourceUrl,
+			sourceType,
+			folderId,
+			createdAt,
+			accessGroupId,
+			llmModel,
 			bucket,
-		);
-		if (!fileExists) {
-			return {
-				success: false,
-				error: "File not found in storage at the specified source_url",
-				status: 404,
-			};
-		}
-
-		return { success: true, bucket };
+			file,
+		};
 	}
 }

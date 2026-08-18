@@ -281,7 +281,3 @@ export type AllowedEmailDomain = {
 	id: number;
 	domain: string;
 };
-
-export type ValidationResult =
-	| { success: true; bucket: string }
-	| { success: false; error: string; status: 400 | 403 | 404 };
