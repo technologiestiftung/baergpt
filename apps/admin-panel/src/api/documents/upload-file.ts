@@ -1,72 +1,39 @@
-import { useAuthStore } from "../../store/use-auth-store";
+import { useAuthStore } from "@/store/use-auth-store";
 import { useAccessGroupStore } from "@/store/use-access-group-store";
-import { supabase } from "../../../supabase-client";
-import { StorageApiError } from "@supabase/storage-js";
+import type { UploadStatusKeys } from "@/store/use-upload-document-store.ts";
+import { UPLOAD_STATUS_MAP } from "baergpt-frontend/src/store/use-file-uploads-store.ts";
 
-/**
- * Uploads the provided file directly to Supabase Storage in the "public_documents" bucket.
- * @param file The file to upload.
- * @param filePath The path (including filename) where the file will be stored in Supabase Storage.
- */
-export async function uploadFileToDb(
+export async function uploadAndProcessDocument(
 	file: File,
-	filePath: string,
-): Promise<void> {
-	try {
-		const { error: uploadError } = await supabase.storage
-			.from("public_documents")
-			.upload(filePath, file);
-
-		if (uploadError) {
-			console.error("Storage upload error:", uploadError);
-			throw uploadError;
-		}
-	} catch (error) {
-		if (error instanceof StorageApiError && error.status === 409) {
-			throw new Error("failed.duplicate");
-		} else {
-			throw new Error("failed.generic");
-		}
-	}
-}
-
-/**
- * Processes the uploaded document via the /documents/process endpoint.
- */
-export async function processDocument(
-	file: File,
-	filePath: string,
+	updateFileUploadStatusCallback: (status: UploadStatusKeys) => void,
 ): Promise<void> {
 	const { session } = useAuthStore.getState();
-	const access_group_id = useAccessGroupStore.getState().accessGroupId;
+	const { accessGroupId } = useAccessGroupStore.getState();
+
 	// Create document metadata
 	const documentData = {
 		document: {
-			id: null,
-			folder_id: null,
-			owned_by_user_id: null,
-			created_at: new Date().toISOString(),
-			source_type: "public_document",
-			source_url: filePath,
-			access_group_id: access_group_id,
-			uploaded_by_user_id: session?.user.id,
-			metadata: {
-				mimeType: file.type,
-				size: file.size,
-			},
+			folderId: null,
+			sourceType: "public_document",
+			accessGroupId,
 		},
-		llm_model: import.meta.env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
+		llmModel: import.meta.env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
 	};
+
+	const form = new FormData();
+	form.append("file", file);
+	form.append("metadata", JSON.stringify(documentData));
+
+	updateFileUploadStatusCallback("uploading");
 
 	const url = `${import.meta.env.VITE_API_URL}/documents/process`;
 
 	const response = await fetch(url, {
 		method: "POST",
 		headers: {
-			"Content-Type": "application/json",
 			Authorization: `Bearer ${session?.access_token}`,
 		},
-		body: JSON.stringify(documentData),
+		body: form,
 	});
 
 	if (!response.ok) {
@@ -74,11 +41,64 @@ export async function processDocument(
 			.json()
 			.catch(() => ({ message: "Unknown error" }));
 
-		if (response.status === 409) {
-			throw new Error("failed.duplicate");
-		}
+		throw new Error(
+			`Document processing failed: ${JSON.stringify(errorResponse)}`,
+		);
+	}
 
-		console.error("Document processing failed:", errorResponse);
-		throw new Error("failed.generic");
+	if (!response.body) {
+		throw new Error("Document processing response has no body");
+	}
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+
+			if (done) {
+				break;
+			}
+
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split("\n");
+			buffer = lines.pop() ?? ""; // last line may be incomplete — keep i
+
+			for (const line of lines) {
+				if (!line.startsWith("data: ")) {
+					continue;
+				}
+
+				const payload = line.slice(6).trim();
+				if (!payload) {
+					continue;
+				}
+
+				let event;
+				try {
+					event = JSON.parse(payload);
+				} catch {
+					continue; // ignore anything unparseable
+				}
+
+				const status: unknown = event?.status;
+
+				if (typeof status !== "string" || !(status in UPLOAD_STATUS_MAP)) {
+					continue;
+				}
+
+				updateFileUploadStatusCallback(status as UploadStatusKeys);
+
+				if (status.startsWith("failed")) {
+					throw new Error(status);
+				}
+
+				updateFileUploadStatusCallback(event.status);
+			}
+		}
+	} finally {
+		reader.cancel().catch((error) => console.error(error));
 	}
 }

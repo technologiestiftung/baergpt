@@ -1,22 +1,15 @@
 import { create } from "zustand";
 import { useUserDocumentStore } from "./use-user-document-store.ts";
-import { useAuthStore } from "./auth-store.ts";
-import {
-	uploadFileToDb,
-	processDocument,
-} from "../api/documents/upload-file.ts";
+import { uploadAndProcessDocument } from "../api/documents/upload-file.ts";
 import { useErrorStore } from "./error-store.ts";
 import * as Sentry from "@sentry/react";
 import type { Span } from "@sentry/react";
-import { deleteFileFromStorage } from "../api/documents/delete-file-from-storage.ts";
-import { isDocumentInDatabase } from "../api/documents/is-document-in-database.ts";
 
 export const UPLOAD_STATUS_MAP = {
 	waiting: "Warte",
 	uploading: "Hochladen läuft",
-	uploaded: "Erfolgreich hochgeladen",
-	processing: "Hochladen läuft",
-	successful: "Erfolgreich hochgeladen",
+	processing: "Verarbeitung läuft",
+	successful: "Bereit zur Nutzung",
 	canceled: "Hochladen abgebrochen",
 	"failed.generic": "Hochladen fehlgeschlagen",
 	"failed.duplicate": "Datei existiert bereits",
@@ -58,15 +51,11 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 	async uploadFile({ fileUpload: { file }, span, selectInChatOnSuccess }) {
 		const { updateFileUploadStatus } = get();
-		const { session } = useAuthStore.getState();
 		const { userDocuments, getUserDocuments, selectUserChatDocument } =
 			useUserDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
-		const fileExtension = file.name.split(".").pop();
-		const filePath = `${session?.user.id}/${crypto.randomUUID()}.${fileExtension}`;
-		let storageUploadSucceeded = false;
-		let documentCreated = false;
+
 		try {
 			if (file.size > uploadFileSizeLimit * 1024 * 1024) {
 				throw new Error("failed.size");
@@ -92,21 +81,16 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				throw new Error("failed.format");
 			}
 
-			updateFileUploadStatus(file, "uploading");
-			await uploadFileToDb(file, filePath);
-			storageUploadSucceeded = true;
-			updateFileUploadStatus(file, "uploaded");
-
-			updateFileUploadStatus(file, "processing");
-			await processDocument(file, filePath);
-			documentCreated = true;
+			const id = await uploadAndProcessDocument(file, (status) =>
+				updateFileUploadStatus(file, status),
+			);
 
 			await getUserDocuments(new AbortController().signal);
 
 			if (selectInChatOnSuccess) {
 				const uploadedDocument = useUserDocumentStore
 					.getState()
-					.userDocuments.find((doc) => doc.source_url === filePath);
+					.userDocuments.find((doc) => doc.id === id);
 
 				if (uploadedDocument) {
 					selectUserChatDocument(uploadedDocument);
@@ -120,26 +104,6 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 		} catch (error) {
 			useErrorStore.getState().handleError(error, span);
-
-			// Storage succeeded, but /documents/process failed or its response
-			// never arrived. That doesn't guarantee no document was created,
-			// so confirm with the server before deleting the file.
-			if (storageUploadSucceeded && !documentCreated) {
-				const { data: documentExists, error: checkError } =
-					await isDocumentInDatabase(filePath);
-
-				if (checkError) {
-					useErrorStore.getState().handleError(checkError, span);
-				}
-
-				if (!checkError && documentExists === false) {
-					const { error: deleteFileError } =
-						await deleteFileFromStorage(filePath);
-					if (deleteFileError) {
-						useErrorStore.getState().handleError(deleteFileError, span);
-					}
-				}
-			}
 
 			if (isKnownError(error)) {
 				updateFileUploadStatus(file, error.message);
@@ -164,7 +128,6 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			(upload) =>
 				upload.status === "waiting" ||
 				upload.status === "uploading" ||
-				upload.status === "uploaded" ||
 				upload.status === "processing",
 		).length;
 
@@ -239,9 +202,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		const { fileUploads } = get();
 		return fileUploads.every(
 			(fileUpload) =>
-				fileUpload.status !== "uploading" &&
-				fileUpload.status !== "processing" &&
-				fileUpload.status !== "uploaded",
+				fileUpload.status !== "uploading" && fileUpload.status !== "processing",
 		);
 	},
 
@@ -252,9 +213,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		);
 		const activeUploads = fileUploads.filter(
 			(fileUpload) =>
-				fileUpload.status === "uploading" ||
-				fileUpload.status === "processing" ||
-				fileUpload.status === "uploaded",
+				fileUpload.status === "uploading" || fileUpload.status === "processing",
 		);
 		return activeUploads.length < maxFileUploads;
 	},

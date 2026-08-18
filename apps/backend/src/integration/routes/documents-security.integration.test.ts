@@ -22,6 +22,49 @@ const USER_B_PASSWORD = "SecurePassword456!";
 let userAToken: string;
 let userBToken: string;
 
+const PROCESS_URL = "http://localhost/documents/process";
+
+function pdfFile(): File {
+	return new File([new Uint8Array([1, 2, 3])], "test.pdf", {
+		type: "application/pdf",
+	});
+}
+
+// The route now takes multipart (file + metadata) and generates the storage
+// path itself, so security is enforced on the metadata, not a client source_url.
+function createProcessRequest(
+	metadata: unknown,
+	token: string,
+	file: File = pdfFile(),
+): Request {
+	const form = new FormData();
+	form.append("file", file);
+	form.append(
+		"metadata",
+		typeof metadata === "string" ? metadata : JSON.stringify(metadata),
+	);
+
+	return new Request(PROCESS_URL, {
+		method: "POST",
+		headers: { authorization: `Bearer ${token}` },
+		body: form,
+	});
+}
+
+// Failures are delivered in-band as `{ status: "failed.*", error }` SSE events
+// on a 200 response. Returns the parsed events (heartbeat pings are empty).
+async function readSseEvents(
+	response: Response,
+): Promise<Array<{ status: string; error?: string }>> {
+	const text = await response.text();
+	return text
+		.split("\n")
+		.filter((line) => line.startsWith("data: "))
+		.map((line) => line.slice(6).trim())
+		.filter((payload) => payload.length > 0)
+		.map((payload) => JSON.parse(payload));
+}
+
 describe("Document Process Security Tests", () => {
 	beforeAll(async () => {
 		// Create test users
@@ -65,156 +108,72 @@ describe("Document Process Security Tests", () => {
 	});
 
 	describe("Request Validation", () => {
-		it("should reject requests with invalid source_type", async () => {
-			const payload = {
+		it("should reject requests with invalid sourceType", async () => {
+			const metadata = {
 				document: {
-					source_url: `${USER_A_ID}/test.pdf`,
-					source_type: "malicious_type", // Invalid
-					owned_by_user_id: USER_A_ID,
+					folderId: null,
+					sourceType: "malicious_type", // Invalid
 				},
+				llmModel: config.defaultDocumentProcessingModel,
 			};
 
-			const res = await app.request("/documents/process", {
-				method: "POST",
-				body: JSON.stringify(payload),
-				headers: new Headers({
-					"Content-Type": "application/json",
-					authorization: `Bearer ${userAToken}`,
-				}),
-			});
+			const res = await app.fetch(createProcessRequest(metadata, userAToken));
 
-			expect(res.status).toBe(400);
-			const body = await res.json();
-			expect(body.error).toContain("Validation failed");
+			const events = await readSseEvents(res);
+			const statuses = events.map((e) => e.status);
+			expect(statuses).toContain("failed.generic");
+			// Validation must fail before processing begins.
+			expect(statuses).not.toContain("processing");
 		});
 
-		it("should reject requests with path traversal in source_url", async () => {
-			const maliciousUrls = [
-				`../../../etc/passwd`,
-				`${USER_A_ID}/../../../etc/passwd`,
-				`./test.pdf`,
-				`//double/slash`,
-				`/absolute/path.pdf`,
+		it("should reject path traversal in the (user-supplied) access_group_id", async () => {
+			// For public/default documents the storage path prefix comes from the
+			// client-supplied accessGroupId. The z.uuid() schema is what prevents a
+			// traversal payload from ever reaching the storage path.
+			const maliciousAccessGroupIds = [
+				"../../../etc/passwd",
+				"../../secrets",
+				"./nested",
+				"//double/slash",
+				"/absolute/path",
 			];
 
-			for (const sourceUrl of maliciousUrls) {
-				const payload = {
+			for (const accessGroupId of maliciousAccessGroupIds) {
+				const metadata = {
 					document: {
-						source_url: sourceUrl,
-						source_type: "personal_document",
-						owned_by_user_id: USER_A_ID,
+						folderId: null,
+						sourceType: "public_document",
+						accessGroupId,
 					},
+					llmModel: config.defaultDocumentProcessingModel,
 				};
 
-				const res = await app.request("/documents/process", {
-					method: "POST",
-					body: JSON.stringify(payload),
-					headers: new Headers({
-						"Content-Type": "application/json",
-						authorization: `Bearer ${userAToken}`,
-					}),
-				});
+				const res = await app.fetch(createProcessRequest(metadata, userAToken));
 
-				expect(res.status).toBe(400);
-				const body = await res.json();
-				expect(body.error).toContain("Validation failed");
+				const events = await readSseEvents(res);
+				const statuses = events.map((e) => e.status);
+				expect(statuses).toContain("failed.generic");
+				// Validation must fail before processing begins.
+				expect(statuses).not.toContain("processing");
 			}
 		});
 
-		it("should reject requests with empty source_url", async () => {
-			const payload = {
-				document: {
-					source_url: "",
-					source_type: "personal_document",
-					owned_by_user_id: USER_A_ID,
-				},
-			};
-
-			const res = await app.request("/documents/process", {
-				method: "POST",
-				body: JSON.stringify(payload),
-				headers: new Headers({
-					"Content-Type": "application/json",
-					authorization: `Bearer ${userAToken}`,
-				}),
-			});
-
-			expect(res.status).toBe(400);
-		});
-
 		it("should reject requests missing required fields", async () => {
-			const payload = {
+			const metadata = {
 				document: {
-					// Missing source_url and source_type
-					owned_by_user_id: USER_A_ID,
+					// Missing sourceType
+					folderId: null,
 				},
+				// llmModel missing
 			};
 
-			const res = await app.request("/documents/process", {
-				method: "POST",
-				body: JSON.stringify(payload),
-				headers: new Headers({
-					"Content-Type": "application/json",
-					authorization: `Bearer ${userAToken}`,
-				}),
-			});
+			const res = await app.fetch(createProcessRequest(metadata, userAToken));
 
-			expect(res.status).toBe(400);
-		});
-	});
-
-	describe("User ID Spoofing Prevention", () => {
-		it("should reject processing documents in another user's storage folder", async () => {
-			// User A tries to process a document claiming it's in User B's folder
-			const payload = {
-				document: {
-					source_url: `${USER_B_ID}/stolen-doc.pdf`, // Trying to access User B's storage
-					source_type: "personal_document",
-					owned_by_user_id: USER_B_ID, // Trying to spoof as User B
-					folder_id: null,
-				},
-				llm_model: config.defaultDocumentProcessingModel,
-			};
-
-			const res = await app.request("/documents/process", {
-				method: "POST",
-				body: JSON.stringify(payload),
-				headers: new Headers({
-					"Content-Type": "application/json",
-					authorization: `Bearer ${userAToken}`, // But authenticating as User A
-				}),
-			});
-
-			// Should be rejected because the authenticated user (A) doesn't match the path prefix (B)
-			expect(res.status).toBe(403);
-			const body = await res.json();
-			expect(body.error).toContain("Unauthorized");
-		});
-
-		it("should reject processing document with spoofed owned_by_user_id even if file doesn't exist", async () => {
-			// User A tries to claim ownership for User B
-			const payload = {
-				document: {
-					source_url: `${USER_A_ID}/my-doc.pdf`, // User A's folder
-					source_type: "personal_document",
-					owned_by_user_id: USER_B_ID, // Trying to assign to User B
-					folder_id: null,
-				},
-				llm_model: config.defaultDocumentProcessingModel,
-			};
-
-			const res = await app.request("/documents/process", {
-				method: "POST",
-				body: JSON.stringify(payload),
-				headers: new Headers({
-					"Content-Type": "application/json",
-					authorization: `Bearer ${userAToken}`,
-				}),
-			});
-
-			// Should fail with 404 because file doesn't exist (but importantly,
-			// even if it succeeded, the document would be owned by User A, not User B)
-			expect(res.status).toBe(404);
+			const events = await readSseEvents(res);
+			const statuses = events.map((e) => e.status);
+			expect(statuses).toContain("failed.generic");
+			// Validation must fail before processing begins.
+			expect(statuses).not.toContain("processing");
 		});
 	});
 
@@ -249,85 +208,47 @@ describe("Document Process Security Tests", () => {
 
 		it("should reject processing document into another user's folder", async () => {
 			// User B tries to process a document into User A's folder
-			const payload = {
+			const metadata = {
 				document: {
-					source_url: `${USER_B_ID}/test-doc.pdf`,
-					source_type: "personal_document",
-					folder_id: userAFolderId,
-					owned_by_user_id: USER_B_ID,
+					folderId: userAFolderId,
+					sourceType: "personal_document",
 				},
-				llm_model: config.defaultDocumentProcessingModel,
+				llmModel: config.defaultDocumentProcessingModel,
 			};
 
-			const res = await app.request("/documents/process", {
-				method: "POST",
-				body: JSON.stringify(payload),
-				headers: new Headers({
-					"Content-Type": "application/json",
-					authorization: `Bearer ${userBToken}`,
-				}),
-			});
+			const res = await app.fetch(createProcessRequest(metadata, userBToken));
 
-			expect(res.status).toBe(403);
-			const body = await res.json();
-			expect(body.error).toContain(
-				"folder_id does not belong to the authenticated user",
-			);
+			const events = await readSseEvents(res);
+			const statuses = events.map((e) => e.status);
+			// The route surfaces validation failures as a generic in-band error
+			// (the specific reason is only captured server-side, not exposed to the
+			// client), so we assert the failure status rather than the message.
+			expect(statuses).toContain("failed.generic");
+			// Validation must fail before processing begins.
+			expect(statuses).not.toContain("processing");
 		});
 
 		it("should reject non-existent folder_id", async () => {
-			const payload = {
+			const metadata = {
 				document: {
-					source_url: `${USER_A_ID}/test-doc.pdf`,
-					source_type: "personal_document",
-					folder_id: 999999, // Non-existent folder
-					owned_by_user_id: USER_A_ID,
+					folderId: 999999, // Non-existent folder
+					sourceType: "personal_document",
 				},
-				llm_model: config.defaultDocumentProcessingModel,
+				llmModel: config.defaultDocumentProcessingModel,
 			};
 
-			const res = await app.request("/documents/process", {
-				method: "POST",
-				body: JSON.stringify(payload),
-				headers: new Headers({
-					"Content-Type": "application/json",
-					authorization: `Bearer ${userAToken}`,
-				}),
-			});
+			const res = await app.fetch(createProcessRequest(metadata, userAToken));
 
-			expect(res.status).toBe(403);
-		});
-	});
-
-	describe("File Existence Validation", () => {
-		it("should reject processing non-existent file", async () => {
-			const payload = {
-				document: {
-					source_url: `${USER_A_ID}/non-existent-file.pdf`,
-					source_type: "personal_document",
-					owned_by_user_id: USER_A_ID,
-					folder_id: null,
-				},
-				llm_model: config.defaultDocumentProcessingModel,
-			};
-
-			const res = await app.request("/documents/process", {
-				method: "POST",
-				body: JSON.stringify(payload),
-				headers: new Headers({
-					"Content-Type": "application/json",
-					authorization: `Bearer ${userAToken}`,
-				}),
-			});
-
-			expect(res.status).toBe(404);
-			const body = await res.json();
-			expect(body.error).toContain("File not found");
+			const events = await readSseEvents(res);
+			const statuses = events.map((e) => e.status);
+			expect(statuses).toContain("failed.generic");
+			// Validation must fail before processing begins.
+			expect(statuses).not.toContain("processing");
 		});
 	});
 
 	describe("Source Type Restrictions", () => {
-		it("should only accept valid source_type values", async () => {
+		it("should only accept valid sourceType values", async () => {
 			const invalidTypes = [
 				"admin_document",
 				"system",
@@ -336,24 +257,21 @@ describe("Document Process Security Tests", () => {
 			];
 
 			for (const invalidType of invalidTypes) {
-				const payload = {
+				const metadata = {
 					document: {
-						source_url: `${USER_A_ID}/test.pdf`,
-						source_type: invalidType,
-						owned_by_user_id: USER_A_ID,
+						folderId: null,
+						sourceType: invalidType,
 					},
+					llmModel: config.defaultDocumentProcessingModel,
 				};
 
-				const res = await app.request("/documents/process", {
-					method: "POST",
-					body: JSON.stringify(payload),
-					headers: new Headers({
-						"Content-Type": "application/json",
-						authorization: `Bearer ${userAToken}`,
-					}),
-				});
+				const res = await app.fetch(createProcessRequest(metadata, userAToken));
 
-				expect(res.status).toBe(400);
+				const events = await readSseEvents(res);
+				const statuses = events.map((e) => e.status);
+				expect(statuses).toContain("failed.generic");
+				// Validation must fail before processing begins.
+				expect(statuses).not.toContain("processing");
 			}
 		});
 	});

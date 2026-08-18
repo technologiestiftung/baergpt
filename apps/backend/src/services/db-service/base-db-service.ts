@@ -158,7 +158,7 @@ export abstract class BaseContentDbService {
 			tags: string[];
 		},
 		embeddings: Embedding[],
-	): Promise<void> {
+	): Promise<number> {
 		// 1. Insert Document
 		const { data, error } = await this.client
 			.from("documents")
@@ -200,12 +200,12 @@ export abstract class BaseContentDbService {
 			if (userId) {
 				await this.updateUserDocumentCount(userId);
 			}
-
-			return null;
 		} catch (innerError) {
 			await this.deleteDocumentById(documentId);
 			throw innerError;
 		}
+
+		return documentId;
 	}
 
 	/**
@@ -254,17 +254,17 @@ export abstract class BaseContentDbService {
 		}
 	}
 
-	async extractDocument(document: Document): Promise<ExtractionResult> {
+	async extractDocument(
+		document: Document,
+		file: File,
+	): Promise<ExtractionResult> {
 		const bucket = ["public_document", "default_document"].includes(
 			document.source_type,
 		)
 			? "public_documents"
 			: "documents";
 
-		const fileBytes = await this.getDocumentBufferFromSupabase(
-			bucket,
-			document.source_url,
-		);
+		const fileBytes = await file.bytes();
 
 		if (/\.(docx?)$/i.test(document.source_url)) {
 			await this.savePdfPreview({ fileBytes, bucket, document });
@@ -302,29 +302,6 @@ export abstract class BaseContentDbService {
 			}),
 			bucket,
 		);
-	}
-
-	/**
-	 * Downloads a document from Supabase storage and returns it as a buffer
-	 * @param document Document information
-	 * @returns Buffer containing the document data
-	 */
-	async getDocumentBufferFromSupabase(
-		bucket: string,
-		sourceUrl: string,
-	): Promise<Uint8Array> {
-		const { data, error } = await this.client.storage
-			.from(bucket)
-			.download(sourceUrl);
-
-		if (!data) {
-			throw new Error(`Could not download ${sourceUrl}: ${error}`);
-		}
-
-		// Convert the Blob to a Buffer
-		const buffer = new Uint8Array(await data.arrayBuffer());
-
-		return buffer;
 	}
 
 	// Updates the user's document count in the profiles table

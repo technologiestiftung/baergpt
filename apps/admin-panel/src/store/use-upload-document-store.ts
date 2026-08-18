@@ -1,22 +1,16 @@
 import { create } from "zustand";
 import { useDocumentStore } from "./use-document-store.ts";
-import slugify from "slugify";
-
-import {
-	uploadFileToDb,
-	processDocument,
-} from "../api/documents/upload-file.ts";
-import { useAccessGroupStore } from "./use-access-group-store.ts";
+import { uploadAndProcessDocument } from "@/api/documents/upload-file.ts";
 
 export const UPLOAD_STATUS_MAP = {
 	uploading: "wird hochgeladen",
 	uploaded: "erfolgreich hochgeladen",
 	processing: "wird verarbeitet",
-	successful: "erfolgreich verarbeitet",
+	successful: "bereit zur Nutzung",
 	canceled: "hochladen abgebrochen",
 	"failed.generic": "hochladen fehlgeschlagen",
 	"failed.duplicate": "Datei existiert bereits",
-	"failed.format": "Ungültiges Dateiformat (nur PDF, Word oder Excel)",
+	"failed.format": "Ungültiges Dateiformat (nur PDF, Word, Excel oder CSV)",
 	"failed.size": `Datei zu groß (max. ${import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB} MB)`,
 } as const;
 
@@ -46,35 +40,37 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 	async uploadFile({ file }: FileUpload) {
 		const { updateFileUploadStatus } = get();
-		const access_group_id = useAccessGroupStore.getState().accessGroupId;
 		const { documents, getDocuments, deleteDocument } =
 			useDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
-		const slugifiedFilename = slugify(file.name, { lower: true });
-		const filePath = `${access_group_id}/${slugifiedFilename}`;
 
 		try {
 			if (file.size > uploadFileSizeLimit * 1024 * 1024) {
 				throw new Error("failed.size");
 			}
 
-			const fileExists = documents.some((doc) => doc.source_url === filePath);
+			const fileExists = documents.some((doc) => doc.file_name === file.name);
 			if (fileExists) {
 				throw new Error("failed.duplicate");
 			}
 
-			if (!file.type.includes("pdf")) {
+			if (
+				!file.type.includes("pdf") &&
+				!file.type.includes(
+					"vnd.openxmlformats-officedocument.wordprocessingml.document",
+				) &&
+				!file.type.includes(
+					"vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				) &&
+				!file.type.includes("csv")
+			) {
 				throw new Error("failed.format");
 			}
 
-			updateFileUploadStatus(file, "uploading");
-			await uploadFileToDb(file, filePath);
-			updateFileUploadStatus(file, "uploaded");
-
-			updateFileUploadStatus(file, "processing");
-			await processDocument(file, filePath);
-			updateFileUploadStatus(file, "successful");
+			await uploadAndProcessDocument(file, (status) =>
+				updateFileUploadStatus(file, status),
+			);
 
 			getDocuments(new AbortController().signal).catch(console.error);
 		} catch (error) {
@@ -87,7 +83,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			updateFileUploadStatus(file, "failed.generic");
 			// If the document processing fails, remove the document from the store
 			const documentToDelete = documents.find(
-				(doc) => doc.source_url === filePath,
+				(doc) => doc.file_name === file.name,
 			);
 			if (documentToDelete) {
 				await deleteDocument(documentToDelete.id);

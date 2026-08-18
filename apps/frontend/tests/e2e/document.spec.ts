@@ -2,6 +2,7 @@ import { expect, test, type Request } from "@playwright/test";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import {
 	deleteFileViaUI,
+	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
 	attemptFileUploadViaFileChooser,
@@ -28,7 +29,6 @@ import {
 	secondaryDocumentType,
 	seedDefaultDocumentName,
 } from "../constants.ts";
-import { supabaseAdminClient } from "../supabase.ts";
 
 test.describe("Documents", () => {
 	testDesktopOnly(
@@ -54,14 +54,17 @@ test.describe("Documents", () => {
 
 			// Track which requests have been received and resolvers to control them
 			const requestResolvers: Array<() => void> = [];
+			let nextDocumentId = 1;
 
-			// Mock the /documents/process route to control upload completion
+			// Mock the /documents/process route to control upload completion. The
+			// route now responds with a 200 SSE stream ending in a `successful`
+			// event, so we fulfill with that shape once we release the request.
 			await page.route("**/documents/process", async (route) => {
 				// Hold each request until we manually resolve it
 				await new Promise<void>((resolve) => {
 					requestResolvers.push(resolve);
 				});
-				return route.fulfill({ status: 204 });
+				return fulfillProcessedDocumentSse(route, nextDocumentId++);
 			});
 
 			attemptMultipleFilesViaFileChooser({
@@ -147,59 +150,13 @@ test.describe("Documents", () => {
 		},
 	);
 
-	testDesktopOnly(
-		"Should delete the file from storage when the processing fails",
-		async ({ page, browserName }) => {
-			// Force the process step to fail after the file has already reached
-			// storage, so we can verify the frontend cleans up the now-orphaned
-			// storage object.
-			await page.route("**/documents/process", async (route) => {
-				return route.fulfill({ status: 500 });
-			});
-
-			// Storage paths are UUID-based now, so we need to capture the path
-			// from the actual upload request instead of predicting it. Both
-			// listeners are set up before triggering the upload so neither can
-			// fire and resolve before we start waiting for it.
-			const waitForUpload = page.waitForResponse(
-				(response) =>
-					response.url().includes("/storage/v1/object/documents/") &&
-					response.request().method() === "POST",
-			);
-			const waitForDeletion = page.waitForResponse(
-				(response) =>
-					response.url().includes("/storage/v1/object/documents") &&
-					response.request().method() === "DELETE",
-			);
-
-			await attemptFileUploadViaFileChooser({
-				page,
-				filePath: secondaryDocumentPath,
-				browserName,
-				uploadButtonName: "Datei hochladen",
-			});
-
-			const uploadResponse = await waitForUpload;
-			const uploadedPath = decodeURIComponent(
-				uploadResponse.url().split("/storage/v1/object/documents/")[1],
-			);
-
-			await waitForDeletion;
-
-			const { data: exists, error: existsError } =
-				await supabaseAdminClient.storage
-					.from(defaultBucketName)
-					.exists(uploadedPath);
-
-			/**
-			 * If the file does not exist, supabase returns false + an error:
-			 * https://github.com/supabase/supabase-js/issues/1363
-			 * So we expect an error to be defined, but we also expect exists to be false.
-			 */
-			expect(existsError).toBeDefined();
-			expect(exists).toBe(false);
-		},
-	);
+	// NOTE: The old "Should delete the file from storage when the processing
+	// fails" test was removed. Storage upload + cleanup now happen entirely
+	// server-side in the combined route (the browser no longer uploads to or
+	// deletes from storage), so there is no client-observable storage POST/DELETE
+	// to assert on. The "no orphaned storage file on failure" invariant is now
+	// covered by the backend integration test in
+	// apps/backend/src/integration/routes/documents.integration.test.ts.
 
 	testDesktopOnly(
 		"Should reject uploading a file with a name that already exists",
