@@ -51,7 +51,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 		const files = event.target.files;
 
 		if (files && files.length > 0) {
-			uploadFiles(Array.from(files), { selectInChatOnSuccess: true }).catch(
+			uploadFiles(Array.from(files)).catch(
 				useErrorStore.getState().handleError,
 			);
 		}

@@ -27,18 +27,10 @@ export type FileUpload = {
 
 const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
 
-export type UploadFilesOptions = {
-	selectInChatOnSuccess?: boolean;
-};
-
 type UseFileUploadsStore = {
 	fileUploads: FileUpload[];
-	uploadFile: (args: {
-		fileUpload: FileUpload;
-		span: Span;
-		selectInChatOnSuccess?: boolean;
-	}) => Promise<void>;
-	uploadFiles: (files: File[], options?: UploadFilesOptions) => Promise<void>;
+	uploadFile: (args: { fileUpload: FileUpload; span: Span }) => Promise<void>;
+	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
 	hasAvailableUploadSlots: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
@@ -49,7 +41,7 @@ type UseFileUploadsStore = {
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
 
-	async uploadFile({ fileUpload: { file }, span, selectInChatOnSuccess }) {
+	async uploadFile({ fileUpload: { file }, span }) {
 		const { updateFileUploadStatus } = get();
 		const { userDocuments, getUserDocuments, selectUserChatDocument } =
 			useUserDocumentStore.getState();
@@ -87,14 +79,12 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 			await getUserDocuments(new AbortController().signal);
 
-			if (selectInChatOnSuccess) {
-				const uploadedDocument = useUserDocumentStore
-					.getState()
-					.userDocuments.find((doc) => doc.id === id);
+			const uploadedDocument = useUserDocumentStore
+				.getState()
+				.userDocuments.find((doc) => doc.id === id);
 
-				if (uploadedDocument) {
-					selectUserChatDocument(uploadedDocument);
-				}
+			if (uploadedDocument) {
+				selectUserChatDocument(uploadedDocument);
 			}
 
 			updateFileUploadStatus(file, "successful");
@@ -114,9 +104,8 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		}
 	},
 
-	uploadFiles: async (files: File[], options?: UploadFilesOptions) => {
+	uploadFiles: async (files: File[]) => {
 		const { fileUploads, uploadFile } = get();
-		const { selectInChatOnSuccess } = options ?? {};
 		const { userDocuments, deletedDefaultDocumentIds } =
 			useUserDocumentStore.getState();
 
@@ -185,7 +174,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 					Sentry.startSpan(
 						{ name: "File Upload", op: "file.upload" },
 						async (span) => {
-							await uploadFile({ fileUpload, span, selectInChatOnSuccess });
+							await uploadFile({ fileUpload, span });
 						},
 					).finally(() => {
 						queueState.activeUploads--;
