@@ -150,14 +150,6 @@ test.describe("Documents", () => {
 		},
 	);
 
-	// NOTE: The old "Should delete the file from storage when the processing
-	// fails" test was removed. Storage upload + cleanup now happen entirely
-	// server-side in the combined route (the browser no longer uploads to or
-	// deletes from storage), so there is no client-observable storage POST/DELETE
-	// to assert on. The "no orphaned storage file on failure" invariant is now
-	// covered by the backend integration test in
-	// apps/backend/src/integration/routes/documents.integration.test.ts.
-
 	testDesktopOnly(
 		"Should reject uploading a file with a name that already exists",
 		async ({ page, browserName }) => {

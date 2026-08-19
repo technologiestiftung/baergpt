@@ -89,16 +89,20 @@ export abstract class BaseContentDbService {
 	}
 
 	async uploadFileToStorage(
-		filePath: string,
+		sourceUrl: string,
 		file: File,
 		bucket: string,
 	): Promise<void> {
 		const { error: uploadError } = await this.client.storage
 			.from(bucket)
-			.upload(filePath, file);
+			.upload(sourceUrl, file);
 
 		if (uploadError) {
 			throw uploadError;
+		}
+
+		if (/\.(docx?)$/i.test(sourceUrl)) {
+			await this.savePdfPreview({ file, sourceUrl, bucket });
 		}
 	}
 
@@ -258,17 +262,7 @@ export abstract class BaseContentDbService {
 		document: Document,
 		file: File,
 	): Promise<ExtractionResult> {
-		const bucket = ["public_document", "default_document"].includes(
-			document.source_type,
-		)
-			? "public_documents"
-			: "documents";
-
 		const fileBytes = await file.bytes();
-
-		if (/\.(docx?)$/i.test(document.source_url)) {
-			await this.savePdfPreview({ fileBytes, bucket, document });
-		}
 
 		const extractionResult = await documentExtraction.extractDocument(
 			fileBytes,
@@ -279,25 +273,24 @@ export abstract class BaseContentDbService {
 	}
 
 	async savePdfPreview({
-		fileBytes,
+		file,
 		bucket,
-		document,
+		sourceUrl,
 	}: {
-		fileBytes: Uint8Array;
+		file: File;
 		bucket: string;
-		document: Document;
+		sourceUrl: string;
 	}) {
-		const pdfPreviewUrl = document.source_url.replace(/\.(docx?)$/i, ".pdf");
-		const fileName = document.source_url.split("/").pop();
+		const pdfPreviewUrl = sourceUrl.replace(/\.(docx?)$/i, ".pdf");
 
 		const pdfBuffer = await wordExtractionService.convertWordToPdf({
-			fileName,
-			wordDoc: Buffer.from(fileBytes),
+			fileName: file.name,
+			wordDoc: Buffer.from(await file.bytes()),
 		});
 
 		await this.uploadFileToStorage(
 			pdfPreviewUrl,
-			new File([pdfBuffer], fileName, {
+			new File([pdfBuffer], file.name, {
 				type: "application/pdf",
 			}),
 			bucket,
