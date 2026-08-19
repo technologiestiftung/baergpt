@@ -2,72 +2,13 @@ import { config } from "../config";
 import { LLMHandler } from "../types/common";
 import { getLanguageModel } from "./llm-provider";
 
-type ModelProvider = "Mistral";
-
-interface ModelStatus {
-	status: number;
-	healthy: boolean;
-	identifier: string;
-	error: string | undefined;
-}
-
-class Model {
-	identifier: string;
-	baseModelName: string;
-	provider: ModelProvider;
-	isGdprCompliant: boolean;
-	contextSize: number;
-	isOpenSource: boolean;
-	serverLocation: string;
-	description: string;
-	status?: ModelStatus;
-
-	constructor(params: {
-		identifier: string;
-		baseModelName: string;
-		provider: ModelProvider;
-		isGdprCompliant: boolean;
-		contextSize: number;
-		isOpenSource: boolean;
-		serverLocation: string;
-		description: string;
-		status?: ModelStatus;
-	}) {
-		this.identifier = params.identifier;
-		this.baseModelName = params.baseModelName;
-		this.provider = params.provider;
-		this.isGdprCompliant = params.isGdprCompliant;
-		this.contextSize = params.contextSize;
-		this.isOpenSource = params.isOpenSource;
-		this.serverLocation = params.serverLocation;
-		this.description = params.description;
-		this.status = params.status;
-	}
-}
+type modelIdentifiers = "mistral-small" | "mistral-large" | "glm-5-2";
 
 export class ModelService {
-	availableModels: Record<string, Model> = {
-		"mistral-small": new Model({
-			identifier: config.smallModelIdentifier,
-			baseModelName: "mistral-small",
-			provider: "Mistral",
-			isGdprCompliant: true,
-			contextSize: 128000,
-			isOpenSource: true,
-			serverLocation: "Frankreich",
-			description:
-				"Aktuelles kleines Modell von Mistral, gehostet von Mistral.",
-		}),
-		"mistral-large": new Model({
-			identifier: config.largeModelIdentifier,
-			baseModelName: "mistral-large",
-			provider: "Mistral",
-			isGdprCompliant: true,
-			contextSize: 256000,
-			isOpenSource: true,
-			serverLocation: "Frankreich",
-			description: "Aktuelles großes Modell von Mistral, gehostet von Mistral.",
-		}),
+	contextSizes: Record<modelIdentifiers, number> = {
+		"mistral-small": 128_000,
+		"mistral-large": 256_000,
+		"glm-5-2": 128_000,
 	};
 
 	handlers: Record<string, LLMHandler> = {
@@ -81,6 +22,15 @@ export class ModelService {
 			getLanguageModel(config.largeModelIdentifier),
 			"https://api.mistral.ai/v1",
 		),
+		...(config.featureFlagGlm52Allowed
+			? {
+					"glm-5-2": new LLMHandler(
+						"glm-5-2",
+						getLanguageModel(config.glmModelIdentifier),
+						"https://api.mistral.ai/v1",
+					),
+				}
+			: {}),
 	};
 
 	resolveLlmHandler(llmType: string): LLMHandler {

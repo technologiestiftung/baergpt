@@ -270,7 +270,7 @@ export class GenerationService {
 		parsedPages: ParsedPage[],
 		llmIdentifier: string,
 	): Promise<string> {
-		const { contextSize } = modelService.availableModels[llmIdentifier];
+		const contextSize = modelService.contextSizes[llmIdentifier];
 		const systemPromptToken = await this.estimateSystemPromptTokens("summary");
 		const tokenLimit = computeSafePayload(contextSize, systemPromptToken);
 
