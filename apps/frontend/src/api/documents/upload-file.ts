@@ -99,8 +99,6 @@ export async function uploadAndProcessDocument(
 					throw new Error(status);
 				}
 
-				updateFileUploadStatusCallback(event.status);
-
 				if (event.status === "successful") {
 					documentId = event.documentId;
 				}

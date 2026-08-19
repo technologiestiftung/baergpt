@@ -4,7 +4,6 @@ import { uploadAndProcessDocument } from "@/api/documents/upload-file.ts";
 
 export const UPLOAD_STATUS_MAP = {
 	uploading: "wird hochgeladen",
-	uploaded: "erfolgreich hochgeladen",
 	processing: "wird verarbeitet",
 	successful: "bereit zur Nutzung",
 	canceled: "hochladen abgebrochen",
@@ -111,9 +110,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		const { fileUploads } = get();
 		return fileUploads.every(
 			(fileUpload) =>
-				fileUpload.status !== "uploading" &&
-				fileUpload.status !== "processing" &&
-				fileUpload.status !== "uploaded",
+				fileUpload.status !== "uploading" && fileUpload.status !== "processing",
 		);
 	},
 
