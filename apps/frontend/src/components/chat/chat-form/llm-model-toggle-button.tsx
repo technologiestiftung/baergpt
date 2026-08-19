@@ -22,7 +22,7 @@ export const LlmModelToggleButton: React.FC = () => {
 		},
 		{
 			label: Content["chat.llmModel.dropdown.li2.labelExtended"],
-			value: "mistral-large" as const,
+			value: "mistral-medium" as const,
 			description: Content["chat.llmModel.dropdown.li2.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li2.ariaLabel"],
 		},
@@ -40,7 +40,7 @@ export const LlmModelToggleButton: React.FC = () => {
 
 	const selectedLlmModelLabel: Record<LlmModel, string> = {
 		"mistral-small": Content["chat.llmModel.dropdown.li1.label"],
-		"mistral-large": Content["chat.llmModel.dropdown.li2.label"],
+		"mistral-medium": Content["chat.llmModel.dropdown.li2.label"],
 		"glm-5-2": Content["chat.llmModel.dropdown.li3.label"],
 	};
 
