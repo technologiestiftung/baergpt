@@ -142,7 +142,7 @@ documents.post("/process", async (c: Context) =>
 			logMemory("doc:error", reqId);
 			captureError(error);
 
-			if (error.message === "failed.format") {
+			if (error instanceof Error && error.message === "failed.format") {
 				return stream.writeSSE({
 					data: JSON.stringify({
 						status: "failed.format",
@@ -150,7 +150,7 @@ documents.post("/process", async (c: Context) =>
 				});
 			}
 
-			if (error.message === "failed.size") {
+			if (error instanceof Error && error.message === "failed.size") {
 				return stream.writeSSE({
 					data: JSON.stringify({
 						status: "failed.size",

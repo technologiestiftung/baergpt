@@ -54,6 +54,7 @@ const VALID_METADATA = {
 const VALID_PDF_BODY = VALID_METADATA;
 const VALID_WORD_BODY = VALID_METADATA;
 const VALID_EXCEL_BODY = VALID_METADATA;
+const VALID_CSV_BODY = VALID_METADATA;
 
 const DUMMY_BYTES = new Uint8Array([1, 2, 3]);
 
@@ -72,6 +73,12 @@ function wordFile(): File {
 function excelFile(): File {
 	return new File([DUMMY_BYTES], "some-document.xlsx", {
 		type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	});
+}
+
+function csvFile(): File {
+	return new File([DUMMY_BYTES], "some-document.csv", {
+		type: "text/csv",
 	});
 }
 
@@ -274,7 +281,6 @@ describe("POST /documents/process – captureError is called for every error cas
 	});
 
 	it("calls captureError when validateDocumentRequest throws", async () => {
-		// validateDocumentRequest no longer returns failure results — it throws.
 		const givenError = new Error("Unexpected DB error during validation");
 		vi.spyOn(
 			ValidationService.prototype,
@@ -292,11 +298,14 @@ describe("POST /documents/process – captureError is called for every error cas
 		let givenPdfRequest: Request;
 		let givenWordRequest: Request;
 		let givenExcelRequest: Request;
+		let givenCsvRequest: Request;
 
 		beforeEach(() => {
 			givenPdfRequest = createRequest(VALID_PDF_BODY, pdfFile());
 			givenWordRequest = createRequest(VALID_WORD_BODY, wordFile());
 			givenExcelRequest = createRequest(VALID_EXCEL_BODY, excelFile());
+			givenCsvRequest = createRequest(VALID_CSV_BODY, csvFile());
+
 			// For these tests, we want to test sub-functions of extractDocument,
 			// so we restore the original implementation of extractDocument
 			extractDocumentSpy.mockRestore();
@@ -317,7 +326,7 @@ describe("POST /documents/process – captureError is called for every error cas
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
 		});
 
-		it("calls captureError when extractExcelDocument throws", async () => {
+		it("calls captureError when extractExcelDocument throws while processing excel", async () => {
 			const givenError = new Error("Some Error");
 			vi.spyOn(
 				ExcelExtractionService.prototype,
@@ -325,6 +334,20 @@ describe("POST /documents/process – captureError is called for every error cas
 			).mockRejectedValueOnce(givenError);
 
 			const actualResponse = await app.fetch(givenExcelRequest);
+
+			expect(await getStatuses(actualResponse)).toContain("failed.generic");
+			expect(captureErrorMock).toHaveBeenCalledOnce();
+			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
+		});
+
+		it("calls captureError when extractExcelDocument throws while processing csv", async () => {
+			const givenError = new Error("Some Error");
+			vi.spyOn(
+				ExcelExtractionService.prototype,
+				"extractExcelDocument",
+			).mockRejectedValueOnce(givenError);
+
+			const actualResponse = await app.fetch(givenCsvRequest);
 
 			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledOnce();

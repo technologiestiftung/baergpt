@@ -13,7 +13,7 @@ const DEFAULT_DOCUMENT_SOURCE_TYPE = "default_document";
 const PUBLIC_DOCUMENTS_BUCKET = "public_documents";
 
 // Mocked processing outputs so the test exercises real storage + DB writes
-// without hitting the (flaky) Mistral OCR / summary / embedding APIs. The chunk
+// without hitting the (flaky) API OCR / LLM / embedding APIs. The chunk
 // embedding must match the vector(1024) column, or the real insert fails.
 const MOCK_EXTRACTION_RESULT = {
 	parsedPages: [{ content: "page content", tokenCount: 10, pageNumber: 1 }],
