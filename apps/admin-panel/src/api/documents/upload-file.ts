@@ -95,8 +95,6 @@ export async function uploadAndProcessDocument(
 				if (status.startsWith("failed")) {
 					throw new Error(status);
 				}
-
-				updateFileUploadStatusCallback(event.status);
 			}
 		}
 	} finally {

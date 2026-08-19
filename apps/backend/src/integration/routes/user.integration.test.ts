@@ -81,7 +81,7 @@ const personalMetadata = {
 };
 
 // Mocked processing outputs so the tests exercise the route + real DB/storage
-// without hitting Mistral. The chunk embedding must match the vector(1024)
+// without hitting the API. The chunk embedding must match the vector(1024)
 // column, otherwise the real insert fails.
 const MOCK_EXTRACTION_RESULT = {
 	parsedPages: [{ content: "page content", tokenCount: 10, pageNumber: 1 }],
@@ -264,7 +264,7 @@ describe("Integration Tests for Routes", () => {
 	});
 
 	// Mock the expensive processing steps (OCR/summary/embeddings) so the tests
-	// exercise the route + real DB/storage without hitting Mistral. The route
+	// exercise the route + real DB/storage without hitting the API. The route
 	// still uploads the file and writes real rows via logProcessedDocument.
 	beforeEach(() => {
 		vi.spyOn(
@@ -316,7 +316,7 @@ describe("Integration Tests for Routes", () => {
 	}, 20_000);
 
 	it("POST /llm/just-chatting should handle a valid request", async () => {
-		// Mock prompt assembly (Langfuse) and the LLM stream (Mistral) so the
+		// Mock prompt assembly and the LLM stream so the
 		// route smoke-test is deterministic and never depends on external APIs.
 		vi.spyOn(GenerationService.prototype, "createPrompt").mockResolvedValue({
 			messages: [],
