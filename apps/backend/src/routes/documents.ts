@@ -14,7 +14,6 @@ import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
 import { logMemory } from "../monitoring/memory-logger";
 import { config } from "../config";
-import { clearInterval } from "node:timers";
 
 const documents = new Hono();
 
@@ -27,27 +26,12 @@ documents.post("/process", async (c: Context) =>
 		const validationService = new ValidationService(userScopedDbService);
 
 		let documentId: number | null = null;
-		let sourceUrl: string | null = null;
-		let bucket: string | null = null;
 
 		const userId: string = c.get("authenticatedUserId");
 		const reqId =
 			config.nodeEnv === "production"
 				? crypto.randomUUID().slice(0, 8)
 				: (userId?.slice(0, 8) ?? "no-user");
-
-		/**
-		 * CloudFoundry might kill the request when there is a long silence
-		 * So we add a new line every 10 seconds
-		 */
-		const heartbeat = setInterval(async () => {
-			try {
-				await stream.writeSSE({ data: "" });
-			} catch (error) {
-				captureError(error);
-				clearInterval(heartbeat);
-			}
-		}, 10_000);
 
 		try {
 			logMemory("doc:start", reqId);
@@ -56,11 +40,11 @@ documents.post("/process", async (c: Context) =>
 
 			// Validate document request (path, folder ownership, file existence)
 			const {
-				sourceUrl: generatedSourceUrl,
+				sourceUrl,
 				sourceType,
 				createdAt,
 				llmModel,
-				bucket: foundBucket,
+				bucket,
 				file,
 				folderId,
 				accessGroupId,
@@ -68,9 +52,6 @@ documents.post("/process", async (c: Context) =>
 				body,
 				userId,
 			});
-
-			sourceUrl = generatedSourceUrl;
-			bucket = foundBucket;
 
 			await stream.writeSSE({
 				data: JSON.stringify({
@@ -143,8 +124,6 @@ documents.post("/process", async (c: Context) =>
 					userScopedDbService,
 					userId,
 					documentId,
-					sourceUrl,
-					bucket,
 				});
 				return stream.writeSSE({
 					data: JSON.stringify({
@@ -196,8 +175,6 @@ documents.post("/process", async (c: Context) =>
 				userScopedDbService,
 				userId,
 				documentId,
-				sourceUrl,
-				bucket,
 			});
 
 			return stream.writeSSE({
@@ -206,8 +183,6 @@ documents.post("/process", async (c: Context) =>
 					error: "Internal Server Error",
 				}),
 			});
-		} finally {
-			clearInterval(heartbeat);
 		}
 	}),
 );
@@ -247,32 +222,15 @@ documents.delete("/:documentId", async (c: Context) => {
 async function cleanup(args: {
 	userScopedDbService: UserScopedDbService;
 	userId: string;
-	sourceUrl: string | null;
-	bucket: string | null;
 	documentId: number | null;
 }) {
-	const { userScopedDbService, userId, documentId, sourceUrl, bucket } = args;
+	const { userScopedDbService, userId, documentId } = args;
 
 	if (documentId !== null) {
 		try {
 			await userScopedDbService.deleteDocument(documentId, userId);
 		} catch (deleteDocumentError) {
 			captureError(deleteDocumentError);
-		}
-	}
-
-	/**
-	 * You might wonder why deleteFileFromStorage is called on top
-	 * of deleteDocument (which calls deleteFileFromStorage):
-	 * extractDocument generates a preview for docx documents.
-	 * If another step fails before saving the data in the DB (we won't have a documentId),
-	 * we'll have an orphan preview document in storage that needs to be cleaned up.
-	 */
-	if (sourceUrl !== null && bucket !== null) {
-		try {
-			await userScopedDbService.deleteFileFromStorage(sourceUrl, bucket);
-		} catch (deleteFileError) {
-			captureError(deleteFileError);
 		}
 	}
 }
