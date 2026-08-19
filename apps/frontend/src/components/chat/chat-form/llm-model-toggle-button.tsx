@@ -5,6 +5,7 @@ import { ChatFormDropdown } from "./chat-form-dropdown";
 import Content from "../../../content";
 import { useChatsStore } from "../../../store/use-chats-store";
 import type { LlmModel } from "../../../common";
+import { config } from "../../../config";
 
 export const LlmModelToggleButton: React.FC = () => {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -25,7 +26,23 @@ export const LlmModelToggleButton: React.FC = () => {
 			description: Content["chat.llmModel.dropdown.li2.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li2.ariaLabel"],
 		},
+		...(config.featureFlagGlm52Allowed
+			? [
+					{
+						label: Content["chat.llmModel.dropdown.li3.labelExtended"],
+						value: "glm-5-2" as const,
+						description: Content["chat.llmModel.dropdown.li3.description"],
+						ariaLabel: Content["chat.llmModel.dropdown.li3.ariaLabel"],
+					},
+				]
+			: []),
 	];
+
+	const selectedLlmModelLabel: Record<LlmModel, string> = {
+		"mistral-small": Content["chat.llmModel.dropdown.li1.label"],
+		"mistral-large": Content["chat.llmModel.dropdown.li2.label"],
+		"glm-5-2": Content["chat.llmModel.dropdown.li3.label"],
+	};
 
 	const handleClose = useCallback(() => {
 		setIsDropdownOpen(false);
@@ -52,9 +69,7 @@ export const LlmModelToggleButton: React.FC = () => {
 				onClick={handleToggleDropdown}
 			>
 				<span className="text-sm leading-5 text-dunkelblau-80">
-					{selectedLlmModel === "mistral-small"
-						? Content["chat.llmModel.dropdown.li1.label"]
-						: Content["chat.llmModel.dropdown.li2.label"]}
+					{selectedLlmModelLabel[selectedLlmModel]}
 				</span>
 
 				<ChevronIcon color="dunkelblau-80" direction="down" />

@@ -987,6 +987,11 @@ export const Content = {
 		"Leistungsstark für komplexe Aufgaben",
 	"chat.llmModel.dropdown.li2.ariaLabel":
 		"Mistral Medium 3.5 (präzise) auswählen",
+	"chat.llmModel.dropdown.li3.label": "GLM 5.2",
+	"chat.llmModel.dropdown.li3.labelExtended": "GLM 5.2",
+	"chat.llmModel.dropdown.li3.description":
+		"Leistungsstark für komplexe Aufgaben",
+	"chat.llmModel.dropdown.li3.ariaLabel": "GLM 5.2 auswählen",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",

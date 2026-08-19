@@ -18,6 +18,8 @@ export interface Config {
 	modelTemperature: number;
 	smallModelIdentifier: string;
 	largeModelIdentifier: string;
+	glmModelIdentifier: string;
+	featureFlagGlm52Allowed: boolean;
 	defaultDocumentProcessingModel: string;
 	sentryDsn: string;
 	gotenbergUrl: string;
@@ -93,6 +95,14 @@ export function verifyConfig(): void {
 	}
 	if (!process.env.LARGE_MODEL_IDENTIFIER) {
 		throw new Error("LARGE_MODEL_IDENTIFIER must be defined");
+	}
+	if (
+		process.env.FEATURE_FLAG_GLM_5_2_ALLOWED === "true" &&
+		!process.env.GLM_MODEL_IDENTIFIER
+	) {
+		throw new Error(
+			"GLM_MODEL_IDENTIFIER must be defined when FEATURE_FLAG_GLM_5_2_ALLOWED is true",
+		);
 	}
 	if (!process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL) {
 		throw new Error("DEFAULT_DOCUMENT_PROCESSING_MODEL must be defined");
@@ -180,6 +190,8 @@ export const config: Config = {
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
 	smallModelIdentifier: process.env.SMALL_MODEL_IDENTIFIER,
 	largeModelIdentifier: process.env.LARGE_MODEL_IDENTIFIER,
+	glmModelIdentifier: process.env.GLM_MODEL_IDENTIFIER,
+	featureFlagGlm52Allowed: process.env.FEATURE_FLAG_GLM_5_2_ALLOWED === "true",
 	defaultDocumentProcessingModel: process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL,
 	sentryDsn: process.env.SENTRY_DSN,
 	gotenbergUrl: process.env.GOTENBERG_URL,
