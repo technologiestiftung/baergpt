@@ -25,7 +25,10 @@ server {
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # nginx is the public edge, so don't trust a client-supplied X-Forwarded-For.
+        # Overwrite it with the real peer IP — this is the value GoTrue keys its rate
+        # limiter on, so appending the client value let attackers rotate the key.
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
 
