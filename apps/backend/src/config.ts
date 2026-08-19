@@ -17,7 +17,7 @@ export interface Config {
 	nodeEnv?: string;
 	modelTemperature: number;
 	smallModelIdentifier: string;
-	largeModelIdentifier: string;
+	mediumModelIdentifier: string;
 	glmModelIdentifier: string;
 	featureFlagGlm52Allowed: boolean;
 	defaultDocumentProcessingModel: string;
@@ -93,8 +93,8 @@ export function verifyConfig(): void {
 	if (!process.env.SMALL_MODEL_IDENTIFIER) {
 		throw new Error("SMALL_MODEL_IDENTIFIER must be defined");
 	}
-	if (!process.env.LARGE_MODEL_IDENTIFIER) {
-		throw new Error("LARGE_MODEL_IDENTIFIER must be defined");
+	if (!process.env.MEDIUM_MODEL_IDENTIFIER) {
+		throw new Error("MEDIUM_MODEL_IDENTIFIER must be defined");
 	}
 	if (
 		process.env.FEATURE_FLAG_GLM_5_2_ALLOWED === "true" &&
@@ -189,7 +189,7 @@ export const config: Config = {
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
 	smallModelIdentifier: process.env.SMALL_MODEL_IDENTIFIER,
-	largeModelIdentifier: process.env.LARGE_MODEL_IDENTIFIER,
+	mediumModelIdentifier: process.env.MEDIUM_MODEL_IDENTIFIER,
 	glmModelIdentifier: process.env.GLM_MODEL_IDENTIFIER,
 	featureFlagGlm52Allowed: process.env.FEATURE_FLAG_GLM_5_2_ALLOWED === "true",
 	defaultDocumentProcessingModel: process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL,
