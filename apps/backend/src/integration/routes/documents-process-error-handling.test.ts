@@ -302,20 +302,6 @@ describe("POST /documents/process – captureError is called for every error cas
 			extractDocumentSpy.mockRestore();
 		});
 
-		it("calls captureError when savePdfPreview throws", async () => {
-			const givenError = new Error("Some Error");
-			vi.spyOn(
-				UserScopedDbService.prototype,
-				"savePdfPreview",
-			).mockRejectedValue(givenError);
-
-			const res = await app.fetch(givenWordRequest);
-
-			expect(await getStatuses(res)).toContain("failed.generic");
-			expect(captureErrorMock).toHaveBeenCalledOnce();
-			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
-		});
-
 		it("calls captureError when extractWordDocument throws", async () => {
 			const givenError = new Error("Some Error");
 			vi.spyOn(

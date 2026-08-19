@@ -64,14 +64,15 @@ export async function uploadAndProcessDocument(
 
 			buffer += decoder.decode(value, { stream: true });
 			const lines = buffer.split("\n");
-			buffer = lines.pop() ?? ""; // last line may be incomplete — keep i
+			buffer = lines.pop() ?? "";
 
 			for (const line of lines) {
-				if (!line.startsWith("data: ")) {
+				const prefix = "data: ";
+				if (!line.startsWith(prefix)) {
 					continue;
 				}
 
-				const payload = line.slice(6).trim();
+				const payload = line.slice(prefix.length).trim();
 				if (!payload) {
 					continue;
 				}
