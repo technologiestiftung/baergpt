@@ -121,14 +121,15 @@ testWithLoggedInUser.describe("User Profile", () => {
 	testWithLoggedInUser(
 		"should allow user to update personal prompt",
 		async ({ page }) => {
-			await page.goto("/profile/");
-
-			await page.waitForResponse(
+			const waitForProfile = page.waitForResponse(
 				(res) =>
 					res.url().includes("/rest/v1/profiles") &&
 					res.request().method() === "GET" &&
 					res.ok(),
 			);
+			await page.goto("/profile/");
+
+			await waitForProfile;
 
 			const newPrompt = "This is a new personal prompt for testing.";
 			const promptInput = page.locator("#personalPrompt");
@@ -186,14 +187,16 @@ testWithLoggedInUser.describe("User Profile", () => {
 	testWithLoggedInUser(
 		"should respect max character limit for personal prompt",
 		async ({ page }) => {
-			await page.goto("/profile/");
-
-			await page.waitForResponse(
+			const waitForProfile = page.waitForResponse(
 				(res) =>
 					res.url().includes("/rest/v1/profiles") &&
 					res.request().method() === "GET" &&
 					res.ok(),
 			);
+
+			await page.goto("/profile/");
+
+			await waitForProfile;
 
 			const promptInput = page.locator("#personalPrompt");
 			await expect(promptInput).toBeVisible();
