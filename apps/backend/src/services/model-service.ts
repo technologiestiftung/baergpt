@@ -8,7 +8,7 @@ export class ModelService {
 	contextSizes: Record<modelIdentifiers, number> = {
 		"mistral-small": 128_000,
 		"mistral-medium": 256_000,
-		"glm-5-2": 128_000,
+		"glm-5-2": 1_000_000,
 	};
 
 	handlers: Record<string, LLMHandler> = {

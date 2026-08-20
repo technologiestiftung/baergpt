@@ -13,6 +13,7 @@ import {
 	createUIMessageStreamResponse,
 	generateText,
 	Output,
+	stepCountIs,
 	streamText,
 	toUIMessageStream,
 } from "ai";
@@ -24,7 +25,7 @@ import { propagateAttributes } from "@langfuse/tracing";
 import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
-import { LLM_PARAMETERS } from "../constants";
+import { LLM_PARAMETERS, EXPERIMENTAL_MAX_TOOL_CALL_STEPS } from "../constants";
 import type {
 	ActiveTools,
 	IncomingChatMessage,
@@ -344,7 +345,10 @@ export class GenerationService {
 							temperature: LLM_PARAMETERS.temperature,
 							tools,
 							toolChoice,
-							stopWhen: isLoopFinished(),
+							stopWhen:
+								llmHandler.languageModel === "zai-glm-5-2"
+									? stepCountIs(EXPERIMENTAL_MAX_TOOL_CALL_STEPS)
+									: isLoopFinished(),
 							providerOptions: {
 								mistral: {
 									presencePenalty: LLM_PARAMETERS.presencePenalty,
