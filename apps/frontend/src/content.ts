@@ -828,10 +828,12 @@ export const Content = {
 		"Herunterladen fehlgeschlagen",
 	"documentsPreviewSection.disclaimer.docx":
 		"Die Vorschau von Word-Dateien ist noch experimentell. Die Formatierung entspricht nicht dem Originaldokument. Dies hat kein Auswirkung auf die Antwortqualität.",
-	"documentsPreviewSection.noPreviewAvailable":
-		"Die Vorschau von Excel-Dateien wird aktuell noch nicht unterstützt. Wir arbeiten daran, dieses Feature zu einem späteren Zeitpunkt anzubieten. Vielen Dank für Ihr Verständnis.",
 	"documentsPreviewSection.loadingPreview": "Die Vorschau wird geladen...",
 	"documentsPreviewSection.title": "Dokumentvorschau",
+	"documentsPreviewSection.spreadsheet.empty":
+		"Diese Tabelle enthält keine Daten.",
+	"documentsPreviewSection.spreadsheet.truncated":
+		"Diese Tabelle wurde für die Anzeige gekürzt. Sehr große Tabellen werden nur teilweise dargestellt.",
 
 	/* -------------------- Dialogs -------------------- */
 	//DeleteItemDialog

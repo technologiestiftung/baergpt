@@ -105,6 +105,13 @@ export const msExcelDocumentPath = resolve(
 export const msExcelDocumentType =
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+export const csvDocumentName = "csv-document.csv";
+export const csvDocumentPath = resolve(
+	__dirname,
+	`./fixtures/${csvDocumentName}`,
+);
+export const csvDocumentType = "text/csv";
+
 export const longFileName =
 	"This_is_a_very_long_document_name_that_should_be_truncated.pdf";
 export const longFilePath = resolve(__dirname, `./fixtures/${longFileName}`);

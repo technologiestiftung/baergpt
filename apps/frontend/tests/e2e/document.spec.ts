@@ -11,6 +11,9 @@ import {
 	uploadFileViaFileChooserAndWait,
 } from "../fixtures/test-with-documents.ts";
 import {
+	csvDocumentName,
+	csvDocumentPath,
+	csvDocumentType,
 	defaultBucketName,
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -1006,10 +1009,32 @@ test.describe("Documents", () => {
 				fileType: msExcelDocumentType,
 			});
 
-			// Click on the document to open the preview
+			// Open the preview for the Excel document
 			await page
 				.getByRole("button", { name: `Dokumente-Icon ${msExcelDocumentName}` })
 				.click();
+
+			// Preview header is shown
+			await expect(
+				page.getByRole("heading", { name: msExcelDocumentName }),
+			).toBeVisible();
+
+			// The spreadsheet grid renders with the fixture's cell content
+			const grid = page.getByRole("grid");
+			await expect(grid).toBeVisible();
+			await expect(
+				grid.getByRole("gridcell", { name: "Eine Excel Datei" }),
+			).toBeVisible();
+
+			// Column letters and row numbers are shown
+			await expect(
+				grid.getByRole("columnheader", { name: "A", exact: true }),
+			).toBeVisible();
+			await expect(grid.getByText("1", { exact: true })).toBeVisible();
+
+			// Read-only: double-clicking a cell must not open an editor input
+			await grid.getByRole("gridcell", { name: "Eine Excel Datei" }).dblclick();
+			await expect(grid.getByRole("textbox")).toHaveCount(0);
 
 			// Expect the preview to be visible
 			await expect(
@@ -1023,6 +1048,61 @@ test.describe("Documents", () => {
 			});
 			await page
 				.getByRole("link", { name: `${msExcelDocumentName} herunterladen` })
+				.click();
+			const download = await downloadPromise;
+
+			// Verify the download was successful
+			expect(download).toBeDefined();
+			expect(await download.path()).toBeTruthy();
+		},
+	);
+
+	testDesktopOnly(
+		"Upload csv document, open it in the preview, then download it",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await uploadFileViaDragAndDropAndWait({
+				page,
+				fileName: csvDocumentName,
+				filePath: csvDocumentPath,
+				fileType: csvDocumentType,
+			});
+
+			// Open the preview for the CSV document
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${csvDocumentName}` })
+				.click();
+
+			// Preview header is shown
+			await expect(
+				page.getByRole("heading", { name: csvDocumentName }),
+			).toBeVisible();
+
+			// The spreadsheet grid renders with the fixture's cell content
+			const grid = page.getByRole("grid");
+			await expect(grid).toBeVisible();
+			await expect(
+				grid.getByRole("gridcell", { name: "Eine CSV Datei" }),
+			).toBeVisible();
+
+			// Column letters and row numbers are shown
+			await expect(
+				grid.getByRole("columnheader", { name: "A", exact: true }),
+			).toBeVisible();
+			await expect(grid.getByText("1", { exact: true })).toBeVisible();
+
+			// Read-only: double-clicking a cell must not open an editor input
+			await grid.getByRole("gridcell", { name: "Eine CSV Datei" }).dblclick();
+			await expect(grid.getByRole("textbox")).toHaveCount(0);
+
+			// Download the document from the preview
+			const downloadPromise = page.waitForEvent("download", {
+				predicate: (download) =>
+					download.suggestedFilename() === csvDocumentName,
+			});
+			await page
+				.getByRole("link", { name: `${csvDocumentName} herunterladen` })
 				.click();
 			const download = await downloadPromise;
 

@@ -19,6 +19,7 @@
 		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts"
 	},
 	"dependencies": {
+		"@e965/xlsx": "0.20.3",
 		"@mohtasham/md-to-docx": "3.0.1",
 		"@react-pdf/renderer": "4.5.1",
 		"@repo/db-schema": "file:../../libs/db-schema",
@@ -28,6 +29,7 @@
 		"dotenv": "16.6.1",
 		"js-tiktoken": "1.0.21",
 		"react": "19.2.8",
+		"react-data-grid": "7.0.0-beta.61",
 		"react-dnd": "16.0.1",
 		"react-dnd-html5-backend": "16.0.1",
 		"react-dom": "19.2.8",

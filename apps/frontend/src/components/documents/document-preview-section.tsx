@@ -2,6 +2,7 @@ import React from "react";
 import { usePreviewDocumentStore } from "../../store/use-preview-document-store.ts";
 import { useErrorStore } from "../../store/error-store";
 import { CloseIcon } from "../primitives/icons/close-icon";
+import { SpreadsheetPreview } from "../spreadsheet/spreadsheet-preview.tsx";
 import Content from "../../content";
 
 export const DocumentPreviewSection: React.FC = () => {
@@ -9,6 +10,7 @@ export const DocumentPreviewSection: React.FC = () => {
 		selectedPreviewDocument,
 		selectedPreviewDocumentPreviewUrl,
 		selectedPreviewDocumentDownloadUrl,
+		isLoadingPreviewDocument,
 		unselectPreviewDocument,
 	} = usePreviewDocumentStore();
 
@@ -19,12 +21,12 @@ export const DocumentPreviewSection: React.FC = () => {
 		return null;
 	}
 
-	const isDocxFormat = (fileName: string) => {
-		return fileName.toLowerCase().split(".").pop() === "docx";
-	};
+	const isDocxFormat = selectedPreviewDocument.file_name
+		?.toLowerCase()
+		.endsWith(".docx");
 
-	const hasSupportedPreview = [".pdf", ".docx"].some((suffix) =>
-		selectedPreviewDocument.file_name?.endsWith(suffix),
+	const isSpreadsheet = [".xlsx", ".csv"].some((suffix) =>
+		selectedPreviewDocument.file_name?.toLowerCase().endsWith(suffix),
 	);
 
 	return (
@@ -78,38 +80,40 @@ export const DocumentPreviewSection: React.FC = () => {
 				</div>
 			</div>
 			<div className="h-full w-full px-5 md:px-[60px] bg-hellblau-30 flex items-center justify-center flex-col">
-				{!hasSupportedPreview && (
-					<div className="flex items-center justify-center h-full text-center max-w-xl">
-						<p className="text-lg text-dunkelblau-80">
-							{Content["documentsPreviewSection.noPreviewAvailable"]}
-						</p>
-					</div>
+				{isLoadingPreviewDocument && (
+					<p className="text-lg text-dunkelblau-80">
+						{Content["documentsPreviewSection.loadingPreview"]}
+					</p>
 				)}
-				{selectedPreviewDocumentPreviewUrl && hasSupportedPreview && (
-					<>
-						<p
-							className={`pb-5 text-sm leading-5 font-normal text-dunkelblau-80 
-						${isDocxFormat(selectedPreviewDocument.file_name ?? "") ? "" : "hidden"}`}
-						>
-							{Content["documentsPreviewSection.disclaimer.docx"]}
-						</p>
-						<div className="w-full h-full overflow-hidden relative shadow-md">
-							<iframe
-								key={selectedPreviewDocument.id}
-								src={`${selectedPreviewDocumentPreviewUrl}#toolbar=0&view=fitH`}
-								className="absolute -inset-1.5 w-[calc(100%+12px)] h-[calc(100%+12px)]"
-								title={Content["documentsPreviewSection.title"]}
+				{!isLoadingPreviewDocument &&
+					!isSpreadsheet &&
+					selectedPreviewDocumentPreviewUrl && (
+						<>
+							<p
+								className={`pb-5 text-sm leading-5 font-normal text-dunkelblau-80 ${isDocxFormat ? "" : "hidden"}`}
+							>
+								{Content["documentsPreviewSection.disclaimer.docx"]}
+							</p>
+							<div className="w-full h-full overflow-hidden relative shadow-md">
+								<iframe
+									key={selectedPreviewDocument.id}
+									src={`${selectedPreviewDocumentPreviewUrl}#toolbar=0&view=fitH`}
+									className="absolute -inset-1.5 w-[calc(100%+12px)] h-[calc(100%+12px)]"
+									title={Content["documentsPreviewSection.title"]}
+								/>
+							</div>
+						</>
+					)}
+
+				{!isLoadingPreviewDocument &&
+					isSpreadsheet &&
+					selectedPreviewDocumentPreviewUrl && (
+						<div className="w-full h-full min-h-0 self-stretch py-2">
+							<SpreadsheetPreview
+								downloadUrl={selectedPreviewDocumentPreviewUrl}
 							/>
 						</div>
-					</>
-				)}
-				{!selectedPreviewDocumentPreviewUrl && hasSupportedPreview && (
-					<div className="flex items-center justify-center h-full text-center max-w-xl">
-						<p className="text-lg text-dunkelblau-80">
-							{Content["documentsPreviewSection.loadingPreview"]}
-						</p>
-					</div>
-				)}
+					)}
 			</div>
 		</section>
 	);
