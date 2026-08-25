@@ -13,7 +13,7 @@ import {
 	createUIMessageStreamResponse,
 	generateText,
 	Output,
-	stepCountIs,
+	isStepCount,
 	streamText,
 	toUIMessageStream,
 } from "ai";
@@ -347,7 +347,7 @@ export class GenerationService {
 							toolChoice,
 							stopWhen:
 								llmHandler.languageModel === "zai-glm-5-2"
-									? stepCountIs(EXPERIMENTAL_MAX_TOOL_CALL_STEPS)
+									? isStepCount(EXPERIMENTAL_MAX_TOOL_CALL_STEPS)
 									: isLoopFinished(),
 							providerOptions: {
 								mistral: {
