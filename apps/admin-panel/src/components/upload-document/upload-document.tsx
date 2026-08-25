@@ -82,30 +82,30 @@ export const UploadDocument: React.FC = () => {
 			<div className="flex items-center gap-2">
 				<Upload className="size-5" />
 				<h2 className="text-lg font-semibold">
-					{Content["baseKnowledge.uploadPDF.title"]}
+					{Content["baseKnowledge.uploadDocument.title"]}
 				</h2>
 			</div>
 			<div className="text-gray-500 text-sm">
-				{Content["baseKnowledge.uploadPDF.description"]}
+				{Content["baseKnowledge.uploadDocument.description"]}
 			</div>
 			<div className="flex flex-col justify-start gap-x-4 space-y-4 mt-4">
 				<div className="space-y-3">
-					<Label className="font-semibold" htmlFor="pdf-upload">
-						{Content["baseKnowledge.uploadPDF.label"]}
+					<Label className="font-semibold" htmlFor="document-upload">
+						{Content["baseKnowledge.uploadDocument.label"]}
 					</Label>
 					<div className="relative">
 						<Button
 							onClick={() => fileInputRef.current?.click()}
 							className="max-w-sm w-full"
 						>
-							{Content["baseKnowledge.uploadPDF.button.label"]}
+							{Content["baseKnowledge.uploadDocument.button.label"]}
 							<Upload className="h-4 w-4 ml-2" />
 						</Button>
 						<Input
 							ref={fileInputRef}
-							id="pdf-upload"
+							id="document-upload"
 							type="file"
-							accept="application/pdf"
+							accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
 							multiple
 							className="hidden"
 							onChange={handleFileSelect}

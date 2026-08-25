@@ -174,19 +174,21 @@ export const Content = {
 	"userEditModal.form.updateSuccess": "Benutzerdaten erfolgreich aktualisiert",
 
 	/* ---------------------- Base Knowledge ---------------------- */
-	// Upload PDF
-	"baseKnowledge.uploadPDF.title": "PDF hochladen",
-	"baseKnowledge.uploadPDF.description":
-		"Lade PDF-Dokumente in die Base Knowledge hoch",
-	"baseKnowledge.uploadPDF.label": "PDF-Datei",
-	"baseKnowledge.uploadPDF.button.label": "PDF hochladen",
-	"baseKnowledge.uploadPDF.uploadSuccess": "PDF erfolgreich hochgeladen",
-	"baseKnowledge.uploadPDF.uploadError": "Fehler beim Hochladen des PDFs",
-	// Uploaded PDF
-	"baseKnowledge.uploadedPDF.title": "Hochgeladene PDFs",
+	// Upload Document
+	"baseKnowledge.uploadDocument.title": "Dokument hochladen",
+	"baseKnowledge.uploadDocument.description":
+		"Lade Dokumente (PDF, Word, Excel oder CSV) in das Base Knowledge hoch",
+	"baseKnowledge.uploadDocument.label": "Dokument",
+	"baseKnowledge.uploadDocument.button.label": "Dokument hochladen",
+	"baseKnowledge.uploadDocument.uploadSuccess":
+		"Dokument erfolgreich hochgeladen",
+	"baseKnowledge.uploadDocument.uploadError":
+		"Fehler beim Hochladen des Dokuments",
+	// Uploaded Documents
+	"baseKnowledge.uploadedPDF.title": "Hochgeladene Dokumente",
 	"baseKnowledge.uploadedPDF.description":
-		"Verwalte die hochgeladenen PDF-Dokumente",
-	"baseKnowledge.uploadedPDF.noDocuments": "Keine PDFs hochgeladen.",
+		"Verwalte die hochgeladenen Dokumente",
+	"baseKnowledge.uploadedPDF.noDocuments": "Keine Dokumente hochgeladen.",
 	"baseKnowledge.uploadedPDF.item.size": "Größe:",
 	"baseKnowledge.uploadedPDF.item.uploadedAt": "Hochgeladen am:",
 	//fileUploadButtonStatus
