@@ -24,12 +24,17 @@ export function SpreadsheetPreview({ downloadUrl }: { downloadUrl: string }) {
 
 	const activeSheet = sheets[activeSheetIndex];
 	const activeRows = activeSheet?.rows ?? [];
+	const rowOffset = activeSheet?.rowOffset ?? 0;
+	const colOffset = activeSheet?.colOffset ?? 0;
 
 	const columnCount = useMemo(() => getColumnCount(activeRows), [activeRows]);
-	const columns = useMemo(() => buildColumns(columnCount), [columnCount]);
+	const columns = useMemo(
+		() => buildColumns(columnCount, colOffset),
+		[columnCount, colOffset],
+	);
 	const rows = useMemo(
-		() => buildGridRows(activeRows, columnCount),
-		[activeRows, columnCount],
+		() => buildGridRows(activeRows, columnCount, rowOffset),
+		[activeRows, columnCount, rowOffset],
 	);
 
 	if (isLoading) {
