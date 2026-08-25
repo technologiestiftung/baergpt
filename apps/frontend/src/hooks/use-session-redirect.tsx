@@ -7,7 +7,7 @@ import { useAuthErrorStore } from "../store/auth-error-store.ts";
 
 export function useSessionRedirect() {
 	const session = useAuthStore((state) => state.session);
-	const isBanned = useAuthStore((state) => state.isBanned);
+	const isBannedOrDeleted = useAuthStore((state) => state.isBannedOrDeleted);
 
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -30,21 +30,21 @@ export function useSessionRedirect() {
 			session,
 			pathname: location.pathname,
 			navigate,
-			isBanned,
+			isBannedOrDeleted,
 		}).catch(useErrorStore.getState().handleError);
-	}, [session, location, isBanned, navigate]);
+	}, [session, location, isBannedOrDeleted, navigate]);
 }
 
 async function redirectBasedOnSession({
 	session,
 	pathname,
 	navigate,
-	isBanned,
+	isBannedOrDeleted,
 }: {
 	session: Session | null | undefined;
 	pathname: string;
 	navigate: (path: string) => void;
-	isBanned: boolean | null;
+	isBannedOrDeleted: boolean | null;
 }) {
 	/**
 	 * On first load the session and user are undefined, and
@@ -64,16 +64,16 @@ async function redirectBasedOnSession({
 	}
 
 	/**
-	 * If isBanned is null, we don't know yet if the user has been banned or not
+	 * If isBannedOrDeleted is null, we don't know yet if the user has been banned or not
 	 */
-	if (isBanned === null) {
+	if (isBannedOrDeleted === null) {
 		return;
 	}
 
 	/**
-	 * If the user is banned, we log them out
+	 * If the user is banned or has been deleted, we log them out
 	 */
-	if (isBanned) {
+	if (isBannedOrDeleted) {
 		await useAuthStore.getState().logout();
 		useAuthErrorStore
 			.getState()

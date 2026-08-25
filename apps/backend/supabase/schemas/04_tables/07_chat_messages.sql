@@ -68,7 +68,7 @@ CREATE POLICY "Allow authenticated users to CRUD their own chat_messages" ON "pu
                     )
             )
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -92,7 +92,7 @@ WITH
                         )
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 

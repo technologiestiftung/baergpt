@@ -38,7 +38,7 @@ SELECT
                         "auth"."uid" () AS "uid"
                 ) = "id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -52,7 +52,7 @@ WITH
                         "auth"."uid" () AS "uid"
                 ) = "id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -66,7 +66,7 @@ FOR UPDATE
                         "auth"."uid" () AS "uid"
                 ) = "id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 

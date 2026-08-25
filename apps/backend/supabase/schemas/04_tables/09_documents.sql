@@ -68,7 +68,7 @@ WITH
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
             OR (
                 "public"."is_application_admin" ()
@@ -90,7 +90,7 @@ SELECT
                     )
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -104,7 +104,7 @@ FOR UPDATE
                         "auth"."uid" () AS "uid"
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -118,7 +118,7 @@ CREATE POLICY "Allow owners to delete documents and admins to delete base know" 
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
             OR (
                 "public"."is_application_admin" ()
