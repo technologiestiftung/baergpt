@@ -62,7 +62,12 @@ export async function parseWorkbook(
 			return capped.map((cell) => (cell === undefined ? null : cell));
 		});
 
-		return { name, rows };
+		return {
+			name,
+			rows,
+			rowOffset: fullRange?.s.r ?? 0,
+			colOffset: fullRange?.s.c ?? 0,
+		};
 	});
 
 	return { sheets, truncated };
