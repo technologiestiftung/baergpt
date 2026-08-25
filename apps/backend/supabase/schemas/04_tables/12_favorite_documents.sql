@@ -18,7 +18,7 @@ CREATE POLICY "Allow authenticated users to CRUD their own rows" ON "public"."fa
                     "auth"."uid" () AS "uid"
             ) = "user_id"
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -30,7 +30,7 @@ WITH
                         "auth"."uid" () AS "uid"
                 ) = "user_id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
