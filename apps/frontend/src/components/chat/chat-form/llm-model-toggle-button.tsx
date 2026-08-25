@@ -30,7 +30,7 @@ export const LlmModelToggleButton: React.FC = () => {
 			? [
 					{
 						label: Content["chat.llmModel.dropdown.li3.labelExtended"],
-						value: "glm-5-2" as const,
+						value: "zai-glm-5-2" as const,
 						description: Content["chat.llmModel.dropdown.li3.description"],
 						ariaLabel: Content["chat.llmModel.dropdown.li3.ariaLabel"],
 					},
@@ -41,7 +41,7 @@ export const LlmModelToggleButton: React.FC = () => {
 	const selectedLlmModelLabel: Record<LlmModel, string> = {
 		"mistral-small": Content["chat.llmModel.dropdown.li1.label"],
 		"mistral-medium": Content["chat.llmModel.dropdown.li2.label"],
-		"glm-5-2": Content["chat.llmModel.dropdown.li3.label"],
+		"zai-glm-5-2": Content["chat.llmModel.dropdown.li3.label"],
 	};
 
 	const handleClose = useCallback(() => {
