@@ -2,13 +2,13 @@ import { config } from "../config";
 import { LLMHandler } from "../types/common";
 import { getLanguageModel } from "./llm-provider";
 
-type modelIdentifiers = "mistral-small" | "mistral-medium" | "glm-5-2";
+type modelIdentifiers = "mistral-small" | "mistral-medium" | "zai-glm-5-2";
 
 export class ModelService {
 	contextSizes: Record<modelIdentifiers, number> = {
 		"mistral-small": 128_000,
 		"mistral-medium": 256_000,
-		"glm-5-2": 1_000_000,
+		"zai-glm-5-2": 1_000_000,
 	};
 
 	handlers: Record<string, LLMHandler> = {
@@ -24,8 +24,8 @@ export class ModelService {
 		),
 		...(config.featureFlagGlm52Allowed
 			? {
-					"glm-5-2": new LLMHandler(
-						"glm-5-2",
+					"zai-glm-5-2": new LLMHandler(
+						"zai-glm-5-2",
 						getLanguageModel(config.glmModelIdentifier),
 						"https://api.mistral.ai/v1",
 					),
