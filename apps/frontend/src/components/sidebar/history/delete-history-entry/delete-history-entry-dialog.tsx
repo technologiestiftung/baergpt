@@ -27,6 +27,11 @@ export const DeleteHistoryEntryDialog: React.FC = () => {
 		useHistoryEntryDeleteStore();
 	const { currentChatId, setCurrentChatId } = useCurrentChatIdStore();
 
+	const truncatedHistoryEntryToDeleteName =
+		historyEntryToDeleteName.length > 80
+			? `${historyEntryToDeleteName.slice(0, 80)}…`
+			: historyEntryToDeleteName;
+
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
@@ -53,7 +58,7 @@ export const DeleteHistoryEntryDialog: React.FC = () => {
 				</p>
 				<p>
 					{Content["deleteHistoryEntryDialog.confirmation.p1"]}{" "}
-					<span className="underline">{historyEntryToDeleteName}</span>{" "}
+					<span className="underline">{truncatedHistoryEntryToDeleteName}</span>{" "}
 					{Content["deleteHistoryEntryDialog.confirmation.p2"]}
 				</p>
 
