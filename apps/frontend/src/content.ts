@@ -811,8 +811,10 @@ export const Content = {
 	"fileUpload.uploadInstructions.p1": "Dateien hier ablegen oder ",
 	"fileUpload.searchComputerbutton.label": "Hochladen",
 	//fileupload help link
-	"fileUpload.helpLink.link":
-		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
+	"fileUpload.helpLink.format.link":
+		"https://hilfe.baergpt.berlin/faq#welche-dateiformate-und-dateigroessen-werden-unterstuetzt",
+	"fileUpload.helpLink.generic.link":
+		"https://hilfe.baergpt.berlin/faq#warum-kann-ich-eine-datei-nicht-hochladen",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
 	// file upload counter message
 	"fileUpload.infoMessage.counter.p1": `von`,

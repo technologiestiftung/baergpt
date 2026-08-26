@@ -4,11 +4,14 @@ import { GreyXIcon } from "../../primitives/icons/grey-x-icon.tsx";
 import { RedErrorIcon } from "../../primitives/icons/red-error-icon.tsx";
 import {
 	UPLOAD_STATUS_MAP,
+	type UploadStatusKeys,
 	useFileUploadsStore,
 } from "../../../store/use-file-uploads-store.ts";
 import Content from "../../../content.ts";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { ClockIcon } from "../../primitives/icons/clock-icon.tsx";
+
+type FailedStatus = Extract<UploadStatusKeys, `failed.${string}`>;
 
 export function FileUploadList() {
 	const { fileUploads } = useFileUploadsStore();
@@ -30,9 +33,9 @@ export function FileUploadList() {
 							</span>
 							<span className="flex gap-x-2.5 items-center shrink-0">
 								{/* Status */}
-								{status.includes("failed") ? (
+								{hasFailed(status) ? (
 									<a
-										href={Content["fileUpload.helpLink.link"]}
+										href={getLink(status)}
 										className="text-[10px] leading-4 text-hellblau-30 underline underline-offset-2"
 										aria-label={Content["fileUpload.helpLink.ariaLabel"]}
 										target="_blank"
@@ -60,4 +63,16 @@ export function FileUploadList() {
 			</div>
 		</ul>
 	);
+}
+
+function hasFailed(status: UploadStatusKeys): status is FailedStatus {
+	return status.includes("failed");
+}
+
+function getLink(status: FailedStatus) {
+	if (status === "failed.format") {
+		return Content["fileUpload.helpLink.format.link"];
+	}
+
+	return Content["fileUpload.helpLink.generic.link"];
 }
