@@ -11,12 +11,17 @@ type LoadMoreChatsSpinnerProps = {
 export function LoadMoreChatsSpinner({
 	containerRef,
 }: LoadMoreChatsSpinnerProps) {
-	const { hasMoreChats } = useChatsStore();
+	const { chats, hasMoreChats } = useChatsStore();
 	const ref = useRef<HTMLDivElement>(null);
 
 	const hasLoadedAllChats = !hasMoreChats;
 
-	useIntersectionObserver({ containerRef, ref, hasLoadedAllChats });
+	useIntersectionObserver({
+		containerRef,
+		ref,
+		hasLoadedAllChats,
+		chatsCount: chats.length,
+	});
 
 	return (
 		<div className="flex justify-center pl-2 text-dunkelblau-50 text-xs mt-2 pb-8">
