@@ -11,11 +11,10 @@ type LoadMoreChatsSpinnerProps = {
 export function LoadMoreChatsSpinner({
 	containerRef,
 }: LoadMoreChatsSpinnerProps) {
-	const { chats, totalChatCount } = useChatsStore();
+	const { hasMoreChats } = useChatsStore();
 	const ref = useRef<HTMLDivElement>(null);
 
-	const hasLoadedAllChats =
-		totalChatCount !== null && chats.length >= totalChatCount;
+	const hasLoadedAllChats = !hasMoreChats;
 
 	useIntersectionObserver({ containerRef, ref, hasLoadedAllChats });
 

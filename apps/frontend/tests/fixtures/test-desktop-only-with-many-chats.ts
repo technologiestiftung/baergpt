@@ -24,10 +24,12 @@ export const testDesktopOnlyWithManyChats = testDesktopOnly.extend({
 });
 
 async function addChatsToAccount(session: Session, numberOfChats: number) {
+	// Inserted oldest-first so the assigned `id`s (used as the pagination
+	// cursor) increase in the same order as `created_at`.
 	const chats = Array.from({ length: numberOfChats }, (_, i) => ({
 		user_id: session.user.id,
-		name: `Test Chat ${numberOfChats - i}`,
-		created_at: new Date(Date.now() - i).toISOString(),
+		name: `Test Chat ${i + 1}`,
+		created_at: new Date(Date.now() - (numberOfChats - 1 - i)).toISOString(),
 	}));
 
 	const { error } = await supabaseAnonClient.from("chats").insert([...chats]);
