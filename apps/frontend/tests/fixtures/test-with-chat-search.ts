@@ -112,17 +112,26 @@ export async function seedBerlinSearchChats(
 	]);
 }
 
-/** Inserts newer filler chats so a later, older chat falls outside the first page. */
+/**
+ * Inserts newer filler chats so a later, older chat falls outside the first
+ * page. Inserted oldest-first so the assigned `id`s (used as the pagination
+ * cursor) increase in the same order as `created_at`.
+ */
 export async function insertFillerChats(
 	session: Session,
 	count: number,
 	newestCreatedAt: Date,
 ): Promise<void> {
-	const chats = Array.from({ length: count }, (_, i) => ({
-		user_id: session.user.id,
-		name: `Filler Chat ${i}`,
-		created_at: new Date(newestCreatedAt.getTime() - i * 1_000).toISOString(),
-	}));
+	const chats = Array.from({ length: count }, (_, i) => {
+		const chatIndex = count - 1 - i;
+		return {
+			user_id: session.user.id,
+			name: `Filler Chat ${chatIndex}`,
+			created_at: new Date(
+				newestCreatedAt.getTime() - chatIndex * 1_000,
+			).toISOString(),
+		};
+	});
 
 	const { error } = await supabaseAnonClient.from("chats").insert(chats);
 
