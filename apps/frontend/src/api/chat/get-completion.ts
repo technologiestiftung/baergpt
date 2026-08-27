@@ -57,7 +57,9 @@ export async function getCompletion(
 	const { handleError } = useErrorStore.getState();
 	const {
 		updateMessage,
-		addMessageToChat,
+		createPendingMessageInMemory,
+		persistPendingMessageToDb,
+		removePendingMessageFromMemory,
 		selectedLlmModel,
 		selectedChatTools,
 	} = useChatsStore.getState();
@@ -78,6 +80,10 @@ export async function getCompletion(
 	const isExternalToolContext = selectedChatTools.some((tool) =>
 		externalChatTools.includes(tool),
 	);
+
+	// Id of the optimistic placeholder, set once created — lets the catch
+	// block clean it up if the stream errors out.
+	let messageIdForCleanup: number | undefined;
 
 	try {
 		// Abort any existing stream before starting a new one
@@ -144,7 +150,9 @@ export async function getCompletion(
 			return;
 		}
 
-		const messageId = await addMessageToChat(currentChat, {
+		// Optimistic placeholder — persisted only once the stream settles
+		// (see `onFinish` below).
+		const localMessageId = createPendingMessageInMemory(currentChat, {
 			content: "",
 			type: "text",
 			role: "assistant",
@@ -156,6 +164,7 @@ export async function getCompletion(
 			open_data_citations: null,
 			external_tool_context: isExternalToolContext,
 		});
+		messageIdForCleanup = localMessageId;
 
 		let currentText = "";
 		let documentCitations: number[] = [];
@@ -168,7 +177,7 @@ export async function getCompletion(
 		const writeMessage = () =>
 			updateMessage({
 				chat: currentChat,
-				messageId,
+				messageId: localMessageId,
 				content: currentText,
 				citations: documentCitations.length ? documentCitations : null,
 				web_citations: webCitations.length ? webCitations : null,
@@ -212,12 +221,43 @@ export async function getCompletion(
 				openDataCitations = sources;
 				writeMessage();
 			},
-			onFinish: () => {
+			onFinish: async (wasSuccessful) => {
 				setStatus("idle");
 				setStreamingAbortController(null);
+
+				// Only persist if the stream finished cleanly with non-whitespace
+				// content — otherwise drop the placeholder.
+				if (wasSuccessful && currentText.trim()) {
+					try {
+						await persistPendingMessageToDb(currentChat, localMessageId, {
+							content: currentText,
+							type: "text",
+							role: "assistant",
+							allowed_document_ids: allowedDocumentIds,
+							allowed_folder_ids: selectedFolderIds,
+							citations: documentCitations.length ? documentCitations : null,
+							web_citations: webCitations.length ? webCitations : null,
+							parla_citations: parlaCitations.length ? parlaCitations : null,
+							open_data_citations: openDataCitations.length
+								? openDataCitations
+								: null,
+							external_tool_context: isExternalToolContext,
+						});
+					} catch (error) {
+						removePendingMessageFromMemory(currentChat, localMessageId);
+						handleError(error, span);
+					}
+				} else {
+					removePendingMessageFromMemory(currentChat, localMessageId);
+				}
 			},
 		});
 	} catch (error) {
+		// Stream never settled — drop the placeholder if one was created.
+		if (messageIdForCleanup !== undefined) {
+			removePendingMessageFromMemory(currentChat, messageIdForCleanup);
+		}
+
 		// Only handle error if it's not an abort error
 		const isUserAbort = error instanceof Error && error.name === "AbortError";
 		if (isUserAbort) {
@@ -232,7 +272,7 @@ export async function getCompletion(
 	}
 }
 
-function processStreamLine(
+async function processStreamLine(
 	line: string,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
@@ -240,9 +280,9 @@ function processStreamLine(
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
-		onFinish: () => void;
+		onFinish: (wasSuccessful: boolean) => void | Promise<void>;
 	},
-): boolean {
+): Promise<boolean> {
 	if (!line.startsWith("data: ")) {
 		return false;
 	}
@@ -250,7 +290,7 @@ function processStreamLine(
 	const jsonStr = line.slice(6).trim();
 
 	if (jsonStr === "[DONE]") {
-		callbacks.onFinish();
+		await callbacks.onFinish(true);
 		return true;
 	}
 
@@ -299,7 +339,7 @@ async function parseStream(
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
-		onFinish: () => void;
+		onFinish: (wasSuccessful: boolean) => void | Promise<void>;
 	},
 ) {
 	const reader = body.getReader();
@@ -318,7 +358,7 @@ async function parseStream(
 		buffer = lines.pop() || "";
 
 		for (const line of lines) {
-			const isFinished = processStreamLine(line, callbacks);
+			const isFinished = await processStreamLine(line, callbacks);
 			if (isFinished) {
 				finishCalled = true;
 			}
@@ -333,6 +373,6 @@ async function parseStream(
 					"stream was done before reaching the the last streaming line ([DONE])",
 				),
 			);
-		callbacks.onFinish();
+		await callbacks.onFinish(false);
 	}
 }
