@@ -932,6 +932,9 @@ export const Content = {
 		"Berlin Open Data wurde automatisch deaktiviert.",
 	"chat.openData.infoText.p1":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Berlin Open Data deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Open Data wieder zu aktivieren, klicken Sie auf +.",
+	// Chat info text for automated deactivation of multiple external tools at once
+	"chat.toolsDeactivated.infoText.p1":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wurden die Werkzeuge deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Werkzeuge zu reaktivieren, klicken Sie auf +.",
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
