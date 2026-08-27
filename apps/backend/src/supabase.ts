@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "./config";
+import { retryingFetch } from "./retrying-fetch";
 
 export type UserScopedDbClient = SupabaseClient<Database> & {
 	readonly __brand: "user-scoped";
@@ -14,6 +15,7 @@ export const serviceRoleDbClient = createClient<Database>(
 	config.supabaseServiceRoleKey,
 	{
 		auth: { persistSession: false },
+		global: { fetch: retryingFetch },
 	},
 ) as ServiceRoleDbClient;
 
@@ -23,6 +25,7 @@ export function createUserScopedDbClient(
 	return createClient<Database>(config.supabaseUrl, config.supabaseAnonKey, {
 		auth: { persistSession: false },
 		global: {
+			fetch: retryingFetch,
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 			},
