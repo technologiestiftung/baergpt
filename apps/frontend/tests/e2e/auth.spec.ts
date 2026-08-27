@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import {
 	confirmOtp,
+	findUserByEmail,
 	testWithRegisteredUser,
 } from "../fixtures/test-with-registered-user.ts";
 import { supabaseAdminClient } from "../supabase.ts";
@@ -289,21 +290,20 @@ async function fillAndSubmitRegistrationForm(
 }
 
 test.describe("User Registration (uses different user to prevent side-effects on other tests)", () => {
-	const givenUserEmail = "user.registration@ts.berlin";
+	// Unique per test so parallel workers never register the same email or have
+	// one test's afterEach delete another's user. A worker runs its tests
+	// serially, so a single module-scoped variable set in beforeEach is safe.
+	let givenUserEmail: string;
 	const givenUserPassword = "123456789!";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
 
+	testWithoutSplashScreen.beforeEach(() => {
+		givenUserEmail = `user.registration+${crypto.randomUUID()}@ts.berlin`;
+	});
+
 	testWithoutSplashScreen.afterEach(async () => {
-		const { data: listUsersData, error: listUsersError } =
-			await supabaseAdminClient.auth.admin.listUsers();
-
-		expect(listUsersError).toBeNull();
-		expect(listUsersData).toBeDefined();
-
-		const foundUser = listUsersData.users.find(
-			({ email }) => email === givenUserEmail,
-		);
+		const foundUser = await findUserByEmail(givenUserEmail);
 
 		expect(foundUser).toBeDefined();
 

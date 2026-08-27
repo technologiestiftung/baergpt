@@ -22,15 +22,20 @@ export default defineConfig({
 	expect: {
 		timeout: 30_000,
 	},
-	maxFailures: 1,
-	/* Run tests in files in parallel */
-	fullyParallel: false,
+	// No global cap: under parallel workers a single flake shouldn't abort the
+	// whole run. Local keeps a small cap for fast feedback.
+	maxFailures: process.env.CI ? undefined : 1,
+	/**
+	 * Fixtures key their users/domains/emails by worker index, so tests are
+	 * isolated and safe to run in parallel.
+	 */
+	fullyParallel: true,
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
 	forbidOnly: !!process.env.CI,
 	/* No retries */
 	retries: 0,
-	/* Opt out of parallel tests. */
-	workers: 1,
+	/* Parallel workers. Local uses Playwright's default (CPU-based). */
+	workers: process.env.CI ? 4 : undefined,
 	/* Reporter to use. See https://playwright.dev/docs/test-reporters */
 	reporter: [
 		["list"],
