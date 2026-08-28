@@ -1,9 +1,13 @@
 /* eslint-disable no-console */
 import { Mistral } from "@mistralai/mistralai";
 import { config } from "dotenv";
-import { ocrTempFileName } from "../../src/constants";
 
 config();
+
+// Duplicated from src/constants.ts (keep in sync) rather than imported from
+// there: importing anything from that file also imports the app's config.ts,
+// which validates the full app config and fails this script's minimal env.
+const ocrTempFileName = "uploaded_file.pdf";
 
 const apiKey = process.env.MISTRAL_API_KEY;
 
