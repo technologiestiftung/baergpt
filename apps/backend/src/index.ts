@@ -6,12 +6,14 @@ import { sentryTracing } from "./middleware/sentry-tracing";
 import basicAuth from "./middleware/basic-auth";
 import documents from "./routes/documents";
 import llms from "./routes/llms";
-import { config } from "./config";
+import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
 import favicon from "./routes/favicon";
 import { captureError } from "./monitoring/capture-error";
 import { logMemory } from "./monitoring/memory-logger";
+
+verifyConfig();
 
 const app = new Hono();
 

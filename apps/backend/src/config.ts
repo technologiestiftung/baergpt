@@ -125,18 +125,18 @@ function collectConfigErrors(): string[] {
 }
 
 /**
- * Validates all required env vars up front, in one pass, and throws with the
- * full list of problems at once. Runs automatically below, as soon as this
- * module is imported — there's no separate "did someone call this" step.
+ * Validates all required env vars in one pass and throws with the full list
+ * of problems at once. Call this explicitly at app startup (see index.ts) —
+ * it's intentionally not run automatically on import, so that standalone
+ * scripts which only import a handful of unrelated constants from this
+ * package aren't forced to satisfy the entire app's configuration.
  */
-function verifyConfig(): void {
+export function verifyConfig(): void {
 	const errors = collectConfigErrors();
 	if (errors.length > 0) {
 		throw new Error(`Invalid backend configuration:\n- ${errors.join("\n- ")}`);
 	}
 }
-
-verifyConfig();
 
 export const config: Config = {
 	mistralApiKey: process.env.MISTRAL_API_KEY as string,
