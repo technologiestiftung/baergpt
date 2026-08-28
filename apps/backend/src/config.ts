@@ -44,105 +44,67 @@ export interface Config {
 	webSearchProvider?: string;
 }
 
-/* eslint-disable-next-line complexity */
-export function verifyConfig(): void {
-	if (!process.env.MISTRAL_API_KEY) {
-		throw new Error("MISTRAL_API_KEY must be defined");
+// Required in every environment.
+const ALWAYS_REQUIRED_KEYS = [
+	"MISTRAL_API_KEY",
+	"MISTRAL_EMBEDDING_MODEL",
+	"MISTRAL_EMBED_MAX_CONTEXT_TOKENS",
+	"MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST",
+	"MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST",
+	"MISTRAL_EMBEDDING_DIMENSIONS",
+	"MISTRAL_MAX_RPS",
+	"SUPABASE_URL",
+	"SUPABASE_SERVICE_ROLE_KEY",
+	"SUPABASE_ANON_KEY",
+	"SUPABASE_JWT_KEY",
+	"SMALL_MODEL_IDENTIFIER",
+	"MEDIUM_MODEL_IDENTIFIER",
+	"DEFAULT_DOCUMENT_PROCESSING_MODEL",
+	"SENTRY_DSN",
+];
+
+// Required in real environments, but exempted in CI since these integrations
+// (Gotenberg, real NODE_ENV/MODEL_TEMPERATURE tuning) aren't exercised there.
+const REQUIRED_UNLESS_CI_KEYS = [
+	"UPLOAD_FILE_SIZE_LIMIT_MB",
+	"NODE_ENV",
+	"MODEL_TEMPERATURE",
+	"GOTENBERG_URL",
+	"GOTENBERG_API_BASIC_AUTH_USERNAME",
+	"GOTENBERG_API_BASIC_AUTH_PASSWORD",
+];
+
+// Only required when the corresponding feature flag is turned on.
+const REQUIRED_IF_FLAG_ENABLED: ReadonlyArray<{ flag: string; key: string }> = [
+	{ flag: "FEATURE_FLAG_GLM_5_2_ALLOWED", key: "GLM_MODEL_IDENTIFIER" },
+	{ flag: "FEATURE_FLAG_MCP_PARLA_ALLOWED", key: "MCP_PARLA_URL" },
+	{ flag: "FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED", key: "OPEN_DATA_MCP_URL" },
+	{ flag: "FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED", key: "DATAWRAPPER_MCP_URL" },
+];
+
+function collectConfigErrors(): string[] {
+	const errors: string[] = [];
+
+	for (const key of ALWAYS_REQUIRED_KEYS) {
+		if (!process.env[key]) {
+			errors.push(`${key} must be defined`);
+		}
 	}
-	if (!process.env.MISTRAL_EMBEDDING_MODEL) {
-		throw new Error("MISTRAL_EMBEDDING_MODEL must be defined");
+
+	if (!process.env.CI) {
+		for (const key of REQUIRED_UNLESS_CI_KEYS) {
+			if (!process.env[key]) {
+				errors.push(`${key} must be defined`);
+			}
+		}
 	}
-	if (!process.env.MISTRAL_EMBED_MAX_CONTEXT_TOKENS) {
-		throw new Error("MISTRAL_EMBED_MAX_CONTEXT_TOKENS must be defined");
+
+	for (const { flag, key } of REQUIRED_IF_FLAG_ENABLED) {
+		if (process.env[flag] === "true" && !process.env[key]) {
+			errors.push(`${key} must be defined when ${flag} is true`);
+		}
 	}
-	if (!process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST) {
-		throw new Error(
-			"MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST must be defined",
-		);
-	}
-	if (!process.env.MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST) {
-		throw new Error("MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST must be defined");
-	}
-	if (!process.env.MISTRAL_EMBEDDING_DIMENSIONS) {
-		throw new Error("MISTRAL_EMBEDDING_DIMENSIONS must be defined");
-	}
-	if (!process.env.MISTRAL_MAX_RPS) {
-		throw new Error("MISTRAL_MAX_RPS must be defined");
-	}
-	if (!process.env.UPLOAD_FILE_SIZE_LIMIT_MB && !process.env.CI) {
-		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be defined");
-	}
-	if (!process.env.SUPABASE_URL) {
-		throw new Error("SUPABASE_URL must be defined");
-	}
-	if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-		throw new Error("SUPABASE_SERVICE_ROLE_KEY must be defined");
-	}
-	if (!process.env.SUPABASE_ANON_KEY) {
-		throw new Error("SUPABASE_ANON_KEY must be defined");
-	}
-	if (!process.env.SUPABASE_JWT_KEY) {
-		throw new Error("SUPABASE_JWT_KEY must be defined");
-	}
-	if (!process.env.NODE_ENV && !process.env.CI) {
-		throw new Error("NODE_ENV must be defined");
-	}
-	if (!process.env.MODEL_TEMPERATURE && !process.env.CI) {
-		throw new Error("MODEL_TEMPERATURE must be defined");
-	}
-	if (!process.env.SMALL_MODEL_IDENTIFIER) {
-		throw new Error("SMALL_MODEL_IDENTIFIER must be defined");
-	}
-	if (!process.env.MEDIUM_MODEL_IDENTIFIER) {
-		throw new Error("MEDIUM_MODEL_IDENTIFIER must be defined");
-	}
-	if (
-		process.env.FEATURE_FLAG_GLM_5_2_ALLOWED === "true" &&
-		!process.env.GLM_MODEL_IDENTIFIER
-	) {
-		throw new Error(
-			"GLM_MODEL_IDENTIFIER must be defined when FEATURE_FLAG_GLM_5_2_ALLOWED is true",
-		);
-	}
-	if (!process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL) {
-		throw new Error("DEFAULT_DOCUMENT_PROCESSING_MODEL must be defined");
-	}
-	if (!process.env.SENTRY_DSN) {
-		throw new Error("SENTRY_DSN must be defined");
-	}
-	if (!process.env.GOTENBERG_URL && !process.env.CI) {
-		throw new Error("GOTENBERG_URL must be defined");
-	}
-	if (!process.env.GOTENBERG_API_BASIC_AUTH_USERNAME && !process.env.CI) {
-		throw new Error("GOTENBERG_API_BASIC_AUTH_USERNAME must be defined");
-	}
-	if (!process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD && !process.env.CI) {
-		throw new Error("GOTENBERG_API_BASIC_AUTH_PASSWORD must be defined");
-	}
-	if (
-		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true" &&
-		!process.env.MCP_PARLA_URL
-	) {
-		throw new Error(
-			"MCP_PARLA_URL must be defined when FEATURE_FLAG_MCP_PARLA_ALLOWED is true",
-		);
-	}
-	if (
-		process.env.FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED === "true" &&
-		!process.env.OPEN_DATA_MCP_URL
-	) {
-		throw new Error(
-			"OPEN_DATA_MCP_URL must be defined when FEATURE_FLAG_MCP_OPEN_DATA_ALLOWED is true",
-		);
-	}
-	if (
-		process.env.FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED === "true" &&
-		!process.env.DATAWRAPPER_MCP_URL
-	) {
-		throw new Error(
-			"DATAWRAPPER_MCP_URL must be defined when FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED is true",
-		);
-	}
+
 	if (
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
 		!(
@@ -154,49 +116,68 @@ export function verifyConfig(): void {
 				process.env.STAAN_SEARCH_MAX_RPS)
 		)
 	) {
-		throw new Error(
+		errors.push(
 			"BRAVE_SEARCH_API_KEY, BRAVE_SEARCH_API_URL and BRAVE_SEARCH_MAX_RPS or STAAN_SEARCH_API_KEY, STAAN_SEARCH_API_URL and STAAN_SEARCH_MAX_RPS must be defined when FEATURE_FLAG_WEB_SEARCH_ALLOWED is true",
 		);
 	}
+
+	return errors;
 }
 
+/**
+ * Validates all required env vars up front, in one pass, and throws with the
+ * full list of problems at once. Runs automatically below, as soon as this
+ * module is imported — there's no separate "did someone call this" step.
+ */
+function verifyConfig(): void {
+	const errors = collectConfigErrors();
+	if (errors.length > 0) {
+		throw new Error(`Invalid backend configuration:\n- ${errors.join("\n- ")}`);
+	}
+}
+
+verifyConfig();
+
 export const config: Config = {
-	mistralApiKey: process.env.MISTRAL_API_KEY,
-	mistralEmbeddingModel: process.env.MISTRAL_EMBEDDING_MODEL,
+	mistralApiKey: process.env.MISTRAL_API_KEY as string,
+	mistralEmbeddingModel: process.env.MISTRAL_EMBEDDING_MODEL as string,
 	mistralEmbedMaxContextTokens: parseInt(
-		process.env.MISTRAL_EMBED_MAX_CONTEXT_TOKENS,
+		process.env.MISTRAL_EMBED_MAX_CONTEXT_TOKENS as string,
 		10,
 	),
 	mistralEmbedMaxDocumentsPerRequest: parseInt(
-		process.env.MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST,
+		process.env.MISTRAL_EMBED_MAX_DOCUMENTS_PER_REQUEST as string,
 		10,
 	),
 	mistralEmbedMaxTotalTokensPerRequest: parseInt(
-		process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST,
+		process.env.MISTRAL_EMBED_MAX_TOTAL_TOKENS_PER_REQUEST as string,
 		10,
 	),
 	mistralEmbeddingDimensions: parseInt(
-		process.env.MISTRAL_EMBEDDING_DIMENSIONS,
+		process.env.MISTRAL_EMBEDDING_DIMENSIONS as string,
 		10,
 	),
-	mistralMaxRPS: parseInt(process.env.MISTRAL_MAX_RPS, 10),
-	supabaseUrl: process.env.SUPABASE_URL,
-	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
-	port: parseInt(process.env.PORT, 10) || 3000,
-	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
+	mistralMaxRPS: parseInt(process.env.MISTRAL_MAX_RPS as string, 10),
+	supabaseUrl: process.env.SUPABASE_URL as string,
+	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+	supabaseAnonKey: process.env.SUPABASE_ANON_KEY as string,
+	supabaseJwtKey: process.env.SUPABASE_JWT_KEY as string,
+	port: parseInt(process.env.PORT ?? "", 10) || 3000,
+	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB ?? "", 10),
 	nodeEnv: process.env.NODE_ENV,
-	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
-	smallModelIdentifier: process.env.SMALL_MODEL_IDENTIFIER,
-	mediumModelIdentifier: process.env.MEDIUM_MODEL_IDENTIFIER,
-	glmModelIdentifier: process.env.GLM_MODEL_IDENTIFIER,
+	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE ?? ""),
+	smallModelIdentifier: process.env.SMALL_MODEL_IDENTIFIER as string,
+	mediumModelIdentifier: process.env.MEDIUM_MODEL_IDENTIFIER as string,
+	glmModelIdentifier: process.env.GLM_MODEL_IDENTIFIER as string,
 	featureFlagGlm52Allowed: process.env.FEATURE_FLAG_GLM_5_2_ALLOWED === "true",
-	defaultDocumentProcessingModel: process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL,
-	sentryDsn: process.env.SENTRY_DSN,
-	gotenbergUrl: process.env.GOTENBERG_URL,
-	gotenbergApiBasicAuthUsername: process.env.GOTENBERG_API_BASIC_AUTH_USERNAME,
-	gotenbergApiBasicAuthPassword: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
+	defaultDocumentProcessingModel: process.env
+		.DEFAULT_DOCUMENT_PROCESSING_MODEL as string,
+	sentryDsn: process.env.SENTRY_DSN as string,
+	gotenbergUrl: process.env.GOTENBERG_URL as string,
+	gotenbergApiBasicAuthUsername: process.env
+		.GOTENBERG_API_BASIC_AUTH_USERNAME as string,
+	gotenbergApiBasicAuthPassword: process.env
+		.GOTENBERG_API_BASIC_AUTH_PASSWORD as string,
 	presencePenalty: parseFloat(process.env.PRESENCE_PENALTY || "0"),
 	frequencyPenalty: parseFloat(process.env.FREQUENCY_PENALTY || "0"),
 	featureFlagMcpParlaAllowed:
@@ -219,6 +200,6 @@ export const config: Config = {
 		process.env.NODE_ENV !== "test",
 	staanSearchApiKey: process.env.STAAN_SEARCH_API_KEY,
 	staanSearchApiUrl: process.env.STAAN_SEARCH_API_URL,
-	staanSearchMaxRPS: parseInt(process.env.STAAN_SEARCH_MAX_RPS, 10),
+	staanSearchMaxRPS: parseInt(process.env.STAAN_SEARCH_MAX_RPS ?? "", 10),
 	webSearchProvider: process.env.WEB_SEARCH_PROVIDER,
 };

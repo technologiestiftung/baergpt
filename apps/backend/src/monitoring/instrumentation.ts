@@ -12,7 +12,7 @@ export const sentryClient = Sentry.init({
 	dsn: config.sentryDsn || "",
 	environment: config.nodeEnv || "development",
 	tracesSampleRate: 1.0,
-	enabled: ["production", "staging"].includes(config.nodeEnv),
+	enabled: ["production", "staging"].includes(config.nodeEnv || "development"),
 	skipOpenTelemetrySetup: true,
 });
 

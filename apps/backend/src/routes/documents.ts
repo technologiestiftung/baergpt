@@ -83,7 +83,7 @@ documents.post("/process", async (c: Context) =>
 				owned_by_user_id:
 					sourceType === "personal_document" ? userId : undefined,
 				created_at: createdAt,
-				access_group_id: accessGroupId,
+				access_group_id: accessGroupId ?? undefined,
 				uploaded_by_user_id:
 					sourceType !== "personal_document" ? userId : undefined,
 				source_url: sourceUrl,

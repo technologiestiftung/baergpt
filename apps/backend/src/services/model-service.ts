@@ -2,10 +2,8 @@ import { config } from "../config";
 import { LLMHandler } from "../types/common";
 import { getLanguageModel } from "./llm-provider";
 
-type modelIdentifiers = "mistral-small" | "mistral-medium" | "zai-glm-5-2";
-
 export class ModelService {
-	contextSizes: Record<modelIdentifiers, number> = {
+	contextSizes: Record<string, number> = {
 		"mistral-small": 128_000,
 		"mistral-medium": 256_000,
 		"zai-glm-5-2": 1_000_000,

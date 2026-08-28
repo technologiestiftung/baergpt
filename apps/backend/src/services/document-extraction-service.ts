@@ -18,6 +18,11 @@ export class DocumentExtractionService {
 		document: Document,
 	): Promise<ExtractionResult> {
 		const fileName = document.source_url.split("/").pop();
+		if (!fileName) {
+			throw new Error(
+				`Could not determine file name from source URL: ${document.source_url}`,
+			);
+		}
 		const checksum = getHash(fileBytes);
 		const fileSize = fileBytes.byteLength;
 
@@ -78,9 +83,10 @@ export class DocumentExtractionService {
 	 */
 	async extractPdfAsMarkdownPages(pdfBytes: Uint8Array): Promise<ParsedPage[]> {
 		const fileSizeMb = pdfBytes.byteLength / (1024 * 1024);
-		if (fileSizeMb > config.fileUploadLimitMb) {
+		const fileUploadLimitMb = config.fileUploadLimitMb as number;
+		if (fileSizeMb > fileUploadLimitMb) {
 			throw new Error(
-				`PDF file size ${fileSizeMb.toFixed(2)} MB exceeds upload limit of ${config.fileUploadLimitMb} MB.`,
+				`PDF file size ${fileSizeMb.toFixed(2)} MB exceeds upload limit of ${fileUploadLimitMb} MB.`,
 			);
 		}
 
@@ -382,7 +388,11 @@ export class MistralOCRService {
 			try {
 				await client.files.delete({ fileId: uploaded_pdf.id });
 			} catch (error) {
-				if (error?.status !== 404 && error?.statusCode !== 404) {
+				const { status, statusCode } = (error ?? {}) as {
+					status?: number;
+					statusCode?: number;
+				};
+				if (status !== 404 && statusCode !== 404) {
 					captureError(error);
 				}
 			}

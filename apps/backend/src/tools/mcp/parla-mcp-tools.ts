@@ -79,6 +79,12 @@ export type ParlaVectorSearchInput = z.infer<
 export const parlaMCPTools = async (): Promise<ParlaMCPToolsResult | null> => {
 	let parlaHttpClient: MCPClient | undefined;
 	try {
+		if (!config.mcpParlaUrl) {
+			throw new Error(
+				"MCP_PARLA_URL is not configured but parlaMCPTools was invoked",
+			);
+		}
+
 		parlaHttpClient = await createMCPClient({
 			transport: {
 				type: "http",

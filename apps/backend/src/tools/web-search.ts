@@ -174,6 +174,12 @@ export const webSearchTool = tool({
 			const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
 			if (config.webSearchProvider === "brave") {
+				if (!config.braveSearchApiKey) {
+					throw new Error(
+						"BRAVE_SEARCH_API_KEY is not configured but the brave web search provider is active",
+					);
+				}
+
 				const res = await fetch(
 					`${config.braveSearchApiUrl}?q=${encodeURIComponent(query)}&country=DE&search_lang=de&count=20`,
 					{

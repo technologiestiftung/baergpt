@@ -13,6 +13,12 @@ export const datawrapperMCPTools =
 	async (): Promise<DatawrapperMCPToolsResult | null> => {
 		let datawrapperHttpClient: MCPClient | undefined;
 		try {
+			if (!config.datawrapperMcpUrl) {
+				throw new Error(
+					"DATAWRAPPER_MCP_URL is not configured but datawrapperMCPTools was invoked",
+				);
+			}
+
 			datawrapperHttpClient = await createMCPClient({
 				transport: {
 					type: "http",

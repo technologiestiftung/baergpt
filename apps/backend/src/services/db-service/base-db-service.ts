@@ -321,7 +321,7 @@ export abstract class BaseContentDbService {
 
 	async getUserAdminStatus(): Promise<boolean> {
 		const { data: isAdmin } = await this.client.rpc("is_application_admin");
-		return isAdmin;
+		return isAdmin ?? false;
 	}
 
 	async getMaintenanceModeStatus(): Promise<{ is_enabled: boolean }> {

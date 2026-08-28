@@ -14,7 +14,7 @@
 		"allowSyntheticDefaultImports": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
-		"strict": false,
+		"strict": true,
 
 		"allowImportingTsExtensions": false,
 		"noEmit": false,

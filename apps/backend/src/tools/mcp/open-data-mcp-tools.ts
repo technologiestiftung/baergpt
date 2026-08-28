@@ -276,6 +276,12 @@ export const openDataMCPTools =
 	async (): Promise<OpenDataMCPToolsResult | null> => {
 		let openDataHttpClient: MCPClient | undefined;
 		try {
+			if (!config.openDataMcpUrl) {
+				throw new Error(
+					"OPEN_DATA_MCP_URL is not configured but openDataMCPTools was invoked",
+				);
+			}
+
 			openDataHttpClient = await createMCPClient({
 				transport: {
 					type: "http",

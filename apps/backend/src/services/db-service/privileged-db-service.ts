@@ -200,7 +200,7 @@ export class PrivilegedDbService extends BaseContentDbService {
 		);
 	}
 
-	async updateUsage(_userId, _tokenAmount) {
+	async updateUsage(_userId: string, _tokenAmount: number): Promise<void> {
 		throw new Error(
 			"You're trying to update a user's token usage via the PrivilegedDbService. Either check if userId is defined before calling this method or use the UserScopedDbService instead.",
 		);

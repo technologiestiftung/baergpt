@@ -241,6 +241,11 @@ export class GenerationService {
 		const summaryInput = await this.getSummaryInput(parsedPages, llmIdentifier);
 
 		const userId = document.owned_by_user_id || document.uploaded_by_user_id;
+		if (!userId) {
+			throw new Error(
+				"Document has neither owned_by_user_id nor uploaded_by_user_id set",
+			);
+		}
 
 		const summary = await this.generateSummary({
 			llmIdentifier,
@@ -427,7 +432,7 @@ export class GenerationService {
 
 										await this.dbService.updateUsage(
 											userId,
-											generateObjectUsage.totalTokens,
+											generateObjectUsage.totalTokens ?? 0,
 										);
 									} catch (error) {
 										captureError(error);
@@ -495,7 +500,7 @@ export class GenerationService {
 
 										await this.dbService.updateUsage(
 											userId,
-											webCitationUsage.totalTokens,
+											webCitationUsage.totalTokens ?? 0,
 										);
 									} catch (error) {
 										captureError(error);
@@ -567,7 +572,7 @@ export class GenerationService {
 										}
 										await this.dbService.updateUsage(
 											userId,
-											parlaCitationUsage.totalTokens,
+											parlaCitationUsage.totalTokens ?? 0,
 										);
 									} catch (error) {
 										captureError(error);
@@ -620,7 +625,10 @@ export class GenerationService {
 
 								logMemory("chat:onFinish-complete", memoryLogId);
 
-								await this.dbService.updateUsage(userId, usage.totalTokens);
+								await this.dbService.updateUsage(
+									userId,
+									usage.totalTokens ?? 0,
+								);
 							},
 							runtimeContext: {
 								sessionId: sessionId ? sessionId : "unknown",
@@ -685,7 +693,7 @@ export class GenerationService {
 		);
 
 		if (userId) {
-			await this.dbService.updateUsage(userId, usage.totalTokens);
+			await this.dbService.updateUsage(userId, usage.totalTokens ?? 0);
 		}
 		return text;
 	}
@@ -773,7 +781,7 @@ export class GenerationService {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
 		activeTools: string[];
-		userId?: string;
+		userId: string;
 	}): Promise<RelevantTools> {
 		const { allowedDocumentIds, allowedFolderIds, activeTools, userId } =
 			options;
@@ -906,7 +914,7 @@ export class GenerationService {
 
 			await this.dbService.updateUsage(
 				userId,
-				openDataCitationUsage.totalTokens,
+				openDataCitationUsage.totalTokens ?? 0,
 			);
 		} catch (error) {
 			captureError(error);

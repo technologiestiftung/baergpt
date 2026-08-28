@@ -58,7 +58,7 @@ export class ValidationService {
 			throw new Error("failed.format", { cause: "file not instance of File" });
 		}
 
-		const maxSize = config.fileUploadLimitMb * 1024 * 1024;
+		const maxSize = (config.fileUploadLimitMb as number) * 1024 * 1024;
 
 		if (file.size > maxSize) {
 			throw new Error("failed.size", {
