@@ -39,6 +39,12 @@ default_pool_size = 20
 # Maximum number of client connections allowed.
 max_client_conn = 100
 
+[db.migrations]
+schema_paths = [
+    "./schemas/00_extensions.sql",
+    "./schemas/schema.sql",
+]
+
 [realtime]
 enabled = true
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
