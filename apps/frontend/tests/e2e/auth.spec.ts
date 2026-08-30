@@ -599,6 +599,39 @@ testWithRegisteredUser.describe("User ban", async () => {
 });
 
 testWithLoggedInUser(
+	"Logged-In User should be logged out when their account is deleted",
+	async ({ page, account }) => {
+		// Step 1: Go to the app (user is already logged in via fixture)
+		await page.goto("/");
+
+		// Verify user is logged in
+		await expect(
+			page.getByRole("heading", {
+				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
+			}),
+		).toBeVisible();
+
+		// Step 2: Delete the account in the database, without ever signing the
+		// browser session out — simulates a still-valid access token for an
+		// account that has since been deleted (e.g. deleted from another
+		// session, or by an admin).
+		const { error: deleteError } =
+			await supabaseAdminClient.auth.admin.deleteUser(account.id);
+		expect(deleteError).toBeNull();
+
+		// Step 3: Reload the page to trigger the deletion check
+		await page.reload();
+
+		// Step 4: Verify user is redirected to the landing page (logged out)
+		await expect(
+			page.getByRole("heading", {
+				name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
+			}),
+		).toBeVisible();
+	},
+);
+
+testWithLoggedInUser(
 	"should allow user to change email address",
 	async ({ page, account }) => {
 		const updatedEmail = "john.doe@polizei.berlin.de";

@@ -234,8 +234,8 @@ SET
 SET
     "statement_timeout" TO '60000' AS $$
 BEGIN
-    IF public.is_current_user_banned() THEN
-        RAISE EXCEPTION 'Permission denied: banned users may not delete their account';
+    IF public.is_current_user_banned_or_deleted() THEN
+        RAISE EXCEPTION 'Permission denied: banned or deleted users may not delete their account';
 END IF;
 
 DELETE FROM auth.users WHERE id = auth.uid();
@@ -813,26 +813,31 @@ SET
     "search_path" TO '' AS $$
 SELECT
     EXISTS (SELECT 1 FROM public.application_admins WHERE user_id = auth.uid())
-    AND NOT (SELECT public.is_current_user_banned());
+    AND NOT (SELECT public.is_current_user_banned_or_deleted());
 $$;
 
 ALTER FUNCTION "public"."is_application_admin" () OWNER TO "postgres";
 
-CREATE OR REPLACE FUNCTION "public"."is_current_user_banned" () RETURNS BOOLEAN LANGUAGE "sql" SECURITY DEFINER
+CREATE OR REPLACE FUNCTION "public"."is_current_user_banned_or_deleted" () RETURNS BOOLEAN LANGUAGE "sql" SECURITY DEFINER
 SET
     "search_path" TO '' AS $$
-SELECT EXISTS (
-    SELECT 1
-    FROM auth.users u
-    WHERE u.id = auth.uid()
-      AND u.banned_until IS NOT NULL
-      AND u.banned_until > now()
-);
+SELECT
+  -- Treat a deleted user (valid pre-deletion session, but no row) as banned
+  NOT EXISTS (
+    SELECT 1 FROM auth.users u WHERE u.id = auth.uid()
+  )
+  OR EXISTS (
+                    SELECT 1
+                    FROM auth.users u
+                    WHERE u.id = auth.uid()
+                      AND u.banned_until IS NOT NULL
+                      AND u.banned_until > now()
+                );
 $$;
 
-ALTER FUNCTION "public"."is_current_user_banned" () OWNER TO "postgres";
+ALTER FUNCTION "public"."is_current_user_banned_or_deleted" () OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."is_current_user_banned" () IS 'Returns TRUE if the current user is banned (auth.users.banned_until in the future).';
+COMMENT ON FUNCTION "public"."is_current_user_banned_or_deleted" () IS 'Returns TRUE if the current user is banned (auth.users.banned_until in the future) or deleted (session issued pre-deletion).';
 
 CREATE OR REPLACE FUNCTION "public"."maintain_chat_messages_document_references" () RETURNS "trigger" LANGUAGE "plpgsql"
 SET
@@ -1808,7 +1813,7 @@ CREATE POLICY "Allow authenticated users to CRUD their own chat_messages" ON "pu
                     )
             )
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -1832,7 +1837,7 @@ WITH
                         )
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -1844,7 +1849,7 @@ CREATE POLICY "Allow authenticated users to CRUD their own chats" ON "public"."c
                     "auth"."uid" () AS "uid"
             ) = "user_id"
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -1856,7 +1861,7 @@ WITH
                         "auth"."uid" () AS "uid"
                 ) = "user_id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -1868,7 +1873,7 @@ CREATE POLICY "Allow authenticated users to CRUD their own document_folders" ON 
                     "auth"."uid" () AS "uid"
             ) = "user_id"
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -1880,7 +1885,7 @@ WITH
                         "auth"."uid" () AS "uid"
                 ) = "user_id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -1892,7 +1897,7 @@ CREATE POLICY "Allow authenticated users to CRUD their own rows" ON "public"."fa
                     "auth"."uid" () AS "uid"
             ) = "user_id"
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -1904,7 +1909,7 @@ WITH
                         "auth"."uid" () AS "uid"
                 ) = "user_id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -1919,7 +1924,7 @@ CREATE POLICY "Allow authenticated users to access own or public document_chun" 
                 )
             )
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -1932,7 +1937,7 @@ WITH
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
             OR (
                 "public"."is_application_admin" ()
@@ -1952,7 +1957,7 @@ CREATE POLICY "Allow authenticated users to access own or public document_summ" 
                 )
             )
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -1965,7 +1970,7 @@ WITH
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
             OR (
                 "public"."is_application_admin" ()
@@ -1984,7 +1989,7 @@ SELECT
                         "auth"."uid" () AS "uid"
                 ) = "id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -1999,7 +2004,7 @@ WITH
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
             OR (
                 "public"."is_application_admin" ()
@@ -2021,7 +2026,7 @@ SELECT
                     )
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -2035,7 +2040,7 @@ FOR UPDATE
                         "auth"."uid" () AS "uid"
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -2049,7 +2054,7 @@ CREATE POLICY "Allow owners to delete documents and admins to delete base know" 
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
             OR (
                 "public"."is_application_admin" ()
@@ -2070,7 +2075,7 @@ WITH
                         "auth"."uid" () AS "uid"
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -2084,7 +2089,7 @@ WITH
                         "auth"."uid" () AS "uid"
                 ) = "id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -2098,7 +2103,7 @@ FOR UPDATE
                         "auth"."uid" () AS "uid"
                 ) = "id"
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -2112,7 +2117,7 @@ SELECT
                         "auth"."uid" () AS "uid"
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 
@@ -2136,7 +2141,7 @@ SELECT
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
         )
     );
@@ -2370,15 +2375,15 @@ GRANT ALL ON FUNCTION "public"."is_application_admin" () TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."is_application_admin" () TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."is_current_user_banned" ()
+REVOKE ALL ON FUNCTION "public"."is_current_user_banned_or_deleted" ()
 FROM
     PUBLIC;
 
-GRANT ALL ON FUNCTION "public"."is_current_user_banned" () TO "anon";
+GRANT ALL ON FUNCTION "public"."is_current_user_banned_or_deleted" () TO "anon";
 
-GRANT ALL ON FUNCTION "public"."is_current_user_banned" () TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_current_user_banned_or_deleted" () TO "authenticated";
 
-GRANT ALL ON FUNCTION "public"."is_current_user_banned" () TO "service_role";
+GRANT ALL ON FUNCTION "public"."is_current_user_banned_or_deleted" () TO "service_role";
 
 GRANT ALL ON FUNCTION "public"."maintain_chat_messages_document_references" () TO "anon";
 

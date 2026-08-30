@@ -11,7 +11,7 @@ import { captureError } from "../monitoring/capture-error.ts";
 import { registerOrRecoverUser } from "../api/auth/register-user.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
 import type { Span } from "@sentry/react";
-import { getIsUserBanned } from "../api/auth/get-is-user-banned.ts";
+import { getIsUserBannedOrDeleted } from "../api/auth/get-is-user-banned-or-deleted.ts";
 
 let resendTime: number | null = null;
 
@@ -28,7 +28,15 @@ interface AuthStore {
 	isPasswordRecoveryMode: boolean;
 	isUserAdmin: boolean;
 	isAdminStatusLoaded: boolean;
-	isBanned: boolean | null;
+	/**
+	 * You might wonder why we track isBannedOrDeleted
+	 * in the AuthStore. JWT Sessions can't be revoked
+	 * after issuance and are only invalidated via expiration
+	 * Therefore there can be a situation where a user was
+	 * banned / deleted but still has a valid session.
+	 * In this edge-case, we'll need to log them out.
+	 */
+	isBannedOrDeleted: boolean | null;
 	register: (args: {
 		firstName: string;
 		lastName: string;
@@ -53,7 +61,7 @@ interface AuthStore {
 	}) => Promise<void>;
 	logout: () => Promise<void>;
 	checkIsUserAdmin: (signal: AbortSignal) => Promise<void>;
-	checkIsUserBanned: () => Promise<void>;
+	checkIsUserBannedOrDeleted: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>()((set, get) => {
@@ -154,7 +162,8 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isPasswordRecoveryMode: false,
 		isUserAdmin: false,
 		isAdminStatusLoaded: false,
-		isBanned: null,
+		isBannedOrDeleted: null,
+		isDeleted: null,
 
 		async register({ firstName, lastName, email, password, span }) {
 			try {
@@ -312,7 +321,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			set({
 				session: null,
 				unconfirmedEmail: null,
-				isBanned: null,
+				isBannedOrDeleted: null,
 				emailConfirmationStatus: "unknown",
 				isInitialized: true,
 				isUserAdmin: false,
@@ -349,10 +358,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			set({ isUserAdmin: isAdmin, isAdminStatusLoaded });
 		},
 
-		async checkIsUserBanned() {
-			const isUserBanned = await getIsUserBanned();
+		async checkIsUserBannedOrDeleted() {
+			const isUserBanned = await getIsUserBannedOrDeleted();
 
-			set({ isBanned: isUserBanned });
+			set({ isBannedOrDeleted: isUserBanned });
 		},
 	};
 });
