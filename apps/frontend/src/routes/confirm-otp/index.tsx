@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ClipboardEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import Content from "../../content";
 import { ConfirmationLayout } from "../../layouts/confirmation-layout.tsx";
 import { supabase } from "../../../supabase-client";
@@ -27,6 +27,7 @@ export function ConfirmOtpPage() {
 
 	const email = searchParams.get("email");
 	const otpType = searchParams.get("type");
+	const origin = searchParams.get("origin");
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -125,7 +126,16 @@ export function ConfirmOtpPage() {
 						{Content["confirmOtp.title"]}
 					</h1>
 					<p className="text-base mt-4 text-schwarz-100">
-						{Content["confirmOtp.description"]}
+						{email ? (
+							<>
+								{Content["confirmOtp.description.sent"]}{" "}
+								<strong>{email}</strong>
+								<br />
+								{Content["confirmOtp.description.instruction"]}
+							</>
+						) : (
+							Content["confirmOtp.description"]
+						)}
 					</p>
 
 					<form className="flex flex-col mt-8 gap-6" onSubmit={handleSubmit}>
@@ -162,23 +172,63 @@ export function ConfirmOtpPage() {
 								: Content["confirmOtp.button.submit"]}
 						</button>
 
-						<p>
-							{Content["unconfirmedEmail.otp.resend"]}
-							{hasEmailBeenRecentlySent && (
-								<span className="ml-5 leading-6 md:text-lg md:leading-7 font-semibold text-mittelgruen">
-									{Content["unconfirmedEmail.resend.success"]}
-								</span>
+						<div className="flex flex-col gap-1">
+							<p className="text-base text-schwarz-100">
+								{Content["confirmOtp.resend.question"]}{" "}
+								{hasEmailBeenRecentlySent ? (
+									<span className="text-base font-semibold text-mittelgruen">
+										{Content["unconfirmedEmail.resend.success"]}
+									</span>
+								) : (
+									<button
+										className="text-base font-semibold underline hover:no-underline"
+										type="button"
+										onClick={handleResendEmail}
+									>
+										{Content["unconfirmedEmail.resendButton"]}
+									</button>
+								)}
+							</p>
+
+							<p className="text-base text-schwarz-100">
+								{Content["confirmOtp.checkSpam"]}
+							</p>
+
+							<p className="text-base text-schwarz-100">
+								{Content["confirmOtp.typo.question"]}{" "}
+								{origin !== "register" && (
+									<Link
+										to="/login/"
+										className="text-base font-semibold underline hover:no-underline"
+									>
+										{Content["confirmOtp.typo.loginLink"]}
+									</Link>
+								)}
+								{origin !== "login" && origin !== "register" && (
+									<> {Content["confirmOtp.typo.or"]} </>
+								)}
+								{origin !== "login" && (
+									<Link
+										to="/register/"
+										className="text-base font-semibold underline hover:no-underline"
+									>
+										{Content["confirmOtp.typo.registerLink"]}
+									</Link>
+								)}
+							</p>
+
+							{origin === "login" && (
+								<p className="text-base text-schwarz-100">
+									{Content["confirmOtp.notRegistered.question"]}{" "}
+									<Link
+										to="/register/"
+										className="text-base font-semibold underline hover:no-underline"
+									>
+										{Content["confirmOtp.notRegistered.registerLink"]}
+									</Link>
+								</p>
 							)}
-							{!hasEmailBeenRecentlySent && (
-								<button
-									className="ml-5 leading-6 md:text-lg md:leading-7 font-semibold underline hover:no-underline"
-									type="button"
-									onClick={handleResendEmail}
-								>
-									{Content["unconfirmedEmail.resendButton"]}
-								</button>
-							)}
-						</p>
+						</div>
 					</form>
 				</div>
 			</div>

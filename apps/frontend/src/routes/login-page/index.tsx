@@ -26,7 +26,7 @@ export function LoginPage() {
 
 				if (!loginError) {
 					navigate(
-						`/confirm-otp/?type=email&email=${encodeURIComponent(email)}`,
+						`/confirm-otp/?type=email&email=${encodeURIComponent(email)}&origin=login`,
 					);
 				}
 			},

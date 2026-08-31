@@ -69,6 +69,64 @@ test.describe("Login", () => {
 		// Email field should show a format validation error
 		await expect(page.getByText("Das E-Mail-Format ist falsch.")).toBeVisible();
 	});
+
+	test("Login with an unregistered email is indistinguishable from a registered one", async ({
+		page,
+	}) => {
+		// Regression test: an unregistered email must navigate to /confirm-otp/
+		// exactly like a registered one, so the login form can't be used to probe
+		// which emails have accounts (see requestLoginOtp's otp_disabled handling).
+		const nonExistentEmail = "nonexistent-login-attempt@ts.berlin";
+
+		const { data: listUsersDataBefore } =
+			await supabaseAdminClient.auth.admin.listUsers();
+		expect(
+			listUsersDataBefore?.users.some(
+				({ email }) => email === nonExistentEmail,
+			),
+		).toBe(false);
+
+		await page.goto("/login/");
+		await page
+			.getByRole("textbox", { name: "E-Mail-Adresse" })
+			.fill(nonExistentEmail);
+		await page.getByRole("button", { name: "Code anfordern" }).click();
+
+		await expect(page).toHaveURL(/\/confirm-otp\//);
+
+		// shouldCreateUser:false must still hold — navigating must not have
+		// silently created an account for the unregistered email.
+		const { data: listUsersDataAfter } =
+			await supabaseAdminClient.auth.admin.listUsers();
+		expect(
+			listUsersDataAfter?.users.some(({ email }) => email === nonExistentEmail),
+		).toBe(false);
+	});
+
+	test("Confirm-otp page reached via login shows the login-specific footer links", async ({
+		page,
+	}) => {
+		// Regression test: the confirm-otp page tailors its "wrong email" /
+		// "not registered" footer links based on the ?origin= param set by
+		// login-page/register-page. Reaching it via login must never show the
+		// "not yet registered" escape hatch. See confirm-otp/index.tsx.
+		await page.goto("/login/");
+		await page
+			.getByRole("textbox", { name: "E-Mail-Adresse" })
+			.fill("confirm-otp-footer-check@ts.berlin");
+		await page.getByRole("button", { name: "Code anfordern" }).click();
+
+		await expect(page).toHaveURL(/[?&]origin=login(&|$)/);
+		await expect(
+			page.getByRole("link", { name: "Zurück zum Login" }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("link", { name: "Zurück zur Registrierung" }),
+		).not.toBeVisible();
+		await expect(
+			page.getByRole("link", { name: "Zur Registrierung" }),
+		).toBeVisible();
+	});
 });
 
 async function fillAndSubmitRegistrationForm(
@@ -188,7 +246,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			// The uniform confirm-code screen must be shown -
 			// never an error revealing that the account already exists.
 			await expect(
-				page.getByRole("heading", { name: "Aktion bestätigen" }),
+				page.getByRole("heading", { name: "Fast geschafft!" }),
 			).toBeVisible({ timeout: 10_000 });
 			await expect(
 				page.getByText("Benutzer ist bereits registriert."),
@@ -217,7 +275,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			// Behaviorally indistinguishable from the "new user" case from the UI -
 			// that's expected, the whole point is uniformity.
 			await expect(
-				page.getByRole("heading", { name: "Aktion bestätigen" }),
+				page.getByRole("heading", { name: "Fast geschafft!" }),
 			).toBeVisible({ timeout: 10_000 });
 			await expect(
 				page.getByText("Benutzer ist bereits registriert."),
@@ -236,7 +294,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 
 			// Registration navigates straight to the confirm-code screen.
 			await expect(
-				page.getByRole("heading", { name: "Aktion bestätigen" }),
+				page.getByRole("heading", { name: "Fast geschafft!" }),
 			).toBeVisible({ timeout: 10_000 });
 
 			const resendButton = page.getByRole("button", {
