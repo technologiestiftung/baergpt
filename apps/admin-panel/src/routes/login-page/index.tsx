@@ -1,6 +1,6 @@
 import { type FormEvent, useRef } from "react";
+import { useNavigate } from "react-router";
 import { EmailInput } from "../../components/login/text-inputs/email-input.tsx";
-import { PasswordInput } from "../../components/login/text-inputs/password-input.tsx";
 import { ArrowWhiteRightIcon } from "../../components/primitives/icons/arrow-white-right-icon.tsx";
 import { AuthLayout } from "../../components/layout/auth-layout.tsx";
 import { useAuthStore } from "../../store/use-auth-store.ts";
@@ -9,16 +9,20 @@ import { useAuthErrorStore } from "../../store/use-auth-error-store.ts";
 
 export function LoginPage() {
 	const { error } = useAuthErrorStore();
-	const { login } = useAuthStore();
+	const { requestLoginOtp } = useAuthStore();
+	const navigate = useNavigate();
 	const formRef = useRef<HTMLFormElement | null>(null);
 
-	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
 		const email = event.currentTarget.email.value;
-		const password = event.currentTarget.password.value;
 
-		login({ email, password });
+		const { error: loginError } = await requestLoginOtp({ email });
+
+		if (!loginError) {
+			navigate(`/confirm-otp/?type=email&email=${encodeURIComponent(email)}`);
+		}
 	};
 
 	return (
@@ -43,14 +47,9 @@ export function LoginPage() {
 							/>
 						</label>
 
-						<label htmlFor="password" className="flex flex-col mt-7 gap-y-1">
-							{Content["loginPage.passwordLabel"]}
-							<PasswordInput
-								id="password"
-								placeholder="Passwort"
-								formRef={formRef}
-							/>
-						</label>
+						<p className="mt-3 text-sm leading-5 text-schwarz-100">
+							{Content["loginPage.otpHint"]}
+						</p>
 
 						{error && (
 							<div

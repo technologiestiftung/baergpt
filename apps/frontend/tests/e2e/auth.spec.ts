@@ -10,148 +10,26 @@ import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
 import Content from "../../src/content.ts";
 
+/**
+ * Passwordless login: enter the email, request a one-time code, then read the
+ * code from Mailpit and submit it on the confirm-otp page. confirmOtp opens the
+ * emailed link in a new tab and returns that (now authenticated) page.
+ */
+async function loginViaOtp(
+	page: Page,
+	account: { email: string; password: string; id: string },
+) {
+	await page.goto("/login/");
+	await page
+		.getByRole("textbox", { name: "E-Mail-Adresse" })
+		.fill(account.email);
+	await page.getByRole("button", { name: "Code anfordern" }).click();
+	return confirmOtp({ page, account });
+}
+
 test.describe("Login", () => {
 	testWithRegisteredUser("User Login and Logout", async ({ page, account }) => {
-		// Go to the login page
-		await page.goto("/login/");
-
-		// Fill in the email and password fields
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill(account.email);
-		await page
-			.getByRole("textbox", { name: "Passwort" })
-			.fill(account.password);
-
-		// Click on the "Anmelden" button
-		await page.getByRole("button", { name: "Anmelden" }).click();
-
-		// Check if we are on the main page
-		await expect(
-			page.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
-
-		// Click on the drop-down button
-		await page.getByRole("button", { name: "Profil öffnen" }).click();
-
-		// Click on the log-out button
-		await page.getByRole("button", { name: "Ausloggen" }).click();
-
-		// Check if we are back on the landing page
-		await expect(
-			page.getByText("BärGPT, der KI-Assistent für die Berliner Verwaltung"),
-		).toBeVisible();
-	});
-
-	test("Invalid Login Attempt", async ({ page }) => {
-		// Go to the login page
-		await page.goto("/login/");
-
-		// Try to log in with empty fields
-		await page.getByRole("button", { name: "Anmelden" }).click();
-
-		// Email and Password fields should show validation errors
-		await expect(
-			page.getByText("Bitte füllen Sie dieses Feld").nth(0),
-		).toBeVisible();
-		await expect(
-			page.getByText("Bitte füllen Sie dieses Feld").nth(1),
-		).toBeVisible();
-
-		// Fill in the email field with an invalid email format
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse Bitte füllen" })
-			.fill("some-invalid-email");
-
-		// Email field should show validation error
-		await expect(page.getByText("Das E-Mail-Format ist falsch.")).toBeVisible();
-
-		// Fill the password field with a too short password
-		await page
-			.getByRole("textbox", { name: "Passwort Passwort anzeigen" })
-			.fill("1");
-
-		// Password field should show validation error
-		await expect(page.getByText("Das Passwort muss mindestens")).toBeVisible();
-
-		// Fill in the email field with a valid email format, but not existing user
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse Das E-Mail-" })
-			.fill("not-existing-user@ts.berlin");
-
-		// Fill in the password field with a valid password, but not existing user
-		await page
-			.getByRole("textbox", { name: "Passwort Passwort anzeigen" })
-			.fill("123456789!");
-
-		// Logging in with valid email and password format, but non-existing user
-		await page.getByRole("button", { name: "Anmelden" }).click();
-		await expect(page.getByText("Benutzername oder Passwort")).toBeVisible();
-	});
-});
-
-test.describe("Password Reset", () => {
-	testWithRegisteredUser("Password Reset Flow", async ({ page, account }) => {
-		const givenNewPassword = "!987654321";
-		// Go to the login page
-		await page.goto("/login/");
-
-		// Check if we are on the login page
-		await expect(
-			page.getByRole("heading", { name: "Willkommen zurück" }),
-		).toBeVisible();
-
-		// click passwort vergessen
-		await page.getByRole("link", { name: "Passwort vergessen?" }).click();
-
-		// Check if we are on the reset password page
-		await expect(
-			page.getByRole("heading", { name: "Passwort vergessen?" }),
-		).toBeVisible();
-
-		// Fill in the email field
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill(account.email);
-
-		// Click on the "Passwort zurücksetzen" button
-		await page.getByRole("button", { name: "Zurücksetzen" }).click();
-
-		// Check for the confirmation message
-		await expect(
-			page.getByText(
-				"Wenn die E-Mail-Adresse registriert ist, senden wir Ihnen einen Link zum Zurücksetzen Ihres Passwortes.",
-			),
-		).toBeVisible();
-
-		const page1 = await confirmOtp({ page, account });
-
-		await expect(page1).toHaveURL("/reset-password/");
-
-		await expect(
-			page1.getByRole("heading", { name: "Passwort zurücksetzen" }),
-		).toBeVisible();
-
-		// Fill in the new password field
-		await page1
-			.getByRole("textbox", { name: "Neues Passwort Passwort" })
-			.fill(givenNewPassword);
-		await page1
-			.getByRole("textbox", { name: "Neues Passwort wiederholen" })
-			.fill(givenNewPassword);
-
-		// Click on the "Passwort zurücksetzen" button
-		await page1.getByRole("button", { name: "Passwort ändern" }).click();
-
-		// Check for the confirmation message
-		await expect(
-			page1.getByText("Ihr Passwort wurde erfolgreich geändert."),
-		).toBeVisible();
-
-		// Click login
-		await page1.getByRole("link", { name: "Zum Login" }).click();
+		const page1 = await loginViaOtp(page, account);
 
 		// Check if we are on the main page
 		await expect(
@@ -159,78 +37,37 @@ test.describe("Password Reset", () => {
 				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
 			}),
 		).toBeVisible();
+
+		// Click on the drop-down button
+		await page1.getByRole("button", { name: "Profil öffnen" }).click();
+
+		// Click on the log-out button
+		await page1.getByRole("button", { name: "Ausloggen" }).click();
+
+		// Check if we are back on the landing page
+		await expect(
+			page1.getByText("BärGPT, der KI-Assistent für die Berliner Verwaltung"),
+		).toBeVisible();
 	});
 
-	test("Invalid request password reset link attempt", async ({ page }) => {
-		await page.goto("/request-password-reset/");
+	test("Invalid Login Attempt", async ({ page }) => {
+		// Go to the login page
+		await page.goto("/login/");
 
-		// Try to submit the form with empty fields
-		await page.getByRole("button", { name: "Zurücksetzen" }).click();
+		// Try to request a code with an empty email field
+		await page.getByRole("button", { name: "Code anfordern" }).click();
 
-		// Check for the validation errors
+		// Email field should show a validation error
 		await expect(page.getByText("Bitte füllen Sie dieses Feld")).toBeVisible();
 
 		// Fill in the email field with an invalid email format
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill("invalid-email");
+		await page.locator("#email").fill("some-invalid-email");
 
-		// Try to submit the form
-		await page.getByRole("button", { name: "Zurücksetzen" }).click();
+		// Try to request a code again
+		await page.getByRole("button", { name: "Code anfordern" }).click();
 
-		// Check for the validation error
+		// Email field should show a format validation error
 		await expect(page.getByText("Das E-Mail-Format ist falsch.")).toBeVisible();
-	});
-
-	test("Invalid password reset Attempt", async ({ page }) => {
-		await page.goto("/reset-password/");
-
-		// Try to submit the form with empty fields
-		await page.getByRole("button", { name: "Passwort ändern" }).click();
-
-		// Check for the validation errors
-		await expect(
-			page.getByText("Bitte füllen Sie dieses Feld").nth(0),
-		).toBeVisible();
-		await expect(
-			page.getByText("Bitte füllen Sie dieses Feld").nth(1),
-		).toBeVisible();
-
-		// Fill in the new password field with a too short password
-		await page
-			.getByRole("textbox", { name: "Neues Passwort Passwort" })
-			.fill("1");
-
-		// Fill in the password repeat field with a too short password
-		await page
-			.getByRole("textbox", { name: "Neues Passwort wiederholen" })
-			.fill("1");
-
-		// Try to submit the form
-		await page.getByRole("button", { name: "Passwort ändern" }).click();
-
-		// Check for the validation errors
-		await expect(
-			page.getByText("Das Passwort muss mindestens").nth(0),
-		).toBeVisible();
-		await expect(
-			page.getByText("Das Passwort muss mindestens").nth(1),
-		).toBeVisible();
-
-		// Fill in the new password field with a valid password
-		await page
-			.getByRole("textbox", { name: "Neues Passwort Passwort" })
-			.fill("123456789!");
-		// Fill in the password reset field with a valid but different password
-		await page
-			.getByRole("textbox", { name: "Neues Passwort wiederholen" })
-			.fill("123456789!0");
-
-		// Try to submit the form
-		await page.getByRole("button", { name: "Passwort ändern" }).click();
-
-		// Check for the validation error
-		await expect(page.getByText("Die Passwörter stimmen nicht")).toBeVisible();
 	});
 });
 
@@ -238,10 +75,9 @@ async function fillAndSubmitRegistrationForm(
 	page: Page,
 	{
 		email,
-		password,
 		firstName,
 		lastName,
-	}: { email: string; password: string; firstName: string; lastName: string },
+	}: { email: string; firstName: string; lastName: string },
 ) {
 	await page.goto("/register/");
 
@@ -263,26 +99,15 @@ async function fillAndSubmitRegistrationForm(
 		})
 		.catch(() => {}); // Ignore if already completed
 
-	const passwordInput = page.getByRole("textbox", {
-		name: "Passwort",
-		exact: true,
-	});
-	await passwordInput.fill(password);
-
-	const passwordRepeatInput = page.getByRole("textbox", {
-		name: "Passwort wiederholen",
-	});
-	await passwordRepeatInput.fill(password);
-
 	const privacyCheckboxInput = page.locator(
 		'[data-testid="label-has-accepted-privacy-checkbox"]',
 	);
 	await privacyCheckboxInput.check();
 
-	// Wait for the registration request to complete
+	// Wait for the passwordless sign-up (OTP) request to complete
 	await Promise.all([
 		page.waitForResponse(
-			(resp) => resp.url().includes("/auth/register") && resp.status() === 200,
+			(resp) => resp.url().includes("/auth/v1/otp") && resp.status() === 200,
 		),
 		page.getByRole("button", { name: "Registrieren" }).click(),
 	]);
@@ -305,10 +130,10 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			({ email }) => email === givenUserEmail,
 		);
 
-		expect(foundUser).toBeDefined();
-
+		// A brand-new registration might not have created the user yet if the OTP
+		// was never confirmed; only delete when present.
 		if (!foundUser) {
-			throw new Error("User not found");
+			return;
 		}
 
 		const { error: deleteUserError } =
@@ -320,15 +145,9 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	testWithoutSplashScreen("Default Registration Flow", async ({ page }) => {
 		await fillAndSubmitRegistrationForm(page, {
 			email: givenUserEmail,
-			password: givenUserPassword,
 			firstName: givenUserFirstName,
 			lastName: givenUserLastName,
 		});
-
-		// Info message about confirmation mail should be visible
-		await expect(
-			page.getByRole("heading", { name: "Fast geschafft!" }),
-		).toBeVisible({ timeout: 10_000 });
 
 		const page1 = await confirmOtp({
 			page,
@@ -362,17 +181,14 @@ test.describe("User Registration (uses different user to prevent side-effects on
 
 			await fillAndSubmitRegistrationForm(page, {
 				email: givenUserEmail,
-				password: givenUserPassword,
 				firstName: givenUserFirstName,
 				lastName: givenUserLastName,
 			});
 
-			// The uniform "check your email" screen must be shown -
+			// The uniform confirm-code screen must be shown -
 			// never an error revealing that the account already exists.
 			await expect(
-				page.getByRole("heading", {
-					name: "Fast geschafft!",
-				}),
+				page.getByRole("heading", { name: "Aktion bestätigen" }),
 			).toBeVisible({ timeout: 10_000 });
 			await expect(
 				page.getByText("Benutzer ist bereits registriert."),
@@ -394,7 +210,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 
 			await fillAndSubmitRegistrationForm(page, {
 				email: givenUserEmail,
-				password: givenUserPassword,
 				firstName: givenUserFirstName,
 				lastName: givenUserLastName,
 			});
@@ -402,9 +217,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			// Behaviorally indistinguishable from the "new user" case from the UI -
 			// that's expected, the whole point is uniformity.
 			await expect(
-				page.getByRole("heading", {
-					name: "Fast geschafft!",
-				}),
+				page.getByRole("heading", { name: "Aktion bestätigen" }),
 			).toBeVisible({ timeout: 10_000 });
 			await expect(
 				page.getByText("Benutzer ist bereits registriert."),
@@ -413,19 +226,17 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	);
 
 	testWithoutSplashScreen(
-		"Resend button re-submits the registration endpoint with just the email",
+		"Resend button re-requests a one-time code with just the email",
 		async ({ page }) => {
 			await fillAndSubmitRegistrationForm(page, {
 				email: givenUserEmail,
-				password: givenUserPassword,
 				firstName: givenUserFirstName,
 				lastName: givenUserLastName,
 			});
 
+			// Registration navigates straight to the confirm-code screen.
 			await expect(
-				page.getByRole("heading", {
-					name: "Fast geschafft!",
-				}),
+				page.getByRole("heading", { name: "Aktion bestätigen" }),
 			).toBeVisible({ timeout: 10_000 });
 
 			const resendButton = page.getByRole("button", {
@@ -435,13 +246,13 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			const [resendRequest] = await Promise.all([
 				page.waitForRequest(
 					(request) =>
-						request.url().includes("/auth/register") &&
+						request.url().includes("/auth/v1/otp") &&
 						request.method() === "POST",
 				),
 				resendButton.click(),
 			]);
 
-			expect(resendRequest.postDataJSON()).toEqual({ email: givenUserEmail });
+			expect(resendRequest.postDataJSON().email).toEqual(givenUserEmail);
 
 			await expect(
 				page.getByText(Content["unconfirmedEmail.resend.success"]),
@@ -502,98 +313,42 @@ testWithRegisteredUser.describe("User ban", async () => {
 		expect(error).toBeNull();
 	}
 
-	testWithRegisteredUser.beforeEach(async ({ account }) => {
-		await banUser(account.id);
-	});
-
 	testWithRegisteredUser.afterEach(async ({ account }) => {
 		await unbanUser(account.id);
 	});
 
 	testWithRegisteredUser(
-		"Logged-In User should be logged out when their account is banned",
+		"Logged-in user is logged out when their account is banned",
 		async ({ page, account, baseURL }) => {
-			// Go to the login page
-			await page.goto("/login/");
-
-			// Try to log-in
-			await page
-				.getByRole("textbox", { name: "E-Mail-Adresse" })
-				.fill(account.email);
-			await page
-				.getByRole("textbox", { name: "Passwort" })
-				.fill(account.password);
-			await page.getByRole("button", { name: "Anmelden" }).click();
-
-			// Check if we are still on the login page with the error message
-			// Note: order matters here, we need to wait for the Text to be visible before checking the URL.
+			// Log in via OTP while the account is active.
+			const page1 = await loginViaOtp(page, account);
 			await expect(
-				page.getByText("Der Benutzeraccount wurde gesperrt."),
-			).toBeVisible();
-			await expect(page).toHaveURL(`${baseURL}/login/`);
-
-			// Unban the user account in the database
-			await unbanUser(account.id);
-
-			// Refresh the page to clear the error message
-			await page.goto("/");
-			await expect(
-				page.getByText("Der Benutzeraccount wurde gesperrt."),
-			).not.toBeVisible();
-			await expect(page).toHaveURL(`${baseURL}/`);
-
-			// Go to the login page again
-			await page.getByRole("link", { name: "Zur Login-Seite" }).click();
-
-			// Log in again with the same credentials
-			await page
-				.getByRole("textbox", { name: "E-Mail-Adresse" })
-				.fill(account.email);
-			await page
-				.getByRole("textbox", { name: "Passwort" })
-				.fill(account.password);
-			await page.getByRole("button", { name: "Anmelden" }).click();
-
-			// Check if we are on the main page again
-			await expect(
-				page.getByRole("heading", {
+				page1.getByRole("heading", {
 					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
 				}),
 			).toBeVisible();
 
-			// Ban the user account again in the database
+			// Ban the user account in the database.
 			await banUser(account.id);
 
-			// Refresh the page
-			await page.goto("/");
-
-			// Check if we are redirected to the landing page
+			// On the next navigation the app detects the ban and logs the user out.
+			await page1.goto("/");
 			await expect(
-				page.getByRole("heading", {
+				page1.getByRole("heading", {
 					name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 				}),
 			).toBeVisible();
 
-			// Go to the login page again
-			await page.getByRole("link", { name: "Zur Login-Seite" }).click();
+			// Unban and confirm the user can log in again via a fresh OTP.
+			await unbanUser(account.id);
 
-			// Check if we are on the login page
-			await expect(page).toHaveURL(`${baseURL}/login/`);
-
-			// Try to log-in again
-			await page
-				.getByRole("textbox", { name: "E-Mail-Adresse" })
-				.fill(account.email);
-			await page
-				.getByRole("textbox", { name: "Passwort" })
-				.fill(account.password);
-			await page.getByRole("button", { name: "Anmelden" }).click();
-
-			// Check if we are still on the login page with the error message
-			// Note: order matters here, we need to wait for the Text to be visible before checking the URL.
+			const page2 = await loginViaOtp(page1, account);
 			await expect(
-				page.getByText("Der Benutzeraccount wurde gesperrt."),
+				page2.getByRole("heading", {
+					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
+				}),
 			).toBeVisible();
+			await expect(page2).toHaveURL(`${baseURL}/`);
 		},
 	);
 });

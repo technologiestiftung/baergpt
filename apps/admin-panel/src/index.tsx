@@ -6,6 +6,7 @@ import "./index.css";
 import { IndexPage } from "./routes";
 import { BaseKnowledgePage } from "./routes/base-knowledge/index";
 import { LoginPage } from "./routes/login-page";
+import { ConfirmOtpPage } from "./routes/confirm-otp";
 import { ProductDashboardPage } from "@/routes/product-dashboard";
 import { DomainAllowlistPage } from "./routes/domain-allowlist/index";
 import { IndividualEmailAllowlistPage } from "./routes/individual-email-allowlist/index";
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
 	{
 		path: "/login/",
 		element: <LoginPage />,
+	},
+	{
+		path: "/confirm-otp/",
+		element: <ConfirmOtpPage />,
 	},
 ]);
 

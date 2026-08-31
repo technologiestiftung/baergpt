@@ -20,8 +20,25 @@ export const Content = {
 	"loginPage.h1": "Willkommen zurück",
 	"loginPage.h2": "Bitte melden Sie sich an",
 	"loginPage.emailLabel": "E-Mail-Adresse",
-	"loginPage.passwordLabel": "Passwort",
-	"loginPage.submitButton": "Anmelden",
+	"loginPage.otpHint":
+		"Wir senden Ihnen einen einmaligen Sicherheitscode per E-Mail, mit dem Sie sich anmelden.",
+	"loginPage.submitButton": "Code anfordern",
+
+	/* ---------------------- OTP Confirmation Page ---------------------- */
+	"confirmOtp.title": "Anmeldung bestätigen",
+	"confirmOtp.description":
+		"Bitte geben Sie den Sicherheitscode aus Ihrer E-Mail ein.",
+	"confirmOtp.token.label": "Sicherheitscode",
+	"confirmOtp.token.placeholder": "z. B. 123456",
+	"confirmOtp.button.submit": "Weiter",
+	"confirmOtp.button.loading": "Überprüfe …",
+	"confirmOtp.error.missingFields":
+		"E-Mail-Adresse und Sicherheitscode werden benötigt.",
+	"confirmOtp.error.tokenExpiredOrInvalid":
+		"Der angegebene Sicherheitscode ist fehlerhaft oder ungültig.",
+	"confirmOtp.error.generic":
+		"Die Bestätigung ist fehlgeschlagen. Bitte versuchen Sie es erneut oder fordern Sie einen neuen Code an.",
+	"confirmOtp.resend": "Keinen Code erhalten?",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
 	"unconfirmedEmail.h2": "Sie erhalten in Kürze eine E-Mail",
