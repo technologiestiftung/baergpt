@@ -6,8 +6,6 @@ import "./index.css";
 import { IndexPage } from "./routes";
 import { RegisterPage } from "./routes/register-page";
 import { LoginPage } from "./routes/login-page";
-import { RequestResetPasswordPage } from "./routes/request-password-reset";
-import { ResetPasswordPage } from "./routes/reset-password";
 import { ConfirmOtpPage } from "./routes/confirm-otp";
 import { ProfilePage } from "./routes/profile";
 import { EmailChanged } from "./routes/email-changed";
@@ -35,16 +33,8 @@ const router = sentryCreateBrowserRouter([
 		element: <RegistrationError />,
 	},
 	{
-		path: "/request-password-reset/",
-		element: <RequestResetPasswordPage />,
-	},
-	{
 		path: "/confirm-otp/",
 		element: <ConfirmOtpPage />,
-	},
-	{
-		path: "/reset-password/",
-		element: <ResetPasswordPage />,
 	},
 	{
 		path: "/profile/",

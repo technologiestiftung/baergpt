@@ -1,6 +1,6 @@
 import { type FormEvent, useRef } from "react";
+import { useNavigate } from "react-router";
 import { EmailInput } from "../../components/primitives/text-inputs/email-input.tsx";
-import { PasswordInput } from "../../components/primitives/text-inputs/password-input.tsx";
 import { ArrowWhiteRightIcon } from "../../components/primitives/icons/arrow-white-right-icon.tsx";
 import { AuthLayout } from "../../layouts/auth-layout.tsx";
 import { useAuthStore } from "../../store/auth-store.ts";
@@ -10,19 +10,25 @@ import * as Sentry from "@sentry/react";
 
 export function LoginPage() {
 	const { error } = useAuthErrorStore();
-	const { login } = useAuthStore();
+	const { requestLoginOtp } = useAuthStore();
+	const navigate = useNavigate();
 	const formRef = useRef<HTMLFormElement | null>(null);
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
 		const email = event.currentTarget.email.value;
-		const password = event.currentTarget.password.value;
 
 		await Sentry.startSpan(
 			{ name: "User Login", op: "user.login.submit" },
 			async (span) => {
-				await login({ email, password, span });
+				const { error: loginError } = await requestLoginOtp({ email, span });
+
+				if (!loginError) {
+					navigate(
+						`/confirm-otp/?type=email&email=${encodeURIComponent(email)}`,
+					);
+				}
 			},
 		);
 	};
@@ -50,16 +56,9 @@ export function LoginPage() {
 							/>
 						</label>
 
-						<label htmlFor="password" className="flex flex-col mt-5 gap-y-1">
-							{Content["loginPage.passwordLabel"]}
-							<PasswordInput id="password" placeholder="Passwort" />
-						</label>
-						<a
-							href={Content["loginPage.resetPassword.link"]}
-							className="mt-2 text-sm leading-5 font-normal underline hover:no-underline"
-						>
-							{Content["loginPage.resetPassword.label"]}
-						</a>
+						<p className="mt-3 text-sm leading-5 text-schwarz-100">
+							{Content["loginPage.otpHint"]}
+						</p>
 
 						{error && (
 							<div

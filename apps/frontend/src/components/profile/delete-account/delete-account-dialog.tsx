@@ -3,9 +3,9 @@ import { DefaultDialog } from "../../primitives/dialogs/default-dialog.tsx";
 import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
 import Content from "../../../content.ts";
 import { useUserStore } from "../../../store/user-store.ts";
+import { useAuthStore } from "../../../store/auth-store.ts";
 import { useNavigate } from "react-router";
-import { PasswordInput } from "../../primitives/text-inputs/password-input.tsx";
-import { verifyPassword } from "../../../api/auth/verify-password.ts";
+import { TextInput } from "../../primitives/text-inputs/text-input.tsx";
 import { WarningButton } from "../../primitives/buttons/warning-button.tsx";
 
 const deleteAccountDialogId = "delete-account-dialog";
@@ -23,26 +23,26 @@ export function hideDeleteDialog() {
 export const DeleteAccountDialog = () => {
 	const { deleteAccount } = useUserStore.getState();
 	const navigate = useNavigate();
-	const [currentPasswordError, setCurrentPasswordError] = useState<
-		string | null
-	>(null);
+	const [confirmationError, setConfirmationError] = useState<string | null>(
+		null,
+	);
 
 	const formref = useRef<HTMLFormElement | null>(null);
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		const currentPassword = event.currentTarget.currentPasswordValidation.value;
+		const accountEmail = useAuthStore.getState().session?.user.email ?? "";
+		const enteredEmail = event.currentTarget.deleteAccountConfirmation.value;
 
-		// Verify current password
-		const verifyResult = await verifyPassword(currentPassword);
-		if (verifyResult.error) {
-			return;
-		}
-
-		const isCurrentPasswordValid = verifyResult.data;
-		if (!isCurrentPasswordValid) {
-			setCurrentPasswordError(Content["form.validation.password.wrong.error"]);
+		// Passwordless accounts confirm the destructive action by re-typing the
+		// account's own email address instead of a password.
+		const isConfirmed =
+			enteredEmail.trim().toLowerCase() === accountEmail.toLowerCase();
+		if (!isConfirmed) {
+			setConfirmationError(
+				Content["profile.deleteAccount.dialog.emailCheck.error"],
+			);
 			return;
 		}
 
@@ -57,7 +57,7 @@ export const DeleteAccountDialog = () => {
 	const handleHideDeleteDialog = () => {
 		hideDeleteDialog();
 		formref.current?.reset();
-		setCurrentPasswordError(null);
+		setConfirmationError(null);
 	};
 
 	return (
@@ -79,14 +79,17 @@ export const DeleteAccountDialog = () => {
 					className="flex flex-col gap-6"
 					onSubmit={handleSubmit}
 				>
-					<label htmlFor="password-validation" className="flex flex-col gap-2">
+					<label
+						htmlFor="deleteAccountConfirmation"
+						className="flex flex-col gap-2"
+					>
 						<span className="text-sm leading-5 font-normal">
-							{Content["profile.deleteAccount.dialog.passwordCheck.label"]}
+							{Content["profile.deleteAccount.dialog.emailCheck.label"]}
 						</span>
-						<PasswordInput id="currentPasswordValidation" autoComplete="off" />
-						{currentPasswordError && (
+						<TextInput id="deleteAccountConfirmation" />
+						{confirmationError && (
 							<div className="text-berlin-rot text-sm mt-1">
-								{currentPasswordError}
+								{confirmationError}
 							</div>
 						)}
 					</label>

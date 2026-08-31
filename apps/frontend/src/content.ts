@@ -1082,8 +1082,10 @@ export const Content = {
 	"profile.deleteAccount.dialog.description":
 		"Dieser Vorgang kann nicht rückgängig gemacht werden und alle Daten werden gelöscht.",
 	"profile.deleteAccount.dialog.cancel": "Abbrechen",
-	"profile.deleteAccount.dialog.passwordCheck.label":
-		"Passwort eingeben und Konto löschen",
+	"profile.deleteAccount.dialog.emailCheck.label":
+		"Geben Sie zur Bestätigung Ihre E-Mail-Adresse ein und löschen Sie Ihr Konto.",
+	"profile.deleteAccount.dialog.emailCheck.error":
+		"Die eingegebene E-Mail-Adresse stimmt nicht mit Ihrer Konto-E-Mail-Adresse überein.",
 
 	//change email form
 	"profile.changeEmailForm.title": "E-Mail-Adresse ändern",
@@ -1148,28 +1150,11 @@ export const Content = {
 	"loginPage.h1": "Willkommen zurück",
 	"loginPage.h2": "Bitte melden Sie sich an",
 	"loginPage.emailLabel": "E-Mail-Adresse",
-	"loginPage.passwordLabel": "Passwort",
-	"loginPage.submitButton": "Anmelden",
+	"loginPage.otpHint":
+		"Wir senden Ihnen einen einmaligen Sicherheitscode per E-Mail, mit dem Sie sich anmelden.",
+	"loginPage.submitButton": "Code anfordern",
 	"loginPage.registerPrompt": "Sie haben noch keinen Account?",
 	"loginPage.registerLink": "Jetzt registrieren",
-	"loginPage.resetPassword.link": "/request-password-reset/",
-	"loginPage.resetPassword.label": "Passwort vergessen?",
-	/* ---------------------- Reset Password Form ---------------------- */
-	"resetPassword.h1": "Passwort vergessen?",
-	"resetPassword.h2":
-		"Bitte geben Sie Ihre E-Mail-Adresse ein, um Ihr Passwort zurückzusetzen.",
-	"resetPassword.emailLabel": "E-Mail-Adresse",
-	"resetPassword.submitButton": "Zurücksetzen",
-	/* ---------------------- New Password Form ---------------------- */
-	"newPassword.h1": "Passwort zurücksetzen",
-	"newPassword.h2": "Neues Passwort eingeben",
-	"newPassword.password.label": "Neues Passwort ",
-	"newPassword.password.placeholder": "Passwort",
-	"newPassword.repeatPassword.label": "Neues Passwort wiederholen",
-	"newPassword.repeatPassword.placeholder": "Passwort",
-	"newPassword.submitButton": "Passwort ändern",
-	"newPassword.recoveryNotActive.error":
-		"Der Link wurde bereits verwendet oder ist abgelaufen. Bitte fordern Sie einen neuen Link an.",
 
 	/* ---------------------- OTP Confirmation Page ---------------------- */
 	"confirmOtp.title": "Aktion bestätigen",
@@ -1207,21 +1192,8 @@ export const Content = {
 	"registerPage.emailHint":
 		"Nur dienstliche E-Mail-Adressen der Berliner Verwaltung sind erlaubt.",
 	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
-	"registerPage.passwordLabel": "Passwort",
-	"registerPage.passwordPlaceholder": "Passwort",
-	"registerPage.showPassword": "Passwort anzeigen",
-	"registerPage.hidePassword": "Passwort verstecken",
-	"registerPage.repeatPasswordLabel": "Passwort wiederholen",
-	"registerPage.repeatPasswordPlaceholder": "Passwort",
-	"registerPage.passwordTooltip.ariaLabel":
-		"Hinweis: Sichere Passwörter verwenden mindestens: 10 Zeichen, 1 Buchstabe, 1 Zahl, 1 Sonderzeichen",
-	"registerPage.passwordTooltip": `Sichere Passwörter verwenden mindestens:
-<ul class="list-disc pl-5">
-	<li>10 Zeichen</li>
-	<li>1 Buchstabe</li>
-	<li>1 Zahl</li>
-	<li>1 Sonderzeichen</li>
-</ul>`,
+	"registerPage.otpHint":
+		"Nach der Registrierung senden wir Ihnen einen einmaligen Sicherheitscode per E-Mail, mit dem Sie Ihr Konto bestätigen und sich anmelden.",
 	"registerPage.privacyLink.label": "Datenschutzbestimmungen",
 	"registerPage.privacyText.p1": "und",
 	"registerPage.termsOfUse.label": "Nutzungsbedingungen",

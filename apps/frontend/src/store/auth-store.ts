@@ -3,12 +3,9 @@ import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "../../supabase-client.ts";
 import { useAuthErrorStore } from "./auth-error-store.ts";
 import { handleSessionChange } from "../api/session/handle-session-change.ts";
-import { updatePassword } from "../api/auth/update-password.ts";
-import { requestPasswordResetByEmail } from "../api/auth/request-password-reset-by-email.ts";
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
 import { captureError } from "../monitoring/capture-error.ts";
-import { registerOrRecoverUser } from "../api/auth/register-user.ts";
 import { resendOtpEmail } from "../api/auth/resend-otp-email.ts";
 import type { Span } from "@sentry/react";
 import { getIsUserBanned } from "../api/auth/get-is-user-banned.ts";
@@ -22,10 +19,6 @@ interface AuthStore {
 	unconfirmedEmail: string | null;
 	emailConfirmationStatus: EmailConfirmationStatus;
 	session: Session | null | undefined;
-	isPasswordResetEmailSent: boolean;
-	passwordResetEmail: string | null;
-	isPasswordResetSuccessful: boolean;
-	isPasswordRecoveryMode: boolean;
 	isUserAdmin: boolean;
 	isAdminStatusLoaded: boolean;
 	isBanned: boolean | null;
@@ -33,24 +26,19 @@ interface AuthStore {
 		firstName: string;
 		lastName: string;
 		email: string;
-		password: string;
 		span: Span;
-	}) => Promise<void>;
+	}) => Promise<{ error: Error | null }>;
 	updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
-	updatePassword: (newPassword: string) => Promise<void>;
 	resendConfirmationEmail: () => Promise<void>;
 	resetUnconfirmedEmail: () => void;
 	resendOtpEmail: (args: {
 		email: string;
-		otpType: "email" | "email_change" | "recovery";
+		otpType: "email" | "email_change";
 	}) => Promise<void>;
-	requestPasswordReset: (email: string) => Promise<void>;
-	resetPassword: (newPassword: string) => Promise<void>;
-	login: (args: {
+	requestLoginOtp: (args: {
 		email: string;
-		password: string;
 		span: Span;
-	}) => Promise<void>;
+	}) => Promise<{ error: Error | null }>;
 	logout: () => Promise<void>;
 	checkIsUserAdmin: (signal: AbortSignal) => Promise<void>;
 	checkIsUserBanned: () => Promise<void>;
@@ -63,10 +51,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 	supabase.auth.onAuthStateChange(
 		(event: AuthChangeEvent, sessionChange: Session | null) => {
 			const currentState = get();
-
-			if (event === "PASSWORD_RECOVERY") {
-				set({ isPasswordRecoveryMode: true });
-			}
 
 			const isConfirmed = !!sessionChange?.user?.email_confirmed_at;
 			let newEmailConfirmationStatus: AuthStore["emailConfirmationStatus"] =
@@ -148,45 +132,33 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		emailConfirmationStatus: "unknown" as EmailConfirmationStatus,
 		session: undefined,
 		isInitialized: false,
-		isPasswordResetEmailSent: false,
-		passwordResetEmail: null,
-		isPasswordResetSuccessful: false,
-		isPasswordRecoveryMode: false,
 		isUserAdmin: false,
 		isAdminStatusLoaded: false,
 		isBanned: null,
 
-		async register({ firstName, lastName, email, password, span }) {
-			try {
-				await registerOrRecoverUser({ email, password, firstName, lastName });
-			} catch (error) {
+		async register({ firstName, lastName, email, span }) {
+			/**
+			 * Passwordless sign-up: GoTrue sends a one-time code and creates the
+			 * account (with the name metadata) only if the email doesn't exist yet.
+			 * The response is generic whether or not the email already exists, which
+			 * preserves anti-enumeration. The allowlist trigger on auth.users still
+			 * gates who may be created. The register page then navigates to the
+			 * confirm-otp page where the emailed code is entered.
+			 */
+			const { error } = await supabase.auth.signInWithOtp({
+				email,
+				options: {
+					shouldCreateUser: true,
+					data: { first_name: firstName, last_name: lastName },
+				},
+			});
+
+			if (error) {
 				useAuthErrorStore.getState().handleError(error, span);
-				return;
+				return { error };
 			}
 
-			/**
-			 * The backend always returns the same generic response regardless of
-			 * whether it created a new account, resent a confirmation email, or
-			 * sent a password reset email, so we always show the same
-			 * "check your email" screen here.
-			 */
-			set({
-				unconfirmedEmail: email,
-				emailConfirmationStatus: "unconfirmed",
-			});
-		},
-		async updatePassword(newPassword) {
-			try {
-				await updatePassword(newPassword);
-			} catch (error) {
-				useAuthErrorStore
-					.getState()
-					.handleError(
-						error instanceof Error
-							? error
-							: new Error("Password update failed"),
-					);
-			}
+			return { error: null };
 		},
 
 		async updateEmail(newEmail: string) {
@@ -234,9 +206,11 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 
 			resendTime = Date.now();
 
-			try {
-				await registerOrRecoverUser({ email: unconfirmedEmail });
-			} catch (error) {
+			const { error } = await supabase.auth.signInWithOtp({
+				email: unconfirmedEmail,
+			});
+
+			if (error) {
 				resendTime = null;
 				useAuthErrorStore.getState().handleError(error);
 				throw error;
@@ -244,8 +218,14 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		},
 
 		resendOtpEmail: async ({ email, otpType }) => {
-			if (otpType === "recovery") {
-				const { error } = await requestPasswordResetByEmail(email);
+			/**
+			 * For the login / sign-up code (otpType "email"), re-request via
+			 * signInWithOtp so it works for both a brand-new sign-up (unconfirmed
+			 * user) and an existing user logging in. auth.resend({type:"signup"})
+			 * only works for unconfirmed sign-ups and errors for existing users.
+			 */
+			if (otpType === "email") {
+				const { error } = await supabase.auth.signInWithOtp({ email });
 
 				if (error) {
 					useAuthErrorStore.getState().handleError(error);
@@ -261,50 +241,23 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			}
 		},
 
-		async requestPasswordReset(email: string) {
-			const { error } = await requestPasswordResetByEmail(email);
-
-			if (error) {
-				useAuthErrorStore.getState().handleError(error);
-				return;
-			}
-
-			set({
-				isPasswordResetEmailSent: true,
-				passwordResetEmail: email,
-			});
-		},
-
-		// sets a new password for the user and is triggered by reset password link from mail
-		async resetPassword(newPassword: string) {
-			const { error } = await updatePassword(newPassword);
-
-			if (error) {
-				throw error;
-			}
-
-			set({ isPasswordResetSuccessful: true });
-		},
-
-		async login({ email, password, span }) {
-			const { error } = await supabase.auth.signInWithPassword({
+		async requestLoginOtp({ email, span }) {
+			/**
+			 * Passwordless login: send a one-time code to an existing user.
+			 * shouldCreateUser:false so login never silently creates an account —
+			 * account creation only happens through the register page.
+			 */
+			const { error } = await supabase.auth.signInWithOtp({
 				email,
-				password,
+				options: { shouldCreateUser: false },
 			});
 
-			if (!error) {
-				return;
+			if (error) {
+				useAuthErrorStore.getState().handleError(error, span);
+				return { error };
 			}
 
-			if (error.message === "Email not confirmed") {
-				set({
-					unconfirmedEmail: email,
-					emailConfirmationStatus: "unconfirmed",
-				});
-				return;
-			}
-
-			useAuthErrorStore.getState().handleError(error, span);
+			return { error: null };
 		},
 
 		async logout() {
