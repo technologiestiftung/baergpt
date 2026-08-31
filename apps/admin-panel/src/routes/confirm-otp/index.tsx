@@ -61,7 +61,15 @@ export function ConfirmOtpPage() {
 			return;
 		}
 
-		await supabase.auth.signInWithOtp({ email });
+		setError(null);
+
+		const { error: resendError } = await supabase.auth.signInWithOtp({ email });
+
+		if (resendError) {
+			setError(Content["confirmOtp.error.generic"]);
+			return;
+		}
+
 		setHasEmailBeenRecentlySent(true);
 
 		setTimeout(() => {
@@ -92,6 +100,7 @@ export function ConfirmOtpPage() {
 								type="text"
 								inputMode="numeric"
 								pattern="\d{6}"
+								required
 								className="border border-schwarz-40 rounded-3px px-3 py-2 focus-visible:outline-default uppercase tracking-[0.3em]"
 								placeholder={Content["confirmOtp.token.placeholder"]}
 								onPaste={handlePaste}

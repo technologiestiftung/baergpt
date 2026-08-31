@@ -62,7 +62,7 @@ export function TextInput({
 	);
 }
 
-function getErrorMessage(ref: RefObject<HTMLInputElement>) {
+function getErrorMessage(ref: RefObject<HTMLInputElement | null>) {
 	const current = ref.current;
 
 	if (!current) {
