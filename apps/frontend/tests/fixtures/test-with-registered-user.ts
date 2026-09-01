@@ -176,7 +176,7 @@ export async function confirmOtp({
 	await page1.goto(confirmUrl);
 
 	await expect(
-		page1.getByRole("heading", { name: "Aktion bestätigen" }),
+		page1.getByRole("heading", { name: "Fast geschafft!" }),
 	).toBeVisible();
 
 	await page1

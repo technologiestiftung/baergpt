@@ -1157,9 +1157,21 @@ export const Content = {
 	"loginPage.registerLink": "Jetzt registrieren",
 
 	/* ---------------------- OTP Confirmation Page ---------------------- */
-	"confirmOtp.title": "Aktion bestätigen",
+	"confirmOtp.title": "Fast geschafft!",
 	"confirmOtp.description":
 		"Bitte geben Sie den Sicherheitscode aus Ihrer E-Mail ein.",
+	"confirmOtp.description.sent":
+		"Wir haben eine E-Mail an folgende Adresse geschickt:",
+	"confirmOtp.description.instruction":
+		"Bitte geben Sie den Code aus der E-Mail hier ein, um fortzufahren:",
+	"confirmOtp.resend.question": "Keinen Code erhalten oder Code ungültig?",
+	"confirmOtp.checkSpam": "Bitte überprüfen Sie auch Ihren Spam-Ordner.",
+	"confirmOtp.typo.question": "Tippfehler?",
+	"confirmOtp.typo.or": "oder",
+	"confirmOtp.typo.registerLink": "Zurück zur Registrierung",
+	"confirmOtp.typo.loginLink": "Zurück zum Login",
+	"confirmOtp.notRegistered.question": "Noch nicht registriert?",
+	"confirmOtp.notRegistered.registerLink": "Zur Registrierung",
 	"confirmOtp.token.label": "Sicherheitscode",
 	"confirmOtp.token.placeholder": "z. B. 123456",
 	"confirmOtp.button.submit": "Weiter",
