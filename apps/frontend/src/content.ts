@@ -1212,7 +1212,7 @@ export const Content = {
 		"Nur dienstliche E-Mail-Adressen der Berliner Verwaltung sind erlaubt.",
 	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
 	"registerPage.otpHint":
-		"Nach der Registrierung senden wir Ihnen einen einmaligen Sicherheitscode per E-Mail, mit dem Sie Ihr Konto bestätigen und sich anmelden können.",
+		"Nach der Registrierung schicken wir Ihnen eine E-Mail mit einem Code. Damit bestätigen Sie Ihr Konto und melden sich an.",
 	"registerPage.privacyLink.label": "Datenschutzbestimmungen",
 	"registerPage.privacyText.p1": "und",
 	"registerPage.termsOfUse.label": "Nutzungsbedingungen",

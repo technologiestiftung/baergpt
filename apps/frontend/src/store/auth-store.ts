@@ -208,6 +208,9 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 
 			const { error } = await supabase.auth.signInWithOtp({
 				email: unconfirmedEmail,
+				options: {
+					shouldCreateUser: false,
+				},
 			});
 
 			if (error) {
@@ -225,7 +228,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			 * only works for unconfirmed sign-ups and errors for existing users.
 			 */
 			if (otpType === "email") {
-				const { error } = await supabase.auth.signInWithOtp({ email });
+				const { error } = await supabase.auth.signInWithOtp({
+					email,
+					options: { shouldCreateUser: false },
+				});
 
 				if (error) {
 					useAuthErrorStore.getState().handleError(error);

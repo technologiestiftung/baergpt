@@ -133,6 +133,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			resendTime = Date.now();
 			const { error } = await supabase.auth.signInWithOtp({
 				email: unconfirmedEmail,
+				options: { shouldCreateUser: false },
 			});
 			if (error) {
 				useAuthErrorStore.getState().handleError(new Error(error.message));
