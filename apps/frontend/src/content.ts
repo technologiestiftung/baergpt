@@ -1149,9 +1149,16 @@ export const Content = {
 	/* ---------------------- Login Form ---------------------- */
 	"loginPage.h1": "Willkommen zurück",
 	"loginPage.h2": "Bitte melden Sie sich an",
+	"loginPage.notice.heading": "Wir stellen auf Anmeldung ohne Passwort um",
+	"loginPage.notice.body":
+		"Beim Cyberangriff auf die Berliner Verwaltung wurden Passwörter gestohlen. Zur Sicherheit haben wir die Anmeldung bei BärGPT auf ein passwortloses Verfahren umgestellt.",
+	"loginPage.notice.showMore.button.label": "Mehr Infos",
+	"loginPage.notice.showMore.button.ariaLabel": "Mehr Infos anzeigen",
+	"loginPage.notice.showLess.button.label": "Weniger Infos",
+	"loginPage.notice.showLess.button.ariaLabel": "Weniger Infos anzeigen",
 	"loginPage.emailLabel": "E-Mail-Adresse",
 	"loginPage.otpHint":
-		"Wir senden Ihnen einen einmaligen Sicherheitscode per E-Mail, mit dem Sie sich anmelden.",
+		"Wir senden Ihnen einen einmaligen Sicherheitscode per E-Mail, den Sie dann im nächsten Schritt eingeben können.",
 	"loginPage.submitButton": "Code anfordern",
 	"loginPage.registerPrompt": "Sie haben noch keinen Account?",
 	"loginPage.registerLink": "Jetzt registrieren",
@@ -1205,7 +1212,7 @@ export const Content = {
 		"Nur dienstliche E-Mail-Adressen der Berliner Verwaltung sind erlaubt.",
 	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
 	"registerPage.otpHint":
-		"Nach der Registrierung senden wir Ihnen einen einmaligen Sicherheitscode per E-Mail, mit dem Sie Ihr Konto bestätigen und sich anmelden.",
+		"Nach der Registrierung senden wir Ihnen einen einmaligen Sicherheitscode per E-Mail, mit dem Sie Ihr Konto bestätigen und sich anmelden können.",
 	"registerPage.privacyLink.label": "Datenschutzbestimmungen",
 	"registerPage.privacyText.p1": "und",
 	"registerPage.termsOfUse.label": "Nutzungsbedingungen",
