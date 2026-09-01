@@ -24,7 +24,9 @@
 		"mistral:assess-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts -- --dry-run",
 		"mistral:cleanup-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts",
 		"s3:assess-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts -- --dry-run",
-		"s3:cleanup-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts"
+		"s3:cleanup-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts",
+		"auth:assess-password-rotation": "tsx supabase/scripts/rotate-user-passwords.ts -- --dry-run",
+		"auth:rotate-passwords": "tsx supabase/scripts/rotate-user-passwords.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/mcp": "2.0.34",
