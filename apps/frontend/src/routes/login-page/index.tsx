@@ -1,7 +1,8 @@
-import { type FormEvent, useRef } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { EmailInput } from "../../components/primitives/text-inputs/email-input.tsx";
 import { ArrowWhiteRightIcon } from "../../components/primitives/icons/arrow-white-right-icon.tsx";
+import { ChevronIcon } from "../../components/primitives/icons/chevron-icon.tsx";
 import { AuthLayout } from "../../layouts/auth-layout.tsx";
 import { useAuthStore } from "../../store/auth-store.ts";
 import Content from "../../content.ts";
@@ -13,6 +14,7 @@ export function LoginPage() {
 	const { requestLoginOtp } = useAuthStore();
 	const navigate = useNavigate();
 	const formRef = useRef<HTMLFormElement | null>(null);
+	const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -41,6 +43,46 @@ export function LoginPage() {
 						{Content["loginPage.h1"]}
 					</h1>
 					<h2 className="text-xl">{Content["loginPage.h2"]}</h2>
+
+					<div className="flex gap-3 bg-hellblau-55 p-3 rounded-3px mt-5 text-start break-words">
+						<img
+							className="self-start"
+							src="/icons/info-dark-icon.svg"
+							alt="info-icon"
+						/>
+
+						<div className="flex flex-col gap-3 min-w-0" id="login-notice">
+							<p className="text-sm leading-5 md:text-base md:leading-6 font-semibold">
+								{Content["loginPage.notice.heading"]}
+							</p>
+							{isNoticeExpanded && (
+								<p className="text-sm leading-5 md:text-base md:leading-6 font-normal">
+									{Content["loginPage.notice.body"]}
+								</p>
+							)}
+							<button
+								type="button"
+								className="flex items-center text-sm leading-5 md:text-base md:leading-6 font-normal focus-visible:outline-default rounded-3px text-start w-fit"
+								aria-label={
+									isNoticeExpanded
+										? Content["loginPage.notice.showLess.button.ariaLabel"]
+										: Content["loginPage.notice.showMore.button.ariaLabel"]
+								}
+								aria-expanded={isNoticeExpanded}
+								aria-controls="login-notice"
+								onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
+							>
+								{isNoticeExpanded
+									? Content["loginPage.notice.showLess.button.label"]
+									: Content["loginPage.notice.showMore.button.label"]}
+								{isNoticeExpanded ? (
+									<ChevronIcon color="dunkelblau-200" direction="up" />
+								) : (
+									<ChevronIcon color="dunkelblau-200" direction="down" />
+								)}
+							</button>
+						</div>
+					</div>
 
 					<form
 						className="flex flex-col mt-9"
