@@ -1149,9 +1149,9 @@ export const Content = {
 	/* ---------------------- Login Form ---------------------- */
 	"loginPage.h1": "Willkommen zurück",
 	"loginPage.h2": "Bitte melden Sie sich an",
-	"loginPage.notice.heading": "Wir stellen auf Anmeldung ohne Passwort um",
+	"loginPage.notice.heading": "Wir stellen auf Anmeldung ohne Passwort um.",
 	"loginPage.notice.body":
-		"Beim Cyberangriff auf die Berliner Verwaltung wurden Passwörter gestohlen. Zur Sicherheit haben wir die Anmeldung bei BärGPT auf ein passwortloses Verfahren umgestellt.",
+		"Zur Verbesserung der Sicherheit haben wir die Anmeldung bei BärGPT auf ein passwortloses Verfahren umgestellt.",
 	"loginPage.notice.showMore.button.label": "Mehr Infos",
 	"loginPage.notice.showMore.button.ariaLabel": "Mehr Infos anzeigen",
 	"loginPage.notice.showLess.button.label": "Weniger Infos",
