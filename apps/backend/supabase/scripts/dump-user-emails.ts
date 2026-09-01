@@ -1,19 +1,16 @@
 /* eslint-disable no-console */
 /**
- * Fetch all emails from auth.users by paginating through Supabase's Admin API.
+ * Fetch all users (first name, last name, email) from auth.users by paginating
+ * through Supabase's Admin API.
  *
  * Requires the SERVICE ROLE key (not the anon key) since auth.users is only
  * accessible via the admin API, not the public REST API / regular client.
  *
- * Install deps:
- *   npm install @supabase/supabase-js
+ * Prerequisite: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY set in .env file
  *
- * Run:
- *   SUPABASE_URL=https://xxxx.supabase.co \
- *   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
- *   npx tsx fetch-all-emails.ts
+ * Run: npm run dev db:dump-user-emails
  *
- * Writes the emails to user-emails.csv.
+ * Writes vorname,nachname,email per line to user-emails.csv.
  *
  * Prints the target Supabase URL and asks for a y/n confirmation before dumping
  * (guard against pointing at the wrong project).
@@ -42,8 +39,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const PAGE_SIZE = 100;
 
-async function fetchAllEmails(): Promise<string[]> {
-	const emails: string[] = [];
+type UserRecord = {
+	firstName: string;
+	lastName: string;
+	email: string;
+};
+
+async function fetchAllUsers(): Promise<UserRecord[]> {
+	const records: UserRecord[] = [];
 	let page = 1;
 
 	while (true) {
@@ -63,12 +66,17 @@ async function fetchAllEmails(): Promise<string[]> {
 
 		for (const user of users) {
 			if (user.email) {
-				emails.push(user.email);
+				const metadata = user.user_metadata ?? {};
+				records.push({
+					firstName: String(metadata.first_name ?? ""),
+					lastName: String(metadata.last_name ?? ""),
+					email: user.email,
+				});
 			}
 		}
 
 		console.log(
-			`Fetched page ${page} (${users.length} users, ${emails.length} total so far)`,
+			`Fetched page ${page} (${users.length} users, ${records.length} total so far)`,
 		);
 
 		// Stop once a short page is returned — means we've hit the last page
@@ -79,7 +87,7 @@ async function fetchAllEmails(): Promise<string[]> {
 		page++;
 	}
 
-	return emails;
+	return records;
 }
 
 /** Escape a value for CSV: quote it when it contains a comma, quote, or newline. */
@@ -90,8 +98,15 @@ function toCsvField(value: string): string {
 	return value;
 }
 
-function toCsv(emails: string[]): string {
-	const rows = ["email", ...emails.map(toCsvField)];
+function toCsv(records: UserRecord[]): string {
+	const rows = [
+		"vorname,nachname,email",
+		...records.map((record) =>
+			[record.firstName, record.lastName, record.email]
+				.map(toCsvField)
+				.join(","),
+		),
+	];
 	return `${rows.join("\n")}\n`;
 }
 
@@ -121,12 +136,12 @@ async function confirmTarget(): Promise<void> {
 async function main() {
 	await confirmTarget();
 
-	const allEmails = await fetchAllEmails();
+	const allUsers = await fetchAllUsers();
 
 	const outputFile = "user-emails.csv";
-	writeFileSync(outputFile, toCsv(allEmails), "utf8");
+	writeFileSync(outputFile, toCsv(allUsers), "utf8");
 
-	console.log(`\nDone. Wrote ${allEmails.length} emails to ${outputFile}.`);
+	console.log(`\nDone. Wrote ${allUsers.length} users to ${outputFile}.`);
 }
 
 main().catch((err) => {
