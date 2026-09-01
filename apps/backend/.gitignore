@@ -1,3 +1,6 @@
+# Exported user emails (contains personal data — never commit)
+user-emails.csv
+
 # Logs
 logs
 *.log
