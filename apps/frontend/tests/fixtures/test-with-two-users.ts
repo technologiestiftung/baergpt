@@ -1,6 +1,6 @@
 import { Session } from "@supabase/supabase-js";
 import { test as baseTest } from "@playwright/test";
-import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
 import {
 	defaultUserFirstName,
 	defaultUserLastName,
@@ -24,7 +24,8 @@ export type TwoUserTestFixtures = {
  * Creates a user with the given email prefix and returns the account details.
  */
 async function createUser(emailPrefix: string): Promise<UserAccount> {
-	const email = `${emailPrefix}@ts.berlin`;
+	// Unique suffix so parallel tests never collide on the same email.
+	const email = `${emailPrefix}+${crypto.randomUUID()}@ts.berlin`;
 
 	const { data, error: createUserError } =
 		await supabaseAdminClient.auth.admin.createUser({
@@ -53,7 +54,7 @@ async function createUser(emailPrefix: string): Promise<UserAccount> {
  * Signs in a user and returns their session.
  */
 async function signInUser(account: UserAccount): Promise<Session> {
-	const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
+	const { data, error } = await createAnonClient().auth.signInWithPassword({
 		email: account.email,
 		password: account.password,
 	});

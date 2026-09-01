@@ -1,5 +1,5 @@
 import { Session } from "@supabase/supabase-js";
-import { supabaseAnonClient } from "../supabase.ts";
+import { supabaseAdminClient } from "../supabase.ts";
 import { expect } from "@playwright/test";
 import { testDesktopOnly } from "./test-desktop-only.ts";
 
@@ -32,7 +32,7 @@ async function addChatsToAccount(session: Session, numberOfChats: number) {
 		created_at: new Date(Date.now() - (numberOfChats - 1 - i)).toISOString(),
 	}));
 
-	const { error } = await supabaseAnonClient.from("chats").insert([...chats]);
+	const { error } = await supabaseAdminClient.from("chats").insert([...chats]);
 
 	expect(error).toBeNull();
 }

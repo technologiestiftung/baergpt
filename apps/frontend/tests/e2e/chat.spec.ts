@@ -20,7 +20,7 @@ import {
 	secondaryDocumentType,
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
-import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
 import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 
@@ -455,7 +455,7 @@ test.describe("Chat", () => {
 
 	testDesktopOnly("Chat with public document citations", async ({ page }) => {
 		// Create an admin user to upload the public document
-		const adminEmail = "admin.test@ts.berlin";
+		const adminEmail = `admin.test+${crypto.randomUUID()}@ts.berlin`;
 		const adminPassword = "TestPassword123!";
 
 		const { data: adminUserData, error: createAdminError } =
@@ -487,7 +487,7 @@ test.describe("Chat", () => {
 
 			// Sign in the admin user to get their access token
 			const { data: adminSessionData, error: adminSignInError } =
-				await supabaseAnonClient.auth.signInWithPassword({
+				await createAnonClient().auth.signInWithPassword({
 					email: adminEmail,
 					password: adminPassword,
 				});

@@ -1,6 +1,6 @@
 import { Session } from "@supabase/supabase-js";
 import { test as baseTest } from "@playwright/test";
-import { supabaseAnonClient, supabaseAdminClient } from "../supabase.ts";
+import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
 import { testWithAdminUser } from "./test-with-admin-user.ts";
 
 type TestWithLoggedInAdminUser = {
@@ -16,7 +16,7 @@ export const testWithLoggedInAdminUser =
 				const { email, password } = adminAccount;
 
 				const { data, error } =
-					await supabaseAnonClient.auth.signInWithPassword({
+					await createAnonClient().auth.signInWithPassword({
 						email,
 						password,
 					});

@@ -2,7 +2,6 @@ import {
 	defaultUserFirstName,
 	defaultUserLastName,
 	defaultUserPassword,
-	defaultUserEmail,
 } from "../constants.ts";
 import { Page, expect } from "@playwright/test";
 import { supabaseAdminClient } from "../supabase.ts";
@@ -20,8 +19,12 @@ export const testWithRegisteredUser =
 	testWithoutSplashScreen.extend<TestWithRegisteredUser>({
 		account: [
 			async ({}, use) => {
-				const email = defaultUserEmail;
-				const userId = "d857dd39-c039-49b8-9345-a32b07668908";
+				// Unique per test so parallel workers never collide on the same
+				// auth user (duplicate create / one test's cleanup deleting
+				// another's user). Keep the display name fixed — some specs assert
+				// on the "john doe" welcome heading.
+				const userId = crypto.randomUUID();
+				const email = `${defaultUserFirstName}.${defaultUserLastName}+${userId}@ts.berlin`;
 
 				try {
 					/**
@@ -84,15 +87,15 @@ type MailpitSummary = {
 /**
  * Polls Mailpit for the most recent message addressed to `recipient` and returns its plain
  * text body, which carries both the security code and the confirmation link.
- *
- * @param cutoffTime Only consider messages created after this UTC timestamp (ms-since-epoch).
  */
-async function waitForLatestMessageTo(
-	page: Page,
-	recipient: string,
-	timeoutMs = 30_000,
-	cutoffTime?: number,
-) {
+async function waitForLatestMessageTo(args: {
+	page: Page;
+	recipient: string;
+	timeoutMs?: number;
+	cutoffTime?: number; // Only consider messages created after this UTC timestamp (ms-since-epoch).
+}) {
+	const { page, recipient, timeoutMs = 30_000, cutoffTime } = args;
+
 	const wanted = recipient.toLowerCase();
 	const deadline = Date.now() + timeoutMs;
 	let mailboxSize = 0;
@@ -149,7 +152,10 @@ export async function confirmOtp({
 	page: Page;
 	account: TestWithRegisteredUser["account"];
 }) {
-	const { id, text } = await waitForLatestMessageTo(page, account.email);
+	const { id, text } = await waitForLatestMessageTo({
+		page,
+		recipient: account.email,
+	});
 
 	// The security code sits on its own line; the button's href is the first confirm-otp link.
 	const recoveryOtp = text.match(/^\s*(\d{6})\s*$/m)?.[1];
@@ -185,4 +191,30 @@ export async function confirmOtp({
 	await page1.getByRole("button", { name: "Weiter" }).click();
 
 	return page1;
+}
+
+/**
+ * Finds a user by email, paginating through `auth.admin.listUsers` beyond the
+ * first page. `listUsers` returns only one page (default 50 users), so a lookup
+ * against the first page alone misses users once the project grows past it.
+ * Returns the matching user or `null` if no user has that email.
+ */
+export async function findUserByEmail(email: string) {
+	for (let page = 1; ; page++) {
+		const { data, error } = await supabaseAdminClient.auth.admin.listUsers({
+			page,
+		});
+		if (error) {
+			throw new Error(`Failed to list users: ${error.message}`);
+		}
+
+		const found = data.users.find((user) => user.email === email);
+		if (found) {
+			return found;
+		}
+
+		if (data.users.length === 0) {
+			return null;
+		}
+	}
 }

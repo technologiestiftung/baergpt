@@ -16,7 +16,9 @@
 		"test": "vitest run src --passWithNoTests",
 		"test:watch": "vitest watch src",
 		"test:a11y": "npx playwright test tests/a11y --config=playwright.config.ts",
-		"test:e2e": "npx playwright test tests/e2e --config=playwright.config.ts"
+		"test:e2e": "npm run test:e2e:parallel && npm run test:e2e:no-parallel",
+		"test:e2e:parallel": "npx playwright test tests/e2e --grep-invert=@no-parallel --config=playwright.config.ts",
+		"test:e2e:no-parallel": "npx playwright test tests/e2e --grep=@no-parallel --workers=1 --config=playwright.config.ts"
 	},
 	"dependencies": {
 		"@e965/xlsx": "0.20.3",
