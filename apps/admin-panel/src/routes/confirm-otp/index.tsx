@@ -63,7 +63,10 @@ export function ConfirmOtpPage() {
 
 		setError(null);
 
-		const { error: resendError } = await supabase.auth.signInWithOtp({ email });
+		const { error: resendError } = await supabase.auth.signInWithOtp({
+			email,
+			options: { shouldCreateUser: false },
+		});
 
 		if (resendError) {
 			setError(Content["confirmOtp.error.generic"]);
