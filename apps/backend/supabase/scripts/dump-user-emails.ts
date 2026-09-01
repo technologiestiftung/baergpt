@@ -8,7 +8,7 @@
  *
  * Prerequisite: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY set in .env file
  *
- * Run: npm run dev db:dump-user-emails
+ * Run: npm run db:dump-user-emails
  *
  * Writes vorname,nachname,email per line to user-emails.csv.
  *
@@ -90,12 +90,17 @@ async function fetchAllUsers(): Promise<UserRecord[]> {
 	return records;
 }
 
-/** Escape a value for CSV: quote it when it contains a comma, quote, or newline. */
+/**
+ * Escape a value for CSV: quote it when it contains a comma, quote, or newline,
+ * and prefix a leading =, +, -, or @ with a tab to prevent formula injection
+ * when the file is opened in Excel/Sheets.
+ */
 function toCsvField(value: string): string {
-	if (/[",\n\r]/.test(value)) {
-		return `"${value.replace(/"/g, '""')}"`;
+	const escaped = /^[=+\-@]/.test(value) ? `\t${value}` : value;
+	if (/[",\n\r]/.test(escaped)) {
+		return `"${escaped.replace(/"/g, '""')}"`;
 	}
-	return value;
+	return escaped;
 }
 
 function toCsv(records: UserRecord[]): string {
