@@ -41,7 +41,7 @@ export function RegisterPage() {
 
 				if (!registerError) {
 					navigate(
-						`/confirm-otp/?type=email&email=${encodeURIComponent(email)}`,
+						`/confirm-otp/?type=email&email=${encodeURIComponent(email)}&origin=register`,
 					);
 				}
 			},

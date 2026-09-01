@@ -252,7 +252,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 				options: { shouldCreateUser: false },
 			});
 
-			if (error) {
+			// GoTrue's otp_disabled error means the email has no account — treated
+			// as success so an attacker can't tell registered emails apart from
+			// unregistered ones by whether the page navigates or shows an error.
+			if (error && error.code !== "otp_disabled") {
 				useAuthErrorStore.getState().handleError(error, span);
 				return { error };
 			}
