@@ -78,8 +78,9 @@ test.describe("Login", () => {
 		// which emails have accounts (see requestLoginOtp's otp_disabled handling).
 		const nonExistentEmail = "nonexistent-login-attempt@ts.berlin";
 
-		const { data: listUsersDataBefore } =
+		const { data: listUsersDataBefore, error: listUsersErrorBefore } =
 			await supabaseAdminClient.auth.admin.listUsers();
+		expect(listUsersErrorBefore).toBeNull();
 		expect(
 			listUsersDataBefore?.users.some(
 				({ email }) => email === nonExistentEmail,
@@ -96,8 +97,9 @@ test.describe("Login", () => {
 
 		// shouldCreateUser:false must still hold — navigating must not have
 		// silently created an account for the unregistered email.
-		const { data: listUsersDataAfter } =
+		const { data: listUsersDataAfter, error: listUsersErrorAfter } =
 			await supabaseAdminClient.auth.admin.listUsers();
+		expect(listUsersErrorAfter).toBeNull();
 		expect(
 			listUsersDataAfter?.users.some(({ email }) => email === nonExistentEmail),
 		).toBe(false);
