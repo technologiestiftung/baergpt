@@ -152,7 +152,7 @@ export async function confirmOtp({
 	const { id, text } = await waitForLatestMessageTo(page, account.email);
 
 	// The security code sits on its own line; the button's href is the first confirm-otp link.
-	const recoveryOtp = text.match(/^\s*(\d{6})\s*$/m)?.[1];
+	const recoveryOtp = text.match(/^\s*(\d{10})\s*$/m)?.[1];
 	const confirmUrl = text.match(/(https?:\/\/\S*?\/confirm-otp\/\S*)/)?.[1];
 
 	if (!recoveryOtp || !confirmUrl) {

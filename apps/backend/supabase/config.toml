@@ -109,9 +109,9 @@ enable_confirmations = true
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1ms"
 # Number of digits in the emailed one-time code (login + confirmation OTPs).
-otp_length = 6
-# How long an emailed one-time code stays valid, in seconds (60 minutes).
-otp_expiry = 3600
+otp_length = 10
+# How long an emailed one-time code stays valid, in seconds (30 minutes).
+otp_expiry = 1800
 
 [auth.rate_limit]
 email_sent = 1000
