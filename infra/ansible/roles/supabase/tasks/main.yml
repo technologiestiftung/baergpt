@@ -62,8 +62,8 @@
 
 # The .env is rendered fresh from 1Password on every run, so these GoTrue
 # hardening overrides are (re)applied here to guarantee they are present.
-# docker-compose.yml already carries safe defaults (:-5 / :-3600); these lines
-# make the intended values explicit and tunable without a code change.
+# these lines make the intended values explicit and tunable without a
+# code change.
 - name: Ensure GoTrue OTP hardening vars in .env
   ansible.builtin.lineinfile:
     path: "{{ supabase_dir }}/.env"
@@ -71,7 +71,8 @@
     line: "{{ item.key }}={{ item.value }}"
     state: present
   loop:
-    - { key: "GOTRUE_MAILER_OTP_EXP", value: "3600" } # 60 min instead of 24h
+    - { key: "GOTRUE_MAILER_OTP_EXP", value: "1800" } # 30 min instead of 24h
+    - { key: "GOTRUE_MAILER_OTP_LENGTH", value: "10" } # numeric-only OTP; length is the entropy lever
     - { key: "GOTRUE_RATE_LIMIT_VERIFY", value: "5" } # low; only meaningful once RATE_LIMIT_HEADER is set
   loop_control:
     label: "{{ item.key }}"

@@ -29,7 +29,7 @@ export const Content = {
 	"confirmOtp.description":
 		"Bitte geben Sie den Sicherheitscode aus Ihrer E-Mail ein.",
 	"confirmOtp.token.label": "Sicherheitscode",
-	"confirmOtp.token.placeholder": "z. B. 123456",
+	"confirmOtp.token.placeholder": "z. B. 1234567890",
 	"confirmOtp.button.submit": "Weiter",
 	"confirmOtp.button.loading": "Überprüfe …",
 	"confirmOtp.error.missingFields":
