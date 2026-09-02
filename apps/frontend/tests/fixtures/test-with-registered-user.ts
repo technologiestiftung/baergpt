@@ -87,7 +87,7 @@ type MailpitSummary = {
  *
  * @param cutoffTime Only consider messages created after this UTC timestamp (ms-since-epoch).
  */
-async function waitForLatestMessageTo(
+export async function waitForLatestMessageTo(
 	page: Page,
 	recipient: string,
 	timeoutMs = 30_000,

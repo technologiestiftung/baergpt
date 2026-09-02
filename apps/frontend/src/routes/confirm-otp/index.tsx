@@ -1,5 +1,11 @@
 import { useState, type FormEvent, type ClipboardEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import {
+	Link,
+	Navigate,
+	useLocation,
+	useNavigate,
+	useSearchParams,
+} from "react-router";
 import Content from "../../content";
 import { ConfirmationLayout } from "../../layouts/confirmation-layout.tsx";
 import { supabase } from "../../../supabase-client";
@@ -23,11 +29,30 @@ export function ConfirmOtpPage() {
 	const [hasEmailBeenRecentlySent, setHasEmailBeenRecentlySent] =
 		useState(false);
 	const navigate = useNavigate();
+	const location = useLocation();
 	const [searchParams] = useSearchParams();
 
 	const email = searchParams.get("email");
 	const otpType = searchParams.get("type");
 	const origin = searchParams.get("origin");
+
+	// Prefill from the token in the email link's URL fragment (#token=…). A
+	// fragment never hits the server, so it stays out of access logs and Referer.
+	const [initialToken] = useState(
+		() =>
+			new URLSearchParams(location.hash.replace(/^#/, "")).get("token") ?? "",
+	);
+
+	// Strip the token from the URL so it doesn't linger in the address bar or
+	// history. Local-device hygiene only.
+	if (location.hash) {
+		return (
+			<Navigate
+				to={{ pathname: location.pathname, search: location.search }}
+				replace
+			/>
+		);
+	}
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -150,6 +175,7 @@ export function ConfirmOtpPage() {
 								type="text"
 								inputMode="numeric"
 								pattern="\d{6}"
+								defaultValue={initialToken}
 								className="border border-schwarz-40 rounded-3px px-3 py-2 focus-visible:outline-default uppercase tracking-[0.3em]"
 								placeholder={Content["confirmOtp.token.placeholder"]}
 								onPaste={handlePaste}
