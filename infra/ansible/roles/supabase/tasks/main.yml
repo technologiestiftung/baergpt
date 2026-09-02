@@ -1,3 +1,10 @@
+- name: Check whether the Supabase stack is already provisioned
+  ansible.builtin.stat:
+    path: "{{ supabase_dir }}/docker-compose.yml"
+  register: supabase_compose
+
+# Only needed on first provision: the copy task below is guarded by `creates:`,
+# so re-cloning would add an anonymous GitHub fetch that can hang the play.
 - name: Clone Supabase repo (shallow)
   ansible.builtin.git:
     repo: "{{ supabase_repo }}"
@@ -5,6 +12,9 @@
     version: "{{ supabase_ref }}"
     depth: 1
     force: true
+  when: not supabase_compose.stat.exists
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
 
 - name: Ensure Supabase target dir exists
   ansible.builtin.file:
@@ -40,6 +50,7 @@
         src: "{{ playbook_dir }}/../supabase/.env"
         dest: "{{ supabase_dir }}/.env"
         mode: "0640"
+      no_log: true
 
   always:
     - name: Delete local .env after upload
@@ -51,8 +62,8 @@
 
 # The .env is rendered fresh from 1Password on every run, so these GoTrue
 # hardening overrides are (re)applied here to guarantee they are present.
-# docker-compose.yml already carries safe defaults (:-5 / :-3600); these lines
-# make the intended values explicit and tunable without a code change.
+# these lines make the intended values explicit and tunable without a
+# code change.
 - name: Ensure GoTrue OTP hardening vars in .env
   ansible.builtin.lineinfile:
     path: "{{ supabase_dir }}/.env"
@@ -60,7 +71,8 @@
     line: "{{ item.key }}={{ item.value }}"
     state: present
   loop:
-    - { key: "GOTRUE_MAILER_OTP_EXP", value: "3600" } # 60 min instead of 24h
+    - { key: "GOTRUE_MAILER_OTP_EXP", value: "1800" } # 30 min instead of 24h
+    - { key: "GOTRUE_MAILER_OTP_LENGTH", value: "10" } # numeric-only OTP; length is the entropy lever
     - { key: "GOTRUE_RATE_LIMIT_VERIFY", value: "5" } # low; only meaningful once RATE_LIMIT_HEADER is set
   loop_control:
     label: "{{ item.key }}"

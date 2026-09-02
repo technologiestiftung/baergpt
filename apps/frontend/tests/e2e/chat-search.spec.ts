@@ -240,8 +240,6 @@ test.describe("Chat search", () => {
 		async ({ page, insertChat, insertMessages, session }) => {
 			const now = Date.now();
 
-			await insertFillerChats(session, CHATS_PAGE_SIZE, new Date(now));
-
 			const unloadedChatName = "Archivierter Berlin-Chat";
 			const unloadedMessage = "Wie hoch ist die Grundsteuer in Berlin?";
 			const unloadedChatId = await insertChat(
@@ -256,12 +254,14 @@ test.describe("Chat search", () => {
 				},
 			]);
 
+			await insertFillerChats(session, CHATS_PAGE_SIZE, new Date(now));
+
 			// Keep the second history page from loading so the older chat stays
 			// out of the chats store (intersection observer would otherwise fetch it).
 			await page.route(
 				(url) =>
 					url.pathname.includes("/rest/v1/chats") &&
-					url.searchParams.get("offset") === String(CHATS_PAGE_SIZE),
+					url.searchParams.get("id")?.startsWith("lt.") === true,
 				async () => {
 					await new Promise(() => {});
 				},

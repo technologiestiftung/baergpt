@@ -811,8 +811,10 @@ export const Content = {
 	"fileUpload.uploadInstructions.p1": "Dateien hier ablegen oder ",
 	"fileUpload.searchComputerbutton.label": "Hochladen",
 	//fileupload help link
-	"fileUpload.helpLink.link":
-		"https://hilfe.baergpt.berlin/faq#arbeiten-mit-dokumenten",
+	"fileUpload.helpLink.format.link":
+		"https://hilfe.baergpt.berlin/faq#welche-dateiformate-und-dateigroessen-werden-unterstuetzt",
+	"fileUpload.helpLink.generic.link":
+		"https://hilfe.baergpt.berlin/faq#warum-kann-ich-eine-datei-nicht-hochladen",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
 	// file upload counter message
 	"fileUpload.infoMessage.counter.p1": `von`,
@@ -828,10 +830,12 @@ export const Content = {
 		"Herunterladen fehlgeschlagen",
 	"documentsPreviewSection.disclaimer.docx":
 		"Die Vorschau von Word-Dateien ist noch experimentell. Die Formatierung entspricht nicht dem Originaldokument. Dies hat kein Auswirkung auf die Antwortqualität.",
-	"documentsPreviewSection.noPreviewAvailable":
-		"Die Vorschau von Excel-Dateien wird aktuell noch nicht unterstützt. Wir arbeiten daran, dieses Feature zu einem späteren Zeitpunkt anzubieten. Vielen Dank für Ihr Verständnis.",
 	"documentsPreviewSection.loadingPreview": "Die Vorschau wird geladen...",
 	"documentsPreviewSection.title": "Dokumentvorschau",
+	"documentsPreviewSection.spreadsheet.empty":
+		"Diese Tabelle enthält keine Daten.",
+	"documentsPreviewSection.spreadsheet.truncated":
+		"Diese Tabelle wurde für die Anzeige gekürzt. Sehr große Tabellen werden nur teilweise dargestellt.",
 
 	/* -------------------- Dialogs -------------------- */
 	//DeleteItemDialog
@@ -930,6 +934,9 @@ export const Content = {
 		"Berlin Open Data wurde automatisch deaktiviert.",
 	"chat.openData.infoText.p1":
 		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wird Berlin Open Data deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um Open Data wieder zu aktivieren, klicken Sie auf +.",
+	// Chat info text for automated deactivation of multiple external tools at once
+	"chat.toolsDeactivated.infoText.p1":
+		"Ein Dokument wurde hinzugefügt. Aus Datenschutzgründen wurden die Werkzeuge deaktiviert, damit Ihre Inhalte nicht an externe Dienste übermittelt werden. Um die Werkzeuge zu reaktivieren, klicken Sie auf +.",
 	"chat.infoText.imgAlt": "Ein Ausrufezeichen-Icon",
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
@@ -987,6 +994,11 @@ export const Content = {
 		"Leistungsstark für komplexe Aufgaben",
 	"chat.llmModel.dropdown.li2.ariaLabel":
 		"Mistral Medium 3.5 (präzise) auswählen",
+	"chat.llmModel.dropdown.li3.label": "GLM 5.2",
+	"chat.llmModel.dropdown.li3.labelExtended": "GLM 5.2",
+	"chat.llmModel.dropdown.li3.description":
+		"Leistungsstark für komplexe Aufgaben",
+	"chat.llmModel.dropdown.li3.ariaLabel": "GLM 5.2 auswählen",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
@@ -1070,8 +1082,10 @@ export const Content = {
 	"profile.deleteAccount.dialog.description":
 		"Dieser Vorgang kann nicht rückgängig gemacht werden und alle Daten werden gelöscht.",
 	"profile.deleteAccount.dialog.cancel": "Abbrechen",
-	"profile.deleteAccount.dialog.passwordCheck.label":
-		"Passwort eingeben und Konto löschen",
+	"profile.deleteAccount.dialog.emailCheck.label":
+		"Geben Sie zur Bestätigung Ihre E-Mail-Adresse ein und löschen Sie Ihr Konto.",
+	"profile.deleteAccount.dialog.emailCheck.error":
+		"Die eingegebene E-Mail-Adresse stimmt nicht mit Ihrer Konto-E-Mail-Adresse überein.",
 
 	//change email form
 	"profile.changeEmailForm.title": "E-Mail-Adresse ändern",
@@ -1135,36 +1149,38 @@ export const Content = {
 	/* ---------------------- Login Form ---------------------- */
 	"loginPage.h1": "Willkommen zurück",
 	"loginPage.h2": "Bitte melden Sie sich an",
+	"loginPage.notice.heading": "Wir stellen auf Anmeldung ohne Passwort um.",
+	"loginPage.notice.body":
+		"Zur Verbesserung der Sicherheit haben wir die Anmeldung bei BärGPT auf ein passwortloses Verfahren umgestellt.",
+	"loginPage.notice.showMore.button.label": "Mehr Infos",
+	"loginPage.notice.showMore.button.ariaLabel": "Mehr Infos anzeigen",
+	"loginPage.notice.showLess.button.label": "Weniger Infos",
+	"loginPage.notice.showLess.button.ariaLabel": "Weniger Infos anzeigen",
 	"loginPage.emailLabel": "E-Mail-Adresse",
-	"loginPage.passwordLabel": "Passwort",
-	"loginPage.submitButton": "Anmelden",
+	"loginPage.otpHint":
+		"Wir senden Ihnen einen einmaligen Sicherheitscode per E-Mail, den Sie dann im nächsten Schritt eingeben können.",
+	"loginPage.submitButton": "Code anfordern",
 	"loginPage.registerPrompt": "Sie haben noch keinen Account?",
 	"loginPage.registerLink": "Jetzt registrieren",
-	"loginPage.resetPassword.link": "/request-password-reset/",
-	"loginPage.resetPassword.label": "Passwort vergessen?",
-	/* ---------------------- Reset Password Form ---------------------- */
-	"resetPassword.h1": "Passwort vergessen?",
-	"resetPassword.h2":
-		"Bitte geben Sie Ihre E-Mail-Adresse ein, um Ihr Passwort zurückzusetzen.",
-	"resetPassword.emailLabel": "E-Mail-Adresse",
-	"resetPassword.submitButton": "Zurücksetzen",
-	/* ---------------------- New Password Form ---------------------- */
-	"newPassword.h1": "Passwort zurücksetzen",
-	"newPassword.h2": "Neues Passwort eingeben",
-	"newPassword.password.label": "Neues Passwort ",
-	"newPassword.password.placeholder": "Passwort",
-	"newPassword.repeatPassword.label": "Neues Passwort wiederholen",
-	"newPassword.repeatPassword.placeholder": "Passwort",
-	"newPassword.submitButton": "Passwort ändern",
-	"newPassword.recoveryNotActive.error":
-		"Der Link wurde bereits verwendet oder ist abgelaufen. Bitte fordern Sie einen neuen Link an.",
 
 	/* ---------------------- OTP Confirmation Page ---------------------- */
-	"confirmOtp.title": "Aktion bestätigen",
+	"confirmOtp.title": "Fast geschafft!",
 	"confirmOtp.description":
 		"Bitte geben Sie den Sicherheitscode aus Ihrer E-Mail ein.",
+	"confirmOtp.description.sent":
+		"Wir haben eine E-Mail an folgende Adresse geschickt:",
+	"confirmOtp.description.instruction":
+		"Bitte geben Sie den Code aus der E-Mail hier ein, um fortzufahren:",
+	"confirmOtp.resend.question": "Keinen Code erhalten oder Code ungültig?",
+	"confirmOtp.checkSpam": "Bitte überprüfen Sie auch Ihren Spam-Ordner.",
+	"confirmOtp.typo.question": "Tippfehler?",
+	"confirmOtp.typo.or": "oder",
+	"confirmOtp.typo.registerLink": "Zurück zur Registrierung",
+	"confirmOtp.typo.loginLink": "Zurück zum Login",
+	"confirmOtp.notRegistered.question": "Noch nicht registriert?",
+	"confirmOtp.notRegistered.registerLink": "Zur Registrierung",
 	"confirmOtp.token.label": "Sicherheitscode",
-	"confirmOtp.token.placeholder": "z. B. 123456",
+	"confirmOtp.token.placeholder": "z. B. 1234567890",
 	"confirmOtp.button.submit": "Weiter",
 	"confirmOtp.button.loading": "Überprüfe …",
 	"confirmOtp.error.missingFields":
@@ -1195,21 +1211,8 @@ export const Content = {
 	"registerPage.emailHint":
 		"Nur dienstliche E-Mail-Adressen der Berliner Verwaltung sind erlaubt.",
 	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
-	"registerPage.passwordLabel": "Passwort",
-	"registerPage.passwordPlaceholder": "Passwort",
-	"registerPage.showPassword": "Passwort anzeigen",
-	"registerPage.hidePassword": "Passwort verstecken",
-	"registerPage.repeatPasswordLabel": "Passwort wiederholen",
-	"registerPage.repeatPasswordPlaceholder": "Passwort",
-	"registerPage.passwordTooltip.ariaLabel":
-		"Hinweis: Sichere Passwörter verwenden mindestens: 10 Zeichen, 1 Buchstabe, 1 Zahl, 1 Sonderzeichen",
-	"registerPage.passwordTooltip": `Sichere Passwörter verwenden mindestens:
-<ul class="list-disc pl-5">
-	<li>10 Zeichen</li>
-	<li>1 Buchstabe</li>
-	<li>1 Zahl</li>
-	<li>1 Sonderzeichen</li>
-</ul>`,
+	"registerPage.otpHint":
+		"Nach der Registrierung schicken wir Ihnen eine E-Mail mit einem Code. Damit bestätigen Sie Ihr Konto und melden sich an.",
 	"registerPage.privacyLink.label": "Datenschutzbestimmungen",
 	"registerPage.privacyText.p1": "und",
 	"registerPage.termsOfUse.label": "Nutzungsbedingungen",

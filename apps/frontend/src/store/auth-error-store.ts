@@ -9,15 +9,10 @@ interface AuthErrorStore {
 }
 
 const errorMessages: { [key: string]: string } = {
-	wrong_password: content["form.validation.password.wrong.error"],
 	"Invalid login credentials":
 		content["form.validation.invalidCredentials.error"],
 	privacy_not_accepted: content["form.validation.privacy.required.error"],
-	"New password should be different from the old password.":
-		content["form.validation.password.shouldBeDifferent.error"],
 	"User is banned": content["form.validation.userBanned.error"],
-	"User tried to reset their password without the recovery mode active.":
-		content["newPassword.recoveryNotActive.error"],
 };
 
 export const useAuthErrorStore = create<AuthErrorStore>()((set) => ({

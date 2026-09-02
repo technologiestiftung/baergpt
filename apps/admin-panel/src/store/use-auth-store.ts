@@ -14,7 +14,9 @@ interface AuthStore {
 	emailConfirmationStatus: EmailConfirmationStatus;
 	session: Session | null | undefined;
 	resendConfirmationEmail: () => Promise<void>;
-	login: (args: { email: string; password: string }) => Promise<void>;
+	requestLoginOtp: (args: {
+		email: string;
+	}) => Promise<{ error: Error | null }>;
 	logout: () => Promise<void>;
 }
 
@@ -129,35 +131,35 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 				return;
 			}
 			resendTime = Date.now();
-			const { error } = await supabase.auth.resend({
-				type: "signup",
+			const { error } = await supabase.auth.signInWithOtp({
 				email: unconfirmedEmail,
+				options: { shouldCreateUser: false },
 			});
 			if (error) {
 				useAuthErrorStore.getState().handleError(new Error(error.message));
 			}
 		},
 
-		async login({ email, password }) {
-			const { error } = await supabase.auth.signInWithPassword({
+		async requestLoginOtp({ email }) {
+			/**
+			 * Passwordless login: send a one-time code to an existing admin user.
+			 * shouldCreateUser:false so login never silently creates an account.
+			 */
+			const { error } = await supabase.auth.signInWithOtp({
 				email,
-				password,
+				options: { shouldCreateUser: false },
 			});
 
-			if (error) {
+			// GoTrue's otp_disabled error means the email has no account — treated
+			// as success so an attacker can't tell registered emails apart from
+			// unregistered ones by whether the page navigates or shows an error.
+			if (error && error.code !== "otp_disabled") {
 				console.error("Login error:", error);
-
-				if (error.message === "Email not confirmed") {
-					set({
-						unconfirmedEmail: email,
-						emailConfirmationStatus: "unconfirmed",
-					});
-					return;
-				}
-
 				useAuthErrorStore.getState().handleError(new Error(error.message));
-				return;
+				return { error: new Error(error.message) };
 			}
+
+			return { error: null };
 		},
 
 		async logout() {

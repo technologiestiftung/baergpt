@@ -5,12 +5,14 @@ type UseIntersectionObserverArgs = {
 	containerRef: RefObject<HTMLDivElement>;
 	ref: RefObject<HTMLDivElement>;
 	hasLoadedAllChats: boolean;
+	chatsCount: number;
 };
 
 export function useIntersectionObserver({
 	containerRef,
 	ref,
 	hasLoadedAllChats,
+	chatsCount,
 }: UseIntersectionObserverArgs) {
 	useEffect(() => {
 		const spinnerElement = ref.current;
@@ -39,5 +41,5 @@ export function useIntersectionObserver({
 		observer.observe(spinnerElement);
 
 		return () => observer.disconnect();
-	}, [containerRef, ref, hasLoadedAllChats]);
+	}, [containerRef, ref, hasLoadedAllChats, chatsCount]);
 }

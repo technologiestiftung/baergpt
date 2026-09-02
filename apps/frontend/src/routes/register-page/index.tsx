@@ -1,22 +1,20 @@
-import React, { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import Checkbox from "../../components/primitives/checkboxes/checkbox.tsx";
 import Content from "../../content.ts";
 import { TextInput } from "../../components/primitives/text-inputs/text-input.tsx";
 import { EmailInput } from "../../components/primitives/text-inputs/email-input.tsx";
-import { PasswordInput } from "../../components/primitives/text-inputs/password-input.tsx";
 import { ArrowWhiteRightIcon } from "../../components/primitives/icons/arrow-white-right-icon.tsx";
 import { AuthLayout } from "../../layouts/auth-layout.tsx";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { useAuthErrorStore } from "../../store/auth-error-store.ts";
-import { QuestionMarkIcon } from "../../components/primitives/icons/question-mark-icon.tsx";
-import { useTooltipStore } from "../../store/tooltip-store.ts";
 import { ChevronIcon } from "../../components/primitives/icons/chevron-icon.tsx";
 import * as Sentry from "@sentry/react";
 
 export function RegisterPage() {
 	const { register } = useAuthStore();
 	const { error } = useAuthErrorStore();
-	const { showTooltip, hideTooltip } = useTooltipStore();
+	const navigate = useNavigate();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
 	const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
 	const formRef = useRef<HTMLFormElement | null>(null);
@@ -27,7 +25,6 @@ export function RegisterPage() {
 		const firstName = event.currentTarget.firstName.value;
 		const lastName = event.currentTarget.lastName.value;
 		const email = event.currentTarget.email.value;
-		const password = event.currentTarget.password.value;
 
 		Sentry.startSpan(
 			{
@@ -35,35 +32,20 @@ export function RegisterPage() {
 				op: "user.registration.submit",
 			},
 			async (span) => {
-				await register({ firstName, lastName, email, password, span });
+				const { error: registerError } = await register({
+					firstName,
+					lastName,
+					email,
+					span,
+				});
+
+				if (!registerError) {
+					navigate(
+						`/confirm-otp/?type=email&email=${encodeURIComponent(email)}&origin=register`,
+					);
+				}
 			},
 		);
-	};
-
-	const handleChange = (event: React.ChangeEvent<HTMLFormElement>) => {
-		const password = event.currentTarget.password.value;
-		const repeatPassword = event.currentTarget.repeatPassword.value;
-
-		const isDifferent = password !== repeatPassword;
-
-		if (isDifferent) {
-			event.currentTarget.repeatPassword.setCustomValidity(
-				Content["form.validation.password.repeatPasswordShouldMatch.error"],
-			);
-			return;
-		}
-
-		event.currentTarget.repeatPassword.setCustomValidity("");
-	};
-
-	const handleShowPasswordTooltip = (
-		event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
-	) => {
-		showTooltip({
-			event,
-			content: Content["registerPage.passwordTooltip"],
-			width: "13rem",
-		});
 	};
 
 	return (
@@ -126,7 +108,6 @@ export function RegisterPage() {
 						className="flex flex-col mt-12"
 						ref={formRef}
 						onSubmit={handleSubmit}
-						onChange={handleChange}
 					>
 						<div className="flex gap-5">
 							<label
@@ -167,31 +148,9 @@ export function RegisterPage() {
 							/>
 						</label>
 
-						<div className="flex mt-4 md:mt-5 mb-1 text-sm md:text-base gap-x-1 items-center">
-							<label htmlFor="password">
-								{Content["registerPage.passwordLabel"]}
-							</label>
-							<button
-								type="button"
-								aria-label={Content["registerPage.passwordTooltip.ariaLabel"]}
-								className="rounded-3px focus-visible:outline-default"
-								onMouseEnter={handleShowPasswordTooltip}
-								onMouseLeave={hideTooltip}
-								onFocus={handleShowPasswordTooltip}
-								onBlur={hideTooltip}
-							>
-								<QuestionMarkIcon />
-							</button>
-						</div>
-						<PasswordInput id="password" minLength={10} />
-
-						<label
-							htmlFor="repeatPassword"
-							className="flex flex-col mt-4 md:mt-5 mb-1 text-sm md:text-base"
-						>
-							{Content["registerPage.repeatPasswordLabel"]}
-						</label>
-						<PasswordInput id="repeatPassword" />
+						<p className="mt-4 md:mt-5 text-sm md:text-base text-schwarz-100">
+							{Content["registerPage.otpHint"]}
+						</p>
 
 						<div className="mt-6">
 							<Checkbox

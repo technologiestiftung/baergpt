@@ -355,7 +355,7 @@ export class MistralOCRService {
 		const uploaded_pdf = await client.files.upload({
 			file: {
 				fileName: ocrTempFileName,
-				content: buffer,
+				content: buffer as Uint8Array<ArrayBuffer>,
 			},
 			purpose: "ocr",
 		});

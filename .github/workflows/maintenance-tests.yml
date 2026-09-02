@@ -1,16 +1,20 @@
 name: Maintenance Tests
 permissions:
-  contents: write
-  packages: write
+  contents: read
+  packages: read
 on:
   pull_request:
     branches: [main, staging]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   maintenance-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
 

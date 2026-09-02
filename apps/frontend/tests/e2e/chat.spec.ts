@@ -680,7 +680,7 @@ test.describe("Chat", () => {
 	testDesktopOnlyWithManyChats("Chat history loading", async ({ page }) => {
 		const isNextChatsPageRequest = (url: URL) =>
 			url.pathname.includes("/rest/v1/chats") &&
-			url.searchParams.get("offset") === "20";
+			url.searchParams.get("id")?.startsWith("lt.") === true;
 
 		const createDeferredPromise = () => {
 			let resolveDeferredPromise: (value?: unknown) => void = () => {};

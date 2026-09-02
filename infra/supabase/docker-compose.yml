@@ -133,8 +133,13 @@ services:
       GOTRUE_MAILER_TEMPLATES_CONFIRMATION: ${MAILER_TEMPLATES_CONFIRMATION_URL}
       # Password recovery - provide a URL to a HTML or Text template
       GOTRUE_MAILER_TEMPLATES_RECOVERY: ${MAILER_TEMPLATES_RECOVERY_URL}
+      # Magic link / login OTP - provide a URL to a HTML or Text template
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: ${MAILER_TEMPLATES_MAGIC_LINK_URL}
       # Email change - provide a URL to a HTML or Text template
       GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: ${MAILER_TEMPLATES_EMAIL_CHANGE_URL}
+      # A stale template is re-fetched on the send path, so this bounds how often
+      # sending an email waits on an HTTP round-trip to the template host.
+      GOTRUE_MAILER_TEMPLATE_MAX_AGE: ${GOTRUE_MAILER_TEMPLATE_MAX_AGE:-30m}
       # Subjects
       GOTRUE_MAILER_SUBJECTS_CONFIRMATION: ${MAILER_SUBJECTS_CONFIRMATION}
       GOTRUE_MAILER_SUBJECTS_RECOVERY: ${MAILER_SUBJECTS_RECOVERY}
@@ -166,8 +171,10 @@ services:
       # Rate-limit the OTP/verify endpoint. GoTrue only enforces the verify
       # limiter when it can identify the client, which requires RATE_LIMIT_HEADER.
       GOTRUE_RATE_LIMIT_HEADER: X-Forwarded-For
-      GOTRUE_RATE_LIMIT_VERIFY: ${GOTRUE_RATE_LIMIT_VERIFY}
-      GOTRUE_MAILER_OTP_EXP: ${GOTRUE_MAILER_OTP_EXP}
+      GOTRUE_RATE_LIMIT_VERIFY: ${GOTRUE_RATE_LIMIT_VERIFY:-5}
+      GOTRUE_MAILER_OTP_EXP: ${GOTRUE_MAILER_OTP_EXP:-1800}
+      GOTRUE_MAILER_OTP_LENGTH: ${GOTRUE_MAILER_OTP_LENGTH:-10}
+
       # Uncomment to enable custom access token hook. Please see: https://supabase.com/docs/guides/auth/auth-hooks for full list of hooks and additional details about custom_access_token_hook
 
       # GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED: "true"

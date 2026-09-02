@@ -121,14 +121,15 @@ testWithLoggedInUser.describe("User Profile", () => {
 	testWithLoggedInUser(
 		"should allow user to update personal prompt",
 		async ({ page }) => {
-			await page.goto("/profile/");
-
-			await page.waitForResponse(
+			const waitForProfile = page.waitForResponse(
 				(res) =>
 					res.url().includes("/rest/v1/profiles") &&
 					res.request().method() === "GET" &&
 					res.ok(),
 			);
+			await page.goto("/profile/");
+
+			await waitForProfile;
 
 			const newPrompt = "This is a new personal prompt for testing.";
 			const promptInput = page.locator("#personalPrompt");
@@ -186,14 +187,16 @@ testWithLoggedInUser.describe("User Profile", () => {
 	testWithLoggedInUser(
 		"should respect max character limit for personal prompt",
 		async ({ page }) => {
-			await page.goto("/profile/");
-
-			await page.waitForResponse(
+			const waitForProfile = page.waitForResponse(
 				(res) =>
 					res.url().includes("/rest/v1/profiles") &&
 					res.request().method() === "GET" &&
 					res.ok(),
 			);
+
+			await page.goto("/profile/");
+
+			await waitForProfile;
 
 			const promptInput = page.locator("#personalPrompt");
 			await expect(promptInput).toBeVisible();
@@ -220,7 +223,8 @@ testWithLoggedInUser.describe("User Profile", () => {
 			const dialog = page.locator("#delete-account-dialog");
 			await expect(dialog).toBeVisible();
 
-			await page.fill("#currentPasswordValidation", account.password);
+			// Passwordless accounts confirm deletion by re-typing the account email.
+			await page.fill("#deleteAccountConfirmation", account.email);
 
 			// Set up route interceptor just before submitting — delete_user is
 			// only called on confirm, so setting it up here avoids interfering
@@ -261,10 +265,8 @@ testWithLoggedInUser.describe("User Profile", () => {
 			const dialog = page.locator("#delete-account-dialog");
 			await expect(dialog).toBeVisible();
 
-			// click the password input field in the dialog
-			await page.click("#currentPasswordValidation");
-			// Fill in the password input field
-			await page.fill("#currentPasswordValidation", account.password);
+			// Passwordless accounts confirm deletion by re-typing the account email.
+			await page.fill("#deleteAccountConfirmation", account.email);
 
 			// Click delete button in dialog to confirm
 			await page.getByTestId("confirm-delete-account-button").click();

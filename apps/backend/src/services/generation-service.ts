@@ -13,6 +13,7 @@ import {
 	createUIMessageStreamResponse,
 	generateText,
 	Output,
+	isStepCount,
 	streamText,
 	toUIMessageStream,
 } from "ai";
@@ -24,7 +25,7 @@ import { propagateAttributes } from "@langfuse/tracing";
 import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
-import { LLM_PARAMETERS } from "../constants";
+import { LLM_PARAMETERS, EXPERIMENTAL_MAX_TOOL_CALL_STEPS } from "../constants";
 import type {
 	ActiveTools,
 	IncomingChatMessage,
@@ -270,7 +271,7 @@ export class GenerationService {
 		parsedPages: ParsedPage[],
 		llmIdentifier: string,
 	): Promise<string> {
-		const { contextSize } = modelService.availableModels[llmIdentifier];
+		const contextSize = modelService.contextSizes[llmIdentifier];
 		const systemPromptToken = await this.estimateSystemPromptTokens("summary");
 		const tokenLimit = computeSafePayload(contextSize, systemPromptToken);
 
@@ -344,7 +345,10 @@ export class GenerationService {
 							temperature: LLM_PARAMETERS.temperature,
 							tools,
 							toolChoice,
-							stopWhen: isLoopFinished(),
+							stopWhen:
+								llmHandler.languageModel === "zai-glm-5-2"
+									? isStepCount(EXPERIMENTAL_MAX_TOOL_CALL_STEPS)
+									: isLoopFinished(),
 							providerOptions: {
 								mistral: {
 									presencePenalty: LLM_PARAMETERS.presencePenalty,

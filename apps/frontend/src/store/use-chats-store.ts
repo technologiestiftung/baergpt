@@ -6,14 +6,16 @@ import type {
 	LlmModel,
 } from "../common";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
-import { getChats as getChatsFromDb } from "../api/chat/get-chats.ts";
+import {
+	getChats as getChatsFromDb,
+	CHATS_PAGE_SIZE,
+} from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";
 import { deleteChat as deleteChatFromDb } from "../api/chat/delete-chat.ts";
 import { renameChat as renameChatInDb } from "../api/chat/rename-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
 import { updateMessage as updateMessageInDb } from "../api/message/update-message.ts";
-import { getTotalChatCount as getTotalChatCountFromDb } from "../api/chat/get-total-chat-count.ts";
 import { useErrorStore } from "./error-store.ts";
 import type {
 	WebCitationSource,
@@ -37,7 +39,7 @@ interface ChatStore {
 	isFirstLoad: boolean;
 	isLoading: boolean;
 	chats: ChatWithMessages[];
-	totalChatCount: number | null;
+	hasMoreChats: boolean;
 	selectedChatTools: ChatTool[];
 	selectedLlmModel: LlmModel;
 	resetToDefaultChatTools(): void;
@@ -83,7 +85,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	isFirstLoad: true,
 	isLoading: false,
 	chats: [],
-	totalChatCount: null,
+	hasMoreChats: true,
 	selectedChatTools: [],
 	selectedLlmModel: "mistral-small",
 	visibleInfoMessage: null,
@@ -179,16 +181,17 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	async getChatsFromDb(signal) {
 		set({ isLoading: true });
 
-		const offset = get().chats.length;
+		// Chats are appended oldest-last, so the last loaded chat's
+		// id is the cursor for the next (older) page.
+		const { chats } = get();
+		const cursor = chats.length > 0 ? chats[chats.length - 1].id : null;
 
 		// Clear any existing fetch error when starting a new fetch attempt
 		useErrorStore.getState().clearUIError("chats-fetch");
 
-		const totalChatCount = await getTotalChatCountFromDb(signal);
+		const chatsFromDb = await getChatsFromDb(cursor, signal);
 
-		set({ totalChatCount });
-
-		const chatsFromDb = await getChatsFromDb(offset, signal);
+		set({ hasMoreChats: chatsFromDb.length === CHATS_PAGE_SIZE });
 
 		const promises = chatsFromDb.map(async (chat) => {
 			const messages = await getMessagesFromDb(chat.id, signal);
@@ -225,13 +228,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	async getNextChatsPage() {
 		clearTimeout(getChatsDebounceTimeout);
 
-		const { totalChatCount, chats } = get();
-		if (totalChatCount === null) {
-			return;
-		}
-
-		const hasLoadedAllChats = chats.length === totalChatCount;
-		if (hasLoadedAllChats) {
+		if (!get().hasMoreChats) {
 			return;
 		}
 
