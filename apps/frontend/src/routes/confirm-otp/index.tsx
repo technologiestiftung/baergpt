@@ -149,7 +149,7 @@ export function ConfirmOtpPage() {
 								name="token"
 								type="text"
 								inputMode="numeric"
-								pattern="\d{6}"
+								pattern="\d{10}"
 								className="border border-schwarz-40 rounded-3px px-3 py-2 focus-visible:outline-default uppercase tracking-[0.3em]"
 								placeholder={Content["confirmOtp.token.placeholder"]}
 								onPaste={handlePaste}

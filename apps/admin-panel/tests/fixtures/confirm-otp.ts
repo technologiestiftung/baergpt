@@ -64,7 +64,7 @@ async function waitForLatestMessageTo(
 export async function enterLoginOtp(page: Page, email: string) {
 	const { id, text } = await waitForLatestMessageTo(page, email);
 
-	const code = text.match(/^\s*(\d{6})\s*$/m)?.[1];
+	const code = text.match(/^\s*(\d{10})\s*$/m)?.[1];
 	if (!code) {
 		throw new Error(
 			`Could not read a security code from Mailpit message ${id}:\n${text}`,

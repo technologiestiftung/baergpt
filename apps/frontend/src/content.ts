@@ -1180,7 +1180,7 @@ export const Content = {
 	"confirmOtp.notRegistered.question": "Noch nicht registriert?",
 	"confirmOtp.notRegistered.registerLink": "Zur Registrierung",
 	"confirmOtp.token.label": "Sicherheitscode",
-	"confirmOtp.token.placeholder": "z. B. 123456",
+	"confirmOtp.token.placeholder": "z. B. 1234567890",
 	"confirmOtp.button.submit": "Weiter",
 	"confirmOtp.button.loading": "Überprüfe …",
 	"confirmOtp.error.missingFields":
