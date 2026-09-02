@@ -1,3 +1,10 @@
+- name: Check whether the Supabase stack is already provisioned
+  ansible.builtin.stat:
+    path: "{{ supabase_dir }}/docker-compose.yml"
+  register: supabase_compose
+
+# Only needed on first provision: the copy task below is guarded by `creates:`,
+# so re-cloning would add an anonymous GitHub fetch that can hang the play.
 - name: Clone Supabase repo (shallow)
   ansible.builtin.git:
     repo: "{{ supabase_repo }}"
@@ -5,6 +12,9 @@
     version: "{{ supabase_ref }}"
     depth: 1
     force: true
+  when: not supabase_compose.stat.exists
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
 
 - name: Ensure Supabase target dir exists
   ansible.builtin.file:
@@ -40,6 +50,7 @@
         src: "{{ playbook_dir }}/../supabase/.env"
         dest: "{{ supabase_dir }}/.env"
         mode: "0640"
+      no_log: true
 
   always:
     - name: Delete local .env after upload
