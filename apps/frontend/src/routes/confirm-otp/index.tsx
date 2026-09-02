@@ -1,10 +1,11 @@
+import { useState, type FormEvent, type ClipboardEvent } from "react";
 import {
-	useEffect,
-	useState,
-	type FormEvent,
-	type ClipboardEvent,
-} from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+	Link,
+	Navigate,
+	useLocation,
+	useNavigate,
+	useSearchParams,
+} from "react-router";
 import Content from "../../content";
 import { ConfirmationLayout } from "../../layouts/confirmation-layout.tsx";
 import { supabase } from "../../../supabase-client";
@@ -28,6 +29,7 @@ export function ConfirmOtpPage() {
 	const [hasEmailBeenRecentlySent, setHasEmailBeenRecentlySent] =
 		useState(false);
 	const navigate = useNavigate();
+	const location = useLocation();
 	const [searchParams] = useSearchParams();
 
 	const email = searchParams.get("email");
@@ -36,27 +38,21 @@ export function ConfirmOtpPage() {
 
 	// Prefill from the token in the email link's URL fragment (#token=…). A
 	// fragment never hits the server, so it stays out of access logs and Referer.
-	const [initialToken] = useState(() => {
-		if (typeof window === "undefined") {
-			return "";
-		}
-		const hashParams = new URLSearchParams(
-			window.location.hash.replace(/^#/, ""),
-		);
-		return hashParams.get("token") ?? "";
-	});
+	const [initialToken] = useState(
+		() =>
+			new URLSearchParams(location.hash.replace(/^#/, "")).get("token") ?? "",
+	);
 
 	// Strip the token from the URL so it doesn't linger in the address bar or
 	// history. Local-device hygiene only.
-	useEffect(() => {
-		if (window.location.hash) {
-			window.history.replaceState(
-				null,
-				"",
-				window.location.pathname + window.location.search,
-			);
-		}
-	}, []);
+	if (location.hash) {
+		return (
+			<Navigate
+				to={{ pathname: location.pathname, search: location.search }}
+				replace
+			/>
+		);
+	}
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
