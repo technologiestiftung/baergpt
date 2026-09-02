@@ -1,4 +1,9 @@
-import { useState, type FormEvent, type ClipboardEvent } from "react";
+import {
+	useEffect,
+	useState,
+	type FormEvent,
+	type ClipboardEvent,
+} from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import Content from "../../content";
 import { ConfirmationLayout } from "../../layouts/confirmation-layout.tsx";
@@ -28,6 +33,30 @@ export function ConfirmOtpPage() {
 	const email = searchParams.get("email");
 	const otpType = searchParams.get("type");
 	const origin = searchParams.get("origin");
+
+	// Prefill from the token in the email link's URL fragment (#token=…). A
+	// fragment never hits the server, so it stays out of access logs and Referer.
+	const [initialToken] = useState(() => {
+		if (typeof window === "undefined") {
+			return "";
+		}
+		const hashParams = new URLSearchParams(
+			window.location.hash.replace(/^#/, ""),
+		);
+		return hashParams.get("token") ?? "";
+	});
+
+	// Strip the token from the URL so it doesn't linger in the address bar or
+	// history. Local-device hygiene only.
+	useEffect(() => {
+		if (window.location.hash) {
+			window.history.replaceState(
+				null,
+				"",
+				window.location.pathname + window.location.search,
+			);
+		}
+	}, []);
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -150,6 +179,7 @@ export function ConfirmOtpPage() {
 								type="text"
 								inputMode="numeric"
 								pattern="\d{6}"
+								defaultValue={initialToken}
 								className="border border-schwarz-40 rounded-3px px-3 py-2 focus-visible:outline-default uppercase tracking-[0.3em]"
 								placeholder={Content["confirmOtp.token.placeholder"]}
 								onPaste={handlePaste}
