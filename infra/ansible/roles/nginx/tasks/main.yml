@@ -1,3 +1,27 @@
+- name: Install anon-egress blocklist refresh script
+  ansible.builtin.copy:
+    src: anon_egress_blocklist.py
+    dest: /usr/local/sbin/anon-egress-blocklist
+    mode: "0755"
+
+# Seed only; the refresh service overwrites it. Without a file the include fails nginx -t.
+- name: Seed empty anon-egress blocklist
+  ansible.builtin.copy:
+    dest: /etc/nginx/anon-egress-blocklist.conf
+    content: "# Empty until the first anon-egress-blocklist run.\n"
+    mode: "0644"
+    force: false
+
+- name: Install anon-egress blocklist systemd units
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: "0644"
+  loop:
+    - anon-egress-blocklist.service
+    - anon-egress-blocklist.timer
+  register: anon_egress_units
+
 - name: Render Nginx default site
   ansible.builtin.template:
     src: supabase.default.j2
@@ -16,3 +40,17 @@
     name: nginx
     state: started
     enabled: true
+
+- name: Enable anon-egress blocklist timer
+  ansible.builtin.systemd:
+    name: anon-egress-blocklist.timer
+    daemon_reload: "{{ anon_egress_units.changed }}"
+    enabled: true
+    state: started
+  when: not ansible_check_mode
+
+- name: Run anon-egress blocklist refresh now
+  ansible.builtin.systemd:
+    name: anon-egress-blocklist.service
+    state: started
+  when: not ansible_check_mode
