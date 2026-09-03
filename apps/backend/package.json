@@ -22,6 +22,7 @@
 		"db:backfill-mistral": "tsx ./supabase/backfill-mistral-embeddings.ts",
 		"db:up": "supabase migration up --local && npm run db:typegen",
 		"db:dump-schema": "supabase db dump --local --schema public > supabase/schemas/schema.sql && prettier --write supabase/schemas/schema.sql",
+		"db:split-schema": "tsx supabase/scripts/split-schema.ts",
 		"db:generate-migration": "supabase db diff --schema public -f",
 		"mistral:assess-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts -- --dry-run",
 		"mistral:cleanup-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts",

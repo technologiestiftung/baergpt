@@ -42,7 +42,27 @@ max_client_conn = 100
 [db.migrations]
 schema_paths = [
     "./schemas/00_extensions.sql",
-    "./schemas/schema.sql",
+    "./schemas/00_settings.sql",
+    "./schemas/01_schema.sql",
+    "./schemas/02_functions.sql",
+    "./schemas/20_tables/access_group_members.sql",
+    "./schemas/20_tables/access_groups.sql",
+    "./schemas/20_tables/allowed_email_domains.sql",
+    "./schemas/20_tables/allowed_individual_emails.sql",
+    "./schemas/20_tables/application_admins.sql",
+    "./schemas/20_tables/chat_messages.sql",
+    "./schemas/20_tables/chats.sql",
+    "./schemas/20_tables/document_chunks.sql",
+    "./schemas/20_tables/document_folders.sql",
+    "./schemas/20_tables/document_summaries.sql",
+    "./schemas/20_tables/documents.sql",
+    "./schemas/20_tables/favorite_documents.sql",
+    "./schemas/20_tables/maintenance_mode.sql",
+    "./schemas/20_tables/profiles.sql",
+    "./schemas/20_tables/user_hidden_default_documents.sql",
+    "./schemas/30_foreign_keys.sql",
+    "./schemas/40_policies.sql",
+    "./schemas/90_orphaned.sql",
 ]
 
 [realtime]
