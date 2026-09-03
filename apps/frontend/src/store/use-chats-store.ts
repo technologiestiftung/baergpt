@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type {
 	ChatWithMessages,
+	ChatMessage,
 	NewChatMessage,
 	ChatTool,
 	LlmModel,
@@ -15,7 +16,6 @@ import { deleteChat as deleteChatFromDb } from "../api/chat/delete-chat.ts";
 import { renameChat as renameChatInDb } from "../api/chat/rename-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
-import { updateMessage as updateMessageInDb } from "../api/message/update-message.ts";
 import { useErrorStore } from "./error-store.ts";
 import type {
 	WebCitationSource,
@@ -26,9 +26,14 @@ import { useUserDocumentStore } from "./use-user-document-store.ts";
 import { useUserFolderStore } from "./use-user-folder-store.ts";
 import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
-let updateMessageDebounceTimeout: ReturnType<typeof setTimeout>;
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
 let visibleInfoMessageTimeout: ReturnType<typeof setTimeout>;
+
+/**
+ * Client-generated ids for not-yet-persisted messages. Always negative so
+ * they never collide with real (positive) DB ids.
+ */
+let nextLocalMessageId = -1;
 
 export type VisibleChatInfoMessage =
 	| { type: "toolDeactivated"; tools: ChatTool[] }
@@ -60,6 +65,30 @@ interface ChatStore {
 		chat: ChatWithMessages,
 		chatMessage: NewChatMessage,
 	): Promise<number>;
+	/**
+	 * Creates a message in memory only, no DB write. Returns its local id,
+	 * used until `persistPendingMessageToDb` or `removePendingMessageFromMemory`.
+	 */
+	createPendingMessageInMemory(
+		chat: ChatWithMessages,
+		chatMessage: NewChatMessage,
+	): number;
+	/**
+	 * Persists a local message to the DB and replaces it with the DB-assigned row.
+	 */
+	persistPendingMessageToDb(
+		chat: ChatWithMessages,
+		localMessageId: number,
+		chatMessage: NewChatMessage,
+	): Promise<void>;
+	/**
+	 * Removes a message from memory only, no DB call — for messages that
+	 * never made it to the DB.
+	 */
+	removePendingMessageFromMemory(
+		chat: ChatWithMessages,
+		messageId: number,
+	): void;
 	updateMessage(args: {
 		chat: ChatWithMessages;
 		messageId: number;
@@ -324,7 +353,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	async addMessageToChat(givenChat, givenMessage) {
 		const message = await insertMessageIntoDb(givenChat.id, givenMessage);
 
-		givenChat.messages.push(message);
+		givenChat.messages.push({ ...message, clientKey: message.id });
 
 		get().updateChats(givenChat);
 
@@ -332,8 +361,60 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	/**
-	 * Updates the content of a message
-	 * and debounces updating the message in the database
+	 * Creates a message in local store state only (no DB write). Used for
+	 * optimistic assistant messages while a response is still streaming in,
+	 * since we don't yet know whether the turn will succeed.
+	 */
+	createPendingMessageInMemory(givenChat, givenMessage) {
+		const localMessageId = nextLocalMessageId--;
+
+		const message: ChatMessage = {
+			...givenMessage,
+			id: localMessageId,
+			clientKey: localMessageId,
+			chat_id: givenChat.id,
+			created_at: new Date().toISOString(),
+		};
+
+		givenChat.messages.push(message);
+
+		get().updateChats(givenChat);
+
+		return localMessageId;
+	},
+
+	/**
+	 * Persists a locally-tracked message to the DB (a single insert) and
+	 * swaps the local placeholder for the DB-assigned row.
+	 */
+	async persistPendingMessageToDb(chat, localMessageId, chatMessage) {
+		const message = await insertMessageIntoDb(chat.id, chatMessage);
+
+		const messageIndex = chat.messages.findIndex(
+			({ id }) => id === localMessageId,
+		);
+		if (messageIndex === -1) {
+			return;
+		}
+
+		// Keep the original clientKey (the local id) so React reconciles the
+		// same DOM node instead of remounting it — only `id` changes here.
+		chat.messages[messageIndex] = { ...message, clientKey: localMessageId };
+		get().updateChats(chat);
+	},
+
+	/**
+	 * Removes a message from local store state only (no DB call).
+	 */
+	removePendingMessageFromMemory(chat, messageId) {
+		chat.messages = chat.messages.filter(({ id }) => id !== messageId);
+		get().updateChats(chat);
+	},
+
+	/**
+	 * Updates the content of a message in local store state only.
+	 * Persistence happens separately once the stream settles
+	 * (see `persistPendingMessageToDb` / `removePendingMessageFromMemory`).
 	 */
 	updateMessage: ({
 		chat,
@@ -344,11 +425,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		parla_citations,
 		open_data_citations,
 	}) => {
-		clearTimeout(updateMessageDebounceTimeout);
-
-		const foundMessage = chat.messages.find(
-			(message) => message.id === messageId,
-		);
+		const foundMessage = chat.messages.find(({ id }) => id === messageId);
 		if (!foundMessage) {
 			return;
 		}
@@ -359,16 +436,6 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		foundMessage.parla_citations = parla_citations;
 		foundMessage.open_data_citations = open_data_citations;
 		get().updateChats(chat);
-
-		updateMessageDebounceTimeout = setTimeout(async () => {
-			await updateMessageInDb(messageId, {
-				content,
-				citations,
-				web_citations,
-				parla_citations,
-				open_data_citations,
-			});
-		}, 300);
 	},
 
 	showInfoMessage(infoMessage: VisibleChatInfoMessage) {

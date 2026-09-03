@@ -23,6 +23,7 @@ import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
 import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
+import { testWithChatSearch } from "../fixtures/test-with-chat-search.ts";
 
 test.describe("Chat", () => {
 	testWithMockedLlm(
@@ -1314,6 +1315,49 @@ test.describe("Chat", () => {
 			// Clicking it jumps to the bottom, which hides the button again.
 			await scrollToBottomButton.click();
 			await expect(scrollToBottomButton).toBeHidden();
+		},
+	);
+
+	testWithChatSearch(
+		"Opening an existing chat with history scrolls to the bottom, not the top",
+		async ({ page, insertChat, insertMessages }) => {
+			const chatId = await insertChat(
+				"Alter Testchat",
+				new Date(Date.now() - 60_000),
+			);
+
+			const baseTime = new Date(Date.now() - 50_000);
+			const messages = Array.from({ length: 10 }, (_, index) => [
+				{
+					role: "user" as const,
+					content: `Frage ${index + 1}: Was ist die Hauptstadt von Bundesland ${index + 1}? Lorem ipsum dolor sit amet.`,
+					createdAt: new Date(baseTime.getTime() + index * 2000),
+				},
+				{
+					role: "assistant" as const,
+					content: `Antwort ${index + 1}: Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
+					createdAt: new Date(baseTime.getTime() + index * 2000 + 1000),
+				},
+			]).flat();
+			await insertMessages(chatId, messages);
+
+			await page.goto("/");
+
+			await page
+				.getByRole("complementary", { name: "Sidebar" })
+				.getByRole("button", { name: "Alter Testchat", exact: true })
+				.click();
+
+			const lastAnswer = page
+				.getByTestId("assistant-message-markdown-container")
+				.last();
+			await expect(lastAnswer).toBeVisible();
+			await expect(lastAnswer).toContainText("Antwort 10");
+
+			// Already at the bottom, so the scroll-to-bottom button should not appear.
+			await expect(
+				page.getByRole("button", { name: "Zum Ende des Chats scrollen" }),
+			).not.toBeVisible();
 		},
 	);
 
