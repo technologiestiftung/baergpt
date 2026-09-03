@@ -1,3 +1,51 @@
+/*
+ * Splits supabase/schemas/schema.sql (one big pg_dump) into per-object declarative
+ * schema files and updates config.toml's schema_paths to match. schema.sql itself
+ * is left untouched -- delete it manually once you've reviewed the result.
+ *
+ * - Tokenizes schema.sql into top-level statements (split on `;`, aware of
+ *   string/identifier quotes, `--` comments, and `$tag$...$tag$` function bodies)
+ * - Pass 1: learns every table name, sequence name (incl. identity-column
+ *   sequences), and sequence -> owning-table mapping, so routing doesn't have
+ *   to guess from filename patterns
+ * - Pass 2: classifies each statement, first match wins:
+ *   settings -> extensions (untouched) -> schema -> functions ->
+ *   foreign keys (any table, deferred so no topo-sort is needed) ->
+ *   policies + RLS toggles (kept together) -> per-table (via the table/sequence
+ *   maps from pass 1) -> orphaned (sequence with no owning table) -> unclassified
+ * - Anything unclassified aborts the run with line numbers -- nothing is ever
+ *   silently dropped
+ * - Writes 00_settings.sql, 01_schema.sql, 02_functions.sql, 20_tables/<table>.sql,
+ *   30_foreign_keys.sql, 40_policies.sql, 90_orphaned.sql (if needed), then
+ *   rewrites config.toml's schema_paths as an explicit ordered list and runs
+ *   prettier on the new files
+ *
+ * File layout. Actual load order comes from config.toml's schema_paths (an
+ * explicit array, applied in listed order) -- the numeric prefixes don't
+ * control anything themselves, they just make that order visible in a plain
+ * directory listing (ls, Finder, GitHub, ...) so it matches what config.toml
+ * says without having to open it. Each tier may only reference objects a
+ * lower tier already created:
+ *   00_extensions.sql    vector/pgcrypto/pg_trgm -- hand-maintained, untouched
+ *   00_settings.sql      session SET statements from the dump preamble
+ *   01_schema.sql        CREATE SCHEMA + schema-level grants/privileges
+ *   02_functions.sql     every function -- after extensions (some signatures
+ *                        take an `extensions.vector` param)
+ *   20_tables/*.sql      one file per table -- after functions (RLS policies
+ *                        used to sit here and call functions; columns can
+ *                        also use extension types)
+ *   30_foreign_keys.sql  FK constraints for every table, deferred here so a
+ *                        table never has to wait on another table's file
+ *                        (same trick pg_dump itself uses)
+ *   40_policies.sql      RLS toggles + CREATE POLICY -- needs the tables
+ *   90_orphaned.sql      objects with no owning table (e.g. a sequence left
+ *                        behind by a dropped table) -- nothing depends on
+ *                        this, so it's last
+ *
+ * Numbers jump (00 -> 01 -> 02 -> 20 -> 30 -> 40 -> 90) instead of counting
+ * 1,2,3,4,5,6,7 on purpose: it leaves headroom to insert a new tier later
+ * (e.g. 10_types.sql for CREATE TYPE) without renumbering everything after it.
+ */
 /* eslint-disable no-console */
 import { execSync } from "node:child_process";
 import {
@@ -369,8 +417,6 @@ for (const [relativePath, content] of filesToWrite) {
 	writeFileSync(join(SCHEMAS_DIR, relativePath), content);
 }
 
-unlinkSync(SOURCE_FILE);
-
 const schemaPaths = [
 	`./schemas/${EXTENSIONS_FILE}`,
 	...[...filesToWrite.keys()].filter((f) => f !== ORPHANED_FILE),
@@ -396,7 +442,10 @@ execSync(`npx prettier --write "${SCHEMAS_DIR}"`, {
 });
 
 console.log(
-	`\nWrote ${filesToWrite.size} file(s) under ${SCHEMAS_DIR}, removed schema.sql, updated config.toml.`,
+	`\nWrote ${filesToWrite.size} file(s) under ${SCHEMAS_DIR} and updated config.toml.`,
+);
+console.log(
+	"schema.sql was left in place -- once you've reviewed the split, delete it manually.",
 );
 if (orphaned.length > 0) {
 	console.log(
