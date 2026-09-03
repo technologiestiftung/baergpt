@@ -44,8 +44,11 @@ export function useChatScrolling(
 	}, [visibleInfoMessage, containerRef, scrollToBottom]);
 
 	/**
-	 * Jump to the last message when a chat is opened or switched.
-	 * Skipped when a search result asked us to scroll to a specific message.
+	 * Jump to the last message when an existing chat is opened or switched.
+	 * Skipped when a search result asked us to scroll to a specific message,
+	 * and skipped when the chat id changed because it was *just created* by
+	 * sending its first message — that case is a new message like any
+	 * other and is handled by the "pin to top" effect below instead.
 	 * The small timeout lets the newly selected chat's messages render first.
 	 * Reads pendingScrollToMessage from getState so clearing it after a
 	 * search-scroll does not re-trigger this effect.
@@ -54,9 +57,12 @@ export function useChatScrolling(
 		if (useChatScrollingStore.getState().pendingScrollToMessage !== null) {
 			return () => {};
 		}
+		if (userMessageCount === 1) {
+			return () => {};
+		}
 		const timer = setTimeout(() => scrollToBottom("auto"), 1);
 		return () => clearTimeout(timer);
-	}, [currentChatId, scrollToBottom]);
+	}, [currentChatId, userMessageCount, scrollToBottom]);
 
 	/**
 	 * Scroll to a specific message after opening a chat from search.
@@ -71,7 +77,10 @@ export function useChatScrolling(
 
 	/**
 	 * Scroll a newly sent user message to the top of the viewport.
-	 * Skipped on a chat switch, where the effect above already jumps to the bottom.
+	 * Skipped on a switch to an *existing* chat, where the effect above
+	 * already jumps to the bottom — except when the chat id changed because
+	 * it was just created by this very message (its first), which should
+	 * still pin to top like any other new message.
 	 */
 	useLayoutEffect(() => {
 		const hasChatIdChanged = previousChatId.current !== currentChatId;
@@ -80,7 +89,9 @@ export function useChatScrolling(
 		previousChatId.current = currentChatId;
 		previousUserMessageCount.current = userMessageCount;
 
-		if (!hasChatIdChanged && hasNewUserMessage) {
+		const isFirstMessageInNewChat = hasChatIdChanged && userMessageCount === 1;
+
+		if ((!hasChatIdChanged || isFirstMessageInNewChat) && hasNewUserMessage) {
 			scrollNewMessageToTop();
 		}
 	}, [currentChatId, userMessageCount, scrollNewMessageToTop]);

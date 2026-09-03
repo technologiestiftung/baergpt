@@ -50,6 +50,8 @@ export type ChatMessage = {
 	created_at: string;
 	external_tool_context: boolean;
 	id: number;
+	// Stable identity to avoid remounting the message's DOM node.
+	clientKey: number;
 	role: string;
 	type: string;
 };

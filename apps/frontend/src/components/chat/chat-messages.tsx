@@ -44,7 +44,7 @@ export const ChatMessages: React.FC = () => {
 						className="flex w-full flex-col gap-y-1 lg:gap-y-3.5"
 					>
 						{messages.map((message) => (
-							<ChatMessage key={message.id} message={message} />
+							<ChatMessage key={message.clientKey} message={message} />
 						))}
 						{isWaitingForResponse && (
 							<div className="text-dunkelblau-50 flex gap-2 w-full items-center">

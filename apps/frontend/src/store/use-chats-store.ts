@@ -353,7 +353,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	async addMessageToChat(givenChat, givenMessage) {
 		const message = await insertMessageIntoDb(givenChat.id, givenMessage);
 
-		givenChat.messages.push(message);
+		givenChat.messages.push({ ...message, clientKey: message.id });
 
 		get().updateChats(givenChat);
 
@@ -371,6 +371,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		const message: ChatMessage = {
 			...givenMessage,
 			id: localMessageId,
+			clientKey: localMessageId,
 			chat_id: givenChat.id,
 			created_at: new Date().toISOString(),
 		};
@@ -396,7 +397,9 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 			return;
 		}
 
-		chat.messages[messageIndex] = message;
+		// Keep the original clientKey (the local id) so React reconciles the
+		// same DOM node instead of remounting it — only `id` changes here.
+		chat.messages[messageIndex] = { ...message, clientKey: localMessageId };
 		get().updateChats(chat);
 	},
 
