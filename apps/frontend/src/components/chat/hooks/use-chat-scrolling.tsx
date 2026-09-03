@@ -23,6 +23,8 @@ export function useChatScrolling(
 
 	const previousChatId = useRef(currentChatId);
 	const previousUserMessageCount = useRef(userMessageCount);
+	const latestUserMessageCount = useRef(userMessageCount);
+	latestUserMessageCount.current = userMessageCount;
 
 	//Jump to the bottom when a transient info message (tool deactivated / history scoped) appears.
 	useLayoutEffect(() => {
@@ -57,12 +59,12 @@ export function useChatScrolling(
 		if (useChatScrollingStore.getState().pendingScrollToMessage !== null) {
 			return () => {};
 		}
-		if (userMessageCount === 1) {
+		if (latestUserMessageCount.current === 1) {
 			return () => {};
 		}
 		const timer = setTimeout(() => scrollToBottom("auto"), 1);
 		return () => clearTimeout(timer);
-	}, [currentChatId, userMessageCount, scrollToBottom]);
+	}, [currentChatId, scrollToBottom]);
 
 	/**
 	 * Scroll to a specific message after opening a chat from search.
