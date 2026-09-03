@@ -685,4 +685,317 @@ describe("Base Knowledge Integration Tests", () => {
 			await supabaseAdminClient.from("documents").delete().eq("id", testDoc.id);
 		}
 	});
+
+	describe("RLS Policy Tests for Base Knowledge Chunk and Summary Mutations", () => {
+		const signedInUserClient = supabaseAnonClient;
+		const serviceRoleClient = supabaseAdminClient;
+
+		let personalDocumentId: number;
+
+		const tableFixtures = [
+			{
+				table: "document_chunks",
+				textColumn: "content",
+				newBaseKnowledgeRow: () => ({
+					document_id: documentId,
+					content: "Base knowledge chunk.",
+					page: 1,
+					chunk_index: 1,
+					owned_by_user_id: null,
+					folder_id: null,
+					access_group_id: accessGroupId,
+					chunk_mistral_embedding: JSON.stringify(
+						createDeterministicEmbedding(),
+					),
+				}),
+				newPersonalRow: () => ({
+					document_id: personalDocumentId,
+					content: "Personal chunk.",
+					page: 1,
+					chunk_index: 0,
+					owned_by_user_id: testUserId,
+					folder_id: null,
+					access_group_id: null,
+					chunk_mistral_embedding: JSON.stringify(
+						createDeterministicEmbedding(),
+					),
+				}),
+			},
+			{
+				table: "document_summaries",
+				textColumn: "summary",
+				newBaseKnowledgeRow: () => ({
+					document_id: documentId,
+					summary: "Base knowledge summary.",
+					short_summary: "Base knowledge.",
+					owned_by_user_id: null,
+					folder_id: null,
+					access_group_id: accessGroupId,
+					tags: ["base-knowledge"],
+				}),
+				newPersonalRow: () => ({
+					document_id: personalDocumentId,
+					summary: "Personal summary.",
+					short_summary: "Personal.",
+					owned_by_user_id: testUserId,
+					folder_id: null,
+					access_group_id: null,
+					tags: ["personal"],
+				}),
+			},
+		] as const;
+
+		type MutableTable = (typeof tableFixtures)[number]["table"];
+
+		type InsertRow = Database["public"]["Tables"][MutableTable]["Insert"];
+
+		const insertRowWithServiceRole = async (
+			table: MutableTable,
+			row: InsertRow,
+		): Promise<number> => {
+			const { data, error } = await serviceRoleClient
+				.from(table)
+				.insert(row)
+				.select("id")
+				.single();
+			expect(error).toBeNull();
+			expect(data).not.toBeNull();
+			return data?.id ?? 0;
+		};
+
+		const readRowWithServiceRole = async (table: MutableTable, id: number) => {
+			const { data, error } = await serviceRoleClient
+				.from(table)
+				.select("*")
+				.eq("id", id)
+				.maybeSingle();
+			expect(error).toBeNull();
+			return data as Record<string, unknown> | null;
+		};
+
+		const deleteRowWithServiceRole = async (
+			table: MutableTable,
+			id: number,
+		) => {
+			await serviceRoleClient.from(table).delete().eq("id", id);
+		};
+
+		const visibleRowIdsAsUser = async (
+			table: MutableTable,
+			ids: number[],
+		): Promise<number[]> => {
+			const { data, error } = await signedInUserClient
+				.from(table)
+				.select("id")
+				.in("id", ids);
+			expect(error).toBeNull();
+			return (data ?? []).map((row) => row.id).sort((a, b) => a - b);
+		};
+
+		// RLS never raises on UPDATE/DELETE; it just leaves forbidden rows out of the affected set.
+		const updateRowAsUser = async (
+			table: MutableTable,
+			id: number,
+			values: Record<string, unknown>,
+		): Promise<number[]> => {
+			const { data, error } = await signedInUserClient
+				.from(table)
+				.update(values)
+				.eq("id", id)
+				.select("id");
+			expect(error).toBeNull();
+			return (data ?? []).map((row) => row.id);
+		};
+
+		const deleteRowAsUser = async (
+			table: MutableTable,
+			id: number,
+		): Promise<number[]> => {
+			const { data, error } = await signedInUserClient
+				.from(table)
+				.delete()
+				.eq("id", id)
+				.select("id");
+			expect(error).toBeNull();
+			return (data ?? []).map((row) => row.id);
+		};
+
+		const withTestUserAsAdmin = async (run: () => Promise<void>) => {
+			const { error: grantError } = await serviceRoleClient
+				.from("application_admins")
+				.insert({ user_id: testUserId });
+			expect(grantError).toBeNull();
+
+			try {
+				await run();
+			} finally {
+				await serviceRoleClient
+					.from("application_admins")
+					.delete()
+					.eq("user_id", testUserId);
+			}
+		};
+
+		const withTestUserBanned = async (run: () => Promise<void>) => {
+			const { error: banError } =
+				await serviceRoleClient.auth.admin.updateUserById(testUserId, {
+					ban_duration: "1h",
+				});
+			expect(banError).toBeNull();
+
+			try {
+				await run();
+			} finally {
+				await serviceRoleClient.auth.admin.updateUserById(testUserId, {
+					ban_duration: "none",
+				});
+			}
+		};
+
+		beforeAll(async () => {
+			const { data: personalDocument, error } = await serviceRoleClient
+				.from("documents")
+				.insert({
+					file_name: "rls-mutation-personal.pdf",
+					source_type: "personal_document",
+					source_url: `${testUserId}/rls-mutation-personal.pdf`,
+					file_checksum: "rls-mutation-personal-checksum",
+					file_size: SMALL_FILE_SIZE,
+					num_pages: 1,
+					folder_id: null,
+					owned_by_user_id: testUserId,
+					access_group_id: null,
+					processing_finished_at: new Date().toISOString(),
+				})
+				.select("id")
+				.single();
+			expect(error).toBeNull();
+			personalDocumentId = personalDocument?.id ?? 0;
+			expect(personalDocumentId).toBeGreaterThan(0);
+		});
+
+		afterAll(async () => {
+			await serviceRoleClient
+				.from("documents")
+				.delete()
+				.eq("id", personalDocumentId);
+		});
+
+		describe.each(tableFixtures)(
+			"$table",
+			({ table, textColumn, newBaseKnowledgeRow, newPersonalRow }) => {
+				let baseKnowledgeRowId: number;
+				let personalRowId: number;
+
+				beforeEach(async () => {
+					baseKnowledgeRowId = await insertRowWithServiceRole(
+						table,
+						newBaseKnowledgeRow(),
+					);
+					personalRowId = await insertRowWithServiceRole(
+						table,
+						newPersonalRow(),
+					);
+				});
+
+				afterEach(async () => {
+					await deleteRowWithServiceRole(table, baseKnowledgeRowId);
+					await deleteRowWithServiceRole(table, personalRowId);
+				});
+
+				it("lets a regular user read base knowledge rows and their own rows", async () => {
+					const visibleIds = await visibleRowIdsAsUser(table, [
+						baseKnowledgeRowId,
+						personalRowId,
+					]);
+
+					expect(visibleIds).toEqual([baseKnowledgeRowId, personalRowId]);
+				});
+
+				it("stops a regular user from deleting base knowledge rows", async () => {
+					const deletedIds = await deleteRowAsUser(table, baseKnowledgeRowId);
+
+					expect(deletedIds).toEqual([]);
+					expect(
+						await readRowWithServiceRole(table, baseKnowledgeRowId),
+					).not.toBeNull();
+				});
+
+				it("stops a regular user from rewriting base knowledge rows and taking them over", async () => {
+					const rowBefore = await readRowWithServiceRole(
+						table,
+						baseKnowledgeRowId,
+					);
+					const takeOverAsOwnRow = {
+						[textColumn]: "poisoned",
+						owned_by_user_id: testUserId,
+						access_group_id: null,
+					};
+
+					const updatedIds = await updateRowAsUser(
+						table,
+						baseKnowledgeRowId,
+						takeOverAsOwnRow,
+					);
+
+					expect(updatedIds).toEqual([]);
+					expect(
+						await readRowWithServiceRole(table, baseKnowledgeRowId),
+					).toEqual(rowBefore);
+				});
+
+				it("lets an admin update base knowledge rows", async () => {
+					await withTestUserAsAdmin(async () => {
+						const updatedIds = await updateRowAsUser(
+							table,
+							baseKnowledgeRowId,
+							{ [textColumn]: "updated by admin" },
+						);
+
+						expect(updatedIds).toEqual([baseKnowledgeRowId]);
+
+						const rowAfter = await readRowWithServiceRole(
+							table,
+							baseKnowledgeRowId,
+						);
+						expect(rowAfter?.[textColumn]).toBe("updated by admin");
+						expect(rowAfter?.owned_by_user_id).toBeNull();
+					});
+				});
+
+				it("lets an admin delete base knowledge rows", async () => {
+					await withTestUserAsAdmin(async () => {
+						const deletedIds = await deleteRowAsUser(table, baseKnowledgeRowId);
+
+						expect(deletedIds).toEqual([baseKnowledgeRowId]);
+						expect(
+							await readRowWithServiceRole(table, baseKnowledgeRowId),
+						).toBeNull();
+					});
+				});
+
+				it("lets the owner update and delete their own rows", async () => {
+					const updatedIds = await updateRowAsUser(table, personalRowId, {
+						[textColumn]: "updated by owner",
+					});
+					expect(updatedIds).toEqual([personalRowId]);
+
+					const deletedIds = await deleteRowAsUser(table, personalRowId);
+					expect(deletedIds).toEqual([personalRowId]);
+					expect(await readRowWithServiceRole(table, personalRowId)).toBeNull();
+				});
+
+				it("hides every row from a banned user who still holds a pre-ban token", async () => {
+					await withTestUserBanned(async () => {
+						const visibleIds = await visibleRowIdsAsUser(table, [
+							baseKnowledgeRowId,
+							personalRowId,
+						]);
+
+						expect(visibleIds).toEqual([]);
+					});
+				});
+			},
+		);
+	});
 });
