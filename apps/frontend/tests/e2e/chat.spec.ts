@@ -344,6 +344,8 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: secondaryDocumentName,

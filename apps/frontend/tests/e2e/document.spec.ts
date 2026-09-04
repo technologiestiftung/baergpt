@@ -199,6 +199,8 @@ test.describe("Documents", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			// Find the document row with the long filename
 			const longFileLocator = page
 				.locator("li", {
@@ -858,6 +860,8 @@ test.describe("Documents", () => {
 	testDesktopOnly("Drag & drop document to upload", async ({ page }) => {
 		await page.goto("/");
 
+		await openDocumentsPanel(page);
+
 		await uploadFileViaDragAndDropAndWait({
 			page,
 			fileName: secondaryDocumentName,
@@ -990,6 +994,8 @@ test.describe("Documents", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			await uploadFileViaDragAndDropAndWait({
 				page,
 				fileName: msWordDocumentName,
@@ -1027,6 +1033,8 @@ test.describe("Documents", () => {
 		"Upload excel document, open it in the preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			await uploadFileViaDragAndDropAndWait({
 				page,
@@ -1087,6 +1095,8 @@ test.describe("Documents", () => {
 		"Upload csv document, open it in the preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			await uploadFileViaDragAndDropAndWait({
 				page,
