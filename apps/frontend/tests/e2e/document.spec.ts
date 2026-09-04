@@ -887,15 +887,26 @@ test.describe("Documents", () => {
 		await openDocumentsPanel(page);
 		await expect(documentPanelHeading).toBeVisible();
 
-		const oldPanelWidth = await page.evaluate(
-			() => document.getElementById("desktop-documents-panel")?.clientWidth,
-		);
+		const getPanelWidth = () =>
+			page.evaluate(
+				() => document.getElementById("desktop-documents-panel")?.clientWidth,
+			);
 
-		expect(oldPanelWidth).toBeDefined();
+		// Opening the panel animates its width, so wait for two identical
+		// measurements before using the width as the baseline
+		let settledWidth = -1;
+		await expect
+			.poll(async () => {
+				const currentWidth = (await getPanelWidth()) ?? -1;
+				const hasSettled = currentWidth === settledWidth;
+				settledWidth = currentWidth;
+				return hasSettled;
+			})
+			.toBe(true);
 
-		if (!oldPanelWidth) {
-			throw new Error("oldPanelWidth is undefined");
-		}
+		const oldPanelWidth = settledWidth;
+
+		expect(oldPanelWidth).toBeGreaterThan(0);
 
 		// Increment to resize the panel
 		const increment = 100;
@@ -912,9 +923,7 @@ test.describe("Documents", () => {
 		// so we have to wait for the resizing to finish
 		await expect(resizer).toHaveAttribute("data-is-resizing", "false");
 
-		const newPanelWidth = await page.evaluate(
-			() => document.getElementById("desktop-documents-panel")?.clientWidth,
-		);
+		const newPanelWidth = await getPanelWidth();
 
 		// The panel width should have decreased
 		expect(newPanelWidth).toBeLessThan(oldPanelWidth);
