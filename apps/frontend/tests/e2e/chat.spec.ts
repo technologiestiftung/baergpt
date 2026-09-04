@@ -4,6 +4,7 @@ import {
 	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
+	openDocumentsPanel,
 	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
 import { expect, test } from "@playwright/test";
@@ -152,6 +153,8 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
+		await openDocumentsPanel(page);
+
 		// Find the add-to-chat button for the specific document
 		const addButton = page
 			.getByRole("listitem")
@@ -272,6 +275,8 @@ test.describe("Chat", () => {
 			const givenFolderName = "test-folder";
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			const menuButtonDocument = page
 				.getByRole("listitem")
@@ -407,6 +412,8 @@ test.describe("Chat", () => {
 		async ({ page, documentChunkId }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [documentChunkId];
 
@@ -526,6 +533,8 @@ test.describe("Chat", () => {
 			});
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [publicDocumentChunkId];
@@ -853,6 +862,8 @@ test.describe("Chat", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			await page.getByRole("button", { name: "In den Chat" }).first().click();
 
 			const baseKnowledgeFolderInChat = page.getByTestId(
@@ -979,6 +990,8 @@ test.describe("Chat", () => {
 			}
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const chatOptionsButton = page.getByRole("button", {
 				name: "Weitere Funktionen aktivieren",
 			});
@@ -1016,6 +1029,8 @@ test.describe("Chat", () => {
 			const givenFolderName = "test-folder";
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			// Create a new folder
 			await page
@@ -1171,6 +1186,8 @@ test.describe("Chat", () => {
 			}
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
 			await chatInput.fill("Hallo, wie geht es dir?");
