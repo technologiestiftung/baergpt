@@ -11,6 +11,7 @@ import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
 interface CurrentChatIdStore {
 	currentChatId: number | null;
+	newChatCount: number;
 	setCurrentChatId: (chatId: number | null) => void;
 }
 
@@ -84,6 +85,7 @@ const hideCompletionLoadingIndicator = () => {
 export const useCurrentChatIdStore = create<CurrentChatIdStore>()(
 	(set, get) => ({
 		currentChatId: null,
+		newChatCount: 0,
 		setCurrentChatId: (chatId) => {
 			const prevChatId = get().currentChatId;
 			const isFirstChat = prevChatId === null;
@@ -103,7 +105,11 @@ export const useCurrentChatIdStore = create<CurrentChatIdStore>()(
 			clearPreviewDocument();
 			hideCompletionLoadingIndicator();
 
-			set({ currentChatId: chatId });
+			set({
+				currentChatId: chatId,
+				newChatCount:
+					chatId === null ? get().newChatCount + 1 : get().newChatCount,
+			});
 		},
 	}),
 );

@@ -2,13 +2,12 @@ import React, {
 	type FormEvent,
 	type KeyboardEvent,
 	type MouseEvent,
+	useEffect,
 	useRef,
 	useState,
 } from "react";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
-import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
-import { ChatStopGeneratingIcon } from "../../primitives/icons/chat-stop-generating-icon.tsx";
 import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
@@ -26,10 +25,35 @@ import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
 import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
+import { useCurrentChatIdStore } from "../../../store/current-chat-id-store.ts";
+import { ChatSubmitButton } from "./chat-submit-button.tsx";
 
 export const chatFormId = "chat-form";
 
-export const ChatForm: React.FC = () => {
+interface ChatFormHandle {
+	focus: () => void;
+	setContent: (content: string) => void;
+}
+
+let activeChatForm: ChatFormHandle | null = null;
+
+export const focusChatForm = () => {
+	activeChatForm?.focus();
+};
+
+export const setChatInputContent = (content: string) => {
+	activeChatForm?.setContent(content);
+};
+
+interface ChatFormProps {
+	isCompact?: boolean;
+	onContentChange?: (content: string) => void;
+}
+
+export const ChatForm: React.FC<ChatFormProps> = ({
+	isCompact,
+	onContentChange,
+}) => {
 	const { status, clearError, isLoading } = useInferenceLoadingStatusStore();
 	const { selectedUserChatFolders: selectedUserChatFolders } =
 		useUserFolderStore();
@@ -43,6 +67,7 @@ export const ChatForm: React.FC = () => {
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [textareaContent, setTextareaContent] = useState("");
+	const { currentChatId, newChatCount } = useCurrentChatIdStore();
 
 	// Resize textarea on input
 	const handleTextAreaInput = () => {
@@ -50,8 +75,41 @@ export const ChatForm: React.FC = () => {
 			textareaRef.current.style.height = "auto";
 			textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
 			setTextareaContent(textareaRef.current.value);
+			onContentChange?.(textareaRef.current.value);
 		}
 	};
+
+	const setContent = (content: string) => {
+		const textareaElement = textareaRef.current;
+		if (!textareaElement) {
+			return;
+		}
+
+		textareaElement.value = content;
+		handleTextAreaInput();
+		textareaElement.focus();
+		textareaElement.setSelectionRange(content.length, content.length);
+	};
+
+	useEffect(() => {
+		const handle: ChatFormHandle = {
+			focus: () => textareaRef.current?.focus(),
+			setContent,
+		};
+		activeChatForm = handle;
+		textareaRef.current?.focus();
+
+		return () => {
+			if (activeChatForm === handle) {
+				activeChatForm = null;
+			}
+		};
+	}, [currentChatId, isCompact]);
+
+	// Discard a leftover draft when a new chat is started
+	useEffect(() => {
+		setContent("");
+	}, [newChatCount]);
 
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
@@ -165,78 +223,83 @@ export const ChatForm: React.FC = () => {
 		return Content["chat.textarea.placeholder"];
 	};
 
+	const contextPills = selectedChatTools.map((tool) => (
+		<ContextPill key={tool} tool={tool} onClose={() => toggleChatTool(tool)} />
+	));
+
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className={`relative flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
+			className={`relative flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px]
 				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
 			<ExternalToolWarningBanner />
 
-			<div className="flex flex-col justify-between rounded-b-3px">
-				<div
-					className={`rounded-[1px] my-2 pt-1 mx-3 px-1 flex z-10
-								has-[textarea:focus]:outline
-								has-[textarea:focus]:outline-[2px]
-								has-[textarea:focus]:outline-offset-0
-								has-[textarea:focus]:outline-mittelblau-100
-								has-[textarea:active]:outline
-								has-[textarea:active]:outline-[2px]
-								has-[textarea:active]:outline-offset-1
-								has-[textarea:active]:outline-dunkelblau-100
-								items-end
-								`}
-				>
-					<textarea
-						className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
-						ref={textareaRef}
-						name="content"
-						rows={1}
-						required={true}
-						placeholder={getTextAreaPlaceholder()}
-						onKeyDown={handleTextAreaKeyDown}
-						onInput={handleTextAreaInput}
-					/>
-				</div>
-				<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
-					<div className="flex items-center gap-3">
+			{isCompact ? (
+				<div className="flex flex-col rounded-b-3px pt-[15px] pb-3 pl-3 pr-4">
+					{contextPills.length > 0 && (
+						<div className="items-center gap-2 pb-2 hidden md:flex flex-wrap">
+							{contextPills}
+						</div>
+					)}
+					<div className="flex items-center gap-1 w-full">
 						<ChatMenuToggleButton />
-						<div className="items-center gap-2 hidden md:flex">
-							{selectedChatTools.map((tool) => (
-								<ContextPill
-									key={tool}
-									tool={tool}
-									onClose={() => toggleChatTool(tool)}
-								/>
-							))}
+						<div className="rounded-[1px] flex z-10 has-[textarea:focus]:outline has-[textarea:focus]:outline-[2px] has-[textarea:focus]:outline-offset-0 has-[textarea:focus]:outline-mittelblau-100 has-[textarea:active]:outline has-[textarea:active]:outline-[2px] has-[textarea:active]:outline-offset-1 has-[textarea:active]:outline-dunkelblau-100 flex-1 min-w-0 px-1">
+							<textarea
+								className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
+								ref={textareaRef}
+								name="content"
+								rows={1}
+								required={true}
+								placeholder={getTextAreaPlaceholder()}
+								onKeyDown={handleTextAreaKeyDown}
+								onInput={handleTextAreaInput}
+							/>
+						</div>
+						<div className="flex items-center gap-2.5 shrink-0">
+							<LlmModelToggleButton />
+							<ChatSubmitButton
+								showLoading={isLoading() && !hasError}
+								handleStop={handleStop}
+								isDisabled={!textareaContent.trim() || !isUploadingOver()}
+							/>
 						</div>
 					</div>
-					<div className="flex items-center gap-3">
-						<LlmModelToggleButton />
-						{isLoading() && !hasError ? (
-							<button
-								type="button"
-								aria-label={Content["chat.stopGeneratingButton.ariaLabel"]}
-								onClick={handleStop}
-								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-110 focus-visible:outline-2px"
-							>
-								<ChatStopGeneratingIcon />
-							</button>
-						) : (
-							<button
-								type="submit"
-								disabled={!textareaContent.trim() || !isUploadingOver()}
-								aria-label={Content["chat.sendButton.ariaLabel"]}
-								className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
-							>
-								<ArrowWhiteRightIcon />
-							</button>
-						)}
+				</div>
+			) : (
+				<div className="flex flex-col justify-between rounded-b-3px">
+					<div className="rounded-[1px] flex z-10 has-[textarea:focus]:outline has-[textarea:focus]:outline-[2px] has-[textarea:focus]:outline-offset-0 has-[textarea:focus]:outline-mittelblau-100 has-[textarea:active]:outline has-[textarea:active]:outline-[2px] has-[textarea:active]:outline-offset-1 has-[textarea:active]:outline-dunkelblau-100 my-2 pt-1 mx-3 px-1 items-end">
+						<textarea
+							className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
+							ref={textareaRef}
+							name="content"
+							rows={1}
+							required={true}
+							placeholder={getTextAreaPlaceholder()}
+							onKeyDown={handleTextAreaKeyDown}
+							onInput={handleTextAreaInput}
+						/>
+					</div>
+					<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
+						<div className="flex items-center gap-3">
+							<ChatMenuToggleButton />
+							<div className="items-center gap-2 hidden md:flex">
+								{contextPills}
+							</div>
+						</div>
+						<div className="flex items-center gap-3">
+							<LlmModelToggleButton />
+							<ChatSubmitButton
+								showLoading={isLoading() && !hasError}
+								handleStop={handleStop}
+								isDisabled={!textareaContent.trim() || !isUploadingOver()}
+							/>
+						</div>
 					</div>
 				</div>
-			</div>
+			)}
 		</form>
 	);
 };
