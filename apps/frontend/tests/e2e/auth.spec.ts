@@ -9,6 +9,7 @@ import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
 import Content from "../../src/content.ts";
+import { expectGreeting } from "./helpers/greeting.ts";
 
 /**
  * Passwordless login: enter the email, request a one-time code, then read the
@@ -32,11 +33,10 @@ test.describe("Login", () => {
 		const page1 = await loginViaOtp(page, account);
 
 		// Check if we are on the main page
-		await expect(
-			page1.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
+		await expectGreeting(
+			page1,
+			`${defaultUserFirstName} ${defaultUserLastName}`,
+		);
 
 		// Click on the drop-down button
 		await page1.getByRole("button", { name: "Profil öffnen" }).click();
@@ -220,11 +220,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 
 		await expect(page1).toHaveURL("/");
 
-		await expect(
-			page1.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${givenUserFirstName} ${givenUserLastName}`,
-			}),
-		).toBeVisible();
+		await expectGreeting(page1, `${givenUserFirstName} ${givenUserLastName}`);
 	});
 
 	testWithoutSplashScreen(
@@ -382,11 +378,10 @@ testWithRegisteredUser.describe("User ban", async () => {
 		async ({ page, account, baseURL }) => {
 			// Log in via OTP while the account is active.
 			const page1 = await loginViaOtp(page, account);
-			await expect(
-				page1.getByRole("heading", {
-					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-				}),
-			).toBeVisible();
+			await expectGreeting(
+				page1,
+				`${defaultUserFirstName} ${defaultUserLastName}`,
+			);
 
 			// Ban the user account in the database.
 			await banUser(account.id);
@@ -403,11 +398,10 @@ testWithRegisteredUser.describe("User ban", async () => {
 			await unbanUser(account.id);
 
 			const page2 = await loginViaOtp(page1, account);
-			await expect(
-				page2.getByRole("heading", {
-					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-				}),
-			).toBeVisible();
+			await expectGreeting(
+				page2,
+				`${defaultUserFirstName} ${defaultUserLastName}`,
+			);
 			await expect(page2).toHaveURL(`${baseURL}/`);
 		},
 	);
@@ -466,9 +460,9 @@ testWithLoggedInUser(
 		});
 		await linkToBaerGPTHomePage.click();
 
-		const homePageHeader = page1.getByRole("heading", {
-			name: "Willkommen bei BärGPT,",
-		});
-		await expect(homePageHeader).toBeVisible();
+		await expectGreeting(
+			page1,
+			`${defaultUserFirstName} ${defaultUserLastName}`,
+		);
 	},
 );

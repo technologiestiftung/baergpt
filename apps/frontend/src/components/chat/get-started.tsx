@@ -92,7 +92,7 @@ export const GetStarted: React.FC = () => {
 			icon: "icons/parla-icon.svg",
 			label: Content["chat.getStarted.parla.heading"],
 			onClick: () => {
-				if (isParlaAllowed) {
+				if (isParlaAllowed && !selectedChatTools.includes(PARLA_MCP)) {
 					toggleChatTool(PARLA_MCP);
 				}
 				focusChatForm();
@@ -102,7 +102,7 @@ export const GetStarted: React.FC = () => {
 			icon: "icons/web-search-icon.svg",
 			label: Content["chat.getStarted.webSearch.heading"],
 			onClick: () => {
-				if (isWebSearchAllowed) {
+				if (isWebSearchAllowed && !selectedChatTools.includes("webSearch")) {
 					toggleChatTool("webSearch");
 				}
 				focusChatForm();

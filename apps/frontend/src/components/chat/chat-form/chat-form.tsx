@@ -1,8 +1,10 @@
 import React, {
+	type ChangeEvent,
 	type FormEvent,
 	type KeyboardEvent,
 	type MouseEvent,
 	useEffect,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
@@ -66,30 +68,39 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	const { isUploadingOver } = useFileUploadsStore();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const shouldMoveCaretToEnd = useRef(false);
 	const [textareaContent, setTextareaContent] = useState("");
 	const { currentChatId, newChatCount } = useCurrentChatIdStore();
 
-	// Resize textarea on input
-	const handleTextAreaInput = () => {
-		if (textareaRef.current) {
-			textareaRef.current.style.height = "auto";
-			textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-			setTextareaContent(textareaRef.current.value);
-			onContentChange?.(textareaRef.current.value);
-		}
+	const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+		setTextareaContent(event.target.value);
+		onContentChange?.(event.target.value);
 	};
 
 	const setContent = (content: string) => {
+		setTextareaContent(content);
+		onContentChange?.(content);
+		shouldMoveCaretToEnd.current = true;
+		textareaRef.current?.focus();
+	};
+
+	useLayoutEffect(() => {
 		const textareaElement = textareaRef.current;
 		if (!textareaElement) {
 			return;
 		}
 
-		textareaElement.value = content;
-		handleTextAreaInput();
-		textareaElement.focus();
-		textareaElement.setSelectionRange(content.length, content.length);
-	};
+		textareaElement.style.height = "auto";
+		textareaElement.style.height = `${textareaElement.scrollHeight}px`;
+
+		if (shouldMoveCaretToEnd.current) {
+			shouldMoveCaretToEnd.current = false;
+			textareaElement.setSelectionRange(
+				textareaContent.length,
+				textareaContent.length,
+			);
+		}
+	}, [textareaContent, isCompact]);
 
 	useEffect(() => {
 		const handle: ChatFormHandle = {
@@ -132,7 +143,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		event.preventDefault();
 
 		const form = event.currentTarget;
-		const textarea = textareaRef.current;
 
 		// Check if textarea only contains whitespace
 		const messageText = form.content.value.trim();
@@ -146,10 +156,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		showInfoMessage(null);
 
 		// Clear textarea on submit
-		if (textarea) {
-			textarea.value = "";
-			handleTextAreaInput(); // Reset height
-		}
+		setTextareaContent("");
+		onContentChange?.("");
 
 		const allowed_document_ids = [
 			...selectedUserChatDocuments.map(({ id }) => id),
@@ -253,9 +261,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 								name="content"
 								rows={1}
 								required={true}
+								value={textareaContent}
 								placeholder={getTextAreaPlaceholder()}
 								onKeyDown={handleTextAreaKeyDown}
-								onInput={handleTextAreaInput}
+								onChange={handleTextAreaChange}
 							/>
 						</div>
 						<div className="flex items-center gap-2.5 shrink-0">
@@ -277,9 +286,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 							name="content"
 							rows={1}
 							required={true}
+							value={textareaContent}
 							placeholder={getTextAreaPlaceholder()}
 							onKeyDown={handleTextAreaKeyDown}
-							onInput={handleTextAreaInput}
+							onChange={handleTextAreaChange}
 						/>
 					</div>
 					<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">

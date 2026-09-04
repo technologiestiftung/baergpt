@@ -23,14 +23,8 @@ export const ChatSection: React.FC = () => {
 					<ChatInfoMessage />
 				</div>
 			) : (
-				<div
-					className={`w-full flex flex-col ${
-						currentMessages.length === 0
-							? "justify-end"
-							: "h-full justify-between"
-					} items-center`}
-				>
-					{currentMessages.length > 0 && <ChatMessages />}
+				<div className="w-full flex flex-col h-full justify-between items-center">
+					<ChatMessages />
 					<div className="w-full flex flex-col justify-center items-center self-end">
 						<div className="w-full max-w-[640px] flex flex-col">
 							<ChatForm />

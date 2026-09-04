@@ -879,12 +879,12 @@ export const Content = {
 	/* -------------------- ChatSection -------------------- */
 	//GetStarted
 	"chat.getStarted.questionMark": "?",
-	"chat.getStarted.h1.1": "Wobei darf ich helfen, ",
-	"chat.getStarted.h1.2": "Was steht heute an, ",
-	"chat.getStarted.h1.3.informal": "Womit kann ich dich unterstützen, ",
-	"chat.getStarted.h1.3.formal": "Womit kann ich Sie unterstützen, ",
-	"chat.getStarted.h1.4.informal": "Schön, dass du da bist, ",
-	"chat.getStarted.h1.4.formal": "Schön, dass Sie da sind, ",
+	"chat.getStarted.h1.1": "Wobei darf ich helfen,",
+	"chat.getStarted.h1.2": "Was steht heute an,",
+	"chat.getStarted.h1.3.informal": "Womit kann ich dich unterstützen,",
+	"chat.getStarted.h1.3.formal": "Womit kann ich Sie unterstützen,",
+	"chat.getStarted.h1.4.informal": "Schön, dass du da bist,",
+	"chat.getStarted.h1.4.formal": "Schön, dass Sie da sind,",
 	"chat.getStarted.parla.heading": "Parla durchsuchen",
 	"chat.getStarted.webSearch.heading": "Etwas recherchieren",
 	"chat.getStarted.writingPrompts.heading": "Schreiben oder Bearbeiten",
