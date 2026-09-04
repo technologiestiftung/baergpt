@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
+import { expectGreeting } from "./helpers/greeting.ts";
 
 test.describe("Maintenance Mode", () => {
 	test.beforeEach(async () => {
@@ -41,11 +42,10 @@ test.describe("Maintenance Mode", () => {
 			await page.goto("/");
 
 			// Verify user is logged in
-			await expect(
-				page.getByRole("heading", {
-					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-				}),
-			).toBeVisible();
+			await expectGreeting(
+				page,
+				`${defaultUserFirstName} ${defaultUserLastName}`,
+			);
 
 			// Step 2: Enable maintenance mode in the database
 			const { error: insertError } = await supabaseAdminClient

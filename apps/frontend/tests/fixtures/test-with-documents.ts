@@ -171,6 +171,25 @@ export async function uploadPublicDocumentIfNecessary(args: {
 	expect(count2).toBe(1);
 }
 
+export async function openDocumentsPanel(page: Page) {
+	const panel = page.locator("#desktop-documents-panel");
+	const showButton = panel.getByRole("button", {
+		name: "Anzeigen der Dateien",
+	});
+	const hideButton = panel.getByRole("button", {
+		name: "Ausblenden der Dateien",
+	});
+
+	await expect(showButton).toBeVisible();
+
+	if (await hideButton.isVisible()) {
+		return;
+	}
+
+	await showButton.click();
+	await expect(hideButton).toBeVisible();
+}
+
 /**
  * Mocks a full document upload:
  * - uploads file to storage
@@ -365,6 +384,8 @@ export async function uploadFileViaFileChooserAndWait({
 
 	await page.waitForLoadState("networkidle");
 
+	await openDocumentsPanel(page);
+
 	// Register the response waiter BEFORE triggering the upload: the combined
 	// route flushes its 200 SSE headers immediately, so the response can arrive
 	// before we'd otherwise start listening and be missed (→ timeout).
@@ -439,6 +460,8 @@ export async function attemptFileUploadViaFileChooser({
 
 	await page.waitForLoadState("networkidle");
 
+	await openDocumentsPanel(page);
+
 	if (browserName === "firefox") {
 		// Firefox: setup file chooser handler and use input element directly
 		page.on("filechooser", async (fileChooser) => {
@@ -475,6 +498,8 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	await page.goto("/");
 
 	await page.waitForLoadState("networkidle");
+
+	await openDocumentsPanel(page);
 
 	const filePaths = files.map((file) => file.path);
 
@@ -571,6 +596,8 @@ export async function attemptMultipleFilesViaFileChooser({
 
 	await page.waitForLoadState("networkidle");
 
+	await openDocumentsPanel(page);
+
 	const filePaths = files.map((file) => file.path);
 
 	if (browserName === "firefox") {
@@ -606,6 +633,8 @@ export async function uploadFileViaDragAndDropAndWait({
 	fileName: string;
 	fileType: string;
 }) {
+	await openDocumentsPanel(page);
+
 	const buffer = readFileSync(filePath).toString("base64");
 
 	const dataTransfer = await page.evaluateHandle(
@@ -665,6 +694,8 @@ export async function deleteFileViaUI({
 	page: Page;
 	fileName: string;
 }) {
+	await openDocumentsPanel(page);
+
 	// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 	const enterMultiSelectButton = page.getByRole("button", {
 		name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
