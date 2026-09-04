@@ -136,23 +136,24 @@ export const GetStarted: React.FC = () => {
 	];
 
 	return (
-		<div className="flex flex-col gap-5">
-			<div className="flex flex-col gap-7 items-center justify-center">
-				<h1 className="text-2xl leading-8 font-semibold md:text-4xl md:leading-10 text-dunkelblau-100">
+		<div className="flex flex-col gap-3.5 md:gap-5 flex-1 md:flex-none">
+			<div className="flex flex-1 items-center justify-center md:flex-none md:mb-2">
+				<h1 className="text-2xl leading-8 font-semibold md:text-4xl md:leading-10 text-dunkelblau-100 text-center">
 					{greeting}
 					{Content["chat.getStarted.questionMark"]}
 				</h1>
-				<div className="w-full max-w-[760px] flex flex-col">
-					<ChatForm
-						isCompact={!isMobile && isChatFormCompact}
-						onContentChange={(content) =>
-							setHasChatInputDraft(content.trim().length > 0)
-						}
-					/>
-				</div>
+			</div>
+
+			<div className="w-full max-w-[760px] self-center flex flex-col order-2 md:order-1">
+				<ChatForm
+					isCompact={!isMobile && isChatFormCompact}
+					onContentChange={(content) =>
+						setHasChatInputDraft(content.trim().length > 0)
+					}
+				/>
 			</div>
 			<div
-				className={`grid gap-1 self-start items-start w-full ${hasChatInputDraft && "invisible"}`}
+				className={`grid gap-1.5 self-start items-start w-full order-1 md:order-2 ${hasChatInputDraft && "invisible"}`}
 			>
 				{isShowingWritingPrompts ? (
 					<>

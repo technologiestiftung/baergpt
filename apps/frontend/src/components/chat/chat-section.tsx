@@ -16,7 +16,7 @@ export const ChatSection: React.FC = () => {
 	const currentMessages = currentChat?.messages || [];
 
 	return (
-		<DropZoneWrapperChat className="text-dunkelblau-100 w-full max-w-full mx-auto flex h-[95%] md:h-full flex-col items-center justify-between py-5 md:pt-6 relative px-4 md:px-5">
+		<DropZoneWrapperChat className="text-dunkelblau-100 w-full max-w-full mx-auto flex h-[95%] md:h-full flex-col items-center justify-between pt-5 pb-3.5 md:pt-6 md:pb-5 relative px-4 md:px-5">
 			{currentMessages.length === 0 ? (
 				<div className="flex flex-col justify-center w-full h-full max-w-[760px] overflow-y-auto gap-y-4">
 					<GetStarted />
