@@ -50,7 +50,9 @@ export const GetStarted: React.FC = () => {
 	}, [newChatCount]);
 
 	useEffect(() => {
-		if (selectedChatTools.length === 0 && !hasChatInputDraft) {
+		if (selectedChatTools.length > 0) {
+			setIsChatFormCompact(false);
+		} else if (!hasChatInputDraft) {
 			setIsChatFormCompact(true);
 		}
 	}, [selectedChatTools, hasChatInputDraft]);
@@ -92,7 +94,6 @@ export const GetStarted: React.FC = () => {
 			onClick: () => {
 				if (isParlaAllowed) {
 					toggleChatTool(PARLA_MCP);
-					setIsChatFormCompact(false);
 				}
 				focusChatForm();
 			},
@@ -103,7 +104,6 @@ export const GetStarted: React.FC = () => {
 			onClick: () => {
 				if (isWebSearchAllowed) {
 					toggleChatTool("webSearch");
-					setIsChatFormCompact(false);
 				}
 				focusChatForm();
 			},
@@ -151,37 +151,35 @@ export const GetStarted: React.FC = () => {
 					/>
 				</div>
 			</div>
-			{isChatFormCompact && (
-				<div
-					className={`grid gap-1 self-start items-start w-full ${hasChatInputDraft && "invisible"}`}
-				>
-					{isShowingWritingPrompts ? (
-						<>
-							{writingPrompts.map((prompt) => (
-								<GetStartedButton
-									key={prompt.label}
-									iconSrc={prompt.icon}
-									label={prompt.label}
-									onClick={() => {
-										setChatInputContent(prompt.input);
-									}}
-								/>
-							))}
-						</>
-					) : (
-						<>
-							{promptStarters.map((prompt) => (
-								<GetStartedButton
-									key={prompt.label}
-									iconSrc={prompt.icon}
-									label={prompt.label}
-									onClick={prompt.onClick}
-								/>
-							))}
-						</>
-					)}
-				</div>
-			)}
+			<div
+				className={`grid gap-1 self-start items-start w-full ${hasChatInputDraft && "invisible"}`}
+			>
+				{isShowingWritingPrompts ? (
+					<>
+						{writingPrompts.map((prompt) => (
+							<GetStartedButton
+								key={prompt.label}
+								iconSrc={prompt.icon}
+								label={prompt.label}
+								onClick={() => {
+									setChatInputContent(prompt.input);
+								}}
+							/>
+						))}
+					</>
+				) : (
+					<>
+						{promptStarters.map((prompt) => (
+							<GetStartedButton
+								key={prompt.label}
+								iconSrc={prompt.icon}
+								label={prompt.label}
+								onClick={prompt.onClick}
+							/>
+						))}
+					</>
+				)}
+			</div>
 		</div>
 	);
 };
