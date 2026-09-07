@@ -62,8 +62,7 @@ export const MobileProfileDrawer = () => {
 								flex rounded-3px h-10 w-fit items-center px-1 gap-1 text-white
 								`}
 								href={Content["sidebar.navigation.privacy.link"]}
-								target="_blank"
-								rel="noopener noreferrer"
+								target="_self"
 							>
 								<img src="/icons/lock-icon.svg" alt="" />
 								<span className="text-hellblau-50">

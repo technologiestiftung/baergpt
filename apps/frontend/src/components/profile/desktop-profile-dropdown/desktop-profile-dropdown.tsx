@@ -17,7 +17,7 @@ export const DesktopProfileDropdown = React.forwardRef<HTMLDivElement>(
 		return (
 			<div
 				ref={ref}
-				className="absolute bottom-full mb-0.5 flex flex-col items-center left-0 z-50 p-1 w-full rounded-[3px] bg-hellblau-30 text-dunkelblau-80"
+				className="absolute bottom-full mb-0.5 flex flex-col items-center left-0 z-50 p-1 w-full min-w-[232px] rounded-[3px] bg-hellblau-30 text-dunkelblau-80"
 			>
 				{/* Profile */}
 				<DesktopProfileDropdownItem
