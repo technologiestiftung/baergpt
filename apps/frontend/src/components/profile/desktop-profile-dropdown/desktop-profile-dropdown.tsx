@@ -14,46 +14,55 @@ export const DesktopProfileDropdown = React.forwardRef<HTMLDivElement>(
 			return null;
 		}
 
-		const { first_name, last_name } = session.user.user_metadata;
 		return (
 			<div
 				ref={ref}
-				className="absolute right-5 z-50 mt-3 py-[5px] px-1 w-48 rounded-[3px] bg-hellblau-100 text-dunkelblau-100"
+				className="absolute bottom-full mb-0.5 flex flex-col items-center left-0 z-50 p-1 w-full rounded-[3px] bg-hellblau-30 text-dunkelblau-80"
 			>
-				<div className="flex flex-col gap-3 justify-between">
-					<div className="px-1 py-0.5 text-base leading-6 font-semibold border-b-[0.25px] border-dunkelblau-60">
-						<span>
-							{first_name} {last_name}
-						</span>
-					</div>
-					<div className="flex flex-col gap-1">
-						{/* Profile */}
-						<DesktopProfileDropdownItem
-							icon="/icons/profile-icon.svg"
-							label={Content["profile.title"]}
-							href="/profile/"
-						/>
-						{/* Admin */}
-						{isUserAdmin && (
-							<DesktopProfileDropdownItem
-								icon="/icons/admin-icon.svg"
-								label={Content["admin.button.link.label"]}
-								href={adminLink}
-							/>
-						)}
-						{/* Logout */}
-						<DesktopProfileDropdownItem
-							type="button"
-							icon="/icons/logout-icon.svg"
-							label={Content["profile.button.logout.label"]}
-							onClick={() => {
-								clearFileUploads();
-								logout();
-							}}
-							ariaLabel={Content["profile.button.logout.ariaLabel"]}
-						/>
-					</div>
-				</div>
+				{/* Profile */}
+				<DesktopProfileDropdownItem
+					icon="/icons/profile-icon-light.svg"
+					label={Content["profile.title"]}
+					href="/profile/"
+				/>
+				{/* Admin */}
+				{isUserAdmin && (
+					<DesktopProfileDropdownItem
+						icon="/icons/admin-icon-light.svg"
+						label={Content["admin.button.link.label"]}
+						href={adminLink}
+					/>
+				)}
+				<span className="h-[0.5px] w-[calc(100%-24px)] bg-hellblau-100 px-3" />
+				{/* Imprint & Privacy */}
+				<DesktopProfileDropdownItem
+					type="link"
+					icon="/icons/imprint-icon-light.svg"
+					label={Content["sidebar.navigation.imprint"]}
+					href={Content["sidebar.navigation.imprint.link"]}
+					openInNewTab={true}
+					ariaLabel={Content["sidebar.navigation.imprint.ariaLabel"]}
+				/>
+				<DesktopProfileDropdownItem
+					type="link"
+					icon="/icons/lock-icon-light.svg"
+					label={Content["sidebar.navigation.privacy"]}
+					href={Content["sidebar.navigation.privacy.link"]}
+					ariaLabel={Content["sidebar.navigation.privacy.ariaLabel"]}
+				/>
+				<span className="h-[0.5px] w-[calc(100%-24px)] bg-hellblau-100" />
+
+				{/* Logout */}
+				<DesktopProfileDropdownItem
+					type="button"
+					icon="/icons/logout-icon-light.svg"
+					label={Content["profile.button.logout.label"]}
+					onClick={() => {
+						clearFileUploads();
+						logout();
+					}}
+					ariaLabel={Content["profile.button.logout.ariaLabel"]}
+				/>
 			</div>
 		);
 	},

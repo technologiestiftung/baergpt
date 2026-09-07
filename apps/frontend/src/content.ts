@@ -659,6 +659,9 @@ export const Content = {
 	"sidebar.navigation.feedback.link":
 		"https://citylabberlin.typeform.com/to/GhoCHw0J",
 	"sidebar.navigation.feedback.ariaLabel": "Feedback geben",
+	"sidebar.navigation.help": "Tipps und Hilfe",
+	"sidebar.navigation.help.link": "https://hilfe.baergpt.berlin/",
+	"sidebar.navigation.help.ariaLabel": "Tipps und Hilfe",
 	"sidebar.navigation.privacy": "Datenschutz",
 	"sidebar.navigation.privacy.link": "/privacy-policy/",
 	"sidebar.navigation.privacy.ariaLabel": "Zur Datenschutz-Seite navigieren",
@@ -726,6 +729,7 @@ export const Content = {
 	"historyEntryDropdown.delete.imgAlt": "Mülleimer-Icon",
 	"historyEntryDropdown.renameInput.ariaLabel": "Chat umbenennen",
 	//profileButton
+	"profile.button.tooltipLabel": "Profil",
 	"profile.button.ariaLabel": "Profil öffnen",
 	"profile.button.mobile": "Profileinstellungen",
 	//toast
@@ -1045,7 +1049,7 @@ export const Content = {
 		"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 
 	/* -------------------- Profile -------------------- */
-	"profile.title": "Profil",
+	"profile.title": "Mein Profil",
 	"profile.title.mobile": "Mein Profil",
 	"profile.button.logout.label": "Ausloggen",
 	"profile.button.logout.ariaLabel": "Ausloggen",

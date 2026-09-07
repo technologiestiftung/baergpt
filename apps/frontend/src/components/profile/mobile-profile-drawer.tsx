@@ -42,6 +42,36 @@ export const MobileProfileDrawer = () => {
 								{Content["profile.button.mobile"]}
 							</span>
 						</a>
+						{/* imprint and privacy */}
+						<div className="border-y border-dunkelblau-80">
+							<a
+								className={`
+								flex rounded-3px h-10 w-fit items-center px-1 gap-1 text-white
+								`}
+								href={Content["sidebar.navigation.imprint.link"]}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								<img src="/icons/imprint-icon.svg" alt="" />
+								<span className="text-hellblau-50">
+									{Content["sidebar.navigation.imprint"]}
+								</span>
+							</a>
+							<a
+								className={`
+								flex rounded-3px h-10 w-fit items-center px-1 gap-1 text-white
+								`}
+								href={Content["sidebar.navigation.privacy.link"]}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								<img src="/icons/lock-icon.svg" alt="" />
+								<span className="text-hellblau-50">
+									{Content["sidebar.navigation.privacy"]}
+								</span>
+							</a>
+						</div>
+						{/* logout button */}
 						<button
 							className={`
 								flex rounded-3px h-10 w-fit items-center px-1 gap-1 text-white
