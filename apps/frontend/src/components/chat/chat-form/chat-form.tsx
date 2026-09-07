@@ -70,7 +70,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const shouldMoveCaretToEnd = useRef(false);
 	const [textareaContent, setTextareaContent] = useState("");
-	const { currentChatId, newChatCount } = useCurrentChatIdStore();
+	const { currentChatId } = useCurrentChatIdStore();
 
 	const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
 		setTextareaContent(event.target.value);
@@ -116,11 +116,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 			}
 		};
 	}, [currentChatId, isCompact]);
-
-	// Discard a leftover draft when a new chat is started
-	useEffect(() => {
-		setContent("");
-	}, [newChatCount]);
 
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter

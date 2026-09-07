@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Content from "../../content.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
@@ -10,7 +10,6 @@ import {
 import { CONNECTOR_VALUES } from "./chat-form/chat-menu/chat-menu-connectors-submenu.tsx";
 import { useChatsStore } from "../../store/use-chats-store.ts";
 import { config } from "../../config.ts";
-import { useCurrentChatIdStore } from "../../store/current-chat-id-store.ts";
 import { useIsMobile } from "../../hooks/use-mobile.tsx";
 import { GetStartedButton } from "./get-started-button.tsx";
 
@@ -37,31 +36,14 @@ export const GetStarted: React.FC = () => {
 	const { user } = useUserStore();
 	const { toggleChatTool, selectedChatTools } = useChatsStore();
 	const [isShowingWritingPrompts, setIsShowingWritingPrompts] = useState(false);
-	const [isChatFormCompact, setIsChatFormCompact] = useState(true);
 	const [hasChatInputDraft, setHasChatInputDraft] = useState(false);
 	const isParlaAllowed = config.featureFlagMcpParlaAllowed;
 	const isWebSearchAllowed = config.featureFlagWebSearchAllowed;
 
-	const { newChatCount } = useCurrentChatIdStore();
 	const isMobile = useIsMobile();
 
-	useEffect(() => {
-		setIsShowingWritingPrompts(false);
-	}, [newChatCount]);
-
-	useEffect(() => {
-		if (selectedChatTools.length > 0) {
-			setIsChatFormCompact(false);
-		} else if (!hasChatInputDraft) {
-			setIsChatFormCompact(true);
-		}
-	}, [selectedChatTools, hasChatInputDraft]);
-
-	useEffect(() => {
-		if (!hasChatInputDraft) {
-			setIsShowingWritingPrompts(false);
-		}
-	}, [hasChatInputDraft]);
+	const isChatFormCompact =
+		selectedChatTools.length === 0 && !hasChatInputDraft;
 
 	const greetingIndex = useMemo(
 		() => Math.floor(Math.random() * GREETING_KEYS.length),
@@ -147,13 +129,17 @@ export const GetStarted: React.FC = () => {
 			<div className="w-full max-w-[760px] self-center flex flex-col order-2 md:order-1">
 				<ChatForm
 					isCompact={!isMobile && isChatFormCompact}
-					onContentChange={(content) =>
-						setHasChatInputDraft(content.trim().length > 0)
-					}
+					onContentChange={(content) => {
+						const hasDraft = content.trim().length > 0;
+						setHasChatInputDraft(hasDraft);
+						if (!hasDraft) {
+							setIsShowingWritingPrompts(false);
+						}
+					}}
 				/>
 			</div>
 			<div
-				className={`grid gap-1.5 self-start items-start w-full order-1 md:order-2 ${hasChatInputDraft && "invisible"}`}
+				className={`grid gap-1.5 px-1 self-start items-start w-full order-1 md:order-2 ${hasChatInputDraft && "invisible"}`}
 			>
 				{isShowingWritingPrompts ? (
 					<>
