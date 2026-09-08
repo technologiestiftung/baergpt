@@ -32,6 +32,8 @@ import { ChatSubmitButton } from "./chat-submit-button.tsx";
 
 export const chatFormId = "chat-form";
 
+const singleLineHeightFallback = 24;
+
 interface ChatFormHandle {
 	focus: () => void;
 	setContent: (content: string) => void;
@@ -50,11 +52,13 @@ export const setChatInputContent = (content: string) => {
 interface ChatFormProps {
 	isCompact?: boolean;
 	onContentChange?: (content: string) => void;
+	onMultilineChange?: (isMultiline: boolean) => void;
 }
 
 export const ChatForm: React.FC<ChatFormProps> = ({
 	isCompact,
 	onContentChange,
+	onMultilineChange,
 }) => {
 	const { status, clearError, isLoading } = useInferenceLoadingStatusStore();
 	const { selectedUserChatFolders: selectedUserChatFolders } =
@@ -70,6 +74,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const shouldMoveCaretToEnd = useRef(false);
 	const [textareaContent, setTextareaContent] = useState("");
+	const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
+	const shouldSuppressFocusRing = useRef(false);
 	const { currentChatId } = useCurrentChatIdStore();
 
 	const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -77,11 +83,16 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		onContentChange?.(event.target.value);
 	};
 
+	const focusTextArea = () => {
+		shouldSuppressFocusRing.current = true;
+		textareaRef.current?.focus();
+	};
+
 	const setContent = (content: string) => {
 		setTextareaContent(content);
 		onContentChange?.(content);
 		shouldMoveCaretToEnd.current = true;
-		textareaRef.current?.focus();
+		focusTextArea();
 	};
 
 	useLayoutEffect(() => {
@@ -91,7 +102,18 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		}
 
 		textareaElement.style.height = "auto";
-		textareaElement.style.height = `${textareaElement.scrollHeight}px`;
+		const contentHeight = textareaElement.scrollHeight;
+		textareaElement.style.height = `${contentHeight}px`;
+
+		const lineHeight =
+			Number.parseFloat(getComputedStyle(textareaElement).lineHeight) ||
+			singleLineHeightFallback;
+
+		const overflowsSingleLine =
+			textareaElement.scrollWidth > textareaElement.clientWidth;
+		onMultilineChange?.(
+			overflowsSingleLine || contentHeight > lineHeight * 1.5,
+		);
 
 		if (shouldMoveCaretToEnd.current) {
 			shouldMoveCaretToEnd.current = false;
@@ -100,22 +122,22 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 				textareaContent.length,
 			);
 		}
-	}, [textareaContent, isCompact]);
+	}, [textareaContent, isCompact, onMultilineChange]);
 
 	useEffect(() => {
 		const handle: ChatFormHandle = {
-			focus: () => textareaRef.current?.focus(),
+			focus: focusTextArea,
 			setContent,
 		};
 		activeChatForm = handle;
-		textareaRef.current?.focus();
+		focusTextArea();
 
 		return () => {
 			if (activeChatForm === handle) {
 				activeChatForm = null;
 			}
 		};
-	}, [currentChatId, isCompact]);
+	}, [currentChatId]);
 
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
@@ -240,71 +262,76 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 			<SelectedChatItemsCollapsible />
 			<ExternalToolWarningBanner />
 
-			{isCompact ? (
-				<div className="flex flex-col rounded-b-3px pt-[15px] pb-3 pl-3 pr-4">
-					{contextPills.length > 0 && (
-						<div className="items-center gap-2 pb-2 hidden md:flex flex-wrap">
-							{contextPills}
-						</div>
-					)}
-					<div className="flex items-center gap-1 w-full">
-						<ChatMenuToggleButton />
-						<div className="rounded-[1px] flex z-10 has-[textarea:focus]:outline has-[textarea:focus]:outline-[2px] has-[textarea:focus]:outline-offset-0 has-[textarea:focus]:outline-mittelblau-100 has-[textarea:active]:outline has-[textarea:active]:outline-[2px] has-[textarea:active]:outline-offset-1 has-[textarea:active]:outline-dunkelblau-100 flex-1 min-w-0 px-1">
-							<textarea
-								className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
-								ref={textareaRef}
-								name="content"
-								rows={1}
-								required={true}
-								value={textareaContent}
-								placeholder={getTextAreaPlaceholder()}
-								onKeyDown={handleTextAreaKeyDown}
-								onChange={handleTextAreaChange}
-							/>
-						</div>
-						<div className="flex items-center gap-2.5 shrink-0">
-							<LlmModelToggleButton />
-							<ChatSubmitButton
-								showLoading={isLoading() && !hasError}
-								handleStop={handleStop}
-								isDisabled={!textareaContent.trim() || !isUploadingOver()}
-							/>
-						</div>
-					</div>
+			<div
+				className={`flex flex-wrap items-center rounded-b-3px transition-[padding,row-gap,column-gap] duration-200 ease-out motion-reduce:transition-none ${
+					isCompact
+						? "gap-x-1 gap-y-2 pt-[15px] pb-3 pl-3 pr-4"
+						: "gap-x-3 gap-y-3 pt-2 pb-3 px-3"
+				}`}
+			>
+				<div
+					onPointerDown={() => {
+						shouldSuppressFocusRing.current = true;
+					}}
+					className={`rounded-[1px] flex z-10 ${
+						hasKeyboardFocus
+							? "outline outline-[2px] outline-offset-0 outline-mittelblau-100"
+							: ""
+					} has-[textarea:active]:outline has-[textarea:active]:outline-[2px] has-[textarea:active]:outline-offset-1 has-[textarea:active]:outline-dunkelblau-100 min-w-0 grow px-1 transition-[padding] duration-200 ease-out motion-reduce:transition-none ${
+						isCompact ? "order-3 basis-0" : "order-1 basis-full items-end pt-1"
+					}`}
+				>
+					<textarea
+						className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80 ${
+							isCompact ? "overflow-x-hidden" : ""
+						}`}
+						ref={textareaRef}
+						name="content"
+						rows={1}
+						wrap={isCompact ? "off" : "soft"}
+						required={true}
+						value={textareaContent}
+						placeholder={getTextAreaPlaceholder()}
+						onKeyDown={handleTextAreaKeyDown}
+						onChange={handleTextAreaChange}
+						onFocus={() => {
+							setHasKeyboardFocus(!shouldSuppressFocusRing.current);
+							shouldSuppressFocusRing.current = false;
+						}}
+						onBlur={() => {
+							setHasKeyboardFocus(false);
+							shouldSuppressFocusRing.current = false;
+						}}
+					/>
 				</div>
-			) : (
-				<div className="flex flex-col justify-between rounded-b-3px">
-					<div className="rounded-[1px] flex z-10 has-[textarea:focus]:outline has-[textarea:focus]:outline-[2px] has-[textarea:focus]:outline-offset-0 has-[textarea:focus]:outline-mittelblau-100 has-[textarea:active]:outline has-[textarea:active]:outline-[2px] has-[textarea:active]:outline-offset-1 has-[textarea:active]:outline-dunkelblau-100 my-2 pt-1 mx-3 px-1 items-end">
-						<textarea
-							className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
-							ref={textareaRef}
-							name="content"
-							rows={1}
-							required={true}
-							value={textareaContent}
-							placeholder={getTextAreaPlaceholder()}
-							onKeyDown={handleTextAreaKeyDown}
-							onChange={handleTextAreaChange}
-						/>
-					</div>
-					<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
-						<div className="flex items-center gap-3">
-							<ChatMenuToggleButton />
-							<div className="items-center gap-2 hidden md:flex">
-								{contextPills}
-							</div>
-						</div>
-						<div className="flex items-center gap-3">
-							<LlmModelToggleButton />
-							<ChatSubmitButton
-								showLoading={isLoading() && !hasError}
-								handleStop={handleStop}
-								isDisabled={!textareaContent.trim() || !isUploadingOver()}
-							/>
-						</div>
-					</div>
+
+				<div className={`order-2 ${isCompact ? "" : "ml-1"}`}>
+					<ChatMenuToggleButton />
 				</div>
-			)}
+
+				{contextPills.length > 0 && (
+					<div
+						className={`items-center gap-2 hidden md:flex flex-wrap ${
+							isCompact ? "order-1 basis-full" : "order-3"
+						}`}
+					>
+						{contextPills}
+					</div>
+				)}
+
+				<div
+					className={`order-4 flex items-center shrink-0 z-10 transition-[column-gap,margin] duration-200 ease-out motion-reduce:transition-none ${
+						isCompact ? "gap-2.5" : "gap-3 ml-auto mr-1"
+					}`}
+				>
+					<LlmModelToggleButton />
+					<ChatSubmitButton
+						showLoading={isLoading() && !hasError}
+						handleStop={handleStop}
+						isDisabled={!textareaContent.trim() || !isUploadingOver()}
+					/>
+				</div>
+			</div>
 		</form>
 	);
 };

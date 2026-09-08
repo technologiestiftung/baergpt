@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import Content from "../../content.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
@@ -37,13 +37,29 @@ export const GetStarted: React.FC = () => {
 	const { toggleChatTool, selectedChatTools } = useChatsStore();
 	const [isShowingWritingPrompts, setIsShowingWritingPrompts] = useState(false);
 	const [hasChatInputDraft, setHasChatInputDraft] = useState(false);
+	const [isChatInputMultiline, setIsChatInputMultiline] = useState(false);
 	const isParlaAllowed = config.featureFlagMcpParlaAllowed;
 	const isWebSearchAllowed = config.featureFlagWebSearchAllowed;
 
 	const isMobile = useIsMobile();
 
 	const isChatFormCompact =
-		selectedChatTools.length === 0 && !hasChatInputDraft;
+		selectedChatTools.length === 0 && !isChatInputMultiline;
+
+	const handleChatInputContentChange = useCallback((content: string) => {
+		const hasDraft = content.trim().length > 0;
+		setHasChatInputDraft(hasDraft);
+		if (!hasDraft) {
+			setIsShowingWritingPrompts(false);
+			setIsChatInputMultiline(false);
+		}
+	}, []);
+
+	const handleChatInputMultilineChange = useCallback((isMultiline: boolean) => {
+		if (isMultiline) {
+			setIsChatInputMultiline(true);
+		}
+	}, []);
 
 	const greetingIndex = useMemo(
 		() => Math.floor(Math.random() * GREETING_KEYS.length),
@@ -129,13 +145,8 @@ export const GetStarted: React.FC = () => {
 			<div className="w-full max-w-[760px] self-center flex flex-col order-2 md:order-1">
 				<ChatForm
 					isCompact={!isMobile && isChatFormCompact}
-					onContentChange={(content) => {
-						const hasDraft = content.trim().length > 0;
-						setHasChatInputDraft(hasDraft);
-						if (!hasDraft) {
-							setIsShowingWritingPrompts(false);
-						}
-					}}
+					onContentChange={handleChatInputContentChange}
+					onMultilineChange={handleChatInputMultilineChange}
 				/>
 			</div>
 			<div
