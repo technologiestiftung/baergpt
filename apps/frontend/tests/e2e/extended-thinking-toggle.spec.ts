@@ -22,6 +22,17 @@ function openModelDropdown(page: Page, triggerLabel = fastModelLabel) {
 	return page.getByRole("button", { name: triggerLabel, exact: false }).click();
 }
 
+/** True while the focused element is one of the dropdown's own controls. */
+function isFocusInsideDropdown(page: Page): Promise<boolean> {
+	return page.evaluate(() => {
+		const active = document.activeElement;
+		return (
+			active instanceof HTMLElement &&
+			active.matches('[role="option"], [role="switch"]')
+		);
+	});
+}
+
 /** Reads `extended_thinking` off the next completion request the page makes. */
 function captureExtendedThinkingFlag(page: Page): Promise<boolean> {
 	return page
@@ -139,11 +150,18 @@ testWithMockedLlm.describe("Extended thinking toggle", () => {
 			await expect(toggle).toBeFocused();
 			await expect(toggle).toBeVisible();
 
+			// The switch is the last stop: rather than trapping focus, Tab leaves
+			// the dropdown forwards and Shift+Tab from the first option leaves it
+			// backwards. Where focus lands outside is up to the browser; what
+			// matters is that it leaves and the dropdown stays open.
 			await page.keyboard.press("Tab");
-			await expect(options.first()).toBeFocused();
+			await expect(isFocusInsideDropdown(page)).resolves.toBe(false);
+			await expect(toggle).toBeVisible();
 
+			await options.first().focus();
 			await page.keyboard.press("Shift+Tab");
-			await expect(toggle).toBeFocused();
+			await expect(isFocusInsideDropdown(page)).resolves.toBe(false);
+			await expect(toggle).toBeVisible();
 		},
 	);
 
