@@ -5,6 +5,7 @@ import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
 import { config } from "../config.ts";
 import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
+import { expectGreeting } from "./helpers/greeting.ts";
 
 // Tagged @no-parallel: these tests flip the app-global `maintenance_mode` row,
 // which logs out every user app-wide. The CI/npm scripts run this describe on
@@ -48,11 +49,10 @@ test.describe("Maintenance Mode", { tag: "@no-parallel" }, () => {
 			await page.goto("/");
 
 			// Verify user is logged in
-			await expect(
-				page.getByRole("heading", {
-					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-				}),
-			).toBeVisible();
+			await expectGreeting(
+				page,
+				`${defaultUserFirstName} ${defaultUserLastName}`,
+			);
 
 			// Step 2: Enable maintenance mode in the database
 			const { error: insertError } = await supabaseAdminClient

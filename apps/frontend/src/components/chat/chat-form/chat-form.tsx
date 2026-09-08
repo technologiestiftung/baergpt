@@ -1,14 +1,15 @@
 import React, {
+	type ChangeEvent,
 	type FormEvent,
 	type KeyboardEvent,
 	type MouseEvent,
+	useEffect,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
-import { ArrowWhiteRightIcon } from "../../primitives/icons/arrow-white-right-icon.tsx";
-import { ChatStopGeneratingIcon } from "../../primitives/icons/chat-stop-generating-icon.tsx";
 import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
@@ -26,10 +27,39 @@ import { ContextPill } from "../../primitives/pill/context-pill.tsx";
 import * as Sentry from "@sentry/react";
 import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
+import { useCurrentChatIdStore } from "../../../store/current-chat-id-store.ts";
+import { ChatSubmitButton } from "./chat-submit-button.tsx";
 
 export const chatFormId = "chat-form";
 
-export const ChatForm: React.FC = () => {
+const singleLineHeightFallback = 24;
+
+interface ChatFormHandle {
+	focus: () => void;
+	setContent: (content: string) => void;
+}
+
+let activeChatForm: ChatFormHandle | null = null;
+
+export const focusChatForm = () => {
+	activeChatForm?.focus();
+};
+
+export const setChatInputContent = (content: string) => {
+	activeChatForm?.setContent(content);
+};
+
+interface ChatFormProps {
+	isCompact?: boolean;
+	onContentChange?: (content: string) => void;
+	onMultilineChange?: (isMultiline: boolean) => void;
+}
+
+export const ChatForm: React.FC<ChatFormProps> = ({
+	isCompact,
+	onContentChange,
+	onMultilineChange,
+}) => {
 	const { status, clearError, isLoading } = useInferenceLoadingStatusStore();
 	const { selectedUserChatFolders: selectedUserChatFolders } =
 		useUserFolderStore();
@@ -42,16 +72,72 @@ export const ChatForm: React.FC = () => {
 	const { isUploadingOver } = useFileUploadsStore();
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const shouldMoveCaretToEnd = useRef(false);
 	const [textareaContent, setTextareaContent] = useState("");
+	const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
+	const shouldSuppressFocusRing = useRef(false);
+	const { currentChatId } = useCurrentChatIdStore();
 
-	// Resize textarea on input
-	const handleTextAreaInput = () => {
-		if (textareaRef.current) {
-			textareaRef.current.style.height = "auto";
-			textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-			setTextareaContent(textareaRef.current.value);
-		}
+	const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+		setTextareaContent(event.target.value);
+		onContentChange?.(event.target.value);
 	};
+
+	const focusTextArea = () => {
+		shouldSuppressFocusRing.current = true;
+		textareaRef.current?.focus();
+	};
+
+	const setContent = (content: string) => {
+		setTextareaContent(content);
+		onContentChange?.(content);
+		shouldMoveCaretToEnd.current = true;
+		focusTextArea();
+	};
+
+	useLayoutEffect(() => {
+		const textareaElement = textareaRef.current;
+		if (!textareaElement) {
+			return;
+		}
+
+		textareaElement.style.height = "auto";
+		const contentHeight = textareaElement.scrollHeight;
+		textareaElement.style.height = `${contentHeight}px`;
+
+		const lineHeight =
+			Number.parseFloat(getComputedStyle(textareaElement).lineHeight) ||
+			singleLineHeightFallback;
+
+		const overflowsSingleLine =
+			textareaElement.scrollWidth > textareaElement.clientWidth;
+		onMultilineChange?.(
+			overflowsSingleLine || contentHeight > lineHeight * 1.5,
+		);
+
+		if (shouldMoveCaretToEnd.current) {
+			shouldMoveCaretToEnd.current = false;
+			textareaElement.setSelectionRange(
+				textareaContent.length,
+				textareaContent.length,
+			);
+		}
+	}, [textareaContent, isCompact, onMultilineChange]);
+
+	useEffect(() => {
+		const handle: ChatFormHandle = {
+			focus: focusTextArea,
+			setContent,
+		};
+		activeChatForm = handle;
+		focusTextArea();
+
+		return () => {
+			if (activeChatForm === handle) {
+				activeChatForm = null;
+			}
+		};
+	}, [currentChatId]);
 
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
@@ -74,7 +160,6 @@ export const ChatForm: React.FC = () => {
 		event.preventDefault();
 
 		const form = event.currentTarget;
-		const textarea = textareaRef.current;
 
 		// Check if textarea only contains whitespace
 		const messageText = form.content.value.trim();
@@ -88,10 +173,8 @@ export const ChatForm: React.FC = () => {
 		showInfoMessage(null);
 
 		// Clear textarea on submit
-		if (textarea) {
-			textarea.value = "";
-			handleTextAreaInput(); // Reset height
-		}
+		setTextareaContent("");
+		onContentChange?.("");
 
 		const allowed_document_ids = [
 			...selectedUserChatDocuments.map(({ id }) => id),
@@ -165,76 +248,88 @@ export const ChatForm: React.FC = () => {
 		return Content["chat.textarea.placeholder"];
 	};
 
+	const contextPills = selectedChatTools.map((tool) => (
+		<ContextPill key={tool} tool={tool} onClose={() => toggleChatTool(tool)} />
+	));
+
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className={`relative flex flex-col max-h-[290px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px] 
+			className={`relative flex flex-col max-h-[290px] mx-[1px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px]
 				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
 			<ExternalToolWarningBanner />
 
-			<div className="flex flex-col justify-between rounded-b-3px">
+			<div
+				className={`flex flex-wrap items-center rounded-b-3px transition-[padding,row-gap,column-gap] duration-200 ease-out motion-reduce:transition-none ${
+					isCompact
+						? "gap-x-1 gap-y-2 pt-[15px] pb-3 pl-3 pr-4"
+						: "gap-x-3 gap-y-3 pt-2 pb-3 px-3"
+				}`}
+			>
 				<div
-					className={`rounded-[1px] my-2 pt-1 mx-3 px-1 flex z-10
-								has-[textarea:focus]:outline
-								has-[textarea:focus]:outline-[2px]
-								has-[textarea:focus]:outline-offset-0
-								has-[textarea:focus]:outline-mittelblau-100
-								has-[textarea:active]:outline
-								has-[textarea:active]:outline-[2px]
-								has-[textarea:active]:outline-offset-1
-								has-[textarea:active]:outline-dunkelblau-100
-								items-end
-								`}
+					onPointerDown={() => {
+						shouldSuppressFocusRing.current = true;
+					}}
+					className={`rounded-[1px] flex z-10 ${
+						hasKeyboardFocus
+							? "outline outline-[2px] outline-offset-0 outline-mittelblau-100"
+							: ""
+					} has-[textarea:active]:outline has-[textarea:active]:outline-[2px] has-[textarea:active]:outline-offset-1 has-[textarea:active]:outline-dunkelblau-100 min-w-0 grow px-1 transition-[padding] duration-200 ease-out motion-reduce:transition-none ${
+						isCompact ? "order-3 basis-0" : "order-1 basis-full items-end pt-1"
+					}`}
 				>
 					<textarea
-						className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80`}
+						className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80 ${
+							isCompact ? "overflow-x-hidden" : ""
+						}`}
 						ref={textareaRef}
 						name="content"
 						rows={1}
+						wrap={isCompact ? "off" : "soft"}
 						required={true}
+						value={textareaContent}
 						placeholder={getTextAreaPlaceholder()}
 						onKeyDown={handleTextAreaKeyDown}
-						onInput={handleTextAreaInput}
+						onChange={handleTextAreaChange}
+						onFocus={() => {
+							setHasKeyboardFocus(!shouldSuppressFocusRing.current);
+							shouldSuppressFocusRing.current = false;
+						}}
+						onBlur={() => {
+							setHasKeyboardFocus(false);
+							shouldSuppressFocusRing.current = false;
+						}}
 					/>
 				</div>
-				<div className="pb-3 pt-1 px-4 flex w-full z-10 justify-between">
-					<div className="flex items-center gap-3">
-						<ChatMenuToggleButton />
-						<div className="items-center gap-2 hidden md:flex">
-							{selectedChatTools.map((tool) => (
-								<ContextPill
-									key={tool}
-									tool={tool}
-									onClose={() => toggleChatTool(tool)}
-								/>
-							))}
-						</div>
+
+				<div className={`order-2 ${isCompact ? "" : "ml-1"}`}>
+					<ChatMenuToggleButton />
+				</div>
+
+				{contextPills.length > 0 && (
+					<div
+						className={`items-center gap-2 hidden md:flex flex-wrap ${
+							isCompact ? "order-1 basis-full" : "order-3"
+						}`}
+					>
+						{contextPills}
 					</div>
-					<div className="flex items-center gap-3">
-						<LlmModelToggleButton />
-						{isLoading() && !hasError ? (
-							<button
-								type="button"
-								aria-label={Content["chat.stopGeneratingButton.ariaLabel"]}
-								onClick={handleStop}
-								className="rounded-3px size-8 bg-hellblau-50 flex items-center justify-center shrink-0 hover:bg-hellblau-110 focus-visible:outline-2px"
-							>
-								<ChatStopGeneratingIcon />
-							</button>
-						) : (
-							<button
-								type="submit"
-								disabled={!textareaContent.trim() || !isUploadingOver()}
-								aria-label={Content["chat.sendButton.ariaLabel"]}
-								className={`rounded-3px size-8 bg-dunkelblau-100 disabled:bg-dunkelblau-30 p-1.5 hover:bg-dunkelblau-90 focus-visible:outline-2px`}
-							>
-								<ArrowWhiteRightIcon />
-							</button>
-						)}
-					</div>
+				)}
+
+				<div
+					className={`order-4 flex items-center shrink-0 z-10 transition-[column-gap,margin] duration-200 ease-out motion-reduce:transition-none ${
+						isCompact ? "gap-2.5" : "gap-3 ml-auto mr-1"
+					}`}
+				>
+					<LlmModelToggleButton />
+					<ChatSubmitButton
+						showLoading={isLoading() && !hasError}
+						handleStop={handleStop}
+						isDisabled={!textareaContent.trim() || !isUploadingOver()}
+					/>
 				</div>
 			</div>
 		</form>

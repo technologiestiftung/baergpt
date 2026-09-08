@@ -2,6 +2,7 @@ import { defaultUserFirstName, defaultUserLastName } from "../constants";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user";
 import { expect } from "@playwright/test";
 import Content from "../../src/content";
+import { expectGreeting } from "./helpers/greeting.ts";
 testWithLoggedInUser.describe("User Profile", () => {
 	testWithLoggedInUser.describe("greeting messages", () => {
 		const testGreeting = (hour: number, expectedContent: string) =>
@@ -89,11 +90,10 @@ testWithLoggedInUser.describe("User Profile", () => {
 			await page.goto("/");
 
 			// Salutation in main page should now be informal
-			await expect(
-				page.getByRole("heading", {
-					name: `Willkommen bei BärGPT, ${defaultUserFirstName}`,
-				}),
-			).toBeVisible();
+			await expectGreeting(page, defaultUserFirstName);
+			await expect(page.getByRole("heading", { level: 1 })).not.toContainText(
+				defaultUserLastName,
+			);
 
 			// go back to profile page to toggle back to formal
 			await page.goto("/profile/");
@@ -110,11 +110,10 @@ testWithLoggedInUser.describe("User Profile", () => {
 			await page.goto("/");
 
 			// Salutation in main page should now be formal
-			await expect(
-				page.getByRole("heading", {
-					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-				}),
-			).toBeVisible();
+			await expectGreeting(
+				page,
+				`${defaultUserFirstName} ${defaultUserLastName}`,
+			);
 		},
 	);
 
