@@ -416,7 +416,7 @@ testWithRegisteredUser.describe("User ban", async () => {
 testWithLoggedInUser(
 	"should allow user to change email address",
 	async ({ page, account }) => {
-		const updatedEmail = "john.doe@polizei.berlin.de";
+		const updatedEmail = `john.doe-${crypto.randomUUID()}@polizei.berlin.de`;
 		const updatedAccount = {
 			...account,
 			email: updatedEmail,
