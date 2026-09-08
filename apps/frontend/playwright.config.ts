@@ -21,15 +21,25 @@ export default defineConfig({
 	expect: {
 		timeout: 30_000,
 	},
-	maxFailures: 1,
+	/**
+	 * Each test provisions its own user/data, so tests are isolated and safe to
+	 * run in parallel. The one exception — the app-global maintenance-mode toggle
+	 * — is tagged @no-parallel and run in a separate workers:1 pass (see the
+	 * test:e2e:parallel / test:e2e:no-parallel scripts).
+	 */
+	// No global cap: under parallel workers a single flake shouldn't abort the
+	// whole run. Local keeps a small cap for fast feedback.
+	maxFailures: process.env.CI ? undefined : 1,
+	/* Seed the shared "Alle" access-group documents once before the run. */
+	globalSetup: "./tests/global-setup.ts",
 	/* Run tests in files in parallel */
-	fullyParallel: false,
+	fullyParallel: true,
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
 	forbidOnly: !!process.env.CI,
 	/* No retries */
 	retries: 0,
-	/* Opt out of parallel tests. */
-	workers: 1,
+	/* Parallel workers. Local uses Playwright's default (CPU-based). */
+	workers: process.env.CI ? 4 : undefined,
 	/* Reporter to use. See https://playwright.dev/docs/test-reporters */
 	reporter: [
 		["list"],

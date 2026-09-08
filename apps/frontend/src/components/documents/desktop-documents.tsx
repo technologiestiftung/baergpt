@@ -23,7 +23,7 @@ const DEFAULT_WIDTH = 400;
 const COLLAPSED_WIDTH = 64;
 
 export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	const [isCollapsed, setIsCollapsed] = useState(true);
 	const [width, setWidth] = useState(DEFAULT_WIDTH);
 	const [isResizing, setIsResizing] = useState(false);
 	const { showTooltip, hideTooltip } = useTooltipStore();

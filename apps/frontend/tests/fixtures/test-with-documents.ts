@@ -1,7 +1,7 @@
 import { supabaseAdminClient } from "../supabase.ts";
 import { testWithMockedLlm } from "./test-with-mocked-llm.ts";
 import { expect, Page, type Route } from "@playwright/test";
-import { createClient, Session } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { config } from "../config.ts";
 import type { Database } from "@repo/db-schema";
 import {
@@ -22,8 +22,6 @@ import {
 	tags,
 	defaultSourceType,
 	defaultBucketName,
-	seedDefaultDocumentName,
-	seedPublicDocumentName,
 } from "../constants.ts";
 import { readFileSync } from "node:fs";
 
@@ -35,9 +33,6 @@ export const testWithDocuments = testWithMockedLlm.extend<{
 			/**
 			 * This happens before each test that uses this fixture.
 			 */
-
-			await uploadDefaultDocumentIfNecessary({ account, session });
-			await uploadPublicDocumentIfNecessary({ account, session });
 
 			// upload a personal document for the user
 			const documentChunkId = await mockDocumentUpload({
@@ -64,111 +59,23 @@ export const testWithDocuments = testWithMockedLlm.extend<{
 	],
 });
 
-async function uploadDefaultDocumentIfNecessary(args: {
-	account: { email: string; password: string; id: string };
-	session: Session;
-}) {
-	const { count: count1, error } = await supabaseAdminClient
-		.from("documents")
-		.select("id", { count: "exact", head: true })
-		.eq("source_type", "default_document")
-		.eq("file_name", seedDefaultDocumentName);
+export async function openDocumentsPanel(page: Page) {
+	const panel = page.locator("#desktop-documents-panel");
+	const showButton = panel.getByRole("button", {
+		name: "Anzeigen der Dateien",
+	});
+	const hideButton = panel.getByRole("button", {
+		name: "Ausblenden der Dateien",
+	});
 
-	expect(error).toBeNull();
+	await expect(showButton).toBeVisible();
 
-	if (count1 && count1 > 0) {
-		// Default document already exists, no need to upload again
+	if (await hideButton.isVisible()) {
 		return;
 	}
 
-	const { account, session } = args;
-
-	// Get the "Alle" access group ID for creating default documents
-	const { data: accessGroup, error: accessGroupError } =
-		await supabaseAdminClient
-			.from("access_groups")
-			.select("id")
-			.eq("name", "Alle")
-			.single();
-
-	expect(accessGroupError).toBeNull();
-
-	if (!accessGroup) {
-		throw new Error("Default access group 'Alle' not found");
-	}
-
-	// Create a mock default document
-	await mockDocumentUpload({
-		userId: account.id,
-		accessToken: session.access_token,
-		accessGroupId: accessGroup.id,
-		fileName: seedDefaultDocumentName,
-		filePath: defaultDocumentPath,
-		sourceType: "default_document" as const,
-		bucketName: "public_documents",
-	});
-
-	const { count: count2, error: defaultDocumentsError } =
-		await supabaseAdminClient
-			.from("documents")
-			.select("source_type,file_name", { count: "exact", head: true })
-			.eq("source_type", "default_document")
-			.eq("file_name", seedDefaultDocumentName);
-
-	expect(defaultDocumentsError).toBeNull();
-	expect(count2).toBe(1);
-}
-
-export async function uploadPublicDocumentIfNecessary(args: {
-	account: { email: string; password: string; id: string };
-	session: Session;
-}) {
-	const { count: count1, error } = await supabaseAdminClient
-		.from("documents")
-		.select("id", { count: "exact", head: true })
-		.eq("source_type", "public_document")
-		.eq("file_name", seedPublicDocumentName);
-
-	expect(error).toBeNull();
-
-	if (count1 && count1 > 0) {
-		return;
-	}
-
-	const { account, session } = args;
-
-	const { data: accessGroup, error: accessGroupError } =
-		await supabaseAdminClient
-			.from("access_groups")
-			.select("id")
-			.eq("name", "Alle")
-			.single();
-
-	expect(accessGroupError).toBeNull();
-
-	if (!accessGroup) {
-		throw new Error("Default access group 'Alle' not found");
-	}
-
-	await mockDocumentUpload({
-		userId: account.id,
-		accessToken: session.access_token,
-		accessGroupId: accessGroup.id,
-		fileName: seedPublicDocumentName,
-		filePath: defaultDocumentPath,
-		sourceType: "public_document" as const,
-		bucketName: "public_documents",
-	});
-
-	const { count: count2, error: publicDocumentsError } =
-		await supabaseAdminClient
-			.from("documents")
-			.select("source_type,file_name", { count: "exact", head: true })
-			.eq("source_type", "public_document")
-			.eq("file_name", seedPublicDocumentName);
-
-	expect(publicDocumentsError).toBeNull();
-	expect(count2).toBe(1);
+	await showButton.click();
+	await expect(hideButton).toBeVisible();
 }
 
 /**
@@ -365,6 +272,8 @@ export async function uploadFileViaFileChooserAndWait({
 
 	await page.waitForLoadState("networkidle");
 
+	await openDocumentsPanel(page);
+
 	// Register the response waiter BEFORE triggering the upload: the combined
 	// route flushes its 200 SSE headers immediately, so the response can arrive
 	// before we'd otherwise start listening and be missed (→ timeout).
@@ -439,6 +348,8 @@ export async function attemptFileUploadViaFileChooser({
 
 	await page.waitForLoadState("networkidle");
 
+	await openDocumentsPanel(page);
+
 	if (browserName === "firefox") {
 		// Firefox: setup file chooser handler and use input element directly
 		page.on("filechooser", async (fileChooser) => {
@@ -475,6 +386,8 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	await page.goto("/");
 
 	await page.waitForLoadState("networkidle");
+
+	await openDocumentsPanel(page);
 
 	const filePaths = files.map((file) => file.path);
 
@@ -571,6 +484,8 @@ export async function attemptMultipleFilesViaFileChooser({
 
 	await page.waitForLoadState("networkidle");
 
+	await openDocumentsPanel(page);
+
 	const filePaths = files.map((file) => file.path);
 
 	if (browserName === "firefox") {
@@ -606,6 +521,8 @@ export async function uploadFileViaDragAndDropAndWait({
 	fileName: string;
 	fileType: string;
 }) {
+	await openDocumentsPanel(page);
+
 	const buffer = readFileSync(filePath).toString("base64");
 
 	const dataTransfer = await page.evaluateHandle(
@@ -665,6 +582,8 @@ export async function deleteFileViaUI({
 	page: Page;
 	fileName: string;
 }) {
+	await openDocumentsPanel(page);
+
 	// Enter multi-select mode (checkboxes for delete appear), skip if already in multi-select
 	const enterMultiSelectButton = page.getByRole("button", {
 		name: "Checkbox-Icon (ausgewählt) Dateien auswählen",
@@ -723,55 +642,9 @@ async function cleanup(userId: string) {
 		.eq("owned_by_user_id", userId);
 	expect(deleteDocumentsError).toBeNull();
 
-	// Clean up default documents uploaded by this user (for access groups)
-	const { data: accessGroupDocuments, error: getAccessGroupDocsError } =
-		await supabaseAdminClient
-			.from("documents")
-			.select("id, source_url")
-			.eq("uploaded_by_user_id", userId)
-			.or("source_type.eq.default_document,source_type.eq.public_document");
-	expect(getAccessGroupDocsError).toBeNull();
-
-	if (accessGroupDocuments && accessGroupDocuments.length > 0) {
-		const accessGroupDocIds = accessGroupDocuments.map((doc) => doc.id);
-
-		// Delete related chunks and summaries
-		const { error: deleteAccessGroupChunksError } = await supabaseAdminClient
-			.from("document_chunks")
-			.delete()
-			.in("document_id", accessGroupDocIds);
-		expect(deleteAccessGroupChunksError).toBeNull();
-
-		const { error: deleteAccessGroupSummariesError } = await supabaseAdminClient
-			.from("document_summaries")
-			.delete()
-			.in("document_id", accessGroupDocIds);
-		expect(deleteAccessGroupSummariesError).toBeNull();
-
-		// Delete the documents themselves
-		const { error: deleteAccessGroupDocsError } = await supabaseAdminClient
-			.from("documents")
-			.delete()
-			.in("id", accessGroupDocIds);
-		expect(deleteAccessGroupDocsError).toBeNull();
-
-		// Delete files from storage
-		for (const doc of accessGroupDocuments) {
-			if (doc.source_url) {
-				const { error: deleteStorageError } = await supabaseAdminClient.storage
-					.from("public_documents")
-					.remove([doc.source_url]);
-				// RLS may prevent storage deletion even with admin client
-				if (deleteStorageError) {
-					console.warn(
-						"Could not delete file from storage:",
-						doc.source_url,
-						deleteStorageError.message,
-					);
-				}
-			}
-		}
-	}
+	// NOTE: We intentionally do NOT clean up the shared "Alle" access-group seed
+	// documents here. They are seeded once in global-setup.ts, owned by a
+	// dedicated seed user (never a test user), and must persist for the whole run.
 
 	const { error: deleteFoldersError } = await supabaseAdminClient
 		.from("document_folders")

@@ -659,6 +659,9 @@ export const Content = {
 	"sidebar.navigation.feedback.link":
 		"https://citylabberlin.typeform.com/to/GhoCHw0J",
 	"sidebar.navigation.feedback.ariaLabel": "Feedback geben",
+	"sidebar.navigation.help": "Tipps und Hilfe",
+	"sidebar.navigation.help.link": "https://hilfe.baergpt.berlin/",
+	"sidebar.navigation.help.ariaLabel": "Tipps und Hilfe",
 	"sidebar.navigation.privacy": "Datenschutz",
 	"sidebar.navigation.privacy.link": "/privacy-policy/",
 	"sidebar.navigation.privacy.ariaLabel": "Zur Datenschutz-Seite navigieren",
@@ -726,6 +729,7 @@ export const Content = {
 	"historyEntryDropdown.delete.imgAlt": "Mülleimer-Icon",
 	"historyEntryDropdown.renameInput.ariaLabel": "Chat umbenennen",
 	//profileButton
+	"profile.button.tooltipLabel": "Profil",
 	"profile.button.ariaLabel": "Profil öffnen",
 	"profile.button.mobile": "Profileinstellungen",
 	//toast
@@ -878,34 +882,28 @@ export const Content = {
 
 	/* -------------------- ChatSection -------------------- */
 	//GetStarted
-	"chat.getStarted.h1": "Willkommen bei BärGPT, ",
-	"chat.getStarted.formal.p1":
-		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Ihnen dabei Dokumente auszuwerten und Texte zu formulieren.",
-	"chat.getStarted.informal.p1":
-		"Ich bin der KI-Assistent für die Berliner Verwaltung. Ich helfe Dir dabei Dokumente auszuwerten und Texte zu formulieren.",
-
-	"chat.getStarted.li1.formal":
-		"Stellen Sie Ihre Frage im Textfeld oder laden Sie ein Dokument hoch (Word, Excel, PDF). Nutzen Sie den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
-
-	"chat.getStarted.li1.informal":
-		"Stell Deine Frage im Textfeld oder lade ein Dokument hoch (Word, Excel, PDF). Nutze den „In den Chat“-Button, um Dateien im Chat zu verwenden.",
-
-	"chat.getStarted.li2.formal.1": "Wichtig: ",
-	"chat.getStarted.li2.formal.2":
-		"Als KI kann ich Fehler machen. Überprüfen Sie wichtige Informationen. Ich habe keinen Internetzugriff.",
-	"chat.getStarted.li2.informal.1": "Wichtig: ",
-	"chat.getStarted.li2.informal.2":
-		"Als KI kann ich Fehler machen. Überprüfe wichtige Informationen. Ich habe keinen Internetzugriff.",
-
-	"chat.getStarted.li3.formal": "Tipps & Videos finden Sie im",
-	"chat.getStarted.li3.informal": "Tipps & Videos findest Du im",
-
-	"chat.getStarted.li3.link.href": "https://hilfe.baergpt.berlin/",
-	"chat.getStarted.li3.link.label": "Hilfecenter.",
-	"chat.getStarted.li3.link.ariaLabel": "Zum Hilfecenter von BärGPT",
+	"chat.getStarted.questionMark": "?",
+	"chat.getStarted.h1.1": "Wobei darf ich helfen,",
+	"chat.getStarted.h1.2": "Was steht heute an,",
+	"chat.getStarted.h1.3.informal": "Womit kann ich dich unterstützen,",
+	"chat.getStarted.h1.3.formal": "Womit kann ich Sie unterstützen,",
+	"chat.getStarted.h1.4.informal": "Schön, dass du da bist,",
+	"chat.getStarted.h1.4.formal": "Schön, dass Sie da sind,",
+	"chat.getStarted.parla.heading": "Parla durchsuchen",
+	"chat.getStarted.webSearch.heading": "Etwas recherchieren",
+	"chat.getStarted.writingPrompts.heading": "Schreiben oder Bearbeiten",
+	"chat.getStarted.writingPrompts.prompt1":
+		"Ideen in eine Gliederung umwandeln",
+	"chat.getStarted.writingPrompts.prompt1.input":
+		"Ordne die folgenden Ideen in eine sinnvolle Gliederung. Gehe so vor:\n- Gruppiere thematisch zusammengehörige Ideen unter Oberpunkten\n- Bringe die Oberpunkte in eine logische Reihenfolge\n- Ordne Einzelideen als Unterpunkte den passenden Oberpunkten zu\n- Lass Ideen, die nicht passen, unter „Sonstiges / später einordnen“ stehen, statt sie zu erzwingen\n- Gib das Ergebnis als nummerierte Gliederung aus. Keine neuen Inhalte hinzufügen und nur die vorhandenen Ideen ordnen.\nIdeen: [HIER EINFÜGEN]",
+	"chat.getStarted.writingPrompts.prompt2": "Protokoll zusammenfassen",
+	"chat.getStarted.writingPrompts.prompt2.input":
+		"Fasse das folgende Protokoll prägnant zusammen. Gliedere in:\n- Kernentscheidungen (was wurde beschlossen?)\n- Offene Aufgaben (wer macht was bis wann – falls genannt)\n- Wichtige Diskussionspunkte (nur die relevantesten)\nHalte die Zusammenfassung kurz (max. 10 Sätze insgesamt) ohne Wertung oder Interpretation und nur wiedergeben, was im Protokoll steht.\nProtokoll: [HIER EINFÜGEN]",
+	"chat.getStarted.writingPrompts.prompt3": "Freundlicher formulieren",
+	"chat.getStarted.writingPrompts.prompt3.input":
+		"Formuliere meinen Text so um, dass er herzlicher und freundlicher klingt, ohne dabei an Klarheit zu verlieren. Hier ist mein Entwurf:",
 
 	"chat.messages.heading": "Chat-Nachrichten",
-
 	"chat.loadingText": "BärGPT überlegt...",
 	//Chat error text
 	"chat.errorText.title": "Ihre Anfrage konnte gerade nicht bearbeitet werden.",
@@ -1049,7 +1047,7 @@ export const Content = {
 		"Externe Datenquellen sind aktiv. Ihre Eingaben werden extern verarbeitet. Keine vertraulichen Daten eingeben.",
 
 	/* -------------------- Profile -------------------- */
-	"profile.title": "Profil",
+	"profile.title": "Mein Profil",
 	"profile.title.mobile": "Mein Profil",
 	"profile.button.logout.label": "Ausloggen",
 	"profile.button.logout.ariaLabel": "Ausloggen",

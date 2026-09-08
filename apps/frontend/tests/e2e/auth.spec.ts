@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import {
 	confirmOtp,
+	findUserByEmail,
 	testWithRegisteredUser,
 } from "../fixtures/test-with-registered-user.ts";
 import { supabaseAdminClient } from "../supabase.ts";
@@ -9,6 +10,7 @@ import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
 import Content from "../../src/content.ts";
+import { expectGreeting } from "./helpers/greeting.ts";
 
 /**
  * Passwordless login: enter the email, request a one-time code, then read the
@@ -32,11 +34,10 @@ test.describe("Login", () => {
 		const page1 = await loginViaOtp(page, account);
 
 		// Check if we are on the main page
-		await expect(
-			page1.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
+		await expectGreeting(
+			page1,
+			`${defaultUserFirstName} ${defaultUserLastName}`,
+		);
 
 		// Click on the drop-down button
 		await page1.getByRole("button", { name: "Profil öffnen" }).click();
@@ -174,21 +175,20 @@ async function fillAndSubmitRegistrationForm(
 }
 
 test.describe("User Registration (uses different user to prevent side-effects on other tests)", () => {
-	const givenUserEmail = "user.registration@ts.berlin";
+	// Unique per test so parallel workers never register the same email or have
+	// one test's afterEach delete another's user. A worker runs its tests
+	// serially, so a single module-scoped variable set in beforeEach is safe.
+	let givenUserEmail: string;
 	const givenUserPassword = "123456789!";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
 
+	testWithoutSplashScreen.beforeEach(() => {
+		givenUserEmail = `user.registration+${crypto.randomUUID()}@ts.berlin`;
+	});
+
 	testWithoutSplashScreen.afterEach(async () => {
-		const { data: listUsersData, error: listUsersError } =
-			await supabaseAdminClient.auth.admin.listUsers();
-
-		expect(listUsersError).toBeNull();
-		expect(listUsersData).toBeDefined();
-
-		const foundUser = listUsersData.users.find(
-			({ email }) => email === givenUserEmail,
-		);
+		const foundUser = await findUserByEmail(givenUserEmail);
 
 		// A brand-new registration might not have created the user yet if the OTP
 		// was never confirmed; only delete when present.
@@ -220,11 +220,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 
 		await expect(page1).toHaveURL("/");
 
-		await expect(
-			page1.getByRole("heading", {
-				name: `Willkommen bei BärGPT, ${givenUserFirstName} ${givenUserLastName}`,
-			}),
-		).toBeVisible();
+		await expectGreeting(page1, `${givenUserFirstName} ${givenUserLastName}`);
 	});
 
 	testWithoutSplashScreen(
@@ -382,11 +378,10 @@ testWithRegisteredUser.describe("User ban", async () => {
 		async ({ page, account, baseURL }) => {
 			// Log in via OTP while the account is active.
 			const page1 = await loginViaOtp(page, account);
-			await expect(
-				page1.getByRole("heading", {
-					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-				}),
-			).toBeVisible();
+			await expectGreeting(
+				page1,
+				`${defaultUserFirstName} ${defaultUserLastName}`,
+			);
 
 			// Ban the user account in the database.
 			await banUser(account.id);
@@ -403,11 +398,10 @@ testWithRegisteredUser.describe("User ban", async () => {
 			await unbanUser(account.id);
 
 			const page2 = await loginViaOtp(page1, account);
-			await expect(
-				page2.getByRole("heading", {
-					name: `Willkommen bei BärGPT, ${defaultUserFirstName} ${defaultUserLastName}`,
-				}),
-			).toBeVisible();
+			await expectGreeting(
+				page2,
+				`${defaultUserFirstName} ${defaultUserLastName}`,
+			);
 			await expect(page2).toHaveURL(`${baseURL}/`);
 		},
 	);
@@ -416,7 +410,7 @@ testWithRegisteredUser.describe("User ban", async () => {
 testWithLoggedInUser(
 	"should allow user to change email address",
 	async ({ page, account }) => {
-		const updatedEmail = "john.doe@polizei.berlin.de";
+		const updatedEmail = `john.doe-${crypto.randomUUID()}@polizei.berlin.de`;
 		const updatedAccount = {
 			...account,
 			email: updatedEmail,
@@ -466,9 +460,9 @@ testWithLoggedInUser(
 		});
 		await linkToBaerGPTHomePage.click();
 
-		const homePageHeader = page1.getByRole("heading", {
-			name: "Willkommen bei BärGPT,",
-		});
-		await expect(homePageHeader).toBeVisible();
+		await expectGreeting(
+			page1,
+			`${defaultUserFirstName} ${defaultUserLastName}`,
+		);
 	},
 );

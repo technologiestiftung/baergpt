@@ -4,6 +4,7 @@ import {
 	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
+	openDocumentsPanel,
 	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
 import { expect, test } from "@playwright/test";
@@ -12,6 +13,7 @@ import {
 	sendAndWaitForLLMResponse,
 } from "../fixtures/mock-llm.ts";
 import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
+import { deleteDocumentsUploadedBy } from "../fixtures/test-with-registered-user.ts";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -20,7 +22,7 @@ import {
 	secondaryDocumentType,
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
-import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
 import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithChatSearch } from "../fixtures/test-with-chat-search.ts";
@@ -153,6 +155,8 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
+		await openDocumentsPanel(page);
+
 		// Find the add-to-chat button for the specific document
 		const addButton = page
 			.getByRole("listitem")
@@ -197,6 +201,7 @@ test.describe("Chat", () => {
 			// `successful` event whose documentId must match the inserted row so the
 			// client can auto-select the freshly uploaded document into the chat.
 			let releaseProcessing: (() => void) | undefined;
+			// eslint-disable-next-line prefer-const
 			let processedDocumentId: number | undefined;
 			await page.route("**/documents/process", async (route) => {
 				await new Promise<void>((resolve) => {
@@ -274,6 +279,8 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const menuButtonDocument = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
@@ -339,6 +346,8 @@ test.describe("Chat", () => {
 			const givenFolderName = "test-folder";
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			await uploadFileViaDragAndDropAndWait({
 				page,
@@ -408,6 +417,8 @@ test.describe("Chat", () => {
 		async ({ page, documentChunkId }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [documentChunkId];
 
@@ -456,7 +467,7 @@ test.describe("Chat", () => {
 
 	testDesktopOnly("Chat with public document citations", async ({ page }) => {
 		// Create an admin user to upload the public document
-		const adminEmail = "admin.test@ts.berlin";
+		const adminEmail = `admin.test+${crypto.randomUUID()}@ts.berlin`;
 		const adminPassword = "TestPassword123!";
 
 		const { data: adminUserData, error: createAdminError } =
@@ -488,7 +499,7 @@ test.describe("Chat", () => {
 
 			// Sign in the admin user to get their access token
 			const { data: adminSessionData, error: adminSignInError } =
-				await supabaseAnonClient.auth.signInWithPassword({
+				await createAnonClient().auth.signInWithPassword({
 					email: adminEmail,
 					password: adminPassword,
 				});
@@ -527,6 +538,8 @@ test.describe("Chat", () => {
 			});
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [publicDocumentChunkId];
@@ -580,6 +593,10 @@ test.describe("Chat", () => {
 			await expect(citationsDialogHeader).not.toBeVisible();
 		} finally {
 			if (adminUserId) {
+				// Remove the "Alle" public document uploaded above before deleting the
+				// user (uploaded_by_user_id is ON DELETE SET NULL, so deleting the user
+				// first would orphan the document).
+				await deleteDocumentsUploadedBy(adminUserId);
 				await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
 			}
 		}
@@ -854,6 +871,8 @@ test.describe("Chat", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			await page.getByRole("button", { name: "In den Chat" }).first().click();
 
 			const baseKnowledgeFolderInChat = page.getByTestId(
@@ -980,6 +999,8 @@ test.describe("Chat", () => {
 			}
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const chatOptionsButton = page.getByRole("button", {
 				name: "Weitere Funktionen aktivieren",
 			});
@@ -1017,6 +1038,8 @@ test.describe("Chat", () => {
 			const givenFolderName = "test-folder";
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			// Create a new folder
 			await page
@@ -1172,6 +1195,8 @@ test.describe("Chat", () => {
 			}
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
 			await chatInput.fill("Hallo, wie geht es dir?");

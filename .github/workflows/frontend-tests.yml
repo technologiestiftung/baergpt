@@ -93,10 +93,17 @@ jobs:
       - name: Wait for Supabase to be ready ⏳
         uses: ./.github/actions/wait-for-supabase
 
-      - name: Run frontend E2E test 🎭
+      - name: Run frontend E2E test (parallel) 🎭
         run: |
           cd apps/frontend
-          npm run test:e2e -- --project="${{ matrix.browser }}"
+          npm run test:e2e:parallel -- --project="${{ matrix.browser }}"
+
+      # The maintenance-mode has side effects, so it runs on its
+      # own (workers:1) and must not overlap the parallel suite above.
+      - name: Run frontend E2E test (no-parallel) 🎭
+        run: |
+          cd apps/frontend
+          npm run test:e2e:no-parallel -- --project="${{ matrix.browser }}"
 
       - name: Capture backend logs after frontend E2E test after failure 📋
         if: failure()
