@@ -68,11 +68,48 @@ export const testWithRegisteredUser =
 	});
 
 async function cleanup(id: string) {
+	await deleteDocumentsUploadedBy(id);
+
 	const { error: deleteUserError } =
 		await supabaseAdminClient.auth.admin.deleteUser(id);
 	// Ignore "User not found" error as it means the user was already deleted
 	if (deleteUserError?.message !== "User not found") {
 		testWithRegisteredUser.expect(deleteUserError).toBeNull();
+	}
+}
+
+/**
+ * Deletes access-group documents uploaded by a user (source_type
+ * public_document / default_document). These have no owner
+ * (owned_by_user_id is NULL), so the owner-keyed document cleanup never matches
+ * them, and uploaded_by_user_id is ON DELETE SET NULL, so deleting the user
+ * would orphan them instead. Must run BEFORE the user is deleted. Deleting the
+ * documents row cascades to its summaries and chunks; the storage blobs (in the
+ * public_documents bucket) are removed via the returned source_urls.
+ */
+export async function deleteDocumentsUploadedBy(userId: string) {
+	const { data: deletedDocuments, error: deleteDocumentsError } =
+		await supabaseAdminClient
+			.from("documents")
+			.delete()
+			.eq("uploaded_by_user_id", userId)
+			.select("source_url");
+	testWithRegisteredUser.expect(deleteDocumentsError).toBeNull();
+
+	const publicDocumentsToRemove = (deletedDocuments ?? []).map(
+		(document) => document.source_url,
+	);
+	if (publicDocumentsToRemove.length > 0) {
+		const { error: removeError } = await supabaseAdminClient.storage
+			.from("public_documents")
+			.remove(publicDocumentsToRemove);
+		// RLS may prevent storage deletion even with the admin client
+		if (removeError) {
+			console.warn(
+				"Could not delete uploaded public documents from storage:",
+				removeError.message,
+			);
+		}
 	}
 }
 

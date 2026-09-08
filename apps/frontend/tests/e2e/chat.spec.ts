@@ -12,6 +12,7 @@ import {
 	sendAndWaitForLLMResponse,
 } from "../fixtures/mock-llm.ts";
 import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
+import { deleteDocumentsUploadedBy } from "../fixtures/test-with-registered-user.ts";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -197,6 +198,7 @@ test.describe("Chat", () => {
 			// `successful` event whose documentId must match the inserted row so the
 			// client can auto-select the freshly uploaded document into the chat.
 			let releaseProcessing: (() => void) | undefined;
+			// eslint-disable-next-line prefer-const
 			let processedDocumentId: number | undefined;
 			await page.route("**/documents/process", async (route) => {
 				await new Promise<void>((resolve) => {
@@ -580,6 +582,10 @@ test.describe("Chat", () => {
 			await expect(citationsDialogHeader).not.toBeVisible();
 		} finally {
 			if (adminUserId) {
+				// Remove the "Alle" public document uploaded above before deleting the
+				// user (uploaded_by_user_id is ON DELETE SET NULL, so deleting the user
+				// first would orphan the document).
+				await deleteDocumentsUploadedBy(adminUserId);
 				await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
 			}
 		}
