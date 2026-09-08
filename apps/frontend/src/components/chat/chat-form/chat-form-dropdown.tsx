@@ -1,6 +1,8 @@
+import { useId, useRef } from "react";
 import Content from "../../../content";
 import type { LlmModel } from "../../../common";
 import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
+import { Switch } from "../../primitives/switch/switch";
 
 interface ChatFormDropdownProps<T extends LlmModel> {
 	title: string;
@@ -15,6 +17,8 @@ interface ChatFormDropdownProps<T extends LlmModel> {
 	className?: string;
 	isOpen: boolean;
 	onClose: () => void;
+	isExtendedThinkingEnabled: boolean;
+	onExtendedThinkingChange: (isEnabled: boolean) => void;
 }
 
 export const ChatFormDropdown = <T extends LlmModel>({
@@ -25,29 +29,40 @@ export const ChatFormDropdown = <T extends LlmModel>({
 	className,
 	isOpen,
 	onClose,
+	isExtendedThinkingEnabled,
+	onExtendedThinkingChange,
 }: ChatFormDropdownProps<T>) => {
+	const titleId = useId();
+	const extendedThinkingSwitchRef = useRef<HTMLInputElement>(null);
+
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
 		items,
 		isOpen,
 		onClose,
 		onItemClick: (item) => onItemClick(item.value),
+		navigateWithTab: true,
+		trailingItemRef: extendedThinkingSwitchRef,
+		onTrailingItemActivate: () =>
+			onExtendedThinkingChange(!isExtendedThinkingEnabled),
 	});
 
 	return (
 		<div
-			className={`z-50 absolute bottom-full rounded-3px bg-white border border-hellblau-50 pt-3 focus-visible:outline-default shadow-md min-w-[280px] mb-1 ${className}`}
+			className={`z-50 absolute bottom-full rounded-3px bg-hellblau-30 border border-hellblau-50 p-1 focus-visible:outline-default shadow-md min-w-[323px] mb-1 ${className}`}
 			onKeyDown={handleKeyDown}
-			role="listbox"
 		>
-			<div className="pb-3 px-4 border-b border-hellblau-50 text-dunkelblau-80 text-sm leading-6">
+			<div
+				id={titleId}
+				className="pt-2 pb-1 px-3 text-dunkelblau-65 text-sm leading-4"
+			>
 				{title}
 			</div>
-			<ul className="flex flex-col">
+			<ul className="flex flex-col" role="listbox" aria-labelledby={titleId}>
 				{items.map((item, index) => {
 					const isSelected = selectedItems.includes(item.value);
 
 					return (
-						<li key={item.value}>
+						<li key={item.value} role="presentation">
 							<button
 								type="button"
 								ref={(el) => {
@@ -58,19 +73,17 @@ export const ChatFormDropdown = <T extends LlmModel>({
 										optionButtonRefs.current.delete(index);
 									}
 								}}
-								className="flex items-center justify-between w-full px-4 py-3 text-left gap-6 hover:bg-hellblau-30 focus-visible:bg-hellblau-30 focus-visible:outline-default rounded-3px"
+								className="flex items-center justify-between w-full p-3 text-left gap-6 hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default rounded-3px"
 								onClick={() => onItemClick(item.value)}
 								aria-label={item.ariaLabel}
 								role="option"
 								aria-selected={isSelected}
 							>
 								<div>
-									<div
-										className={`text-sm leading-6 ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
-									>
+									<div className="text-sm leading-6 text-dunkelblau-90 font-bold">
 										{item.label}
 									</div>
-									<div className="text-dunkelblau-50 text-xs leading-5">
+									<div className="text-dunkelblau-65 text-xs leading-3">
 										{item.description}
 									</div>
 								</div>
@@ -87,6 +100,23 @@ export const ChatFormDropdown = <T extends LlmModel>({
 					);
 				})}
 			</ul>
+			<div className="w-[calc(100%-8px)] h-[0.5px] bg-hellblau-100 justify-self-center " />
+			<div className="flex gap-4 items-center justify-between p-3">
+				<div className="flex flex-col gap-2">
+					<div className="text-sm leading-[14px] text-dunkelblau-80">
+						{Content["chat.llmModel.dropdown.li4.label"]}
+					</div>
+					<p className="text-xs leading-5 text-dunkelblau-50 max-w-[233px] w-full whitespace-normal">
+						{Content["chat.llmModel.dropdown.li4.description"]}
+					</p>
+				</div>
+				<Switch
+					ref={extendedThinkingSwitchRef}
+					checked={isExtendedThinkingEnabled}
+					ariaLabel={Content["chat.llmModel.dropdown.li4.ariaLabel"]}
+					onChange={onExtendedThinkingChange}
+				/>
+			</div>
 		</div>
 	);
 };

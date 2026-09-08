@@ -4,6 +4,7 @@ import { useClickOutside } from "../../../hooks/use-click-outside";
 import { ChatFormDropdown } from "./chat-form-dropdown";
 import Content from "../../../content";
 import { useChatsStore } from "../../../store/use-chats-store";
+import { useExtendedThinkingStore } from "../../../store/use-extended-thinking-store";
 import type { LlmModel } from "../../../common";
 import { config } from "../../../config";
 
@@ -12,6 +13,8 @@ export const LlmModelToggleButton: React.FC = () => {
 	const selectButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const { selectedLlmModel, setSelectedLlmModel } = useChatsStore();
+	const { isExtendedThinkingEnabled, setIsExtendedThinkingEnabled } =
+		useExtendedThinkingStore();
 
 	const llmModelItems = [
 		{
@@ -65,7 +68,7 @@ export const LlmModelToggleButton: React.FC = () => {
 			<button
 				ref={selectButtonRef}
 				type="button"
-				className="hover:bg-hellblau-30 px-3 py-1.5 rounded-3px flex gap-2 items-center justify-center focus-visible:outline-default"
+				className="hover:bg-hellblau-60 px-3 py-1.5 rounded-3px flex gap-2 items-center justify-center focus-visible:outline-default"
 				onClick={handleToggleDropdown}
 			>
 				<span className="text-sm leading-5 text-dunkelblau-80">
@@ -84,6 +87,8 @@ export const LlmModelToggleButton: React.FC = () => {
 						className="right-0 whitespace-nowrap"
 						isOpen={isDropdownOpen}
 						onClose={handleClose}
+						isExtendedThinkingEnabled={isExtendedThinkingEnabled}
+						onExtendedThinkingChange={setIsExtendedThinkingEnabled}
 					/>
 				</div>
 			)}
