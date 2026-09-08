@@ -54,6 +54,33 @@ export function useDropdownKeyboard<T>({
 		focusables[previousIndex].focus();
 	};
 
+	const handleTab = (
+		event: KeyboardEvent<HTMLDivElement>,
+		currentIndex: number,
+		focusables: HTMLElement[],
+	) => {
+		if (!navigateWithTab) {
+			event.preventDefault();
+			onClose();
+			return;
+		}
+
+		const isLeavingBackwards = event.shiftKey && currentIndex === 0;
+		const isLeavingForwards =
+			!event.shiftKey && currentIndex === focusables.length - 1;
+		if (focusables.length === 0 || isLeavingBackwards || isLeavingForwards) {
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+		if (event.shiftKey) {
+			selectPreviousOption(currentIndex, focusables);
+		} else {
+			selectNextOption(currentIndex, focusables);
+		}
+	};
+
 	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
 		const optionButtons = Array.from(optionButtonRefs.current.values());
 		const trailingItem = trailingItemRef?.current ?? null;
@@ -76,17 +103,7 @@ export function useDropdownKeyboard<T>({
 				break;
 
 			case "Tab":
-				if (!navigateWithTab) {
-					event.preventDefault();
-					onClose();
-					break;
-				}
-				consume();
-				if (event.shiftKey) {
-					selectPreviousOption(currentIndex, focusables);
-				} else {
-					selectNextOption(currentIndex, focusables);
-				}
+				handleTab(event, currentIndex, focusables);
 				break;
 
 			case "ArrowLeft":
