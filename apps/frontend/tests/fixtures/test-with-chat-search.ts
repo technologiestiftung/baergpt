@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import type { Session } from "@supabase/supabase-js";
 import { testDesktopOnly } from "./test-desktop-only.ts";
-import { supabaseAnonClient } from "../supabase.ts";
+import { supabaseAdminClient } from "../supabase.ts";
 
 /** Matches `RANGE_LIMIT + 1` in `src/api/chat/get-chats.ts`. */
 export const CHATS_PAGE_SIZE = 20;
@@ -27,12 +27,12 @@ type TestWithChatSearch = {
 
 /**
  * Extends `testDesktopOnly` with helpers that seed chats/messages via
- * `supabaseAnonClient` for the current test user.
+ * `supabaseAdminClient` for the current test user.
  */
 export const testWithChatSearch = testDesktopOnly.extend<TestWithChatSearch>({
 	insertChat: async ({ session }, use) => {
 		await use(async (name, createdAt) => {
-			const { data, error } = await supabaseAnonClient
+			const { data, error } = await supabaseAdminClient
 				.from("chats")
 				.insert({
 					user_id: session.user.id,
@@ -54,7 +54,7 @@ export const testWithChatSearch = testDesktopOnly.extend<TestWithChatSearch>({
 
 	insertMessages: async ({}, use) => {
 		await use(async (chatId, messages) => {
-			const { data, error } = await supabaseAnonClient
+			const { data, error } = await supabaseAdminClient
 				.from("chat_messages")
 				.insert(
 					messages.map(({ role, content, createdAt }) => ({
@@ -133,7 +133,7 @@ export async function insertFillerChats(
 		};
 	});
 
-	const { error } = await supabaseAnonClient.from("chats").insert(chats);
+	const { error } = await supabaseAdminClient.from("chats").insert(chats);
 
 	expect(error, error?.message).toBeNull();
 }

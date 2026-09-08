@@ -33,7 +33,7 @@ export const SidebarLink: React.FC<{
 			onBlur={hideTooltip}
 			aria-label={ariaLabel}
 		>
-			<div className="flex w-5 h-5 flex-shrink-0">
+			<div className="flex w-6 h-6 flex-shrink-0">
 				<img
 					src={iconSrc}
 					width={20}

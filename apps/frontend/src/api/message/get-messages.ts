@@ -26,5 +26,8 @@ export async function getMessages(chatId: number, signal: AbortSignal) {
 	 * as `Jsonb | null` in the DB, which does not exist in Typescript.
 	 * It actually is `number[] | null`, so we cast it here.
 	 */
-	return data as ChatMessage[];
+	return (data as ChatMessage[]).map((message) => ({
+		...message,
+		clientKey: message.id,
+	}));
 }
