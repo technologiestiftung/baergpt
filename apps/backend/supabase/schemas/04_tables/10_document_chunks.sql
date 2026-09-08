@@ -53,20 +53,24 @@ ADD CONSTRAINT "document_chunks_document_id_fkey" FOREIGN KEY ("document_id") RE
 -- RLS POLICIES
 ALTER TABLE "public"."document_chunks" ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow authenticated users to access own or public document_chun" ON "public"."document_chunks" TO "authenticated" USING (
-    (
+CREATE POLICY "Allow users to read own or public document_chunks" ON "public"."document_chunks" FOR
+SELECT
+    TO "authenticated" USING (
         (
-            ("owned_by_user_id" IS NULL)
-            OR (
-                "owned_by_user_id" = (
-                    SELECT
-                        "auth"."uid" () AS "uid"
+            (
+                ("owned_by_user_id" IS NULL)
+                OR (
+                    "owned_by_user_id" = (
+                        SELECT
+                            "auth"."uid" () AS "uid"
+                    )
                 )
             )
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
-        AND (NOT "public"."is_current_user_banned_or_deleted" ())
-    )
-)
+    );
+
+CREATE POLICY "Allow users to insert own; admins public document_chunks" ON "public"."document_chunks" FOR insert TO "authenticated"
 WITH
     CHECK (
         (
@@ -85,6 +89,62 @@ WITH
             )
         )
     );
+
+CREATE POLICY "Allow users to update own; admins public document_chunks" ON "public"."document_chunks"
+FOR UPDATE
+    TO "authenticated" USING (
+        (
+            (
+                (
+                    "owned_by_user_id" = (
+                        SELECT
+                            "auth"."uid" () AS "uid"
+                    )
+                )
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
+            )
+            OR (
+                "public"."is_application_admin" ()
+                AND ("owned_by_user_id" IS NULL)
+            )
+        )
+    )
+WITH
+    CHECK (
+        (
+            (
+                (
+                    "owned_by_user_id" = (
+                        SELECT
+                            "auth"."uid" () AS "uid"
+                    )
+                )
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
+            )
+            OR (
+                "public"."is_application_admin" ()
+                AND ("owned_by_user_id" IS NULL)
+            )
+        )
+    );
+
+CREATE POLICY "Allow users to delete own; admins public document_chunks" ON "public"."document_chunks" FOR delete TO "authenticated" USING (
+    (
+        (
+            (
+                "owned_by_user_id" = (
+                    SELECT
+                        "auth"."uid" () AS "uid"
+                )
+            )
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
+        )
+        OR (
+            "public"."is_application_admin" ()
+            AND ("owned_by_user_id" IS NULL)
+        )
+    )
+);
 
 GRANT ALL ON TABLE "public"."document_chunks" TO "anon";
 
