@@ -7,9 +7,9 @@ diffing these files against the database.
 ## Making a change
 
 1. Edit the relevant file(s) here.
-2. Run `npm run db:generate-migration -- <MIGRATION_NAME>`: this diffs the
+2. Run `npm run db:generate-migration <MIGRATION_NAME>`: this diffs the
    schema and writes `migrations/<DATETIME>_<MIGRATION_NAME>.sql`.
-3. Verify it's complete: `supabase db reset && supabase db diff` should print
+3. Verify it's complete: `supabase db reset && supabase db diff --schema public` should print
    **no** diff. A leftover diff means something isn't captured.
 
 ## Load order
