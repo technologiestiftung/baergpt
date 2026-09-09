@@ -134,8 +134,6 @@ export const Content = {
 	"privacyPolicyPage.section3.li1.title": "Account-Daten: ",
 	"privacyPolicyPage.section3.li1.description":
 		"Vorname, Nachname, E-Mail-Adresse, Anrede/Titel (optional)",
-	"privacyPolicyPage.section3.li2.title": "Authentifizierungsdaten: ",
-	"privacyPolicyPage.section3.li2.description": "Passwort",
 	"privacyPolicyPage.section3.li3.title": "Chat-Daten: ",
 	"privacyPolicyPage.section3.li3.description":
 		"Eingaben und Ergebnisse von Chats (Chat-Historie mit dem LLM)",
@@ -307,9 +305,7 @@ export const Content = {
 	"termsOfUsePage.section3.sub2.li1": "Vorname und Nachname",
 	"termsOfUsePage.section3.sub2.li2":
 		"Gültige dienstliche E-Mail-Adresse der Berliner Verwaltung (in der Regel im Format vorname.name@subdomain.berlin.de)",
-	"termsOfUsePage.section3.sub2.li3":
-		"Selbstgewähltes sicheres Passwort (mindestens 10 Zeichen)",
-	"termsOfUsePage.section3.sub2.li4": "Optional: Anrede und akademischer Titel",
+	"termsOfUsePage.section3.sub2.li3": "Optional: Anrede und akademischer Titel",
 	"termsOfUsePage.section3.sub2.p2":
 		"Ausnahmen von der E-Mail-Adress-Regel können nach Rücksprache mit dem Betreiber geprüft werden.",
 	//3.3
@@ -321,9 +317,9 @@ export const Content = {
 	"termsOfUsePage.section3.sub4.number": "3.4",
 	"termsOfUsePage.section3.sub4.title": "Zugangsdaten",
 	"termsOfUsePage.section3.sub4.p1":
-		"Die Nutzenden sind verpflichtet, ihre Zugangsdaten (E-Mail-Adresse und Passwort) vertraulich zu behandeln und vor unbefugtem Zugriff zu schützen. Eine Weitergabe des Accounts an Dritte ist nicht gestattet.",
+		"Die Nutzenden sind verpflichtet, ihre Zugangsdaten (E-Mail-Adresse und einmalige Sicherheitscodes) vertraulich zu behandeln und vor unbefugtem Zugriff zu schützen. Eine Weitergabe des Accounts an Dritte ist nicht gestattet.",
 	"termsOfUsePage.section3.sub4.p2":
-		"Bei Verdacht auf Missbrauch der Zugangsdaten sind die Nutzenden verpflichtet, dies unverzüglich dem Betreiber zu melden und das Passwort zu ändern.",
+		"Bei Verdacht auf Missbrauch der Zugangsdaten sind die Nutzenden verpflichtet, dies unverzüglich dem Betreiber zu melden.",
 	//Section 4
 	"termsOfUsePage.section4.title": "Nutzungsumfang und -bedingungen",
 	//4.1
@@ -1136,14 +1132,6 @@ export const Content = {
 	"accountDeleted.button": "Feedback geben",
 	"accountDeleted.buttonLink": "https://citylabberlin.typeform.com/to/GhoCHw0J",
 
-	"profile.passwordLabel": "Neues Passwort",
-	"profile.passwordRepeatLabel": "Neues Passwort wiederholen",
-	"profile.changePasswordButton": "Passwort aktualisieren",
-	"profile.changePasswordTitle": "Passwort ändern",
-	"profile.currentPasswordLabel": "Aktuelles Passwort",
-	"profile.passwordUpdateSuccess": "Passwort wurde aktualisiert",
-	"profile.passwordUpdateError":
-		"Fehler beim Aktualisieren des Passworts. Bitte versuchen Sie es erneut.",
 	/* ---------------------- Login Form ---------------------- */
 	"loginPage.h1": "Willkommen zurück",
 	"loginPage.h2": "Bitte melden Sie sich an",
@@ -1219,24 +1207,6 @@ export const Content = {
 	"registerPage.loginPrompt": "Sie haben bereits einen Account?",
 	"registerPage.loginLink": "Jetzt einloggen",
 
-	/* ---------------------- reset Password Confirmation ---------------------- */
-	"resetPasswordConfirmation.h1":
-		"Wenn die E-Mail-Adresse registriert ist, senden wir Ihnen einen Link zum Zurücksetzen Ihres Passwortes.",
-	"resetPasswordConfirmation.p": "Keine E-Mail bekommen?",
-	"resetPasswordConfirmation.list.li.1":
-		"Wir bitten um ein wenig Geduld, der Versand kann einige Minuten dauern",
-	"resetPasswordConfirmation.list.li.2":
-		"Bitte prüfen Sie auch Ihren Spam-Ordner",
-	"resetPasswordConfirmation.list.li.3":
-		"Adresse support@baergpt.berlin als Absender zulassen",
-	"resetPasswordConfirmation.list.li.4":
-		"Bitte prüfen Sie die eingegebene E-Mail-Adresse",
-
-	/* ---------------------- Reset Password Successful ---------------------- */
-	"resetPasswordSuccessful.h1": "Ihr Passwort wurde erfolgreich geändert.",
-	"resetPasswordSuccessful.h2": "Bitte loggen Sie sich ein.",
-	"resetPasswordSuccessful.buttonLink": "Zum Login",
-
 	/* ---------------------- Unconfirmed Email ---------------------- */
 	"unconfirmedEmail.h2": "Fast geschafft!",
 	"unconfirmedEmail.text.beforeEmail":
@@ -1268,10 +1238,6 @@ export const Content = {
 	"accountActivated.firstNamePlaceholder": "Vorname eingeben",
 	"accountActivated.lastNameLabel": "Nachname",
 	"accountActivated.lastNamePlaceholder": "Nachname eingeben",
-	"accountActivated.passwordLabel": "Passwort",
-	"accountActivated.passwordPlaceholder": "Passwort eingeben",
-	"accountActivated.repeatPasswordLabel": "Passwort wiederholen",
-	"accountActivated.repeatPasswordPlaceholder": "Passwort wiederholen",
 	"accountActivated.privacyLabel": "Datenschutzbestimmungen",
 	"accountActivated.privacyLink": "Datenschutzbestimmungen",
 	"accountActivated.privacyText": "zustimmen",
@@ -1282,19 +1248,8 @@ export const Content = {
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
 	"form.validation.email.customError":
 		"E-Mail nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
-	"form.validation.password.tooShort":
-		"Das Passwort muss mindestens 10 Zeichen lang sein.",
-	"form.validation.login.password.tooShort":
-		"Das Passwort muss mindestens 6 Zeichen lang sein.",
-	"form.validation.password.repeatPasswordShouldMatch.error":
-		"Die Passwörter stimmen nicht überein.",
-	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
 	"form.validation.privacy.required.error":
 		"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
-	"form.validation.invalidCredentials.error":
-		"Benutzername oder Passwort inkorrekt",
-	"form.validation.password.shouldBeDifferent.error":
-		"Das neue Passwort muss sich vom alten Passwort unterscheiden.",
 	"form.validation.userBanned.error": "Der Benutzeraccount wurde gesperrt.",
 
 	/* ---------------------- Footer ---------------------- */

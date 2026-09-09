@@ -195,10 +195,10 @@ export async function confirmOtp({
 	});
 
 	// The security code sits on its own line; the button's href is the first confirm-otp link.
-	const recoveryOtp = text.match(/^\s*(\d{10})\s*$/m)?.[1];
+	const otpCode = text.match(/^\s*(\d{10})\s*$/m)?.[1];
 	const confirmUrl = text.match(/(https?:\/\/\S*?\/confirm-otp\/\S*)/)?.[1];
 
-	if (!recoveryOtp || !confirmUrl) {
+	if (!otpCode || !confirmUrl) {
 		throw new Error(
 			`Could not read a security code and confirmation link from Mailpit message ${id}:\n${text}`,
 		);
@@ -222,9 +222,7 @@ export async function confirmOtp({
 		page1.getByRole("heading", { name: "Fast geschafft!" }),
 	).toBeVisible();
 
-	await page1
-		.getByRole("textbox", { name: "Sicherheitscode" })
-		.fill(recoveryOtp);
+	await page1.getByRole("textbox", { name: "Sicherheitscode" }).fill(otpCode);
 	await page1.getByRole("button", { name: "Weiter" }).click();
 
 	return page1;

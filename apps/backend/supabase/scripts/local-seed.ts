@@ -28,7 +28,6 @@ export async function seedLocalAdmin() {
 
 	const id = crypto.randomUUID();
 	const email = "local.admin@ts.berlin";
-	const password = "123456789!";
 
 	const { data, error: listUsersError } = await supabase.auth.admin.listUsers();
 
@@ -45,7 +44,6 @@ export async function seedLocalAdmin() {
 	const { error: createUserError } = await supabase.auth.admin.createUser({
 		id,
 		email,
-		password,
 		email_confirm: true,
 		user_metadata: {
 			first_name: "Local",
@@ -67,16 +65,6 @@ export async function seedLocalAdmin() {
 			"Error inserting local admin into application_admins:",
 			adminError,
 		);
-		return;
-	}
-
-	const { error: loginError } = await supabase.auth.signInWithPassword({
-		email,
-		password,
-	});
-
-	if (loginError) {
-		console.error("Error logging in local admin:", loginError);
 		return;
 	}
 

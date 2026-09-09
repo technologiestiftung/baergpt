@@ -178,9 +178,6 @@ export const section3Sub2ListItems = [
 	{
 		item: Content["termsOfUsePage.section3.sub2.li3"],
 	},
-	{
-		item: Content["termsOfUsePage.section3.sub2.li4"],
-	},
 ];
 
 export const section4Sub2ListItems = [

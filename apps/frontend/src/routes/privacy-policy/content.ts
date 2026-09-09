@@ -1,35 +1,4 @@
 import { Content } from "../../content";
-// A: Section 2.a contacts
-export const section2ContactItemsA = [
-	{
-		key: "section2-a-1",
-		data: {
-			heading: Content["privacyPolicyPage.section2.a.li1.heading"],
-			organisation: Content["privacyPolicyPage.section2.tsb.name"],
-			address: {
-				street: Content["privacyPolicyPage.section2.tsb.address.street"],
-				city: Content["privacyPolicyPage.section2.tsb.address.city"],
-			},
-			phone: Content["privacyPolicyPage.section2.tsb.phone"],
-			email: Content["privacyPolicyPage.section2.tsb.email"],
-			website: Content["privacyPolicyPage.section2.tsb.website"],
-		},
-	},
-	{
-		key: "section2-a-2",
-		data: {
-			heading: Content["privacyPolicyPage.section2.a.li2.heading"],
-			organisation: Content["privacyPolicyPage.section2.tsb.name"],
-			role: Content["privacyPolicyPage.section2.a.li2.role"],
-			address: {
-				street: Content["privacyPolicyPage.section2.tsb.address.street"],
-				city: Content["privacyPolicyPage.section2.tsb.address.city"],
-			},
-			phone: Content["privacyPolicyPage.section2.tsb.phone"],
-			email: Content["privacyPolicyPage.section2.a.li2.email"],
-		},
-	},
-] as const;
 
 // B: Section 2.b contacts
 export const section2ContactItemsB = [
@@ -77,10 +46,6 @@ export const section3ListItems = [
 	{
 		title: Content["privacyPolicyPage.section3.li1.title"],
 		description: Content["privacyPolicyPage.section3.li1.description"],
-	},
-	{
-		title: Content["privacyPolicyPage.section3.li2.title"],
-		description: Content["privacyPolicyPage.section3.li2.description"],
 	},
 	{
 		title: Content["privacyPolicyPage.section3.li3.title"],
