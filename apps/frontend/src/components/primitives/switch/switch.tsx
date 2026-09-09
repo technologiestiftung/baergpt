@@ -9,39 +9,35 @@ interface SwitchProps {
 	ariaLabel?: string;
 }
 
-export const Switch: React.FC<SwitchProps> = ({
-	checked,
-	onChange,
-	disabled = false,
-	id,
-	name,
-	ariaLabel,
-}) => {
-	const handleCheckboxChange = () => {
-		if (!disabled) {
-			onChange(!checked);
-		}
-	};
+export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
+	({ checked, onChange, disabled = false, id, name, ariaLabel }, ref) => {
+		const handleCheckboxChange = () => {
+			if (!disabled) {
+				onChange(!checked);
+			}
+		};
 
-	const getBackgroundColor = () => {
-		if (disabled && checked) {
-			return "bg-dunkelblau-70";
-		}
-		if (checked) {
-			return "bg-dunkelblau-100";
-		}
-		return "bg-hellblau-50";
-	};
+		const getTrackColor = () => {
+			if (disabled) {
+				return checked ? "bg-dunkelblau-70" : "bg-dunkelblau-30";
+			}
+			if (checked) {
+				return "bg-aktiv-blau-100 group-hover/switch:bg-aktiv-blau-95";
+			}
+			return "bg-dunkelblau-40 group-hover/switch:bg-dunkelblau-50";
+		};
 
-	return (
-		<>
+		return (
 			<label
-				className={`flex select-none items-center ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+				className={`group/switch flex select-none items-center ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
 			>
-				<div className="relative">
+				<div className="relative h-6 w-[42px]">
 					<input
+						ref={ref}
 						type="checkbox"
+						role="switch"
 						checked={checked}
+						aria-checked={checked}
 						onChange={handleCheckboxChange}
 						disabled={disabled}
 						id={id}
@@ -50,13 +46,15 @@ export const Switch: React.FC<SwitchProps> = ({
 						className="peer sr-only"
 					/>
 					<div
-						className={`block h-8 w-14 rounded-full ${getBackgroundColor()} peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-default`}
+						className={`block h-full w-full rounded-full transition-colors duration-200 ${getTrackColor()} peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-default`}
 					/>
 					<div
-						className={`dot absolute top-1 h-6 w-6 rounded-full bg-white transition-all duration-200 ${checked ? "left-7" : "left-1"}`}
+						className={`dot absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white transition-all duration-200 ${checked ? "left-[21px]" : "left-[3px]"}`}
 					/>
 				</div>
 			</label>
-		</>
-	);
-};
+		);
+	},
+);
+
+Switch.displayName = "Switch";

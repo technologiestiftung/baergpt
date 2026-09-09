@@ -1,11 +1,11 @@
 import { create } from "zustand";
-import type { MutableRefObject } from "react";
+import type { RefObject } from "react";
 
 const SCROLL_THRESHOLD = 32;
 const USER_MESSAGE_SELECTOR = '[data-testid="user-message-markdown-container"]';
 
-type OutputRef = MutableRefObject<HTMLOutputElement | null>;
-type DivRef = MutableRefObject<HTMLDivElement | null>;
+type OutputRef = RefObject<HTMLOutputElement | null>;
+type DivRef = RefObject<HTMLDivElement | null>;
 
 export type PendingScrollToMessage = {
 	messageId: number;

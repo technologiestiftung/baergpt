@@ -39,12 +39,17 @@ export const ExpandedBannerContent: React.FC<ExpandedBannerContentProps> = ({
 					</p>
 				</div>
 				<div className="flex gap-6 items-center">
-					<label className="text-dunkelblau-100 font-semibold">
+					<label
+						htmlFor="third-party-cookies-switch"
+						className="text-dunkelblau-100 font-semibold cursor-pointer"
+					>
 						{Content["cookiesBanner.thirdPartyCookies.label"]}
 					</label>
 					<Switch
+						id="third-party-cookies-switch"
 						checked={thirdPartyCookiesEnabled}
 						onChange={setThirdPartyCookiesEnabled}
+						ariaLabel={Content["cookiesBanner.thirdPartyCookies.label"]}
 					/>
 				</div>
 			</div>

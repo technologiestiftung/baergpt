@@ -23,6 +23,7 @@ export default {
 				"dunkelblau-80": "#3d5275",
 				"dunkelblau-70": "#556887",
 				"dunkelblau-60": "#6d7d98",
+				"dunkelblau-65": "#63738E",
 				"dunkelblau-50": "#8593a9",
 				"dunkelblau-40": "#9DA8BA",
 				"dunkelblau-30": "#bac2cf",
@@ -35,6 +36,7 @@ export default {
 				"hellblau-55": "#D9E4F2",
 				"hellblau-30": "#F5F8FC",
 				"aktiv-blau-100": "#1A73E8",
+				"aktiv-blau-95": "#1E75E0",
 			},
 			borderRadius: {
 				"3px": "3px",

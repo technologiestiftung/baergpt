@@ -3,6 +3,24 @@ import AxeBuilder from "@axe-core/playwright";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
 
+testWithoutSplashScreen.describe("Accessibility - Chat form", () => {
+	testWithLoggedInUser(
+		"Open model dropdown should be accessible",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await page.getByRole("button", { name: "Schnell", exact: false }).click();
+
+			await expect(
+				page.getByRole("switch", { name: "Länger nachdenken auswählen" }),
+			).toBeVisible();
+
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
+});
+
 testWithoutSplashScreen.describe("Accessibility - Auth Flow", () => {
 	// test accessibility for profile page
 	testWithLoggedInUser(

@@ -78,6 +78,7 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 		},
 		onItemClick: handleSelect,
 		closeOnArrowLeft: true,
+		navigateWithTab: true,
 	});
 
 	return (

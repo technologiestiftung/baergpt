@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent, type MutableRefObject } from "react";
+import { useRef, type KeyboardEvent, type RefObject } from "react";
 import { useFocusOnOpen } from "../components/chat/chat-form/hooks/use-focus-on-open";
 
 interface UseDropdownKeyboardProps<T> {
@@ -7,10 +7,13 @@ interface UseDropdownKeyboardProps<T> {
 	onClose: () => void;
 	onItemClick: (value: T) => void;
 	closeOnArrowLeft?: boolean;
+	navigateWithTab?: boolean; // navigate with tab instead of closing the dropdown
+	trailingItemRef?: RefObject<HTMLElement | null>; // Extra focusable after the option list
+	onTrailingItemActivate?: () => void;
 }
 
 interface UseDropdownKeyboardReturn {
-	optionButtonRefs: MutableRefObject<Map<number, HTMLButtonElement>>;
+	optionButtonRefs: RefObject<Map<number, HTMLButtonElement>>;
 	handleKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
 }
 
@@ -20,6 +23,9 @@ export function useDropdownKeyboard<T>({
 	onClose,
 	onItemClick,
 	closeOnArrowLeft = false,
+	navigateWithTab = false,
+	trailingItemRef,
+	onTrailingItemActivate,
 }: UseDropdownKeyboardProps<T>): UseDropdownKeyboardReturn {
 	const optionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
@@ -27,38 +33,77 @@ export function useDropdownKeyboard<T>({
 
 	const selectNextOption = (
 		currentIndex: number,
-		optionButtons: HTMLButtonElement[],
+		focusables: HTMLElement[],
 	) => {
-		if (optionButtons.length === 0) {
+		if (focusables.length === 0) {
 			return;
 		}
-		const nextIndex = (currentIndex + 1) % optionButtons.length;
-		optionButtons[nextIndex].focus();
+		const nextIndex = (currentIndex + 1) % focusables.length;
+		focusables[nextIndex].focus();
 	};
 
 	const selectPreviousOption = (
 		currentIndex: number,
-		optionButtons: HTMLButtonElement[],
+		focusables: HTMLElement[],
 	) => {
-		if (optionButtons.length === 0) {
+		if (focusables.length === 0) {
 			return;
 		}
 		const previousIndex =
-			(currentIndex - 1 + optionButtons.length) % optionButtons.length;
-		optionButtons[previousIndex].focus();
+			currentIndex <= 0 ? focusables.length - 1 : currentIndex - 1;
+		focusables[previousIndex].focus();
+	};
+
+	const handleTab = (
+		event: KeyboardEvent<HTMLDivElement>,
+		currentIndex: number,
+		focusables: HTMLElement[],
+	) => {
+		if (!navigateWithTab) {
+			event.preventDefault();
+			onClose();
+			return;
+		}
+
+		const isLeavingBackwards = event.shiftKey && currentIndex === 0;
+		const isLeavingForwards =
+			!event.shiftKey && currentIndex === focusables.length - 1;
+		if (focusables.length === 0 || isLeavingBackwards || isLeavingForwards) {
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+		if (event.shiftKey) {
+			selectPreviousOption(currentIndex, focusables);
+		} else {
+			selectNextOption(currentIndex, focusables);
+		}
 	};
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
 		const optionButtons = Array.from(optionButtonRefs.current.values());
-		const currentIndex = optionButtons.findIndex(
-			(button) => button === document.activeElement,
+		const trailingItem = trailingItemRef?.current ?? null;
+		const focusables: HTMLElement[] = trailingItem
+			? [...optionButtons, trailingItem]
+			: optionButtons;
+		const currentIndex = focusables.findIndex(
+			(focusable) => focusable === document.activeElement,
 		);
+
+		const consume = () => {
+			event.preventDefault();
+			event.stopPropagation();
+		};
 
 		switch (event.key) {
 			case "Escape":
-			case "Tab":
 				event.preventDefault();
 				onClose();
+				break;
+
+			case "Tab":
+				handleTab(event, currentIndex, focusables);
 				break;
 
 			case "ArrowLeft":
@@ -69,20 +114,25 @@ export function useDropdownKeyboard<T>({
 				break;
 
 			case "ArrowDown":
-				event.preventDefault();
-				selectNextOption(currentIndex, optionButtons);
+				consume();
+				selectNextOption(currentIndex, focusables);
 				break;
 
 			case "ArrowUp":
-				event.preventDefault();
-				selectPreviousOption(currentIndex, optionButtons);
+				consume();
+				selectPreviousOption(currentIndex, focusables);
 				break;
 
 			case "Enter":
-				event.preventDefault();
-				if (currentIndex !== -1) {
-					onItemClick(items[currentIndex]);
+				consume();
+				if (currentIndex === -1) {
+					break;
 				}
+				if (focusables[currentIndex] === trailingItem) {
+					onTrailingItemActivate?.();
+					break;
+				}
+				onItemClick(items[currentIndex]);
 				break;
 
 			default:

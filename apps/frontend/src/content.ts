@@ -997,6 +997,10 @@ export const Content = {
 	"chat.llmModel.dropdown.li3.description":
 		"Leistungsstark für komplexe Aufgaben",
 	"chat.llmModel.dropdown.li3.ariaLabel": "GLM 5.2 auswählen",
+	"chat.llmModel.dropdown.li4.label": "Länger nachdenken",
+	"chat.llmModel.dropdown.li4.description":
+		"BärGPT plant komplexe Antworten in mehreren Schritten, bevor es antwortet. ",
+	"chat.llmModel.dropdown.li4.ariaLabel": "Länger nachdenken auswählen",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",

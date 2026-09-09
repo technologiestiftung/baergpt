@@ -1,8 +1,8 @@
-import { type MutableRefObject, useEffect } from "react";
+import { type RefObject, useEffect } from "react";
 
 export function useFocusOnOpen(
 	isOpen: boolean,
-	optionButtonRefs: MutableRefObject<Map<number, HTMLButtonElement>>,
+	optionButtonRefs: RefObject<Map<number, HTMLButtonElement>>,
 ) {
 	useEffect(() => {
 		if (isOpen) {

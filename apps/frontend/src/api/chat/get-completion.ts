@@ -14,6 +14,7 @@ import { useFaviconStore } from "../../store/favicon-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 import type { Span } from "@sentry/react";
 import { usePublicDocumentsStore } from "../../store/use-public-documents-store.ts";
+import { useExtendedThinkingStore } from "../../store/use-extended-thinking-store.ts";
 
 export type WebCitationSource = {
 	url: string;
@@ -60,9 +61,12 @@ export async function getCompletion(
 		createPendingMessageInMemory,
 		persistPendingMessageToDb,
 		removePendingMessageFromMemory,
-		selectedLlmModel,
 		selectedChatTools,
+		selectedLlmModel,
 	} = useChatsStore.getState();
+
+	// Read once up front, so toggling mid-stream cannot affect this turn.
+	const { isExtendedThinkingEnabled } = useExtendedThinkingStore.getState();
 	const { getSelectedUserChatDocumentIds } = useUserDocumentStore.getState();
 	const { getSelectedUserChatFolderIds } = useUserFolderStore.getState();
 	const { getSelectedPublicChatDocumentIds } =
@@ -133,6 +137,7 @@ export async function getCompletion(
 						(option) => activeToolsDict[option] ?? [],
 					),
 					llm_model: selectedLlmModel,
+					extended_thinking: isExtendedThinkingEnabled,
 				}),
 			},
 		);
