@@ -74,10 +74,8 @@
 								</h1>
 
 								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Sie haben eine Zurücksetzung Ihres Passworts angefordert oder
-									versucht, sich mit einer bereits registrierten Email-Adresse
-									erneut zu registrieren. Bitte bestätigen Sie Ihre Identität
-									und wählen anschließend ein neues Passwort.
+									Sie haben eine Anmeldung bei BärGPT angefordert. Bitte
+									bestätigen Sie Ihre Identität, um sich anzumelden.
 								</p>
 
 								<p style="font-size: 14px; color: #000000; line-height: 1.5">
@@ -112,7 +110,7 @@
 									<tr>
 										<td align="left">
 											<a
-												href="{{ .SiteURL }}/confirm-otp/?type=recovery&email={{ .Email }}&"
+												href="{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}&"
 												target="_blank"
 												rel="noopener noreferrer"
 												style="
@@ -125,7 +123,7 @@
 													display: inline-block;
 												"
 											>
-												Identität bestätigen &amp; Passwort wählen
+												Identität bestätigen
 											</a>
 										</td>
 									</tr>
@@ -149,13 +147,12 @@
 									manuell:
 									<br />
 									<a
-										href="{{ .SiteURL }}/confirm-otp/?type=recovery&email={{ .Email }}&"
+										href="{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}&"
 										target="_blank"
 										rel="noopener noreferrer"
 										style="color: #0c2753; word-break: break-word"
 									>
-										{{ .SiteURL }}/confirm-otp/?type=recovery&email={{ .Email
-										}}&
+										{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}&
 									</a>
 									<br /><br />
 									Ihr Code (bitte im Formular eingeben):
