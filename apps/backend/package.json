@@ -23,7 +23,7 @@
 		"db:dump-user-emails": "tsx ./supabase/scripts/dump-user-emails.ts",
 		"db:up": "supabase migration up --local && npm run db:typegen",
 		"db:dump-schema": "supabase db dump --local --schema public > supabase/schemas/schema.sql && prettier --write supabase/schemas/schema.sql",
-		"db:generate-migration": "supabase db diff --schema public -f",
+		"db:generate-migration": "tsx supabase/scripts/generate-migration.ts",
 		"mistral:assess-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts -- --dry-run",
 		"mistral:cleanup-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts",
 		"s3:assess-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts -- --dry-run",
