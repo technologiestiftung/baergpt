@@ -790,10 +790,6 @@ export type Database = {
 				Args: { new_last_sign_in_at: string; user_id: string };
 				Returns: undefined;
 			};
-			verify_own_password: {
-				Args: { plain_password: string };
-				Returns: boolean;
-			};
 		};
 		Enums: {
 			[_ in never]: never;
