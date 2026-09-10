@@ -25,7 +25,12 @@ import { propagateAttributes } from "@langfuse/tracing";
 import { getChatPrompt, getTextPrompt } from "./prompt-provider";
 import { type Document, type LLMHandler } from "../types/common";
 import { BaseContentDbService } from "./db-service/base-db-service";
-import { LLM_PARAMETERS, EXPERIMENTAL_MAX_TOOL_CALL_STEPS } from "../constants";
+import {
+	LLM_PARAMETERS,
+	EXPERIMENTAL_MAX_TOOL_CALL_STEPS,
+	MAX_OUTPUT_TOKENS,
+	MAX_OUTPUT_TOKENS_EXTENDED_THINKING,
+} from "../constants";
 import type {
 	ActiveTools,
 	IncomingChatMessage,
@@ -300,6 +305,7 @@ export class GenerationService {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
 		activeTools: ActiveTools[];
+		extendedThinking: boolean;
 	}): Promise<Response> {
 		const {
 			messages,
@@ -310,6 +316,7 @@ export class GenerationService {
 			allowedDocumentIds,
 			allowedFolderIds,
 			activeTools,
+			extendedThinking,
 		} = args;
 
 		const memoryLogId =
@@ -341,8 +348,13 @@ export class GenerationService {
 							model: llmHandler.languageModel,
 							messages: messages.filter(nonEmptyAssistantMessage),
 							allowSystemInMessages: true,
-							maxOutputTokens: 8192,
+							maxOutputTokens: extendedThinking
+								? MAX_OUTPUT_TOKENS_EXTENDED_THINKING
+								: MAX_OUTPUT_TOKENS,
 							temperature: LLM_PARAMETERS.temperature,
+							// Mistral only knows "high" and "none"; left unset when the
+							// toggle is off, which is the API default anyway.
+							reasoning: extendedThinking ? "high" : undefined,
 							tools,
 							toolChoice,
 							stopWhen:
