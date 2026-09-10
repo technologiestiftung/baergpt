@@ -19,6 +19,7 @@ function parseConfig(env: Record<string, string>) {
 		"VITE_FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED",
 		"VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED",
 		"VITE_FEATURE_FLAG_GLM_5_2_ALLOWED",
+		"VITE_FEATURE_FLAG_EXTENDED_THINKING_ALLOWED",
 		"VITE_SPLASH_CONTENT_URL",
 		"VITE_SPLASH_API_COMMIT_URL",
 	];
@@ -65,6 +66,8 @@ function parseConfig(env: Record<string, string>) {
 		featureFlagSplashScreenAllowed:
 			env.VITE_FEATURE_FLAG_SPLASH_SCREEN_ALLOWED === "true",
 		featureFlagGlm52Allowed: env.VITE_FEATURE_FLAG_GLM_5_2_ALLOWED === "true",
+		featureFlagExtendedThinkingAllowed:
+			env.VITE_FEATURE_FLAG_EXTENDED_THINKING_ALLOWED === "true",
 		splashContentUrl: env.VITE_SPLASH_CONTENT_URL,
 		splashCommitApiUrl: env.VITE_SPLASH_API_COMMIT_URL,
 	};

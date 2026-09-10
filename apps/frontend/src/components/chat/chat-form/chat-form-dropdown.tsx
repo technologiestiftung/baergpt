@@ -3,6 +3,7 @@ import Content from "../../../content";
 import type { LlmModel } from "../../../common";
 import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
 import { Switch } from "../../primitives/switch/switch";
+import { config } from "../../../config";
 
 interface ChatFormDropdownProps<T extends LlmModel> {
 	title: string;
@@ -34,6 +35,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 }: ChatFormDropdownProps<T>) => {
 	const titleId = useId();
 	const extendedThinkingSwitchRef = useRef<HTMLInputElement>(null);
+	const isExtendedThinkingAllowed = config.featureFlagExtendedThinkingAllowed;
 
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
 		items,
@@ -100,23 +102,27 @@ export const ChatFormDropdown = <T extends LlmModel>({
 					);
 				})}
 			</ul>
-			<div className="w-[calc(100%-8px)] h-[0.5px] bg-hellblau-100 justify-self-center " />
-			<div className="flex gap-4 items-center justify-between p-3">
-				<div className="flex flex-col gap-2">
-					<div className="text-sm leading-[14px] text-dunkelblau-80">
-						{Content["chat.llmModel.dropdown.li4.label"]}
+			{isExtendedThinkingAllowed && (
+				<>
+					<div className="w-[calc(100%-8px)] h-[0.5px] bg-hellblau-100 justify-self-center " />
+					<div className="flex gap-4 items-center justify-between p-3">
+						<div className="flex flex-col gap-2">
+							<div className="text-sm leading-[14px] text-dunkelblau-80">
+								{Content["chat.llmModel.dropdown.li4.label"]}
+							</div>
+							<p className="text-xs leading-5 text-dunkelblau-50 max-w-[233px] w-full whitespace-normal">
+								{Content["chat.llmModel.dropdown.li4.description"]}
+							</p>
+						</div>
+						<Switch
+							ref={extendedThinkingSwitchRef}
+							checked={isExtendedThinkingEnabled}
+							ariaLabel={Content["chat.llmModel.dropdown.li4.ariaLabel"]}
+							onChange={onExtendedThinkingChange}
+						/>
 					</div>
-					<p className="text-xs leading-5 text-dunkelblau-50 max-w-[233px] w-full whitespace-normal">
-						{Content["chat.llmModel.dropdown.li4.description"]}
-					</p>
-				</div>
-				<Switch
-					ref={extendedThinkingSwitchRef}
-					checked={isExtendedThinkingEnabled}
-					ariaLabel={Content["chat.llmModel.dropdown.li4.ariaLabel"]}
-					onChange={onExtendedThinkingChange}
-				/>
-			</div>
+				</>
+			)}
 		</div>
 	);
 };
