@@ -24,6 +24,7 @@ const externalToolEnabled: Partial<Record<ActiveTools, boolean>> = {
 	datawrapperMCPTools: config.featureFlagMcpDatawrapperAllowed,
 };
 const enabledExternalTool =
+	// @ts-expect-error ts-config excludes test files atm, leading to a type error here
 	[...EXTERNAL_TOOLS].find((tool) => externalToolEnabled[tool]) ?? null;
 
 let userToken: string;
@@ -92,4 +93,40 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 			);
 		},
 	);
+
+	it("rejects a non-boolean extended_thinking with 400", async () => {
+		const res = await postJustChatting({
+			llm_model: "mistral-small",
+			messages: [{ role: "user", content: "hallo" }],
+			extended_thinking: "yes",
+		});
+
+		expect(res.status).toBe(400);
+		const responseBody = await res.json();
+		expect(responseBody.error).toContain("extended_thinking must be a boolean");
+	});
+
+	it("streams reasoning parts when extended_thinking is true", async () => {
+		const res = await postJustChatting({
+			llm_model: "mistral-small",
+			messages: [{ role: "user", content: "hallo" }],
+			extended_thinking: true,
+		});
+
+		expect(res.status).toBe(200);
+		const body = await res.text();
+		expect(body).toContain('"type":"reasoning-delta"');
+		expect(body).toContain("mock reasoning");
+	});
+
+	it("streams no reasoning parts when extended_thinking is omitted", async () => {
+		const res = await postJustChatting({
+			llm_model: "mistral-small",
+			messages: [{ role: "user", content: "hallo" }],
+		});
+
+		expect(res.status).toBe(200);
+		const body = await res.text();
+		expect(body).not.toContain("reasoning");
+	});
 });

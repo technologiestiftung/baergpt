@@ -82,6 +82,7 @@ export type ChatMessageBody = {
 	user_name: string;
 	active_tools: ActiveTools[];
 	llm_model: string;
+	extended_thinking?: boolean;
 };
 
 export type ActiveTools =
