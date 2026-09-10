@@ -21,6 +21,7 @@ export type NewChatMessage = Pick<
 	| "parla_citations"
 	| "open_data_citations"
 	| "external_tool_context"
+	| "thinking_traces"
 >;
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
@@ -49,6 +50,8 @@ export type ChatMessage = {
 	open_data_citations: OpenDataCitationSource[] | null;
 	created_at: string;
 	external_tool_context: boolean;
+	// Reasoning trace streamed by the model when extended thinking is on.
+	thinking_traces: string | null;
 	id: number;
 	// Stable identity to avoid remounting the message's DOM node.
 	clientKey: number;

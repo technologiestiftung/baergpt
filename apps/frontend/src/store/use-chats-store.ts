@@ -97,6 +97,7 @@ interface ChatStore {
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
 		open_data_citations: OpenDataCitationSource[] | null;
+		thinking_traces: string | null;
 	}): void;
 	visibleInfoMessage: VisibleChatInfoMessage;
 	showInfoMessage(infoMessage: VisibleChatInfoMessage): void;
@@ -424,6 +425,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		web_citations,
 		parla_citations,
 		open_data_citations,
+		thinking_traces,
 	}) => {
 		const foundMessage = chat.messages.find(({ id }) => id === messageId);
 		if (!foundMessage) {
@@ -435,6 +437,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		foundMessage.web_citations = web_citations;
 		foundMessage.parla_citations = parla_citations;
 		foundMessage.open_data_citations = open_data_citations;
+		foundMessage.thinking_traces = thinking_traces;
 		get().updateChats(chat);
 	},
 

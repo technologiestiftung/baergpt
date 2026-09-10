@@ -84,6 +84,14 @@ llms.post("/just-chatting", async (c: Context) => {
 			);
 		}
 
+		const extendedThinking = body.extended_thinking ?? false;
+		if (typeof extendedThinking !== "boolean") {
+			return c.json(
+				{ error: "Invalid request: extended_thinking must be a boolean" },
+				400,
+			);
+		}
+
 		const rawActiveTools = body.active_tools ?? [];
 
 		if (
@@ -143,6 +151,7 @@ llms.post("/just-chatting", async (c: Context) => {
 			allowedDocumentIds: allowedDocumentIds,
 			allowedFolderIds: allowedFolderIds,
 			activeTools,
+			extendedThinking,
 		});
 
 		response.headers.set("Content-Type", "text/event-stream; charset=utf-8");

@@ -174,6 +174,7 @@ export type Database = {
 					open_data_citations: Json | null;
 					parla_citations: Json | null;
 					role: string;
+					traces: Json | null;
 					type: string;
 					web_citations: Json | null;
 				};
@@ -189,6 +190,7 @@ export type Database = {
 					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role: string;
+					traces?: Json | null;
 					type: string;
 					web_citations?: Json | null;
 				};
@@ -204,6 +206,7 @@ export type Database = {
 					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role?: string;
+					traces?: Json | null;
 					type?: string;
 					web_citations?: Json | null;
 				};
