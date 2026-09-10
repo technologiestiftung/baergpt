@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
 import type { JSX } from "react";
 import { AnchorLinkTargetBlank } from "../../primitives/markdown/anchor-link-target-blank.tsx";
+import { ThinkingTraces } from "./thinking-traces.tsx";
 
 interface ChatMessageProps {
 	message: ChatMessage;
@@ -18,20 +19,26 @@ const customComponents = {
 };
 
 export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
-	const { role, content } = message;
+	const { role, content, traces } = message;
+	// An assistant message with traces but no content yet is still streaming
+	// its reasoning, so it has to render before the answer arrives.
+	const hasAssistantContent = content !== "" || Boolean(traces);
 
 	return (
 		<div className="flex flex-col" data-message-id={message.id}>
-			{role === "assistant" && content !== "" && (
+			{role === "assistant" && hasAssistantContent && (
 				<div className="mb-8">
 					<AssistantMessage message={message}>
-						<ReactMarkdown
-							remarkPlugins={[remarkGfm]}
-							className="markdown-container"
-							components={customComponents}
-						>
-							{content}
-						</ReactMarkdown>
+						<ThinkingTraces message={message} />
+						{content !== "" && (
+							<ReactMarkdown
+								remarkPlugins={[remarkGfm]}
+								className="markdown-container"
+								components={customComponents}
+							>
+								{content}
+							</ReactMarkdown>
+						)}
 					</AssistantMessage>
 				</div>
 			)}
