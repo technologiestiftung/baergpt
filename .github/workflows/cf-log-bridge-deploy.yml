@@ -1,0 +1,178 @@
+name: CF log bridge deploy to STACKIT Cloud Foundry
+
+on:
+  push:
+    branches: [staging, main]
+    paths: ["infra/cf-log-bridge/**", ".github/workflows/cf-log-bridge-deploy.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/baergpt-log-bridge
+  # Suffix must match the CF space names and the drain URL built in
+  # infra/terraform/cloud-foundry/log-drain.tf.
+  APP_NAME: baergpt-log-bridge-${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: cf-log-bridge-deploy-${{ github.ref }}
+      cancel-in-progress: false
+    # workflow_dispatch has no branches filter, so guard the ref here.
+    if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
+    environment: ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          persist-credentials: "false"
+
+      - name: Setup environment ⚙️
+        uses: ./.github/actions/setup
+        with:
+          install-1password: "true"
+
+      # Same formula as cf-log-bridge-image.yml, so it resolves to the same tag.
+      - name: Compute image tag 🏷️
+        id: tag
+        run: |
+          set -euo pipefail
+          echo "tag=content-sha-${{ hashFiles('infra/cf-log-bridge/vector.yaml', 'infra/cf-log-bridge/Dockerfile') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set 1Password item IDs based on branch 🌿
+        id: env-config
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "app_item_id=${{ secrets.OP_LOG_BRIDGE_PRODUCTION_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "cf_item_id=${{ secrets.OP_CF_DEPLOY_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+            echo "app_item_id=${{ secrets.OP_LOG_BRIDGE_STAGING_ENV_ITEM_ID }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch STACKIT Cloud Foundry credentials from 1Password 🔑
+        run: |
+          set -euo pipefail
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.cf_item_id }}/notesPlain" > cf.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < cf.env
+          rm cf.env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      # Both workflows fire on the same push, so the build may still be running.
+      - name: Wait for image to exist in GHCR 🔍
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}"
+          timeout=600
+          counter=0
+          until docker manifest inspect "$image" >/dev/null 2>&1; do
+            if [ $counter -ge $timeout ]; then
+              echo "::error::Image $image not found in GHCR after ${timeout}s." \
+                "Ensure 'CF log bridge image build and push' ran for this commit."
+              exit 1
+            fi
+            echo "Waiting for $image to be available on GHCR... (${counter}s)"
+            sleep 10
+            counter=$((counter + 10))
+          done
+          echo "Image $image found."
+
+      - name: Install cf CLI ⚙️
+        run: |
+          set -euo pipefail
+          curl -sL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" \
+            | tar -zx
+          sudo mv cf8 /usr/local/bin/cf
+
+      - name: Target STACKIT Cloud Foundry 🎯
+        run: |
+          set -euo pipefail
+          cf api "$CF_API_ENDPOINT"
+          cf auth
+          cf target -o "$CF_ORG" -s "$CF_SPACE"
+
+      # KEY=VALUE lines in the item's notes. See infra/cf-log-bridge/README.md.
+      - name: Fetch bridge env vars from 1Password 🔑
+        run: |
+          set -euo pipefail
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.app_item_id }}/notesPlain" > bridge.env
+          : > infra/cf-log-bridge/app.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            echo "::add-mask::$value"
+            echo "$key=$value" >> infra/cf-log-bridge/app.env
+          done < bridge.env
+          rm bridge.env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      # cf set-env needs the app to exist, so the first deploy creates it with
+      # --no-start. Unsetting first means keys removed from 1Password do not linger.
+      - name: Sync bridge env vars 🔄
+        id: sync
+        working-directory: infra/cf-log-bridge
+        env:
+          CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! cf app "${{ env.APP_NAME }}" >/dev/null 2>&1; then
+            echo "bootstrapped=true" >> "$GITHUB_OUTPUT"
+            cf push \
+              -f manifest.yml \
+              --no-start \
+              --var app_name="${{ env.APP_NAME }}" \
+              --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
+              --var docker_username="${{ github.actor }}"
+          fi
+
+          guid=$(cf app "${{ env.APP_NAME }}" --guid)
+          # Assigned first: a substitution inside `for ... in` discards its exit status, so
+          # a failed cf curl would silently skip the unset and leave stale vars behind.
+          keys=$(cf curl "/v3/apps/$guid/environment_variables" | jq -r '.var | keys[]')
+          for key in $keys; do
+            cf unset-env "${{ env.APP_NAME }}" "$key" >/dev/null
+          done
+
+          while IFS= read -r line || [ -n "$line" ]; do
+            key="${line%%=*}"
+            value="${line#*=}"
+            cf set-env "${{ env.APP_NAME }}" "$key" "$value" >/dev/null
+          done < app.env
+
+          rm -f app.env
+
+      # Rolling keeps the old version serving the drain until the new one is up. The
+      # first deploy has nothing to roll over, hence the flag from the sync step.
+      - name: Push image to Cloud Foundry 🚀
+        working-directory: infra/cf-log-bridge
+        env:
+          CF_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cf push \
+            -f manifest.yml \
+            ${{ steps.sync.outputs.bootstrapped != 'true' && '--strategy rolling' || '' }} \
+            --var app_name="${{ env.APP_NAME }}" \
+            --var image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" \
+            --var docker_username="${{ github.actor }}" \
+          || { cf cancel-deployment "${{ env.APP_NAME }}" 2>/dev/null || true; exit 1; }
+
+      - name: Dump recent app logs on failure 🪵
+        if: ${{ failure() && !cancelled() }}
+        run: cf logs "${{ env.APP_NAME }}" --recent

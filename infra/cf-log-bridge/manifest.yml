@@ -1,0 +1,15 @@
+# ((image)), ((docker_username)) and ((app_name)) are injected at push time via
+# `cf push --var ...`. Runtime env is set by the deploy workflow from 1Password, not
+# here.
+applications:
+  - name: ((app_name))
+    docker:
+      image: ((image))
+      username: ((docker_username))
+    instances: 1
+    memory: 256M
+    disk_quota: 512M
+    # A port check is a TCP connect. An http check would send a request, get 401 from
+    # Vector's basic auth, and mark the app crashed.
+    health-check-type: port
+    default-route: true
