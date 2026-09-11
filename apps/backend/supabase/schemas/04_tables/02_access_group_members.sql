@@ -42,7 +42,7 @@ SELECT
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
         )
     );

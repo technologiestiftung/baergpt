@@ -698,7 +698,7 @@ export type Database = {
 				}[];
 			};
 			is_application_admin: { Args: never; Returns: boolean };
-			is_current_user_banned: { Args: never; Returns: boolean };
+			is_current_user_banned_or_deleted: { Args: never; Returns: boolean };
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];

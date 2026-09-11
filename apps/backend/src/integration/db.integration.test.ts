@@ -70,7 +70,7 @@ describe("Integration tests for DB", async () => {
 		});
 	});
 
-	describe("is_current_user_banned()", () => {
+	describe("is_current_user_banned_or_deleted()", () => {
 		const givenEmail = "ban-rpc-test@ts.berlin";
 		const givenPassword = "SecurePassword123!";
 		let userId: string = "";
@@ -101,12 +101,12 @@ describe("Integration tests for DB", async () => {
 				password: givenPassword,
 			});
 
-			const { data: isBanned, error } = await supabaseAnonClient.rpc(
-				"is_current_user_banned",
+			const { data: isBannedOrDeleted, error } = await supabaseAnonClient.rpc(
+				"is_current_user_banned_or_deleted",
 			);
 
 			expect(error).toBeNull();
-			expect(isBanned).toBe(false);
+			expect(isBannedOrDeleted).toBe(false);
 		});
 
 		it("should return true for banned user then return false after unbanning the user", async () => {
@@ -121,11 +121,11 @@ describe("Integration tests for DB", async () => {
 				});
 			expect(banError).toBeNull();
 
-			const { data: isBanned1, error: isBannedError } =
-				await supabaseAnonClient.rpc("is_current_user_banned");
+			const { data: isBannedOrDeleted1, error: isBannedOrDeletedError1 } =
+				await supabaseAnonClient.rpc("is_current_user_banned_or_deleted");
 
-			expect(isBannedError).toBeNull();
-			expect(isBanned1).toBe(true);
+			expect(isBannedOrDeletedError1).toBeNull();
+			expect(isBannedOrDeleted1).toBe(true);
 
 			const { error: unbanError } =
 				await serviceRoleDbClient.auth.admin.updateUserById(userId, {
@@ -133,12 +133,45 @@ describe("Integration tests for DB", async () => {
 				});
 			expect(unbanError).toBeNull();
 
-			const { data: isBanned2, error } = await supabaseAnonClient.rpc(
-				"is_current_user_banned",
+			const { data: isBannedOrDeleted2, error: isBannedOrDeletedError2 } =
+				await supabaseAnonClient.rpc("is_current_user_banned_or_deleted");
+
+			expect(isBannedOrDeletedError2).toBeNull();
+			expect(isBannedOrDeleted2).toBe(false);
+		});
+
+		it("should return true for a deleted user with a still-valid session", async () => {
+			// Dedicated throwaway user so we don't disturb the shared test user
+			const deletedUserEmail = "deleted-rpc-test@ts.berlin";
+			const { data: createData, error: createError } =
+				await serviceRoleDbClient.auth.admin.createUser({
+					email: deletedUserEmail,
+					password: givenPassword,
+					email_confirm: true,
+				});
+			expect(createError).toBeNull();
+			const deletedUserId = createData.user?.id ?? "";
+			expect(deletedUserId).not.toBe("");
+
+			// Sign in to obtain a valid JWT, then delete the underlying auth.users row.
+			// The JWT is still valid, so auth.uid() resolves but no user row exists.
+			const { error: signInError } =
+				await supabaseAnonClient.auth.signInWithPassword({
+					email: deletedUserEmail,
+					password: givenPassword,
+				});
+			expect(signInError).toBeNull();
+
+			const { error: deleteError } =
+				await serviceRoleDbClient.auth.admin.deleteUser(deletedUserId);
+			expect(deleteError).toBeNull();
+
+			const { data: isBannedOrDeleted, error } = await supabaseAnonClient.rpc(
+				"is_current_user_banned_or_deleted",
 			);
 
 			expect(error).toBeNull();
-			expect(isBanned2).toBe(false);
+			expect(isBannedOrDeleted).toBe(true);
 		});
 	});
 
@@ -863,7 +896,7 @@ describe("Integration tests for DB", async () => {
 						await supabaseAnonClient.rpc("delete_user");
 
 					expect(deleteError.message).toBe(
-						"Permission denied: banned users may not delete their account",
+						"Permission denied: banned or deleted users may not delete their account",
 					);
 
 					const { data, error: selectError } =

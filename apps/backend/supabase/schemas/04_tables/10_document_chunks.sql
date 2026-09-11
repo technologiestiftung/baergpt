@@ -64,7 +64,7 @@ CREATE POLICY "Allow authenticated users to access own or public document_chun" 
                 )
             )
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -77,7 +77,7 @@ WITH
                             "auth"."uid" () AS "uid"
                     )
                 )
-                AND (NOT "public"."is_current_user_banned" ())
+                AND (NOT "public"."is_current_user_banned_or_deleted" ())
             )
             OR (
                 "public"."is_application_admin" ()
