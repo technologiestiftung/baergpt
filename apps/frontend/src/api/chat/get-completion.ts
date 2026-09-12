@@ -15,6 +15,7 @@ import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 import type { Span } from "@sentry/react";
 import { usePublicDocumentsStore } from "../../store/use-public-documents-store.ts";
 import { useExtendedThinkingStore } from "../../store/use-extended-thinking-store.ts";
+import type { Trace, TraceTool } from "../../common.ts";
 
 export type WebCitationSource = {
 	url: string;
@@ -40,10 +41,23 @@ export type OpenDataCitationSource = {
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
 	| { type: "reasoning-delta"; id: string; delta: string }
+	| { type: "tool-input-start"; toolCallId: string; toolName: string }
+	| { type: "tool-output-available"; toolCallId: string }
+	| { type: "tool-output-error"; toolCallId: string }
 	| { type: "data-citations"; data: number[] }
 	| { type: "data-web-citations"; data: WebCitationSource[] }
 	| { type: "data-parla-citations"; data: ParlaCitationSource[] }
 	| { type: "data-open-data-citations"; data: OpenDataCitationSource[] };
+
+/**
+ * Tool names as they arrive on the stream — ours for the built-in tools, the
+ * MCP server's for Parla. Anything not listed here is left out of the trace.
+ */
+const traceToolByStreamName: Record<string, TraceTool> = {
+	webSearchTool: "webSearchTool",
+	ragSearchTool: "ragSearchTool",
+	parla_vector_search: "parlaMCPTools",
+};
 
 const activeToolsDict: Record<ChatTool, string[]> = {
 	parla: ["parlaMCPTools"],
@@ -169,18 +183,34 @@ export async function getCompletion(
 			parla_citations: null,
 			open_data_citations: null,
 			external_tool_context: isExternalToolContext,
-			thinking_traces: null,
+			traces: null,
 		});
 		messageIdForCleanup = localMessageId;
 
 		let currentText = "";
-		let currentThinkingTraces = "";
+		const traces: Trace[] = [];
+		// Tool call that has started but not yet reported a result, so the trace
+		// can mark it as running. Never persisted.
+		let runningToolCallId: string | undefined;
+		let runningTool: TraceTool | undefined;
 		let documentCitations: number[] = [];
 		let webCitations: WebCitationSource[] = [];
 		let parlaCitations: ParlaCitationSource[] = [];
 		let openDataCitations: OpenDataCitationSource[] = [];
 
 		let hasReceivedText = false;
+		let thinkingStartedAt: number | undefined;
+		let thinkingDurationSeconds: number | undefined;
+
+		/** Appends to the open text trace, or opens a new one after a tool step. */
+		const appendTraceText = (delta: string) => {
+			const lastTrace = traces.at(-1);
+			if (lastTrace?.type === "text") {
+				lastTrace.text += delta;
+				return;
+			}
+			traces.push({ type: "text", text: delta });
+		};
 
 		const writeMessage = () =>
 			updateMessage({
@@ -193,7 +223,10 @@ export async function getCompletion(
 				open_data_citations: openDataCitations.length
 					? openDataCitations
 					: null,
-				thinking_traces: currentThinkingTraces || null,
+				traces: traces.length
+					? { traces, durationSeconds: thinkingDurationSeconds }
+					: null,
+				running_tool: runningTool,
 			});
 
 		await parseStream(response.body, {
@@ -202,13 +235,47 @@ export async function getCompletion(
 				if (!hasReceivedText) {
 					setStatus("loading-text");
 					hasReceivedText = true;
+
+					if (thinkingStartedAt !== undefined) {
+						thinkingDurationSeconds = Math.max(
+							1,
+							Math.round((Date.now() - thinkingStartedAt) / 1000),
+						);
+					}
 				}
 
 				currentText += delta;
 				writeMessage();
 			},
 			onReasoningDelta: (delta: string) => {
-				currentThinkingTraces += delta;
+				thinkingStartedAt ??= Date.now();
+				appendTraceText(delta);
+				writeMessage();
+			},
+			onToolStart: (toolName: string, toolCallId: string) => {
+				const tool = traceToolByStreamName[toolName];
+				if (!tool) {
+					return;
+				}
+
+				thinkingStartedAt ??= Date.now();
+				runningToolCallId = toolCallId;
+				runningTool = tool;
+
+				// Consecutive calls of the same tool are one step in the trace.
+				const lastTrace = traces.at(-1);
+				if (lastTrace?.type !== "tool" || lastTrace.tool !== tool) {
+					traces.push({ type: "tool", tool });
+				}
+				writeMessage();
+			},
+			onToolEnd: (toolCallId: string) => {
+				if (toolCallId !== runningToolCallId) {
+					return;
+				}
+
+				runningToolCallId = undefined;
+				runningTool = undefined;
 				writeMessage();
 			},
 			onCitations: (chunkIds: number[]) => {
@@ -255,7 +322,9 @@ export async function getCompletion(
 								? openDataCitations
 								: null,
 							external_tool_context: isExternalToolContext,
-							thinking_traces: currentThinkingTraces || null,
+							traces: traces.length
+								? { traces, durationSeconds: thinkingDurationSeconds }
+								: null,
 						});
 					} catch (error) {
 						removePendingMessageFromMemory(currentChat, localMessageId);
@@ -291,6 +360,8 @@ async function processStreamLine(
 	callbacks: {
 		onTextDelta: (delta: string) => void;
 		onReasoningDelta: (delta: string) => void;
+		onToolStart: (toolName: string, toolCallId: string) => void;
+		onToolEnd: (toolCallId: string) => void;
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
@@ -319,6 +390,19 @@ async function processStreamLine(
 
 		if (event.type === "reasoning-delta") {
 			callbacks.onReasoningDelta(event.delta);
+			return false;
+		}
+
+		if (event.type === "tool-input-start") {
+			callbacks.onToolStart(event.toolName, event.toolCallId);
+			return false;
+		}
+
+		if (
+			event.type === "tool-output-available" ||
+			event.type === "tool-output-error"
+		) {
+			callbacks.onToolEnd(event.toolCallId);
 			return false;
 		}
 
@@ -356,6 +440,8 @@ async function parseStream(
 	callbacks: {
 		onTextDelta: (delta: string) => void;
 		onReasoningDelta: (delta: string) => void;
+		onToolStart: (toolName: string, toolCallId: string) => void;
+		onToolEnd: (toolCallId: string) => void;
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;

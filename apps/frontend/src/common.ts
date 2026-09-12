@@ -21,10 +21,29 @@ export type NewChatMessage = Pick<
 	| "parla_citations"
 	| "open_data_citations"
 	| "external_tool_context"
-	| "thinking_traces"
+	| "traces"
 >;
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
+
+/**
+ * Tools whose calls are shown in the trace. Tools outside this list (Open Data,
+ * Datawrapper) are skipped rather than rendered as an unlabelled step.
+ */
+export type TraceTool = "webSearchTool" | "ragSearchTool" | "parlaMCPTools";
+
+/** One step of the trace, in the order it was streamed. */
+export type Trace =
+	{ type: "text"; text: string } | { type: "tool"; tool: TraceTool };
+
+export type MessageTraces = {
+	traces: Trace[];
+	/**
+	 * Time between the first trace and the first answer token. Measured while
+	 * streaming, so it is absent for messages written before it was recorded.
+	 */
+	durationSeconds?: number;
+};
 
 export type Connector = "parla" | "openData" | "datawrapper";
 export type ChatTool = "webSearch" | Connector;
@@ -50,8 +69,11 @@ export type ChatMessage = {
 	open_data_citations: OpenDataCitationSource[] | null;
 	created_at: string;
 	external_tool_context: boolean;
-	// Reasoning trace streamed by the model when extended thinking is on.
-	thinking_traces: string | null;
+	// Reasoning trace of the message, present when extended thinking was on.
+	traces: MessageTraces | null;
+	// The tool currently being called, while the message is still streaming.
+	// In-memory only: once the message is persisted nothing is running anymore.
+	running_tool?: TraceTool;
 	id: number;
 	// Stable identity to avoid remounting the message's DOM node.
 	clientKey: number;

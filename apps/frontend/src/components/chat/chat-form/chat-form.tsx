@@ -194,7 +194,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 			external_tool_context: selectedChatTools.some((tool) =>
 				externalChatTools.includes(tool),
 			),
-			thinking_traces: null,
+			traces: null,
 		};
 
 		const model = useChatsStore.getState().selectedLlmModel;

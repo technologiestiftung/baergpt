@@ -18,6 +18,9 @@ export type LlmParlaCitation = {
 /** Matches stream payloads consumed by `parseStream` in get-completion.ts */
 export type LlmStreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
+	| { type: "reasoning-delta"; id: string; delta: string }
+	| { type: "tool-input-start"; toolCallId: string; toolName: string }
+	| { type: "tool-output-available"; toolCallId: string; output?: unknown }
 	| { type: "data-citations"; data: number[] }
 	| { type: "data-web-citations"; data: LlmWebCitation[] }
 	| { type: "data-parla-citations"; data: LlmParlaCitation[] };
