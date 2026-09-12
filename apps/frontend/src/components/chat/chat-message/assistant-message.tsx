@@ -20,6 +20,7 @@ export function AssistantMessage({
 	const { getCurrentChat } = useChatsStore();
 	const {
 		content,
+		traces,
 		citations,
 		web_citations,
 		parla_citations,
@@ -33,7 +34,7 @@ export function AssistantMessage({
 	const isIdle = ["idle"].includes(status);
 	const hasChatButtons = !isLastMessage || isIdle;
 
-	const isBaerIconVisible = content && content.length > 0;
+	const isBaerIconVisible = content.length > 0 || Boolean(traces);
 
 	return (
 		<>

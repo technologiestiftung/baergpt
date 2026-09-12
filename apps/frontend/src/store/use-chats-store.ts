@@ -5,6 +5,8 @@ import type {
 	NewChatMessage,
 	ChatTool,
 	LlmModel,
+	MessageTraces,
+	TraceTool,
 } from "../common";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
 import {
@@ -97,7 +99,8 @@ interface ChatStore {
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
 		open_data_citations: OpenDataCitationSource[] | null;
-		thinking_traces: string | null;
+		traces: MessageTraces | null;
+		running_tool?: TraceTool;
 	}): void;
 	visibleInfoMessage: VisibleChatInfoMessage;
 	showInfoMessage(infoMessage: VisibleChatInfoMessage): void;
@@ -425,7 +428,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		web_citations,
 		parla_citations,
 		open_data_citations,
-		thinking_traces,
+		traces,
+		running_tool,
 	}) => {
 		const foundMessage = chat.messages.find(({ id }) => id === messageId);
 		if (!foundMessage) {
@@ -437,7 +441,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		foundMessage.web_citations = web_citations;
 		foundMessage.parla_citations = parla_citations;
 		foundMessage.open_data_citations = open_data_citations;
-		foundMessage.thinking_traces = thinking_traces;
+		foundMessage.traces = traces;
+		foundMessage.running_tool = running_tool;
 		get().updateChats(chat);
 	},
 

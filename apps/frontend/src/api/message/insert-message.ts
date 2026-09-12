@@ -20,7 +20,7 @@ export async function insertMessage(
 			parla_citations: chatMessage.parla_citations,
 			open_data_citations: chatMessage.open_data_citations,
 			external_tool_context: chatMessage.external_tool_context,
-			thinking_traces: chatMessage.thinking_traces,
+			traces: chatMessage.traces,
 		})
 		.select("*")
 		.single();
