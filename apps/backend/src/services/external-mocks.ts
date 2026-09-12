@@ -59,10 +59,17 @@ export function mockLanguageModel(): LanguageModel {
 			usage: MOCK_USAGE,
 			warnings: [],
 		}),
-		doStream: async (): Promise<LanguageModelV4StreamResult> => ({
+		doStream: async (options): Promise<LanguageModelV4StreamResult> => ({
 			stream: simulateReadableStream<LanguageModelV4StreamPart>({
 				chunks: [
 					{ type: "stream-start", warnings: [] },
+					...(options.reasoning !== undefined && options.reasoning !== "none"
+						? ([
+								{ type: "reasoning-start", id: "r0" },
+								{ type: "reasoning-delta", id: "r0", delta: "mock reasoning" },
+								{ type: "reasoning-end", id: "r0" },
+							] satisfies LanguageModelV4StreamPart[])
+						: []),
 					{ type: "text-start", id: "0" },
 					{ type: "text-delta", id: "0", delta: "mock response" },
 					{ type: "text-end", id: "0" },

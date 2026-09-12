@@ -39,6 +39,7 @@ export type OpenDataCitationSource = {
 
 type StreamEvent =
 	| { type: "text-delta"; id: string; delta: string }
+	| { type: "reasoning-delta"; id: string; delta: string }
 	| { type: "data-citations"; data: number[] }
 	| { type: "data-web-citations"; data: WebCitationSource[] }
 	| { type: "data-parla-citations"; data: ParlaCitationSource[] }
@@ -168,10 +169,12 @@ export async function getCompletion(
 			parla_citations: null,
 			open_data_citations: null,
 			external_tool_context: isExternalToolContext,
+			thinking_traces: null,
 		});
 		messageIdForCleanup = localMessageId;
 
 		let currentText = "";
+		let currentThinkingTraces = "";
 		let documentCitations: number[] = [];
 		let webCitations: WebCitationSource[] = [];
 		let parlaCitations: ParlaCitationSource[] = [];
@@ -190,6 +193,7 @@ export async function getCompletion(
 				open_data_citations: openDataCitations.length
 					? openDataCitations
 					: null,
+				thinking_traces: currentThinkingTraces || null,
 			});
 
 		await parseStream(response.body, {
@@ -201,6 +205,10 @@ export async function getCompletion(
 				}
 
 				currentText += delta;
+				writeMessage();
+			},
+			onReasoningDelta: (delta: string) => {
+				currentThinkingTraces += delta;
 				writeMessage();
 			},
 			onCitations: (chunkIds: number[]) => {
@@ -247,6 +255,7 @@ export async function getCompletion(
 								? openDataCitations
 								: null,
 							external_tool_context: isExternalToolContext,
+							thinking_traces: currentThinkingTraces || null,
 						});
 					} catch (error) {
 						removePendingMessageFromMemory(currentChat, localMessageId);
@@ -281,6 +290,7 @@ async function processStreamLine(
 	line: string,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
+		onReasoningDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
@@ -304,6 +314,11 @@ async function processStreamLine(
 
 		if (event.type === "text-delta") {
 			callbacks.onTextDelta(event.delta);
+			return false;
+		}
+
+		if (event.type === "reasoning-delta") {
+			callbacks.onReasoningDelta(event.delta);
 			return false;
 		}
 
@@ -340,6 +355,7 @@ async function parseStream(
 	body: ReadableStream<Uint8Array>,
 	callbacks: {
 		onTextDelta: (delta: string) => void;
+		onReasoningDelta: (delta: string) => void;
 		onCitations: (chunkIds: number[]) => void;
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
