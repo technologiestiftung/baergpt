@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gotenberg
+spec:
+  # No `replicas`: the HPA owns it. Pinning it here would make every `kubectl apply`
+  # reset the Deployment to 1 pod before the HPA scaled it back up — a capacity dip on
+  # every release, which is exactly what maxUnavailable: 0 exists to prevent.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: gotenberg
+  template:
+    metadata:
+      labels:
+        app: gotenberg
+    spec:
+      containers:
+        - name: gotenberg
+          # Same upstream image + basic-auth flag as infra/gotenberg/manifest.yml today —
+          # public Docker Hub image, no imagePullSecret needed.
+          image: gotenberg/gotenberg:8.34.0
+          args: ["gotenberg", "--api-enable-basic-auth"]
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: gotenberg-env # GOTENBERG_API_BASIC_AUTH_USERNAME/PASSWORD
+          # Inherently heavy (bundles Chromium + LibreOffice) — TODO: verify real
+          # values against CF's GOTENBERG_MEMORY (1Password, not in this repo).
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              memory: 1536Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 18 # 180s, matches CF's app-start timeout

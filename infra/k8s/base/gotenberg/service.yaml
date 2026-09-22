@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gotenberg
+spec:
+  # ClusterIP (default): cluster-internal only, no Ingress — unlike CF where gotenberg
+  # had a public route guarded only by basic auth (see K8S_MIGRATION_PLAN.md decision #5).
+  type: ClusterIP
+  selector:
+    app: gotenberg
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

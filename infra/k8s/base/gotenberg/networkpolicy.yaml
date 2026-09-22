@@ -1,0 +1,20 @@
+# Allows only the same-namespace backend to reach gotenberg. Staging's overlay adds
+# a second policy opening this to the sandbox namespace too (sandbox has no gotenberg
+# of its own — reuses staging's, see K8S_MIGRATION_PLAN.md).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gotenberg-allow-backend
+spec:
+  podSelector:
+    matchLabels:
+      app: gotenberg
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - port: http

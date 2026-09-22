@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  # No `replicas`: the HPA owns it. Pinning it here would make every `kubectl apply`
+  # reset the Deployment to 1 pod before the HPA scaled it back up — a capacity dip on
+  # every release, which is exactly what maxUnavailable: 0 exists to prevent.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0 # never drop below the current replica count mid-rollout — same guarantee as CF's `--strategy rolling`
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: backend
+          # placeholder — CI runs `kustomize edit set image backend=ghcr.io/.../baergpt-backend:content-sha-<hash>`
+          # at deploy time (Phase 4), same content-sha tag backend-image-build-and-push.yml produces today.
+          image: ghcr.io/technologiestiftung/baergpt-backend:placeholder
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            # applied by the deploy workflow before `kubectl apply -k` (Phase 4) —
+            # parsed from the same 1Password notesPlain blob CF's `cf set-env` used.
+            - secretRef:
+                name: backend-env
+          # TODO: real values depend on CF_MEMORY (1Password, not in this repo) —
+          # placeholder until that's checked.
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          # CF: health-check-invocation-timeout 10s, timeout (start) 180s.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 18 # 18 * 10s = 180s, matches CF's app-start timeout
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # gives the LB time to deregister this pod's endpoint before SIGTERM is
+              # sent — needed until the graceful-shutdown code task (index.ts) lands.
+              # exec+sleep instead of the native `sleep` action for compatibility with
+              # whatever k8s version SKE ends up on (native sleep needs 1.29+).
+              exec:
+                command: ["sleep", "5"]

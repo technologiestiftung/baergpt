@@ -1,0 +1,25 @@
+# Mirrors infra/gotenberg/autoscaler-policy-production.json (CPU 80% up / 25% down,
+# 1-3 instances, prod only). See backend/hpa.yaml for the same CF->HPA semantics caveat.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gotenberg
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gotenberg
+  minReplicas: 1 # overridden in the prod overlay only; staging/sandbox stay fixed at 1 (no HPA)
+  maxReplicas: 1
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 55 # midpoint between CF's 80% up / 25% down thresholds
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120
+    scaleDown:
+      stabilizationWindowSeconds: 300

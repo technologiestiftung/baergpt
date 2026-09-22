@@ -1,0 +1,52 @@
+name: K8s Manifests Checks
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "infra/k8s/**"
+      - ".github/workflows/k8s-manifests-checks.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/k8s/**"
+      - ".github/workflows/k8s-manifests-checks.yml"
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository ⬇️
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install kubeconform ⚙️
+        run: |
+          set -euo pipefail
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
+            | tar -xz kubeconform
+          sudo mv kubeconform /usr/local/bin/kubeconform
+
+      # kubectl (preinstalled on the runner) ships a kustomize build, no separate
+      # install needed. Validates every overlay builds AND every resulting manifest
+      # matches its k8s schema (-strict catches unknown/typo'd fields).
+      #
+      # The second -schema-location adds the CRDs catalog, which carries schemas for
+      # custom kinds like Gateway API's HTTPRoute. Without it kubeconform has no schema
+      # for those and would fail on every overlay.
+      - name: Build + validate each overlay ✅
+        run: |
+          set -euo pipefail
+          for overlay in infra/k8s/overlays/*/; do
+            echo "::group::$overlay"
+            kubectl kustomize "$overlay" | kubeconform -strict -summary \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+            echo "::endgroup::"
+          done

@@ -1,0 +1,21 @@
+# Cluster-wide policy (platform.tf) default-denies ingress from other namespaces;
+# this explicitly re-opens the one cross-namespace path the backend needs: traffic from
+# the Envoy Gateway data plane, which runs in envoy-gateway-system. Egress is untouched
+# (policyTypes: [Ingress] only) — egress to Supabase/Mistral/etc. stays open, as on CF.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-allow-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - port: http

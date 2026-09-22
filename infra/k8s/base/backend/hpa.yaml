@@ -1,0 +1,27 @@
+# Approximates CF's App-Autoscaler policy (memoryutil >=40% add / <20% remove,
+# 300s breach+cooldown) — not identical semantics: HPA scales continuously toward a
+# single target ratio rather than CF's threshold-breach rules, so 30% here is a
+# midpoint between CF's scale-up/down thresholds, not a direct translation.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 1 # overridden per-env
+  maxReplicas: 1 # overridden per-env
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 30
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120 # matches CF's scale-up breach_duration_secs
+    scaleDown:
+      stabilizationWindowSeconds: 300 # matches CF's scale-down breach_duration_secs/cool_down_secs

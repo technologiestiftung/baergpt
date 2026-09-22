@@ -1,0 +1,10 @@
+# JSON6902 by index: hostnames and parentRefs are plain lists with no merge key, so a
+# strategic-merge patch would replace each list wholesale rather than edit it.
+# The hostname must stay in sync with var.namespaces["staging"].hostname in
+# infra/terraform/ske, which defines the matching Gateway listener and its certificate.
+- op: replace
+  path: /spec/hostnames/0
+  value: api.staging.baergpt.berlin
+- op: replace
+  path: /spec/parentRefs/0/sectionName
+  value: https-staging

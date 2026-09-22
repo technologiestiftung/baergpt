@@ -41,3 +41,9 @@ jobs:
           # so CI needs no STACKIT or object-storage credentials.
           terraform init -backend=false
           terraform validate
+
+      - name: Validate ske module ✅
+        working-directory: infra/terraform/ske
+        run: |
+          terraform init -backend=false
+          terraform validate

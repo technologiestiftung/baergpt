@@ -1,0 +1,321 @@
+name: Backend deploy to STACKIT Kubernetes Engine
+
+on:
+  # Post-merge only, same reasoning as the Cloud Foundry deploy workflow: a push to
+  # staging/main only happens once a PR is merged (past review + branch protection),
+  # unlike a pull_request-triggered image build which fires for any open PR.
+  push:
+    branches: [staging, main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Which environment to deploy. 'auto' derives it from the branch (main -> prod, staging -> staging)."
+        type: choice
+        options: [auto, sandbox]
+        default: auto
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/baergpt-backend
+  CLUSTER_NAME: baergpt # keep in sync with infra/terraform/ske (var.cluster_name)
+  KUBECTL_VERSION: v1.34.2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      # Keyed on ref AND target: a sandbox dispatch from main must not queue behind a
+      # prod deploy from that same ref.
+      group: backend-deploy-ske-${{ github.ref }}-${{ github.event.inputs.target || 'auto' }}
+      cancel-in-progress: false
+    # workflow_dispatch has no branches filter, so a manual run can target any branch
+    # by default — reject anything other than staging/main here.
+    if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
+    # Sandbox reuses the Staging environment's secrets/approvals; it has no environment
+    # of its own. Deploying it needs OP_BACKEND_SANDBOX_ENV_ITEM_ID to exist there.
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'sandbox') && 'Staging' || (github.ref_name == 'main' && 'Production' || 'Staging') }}
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          persist-credentials: "false"
+
+      # Same formula as backend-image-build-and-push.yml, so it resolves to the tag
+      # that workflow just built and pushed for this exact commit.
+      - name: Compute image tag 🏷️
+        id: tag
+        run: |
+          echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install 1Password CLI 🔐
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0, pinned to commit sha to avoid sha-hulud like attacks
+
+      - name: Resolve deployment target 🎯
+        id: target
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.target }}" == "sandbox" ]]; then
+            namespace="sandbox"
+            app_item_id="${{ secrets.OP_BACKEND_SANDBOX_ENV_ITEM_ID }}"
+            if [[ -z "$app_item_id" ]]; then
+              echo "::error::OP_BACKEND_SANDBOX_ENV_ITEM_ID is not set. Create the sandbox 1Password item (with GOTENBERG_URL pointing at http://gotenberg.staging.svc.cluster.local:3000) and add the secret before deploying sandbox."
+              exit 1
+            fi
+          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+            namespace="prod"
+            app_item_id="${{ secrets.OP_BACKEND_PRODUCTION_ENV_ITEM_ID }}"
+          else
+            namespace="staging"
+            app_item_id="${{ secrets.OP_BACKEND_STAGING_ENV_ITEM_ID }}"
+          fi
+          echo "namespace=$namespace" >> "$GITHUB_OUTPUT"
+          echo "overlay=infra/k8s/overlays/$namespace" >> "$GITHUB_OUTPUT"
+          echo "app_item_id=$app_item_id" >> "$GITHUB_OUTPUT"
+          echo "Deploying to namespace: $namespace"
+
+      - name: Install kubectl ⚙️
+        run: |
+          set -euo pipefail
+          # Pinned rather than relying on whatever the runner image ships, so a runner
+          # image bump can't silently change kustomize rendering behaviour.
+          curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl.sha256"
+          echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check --status
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          rm -f kubectl kubectl.sha256
+
+      - name: Install STACKIT CLI ⚙️
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/stackitcloud/stackit-cli/releases/download/v0.73.0/stackit-cli_0.73.0_linux_amd64.tar.gz" \
+            | tar -zx stackit
+          sudo install -o root -g root -m 0755 stackit /usr/local/bin/stackit
+          rm -f stackit
+
+      # Expects a 1Password item with:
+      #   - a `notesPlain` document holding STACKIT_PROJECT_ID and STACKIT_REGION
+      #   - a `service-account-key` field holding the STACKIT service-account JSON key
+      # The SA key lives in its own field (not notesPlain) because it is multi-line JSON,
+      # which the KEY=VALUE-per-line parsing below cannot represent.
+      - name: Fetch STACKIT credentials from 1Password 🔑
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          set -euo pipefail
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_SKE_DEPLOY_ITEM_ID }}/notesPlain" > ske.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            line="${line%$'\r'}" # tolerate a CRLF-edited 1Password note
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < ske.env
+          rm -f ske.env
+
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_SKE_DEPLOY_ITEM_ID }}/service-account-key" > "$RUNNER_TEMP/sa-key.json"
+          chmod 600 "$RUNNER_TEMP/sa-key.json"
+
+      # Mints a short-lived admin kubeconfig from the service-account key, so no
+      # long-lived cluster credential is ever stored in 1Password or GitHub.
+      - name: Create kubeconfig 🔐
+        run: |
+          set -euo pipefail
+          stackit auth activate-service-account \
+            --service-account-key-path "$RUNNER_TEMP/sa-key.json"
+          stackit ske kubeconfig create "$CLUSTER_NAME" \
+            --project-id "$STACKIT_PROJECT_ID" \
+            --region "$STACKIT_REGION" \
+            --filepath "$RUNNER_TEMP/kubeconfig" \
+            --expiration 1h \
+            --overwrite \
+            --assume-yes
+          chmod 600 "$RUNNER_TEMP/kubeconfig"
+          echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/sa-key.json"
+
+      # This workflow doesn't build images — it deploys whatever
+      # backend-image-build-and-push.yml pushed for this exact content. That build may
+      # still be running when this deployment starts (both fire on the same push), so
+      # poll GHCR for a while before giving up rather than failing on the first miss.
+      - name: Wait for image to exist in GHCR 🔍
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          image="${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}"
+          timeout=600
+          counter=0
+          until docker manifest inspect "$image" >/dev/null 2>&1; do
+            if [ $counter -ge $timeout ]; then
+              echo "::error::Image $image not found in GHCR after ${timeout}s." \
+                "Ensure 'Backend image build and push to registry' ran for this commit."
+              exit 1
+            fi
+            echo "Waiting for $image to be available on GHCR... (${counter}s)"
+            sleep 10
+            counter=$((counter + 10))
+          done
+          echo "Image $image found."
+
+      # Replaces Cloud Foundry's `cf unset-env`/`cf set-env` loop: the same 1Password
+      # notesPlain blob is parsed, then applied as k8s Secrets. `kubectl apply` replaces
+      # the Secret wholesale, so keys removed in 1Password disappear here too — 1Password
+      # stays the single source of truth.
+      #
+      # CF_* keys are Cloud Foundry scaling vars (instances/memory/disk), not app env —
+      # in k8s those live in the manifests, so they are filtered out. GOTENBERG_MEMORY is
+      # the same kind of thing for gotenberg.
+      #
+      # NOTE: GOTENBERG_URL in the 1Password items must point at the in-cluster service
+      # (http://gotenberg:3000), not the old public Cloud Foundry route.
+      - name: Sync env Secrets 🔄
+        id: secrets
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          NAMESPACE: ${{ steps.target.outputs.namespace }}
+        run: |
+          set -euo pipefail
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.target.outputs.app_item_id }}/notesPlain" > all.env
+          : > backend.env
+          : > gotenberg.env
+          while IFS= read -r line || [ -n "$line" ]; do
+            line="${line%$'\r'}" # tolerate a CRLF-edited 1Password note
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            value="${line#*=}"
+            echo "::add-mask::$value"
+            case "$key" in
+              CF_*|GOTENBERG_MEMORY) continue ;;
+            esac
+            echo "$key=$value" >> backend.env
+            # The gotenberg container only reads its basic-auth credentials.
+            if [[ "$key" == GOTENBERG_API_BASIC_AUTH_* ]]; then
+              echo "$key=$value" >> gotenberg.env
+            fi
+          done < all.env
+          rm -f all.env
+
+          kubectl create secret generic backend-env \
+            --namespace "$NAMESPACE" \
+            --from-env-file=backend.env \
+            --save-config --dry-run=client -o yaml | kubectl apply -f -
+
+          # Sandbox runs no gotenberg of its own (it uses staging's), so it gets no
+          # gotenberg Secret either.
+          if [[ "$NAMESPACE" != "sandbox" ]]; then
+            kubectl create secret generic gotenberg-env \
+              --namespace "$NAMESPACE" \
+              --from-env-file=gotenberg.env \
+              --save-config --dry-run=client -o yaml | kubectl apply -f -
+          fi
+
+          # Pod env is injected at pod start, so changing a Secret alone does NOT restart
+          # anything. Hashing the env into a pod-template annotation makes a secret-only
+          # change produce a new pod spec, and therefore a rolling update — matching the
+          # Cloud Foundry behaviour where `cf set-env` + push always restarted the app.
+          checksum=$(cat backend.env gotenberg.env | sha256sum | cut -d' ' -f1)
+          echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
+          rm -f backend.env gotenberg.env
+
+      # `kubectl kustomize` (built into kubectl) renders the overlay; the image tag and
+      # env checksum are appended as kustomize transformers rather than using
+      # `kustomize edit`, which needs the standalone kustomize binary.
+      - name: Render and apply manifests 🚀
+        env:
+          NAMESPACE: ${{ steps.target.outputs.namespace }}
+          OVERLAY: ${{ steps.target.outputs.overlay }}
+        run: |
+          set -euo pipefail
+          cat >> "$OVERLAY/kustomization.yaml" <<EOF
+
+          images:
+            - name: ${{ env.IMAGE_NAME }}
+              newTag: ${{ steps.tag.outputs.tag }}
+
+          commonAnnotations:
+            checksum/env: "${{ steps.secrets.outputs.checksum }}"
+          EOF
+
+          kubectl kustomize "$OVERLAY" > rendered.yaml
+
+          # `-o name` echoes every applied object as <resource>.<group>/<name>, which is
+          # exactly the form `kubectl rollout status` takes. Reading the Deployment list
+          # back out of the apply output (rather than querying the namespace) keeps the
+          # rollout gate scoped to what this overlay manages — sandbox has no gotenberg.
+          kubectl apply -f rendered.yaml -o name | tee applied.txt
+          grep '^deployment' applied.txt > deployments.txt || true
+          if [[ ! -s deployments.txt ]]; then
+            echo "::error::No Deployments found in the applied manifests — refusing to continue."
+            exit 1
+          fi
+
+      # Fails the job if the new pods never become ready, leaving the previous
+      # ReplicaSet serving traffic — the same guarantee `cf push --strategy rolling` gave.
+      - name: Wait for rollout ⏳
+        id: rollout
+        env:
+          NAMESPACE: ${{ steps.target.outputs.namespace }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r deployment || [ -n "$deployment" ]; do
+            [[ -z "$deployment" ]] && continue
+            # $deployment is already in resource/name form (deployment.apps/backend),
+            # straight from `kubectl apply -o name` — do not prefix it again.
+            echo "Waiting for $deployment…"
+            kubectl rollout status "$deployment" \
+              --namespace "$NAMESPACE" --timeout=5m
+          done < deployments.txt
+
+      - name: Smoke check /health 🩺
+        env:
+          NAMESPACE: ${{ steps.target.outputs.namespace }}
+        run: |
+          set -euo pipefail
+          host=$(kubectl get httproute backend --namespace "$NAMESPACE" -o jsonpath='{.spec.hostnames[0]}')
+          echo "Checking https://$host/health"
+          timeout=120
+          counter=0
+          # --insecure: the ClusterIssuer defaults to Let's Encrypt STAGING, whose root is
+          # not in any trust store, so a strict check would fail on cert verification even
+          # though the app is healthy. This step verifies the app serves 200 through the
+          # ingress; the certificate chain itself is verified by hand at cutover, when the
+          # issuer is switched to LE production.
+          until [ "$(curl -sS --insecure -o /dev/null -w '%{http_code}' "https://$host/health")" = "200" ]; do
+            if [ $counter -ge $timeout ]; then
+              echo "::error::https://$host/health did not return 200 within ${timeout}s."
+              exit 1
+            fi
+            sleep 5
+            counter=$((counter + 5))
+          done
+          echo "Health check passed."
+
+      # Scoped to a failed rollout specifically. A failing smoke check is deliberately
+      # NOT a rollback trigger: on a first deploy it usually means DNS or the TLS cert
+      # isn't ready yet, and rolling back a healthy new ReplicaSet for that would be
+      # wrong. That case fails the job loudly and leaves the decision to a human.
+      - name: Roll back on failed rollout ↩️
+        if: ${{ failure() && !cancelled() && steps.rollout.outcome == 'failure' }}
+        env:
+          NAMESPACE: ${{ steps.target.outputs.namespace }}
+        run: |
+          set -uo pipefail
+          while IFS= read -r deployment || [ -n "$deployment" ]; do
+            [[ -z "$deployment" ]] && continue
+            echo "Rolling back $deployment"
+            kubectl rollout undo "$deployment" --namespace "$NAMESPACE" || true
+          done < deployments.txt
+
+      - name: Dump diagnostics on failure 🪵
+        if: ${{ failure() && !cancelled() }}
+        env:
+          NAMESPACE: ${{ steps.target.outputs.namespace }}
+        run: |
+          set -uo pipefail
+          kubectl get pods --namespace "$NAMESPACE" -o wide || true
+          kubectl get events --namespace "$NAMESPACE" --sort-by=.lastTimestamp | tail -50 || true
+          kubectl logs --namespace "$NAMESPACE" --selector app=backend --tail=200 --all-containers --prefix || true
