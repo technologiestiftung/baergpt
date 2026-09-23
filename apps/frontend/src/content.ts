@@ -905,6 +905,27 @@ export const Content = {
 
 	"chat.messages.heading": "Chat-Nachrichten",
 	"chat.loadingText": "BärGPT überlegt...",
+	//Thinking traces
+	"chat.thinking.summary": "Gedankengang",
+	"chat.thinking.summaryWithDuration": "Nachgedacht für {seconds} Sekunden",
+	"chat.thinking.tool.webSearchTool.running": "Web durchsuchen",
+	"chat.thinking.tool.webSearchTool.running.description":
+		"Ich suche im Web nach aktuellen Informationen.",
+	"chat.thinking.tool.webSearchTool.done": "Web durchsucht",
+	"chat.thinking.tool.webSearchTool.done.description":
+		"Ich habe passende Webseiten gefunden.",
+	"chat.thinking.tool.ragSearchTool.running": "Dokumente durchsuchen",
+	"chat.thinking.tool.ragSearchTool.running.description":
+		"Ich suche in den ausgewählten Dokumenten.",
+	"chat.thinking.tool.ragSearchTool.done": "Dokumente durchsucht",
+	"chat.thinking.tool.ragSearchTool.done.description":
+		"Ich habe passende Stellen in den Dokumenten gefunden.",
+	"chat.thinking.tool.parlaMCPTools.running": "Parla durchsuchen",
+	"chat.thinking.tool.parlaMCPTools.running.description":
+		"Ich suche in den Parlamentsdokumenten.",
+	"chat.thinking.tool.parlaMCPTools.done": "Parla durchsucht",
+	"chat.thinking.tool.parlaMCPTools.done.description":
+		"Ich habe passende Parlamentsdokumente gefunden.",
 	//Chat error text
 	"chat.errorText.title": "Ihre Anfrage konnte gerade nicht bearbeitet werden.",
 	"chat.errorText.p1": "Bitte versuchen Sie es später erneut. ",
