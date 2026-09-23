@@ -39,7 +39,7 @@
   "devDependencies": {
     "@repo/eslint": "file:libs/eslint",
     "@repo/prettier": "file:libs/prettier",
-    "supabase": "2.71.0",
+    "supabase": "2.110.0",
     "turbo": "2.10.7"
   },
   "packageManager": "npm@11.16.0",
