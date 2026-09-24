@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -70,21 +71,22 @@ async function checkExistingDocument(
 	fileName: string,
 	accessGroupId: string,
 ): Promise<boolean> {
-	const sourceUrl = `${accessGroupId}/${fileName}`;
 	const { data, error } = await serviceRoleDbClient
 		.from("documents")
 		.select("id, processing_finished_at")
-		.eq("source_url", sourceUrl)
+		.eq("file_name", fileName)
 		.eq("source_type", sourceType)
-		.maybeSingle();
+		.eq("access_group_id", accessGroupId)
+		.not("processing_finished_at", "is", null)
+		.limit(1);
 
 	if (error) {
 		console.error("Error checking for existing document:", error);
 		process.exit(1);
 	}
 
-	// Return true if document exists and is fully processed
-	return !!data?.processing_finished_at;
+	// Return true if a fully processed document exists
+	return (data?.length ?? 0) > 0;
 }
 
 async function getDefaultAccessGroupId(): Promise<string> {
@@ -116,12 +118,12 @@ async function processDocument(
 	});
 
 	// Store in access group folder
-	const sourceUrl = `${accessGroupId}/${fileName}`;
+	const sourceUrl = `${accessGroupId}/${randomUUID()}.pdf`;
 
 	console.log(`Uploading ${fileName} to ${bucketName}/${sourceUrl}...`);
 	const { error: uploadError } = await serviceRoleDbClient.storage
 		.from(bucketName)
-		.upload(sourceUrl, file, { upsert: true });
+		.upload(sourceUrl, file);
 
 	if (uploadError) {
 		console.error("Error uploading file to storage:", uploadError);
@@ -137,6 +139,7 @@ async function processDocument(
 	const document: Document = {
 		source_url: sourceUrl,
 		source_type: sourceType,
+		file_name: fileName,
 		file_size: file.size,
 		created_at: new Date().toISOString(),
 		access_group_id: accessGroupId,
