@@ -112,8 +112,26 @@ This will provision the server with:
 2. Docker
 3. Supabase stack (docker-compose + .env from 1Password)
 4. SSL certificates (certbot) with pre/post renewal hooks for nginx
-5. Nginx reverse proxy
+5. Nginx reverse proxy, with an hourly-refreshed block of Tor exits and Mullvad VPN ranges
 6. `migrations` system user with SSH access and Docker wrapper scripts
+
+### Anonymising-egress block
+
+Nginx on the Supabase VMs returns `403` for any client whose address is a Tor exit
+or a Mullvad VPN range. The list lives in `/etc/nginx/anon-egress-blocklist.conf`
+and is rebuilt hourly by `anon-egress-blocklist.timer` from three public sources:
+the Tor bulk exit list, Mullvad's relay list (entry addresses, widened to their
+/24 or /64 since exit addresses differ) and the address blocks RIPE registers to
+Mullvad VPN AB. A refresh keeps the previous file unless every source was fetched,
+the counts look sane and `nginx -t` passes. Blocked requests are logged to
+`/var/log/nginx/anon-egress.log`.
+
+```bash
+# on the VM
+systemctl list-timers anon-egress-blocklist.timer
+journalctl -u anon-egress-blocklist.service -n 5      # one JSON status line per run
+sudo systemctl start anon-egress-blocklist.service    # refresh now
+```
 
 ### Dry Run
 
