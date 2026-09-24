@@ -4,8 +4,8 @@ SET
 SET
     "statement_timeout" TO '60000' AS $$
 BEGIN
-    IF public.is_current_user_banned() THEN
-        RAISE EXCEPTION 'Permission denied: banned users may not delete their account';
+    IF public.is_current_user_banned_or_deleted() THEN
+        RAISE EXCEPTION 'Permission denied: banned or deleted users may not delete their account';
 END IF;
 
 DELETE FROM auth.users WHERE id = auth.uid();

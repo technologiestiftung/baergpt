@@ -24,7 +24,7 @@ export async function handleSessionChange(session: Session | null) {
 
 	try {
 		const promises = [
-			useAuthStore.getState().checkIsUserBanned(),
+			useAuthStore.getState().checkIsUserBannedOrDeleted(),
 			useUserFolderStore.getState().getUserFolders(signal),
 			usePublicDocumentsStore.getState().getPublicDocuments(signal),
 			useUserDocumentStore.getState().getUserDocuments(signal),
