@@ -14,7 +14,6 @@ interface ChatFormDropdownProps<T extends LlmModel> {
 	}[];
 	selectedItems: T[];
 	onItemClick: (value: T) => void;
-	className?: string;
 	isOpen: boolean;
 	onClose: () => void;
 	isExtendedThinkingEnabled: boolean;
@@ -26,7 +25,6 @@ export const ChatFormDropdown = <T extends LlmModel>({
 	title,
 	selectedItems,
 	onItemClick,
-	className,
 	isOpen,
 	onClose,
 	isExtendedThinkingEnabled,
@@ -48,7 +46,11 @@ export const ChatFormDropdown = <T extends LlmModel>({
 
 	return (
 		<div
-			className={`z-50 absolute bottom-full rounded-3px bg-hellblau-30 border border-hellblau-50 p-1 focus-visible:outline-default shadow-md min-w-[323px] mb-1 ${className}`}
+			className={`
+				z-50 absolute bottom-full rounded-3px min-w-[323px] mb-2 
+				left-1/2 -translate-x-48 sm:left-auto sm:right-0 sm:translate-x-0 whitespace-nowrap
+				bg-hellblau-30 border border-hellblau-50 p-1 
+				focus-visible:outline-default shadow-md`}
 			onKeyDown={handleKeyDown}
 		>
 			<div
@@ -73,7 +75,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 										optionButtonRefs.current.delete(index);
 									}
 								}}
-								className="flex items-center justify-between w-full p-3 text-left gap-6 hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default rounded-3px"
+								className="flex items-center justify-between w-full px-3 pt-2 pb-3 text-left gap-6 hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default rounded-3px"
 								onClick={() => onItemClick(item.value)}
 								aria-label={item.ariaLabel}
 								role="option"
@@ -100,13 +102,13 @@ export const ChatFormDropdown = <T extends LlmModel>({
 					);
 				})}
 			</ul>
-			<div className="w-[calc(100%-8px)] h-[0.5px] bg-hellblau-100 justify-self-center " />
-			<div className="flex gap-4 items-center justify-between p-3">
+			<div className="mx-3 h-[0.5px] bg-hellblau-100 justify-self-center " />
+			<div className="flex gap-4 items-center justify-between px-3 pb-2 pt-2.5">
 				<div className="flex flex-col gap-2">
-					<div className="text-sm leading-[14px] text-dunkelblau-80">
+					<div className="text-sm leading-4 text-dunkelblau-90">
 						{Content["chat.llmModel.dropdown.li4.label"]}
 					</div>
-					<p className="text-xs leading-5 text-dunkelblau-50 max-w-[233px] w-full whitespace-normal">
+					<p className="text-xs leading-4 text-dunkelblau-65 max-w-[233px] w-full whitespace-normal">
 						{Content["chat.llmModel.dropdown.li4.description"]}
 					</p>
 				</div>

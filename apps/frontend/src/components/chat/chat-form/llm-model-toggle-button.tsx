@@ -68,7 +68,11 @@ export const LlmModelToggleButton: React.FC = () => {
 			<button
 				ref={selectButtonRef}
 				type="button"
-				className="hover:bg-hellblau-60 px-3 py-1.5 rounded-3px flex gap-2 items-center justify-center focus-visible:outline-default"
+				className={`
+					pl-2 pr-1 py-1.5 rounded-3px flex gap-0.5 items-center justify-center
+					hover:bg-hellblau-60 focus-visible:outline-default
+					${isDropdownOpen && "bg-hellblau-60"}
+				`}
 				onClick={handleToggleDropdown}
 			>
 				<span className="text-sm leading-5 text-dunkelblau-80">
@@ -84,7 +88,6 @@ export const LlmModelToggleButton: React.FC = () => {
 						title={Content["chat.llmModel.dropdown.title"]}
 						selectedItems={[selectedLlmModel]}
 						onItemClick={handleItemClick}
-						className="right-0 whitespace-nowrap"
 						isOpen={isDropdownOpen}
 						onClose={handleClose}
 						isExtendedThinkingEnabled={isExtendedThinkingEnabled}
