@@ -69,8 +69,8 @@ export function ChatMenuRow({
 			<img
 				src="/icons/check-active-icon.svg"
 				alt={Content["chat.options.selected.icon.imgAlt"]}
-				width={20}
-				height={20}
+				width={24}
+				height={24}
 				className={`${isSelected ? "block" : "hidden"}`}
 			/>
 			<img
