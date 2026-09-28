@@ -31,7 +31,7 @@ export const DesktopSidebar: React.FC = () => {
 							{isHistorySidebarOpen && (
 								<a href={"/"}>
 									<img
-										className="h-7"
+										className={`h-7 ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : " opacity-0 animate-fade-out"}`}
 										src="/logos/baergpt-logo-white.svg"
 										alt={Content["header.logo.alt"]}
 									/>
@@ -85,7 +85,9 @@ export const DesktopSidebar: React.FC = () => {
                                 ${isHistorySidebarOpen ? "px-3" : ""}`}
 						>
 							{isHistorySidebarOpen && (
-								<p className="text-dunkelblau-50 text-sm leading-[14px] truncate">
+								<p
+									className={`text-dunkelblau-50 text-sm leading-[14px] truncate ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : " opacity-0 animate-fade-out"}`}
+								>
 									{Content["sidebar.citylab.label"]}
 								</p>
 							)}
@@ -103,14 +105,14 @@ export const DesktopSidebar: React.FC = () => {
 										src="/logos/citylab-berlin-logo-light.svg"
 										alt="citylab-icon"
 										width="54px"
-										className="hidden md:flex shrink-0 mb-[2px]"
+										className={`hidden md:flex shrink-0 mb-[2px] ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : "opacity-0 animate-fade-out"}`}
 									/>
 								) : (
 									<img
 										src="/icons/citylab-shape-icon.svg"
 										alt="citylab-icon"
 										width="16px"
-										className="hidden md:flex shrink-0"
+										className={`hidden md:flex shrink-0 ${isHistorySidebarOpen ? "opacity-0 animate-fade-out" : "opacity-100 animate-fade-in"}`}
 									/>
 								)}
 							</a>

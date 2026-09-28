@@ -30,7 +30,7 @@ export const History: React.FC = () => {
 
 	return (
 		<div
-			className={`flex flex-col w-full min-h-0 ${errorMessage ? "h-full" : ""}`}
+			className={`flex flex-col w-full min-h-0 ${errorMessage ? "h-full" : ""} ${isHistoryCollapsed ? "opacity-0 animate-fade-out" : " opacity-100 animate-fade-in"}`}
 		>
 			<div className="flex justify-between items-center md:pl-2 md:pr-3 pb-2.5 px-5">
 				<h2 className="text-sm font-semibold text-hellblau-50  whitespace-nowrap">
