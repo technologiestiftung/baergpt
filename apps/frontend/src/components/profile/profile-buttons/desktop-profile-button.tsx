@@ -50,7 +50,12 @@ export const DesktopProfileButton = () => {
 			<button
 				ref={buttonRef}
 				onClick={toggleDropdown}
-				className={`group flex items-center py-1.5 h-10 md:h-8 w-full focus-visible:outline-default rounded-3px hover:bg-dunkelblau-90 ${isHistorySidebarOpen ? "px-1 justify-between" : "px-1.5"} ${isDropdownOpen ? "bg-dunkelblau-90" : ""}`}
+				className={`
+					group flex items-center  py-1.5 w-full 
+					focus-visible:outline-default rounded-3px hover:bg-dunkelblau-90
+					 ${isHistorySidebarOpen ? "px-2 justify-between" : "px-1"} 
+					 ${isDropdownOpen ? "bg-dunkelblau-90" : ""}
+				 `}
 				aria-haspopup="true"
 				aria-expanded={isDropdownOpen}
 				aria-label={Content["profile.button.ariaLabel"]}
@@ -65,7 +70,7 @@ export const DesktopProfileButton = () => {
 			>
 				<div className="flex gap-1.5 items-center">
 					<div
-						className={`flex items-center justify-center rounded-full p-1.5 bg-hellblau-60 ${isDropdownOpen ? "group-hover:bg-hellblau-60" : ""} ${isHistorySidebarOpen ? "size-7" : "size-6"}`}
+						className={`flex items-center justify-center rounded-full p-1.5 bg-hellblau-60 ${isDropdownOpen ? "group-hover:bg-hellblau-60" : ""} ${isHistorySidebarOpen ? "animate-fade-in size-7" : "animate-fade-out size-6"}`}
 					>
 						<span className="text-center text-dunkelblau-100 text-xs font-semibold leading-4 uppercase">
 							{first_name?.[0]?.toUpperCase() ?? ""}
@@ -73,7 +78,9 @@ export const DesktopProfileButton = () => {
 						</span>
 					</div>
 					{isHistorySidebarOpen && (
-						<span className="text-hellblau-50 text-sm leading-[14px] font-bold truncate">
+						<span
+							className={`text-hellblau-50 text-sm leading-[14px] font-bold truncate ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : " opacity-0 animate-fade-out"}`}
+						>
 							{first_name} {last_name}
 						</span>
 					)}

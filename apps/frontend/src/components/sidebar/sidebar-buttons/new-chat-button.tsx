@@ -50,7 +50,9 @@ export const NewChatButton: React.FC<NewChatButtonProps> = ({
 				height={24}
 			/>
 			{isExpanded && (
-				<span className="whitespace-nowrap">
+				<span
+					className={`whitespace-nowrap ${isExpanded ? "opacity-100 animate-fade-in" : " opacity-0 animate-fade-out"}`}
+				>
 					{Content["newChatButton.label"]}
 				</span>
 			)}
