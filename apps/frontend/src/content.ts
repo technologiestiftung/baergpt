@@ -670,7 +670,7 @@ export const Content = {
 	"sidebar.citylab.ariaLabel": "CityLAB Berlin Website",
 
 	/* -------------------- Tooltips -------------------- */
-	"sidebar.tooltip.historyToggleButton": "Chatverlauf öffnen",
+	"sidebar.tooltip.historyToggleButton": "Seitenleiste öffnen",
 	"sidebar.tooltip.newChatButton": "Neuen Chat beginnen",
 	"sidebar.tooltip.chatSearchButton": "Chatsuche öffnen",
 

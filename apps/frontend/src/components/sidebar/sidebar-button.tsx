@@ -1,5 +1,6 @@
 import React from "react";
 import { useTooltipStore } from "../../store/tooltip-store";
+import { useDrawerStore } from "../../store/drawer-store.ts";
 
 export const SidebarButton: React.FC<{
 	iconSrc: string;
@@ -9,6 +10,8 @@ export const SidebarButton: React.FC<{
 	onClick: () => void;
 }> = ({ iconSrc, label, ariaLabel, isLabelVisible, onClick }) => {
 	const { showTooltip, hideTooltip } = useTooltipStore();
+	const { openDrawerId } = useDrawerStore();
+	const isHistorySidebarOpen = openDrawerId === "history";
 
 	const handleInteractionStart = (
 		event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
@@ -24,7 +27,7 @@ export const SidebarButton: React.FC<{
 	return (
 		<button
 			type="button"
-			className={`relative flex w-full flex-row items-center justify-start gap-2 p-1.5 rounded-[3px] h-10 md:h-8
+			className={`relative flex w-full flex-row items-center justify-start gap-2 ${isHistorySidebarOpen ? "px-2" : "px-1"} py-1.5 rounded-[3px] h-10 md:h-8 overflow-hidden
 				text-hellblau-50 md:hover:bg-dunkelblau-90 focus-visible:outline-default`}
 			onClick={onClick}
 			onMouseEnter={(event) => handleInteractionStart(event, label)}
@@ -43,7 +46,11 @@ export const SidebarButton: React.FC<{
 				/>
 			</div>
 			{isLabelVisible && (
-				<span className="text-sm font-normal whitespace-nowrap">{label}</span>
+				<span
+					className={`text-sm font-normal whitespace-nowrap ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : " opacity-0 animate-fade-out"}`}
+				>
+					{label}
+				</span>
 			)}
 		</button>
 	);
