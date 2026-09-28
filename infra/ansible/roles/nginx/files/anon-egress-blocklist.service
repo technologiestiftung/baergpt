@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh the nginx blocklist of Tor exits and Mullvad ranges
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+PrivateTmp=yes
+ExecStart=/usr/local/sbin/anon-egress-blocklist
