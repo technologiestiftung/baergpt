@@ -13,8 +13,10 @@ Standard library only.
 """
 import ipaddress
 import json
+import os
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -201,6 +203,27 @@ def count_entries(text):
     return sum(1 for line in text.splitlines() if line.endswith(" 1;"))
 
 
+def write_atomic(path, text):
+    """Replace path in one rename, so a crash leaves either the old or the new file, never a partial one."""
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, path)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+    dir_fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(dir_fd)
+    finally:
+        os.close(dir_fd)
+
+
 def install(live, text, validate, reload):
     """Swap the new file in, roll back if nginx rejects it. Returns True when nginx was reloaded."""
     live = Path(live)
@@ -208,12 +231,17 @@ def install(live, text, validate, reload):
     if previous == text:
         return False
 
-    live.write_text(text)
-    if not validate():
-        if previous is None:
-            live.unlink()
-        else:
-            live.write_text(previous)
+    write_atomic(live, text)
+    valid = False
+    try:
+        valid = validate()
+    finally:
+        if not valid:
+            if previous is None:
+                live.unlink(missing_ok=True)
+            else:
+                write_atomic(live, previous)
+    if not valid:
         raise RefreshError("nginx -t rejected the new blocklist; previous file restored")
 
     reload()
