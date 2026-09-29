@@ -22,6 +22,12 @@
     - anon-egress-blocklist.timer
   register: anon_egress_units
 
+- name: Install anon-egress blocklist status log rotation
+  ansible.builtin.copy:
+    src: anon-egress-blocklist.logrotate
+    dest: /etc/logrotate.d/anon-egress-blocklist
+    mode: "0644"
+
 - name: Render Nginx default site
   ansible.builtin.template:
     src: supabase.default.j2
