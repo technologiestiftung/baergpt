@@ -19,8 +19,8 @@ jobs:
           install-1password: "true"
 
       - name: Fetch backend .env from 1Password ⬇️
+        working-directory: apps/backend
         run: |
-          cd apps/backend
           echo "Fetching backend .env from 1Password..."
           op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
         env:
@@ -29,17 +29,39 @@ jobs:
       - name: Wait for Supabase to be ready ⏳
         uses: ./.github/actions/wait-for-supabase
 
-      - name: Run Database Linting 🔍
+      # `supabase db diff` writes its progress to stderr and exits 0 either way, so the
+      # drift signal is stdout alone: empty when the schemas match, the missing SQL otherwise.
+      - name: Check for schema drift 🔍
+        working-directory: apps/backend
         run: |
-          cd apps/backend
+          DRIFT="$(supabase db diff --schema public)"
+
+          if [ -z "$DRIFT" ]; then
+            echo "No drift: supabase/schemas matches the applied migrations."
+            exit 0
+          fi
+
+          echo "Schema drift detected — supabase/schemas and supabase/migrations disagree."
+          echo "This is the SQL that would turn the migrations state into the schemas state:"
+          echo "--------------------------------------------------------------------------------"
+          echo "$DRIFT"
+          echo "--------------------------------------------------------------------------------"
+          echo "If you edited supabase/schemas: run 'npm run db:generate-migration <MIGRATION_NAME>'"
+          echo "in apps/backend and commit the generated migration."
+          echo "If you hand-wrote a migration: mirror the change in the matching supabase/schemas file."
+          exit 1
+
+      - name: Run Database Linting 🔍
+        working-directory: apps/backend
+        run: |
           npm run lint:db
 
       - name: Upload default document 📄
+        working-directory: apps/backend
         run: |
-          cd apps/backend
           npm run db:upload-default-documents
 
       - name: Run integration tests 🧪
+        working-directory: apps/backend
         run: |
-          cd apps/backend
           npm test
