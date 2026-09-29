@@ -56,8 +56,8 @@ export const ChatMenuToggleButton: React.FC = () => {
 					<img
 						src="icons/plus-dark-blue-icon.svg"
 						alt={Content["plusIcon.imgAlt"]}
-						width={24}
-						height={24}
+						width={20}
+						height={20}
 					/>
 				</button>
 				{isDropdownOpen && (

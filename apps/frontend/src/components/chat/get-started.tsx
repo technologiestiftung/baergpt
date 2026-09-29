@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import Content from "../../content.ts";
+import type { ChatTool } from "../../common.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
 import {
@@ -85,14 +86,25 @@ export const GetStarted: React.FC = () => {
 		? `${Content[formal]} ${formalName}`
 		: `${Content[informal]} ${first_name}`;
 
+	// Makes sure only one tool is selected and unselects all others
+	const selectSingleChatTool = (tool: ChatTool | null) => {
+		selectedChatTools.forEach(toggleChatTool);
+
+		if (tool === null) {
+			return;
+		}
+		toggleChatTool(tool);
+	};
+
 	const promptStarters = [
 		{
 			icon: "icons/parla-icon.svg",
 			label: Content["chat.getStarted.parla.heading"],
 			onClick: () => {
-				if (isParlaAllowed && !selectedChatTools.includes(PARLA_MCP)) {
-					toggleChatTool(PARLA_MCP);
+				if (isParlaAllowed) {
+					selectSingleChatTool(PARLA_MCP);
 				}
+				setIsShowingWritingPrompts(false);
 				focusChatForm();
 			},
 		},
@@ -100,9 +112,10 @@ export const GetStarted: React.FC = () => {
 			icon: "icons/web-search-icon.svg",
 			label: Content["chat.getStarted.webSearch.heading"],
 			onClick: () => {
-				if (isWebSearchAllowed && !selectedChatTools.includes("webSearch")) {
-					toggleChatTool("webSearch");
+				if (isWebSearchAllowed) {
+					selectSingleChatTool("webSearch");
 				}
+				setIsShowingWritingPrompts(false);
 				focusChatForm();
 			},
 		},
@@ -110,6 +123,7 @@ export const GetStarted: React.FC = () => {
 			icon: "icons/edit-dark-blue-icon.svg",
 			label: Content["chat.getStarted.writingPrompts.heading"],
 			onClick: () => {
+				selectSingleChatTool(null);
 				setIsShowingWritingPrompts(true);
 			},
 		},
