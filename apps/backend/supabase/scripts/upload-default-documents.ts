@@ -73,7 +73,7 @@ async function checkExistingDocument(
 ): Promise<boolean> {
 	const { data, error } = await serviceRoleDbClient
 		.from("documents")
-		.select("id, processing_finished_at")
+		.select("id")
 		.eq("file_name", fileName)
 		.eq("source_type", sourceType)
 		.eq("access_group_id", accessGroupId)
