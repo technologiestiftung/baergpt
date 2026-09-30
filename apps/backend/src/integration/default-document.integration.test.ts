@@ -50,7 +50,10 @@ const readDefaultDocumentFile = () => {
 
 // The upload script stores default documents under a random UUID path, so
 // cleanup has to go by file_name + access group, not by a predictable path.
-const cleanupDefaultDocuments = async (accessGroupId: string) => {
+const cleanupDefaultDocuments = async (
+	accessGroupId: string,
+	uploadedSourceUrl?: string,
+) => {
 	try {
 		const { data: documents } = await serviceRoleDbClient
 			.from("documents")
@@ -60,10 +63,16 @@ const cleanupDefaultDocuments = async (accessGroupId: string) => {
 			.eq("access_group_id", accessGroupId);
 
 		const documentIds = documents?.map((doc) => doc.id) ?? [];
-		const sourceUrls =
-			documents
-				?.map((doc) => doc.source_url)
-				.filter((url): url is string => Boolean(url)) ?? [];
+
+		const sourceUrls = [
+			// @ts-expect-error ts-config excludes test files atm, leading to a type error here
+			...new Set(
+				[
+					...(documents?.map((doc) => doc.source_url) ?? []),
+					uploadedSourceUrl,
+				].filter((url): url is string => Boolean(url)),
+			),
+		];
 
 		if (documentIds.length > 0) {
 			// Delete related document_chunks
@@ -132,7 +141,7 @@ describe("Default Document Integration Tests", () => {
 	afterAll(async () => {
 		vi.restoreAllMocks();
 		// Run cleanup after all tests
-		await cleanupDefaultDocuments(accessGroupId);
+		await cleanupDefaultDocuments(accessGroupId, sourceUrl);
 	});
 
 	it("should upload and process default document with correct properties", async () => {
