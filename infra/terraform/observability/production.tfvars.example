@@ -13,3 +13,5 @@ mem_used_ratio_max   = 0.90
 cpu_load_15m_max       = 4
 kong_5xx_ratio_max     = 0.20
 kong_5xx_min_errors_5m = 5
+anon_egress_blocked_ratio_max = 0.25
+anon_egress_blocked_min_30m   = 30

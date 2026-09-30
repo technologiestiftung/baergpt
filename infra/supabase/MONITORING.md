@@ -29,3 +29,12 @@ All telemetry is tagged `source=supabase-<env>` and `host=<hostname>`.
 Only the **Kong gateway** access logs + error/crit/alert/emerg lines, shipped under the Loki
 stream label `service_name=supabase-<env>` (filter by `container.id` in structured metadata).
 Everything else on container stdout is dropped (see `filter/gateway-only`).
+
+The **Tor/Mullvad block** (host nginx, not a container) ships under its own stream
+`service_name=supabase-<env>-anon-egress`, kept apart so its 403s don't skew the Kong 5xx ratio:
+
+- `/var/log/anon-egress-blocklist.log` — one JSON status line per hourly refresh.
+- `/var/log/nginx/anon-egress.log` — one access-log line per blocked request. **These lines
+  contain client IP addresses**, the only log stream here that does (Kong sees nginx's address,
+  not the client's). Retention is whatever the STACKIT Observability instance is set to; it is
+  configured in the STACKIT portal, not in this repo.

@@ -28,6 +28,8 @@ RIPE_SEARCH_URL = "https://rest.db.ripe.net/search.json"
 MULLVAD_ORG_NAME = "Mullvad VPN AB"
 
 OUTPUT = Path("/etc/nginx/anon-egress-blocklist.conf")
+# Tailed by the OTel collector; the staleness alert fires when no "ok" line lands here.
+STATUS_LOG = Path("/var/log/anon-egress-blocklist.log")
 
 MIN_TOR_EXITS = 500
 MIN_MULLVAD_RELAYS = 200
@@ -258,6 +260,16 @@ def nginx_reload():
 
 # ---------------------------------------------------------------------------
 
+def report(status, stream=None):
+    line = json.dumps(status)
+    print(line, file=stream or sys.stdout)
+    try:
+        with STATUS_LOG.open("a") as log:
+            log.write(line + "\n")
+    except OSError as error:
+        print(f"could not append to {STATUS_LOG}: {error}", file=sys.stderr)
+
+
 def main():
     try:
         tor = parse_tor(fetch(TOR_EXIT_LIST_URL))
@@ -274,11 +286,11 @@ def main():
 
         changed = install(OUTPUT, text, validate=nginx_test, reload=nginx_reload)
     except Exception as error:
-        print(json.dumps({"status": "error", "reason": f"{type(error).__name__}: {error}"}), file=sys.stderr)
+        report({"status": "error", "reason": f"{type(error).__name__}: {error}"}, stream=sys.stderr)
         return 1
 
-    print(json.dumps({"status": "ok", "tor": len(tor), "mullvad": len(mullvad), "ripe": len(ripe),
-                      "entries": count_entries(text), "changed": changed}))
+    report({"status": "ok", "tor": len(tor), "mullvad": len(mullvad), "ripe": len(ripe),
+            "entries": count_entries(text), "changed": changed})
     return 0
 
 

@@ -124,12 +124,15 @@ the Tor bulk exit list, Mullvad's relay list (entry addresses, widened to their
 /24 or /64 since exit addresses differ) and the address blocks RIPE registers to
 Mullvad VPN AB. A refresh keeps the previous file unless every source was fetched,
 the counts look sane and `nginx -t` passes. Blocked requests are logged to
-`/var/log/nginx/anon-egress.log`.
+`/var/log/nginx/anon-egress.log`, and each refresh appends its status line to
+`/var/log/anon-egress-blocklist.log`. The OTel collector ships both to STACKIT, where
+`infra/terraform/observability/alerts_anon_egress.tf` alerts when the list hasn't refreshed
+for 3h or the block rejects an unusually large share of requests.
 
 ```bash
 # on the VM
 systemctl list-timers anon-egress-blocklist.timer
-journalctl -u anon-egress-blocklist.service -n 5      # one JSON status line per run
+sudo journalctl -u anon-egress-blocklist.service -n 5 # one JSON status line per run
 sudo systemctl start anon-egress-blocklist.service    # refresh now
 ```
 
