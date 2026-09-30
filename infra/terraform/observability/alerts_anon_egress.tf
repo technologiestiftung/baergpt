@@ -28,7 +28,7 @@ resource "stackit_observability_logalertgroup" "anon_egress" {
       }
       annotations = {
         summary     = "Tor/Mullvad blocklist on ${var.target_source} not refreshed for 3h"
-        description = "No successful anon-egress-blocklist run in 3h; nginx keeps blocking with the old list. The error lines in the ${var.target_source}-anon-egress Loki stream (or journalctl -u anon-egress-blocklist.service on the VM) name the reason."
+        description = "No successful blocklist refresh in 3h; nginx still blocks with the old list. The reason is in the ${var.target_source}-anon-egress Loki stream or journalctl -u anon-egress-blocklist.service."
       }
     },
 
@@ -52,7 +52,7 @@ resource "stackit_observability_logalertgroup" "anon_egress" {
       }
       annotations = {
         summary     = "Tor/Mullvad block rejecting over ${var.anon_egress_blocked_ratio_max} of requests on ${var.target_source}"
-        description = "{{ $value | humanizePercentage }} of requests in the last 30m were blocked. Either real users are caught by a widened range, or someone is hammering the API via Tor/VPN. Check client addresses and user agents in /var/log/nginx/anon-egress.log (or the anon-egress stream in Loki)."
+        description = "{{ $value | humanizePercentage }} of requests in the last 30m were blocked: real users caught by a widened range, or abuse via Tor/VPN. Check IPs and user agents in /var/log/nginx/anon-egress.log."
       }
     },
   ]
