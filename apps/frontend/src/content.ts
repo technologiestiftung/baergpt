@@ -82,7 +82,7 @@ export const Content = {
 
 	/* -------------------- Privacy Policy Page -------------------- */
 	"privacyPolicyPage.h1": "Datenschutzerklärung",
-	"privacyPolicyPage.date": "Stand März 2026",
+	"privacyPolicyPage.date": "Stand September 2026",
 	"privacyPolicyPage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"privacyPolicyPage.section1.title": "Einleitung und Anwendungsbereich",
@@ -220,9 +220,9 @@ export const Content = {
 	/* -------------------- Terms of use Page -------------------- */
 	"termsOfUsePage.h1": "Nutzungsbedingungen für BärGPT",
 	"termsOfUsePage.date.label": "Stand ",
-	"termsOfUsePage.date": "Mai 2026",
+	"termsOfUsePage.date": "September 2026",
 	"termsOfUsePage.version.label": "Version ",
-	"termsOfUsePage.version": "1.1",
+	"termsOfUsePage.version": "1.2",
 	"termsOfUsePage.tableOfContents.title": "Inhaltsverzeichnis",
 	//Section 1
 	"termsOfUsePage.section1.title": "Begriffsbestimmungen",
