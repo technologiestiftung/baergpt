@@ -7,7 +7,7 @@
  * migrations/<DATETIME>_<MIGRATION_NAME>.sql. Only the new file is formatted,
  * so existing migrations stay untouched.
  *
- * Prerequisite: the local Supabase stack is running (`supabase start`).
+ * Prerequisite: docker is running
  *
  * Run: npm run db:generate-migration <MIGRATION_NAME>
  */
