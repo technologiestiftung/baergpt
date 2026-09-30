@@ -143,7 +143,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isUserAdmin: false,
 		isAdminStatusLoaded: false,
 		isBannedOrDeleted: null,
-		isDeleted: null,
 
 		async register({ firstName, lastName, email, span }) {
 			/**

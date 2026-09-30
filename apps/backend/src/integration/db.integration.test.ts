@@ -174,7 +174,7 @@ describe("Integration tests for DB", async () => {
 			} finally {
 				const { error } =
 					await serviceRoleDbClient.auth.admin.deleteUser(deletedUserId);
-				if (error.message !== "User not found") {
+				if (error && error.message !== "User not found") {
 					expect(error).toBeNull();
 				}
 			}
