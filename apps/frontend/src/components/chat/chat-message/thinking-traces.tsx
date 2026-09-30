@@ -6,6 +6,7 @@ import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
 import { ParlaIcon } from "../../primitives/icons/parla-icon.tsx";
 import { WebSearchIcon } from "../../primitives/icons/web-search-icon.tsx";
+import { config } from "../../../config.ts";
 
 const toolIcons: Record<TraceTool, () => JSX.Element> = {
 	webSearchTool: () => <WebSearchIcon width={20} height={20} />,
@@ -76,7 +77,7 @@ export function ThinkingTraces({ message }: { message: ChatMessage }) {
 	const { content, traces, running_tool } = message;
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	if (!traces) {
+	if (!config.featureFlagExtendedThinkingAllowed || !traces) {
 		return null;
 	}
 
