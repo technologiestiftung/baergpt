@@ -1,43 +1,43 @@
-DROP POLICY "access_group_members_select" ON "public"."access_group_members";
+DROP POLICY IF EXISTS "access_group_members_select" ON "public"."access_group_members";
 
-DROP POLICY "Allow authenticated users to CRUD their own chat_messages" ON "public"."chat_messages";
+DROP POLICY IF EXISTS "Allow authenticated users to CRUD their own chat_messages" ON "public"."chat_messages";
 
-DROP POLICY "Allow authenticated users to CRUD their own chats" ON "public"."chats";
+DROP POLICY IF EXISTS "Allow authenticated users to CRUD their own chats" ON "public"."chats";
 
-DROP POLICY "Allow authenticated users to access own or public document_chun" ON "public"."document_chunks";
+DROP POLICY IF EXISTS "Allow authenticated users to access own or public document_chun" ON "public"."document_chunks";
 
-DROP POLICY "Allow authenticated users to CRUD their own document_folders" ON "public"."document_folders";
+DROP POLICY IF EXISTS "Allow authenticated users to CRUD their own document_folders" ON "public"."document_folders";
 
-DROP POLICY "Allow authenticated users to access own or public document_summ" ON "public"."document_summaries";
+DROP POLICY IF EXISTS "Allow authenticated users to access own or public document_summ" ON "public"."document_summaries";
 
-DROP POLICY "Allow authenticated users to insert documents" ON "public"."documents";
+DROP POLICY IF EXISTS "Allow authenticated users to insert documents" ON "public"."documents";
 
-DROP POLICY "Allow authenticated users to read documents" ON "public"."documents";
+DROP POLICY IF EXISTS "Allow authenticated users to read documents" ON "public"."documents";
 
-DROP POLICY "Allow authenticated users to update documents" ON "public"."documents";
+DROP POLICY IF EXISTS "Allow authenticated users to update documents" ON "public"."documents";
 
-DROP POLICY "Allow owners to delete documents and admins to delete base know" ON "public"."documents";
+DROP POLICY IF EXISTS "Allow owners to delete documents and admins to delete base know" ON "public"."documents";
 
-DROP POLICY "Allow authenticated users to CRUD their own rows" ON "public"."favorite_documents";
+DROP POLICY IF EXISTS "Allow authenticated users to CRUD their own rows" ON "public"."favorite_documents";
 
-DROP POLICY "Allow authenticated users to access own profile" ON "public"."profiles";
+DROP POLICY IF EXISTS "Allow authenticated users to access own profile" ON "public"."profiles";
 
-DROP POLICY "Users can insert their own profile." ON "public"."profiles";
+DROP POLICY IF EXISTS "Users can insert their own profile." ON "public"."profiles";
 
-DROP POLICY "Users can update own profile." ON "public"."profiles";
+DROP POLICY IF EXISTS "Users can update own profile." ON "public"."profiles";
 
-DROP POLICY "Users can insert their own hidden default docs" ON "public"."user_hidden_default_documents";
+DROP POLICY IF EXISTS "Users can insert their own hidden default docs" ON "public"."user_hidden_default_documents";
 
-DROP POLICY "Users can view their own hidden default docs" ON "public"."user_hidden_default_documents";
+DROP POLICY IF EXISTS "Users can view their own hidden default docs" ON "public"."user_hidden_default_documents";
 
 -- STORAGE (MANUALLY ADDED) START --
-DROP POLICY "Authenticated users can upload a new document." ON "storage"."objects";
+DROP POLICY IF EXISTS "Authenticated users can upload a new document." ON "storage"."objects";
 
-DROP POLICY "Users can only select their own documents." ON "storage"."objects";
+DROP POLICY IF EXISTS "Users can only select their own documents." ON "storage"."objects";
 
-DROP POLICY "Users can update their own document." ON "storage"."objects";
+DROP POLICY IF EXISTS "Users can update their own document." ON "storage"."objects";
 
-DROP POLICY "Users can delete objects where their user ID is in the path" ON "storage"."objects";
+DROP POLICY IF EXISTS "Users can delete objects where their user ID is in the path" ON "storage"."objects";
 
 -- STORAGE (MANUALLY ADDED) END --
 DROP FUNCTION if EXISTS "public"."is_current_user_banned" ();
@@ -61,6 +61,8 @@ SELECT
           AND u.banned_until > now()
     );
 $function$;
+
+COMMENT ON FUNCTION "public"."is_current_user_banned_or_deleted" () IS 'Returns TRUE if the current user is banned (auth.users.banned_until in the future) or deleted.';
 
 CREATE OR REPLACE FUNCTION public.delete_user () RETURNS void LANGUAGE plpgsql SECURITY DEFINER
 SET
