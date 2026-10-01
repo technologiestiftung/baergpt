@@ -53,7 +53,7 @@ export const DesktopProfileButton = () => {
 				className={`
 					group flex items-center  py-1.5 w-full overflow-hidden
 					focus-visible:outline-default rounded-3px hover:bg-dunkelblau-90
-					 ${isHistorySidebarOpen ? "px-2 justify-between" : "px-1"} 
+					 ${isHistorySidebarOpen ? "px-2 justify-between" : "px-0.5"}
 					 ${isDropdownOpen ? "bg-dunkelblau-90" : ""}
 				 `}
 				aria-haspopup="true"
@@ -70,7 +70,7 @@ export const DesktopProfileButton = () => {
 			>
 				<div className="flex gap-1.5 items-center">
 					<div
-						className={`flex shrink-0 items-center justify-center rounded-full p-1.5 bg-hellblau-50 ${isHistorySidebarOpen ? "size-7" : "size-6"}`}
+						className={`flex shrink-0 items-center justify-center rounded-full p-1.5 bg-hellblau-50 size-7`}
 					>
 						<span className="text-center text-dunkelblau-100 text-xs font-semibold leading-4 uppercase">
 							{first_name?.[0]?.toUpperCase() ?? ""}
