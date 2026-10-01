@@ -78,7 +78,7 @@ export const DesktopProfileButton = () => {
 						</span>
 					</div>
 					<span
-						className={`text-hellblau-50 text-sm leading-[14px] font-bold truncate transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-200" : "opacity-0 duration-100"}`}
+						className={`text-hellblau-50 text-sm leading-[14px] font-bold truncate transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
 						aria-hidden={!isHistorySidebarOpen}
 					>
 						{first_name} {last_name}
@@ -89,7 +89,7 @@ export const DesktopProfileButton = () => {
 					alt=""
 					width={24}
 					height={24}
-					className={`transition-opacity ${isDropdownOpen ? "rotate-180" : ""} ${isHistorySidebarOpen ? "opacity-100 duration-200" : "opacity-0 duration-100"}`}
+					className={`transition-opacity ${isDropdownOpen ? "rotate-180" : ""} ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
 				/>
 			</button>
 

@@ -52,7 +52,7 @@ export const DesktopSidebar: React.FC = () => {
 
 					{/* History Content */}
 					<div
-						className={`flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-200" : "opacity-0 duration-100"}`}
+						className={`flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
 						inert={!isHistorySidebarOpen}
 					>
 						<History />
@@ -88,7 +88,7 @@ export const DesktopSidebar: React.FC = () => {
                                 ${isHistorySidebarOpen ? "px-3 gap-1.5" : ""}`}
 						>
 							<p
-								className={`text-dunkelblau-50 text-sm leading-[14px] truncate transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-200" : "opacity-0 duration-100"}`}
+								className={`text-dunkelblau-50 text-sm leading-[14px] truncate transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
 								aria-hidden={!isHistorySidebarOpen}
 							>
 								{Content["sidebar.citylab.label"]}

@@ -51,7 +51,7 @@ export const ChatSearchButton: React.FC<ChatSearchButtonProps> = ({
 					className="shrink-0"
 				/>
 				<span
-					className={`whitespace-nowrap transition-opacity ${isExpanded ? "opacity-100 duration-200" : "opacity-0 duration-100"}`}
+					className={`whitespace-nowrap transition-opacity ${isExpanded ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
 					aria-hidden={!isExpanded}
 				>
 					{Content["chatSearchButton.label"]}
