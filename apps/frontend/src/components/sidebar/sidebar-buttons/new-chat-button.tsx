@@ -29,9 +29,9 @@ export const NewChatButton: React.FC<NewChatButtonProps> = ({
 	return (
 		<button
 			aria-label={Content["newChatButton.ariaLabel"]}
-			className={`rounded-[3px] h-8 w-full flex items-center px-1 gap-1.5 text-sm leading-5 font-semibold overflow-hidden ${
+			className={`rounded-[3px] h-8 w-full flex items-center px-1 gap-1.5 text-sm leading-5 font-semibold text-hellblau-50 overflow-hidden ${
 				isExpanded
-					? "text-hellblau-50 max-w-[230px] hover:bg-dunkelblau-90 focus-visible:outline-default"
+					? "max-w-[230px] hover:bg-dunkelblau-90 focus-visible:outline-default"
 					: "relative self-center flex-row gap-1 bg-transparent hover:bg-dunkelblau-90 focus-visible:outline-default"
 			}`}
 			onClick={() => {

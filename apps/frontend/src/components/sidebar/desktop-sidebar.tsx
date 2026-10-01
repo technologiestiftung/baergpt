@@ -51,11 +51,12 @@ export const DesktopSidebar: React.FC = () => {
 					</div>
 
 					{/* History Content */}
-					{isHistorySidebarOpen && (
-						<div className="flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden animate-fade-in">
-							<History />
-						</div>
-					)}
+					<div
+						className={`flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-200" : "opacity-0 duration-100"}`}
+						inert={!isHistorySidebarOpen}
+					>
+						<History />
+					</div>
 					<div>
 						<div className="flex flex-col">
 							{/* Full-width border */}
