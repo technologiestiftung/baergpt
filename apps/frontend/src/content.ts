@@ -998,6 +998,8 @@ export const Content = {
 	"mcp.options.dialog.option3.ariaLabel": "Datawrapper auswählen",
 
 	// Chat llm model dropdown
+	"chat.llmModel.toggleButton.ariaDescription":
+		"Öffnet die Auswahl des Sprachmodells",
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
 	"chat.llmModel.dropdown.li1.label": "Schnell",
 	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small 4 (schnell)",

@@ -5,6 +5,10 @@ import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
 import { Switch } from "../../primitives/switch/switch";
 import { config } from "../../../config";
 
+// Referenced by the toggle button's aria-controls,
+// so screen readers can tie the button to the listbox it opens.
+export const LLM_MODEL_DROPDOWN_ID = "llm-model-dropdown";
+
 interface ChatFormDropdownProps<T extends LlmModel> {
 	title: string;
 	items: {
@@ -61,7 +65,12 @@ export const ChatFormDropdown = <T extends LlmModel>({
 			>
 				{title}
 			</div>
-			<ul className="flex flex-col" role="listbox" aria-labelledby={titleId}>
+			<ul
+				id={LLM_MODEL_DROPDOWN_ID}
+				className="flex flex-col"
+				role="listbox"
+				aria-labelledby={titleId}
+			>
 				{items.map((item, index) => {
 					const isSelected = selectedItems.includes(item.value);
 
@@ -95,8 +104,8 @@ export const ChatFormDropdown = <T extends LlmModel>({
 								<img
 									src="/icons/check-active-icon.svg"
 									alt={Content["chat.options.selected.icon.imgAlt"]}
-									width={20}
-									height={20}
+									width={24}
+									height={24}
 									className={`${isSelected ? "block" : "hidden"}`}
 								/>
 							</button>
