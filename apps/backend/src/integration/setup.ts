@@ -1,6 +1,6 @@
 import { serve, type ServerType } from "@hono/node-server";
 import app from "../index";
-import { config } from "../config";
+import { config, verifyConfig } from "../config";
 
 let server: ServerType | null = null;
 
@@ -28,6 +28,7 @@ function assertLocalTarget() {
 }
 
 export async function setup() {
+	verifyConfig();
 	assertLocalTarget();
 
 	if (server) {

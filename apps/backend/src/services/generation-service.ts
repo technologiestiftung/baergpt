@@ -358,7 +358,7 @@ export class GenerationService {
 							tools,
 							toolChoice,
 							stopWhen:
-								llmHandler.model === "zai-glm-5-2"
+								llmHandler.model === "experimental"
 									? isStepCount(EXPERIMENTAL_MAX_TOOL_CALL_STEPS)
 									: isLoopFinished(),
 							providerOptions: {
