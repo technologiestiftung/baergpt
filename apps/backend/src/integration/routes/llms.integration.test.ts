@@ -64,7 +64,7 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 
 	it("rejects unknown tool names with 400", async () => {
 		const res = await postJustChatting({
-			llm_model: "mistral-small",
+			llm_model: "fast",
 			messages: [{ role: "user", content: "hallo" }],
 			active_tools: ["notARealTool"],
 		});
@@ -80,7 +80,7 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 		"rejects combining document/folder search with an external tool (400)",
 		async () => {
 			const res = await postJustChatting({
-				llm_model: "mistral-small",
+				llm_model: "fast",
 				messages: [{ role: "user", content: "hallo" }],
 				active_tools: [enabledExternalTool],
 				allowed_document_ids: [1],
@@ -96,7 +96,7 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 
 	it("rejects a non-boolean extended_thinking with 400", async () => {
 		const res = await postJustChatting({
-			llm_model: "mistral-small",
+			llm_model: "fast",
 			messages: [{ role: "user", content: "hallo" }],
 			extended_thinking: "yes",
 		});
@@ -108,7 +108,7 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 
 	it("streams reasoning parts when extended_thinking is true", async () => {
 		const res = await postJustChatting({
-			llm_model: "mistral-small",
+			llm_model: "fast",
 			messages: [{ role: "user", content: "hallo" }],
 			extended_thinking: true,
 		});
@@ -121,7 +121,7 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 
 	it("streams no reasoning parts when extended_thinking is omitted", async () => {
 		const res = await postJustChatting({
-			llm_model: "mistral-small",
+			llm_model: "fast",
 			messages: [{ role: "user", content: "hallo" }],
 		});
 

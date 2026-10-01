@@ -345,7 +345,7 @@ describe("Integration Tests for Routes", () => {
 			search_type: "all_private",
 			allowed_document_ids: [],
 			allowed_folder_ids: [],
-			llm_model: "mistral-small",
+			llm_model: "fast",
 		};
 
 		const res = await app.request("/llm/just-chatting", {
