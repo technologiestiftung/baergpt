@@ -44,7 +44,7 @@ export const SidebarLink: React.FC<{
 			</div>
 			{/* Transition only from md on: this link is also used in the mobile navigation, which stays unchanged */}
 			<span
-				className={`text-sm font-normal whitespace-nowrap md:transition-opacity ${isLabelVisible ? "opacity-100 md:duration-200" : "opacity-0 md:duration-100"}`}
+				className={`text-sm font-normal whitespace-nowrap md:transition-opacity ${isLabelVisible ? "opacity-100 md:duration-300 md:ease-in" : "opacity-0 md:duration-100"}`}
 				aria-hidden={!isLabelVisible}
 			>
 				{label}
