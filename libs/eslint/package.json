@@ -13,6 +13,6 @@
 		"typescript-eslint": "8.65.0"
 	},
 	"devDependencies": {
-		"eslint-config-turbo": "2.9.14"
+		"eslint-config-turbo": "2.10.7"
 	}
 }
