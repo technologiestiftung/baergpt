@@ -2,7 +2,7 @@ provider "stackit" {
   default_region = var.region
 }
 
-# Cluster admin credentials for the kubernetes/helm providers (Phase 2 platform layer).
+# Cluster admin credentials for the kubernetes/helm providers (platform layer).
 # Short-lived; regenerated automatically via `refresh` so a long-running `terraform
 # apply` (or repeated applies) doesn't hit an expired kubeconfig.
 resource "stackit_ske_kubeconfig" "this" {

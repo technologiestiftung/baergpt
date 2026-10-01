@@ -1,0 +1,14 @@
+# request = limit: prod memory is fully reserved, so under node memory pressure
+# staging/sandbox pods (request < limit) are evicted before any prod pod.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  template:
+    spec:
+      containers:
+        - name: backend
+          resources:
+            requests:
+              memory: 4Gi

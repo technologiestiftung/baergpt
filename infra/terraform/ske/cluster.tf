@@ -1,7 +1,6 @@
-# Single cluster for all environments. staging/prod/sandbox are k8s namespaces on
-# this cluster (see infra/K8S_MIGRATION_PLAN.md decision #1 for the trade-off accepted:
-# a k8s version upgrade touches all envs at once, mitigated by testing against
-# sandbox/staging namespaces before rolling to prod).
+# Single cluster for all environments; staging/prod/sandbox are k8s namespaces on it.
+# Trade-off: a k8s version upgrade touches all envs at once, so test against the
+# sandbox/staging namespaces before relying on it in prod.
 resource "stackit_ske_cluster" "this" {
   project_id             = var.project_id
   region                 = var.region
@@ -20,10 +19,11 @@ resource "stackit_ske_cluster" "this" {
     }
   ]
 
-  network = {
-    id = var.network_area_id
-    control_plane = {
-      access_scope = "PUBLIC" # immutable; CI needs to reach the API server over the internet
+  extensions = {
+    # Forwards cluster and node metrics to the STACKIT Observability instance.
+    observability = {
+      enabled     = true
+      instance_id = var.observability_instance_id
     }
   }
 

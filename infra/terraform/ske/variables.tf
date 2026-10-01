@@ -20,35 +20,21 @@ variable "kubernetes_version_min" {
   description = "Minimum k8s version. Maintenance auto-patches within it; check available versions with `stackit ske options` or the portal before setting."
 }
 
-# TODO: fill in once a STACKIT Network Area (SNA) exists for this project — SKE needs
-# one to attach the cluster's control plane/nodes to. Create it in the portal or a
-# separate `stackit_network_area` resource, then reference its ID here.
-variable "network_area_id" {
-  type        = string
-  description = "STACKIT Network Area ID the cluster attaches to."
-}
-
 variable "availability_zones" {
   type        = list(string)
   default     = ["eu01-1", "eu01-2", "eu01-3"]
   description = "Availability zones for the node pool. Verify exact names for the project's region via the portal."
 }
 
-# TODO: verify against STACKIT's current SKE machine-type list (portal or
-# `stackit ske options`) before applying — placeholder pending Phase 0 quota check.
 variable "machine_type" {
   type        = string
-  default     = "c1a.2d"
-  description = "VM flavor for cluster nodes."
+  default     = "g1a.4d" # AMD x86, 4 vCPU / 16 GB: the backend image is built for linux/amd64 only
+  description = "VM flavor for cluster nodes. List available types with `stackit ske options`."
 }
 
-# Rough estimate, NOT computed from real numbers — actual node count depends on
-# machine_type's CPU/memory and each pod's resource requests, neither finalized yet.
-# Pod-count basis: floor = prod (2 backend + 1 gotenberg) + staging (1 backend +
-# 1 gotenberg) + sandbox (1 backend, reuses staging's gotenberg) = 6 app pods, plus
-# ~5-8 cluster-wide platform pods (envoy-gateway + its proxy, cert-manager, OTel,
-# metrics-server).
-# Peak = prod backend HPA maxes at 6, staging at 2 -> 11 app pods + same platform pods.
+# Floor memory requests ≈ 26Gi: prod 4×4Gi backend + 2×2Gi gotenberg, staging/sandbox
+# ~3Gi, platform + observability ~3Gi. 3 nodes (~40Gi allocatable) also absorb a prod
+# rollout's surge pods; the max leaves room for node failures and new workloads.
 variable "node_pool_min" {
   type        = number
   default     = 3
@@ -57,8 +43,13 @@ variable "node_pool_min" {
 
 variable "node_pool_max" {
   type        = number
-  default     = 6
+  default     = 5
   description = "Maximum node count"
+}
+
+variable "observability_instance_id" {
+  type        = string
+  description = "STACKIT Observability instance the SKE observability extension ships metrics to."
 }
 
 variable "maintenance_window" {
@@ -73,7 +64,7 @@ variable "maintenance_window" {
   description = "Daily UTC maintenance window for patch-version + machine-image updates."
 }
 
-# --- Phase 2: cluster platform layer (platform.tf) ---------------------------------
+# --- Cluster platform layer (platform.tf) -----------------------------------------
 
 variable "namespaces" {
   type = map(object({
@@ -83,15 +74,20 @@ variable "namespaces" {
     hostname     = string # public hostname for this env's Gateway listener
   }))
   default = {
-    # prod memory must cover HPA max PLUS one surge pod during a rolling update:
-    # backend 6x512Mi + gotenberg 3x1536Mi = 7680Mi already, and maxSurge adds another
-    # gotenberg pod (1536Mi). An 8Gi cap would leave the surge pod Pending and stall
-    # the rollout until `rollout status` times out.
-    staging = { quota_cpu = "2", quota_memory = "4Gi", quota_pods = "15", hostname = "api.staging.baergpt.berlin" }
-    prod    = { quota_cpu = "6", quota_memory = "12Gi", quota_pods = "20", hostname = "api.baergpt.berlin" }
-    sandbox = { quota_cpu = "1", quota_memory = "2Gi", quota_pods = "10", hostname = "api.sandbox.baergpt.berlin" }
+    # quota_memory caps requests AND limits, so it must cover the sum of memory limits
+    # plus one surge pod per Deployment during a rolling update — otherwise the surge
+    # pod is rejected and the rollout stalls. prod: 4×4Gi + 2×2Gi + 4Gi + 2Gi = 26Gi.
+    staging = { quota_cpu = "2", quota_memory = "12Gi", quota_pods = "15", hostname = "api-staging.baergpt-ske.stackit.rocks" }
+    prod    = { quota_cpu = "4", quota_memory = "26Gi", quota_pods = "20", hostname = "api.baergpt-ske.stackit.rocks" }
+    sandbox = { quota_cpu = "1", quota_memory = "8Gi", quota_pods = "10", hostname = "api-sandbox.baergpt-ske.stackit.rocks" }
   }
-  description = "Per-env namespaces: ResourceQuota caps + the public hostname of that env's Gateway listener. Quota values are placeholders — size against real workload requests (see node_pool_min/max comment). Hostnames must match the HTTPRoute hostnames in infra/k8s/overlays/<env>."
+  description = "Per-env namespaces: ResourceQuota caps + the public hostname of that env's Gateway listener. Keep quotas in sync with the resources in infra/k8s. Hostnames must match the HTTPRoute hostnames in infra/k8s/overlays/<env>."
+}
+
+variable "dns_zone" {
+  type        = string
+  default     = "baergpt-ske.stackit.rocks"
+  description = "STACKIT DNS zone holding every namespace hostname (dns.tf)."
 }
 
 variable "letsencrypt_email" {
@@ -103,15 +99,4 @@ variable "letsencrypt_acme_server" {
   type        = string
   default     = "https://acme-staging-v02.api.letsencrypt.org/directory"
   description = "ACME server URL. Defaults to LE's STAGING endpoint (untrusted certs, no rate limits) — switch to https://acme-v02.api.letsencrypt.org/directory once ingress + DNS are verified working end to end."
-}
-
-variable "ghcr_username" {
-  type        = string
-  description = "GitHub username/org for the GHCR image-pull credential (a PAT with read:packages, or the repo owner if the package is public — in which case this whole secret is skippable)."
-}
-
-variable "ghcr_token" {
-  type        = string
-  sensitive   = true
-  description = "GHCR read token (PAT with read:packages scope). Pass via -var or TF_VAR_ghcr_token from 1Password, never committed."
 }

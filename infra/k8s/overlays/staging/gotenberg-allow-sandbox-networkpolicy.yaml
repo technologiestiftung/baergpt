@@ -1,6 +1,5 @@
-# Sandbox has no gotenberg of its own — it reuses staging's (see
-# K8S_MIGRATION_PLAN.md). Opens the one cross-namespace path the base gotenberg
-# NetworkPolicy (same-namespace-only) doesn't allow.
+# Sandbox has no gotenberg of its own — it reuses staging's. Opens the one
+# cross-namespace path the base gotenberg NetworkPolicy (same-namespace-only) doesn't allow.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

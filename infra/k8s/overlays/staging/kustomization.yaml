@@ -9,10 +9,6 @@ resources:
   - gotenberg-allow-sandbox-networkpolicy.yaml
 
 patches:
-  - path: backend-hpa-patch.yaml
-    target:
-      kind: HorizontalPodAutoscaler
-      name: backend
   - path: httproute-host-patch.yaml
     target:
       kind: HTTPRoute

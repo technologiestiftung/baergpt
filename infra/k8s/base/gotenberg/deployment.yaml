@@ -3,9 +3,7 @@ kind: Deployment
 metadata:
   name: gotenberg
 spec:
-  # No `replicas`: the HPA owns it. Pinning it here would make every `kubectl apply`
-  # reset the Deployment to 1 pod before the HPA scaled it back up — a capacity dip on
-  # every release, which is exactly what maxUnavailable: 0 exists to prevent.
+  replicas: 1 # overridden per-env
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -19,11 +17,36 @@ spec:
       labels:
         app: gotenberg
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001 # numeric: the image's USER is a name, which runAsNonRoot can't verify
+        runAsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: gotenberg
+          matchLabelKeys: [pod-template-hash]
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: gotenberg
+          matchLabelKeys: [pod-template-hash]
       containers:
         - name: gotenberg
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           # Same upstream image + basic-auth flag as infra/gotenberg/manifest.yml today —
           # public Docker Hub image, no imagePullSecret needed.
-          image: gotenberg/gotenberg:8.34.0
+          image: gotenberg/gotenberg:8.34.0@sha256:67097317623a503ba2a6a7e9ae8db6929a1f7e1bbd88077bacf2d325fbdab923
           args: ["gotenberg", "--api-enable-basic-auth"]
           ports:
             - name: http
@@ -31,14 +54,12 @@ spec:
           envFrom:
             - secretRef:
                 name: gotenberg-env # GOTENBERG_API_BASIC_AUTH_USERNAME/PASSWORD
-          # Inherently heavy (bundles Chromium + LibreOffice) — TODO: verify real
-          # values against CF's GOTENBERG_MEMORY (1Password, not in this repo).
           resources:
             requests:
               cpu: 500m
-              memory: 512Mi
+              memory: 1Gi # prod sets request = limit, see overlays/prod
             limits:
-              memory: 1536Mi
+              memory: 2Gi
           readinessProbe:
             httpGet:
               path: /health

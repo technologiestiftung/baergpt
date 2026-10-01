@@ -1,0 +1,11 @@
+# maxUnavailable rather than minAvailable: with a single replica, minAvailable: 1 would
+# block every node drain, including SKE's automated maintenance rollouts.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gotenberg
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: gotenberg

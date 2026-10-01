@@ -17,7 +17,7 @@ spec:
       # attach itself to the prod hostname.
       sectionName: https-PLACEHOLDER
   hostnames:
-    - PLACEHOLDER.baergpt.berlin # overridden per-env
+    - PLACEHOLDER.baergpt-ske.stackit.rocks # overridden per-env
   rules:
     - matches:
         - path:

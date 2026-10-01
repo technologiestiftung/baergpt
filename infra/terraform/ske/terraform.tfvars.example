@@ -3,27 +3,19 @@ project_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # baergpt-berlin-prod, same 
 region     = "eu01"
 
 # Check available versions before setting: `stackit ske options` or the portal.
-kubernetes_version_min = "1.x"
+kubernetes_version_min = "1.36"
 
-# TODO: create (or reuse) a STACKIT Network Area for this project and paste its ID here.
-network_area_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+observability_instance_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # `stackit observability instance list`
 
-# TODO: verify against the current SKE machine-type list for this project/region —
-# placeholder pending the Phase 0 quota check (see infra/K8S_MIGRATION_PLAN.md).
-# machine_type = "c1a.2d"
+# machine_type = "g1a.4d"
 # availability_zones = ["eu01-1", "eu01-2", "eu01-3"]
 # node_pool_min = 3
-# node_pool_max = 6
+# node_pool_max = 5
 
-# Phase 2 — cluster platform layer
+# Cluster platform layer
 letsencrypt_email = "infra@ts.berlin" # verify: real contact address for ACME expiry/abuse notices
 # letsencrypt_acme_server defaults to LE's STAGING endpoint — leave as-is until ingress
 # + DNS are verified working, then switch to the production ACME URL (see variables.tf).
-
-ghcr_username = "technologiestiftung" # or a PAT owner; skip the ghcr secret entirely if the package is public
-
-# ghcr_token is SENSITIVE — do not put it here. Pass it via -var, TF_VAR_ghcr_token, or
-# op run (see .op.env.ske.example) so it never lands in a tfvars file on disk.
 
 # namespaces (staging/prod/sandbox quotas) has sensible defaults in variables.tf —
 # override here only once real pod resource requests make the defaults wrong.

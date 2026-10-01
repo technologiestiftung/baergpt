@@ -5,6 +5,5 @@ resources:
   - deployment.yaml
   - service.yaml
   - httproute.yaml
-  - hpa.yaml
   - pdb.yaml
   - networkpolicy.yaml

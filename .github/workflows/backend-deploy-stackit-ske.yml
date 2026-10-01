@@ -20,8 +20,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/baergpt-backend
-  CLUSTER_NAME: baergpt # keep in sync with infra/terraform/ske (var.cluster_name)
-  KUBECTL_VERSION: v1.34.2
+  KUBECTL_VERSION: v1.36.5 # within ±1 minor of the cluster version (kubectl skew policy)
 
 jobs:
   deploy:
@@ -35,7 +34,8 @@ jobs:
     # by default — reject anything other than staging/main here.
     if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
     # Sandbox reuses the Staging environment's secrets/approvals; it has no environment
-    # of its own. Deploying it needs OP_BACKEND_SANDBOX_ENV_ITEM_ID to exist there.
+    # of its own. Deploying it needs OP_BACKEND_SANDBOX_ENV_ITEM_ID and
+    # OP_SKE_DEPLOY_SANDBOX_ITEM_ID to exist there.
     environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'sandbox') && 'Staging' || (github.ref_name == 'main' && 'Production' || 'Staging') }}
 
     steps:
@@ -53,7 +53,12 @@ jobs:
 
       - name: Install 1Password CLI 🔐
         uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          version: 2.39.0 # the action installs "latest" otherwise
 
+      # OP_SKE_DEPLOY_ITEM_ID is an environment secret: Production and Staging each point
+      # at the 1Password item holding their own namespace-scoped kubeconfig
+      # (`terraform output deploy_kubeconfigs` in infra/terraform/ske).
       - name: Resolve deployment target 🎯
         id: target
         run: |
@@ -61,20 +66,24 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.target }}" == "sandbox" ]]; then
             namespace="sandbox"
             app_item_id="${{ secrets.OP_BACKEND_SANDBOX_ENV_ITEM_ID }}"
-            if [[ -z "$app_item_id" ]]; then
-              echo "::error::OP_BACKEND_SANDBOX_ENV_ITEM_ID is not set. Create the sandbox 1Password item (with GOTENBERG_URL pointing at http://gotenberg.staging.svc.cluster.local:3000) and add the secret before deploying sandbox."
+            deploy_item_id="${{ secrets.OP_SKE_DEPLOY_SANDBOX_ITEM_ID }}"
+            if [[ -z "$app_item_id" || -z "$deploy_item_id" ]]; then
+              echo "::error::OP_BACKEND_SANDBOX_ENV_ITEM_ID and OP_SKE_DEPLOY_SANDBOX_ITEM_ID must both be set. Create the sandbox 1Password items (backend env with GOTENBERG_URL pointing at http://gotenberg.staging.svc.cluster.local:3000, and the sandbox kubeconfig) before deploying sandbox."
               exit 1
             fi
           elif [[ "${{ github.ref_name }}" == "main" ]]; then
             namespace="prod"
             app_item_id="${{ secrets.OP_BACKEND_PRODUCTION_ENV_ITEM_ID }}"
+            deploy_item_id="${{ secrets.OP_SKE_DEPLOY_ITEM_ID }}"
           else
             namespace="staging"
             app_item_id="${{ secrets.OP_BACKEND_STAGING_ENV_ITEM_ID }}"
+            deploy_item_id="${{ secrets.OP_SKE_DEPLOY_ITEM_ID }}"
           fi
           echo "namespace=$namespace" >> "$GITHUB_OUTPUT"
           echo "overlay=infra/k8s/overlays/$namespace" >> "$GITHUB_OUTPUT"
           echo "app_item_id=$app_item_id" >> "$GITHUB_OUTPUT"
+          echo "deploy_item_id=$deploy_item_id" >> "$GITHUB_OUTPUT"
           echo "Deploying to namespace: $namespace"
 
       - name: Install kubectl ⚙️
@@ -88,55 +97,16 @@ jobs:
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
           rm -f kubectl kubectl.sha256
 
-      - name: Install STACKIT CLI ⚙️
-        run: |
-          set -euo pipefail
-          curl -fsSL "https://github.com/stackitcloud/stackit-cli/releases/download/v0.73.0/stackit-cli_0.73.0_linux_amd64.tar.gz" \
-            | tar -zx stackit
-          sudo install -o root -g root -m 0755 stackit /usr/local/bin/stackit
-          rm -f stackit
-
-      # Expects a 1Password item with:
-      #   - a `notesPlain` document holding STACKIT_PROJECT_ID and STACKIT_REGION
-      #   - a `service-account-key` field holding the STACKIT service-account JSON key
-      # The SA key lives in its own field (not notesPlain) because it is multi-line JSON,
-      # which the KEY=VALUE-per-line parsing below cannot represent.
-      - name: Fetch STACKIT credentials from 1Password 🔑
+      # The kubeconfig carries a token for the target namespace's `deployer` service
+      # account only (infra/terraform/ske/deploy-access.tf), not cluster admin.
+      - name: Fetch kubeconfig 🔐
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |
           set -euo pipefail
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_SKE_DEPLOY_ITEM_ID }}/notesPlain" > ske.env
-          while IFS= read -r line || [ -n "$line" ]; do
-            line="${line%$'\r'}" # tolerate a CRLF-edited 1Password note
-            [[ -z "$line" || "$line" == \#* ]] && continue
-            key="${line%%=*}"
-            value="${line#*=}"
-            echo "::add-mask::$value"
-            echo "$key=$value" >> "$GITHUB_ENV"
-          done < ske.env
-          rm -f ske.env
-
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_SKE_DEPLOY_ITEM_ID }}/service-account-key" > "$RUNNER_TEMP/sa-key.json"
-          chmod 600 "$RUNNER_TEMP/sa-key.json"
-
-      # Mints a short-lived admin kubeconfig from the service-account key, so no
-      # long-lived cluster credential is ever stored in 1Password or GitHub.
-      - name: Create kubeconfig 🔐
-        run: |
-          set -euo pipefail
-          stackit auth activate-service-account \
-            --service-account-key-path "$RUNNER_TEMP/sa-key.json"
-          stackit ske kubeconfig create "$CLUSTER_NAME" \
-            --project-id "$STACKIT_PROJECT_ID" \
-            --region "$STACKIT_REGION" \
-            --filepath "$RUNNER_TEMP/kubeconfig" \
-            --expiration 1h \
-            --overwrite \
-            --assume-yes
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.target.outputs.deploy_item_id }}/kubeconfig" > "$RUNNER_TEMP/kubeconfig"
           chmod 600 "$RUNNER_TEMP/kubeconfig"
           echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> "$GITHUB_ENV"
-          rm -f "$RUNNER_TEMP/sa-key.json"
 
       # This workflow doesn't build images — it deploys whatever
       # backend-image-build-and-push.yml pushed for this exact content. That build may

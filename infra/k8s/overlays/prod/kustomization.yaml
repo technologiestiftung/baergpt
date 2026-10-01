@@ -7,15 +7,15 @@ resources:
   - ../../base/backend
   - ../../base/gotenberg
 
+replicas:
+  - name: backend
+    count: 4
+  - name: gotenberg
+    count: 2
+
 patches:
-  - path: backend-hpa-patch.yaml
-    target:
-      kind: HorizontalPodAutoscaler
-      name: backend
-  - path: gotenberg-hpa-patch.yaml
-    target:
-      kind: HorizontalPodAutoscaler
-      name: gotenberg
+  - path: backend-resources-patch.yaml
+  - path: gotenberg-resources-patch.yaml
   - path: httproute-host-patch.yaml
     target:
       kind: HTTPRoute

@@ -1,6 +1,6 @@
 # Allows only the same-namespace backend to reach gotenberg. Staging's overlay adds
 # a second policy opening this to the sandbox namespace too (sandbox has no gotenberg
-# of its own — reuses staging's, see K8S_MIGRATION_PLAN.md).
+# of its own — reuses staging's).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

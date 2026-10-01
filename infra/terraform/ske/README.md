@@ -1,7 +1,7 @@
 # STACKIT Kubernetes Engine (SKE) cluster (Terraform)
 
 Provisions a single SKE cluster (`baergpt`) that hosts all environments as k8s
-namespaces (`staging`, `prod`, `sandbox` — see `infra/K8S_MIGRATION_PLAN.md`). Replaces
+namespaces (`staging`, `prod`, `sandbox`). Replaces
 `infra/terraform/cloud-foundry` once the migration completes; both can coexist during
 the cutover.
 
@@ -10,27 +10,25 @@ the cutover.
 | File                   | Manages                                                          |
 | ---------------------- | ----------------------------------------------------------------- |
 | `versions.tf`          | Terraform + provider pins; S3 remote-state backend                |
-| `provider.tf`          | `stackit` provider + kubeconfig resource; wires `kubernetes`/`helm` providers for Phase 2 |
+| `provider.tf`          | `stackit` provider + kubeconfig resource; wires `kubernetes`/`helm` providers for the platform layer |
 | `variables.tf`         | project id, region, cluster/node-pool sizing, maintenance window  |
 | `cluster.tf`           | the `stackit_ske_cluster` resource                                |
-| `platform.tf`          | Envoy Gateway + cert-manager, the shared Gateway, namespaces, quotas, network policies, GHCR pull secrets |
-| `outputs.tf`           | cluster name, sensitive kubeconfig                                 |
+| `platform.tf`          | Envoy Gateway + cert-manager, the shared Gateway + its static public IP + HTTPS redirect, namespaces, quotas, network policies |
+| `dns.tf`               | the `baergpt-ske.stackit.rocks` STACKIT DNS zone and one `A` record per namespace hostname |
+| `deploy-access.tf`     | per-namespace `deployer` service account, Role and token for CI    |
+| `outputs.tf`           | cluster name, admin kubeconfig, per-namespace deploy kubeconfigs  |
 | `.op.env.ske.*`        | 1Password `op://` refs for `op run` auth (real file gitignored)   |
 | `terraform.tfvars.example` | copy → `terraform.tfvars` (gitignored)                        |
 
-## Prerequisites (not yet resolved — see Phase 0 in the migration plan)
+## Prerequisites
 
-- STACKIT project quota for SKE (nodes, LBs, volumes) — confirm before applying;
-  `variables.tf` ships with placeholder node-pool sizing.
-- A STACKIT Network Area (SNA) for the cluster to attach to (`network_area_id`).
-- Confirm current SKE machine-type names and available k8s versions via
-  `stackit ske options` or the portal — `machine_type`/`kubernetes_version_min` are
-  placeholders.
+- STACKIT project quota for SKE (nodes, LBs, volumes).
+- Machine types and k8s versions available to the project: `stackit ske options`.
 
 ## Apply
 
 ```sh
-cp terraform.tfvars.example terraform.tfvars              # fill in project_id, network_area_id, versions
+cp terraform.tfvars.example terraform.tfvars              # fill in project_id, versions
 cp .op.env.ske.example .op.env.ske                         # point op:// refs at your 1Password items
 
 OP="op run --env-file .op.env.ske --"
@@ -76,11 +74,24 @@ the cluster and the Gateway API / cert-manager CRDs don't exist yet.
 exposed as the sensitive `kube_config` output. It exists so this module's
 `kubernetes`/`helm` providers can install the platform layer (`platform.tf`).
 
-The deploy workflow does **not** consume that output — it mints its own short-lived
-kubeconfig with the STACKIT CLI (`stackit auth activate-service-account` →
-`stackit ske kubeconfig create --expiration 1h`) from a service-account key in
-1Password. That keeps Terraform state (and its object-storage credentials) out of the
-deploy path entirely, and means no long-lived cluster credential exists anywhere.
+The deploy workflow never gets admin access. `deploy-access.tf` creates a `deployer`
+service account per namespace whose Role covers only that namespace, and
+`deploy_kubeconfigs` renders one kubeconfig per namespace from its token. Store each in
+1Password as a `kubeconfig` field:
+
+| Namespace | 1Password item referenced by                        |
+| --------- | --------------------------------------------------- |
+| `prod`    | `OP_SKE_DEPLOY_ITEM_ID` (GitHub "Production" env)   |
+| `staging` | `OP_SKE_DEPLOY_ITEM_ID` (GitHub "Staging" env)      |
+| `sandbox` | `OP_SKE_DEPLOY_SANDBOX_ITEM_ID` (GitHub "Staging" env) |
+
+```sh
+$OP terraform output -json deploy_kubeconfigs | jq -r '.staging'
+```
+
+The tokens don't expire. Rotate one with
+`$OP terraform apply -replace='kubernetes_secret_v1.deployer_token["<ns>"]'` and update its
+1Password item; an SKE credential rotation invalidates all of them.
 
 ## Remote state
 

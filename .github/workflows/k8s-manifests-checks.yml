@@ -16,6 +16,12 @@ on:
       - ".github/workflows/k8s-manifests-checks.yml"
   workflow_dispatch:
 
+env:
+  KUBECTL_VERSION: v1.36.5 # keep in sync with backend-deploy-stackit-ske.yml
+  KUBECONFORM_VERSION: v0.8.0
+  KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
+  CRDS_CATALOG_SHA: d373c2da9702bc9509a004db83e57263fe3bdfc1
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -26,16 +32,23 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install kubeconform ⚙️
+      - name: Install kubectl and kubeconform ⚙️
         run: |
           set -euo pipefail
-          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
-            | tar -xz kubeconform
-          sudo mv kubeconform /usr/local/bin/kubeconform
+          curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl.sha256"
+          echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check --status
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-      # kubectl (preinstalled on the runner) ships a kustomize build, no separate
-      # install needed. Validates every overlay builds AND every resulting manifest
-      # matches its k8s schema (-strict catches unknown/typo'd fields).
+          curl -fsSLO "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          echo "${KUBECONFORM_SHA256}  kubeconform-linux-amd64.tar.gz" | sha256sum --check --status
+          tar -xzf kubeconform-linux-amd64.tar.gz kubeconform
+          sudo install -o root -g root -m 0755 kubeconform /usr/local/bin/kubeconform
+          rm -f kubectl kubectl.sha256 kubeconform kubeconform-linux-amd64.tar.gz
+
+      # kubectl ships a kustomize build, no separate install needed. Validates every
+      # overlay builds AND every resulting manifest matches its k8s schema (-strict
+      # catches unknown/typo'd fields).
       #
       # The second -schema-location adds the CRDs catalog, which carries schemas for
       # custom kinds like Gateway API's HTTPRoute. Without it kubeconform has no schema
@@ -47,6 +60,6 @@ jobs:
             echo "::group::$overlay"
             kubectl kustomize "$overlay" | kubeconform -strict -summary \
               -schema-location default \
-              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+              -schema-location "https://raw.githubusercontent.com/datreeio/CRDs-catalog/${CRDS_CATALOG_SHA}/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
             echo "::endgroup::"
           done

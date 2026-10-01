@@ -3,9 +3,7 @@ kind: Deployment
 metadata:
   name: backend
 spec:
-  # No `replicas`: the HPA owns it. Pinning it here would make every `kubectl apply`
-  # reset the Deployment to 1 pod before the HPA scaled it back up — a capacity dip on
-  # every release, which is exactly what maxUnavailable: 0 exists to prevent.
+  replicas: 1 # overridden per-env
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -19,29 +17,54 @@ spec:
       labels:
         app: backend
     spec:
-      imagePullSecrets:
-        - name: ghcr-pull-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001 # numeric: the image's USER is a name, which runAsNonRoot can't verify
+        runAsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: backend
+          matchLabelKeys: [pod-template-hash]
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: backend
+          matchLabelKeys: [pod-template-hash]
       containers:
         - name: backend
-          # placeholder — CI runs `kustomize edit set image backend=ghcr.io/.../baergpt-backend:content-sha-<hash>`
-          # at deploy time (Phase 4), same content-sha tag backend-image-build-and-push.yml produces today.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          # Tag replaced at deploy time with the content-sha tag from backend-image-build-and-push.yml.
           image: ghcr.io/technologiestiftung/baergpt-backend:placeholder
           ports:
             - name: http
               containerPort: 3000
           envFrom:
-            # applied by the deploy workflow before `kubectl apply -k` (Phase 4) —
-            # parsed from the same 1Password notesPlain blob CF's `cf set-env` used.
+            # Created by the deploy workflow from the env's 1Password notesPlain blob.
             - secretRef:
                 name: backend-env
-          # TODO: real values depend on CF_MEMORY (1Password, not in this repo) —
-          # placeholder until that's checked.
+          env:
+            - name: PORT # overrides any PORT in backend-env, which would move the app off containerPort
+              value: "3000"
+            # Keeps V8's heap below the 4Gi limit so OOMs surface as "heap out of memory", not a silent kill.
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=3072
           resources:
             requests:
               cpu: 250m
-              memory: 256Mi
+              memory: 1Gi # prod sets request = limit, see overlays/prod
             limits:
-              memory: 512Mi
+              memory: 4Gi
           # CF: health-check-invocation-timeout 10s, timeout (start) 180s.
           startupProbe:
             httpGet:

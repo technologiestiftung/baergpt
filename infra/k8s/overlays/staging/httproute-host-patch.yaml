@@ -4,7 +4,7 @@
 # infra/terraform/ske, which defines the matching Gateway listener and its certificate.
 - op: replace
   path: /spec/hostnames/0
-  value: api.staging.baergpt.berlin
+  value: api-staging.baergpt-ske.stackit.rocks
 - op: replace
   path: /spec/parentRefs/0/sectionName
   value: https-staging
