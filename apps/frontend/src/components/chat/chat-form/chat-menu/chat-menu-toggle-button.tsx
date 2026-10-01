@@ -42,7 +42,7 @@ export const ChatMenuToggleButton: React.FC = () => {
 				<button
 					ref={selectButtonRef}
 					type="button"
-					className="hover:bg-hellblau-30 text-2xl rounded-3px size-7 flex items-center justify-center focus-visible:outline-default"
+					className="hover:bg-hellblau-60 text-2xl rounded-3px size-7 flex items-center justify-center focus-visible:outline-default"
 					onClick={handleToggleDropdown}
 					aria-label={Content["chat.options.toggleButton.tooltip.ariaLabel"]}
 					aria-haspopup="menu"
