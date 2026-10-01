@@ -50,7 +50,7 @@ export type ChatTool = "webSearch" | Connector;
 
 export type ChatToolsMenuItemId = ChatTool | "fileUpload" | "connectors";
 
-export type LlmModel = "mistral-small" | "mistral-medium" | "zai-glm-5-2";
+export type LlmModel = "fast" | "precise" | "experimental";
 
 export type Chat = {
 	created_at: string;

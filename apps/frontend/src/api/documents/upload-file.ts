@@ -5,6 +5,7 @@ import {
 	type UploadStatusKeys,
 } from "../../store/use-file-uploads-store.ts";
 import { captureError } from "../../monitoring/capture-error.ts";
+import { config } from "../../config.ts";
 
 export async function uploadAndProcessDocument(
 	file: File,
@@ -19,7 +20,7 @@ export async function uploadAndProcessDocument(
 			folderId: currentFolder?.id || null,
 			sourceType: "personal_document",
 		},
-		llmModel: import.meta.env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
+		llmModel: config.defaultDocumentProcessingModel,
 	};
 
 	const form = new FormData();
