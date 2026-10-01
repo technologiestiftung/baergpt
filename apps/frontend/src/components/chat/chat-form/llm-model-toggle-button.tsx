@@ -1,17 +1,20 @@
 import React, { useRef, useState, useCallback } from "react";
 import { ChevronIcon } from "../../primitives/icons/chevron-icon";
 import { useClickOutside } from "../../../hooks/use-click-outside";
-import { ChatFormDropdown } from "./chat-form-dropdown";
+import { ChatFormDropdown, LLM_MODEL_DROPDOWN_ID } from "./chat-form-dropdown";
 import Content from "../../../content";
 import { useChatsStore } from "../../../store/use-chats-store";
 import { useExtendedThinkingStore } from "../../../store/use-extended-thinking-store";
 import type { LlmModel } from "../../../common";
 import { config } from "../../../config";
 
+const LLM_MODEL_DROPDOWN_DESCRIPTION_ID = "llm-model-dropdown-description-id";
+
 export const LlmModelToggleButton: React.FC = () => {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const selectButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
+
 	const { selectedLlmModel, setSelectedLlmModel } = useChatsStore();
 	const { isExtendedThinkingEnabled, setIsExtendedThinkingEnabled } =
 		useExtendedThinkingStore();
@@ -68,8 +71,16 @@ export const LlmModelToggleButton: React.FC = () => {
 			<button
 				ref={selectButtonRef}
 				type="button"
-				className="hover:bg-hellblau-60 px-3 py-1.5 rounded-3px flex gap-2 items-center justify-center focus-visible:outline-default"
+				className={`
+					pl-2 pr-1 py-1.5 rounded-3px flex gap-0.5 items-center justify-center
+					hover:bg-hellblau-60 focus-visible:outline-default
+					${isDropdownOpen && "bg-hellblau-60"}
+				`}
 				onClick={handleToggleDropdown}
+				aria-haspopup="listbox"
+				aria-expanded={isDropdownOpen}
+				aria-controls={LLM_MODEL_DROPDOWN_ID}
+				aria-describedby={LLM_MODEL_DROPDOWN_DESCRIPTION_ID}
 			>
 				<span className="text-sm leading-5 text-dunkelblau-80">
 					{selectedLlmModelLabel[selectedLlmModel]}
@@ -77,6 +88,9 @@ export const LlmModelToggleButton: React.FC = () => {
 
 				<ChevronIcon color="dunkelblau-80" direction="down" />
 			</button>
+			<span id={LLM_MODEL_DROPDOWN_DESCRIPTION_ID} className="sr-only">
+				{Content["chat.llmModel.toggleButton.ariaDescription"]}
+			</span>
 			{isDropdownOpen && (
 				<div ref={dropdownRef}>
 					<ChatFormDropdown
@@ -84,7 +98,6 @@ export const LlmModelToggleButton: React.FC = () => {
 						title={Content["chat.llmModel.dropdown.title"]}
 						selectedItems={[selectedLlmModel]}
 						onItemClick={handleItemClick}
-						className="right-0 whitespace-nowrap"
 						isOpen={isDropdownOpen}
 						onClose={handleClose}
 						isExtendedThinkingEnabled={isExtendedThinkingEnabled}
