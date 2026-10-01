@@ -120,7 +120,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	chats: [],
 	hasMoreChats: true,
 	selectedChatTools: [],
-	selectedLlmModel: "mistral-small",
+	selectedLlmModel: "fast",
 	visibleInfoMessage: null,
 
 	setSelectedLlmModel(model: LlmModel) {

@@ -19,21 +19,21 @@ export const LlmModelToggleButton: React.FC = () => {
 	const llmModelItems = [
 		{
 			label: Content["chat.llmModel.dropdown.li1.labelExtended"],
-			value: "mistral-small" as const,
+			value: "fast" as const,
 			description: Content["chat.llmModel.dropdown.li1.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li1.ariaLabel"],
 		},
 		{
 			label: Content["chat.llmModel.dropdown.li2.labelExtended"],
-			value: "mistral-medium" as const,
+			value: "precise" as const,
 			description: Content["chat.llmModel.dropdown.li2.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li2.ariaLabel"],
 		},
-		...(config.featureFlagGlm52Allowed
+		...(config.featureFlagExperimentalModelAllowed
 			? [
 					{
 						label: Content["chat.llmModel.dropdown.li3.labelExtended"],
-						value: "zai-glm-5-2" as const,
+						value: "experimental" as const,
 						description: Content["chat.llmModel.dropdown.li3.description"],
 						ariaLabel: Content["chat.llmModel.dropdown.li3.ariaLabel"],
 					},
@@ -42,9 +42,9 @@ export const LlmModelToggleButton: React.FC = () => {
 	];
 
 	const selectedLlmModelLabel: Record<LlmModel, string> = {
-		"mistral-small": Content["chat.llmModel.dropdown.li1.label"],
-		"mistral-medium": Content["chat.llmModel.dropdown.li2.label"],
-		"zai-glm-5-2": Content["chat.llmModel.dropdown.li3.label"],
+		fast: Content["chat.llmModel.dropdown.li1.label"],
+		precise: Content["chat.llmModel.dropdown.li2.label"],
+		experimental: Content["chat.llmModel.dropdown.li3.label"],
 	};
 
 	const handleClose = useCallback(() => {
