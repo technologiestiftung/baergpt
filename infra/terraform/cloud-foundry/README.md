@@ -14,6 +14,7 @@ Provisions one CF org (`baergpt`) with `staging` and `prod` spaces in the
 | `spaces.tf`           | spaces, space quotas, org/space roles                                |
 | `service-accounts.tf` | per-space CI service accounts + their keys                           |
 | `autoscaler.tf`       | per-space App-Autoscaler service instance (`<space>-autoscaler`)     |
+| `log-drain.tf`        | per-space syslog drain pointing at that space's log bridge           |
 | `outputs.tf`          | api_url, CI credentials                                              |
 
 ## Quotas
@@ -92,6 +93,36 @@ space only. Read a login out and put it in the pipeline's secret store:
 ```sh
 $OP terraform output -json deployer_credentials | jq '.prod'
 ```
+
+## Log drain
+
+Each space gets a `stackit-drain` user-provided service whose URL points at that space's
+log bridge (`infra/cf-log-bridge`), with `?drain-type=all` so container metrics arrive
+alongside logs. Apps bind to it by naming it in their own manifest (see
+`apps/backend/manifest.yml`), so a recreated app re-binds itself.
+
+The URL host is `<log_bridge_app_name>-<space>.<apps_domain>`. A route belongs to one space
+only, so the suffix is what keeps the environments apart.
+`.github/workflows/cf-log-bridge-deploy.yml` builds the same name from the branch — change
+one, change both.
+
+The service holds only a string; Cloud Controller never resolves it, so the drain can be
+created before the bridge exists. Delivery obviously requires the bridge to be up.
+
+`var.drain_credentials` carries the bridge's basic-auth credentials per space, embedded
+in the URL because CF's syslog agent has no other way to authenticate. Supply it from
+the op env-file:
+
+```sh
+TF_VAR_drain_credentials='{"staging":{"username":"...","password":"..."},"prod":{"username":"...","password":"..."}}'
+```
+
+**These must match `DRAIN_USERNAME` / `DRAIN_PASSWORD` in that space's bridge 1Password
+item.** A mismatch produces 401s inside CF's syslog agent and telemetry stops with no
+error surfaced anywhere. Rotate both together.
+
+> CI runs `terraform fmt` over this module but only validates `observability`, so run
+> `$OP terraform validate` here yourself before opening a PR.
 
 ## SSH access
 
