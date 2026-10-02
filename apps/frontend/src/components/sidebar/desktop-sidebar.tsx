@@ -27,16 +27,18 @@ export const DesktopSidebar: React.FC = () => {
 				>
 					{/* Top Section */}
 					<div className="flex flex-col gap-6 items-start w-full mb-5">
-						<div className="flex justify-between items-center w-full">
-							{isHistorySidebarOpen && (
-								<a href={"/"}>
-									<img
-										className={`h-7 ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : " opacity-0 animate-fade-out"}`}
-										src="/logos/baergpt-logo-white.svg"
-										alt={Content["header.logo.alt"]}
-									/>
-								</a>
-							)}
+						<div className="relative flex justify-end items-center w-full">
+							<a
+								href={"/"}
+								className={`absolute left-0 top-1/2 -translate-y-1/2 transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-150 delay-150" : "opacity-0 duration-100 delay-0"}`}
+								inert={!isHistorySidebarOpen}
+							>
+								<img
+									className="h-7"
+									src="/logos/baergpt-logo-white.svg"
+									alt={Content["header.logo.alt"]}
+								/>
+							</a>
 							<HistoryToggleButton
 								isLabelVisible={isHistorySidebarOpen ? false : undefined}
 							/>
@@ -49,11 +51,12 @@ export const DesktopSidebar: React.FC = () => {
 					</div>
 
 					{/* History Content */}
-					{isHistorySidebarOpen && (
-						<div className="flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden">
-							<History />
-						</div>
-					)}
+					<div
+						className={`flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
+						inert={!isHistorySidebarOpen}
+					>
+						<History />
+					</div>
 					<div>
 						<div className="flex flex-col">
 							{/* Full-width border */}
@@ -81,40 +84,39 @@ export const DesktopSidebar: React.FC = () => {
 
 						{/* CityLAB Logo */}
 						<div
-							className={`flex w-full justify-between items-center gap-1.5 h-10 pt-2
-                                ${isHistorySidebarOpen ? "px-3" : ""}`}
+							className={`flex w-full justify-between items-center h-10 pt-2
+                                ${isHistorySidebarOpen ? "px-3 gap-1.5" : ""}`}
 						>
-							{isHistorySidebarOpen && (
-								<p
-									className={`text-dunkelblau-50 text-sm leading-[14px] truncate ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : " opacity-0 animate-fade-out"}`}
-								>
-									{Content["sidebar.citylab.label"]}
-								</p>
-							)}
+							<p
+								className={`text-dunkelblau-50 text-sm leading-[14px] truncate transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
+								aria-hidden={!isHistorySidebarOpen}
+							>
+								{Content["sidebar.citylab.label"]}
+							</p>
 
 							<a
 								href={Content["sidebar.citylab.link"]}
 								target="_blank"
 								rel="noopener noreferrer"
-								className={`focus-visible:outline-default rounded-3px w-fit h-6 flex flex-row items-center gap-1.5
+								className={`relative shrink-0 focus-visible:outline-default rounded-3px w-fit h-6 flex flex-row items-center gap-1.5
                                     ${isHistorySidebarOpen ? "pr-1" : "px-2"}`}
 								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
-								{isHistorySidebarOpen ? (
-									<img
-										src="/logos/citylab-berlin-logo-light.svg"
-										alt="citylab-icon"
-										width="54px"
-										className={`hidden md:flex shrink-0 mb-[2px] ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : "opacity-0 animate-fade-out"}`}
-									/>
-								) : (
-									<img
-										src="/icons/citylab-shape-icon.svg"
-										alt="citylab-icon"
-										width="16px"
-										className={`hidden md:flex shrink-0 ${isHistorySidebarOpen ? "opacity-0 animate-fade-out" : "opacity-100 animate-fade-in"}`}
-									/>
-								)}
+								{/* Both logos stay rendered so they can cross-fade; the inactive one is taken out of the layout */}
+								<img
+									src="/logos/citylab-berlin-logo-light.svg"
+									alt="citylab-icon"
+									width={54}
+									className={`hidden md:flex shrink-0 mb-[2px] transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-150 delay-150" : "absolute left-0 opacity-0 duration-100 delay-0 pointer-events-none"}`}
+									aria-hidden={!isHistorySidebarOpen}
+								/>
+								<img
+									src="/icons/citylab-shape-icon.svg"
+									alt="citylab-icon"
+									width={16}
+									className={`hidden md:flex shrink-0 transition-opacity ${isHistorySidebarOpen ? "absolute left-0 opacity-0 duration-100 delay-0 pointer-events-none" : "opacity-100 duration-150 delay-150"}`}
+									aria-hidden={isHistorySidebarOpen}
+								/>
 							</a>
 						</div>
 					</div>

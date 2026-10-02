@@ -51,9 +51,9 @@ export const DesktopProfileButton = () => {
 				ref={buttonRef}
 				onClick={toggleDropdown}
 				className={`
-					group flex items-center  py-1.5 w-full 
+					group flex items-center  py-1.5 w-full overflow-hidden
 					focus-visible:outline-default rounded-3px hover:bg-dunkelblau-90
-					 ${isHistorySidebarOpen ? "px-2 justify-between" : "px-1"} 
+					 ${isHistorySidebarOpen ? "px-2 justify-between" : "px-0.5"}
 					 ${isDropdownOpen ? "bg-dunkelblau-90" : ""}
 				 `}
 				aria-haspopup="true"
@@ -70,30 +70,27 @@ export const DesktopProfileButton = () => {
 			>
 				<div className="flex gap-1.5 items-center">
 					<div
-						className={`flex items-center justify-center rounded-full p-1.5 bg-hellblau-60 ${isDropdownOpen ? "group-hover:bg-hellblau-60" : ""} ${isHistorySidebarOpen ? "animate-fade-in size-7" : "animate-fade-out size-6"}`}
+						className={`flex shrink-0 items-center justify-center rounded-full p-1.5 bg-hellblau-50 size-7`}
 					>
 						<span className="text-center text-dunkelblau-100 text-xs font-semibold leading-4 uppercase">
 							{first_name?.[0]?.toUpperCase() ?? ""}
 							{last_name?.[0]?.toUpperCase() ?? ""}
 						</span>
 					</div>
-					{isHistorySidebarOpen && (
-						<span
-							className={`text-hellblau-50 text-sm leading-[14px] font-bold truncate ${isHistorySidebarOpen ? "opacity-100 animate-fade-in" : " opacity-0 animate-fade-out"}`}
-						>
-							{first_name} {last_name}
-						</span>
-					)}
+					<span
+						className={`text-hellblau-50 text-sm leading-[14px] font-bold truncate transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
+						aria-hidden={!isHistorySidebarOpen}
+					>
+						{first_name} {last_name}
+					</span>
 				</div>
-				{isHistorySidebarOpen && (
-					<img
-						src="/icons/arrow-drop-down-icon-light.svg"
-						alt=""
-						width={24}
-						height={24}
-						className={`${isDropdownOpen ? "rotate-180" : ""}`}
-					/>
-				)}
+				<img
+					src="/icons/arrow-drop-down-icon-light.svg"
+					alt=""
+					width={24}
+					height={24}
+					className={`transition-opacity ${isDropdownOpen ? "rotate-180" : ""} ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
+				/>
 			</button>
 
 			{isDropdownOpen && <DesktopProfileDropdown ref={dropdownRef} />}
