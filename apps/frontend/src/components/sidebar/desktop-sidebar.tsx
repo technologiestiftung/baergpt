@@ -98,7 +98,7 @@ export const DesktopSidebar: React.FC = () => {
 								href={Content["sidebar.citylab.link"]}
 								target="_blank"
 								rel="noopener noreferrer"
-								className={`relative focus-visible:outline-default rounded-3px w-fit h-6 flex flex-row items-center gap-1.5
+								className={`relative shrink-0 focus-visible:outline-default rounded-3px w-fit h-6 flex flex-row items-center gap-1.5
                                     ${isHistorySidebarOpen ? "pr-1" : "px-2"}`}
 								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
@@ -106,14 +106,14 @@ export const DesktopSidebar: React.FC = () => {
 								<img
 									src="/logos/citylab-berlin-logo-light.svg"
 									alt="citylab-icon"
-									width="54px"
+									width={54}
 									className={`hidden md:flex shrink-0 mb-[2px] transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-150 delay-150" : "absolute left-0 opacity-0 duration-100 delay-0 pointer-events-none"}`}
 									aria-hidden={!isHistorySidebarOpen}
 								/>
 								<img
 									src="/icons/citylab-shape-icon.svg"
 									alt="citylab-icon"
-									width="16px"
+									width={16}
 									className={`hidden md:flex shrink-0 transition-opacity ${isHistorySidebarOpen ? "absolute left-0 opacity-0 duration-100 delay-0 pointer-events-none" : "opacity-100 duration-150 delay-150"}`}
 									aria-hidden={isHistorySidebarOpen}
 								/>
