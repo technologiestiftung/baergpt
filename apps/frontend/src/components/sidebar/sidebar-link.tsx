@@ -25,7 +25,7 @@ export const SidebarLink: React.FC<{
 			href={href}
 			target="_blank"
 			rel="noopener noreferrer"
-			className={`relative flex w-full flex-row items-center justify-start gap-2 ${isLabelVisible ? "px-2" : "px-1"} py-1.5 rounded-[3px] h-10 md:h-8 overflow-hidden
+			className={`relative flex w-full flex-row items-center justify-start gap-2 px-1 py-1.5 rounded-[3px] h-10 md:h-8 overflow-hidden
 				text-hellblau-50 md:hover:bg-dunkelblau-90 focus-visible:outline-default`}
 			onMouseEnter={(event) => handleInteractionStart(event, label)}
 			onMouseLeave={hideTooltip}

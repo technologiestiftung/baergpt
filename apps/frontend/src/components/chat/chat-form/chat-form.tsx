@@ -222,13 +222,9 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	const isParlaActive = selectedChatTools.includes("parla");
 	const isOpenDataActive = selectedChatTools.includes("openData");
 	const isDatawrapperActive = selectedChatTools.includes("datawrapper");
-	const activeToolsCount = [
-		isWebSearchActive,
-		isParlaActive,
-		isOpenDataActive,
-		isDatawrapperActive,
-	].filter(Boolean).length;
-	const areMultipleSourcesActive = activeToolsCount > 1;
+
+	const isOneSourceActive = selectedChatTools.length > 0;
+	const areMultipleSourcesActive = selectedChatTools.length > 1;
 
 	const getTextAreaPlaceholder = () => {
 		if (areMultipleSourcesActive) {
@@ -257,7 +253,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		<form
 			onSubmit={handleSubmit}
 			className={`relative flex flex-col max-h-[290px] mx-[1px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px]
-				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
+				${isOneSourceActive && "bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
