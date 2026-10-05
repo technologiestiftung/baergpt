@@ -87,8 +87,8 @@ export const GetStarted: React.FC = () => {
 
 	const { formal, informal } = GREETING_KEYS[greetingIndex];
 	const greeting = isAddressedFormal
-		? Content[formal].replace("{name}", formalName)
-		: Content[informal].replace("{name}", first_name);
+		? Content[formal].replace("{name}", () => formalName)
+		: Content[informal].replace("{name}", () => first_name);
 
 	const promptStarters = [
 		{
