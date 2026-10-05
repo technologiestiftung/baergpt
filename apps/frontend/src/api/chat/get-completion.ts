@@ -15,6 +15,7 @@ import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 import type { Span } from "@sentry/react";
 import { usePublicDocumentsStore } from "../../store/use-public-documents-store.ts";
 import { useExtendedThinkingStore } from "../../store/use-extended-thinking-store.ts";
+import { useLlmModelStore } from "../../store/use-llm-model-store.ts";
 import type { Trace, TraceTool } from "../../common.ts";
 
 export type WebCitationSource = {
@@ -77,11 +78,11 @@ export async function getCompletion(
 		persistPendingMessageToDb,
 		removePendingMessageFromMemory,
 		selectedChatTools,
-		selectedLlmModel,
 	} = useChatsStore.getState();
 
 	// Read once up front, so toggling mid-stream cannot affect this turn.
 	const { isExtendedThinkingEnabled } = useExtendedThinkingStore.getState();
+	const { selectedLlmModel } = useLlmModelStore.getState();
 	const { getSelectedUserChatDocumentIds } = useUserDocumentStore.getState();
 	const { getSelectedUserChatFolderIds } = useUserFolderStore.getState();
 	const { getSelectedPublicChatDocumentIds } =
