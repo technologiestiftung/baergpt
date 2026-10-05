@@ -15,9 +15,14 @@ import { GetStartedButton } from "./get-started-button.tsx";
 
 const PARLA_MCP = CONNECTOR_VALUES.parla;
 
+type GreetingKey = Extract<
+	keyof typeof Content,
+	`chat.getStarted.h1.${string}`
+>;
+
 const GREETING_KEYS: {
-	formal: keyof typeof Content;
-	informal: keyof typeof Content;
+	formal: GreetingKey;
+	informal: GreetingKey;
 }[] = [
 	{ formal: "chat.getStarted.h1.1", informal: "chat.getStarted.h1.1" },
 	{ formal: "chat.getStarted.h1.2", informal: "chat.getStarted.h1.2" },
@@ -82,8 +87,8 @@ export const GetStarted: React.FC = () => {
 
 	const { formal, informal } = GREETING_KEYS[greetingIndex];
 	const greeting = isAddressedFormal
-		? `${Content[formal]} ${formalName}`
-		: `${Content[informal]} ${first_name}`;
+		? Content[formal].replace("{name}", formalName)
+		: Content[informal].replace("{name}", first_name);
 
 	const promptStarters = [
 		{
@@ -138,7 +143,6 @@ export const GetStarted: React.FC = () => {
 			<div className="flex flex-1 items-center justify-center md:flex-none md:mb-2">
 				<h1 className="text-2xl leading-8 font-semibold md:text-4xl md:leading-10 text-dunkelblau-100 text-center">
 					{greeting}
-					{Content["chat.getStarted.questionMark"]}
 				</h1>
 			</div>
 
