@@ -86,7 +86,10 @@ export const LlmModelToggleButton: React.FC = () => {
 					{selectedLlmModelLabel[selectedLlmModel]}
 				</span>
 
-				<ChevronIcon color="dunkelblau-80" direction="down" />
+				<ChevronIcon
+					color="dunkelblau-80"
+					direction={isDropdownOpen ? "up" : "down"}
+				/>
 			</button>
 			<span id={LLM_MODEL_DROPDOWN_DESCRIPTION_ID} className="sr-only">
 				{Content["chat.llmModel.toggleButton.ariaDescription"]}

@@ -54,7 +54,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 		<div
 			className={`
 				z-50 absolute bottom-full rounded-3px min-w-[323px] mb-2 
-				left-1/2 -translate-x-48 sm:left-auto sm:right-0 sm:translate-x-0 whitespace-nowrap
+				left-1/2 -translate-x-60 sm:left-auto sm:right-0 sm:translate-x-0 whitespace-nowrap
 				bg-hellblau-30 border border-hellblau-50 p-1 
 				focus-visible:outline-default shadow-md`}
 			onKeyDown={handleKeyDown}
@@ -115,7 +115,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 			</ul>
 			{isExtendedThinkingAllowed && (
 				<>
-					<div className="mx-3 h-[0.5px] bg-hellblau-100 justify-self-center " />
+					<div className="mx-3 h-[0.5px] bg-hellblau-100" />
 					<div className="flex gap-4 items-center justify-between px-3 pb-2 pt-2.5">
 						<div className="flex flex-col gap-2">
 							<div className="text-sm leading-4 text-dunkelblau-90">

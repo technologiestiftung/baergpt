@@ -51,9 +51,9 @@ export const DesktopProfileButton = () => {
 				ref={buttonRef}
 				onClick={toggleDropdown}
 				className={`
-					group flex items-center  py-1.5 w-full overflow-hidden
+					group flex items-center px-1 py-1.5 w-full overflow-hidden
 					focus-visible:outline-default rounded-3px hover:bg-dunkelblau-90
-					 ${isHistorySidebarOpen ? "px-2 justify-between" : "px-0.5"}
+					 ${isHistorySidebarOpen ? "justify-between" : ""} 
 					 ${isDropdownOpen ? "bg-dunkelblau-90" : ""}
 				 `}
 				aria-haspopup="true"

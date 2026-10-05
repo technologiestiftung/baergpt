@@ -55,7 +55,7 @@ testWithLoggedInUser.describe("Welcome screen prompt starters", () => {
 			await page.goto("/");
 
 			const webSearchStarter = page.getByRole("button", {
-				name: "Etwas recherchieren",
+				name: "Im Web recherchieren",
 			});
 			const webSearchPill = page.getByRole("button", {
 				name: "Websuche entfernen",

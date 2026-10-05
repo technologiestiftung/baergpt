@@ -38,7 +38,7 @@ export const ChatMenuToggleButton: React.FC = () => {
 
 	return (
 		<>
-			<div>
+			<div className="relative">
 				<button
 					ref={selectButtonRef}
 					type="button"
