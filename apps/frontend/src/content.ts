@@ -886,7 +886,7 @@ export const Content = {
 	"chat.getStarted.h1.4.informal": "Schön, dass du da bist,",
 	"chat.getStarted.h1.4.formal": "Schön, dass Sie da sind,",
 	"chat.getStarted.parla.heading": "Parla durchsuchen",
-	"chat.getStarted.webSearch.heading": "Etwas recherchieren",
+	"chat.getStarted.webSearch.heading": "Im Web recherchieren",
 	"chat.getStarted.writingPrompts.heading": "Schreiben oder Bearbeiten",
 	"chat.getStarted.writingPrompts.prompt1":
 		"Ideen in eine Gliederung umwandeln",

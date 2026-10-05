@@ -27,7 +27,7 @@ testWithLoggedInUser.describe("Welcome screen prompt starters", () => {
 			await page.getByRole("button", { name: "Parla durchsuchen" }).click();
 			await expect(parlaPill).toBeVisible();
 
-			await page.getByRole("button", { name: "Etwas recherchieren" }).click();
+			await page.getByRole("button", { name: "Im Web recherchieren" }).click();
 			await expect(webSearchPill).toBeVisible();
 			await expect(parlaPill).toBeHidden();
 
@@ -55,7 +55,7 @@ testWithLoggedInUser.describe("Welcome screen prompt starters", () => {
 			await page.goto("/");
 
 			const webSearchStarter = page.getByRole("button", {
-				name: "Etwas recherchieren",
+				name: "Im Web recherchieren",
 			});
 			const webSearchPill = page.getByRole("button", {
 				name: "Websuche entfernen",
