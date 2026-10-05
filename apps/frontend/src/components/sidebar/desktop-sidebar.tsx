@@ -54,6 +54,7 @@ export const DesktopSidebar: React.FC = () => {
 					<div
 						className={`flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
 						inert={!isHistorySidebarOpen}
+						aria-hidden={!isHistorySidebarOpen}
 					>
 						<History />
 					</div>
