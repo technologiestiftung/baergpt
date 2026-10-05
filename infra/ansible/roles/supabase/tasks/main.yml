@@ -91,20 +91,45 @@
     dest: "{{ supabase_dir }}/docker-compose.monitoring.yml"
     mode: "0644"
     force: true
-  notify: Recreate otel-collector
+  notify:
+    - Recreate otel-collector
+    - Recreate vector
+
+- name: Upload Vector STACKIT sink config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/vector-stackit.yml"
+    dest: "{{ supabase_dir }}/vector-stackit.yml"
+    mode: "0644"
+    force: true
+  notify: Recreate vector
 
 - name: Render monitoring.env from inventory
   ansible.builtin.template:
     src: monitoring.env.j2
     dest: "{{ supabase_dir }}/monitoring.env"
     mode: "0640"
-  notify: Recreate otel-collector
+  notify:
+    - Recreate otel-collector
+    - Recreate vector
 
 - name: Pull images
   ansible.builtin.command:
     cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml pull"
   args:
     chdir: "{{ supabase_dir }}"
+
+# db waits for vector to be healthy, so a bad Vector config keeps Postgres down: fail before recreating.
+# Health checks off, not --no-environment (which skips compiling remaps), so a STACKIT outage can't block deploys.
+- name: Validate Vector config
+  ansible.builtin.command:
+    cmd: >-
+      docker compose -f docker-compose.yml -f docker-compose.monitoring.yml
+      run --rm --no-deps -T --entrypoint sh vector -c
+      'printf "healthchecks:\n  enabled: false\n" > /tmp/no-healthchecks.yml
+      && vector validate /tmp/no-healthchecks.yml /etc/vector/vector.yml /etc/vector/vector-stackit.yml'
+  args:
+    chdir: "{{ supabase_dir }}"
+  changed_when: false
 
 - name: Start Supabase + monitoring stack
   ansible.builtin.command:
