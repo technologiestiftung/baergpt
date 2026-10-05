@@ -104,7 +104,6 @@ export const GetStarted: React.FC = () => {
 				if (isParlaAllowed) {
 					selectSingleChatTool(PARLA_MCP);
 				}
-				setIsShowingWritingPrompts(false);
 				focusChatForm();
 			},
 		},
@@ -115,7 +114,6 @@ export const GetStarted: React.FC = () => {
 				if (isWebSearchAllowed) {
 					selectSingleChatTool("webSearch");
 				}
-				setIsShowingWritingPrompts(false);
 				focusChatForm();
 			},
 		},
