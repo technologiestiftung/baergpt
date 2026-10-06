@@ -1,0 +1,8 @@
+/var/log/anon-egress-blocklist.log {
+    monthly
+    rotate 12
+    missingok
+    notifempty
+    compress
+    delaycompress
+}

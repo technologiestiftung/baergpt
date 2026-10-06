@@ -2,7 +2,7 @@ import React from "react";
 import { HistoryToggleButton } from "./sidebar-buttons/history-toggle-button";
 import { DocumentsToggleButton } from "./sidebar-buttons/documents-toggle-button";
 import { NewChatMobileButton } from "./sidebar-buttons/new-chat-mobile-button";
-import { AppNavItems } from "../headers/app/app-nav-items.tsx";
+import { MobileProfileButton } from "../profile/profile-buttons/mobile-profile-button.tsx";
 import Content from "../../content";
 
 export const MobileSidebar: React.FC = () => {
@@ -16,7 +16,22 @@ export const MobileSidebar: React.FC = () => {
 					<HistoryToggleButton isLabelVisible={true} />
 					<DocumentsToggleButton />
 					<NewChatMobileButton />
-					<AppNavItems />
+					<a
+						href={Content["header.navigation.help.link"]}
+						className="flex md:hidden flex-col items-center justify-center gap-1 size-[52px] p-2 rounded-sm text-sm leading-5 font-normal text-hellblau-50 md:hover:bg-dunkelblau-80 focus-visible:outline-default"
+						aria-label={Content["header.navigation.help.ariaLabel"]}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<img
+							src="/icons/help-light-icon.svg"
+							alt=""
+							width={24}
+							height={24}
+						/>
+						{Content["header.navigation.help.mobileLabel"]}
+					</a>
+					<MobileProfileButton />
 				</div>
 			</aside>
 		</div>

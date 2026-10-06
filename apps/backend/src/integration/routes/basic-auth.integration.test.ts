@@ -51,9 +51,15 @@ describe("basic auth middleware", () => {
 		});
 
 		afterEach(async () => {
+			// The "deleted user" test below deletes the user itself, so this
+			// cleanup tolerates only that specific case — any other error should
+			// still fail the test.
 			const { error: deleteUserError } =
 				await serviceRoleDbClient.auth.admin.deleteUser(session.user.id);
-			expect(deleteUserError).toBeNull();
+
+			if (deleteUserError && deleteUserError.code !== "user_not_found") {
+				throw deleteUserError;
+			}
 		});
 
 		it("GET / should return a 404 Not Found response with valid session", async () => {
@@ -81,6 +87,31 @@ describe("basic auth middleware", () => {
 
 			expect(error).toBeNull();
 
+			const response = await app.request("http://localhost:3000/", {
+				method: "GET",
+				headers: new Headers({
+					authorization: `Bearer ${session.access_token}`,
+				}),
+			});
+
+			const actualResponse = await response.json();
+			const expectedResponse = {
+				error: "Unauthorized: Invalid or expired session",
+			};
+
+			expect(response.status).toBe(401);
+			expect(actualResponse).toStrictEqual(expectedResponse);
+		});
+
+		it("GET / should return a 401 Unauthorized response with valid session but deleted user", async () => {
+			const { error } = await serviceRoleDbClient.auth.admin.deleteUser(
+				session.user.id,
+			);
+
+			expect(error).toBeNull();
+
+			// Reuse the pre-delete access token — simulates a still-valid token
+			// for an account that has since been deleted.
 			const response = await app.request("http://localhost:3000/", {
 				method: "GET",
 				headers: new Headers({

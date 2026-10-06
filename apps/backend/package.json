@@ -22,6 +22,8 @@
 		"db:backfill-mistral": "tsx ./supabase/backfill-mistral-embeddings.ts",
 		"db:dump-user-emails": "tsx ./supabase/scripts/dump-user-emails.ts",
 		"db:up": "supabase migration up --local && npm run db:typegen",
+		"db:dump-schema": "supabase db dump --local --schema public > supabase/schemas/schema.sql && prettier --write supabase/schemas/schema.sql",
+		"db:generate-migration": "tsx supabase/scripts/generate-migration.ts",
 		"mistral:assess-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts -- --dry-run",
 		"mistral:cleanup-orphans": "tsx supabase/scripts/cleanup-mistral-orphans.ts",
 		"s3:assess-orphans": "tsx supabase/scripts/cleanup-s3-orphans.ts -- --dry-run",
@@ -31,7 +33,7 @@
 	},
 	"dependencies": {
 		"@ai-sdk/mcp": "2.0.34",
-		"@ai-sdk/mistral": "4.0.31",
+		"@ai-sdk/mistral": "4.0.43",
 		"@dqbd/tiktoken": "1.0.22",
 		"@hono/node-server": "2.0.12",
 		"@langfuse/client": "5.10.0",
@@ -55,6 +57,7 @@
 		"mammoth": "1.12.0",
 		"mistral-tokenizer-ts": "2.2.1",
 		"pdf-lib": "1.17.1",
+		"pdfjs-dist": "6.1.200",
 		"unpdf": "1.8.0",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
 		"zod": "4.4.3"

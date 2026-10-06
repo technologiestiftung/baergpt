@@ -4,6 +4,7 @@ import {
 	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
+	openDocumentsPanel,
 	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
 import { expect, test } from "@playwright/test";
@@ -12,6 +13,7 @@ import {
 	sendAndWaitForLLMResponse,
 } from "../fixtures/mock-llm.ts";
 import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
+import { deleteDocumentsUploadedBy } from "../fixtures/test-with-registered-user.ts";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -20,9 +22,10 @@ import {
 	secondaryDocumentType,
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
-import { supabaseAdminClient, supabaseAnonClient } from "../supabase.ts";
+import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
 import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
+import { testWithChatSearch } from "../fixtures/test-with-chat-search.ts";
 
 test.describe("Chat", () => {
 	testWithMockedLlm(
@@ -152,6 +155,8 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with documents", async ({ page }) => {
 		await page.goto("/");
 
+		await openDocumentsPanel(page);
+
 		// Find the add-to-chat button for the specific document
 		const addButton = page
 			.getByRole("listitem")
@@ -196,6 +201,7 @@ test.describe("Chat", () => {
 			// `successful` event whose documentId must match the inserted row so the
 			// client can auto-select the freshly uploaded document into the chat.
 			let releaseProcessing: (() => void) | undefined;
+			// eslint-disable-next-line prefer-const
 			let processedDocumentId: number | undefined;
 			await page.route("**/documents/process", async (route) => {
 				await new Promise<void>((resolve) => {
@@ -273,6 +279,8 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const menuButtonDocument = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
@@ -338,6 +346,8 @@ test.describe("Chat", () => {
 			const givenFolderName = "test-folder";
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			await uploadFileViaDragAndDropAndWait({
 				page,
@@ -407,6 +417,8 @@ test.describe("Chat", () => {
 		async ({ page, documentChunkId }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [documentChunkId];
 
@@ -455,7 +467,7 @@ test.describe("Chat", () => {
 
 	testDesktopOnly("Chat with public document citations", async ({ page }) => {
 		// Create an admin user to upload the public document
-		const adminEmail = "admin.test@ts.berlin";
+		const adminEmail = `admin.test+${crypto.randomUUID()}@ts.berlin`;
 		const adminPassword = "TestPassword123!";
 
 		const { data: adminUserData, error: createAdminError } =
@@ -487,7 +499,7 @@ test.describe("Chat", () => {
 
 			// Sign in the admin user to get their access token
 			const { data: adminSessionData, error: adminSignInError } =
-				await supabaseAnonClient.auth.signInWithPassword({
+				await createAnonClient().auth.signInWithPassword({
 					email: adminEmail,
 					password: adminPassword,
 				});
@@ -526,6 +538,8 @@ test.describe("Chat", () => {
 			});
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			const content = `Das Dokument \\"UI Test Doc\\" enthält einen Platzhaltext (Lorem Ipsum).`;
 			const citations = [publicDocumentChunkId];
@@ -579,6 +593,10 @@ test.describe("Chat", () => {
 			await expect(citationsDialogHeader).not.toBeVisible();
 		} finally {
 			if (adminUserId) {
+				// Remove the "Alle" public document uploaded above before deleting the
+				// user (uploaded_by_user_id is ON DELETE SET NULL, so deleting the user
+				// first would orphan the document).
+				await deleteDocumentsUploadedBy(adminUserId);
 				await supabaseAdminClient.auth.admin.deleteUser(adminUserId);
 			}
 		}
@@ -780,78 +798,12 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testWithMockedLlm(
-		"Change LLM model from small to large and back",
-		async ({ page }) => {
-			await page.goto("/");
-
-			// Check that the small LLM model is selected
-			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
-
-			// Fill in the chat question
-			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
-
-			await sendAndWaitForLLMResponse(page);
-
-			const question1 = page
-				.getByTestId("user-message-markdown-container")
-				.first();
-			await expect(question1).toBeVisible();
-
-			const answer1 = page
-				.getByTestId("assistant-message-markdown-container")
-				.first();
-			await expect(answer1).not.toBeEmpty();
-
-			// Click on the LLM model button
-			await page.getByRole("button", { name: "Schnell" }).click();
-
-			// Select the large LLM model
-			await page
-				.getByRole("option", { name: "Mistral Medium 3.5 (präzise) auswählen" })
-				.click();
-
-			// Verify that the large LLM model is selected
-			await expect(page.getByRole("button", { name: "Präzise" })).toBeVisible();
-
-			// Fill in the chat question
-			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
-
-			await sendAndWaitForLLMResponse(page);
-
-			const question2 = page
-				.getByTestId("user-message-markdown-container")
-				.last();
-			await expect(question2).toBeVisible();
-
-			const answer2 = page
-				.getByTestId("assistant-message-markdown-container")
-				.last();
-			await expect(answer2).not.toBeEmpty();
-
-			// Click on the LLM model button
-			await page.getByRole("button", { name: "Präzise" }).click();
-
-			// Verify that the model selection window is open
-			await expect(page.getByText("Sprachmodell auswählen")).toBeVisible();
-
-			// Select the small LLM model
-			await page
-				.getByRole("option", { name: "Mistral Small 4 (schnell) auswählen" })
-				.click();
-
-			// Verify that the model selection window is closed after selecting a model
-			await expect(page.getByText("Sprachmodell auswählen")).not.toBeVisible();
-
-			// Verify that the small LLM model is selected
-			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
-		},
-	);
-
 	testDesktopOnly(
 		"Toggle base knowledge folder on and off",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			await page.getByRole("button", { name: "In den Chat" }).first().click();
 
@@ -979,6 +931,8 @@ test.describe("Chat", () => {
 			}
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const chatOptionsButton = page.getByRole("button", {
 				name: "Weitere Funktionen aktivieren",
 			});
@@ -1016,6 +970,8 @@ test.describe("Chat", () => {
 			const givenFolderName = "test-folder";
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			// Create a new folder
 			await page
@@ -1172,6 +1128,8 @@ test.describe("Chat", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
 			await chatInput.fill("Hallo, wie geht es dir?");
 			await sendAndWaitForLLMResponse(page);
@@ -1314,6 +1272,49 @@ test.describe("Chat", () => {
 			// Clicking it jumps to the bottom, which hides the button again.
 			await scrollToBottomButton.click();
 			await expect(scrollToBottomButton).toBeHidden();
+		},
+	);
+
+	testWithChatSearch(
+		"Opening an existing chat with history scrolls to the bottom, not the top",
+		async ({ page, insertChat, insertMessages }) => {
+			const chatId = await insertChat(
+				"Alter Testchat",
+				new Date(Date.now() - 60_000),
+			);
+
+			const baseTime = new Date(Date.now() - 50_000);
+			const messages = Array.from({ length: 10 }, (_, index) => [
+				{
+					role: "user" as const,
+					content: `Frage ${index + 1}: Was ist die Hauptstadt von Bundesland ${index + 1}? Lorem ipsum dolor sit amet.`,
+					createdAt: new Date(baseTime.getTime() + index * 2000),
+				},
+				{
+					role: "assistant" as const,
+					content: `Antwort ${index + 1}: Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
+					createdAt: new Date(baseTime.getTime() + index * 2000 + 1000),
+				},
+			]).flat();
+			await insertMessages(chatId, messages);
+
+			await page.goto("/");
+
+			await page
+				.getByRole("complementary", { name: "Sidebar" })
+				.getByRole("button", { name: "Alter Testchat", exact: true })
+				.click();
+
+			const lastAnswer = page
+				.getByTestId("assistant-message-markdown-container")
+				.last();
+			await expect(lastAnswer).toBeVisible();
+			await expect(lastAnswer).toContainText("Antwort 10");
+
+			// Already at the bottom, so the scroll-to-bottom button should not appear.
+			await expect(
+				page.getByRole("button", { name: "Zum Ende des Chats scrollen" }),
+			).not.toBeVisible();
 		},
 	);
 

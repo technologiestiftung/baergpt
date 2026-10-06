@@ -5,11 +5,8 @@ import { captureException, type Span } from "@sentry/react";
  */
 export const NON_REPORTABLE_ERRORS = new Set<string | RegExp>([
 	// Auth related
-	// "wrong_password",
 	// "User already registered",
-	// "Invalid login credentials",
 	// "privacy_not_accepted",
-	// "New password should be different from the old password.",
 	// "User account has been deactivated.",
 
 	// Expected application errors

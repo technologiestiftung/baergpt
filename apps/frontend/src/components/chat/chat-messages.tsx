@@ -25,7 +25,11 @@ export const ChatMessages: React.FC = () => {
 	const { messagesContainerRef, contentRef, spacerRef, isAtBottom, onScroll } =
 		useChatScrolling(currentChatId, userMessageCount);
 
-	const isWaitingForResponse = status === "waiting-for-response";
+	// Once reasoning traces stream in, the last message renders its own loading
+	// label above the traces — the standalone one below would duplicate it.
+	const isThinkingVisible = Boolean(messages.at(-1)?.traces);
+	const isWaitingForResponse =
+		status === "waiting-for-response" && !isThinkingVisible;
 	const hasError = status === "error";
 
 	return (
@@ -44,7 +48,7 @@ export const ChatMessages: React.FC = () => {
 						className="flex w-full flex-col gap-y-1 lg:gap-y-3.5"
 					>
 						{messages.map((message) => (
-							<ChatMessage key={message.id} message={message} />
+							<ChatMessage key={message.clientKey} message={message} />
 						))}
 						{isWaitingForResponse && (
 							<div className="text-dunkelblau-50 flex gap-2 w-full items-center">

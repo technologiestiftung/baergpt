@@ -13,22 +13,16 @@ const newsNavItem = {
 
 const linkNavItems = [
 	{
+		href: Content["sidebar.navigation.help.link"],
+		iconSrc: "/icons/help-light-icon.svg",
+		label: Content["sidebar.navigation.help"],
+		ariaLabel: Content["sidebar.navigation.help.ariaLabel"],
+	},
+	{
 		href: Content["sidebar.navigation.feedback.link"],
 		iconSrc: "/icons/feedback-icon.svg",
 		label: Content["sidebar.navigation.feedback"],
 		ariaLabel: Content["sidebar.navigation.feedback.ariaLabel"],
-	},
-	{
-		href: Content["sidebar.navigation.imprint.link"],
-		iconSrc: "/icons/imprint-icon.svg",
-		label: Content["sidebar.navigation.imprint"],
-		ariaLabel: Content["sidebar.navigation.imprint.ariaLabel"],
-	},
-	{
-		href: Content["sidebar.navigation.privacy.link"],
-		iconSrc: "/icons/lock-icon.svg",
-		label: Content["sidebar.navigation.privacy"],
-		ariaLabel: Content["sidebar.navigation.privacy.ariaLabel"],
 	},
 ];
 

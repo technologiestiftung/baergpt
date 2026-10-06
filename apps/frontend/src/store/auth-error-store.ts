@@ -9,8 +9,6 @@ interface AuthErrorStore {
 }
 
 const errorMessages: { [key: string]: string } = {
-	"Invalid login credentials":
-		content["form.validation.invalidCredentials.error"],
 	privacy_not_accepted: content["form.validation.privacy.required.error"],
 	"User is banned": content["form.validation.userBanned.error"],
 };

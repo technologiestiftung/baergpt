@@ -1,10 +1,10 @@
 export const Content = {
 	/* -------------------- Header -------------------- */
 	"header.logo.alt": "BärGPT Logo",
-	"header.navigation.help.label": "Hilfe und Tipps",
+	"header.navigation.help.label": "Tipps und Hilfe",
 	"header.navigation.help.mobileLabel": "Hilfe",
 	"header.navigation.profile": "Profil",
-	"header.navigation.help.ariaLabel": "Hilfe und Tipps",
+	"header.navigation.help.ariaLabel": "Tipps und Hilfe",
 	"header.navigation.help.link": "https://hilfe.baergpt.berlin/",
 	"header.navigation.profile.ariaLabel": "Zur Profil-Seite",
 
@@ -56,15 +56,8 @@ export const Content = {
 
 	"form.validation.general.valueMissing": "Bitte füllen Sie dieses Feld aus.",
 	"form.validation.email.typeMismatch": "Das E-Mail-Format ist falsch.",
-	"form.validation.password.wrong.error": "Das Passwort ist falsch.",
-	"form.validation.password.tooShort":
-		"Das Passwort muss mindestens 6 Zeichen lang sein.",
-	"form.validation.password.customError":
-		"Die Passwörter stimmen nicht überein.",
 	"form.validation.privacy.required.error":
 		"Bitte stimmen Sie den Datenschutzbestimmungen zu.",
-	"form.validation.invalidCredentials.error":
-		"Benutzername oder Passwort inkorrekt",
 	"form.validation.userBanned.error":
 		"Der Benutzeraccount ist kein Administrator oder wurde gesperrt.",
 

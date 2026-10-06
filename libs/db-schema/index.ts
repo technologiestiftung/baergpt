@@ -174,6 +174,7 @@ export type Database = {
 					open_data_citations: Json | null;
 					parla_citations: Json | null;
 					role: string;
+					traces: Json | null;
 					type: string;
 					web_citations: Json | null;
 				};
@@ -189,6 +190,7 @@ export type Database = {
 					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role: string;
+					traces?: Json | null;
 					type: string;
 					web_citations?: Json | null;
 				};
@@ -204,6 +206,7 @@ export type Database = {
 					open_data_citations?: Json | null;
 					parla_citations?: Json | null;
 					role?: string;
+					traces?: Json | null;
 					type?: string;
 					web_citations?: Json | null;
 				};
@@ -698,7 +701,7 @@ export type Database = {
 				}[];
 			};
 			is_application_admin: { Args: never; Returns: boolean };
-			is_current_user_banned: { Args: never; Returns: boolean };
+			is_current_user_banned_or_deleted: { Args: never; Returns: boolean };
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];
@@ -789,10 +792,6 @@ export type Database = {
 			update_user_last_sign_in_at: {
 				Args: { new_last_sign_in_at: string; user_id: string };
 				Returns: undefined;
-			};
-			verify_own_password: {
-				Args: { plain_password: string };
-				Returns: boolean;
 			};
 		};
 		Enums: {

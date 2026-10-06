@@ -6,6 +6,7 @@ import { NewChatButton } from "./sidebar-buttons/new-chat-button.tsx";
 import Content from "../../content.ts";
 import { History } from "./history/history.tsx";
 import { ChatSearchButton } from "./sidebar-buttons/chat-search-button.tsx";
+import { DesktopProfileButton } from "../profile/profile-buttons/desktop-profile-button.tsx";
 
 export const DesktopSidebar: React.FC = () => {
 	const { openDrawerId } = useDrawerStore();
@@ -21,14 +22,27 @@ export const DesktopSidebar: React.FC = () => {
 				}`}
 			>
 				<aside
-					className={`flex flex-col justify-between h-full px-2.5 pt-5 pb-3.5`}
+					className={`flex flex-col justify-between h-full px-2.5 pt-5 pb-2`}
 					aria-label={Content["sidebar.ariaLabel"]}
 				>
 					{/* Top Section */}
-					<div className="gap-1 flex flex-col items-start w-full mb-5">
-						<HistoryToggleButton
-							isLabelVisible={isHistorySidebarOpen ? false : undefined}
-						/>
+					<div className="flex flex-col gap-6 items-start w-full mb-5">
+						<div className="relative flex justify-end items-center w-full">
+							<a
+								href={"/"}
+								className={`absolute left-0 top-1/2 -translate-y-1/2 transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-150 delay-150" : "opacity-0 duration-100 delay-0"}`}
+								inert={!isHistorySidebarOpen}
+							>
+								<img
+									className="h-7"
+									src="/logos/baergpt-logo-white.svg"
+									alt={Content["header.logo.alt"]}
+								/>
+							</a>
+							<HistoryToggleButton
+								isLabelVisible={isHistorySidebarOpen ? false : undefined}
+							/>
+						</div>
 
 						<div className={`h-16 w-full`}>
 							<NewChatButton isExpanded={isHistorySidebarOpen} />
@@ -37,13 +51,15 @@ export const DesktopSidebar: React.FC = () => {
 					</div>
 
 					{/* History Content */}
-					{isHistorySidebarOpen && (
-						<div className="flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden">
-							<History />
-						</div>
-					)}
+					<div
+						className={`flex flex-col gap-10 min-h-0 h-full overflow-y-auto overflow-x-hidden transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
+						inert={!isHistorySidebarOpen}
+						aria-hidden={!isHistorySidebarOpen}
+					>
+						<History />
+					</div>
 					<div>
-						<div className="h-[169px] flex flex-col">
+						<div className="flex flex-col">
 							{/* Full-width border */}
 							<span
 								className={`block w-[calc(100%+14px)] ml-[-10px] h-[1px] ${isHistorySidebarOpen ? "bg-dunkelblau-90" : "bg-dunkelblau-100"}`}
@@ -57,41 +73,51 @@ export const DesktopSidebar: React.FC = () => {
 							<span
 								className={`block w-[calc(100%+14px)] ml-[-10px] h-[1px] ${isHistorySidebarOpen ? "bg-dunkelblau-90" : "bg-dunkelblau-100"}`}
 							/>
+							{/* Profile button */}
+							<div className="w-full py-2">
+								<DesktopProfileButton />
+							</div>
+							{/* Full-width border */}
+							<span
+								className={`block w-[calc(100%+14px)] ml-[-10px] h-[1px] ${isHistorySidebarOpen ? "bg-dunkelblau-90" : "bg-dunkelblau-100"}`}
+							/>
 						</div>
 
 						{/* CityLAB Logo */}
 						<div
-							className={`flex flex-col gap-1.5 h-[53px] justify-end pt-3.5
-                                ${isHistorySidebarOpen ? "pl-2 pr-3" : ""}`}
+							className={`flex w-full justify-between items-center h-10 pt-2
+                                ${isHistorySidebarOpen ? "px-3 gap-1.5" : ""}`}
 						>
-							{isHistorySidebarOpen && (
-								<p className="text-dunkelblau-50 text-[10px] truncate">
-									{Content["sidebar.citylab.label"]}
-								</p>
-							)}
+							<p
+								className={`text-dunkelblau-50 text-sm leading-[14px] truncate transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-300 ease-in" : "opacity-0 duration-100"}`}
+								aria-hidden={!isHistorySidebarOpen}
+							>
+								{Content["sidebar.citylab.label"]}
+							</p>
 
 							<a
 								href={Content["sidebar.citylab.link"]}
 								target="_blank"
 								rel="noopener noreferrer"
-								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-1.5
+								className={`relative shrink-0 focus-visible:outline-default rounded-3px w-fit h-6 flex flex-row items-center gap-1.5
                                     ${isHistorySidebarOpen ? "pr-1" : "px-2"}`}
 								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
+								{/* Both logos stay rendered so they can cross-fade; the inactive one is taken out of the layout */}
+								<img
+									src="/logos/citylab-berlin-logo-light.svg"
+									alt="citylab-icon"
+									width={54}
+									className={`hidden md:flex shrink-0 mb-[2px] transition-opacity ${isHistorySidebarOpen ? "opacity-100 duration-150 delay-150" : "absolute left-0 opacity-0 duration-100 delay-0 pointer-events-none"}`}
+									aria-hidden={!isHistorySidebarOpen}
+								/>
 								<img
 									src="/icons/citylab-shape-icon.svg"
 									alt="citylab-icon"
-									width="16px"
-									className="hidden md:flex shrink-0"
+									width={16}
+									className={`hidden md:flex shrink-0 transition-opacity ${isHistorySidebarOpen ? "absolute left-0 opacity-0 duration-100 delay-0 pointer-events-none" : "opacity-100 duration-150 delay-150"}`}
+									aria-hidden={isHistorySidebarOpen}
 								/>
-								{isHistorySidebarOpen && (
-									<img
-										src="/icons/citylab-berlin.svg"
-										alt="citylab-icon"
-										width="38px"
-										className="hidden md:flex shrink-0 mb-[2px]"
-									/>
-								)}
 							</a>
 						</div>
 					</div>

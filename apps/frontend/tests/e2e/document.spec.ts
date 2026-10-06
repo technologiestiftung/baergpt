@@ -5,6 +5,7 @@ import {
 	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
+	openDocumentsPanel,
 	attemptFileUploadViaFileChooser,
 	attemptMultipleFilesViaFileChooser,
 	uploadFileViaDragAndDropAndWait,
@@ -198,6 +199,8 @@ test.describe("Documents", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			// Find the document row with the long filename
 			const longFileLocator = page
 				.locator("li", {
@@ -269,6 +272,8 @@ test.describe("Documents", () => {
 			const givenFolderName = "test-folder";
 
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			// Create a new folder
 			await page
@@ -388,6 +393,8 @@ test.describe("Documents", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			// Create a new folder
 			await page
 				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
@@ -489,6 +496,8 @@ test.describe("Documents", () => {
 			const givenFolderName = "temp-folder-single";
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const createNewFolderButton = page.getByRole("button", {
 				name: "Ordner-Icon Ordner erstellen",
 			});
@@ -567,6 +576,8 @@ test.describe("Documents", () => {
 		async ({ page }) => {
 			const folder = "temp-folder-multi";
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			// Create folder
 			await page
@@ -649,6 +660,8 @@ test.describe("Documents", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const menuButtonDocument = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
@@ -721,6 +734,8 @@ test.describe("Documents", () => {
 
 		await page.goto("/");
 
+		await openDocumentsPanel(page);
+
 		// Create a new folder
 		await page
 			.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
@@ -778,6 +793,8 @@ test.describe("Documents", () => {
 
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			// Create a new folder
 			await page
 				.getByRole("button", { name: "Ordner-Icon Ordner erstellen" })
@@ -821,6 +838,8 @@ test.describe("Documents", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const menuButtonDocument = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
@@ -841,6 +860,8 @@ test.describe("Documents", () => {
 	testDesktopOnly("Drag & drop document to upload", async ({ page }) => {
 		await page.goto("/");
 
+		await openDocumentsPanel(page);
+
 		await uploadFileViaDragAndDropAndWait({
 			page,
 			fileName: secondaryDocumentName,
@@ -854,22 +875,38 @@ test.describe("Documents", () => {
 	testDesktopOnly("Interact with documents panel", async ({ page }) => {
 		await page.goto("/");
 
-		// The panel should be open by default
 		const documentPanelHeading = page.getByRole("heading", {
 			name: "Meine Dateien",
 			exact: true,
 		});
+
+		// The panel should be collapsed by default
+		await expect(documentPanelHeading).not.toBeVisible();
+
+		// Open the documents panel
+		await openDocumentsPanel(page);
 		await expect(documentPanelHeading).toBeVisible();
 
-		const oldPanelWidth = await page.evaluate(
-			() => document.getElementById("desktop-documents-panel")?.clientWidth,
-		);
+		const getPanelWidth = () =>
+			page.evaluate(
+				() => document.getElementById("desktop-documents-panel")?.clientWidth,
+			);
 
-		expect(oldPanelWidth).toBeDefined();
+		// Opening the panel animates its width, so wait for two identical
+		// measurements before using the width as the baseline
+		let settledWidth = -1;
+		await expect
+			.poll(async () => {
+				const currentWidth = (await getPanelWidth()) ?? -1;
+				const hasSettled = currentWidth === settledWidth;
+				settledWidth = currentWidth;
+				return hasSettled;
+			})
+			.toBe(true);
 
-		if (!oldPanelWidth) {
-			throw new Error("oldPanelWidth is undefined");
-		}
+		const oldPanelWidth = settledWidth;
+
+		expect(oldPanelWidth).toBeGreaterThan(0);
 
 		// Increment to resize the panel
 		const increment = 100;
@@ -886,9 +923,7 @@ test.describe("Documents", () => {
 		// so we have to wait for the resizing to finish
 		await expect(resizer).toHaveAttribute("data-is-resizing", "false");
 
-		const newPanelWidth = await page.evaluate(
-			() => document.getElementById("desktop-documents-panel")?.clientWidth,
-		);
+		const newPanelWidth = await getPanelWidth();
 
 		// The panel width should have decreased
 		expect(newPanelWidth).toBeLessThan(oldPanelWidth);
@@ -910,6 +945,8 @@ test.describe("Documents", () => {
 		"Click on a pdf document to open a preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 			// Click on the document to open the preview
 			await page
 				.getByRole("button", { name: `Dokumente-Icon ${defaultDocumentName}` })
@@ -938,6 +975,8 @@ test.describe("Documents", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const menuButtonDocument = page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
@@ -963,6 +1002,8 @@ test.describe("Documents", () => {
 		"Upload word document, open it in the preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			await uploadFileViaDragAndDropAndWait({
 				page,
@@ -1001,6 +1042,8 @@ test.describe("Documents", () => {
 		"Upload excel document, open it in the preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			await uploadFileViaDragAndDropAndWait({
 				page,
@@ -1061,6 +1104,8 @@ test.describe("Documents", () => {
 		"Upload csv document, open it in the preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			await uploadFileViaDragAndDropAndWait({
 				page,
@@ -1134,6 +1179,8 @@ test.describe("Documents", () => {
 			await page.goto("/");
 			await page.waitForLoadState("networkidle");
 
+			await openDocumentsPanel(page);
+
 			// Verify the limit reached info messages are displayed (scope to desktop panel)
 			const desktopPanel = page.locator("#desktop-documents-panel");
 			await expect(
@@ -1176,6 +1223,8 @@ test.describe("Documents", () => {
 			await page.goto("/");
 			await page.waitForLoadState("networkidle");
 
+			await openDocumentsPanel(page);
+
 			const desktopPanel = page.locator("#desktop-documents-panel");
 
 			// At 100 visible → limit reached
@@ -1210,6 +1259,8 @@ test.describe("Documents", () => {
 			});
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			// Now at 100 visible → limit reached again
 			await expect(
 				desktopPanel.getByText(
@@ -1224,6 +1275,8 @@ test.describe("Documents", () => {
 		"Move a document into the public folder Verwaltungswissen should not be possible",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			// Verify the Verwaltungswissen folder exists
 			const publicFolder = page.getByRole("button", {
@@ -1253,6 +1306,8 @@ test.describe("Documents", () => {
 		async ({ page }) => {
 			await page.goto("/");
 
+			await openDocumentsPanel(page);
+
 			const desktopPanel = page.locator("#desktop-documents-panel");
 
 			// Navigate into the Verwaltungswissen folder
@@ -1278,6 +1333,8 @@ test.describe("Documents", () => {
 		"Cannot drag & drop a file to upload when inside the public folder Verwaltungswissen",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			// Navigate into the Verwaltungswissen folder
 			const publicFolder = page.getByRole("button", {
@@ -1335,6 +1392,8 @@ test.describe("Documents", () => {
 		"Navigating into a public folder should disable the multi-select",
 		async ({ page }) => {
 			await page.goto("/");
+
+			await openDocumentsPanel(page);
 
 			const activateMultiSelectButton = page.getByRole("button", {
 				name: "Checkbox-Icon (ausgewählt) Dateien auswählen",

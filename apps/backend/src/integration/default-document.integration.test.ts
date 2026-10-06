@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { config } from "../config";
@@ -35,49 +36,71 @@ const MOCK_EMBEDDINGS = [
 	},
 ];
 
-const cleanupDefaultDocuments = async (accessGroupId: string) => {
-	try {
-		const sourceUrl = `${accessGroupId}/${DEFAULT_DOCUMENT_FILE_NAME}`;
+const readDefaultDocumentFile = () => {
+	const filePath = resolve(
+		process.cwd(),
+		`./src/default_documents/${DEFAULT_DOCUMENT_FILE_NAME}`,
+	);
+	const fileBuffer = readFileSync(filePath);
 
-		// Delete all default documents
+	return new File([new Uint8Array(fileBuffer)], DEFAULT_DOCUMENT_FILE_NAME, {
+		type: "application/pdf",
+	});
+};
+
+// The upload script stores default documents under a random UUID path, so
+// cleanup has to go by file_name + access group, not by a predictable path.
+const cleanupDefaultDocuments = async (
+	accessGroupId: string,
+	uploadedSourceUrl?: string,
+) => {
+	try {
 		const { data: documents } = await serviceRoleDbClient
 			.from("documents")
-			.select("id")
+			.select("id, source_url")
 			.eq("source_type", DEFAULT_DOCUMENT_SOURCE_TYPE)
-			.eq("source_url", sourceUrl);
+			.eq("file_name", DEFAULT_DOCUMENT_FILE_NAME)
+			.eq("access_group_id", accessGroupId);
 
 		const documentIds = documents?.map((doc) => doc.id) ?? [];
 
-		// Delete related document_chunks
+		const sourceUrls = [
+			// @ts-expect-error ts-config excludes test files atm, leading to a type error here
+			...new Set(
+				[
+					...(documents?.map((doc) => doc.source_url) ?? []),
+					uploadedSourceUrl,
+				].filter((url): url is string => Boolean(url)),
+			),
+		];
+
 		if (documentIds.length > 0) {
+			// Delete related document_chunks
 			await serviceRoleDbClient
 				.from("document_chunks")
 				.delete()
 				.in("document_id", documentIds);
-		}
 
-		// Delete related document_summaries
-		if (documentIds.length > 0) {
+			// Delete related document_summaries
 			await serviceRoleDbClient
 				.from("document_summaries")
 				.delete()
 				.in("document_id", documentIds);
+
+			// Delete document records
+			await serviceRoleDbClient
+				.from("documents")
+				.delete()
+				.in("id", documentIds);
 		}
 
-		// Delete document records
-		await serviceRoleDbClient
-			.from("documents")
-			.delete()
-			.eq("source_type", DEFAULT_DOCUMENT_SOURCE_TYPE)
-			.eq("source_url", sourceUrl);
-
 		// Delete from storage
-		const { error: removeError } = await serviceRoleDbClient.storage
-			.from(PUBLIC_DOCUMENTS_BUCKET)
-			.remove([sourceUrl]);
+		if (sourceUrls.length > 0) {
+			const { error: removeError } = await serviceRoleDbClient.storage
+				.from(PUBLIC_DOCUMENTS_BUCKET)
+				.remove(sourceUrls);
 
-		if (removeError) {
-			if (!removeError.message?.includes("not found")) {
+			if (removeError && !removeError.message?.includes("not found")) {
 				console.error("Error removing storage file:", removeError);
 			}
 		}
@@ -89,6 +112,7 @@ const cleanupDefaultDocuments = async (accessGroupId: string) => {
 describe("Default Document Integration Tests", () => {
 	let accessGroupId: string;
 	let documentId: number;
+	let sourceUrl: string;
 
 	const dbService = new PrivilegedDbService(serviceRoleDbClient);
 	const generationService = new GenerationService(dbService);
@@ -117,7 +141,7 @@ describe("Default Document Integration Tests", () => {
 	afterAll(async () => {
 		vi.restoreAllMocks();
 		// Run cleanup after all tests
-		await cleanupDefaultDocuments(accessGroupId);
+		await cleanupDefaultDocuments(accessGroupId, sourceUrl);
 	});
 
 	it("should upload and process default document with correct properties", async () => {
@@ -134,29 +158,14 @@ describe("Default Document Integration Tests", () => {
 			MOCK_EMBEDDINGS as never,
 		);
 
-		// Read file from disk
-		const filePath = resolve(
-			process.cwd(),
-			`./src/default_documents/${DEFAULT_DOCUMENT_FILE_NAME}`,
-		);
-		const fileBuffer = readFileSync(filePath);
-		const file = new File(
-			[new Uint8Array(fileBuffer)],
-			DEFAULT_DOCUMENT_FILE_NAME,
-			{
-				type: "application/pdf",
-			},
-		);
+		const file = readDefaultDocumentFile();
 
-		// Store in access group folder
-		const sourceUrl = `${accessGroupId}/${DEFAULT_DOCUMENT_FILE_NAME}`;
+		sourceUrl = `${accessGroupId}/${randomUUID()}.pdf`;
 
 		// Upload file to storage
 		const { error: uploadError } = await serviceRoleDbClient.storage
 			.from(PUBLIC_DOCUMENTS_BUCKET)
-			.upload(sourceUrl, file, {
-				upsert: true,
-			});
+			.upload(sourceUrl, file);
 
 		if (uploadError) {
 			throw new Error(
@@ -167,6 +176,7 @@ describe("Default Document Integration Tests", () => {
 		const document: Document = {
 			source_url: sourceUrl,
 			source_type: DEFAULT_DOCUMENT_SOURCE_TYPE,
+			file_name: DEFAULT_DOCUMENT_FILE_NAME,
 			file_size: file.size,
 			created_at: new Date().toISOString(),
 			access_group_id: accessGroupId,
@@ -260,35 +270,7 @@ describe("Default Document Integration Tests", () => {
 	}, 20_000);
 
 	it("should have file available in storage", async () => {
-		// Read file from disk
-		const filePath = resolve(
-			process.cwd(),
-			`./src/default_documents/${DEFAULT_DOCUMENT_FILE_NAME}`,
-		);
-		const fileBuffer = readFileSync(filePath);
-		const file = new File(
-			[new Uint8Array(fileBuffer)],
-			DEFAULT_DOCUMENT_FILE_NAME,
-			{
-				type: "application/pdf",
-			},
-		);
-
-		// Store in access group folder
-		const sourceUrl = `${accessGroupId}/${DEFAULT_DOCUMENT_FILE_NAME}`;
-
-		// Upload file to storage
-		const { error: uploadError } = await serviceRoleDbClient.storage
-			.from(PUBLIC_DOCUMENTS_BUCKET)
-			.upload(sourceUrl, file, {
-				upsert: true,
-			});
-
-		if (uploadError) {
-			throw new Error(
-				`Error uploading file to storage: ${uploadError.message}`,
-			);
-		}
+		const storageObjectName = sourceUrl.split("/").pop();
 
 		// Verify file exists in storage (list files in access group folder)
 		const { data: fileData, error: listError } =
@@ -298,9 +280,7 @@ describe("Default Document Integration Tests", () => {
 
 		expect(listError).toBeNull();
 		expect(fileData).toBeDefined();
-		expect(fileData?.some((f) => f.name === DEFAULT_DOCUMENT_FILE_NAME)).toBe(
-			true,
-		);
+		expect(fileData?.some((f) => f.name === storageObjectName)).toBe(true);
 
 		// Verify file can be downloaded
 		const { data: downloadedFile, error: downloadError } =
