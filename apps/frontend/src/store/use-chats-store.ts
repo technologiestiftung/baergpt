@@ -4,7 +4,6 @@ import type {
 	ChatMessage,
 	NewChatMessage,
 	ChatTool,
-	LlmModel,
 	MessageTraces,
 	TraceTool,
 } from "../common";
@@ -48,10 +47,8 @@ interface ChatStore {
 	chats: ChatWithMessages[];
 	hasMoreChats: boolean;
 	selectedChatTools: ChatTool[];
-	selectedLlmModel: LlmModel;
 	resetToDefaultChatTools(): void;
 	toggleChatTool(tool: ChatTool): void;
-	setSelectedLlmModel(model: LlmModel): void;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
 	getNextChatsPage(): Promise<void>;
@@ -120,12 +117,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	chats: [],
 	hasMoreChats: true,
 	selectedChatTools: [],
-	selectedLlmModel: "fast",
 	visibleInfoMessage: null,
-
-	setSelectedLlmModel(model: LlmModel) {
-		set({ selectedLlmModel: model });
-	},
 
 	resetToDefaultChatTools() {
 		get().showInfoMessage(null);

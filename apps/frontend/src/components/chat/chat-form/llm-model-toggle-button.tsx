@@ -3,10 +3,12 @@ import { ChevronIcon } from "../../primitives/icons/chevron-icon";
 import { useClickOutside } from "../../../hooks/use-click-outside";
 import { ChatFormDropdown, LLM_MODEL_DROPDOWN_ID } from "./chat-form-dropdown";
 import Content from "../../../content";
-import { useChatsStore } from "../../../store/use-chats-store";
+import {
+	useLlmModelStore,
+	availableLlmModels,
+} from "../../../store/use-llm-model-store";
 import { useExtendedThinkingStore } from "../../../store/use-extended-thinking-store";
 import type { LlmModel } from "../../../common";
-import { config } from "../../../config";
 
 const LLM_MODEL_DROPDOWN_DESCRIPTION_ID = "llm-model-dropdown-description-id";
 
@@ -15,7 +17,7 @@ export const LlmModelToggleButton: React.FC = () => {
 	const selectButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
-	const { selectedLlmModel, setSelectedLlmModel } = useChatsStore();
+	const { selectedLlmModel, setSelectedLlmModel } = useLlmModelStore();
 	const { isExtendedThinkingEnabled, setIsExtendedThinkingEnabled } =
 		useExtendedThinkingStore();
 
@@ -32,17 +34,13 @@ export const LlmModelToggleButton: React.FC = () => {
 			description: Content["chat.llmModel.dropdown.li2.description"],
 			ariaLabel: Content["chat.llmModel.dropdown.li2.ariaLabel"],
 		},
-		...(config.featureFlagExperimentalModelAllowed
-			? [
-					{
-						label: Content["chat.llmModel.dropdown.li3.labelExtended"],
-						value: "experimental" as const,
-						description: Content["chat.llmModel.dropdown.li3.description"],
-						ariaLabel: Content["chat.llmModel.dropdown.li3.ariaLabel"],
-					},
-				]
-			: []),
-	];
+		{
+			label: Content["chat.llmModel.dropdown.li3.labelExtended"],
+			value: "experimental" as const,
+			description: Content["chat.llmModel.dropdown.li3.description"],
+			ariaLabel: Content["chat.llmModel.dropdown.li3.ariaLabel"],
+		},
+	].filter(({ value }) => availableLlmModels.includes(value));
 
 	const selectedLlmModelLabel: Record<LlmModel, string> = {
 		fast: Content["chat.llmModel.dropdown.li1.label"],

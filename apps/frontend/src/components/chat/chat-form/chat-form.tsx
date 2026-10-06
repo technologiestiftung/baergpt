@@ -21,6 +21,7 @@ import {
 	useChatsStore,
 	externalChatTools,
 } from "../../../store/use-chats-store.ts";
+import { useLlmModelStore } from "../../../store/use-llm-model-store.ts";
 import { ChatMenuToggleButton } from "./chat-menu/chat-menu-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
@@ -197,7 +198,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 			traces: null,
 		};
 
-		const model = useChatsStore.getState().selectedLlmModel;
+		const model = useLlmModelStore.getState().selectedLlmModel;
 
 		Sentry.startSpan(
 			{
