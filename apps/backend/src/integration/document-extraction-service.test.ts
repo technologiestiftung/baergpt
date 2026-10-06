@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Hoisted mock fns so we can reference them inside vi.mock and assert on them
@@ -32,6 +33,10 @@ import {
 } from "../services/document-extraction-service";
 import { captureError } from "../monitoring/capture-error";
 import type { Document } from "../types/common";
+import {
+	encryptedDocumentNumPages,
+	encryptedDocumentPath,
+} from "./fixtures/constants";
 
 describe("MistralOCRService cleanup on OCR failure", () => {
 	const captureErrorMock = captureError as ReturnType<typeof vi.fn>;
@@ -127,6 +132,21 @@ describe("MistralOCRService cleanup on OCR failure", () => {
 
 		expect(deleteMock).toHaveBeenCalledOnce();
 		expect(captureErrorMock).toHaveBeenCalledWith(givenDeleteError);
+	});
+});
+
+describe("DocumentExtractionService PDF page count", () => {
+	const service = new DocumentExtractionService();
+
+	it("counts the pages of an AES-256 encrypted PDF", async () => {
+		// Opening an AES-256 PDF runs pdf.js key derivation, which calls
+		// Math.sumPrecise, which is missing in Node 24 unless the legacy build polyfills it
+		// This tests checks whether the polyfills are correctly applied
+		const givenPdfBytes = new Uint8Array(readFileSync(encryptedDocumentPath));
+
+		const actualNumPages = await service.getPdfPageCount(givenPdfBytes);
+
+		expect(actualNumPages).toBe(encryptedDocumentNumPages);
 	});
 });
 
