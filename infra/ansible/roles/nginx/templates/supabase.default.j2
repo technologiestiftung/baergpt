@@ -37,6 +37,11 @@ server {
         return 403 "Access via Tor or VPN exit nodes is blocked. Disconnect and try again.";
     }
 
+    # Users are created via OTP (DISABLE_SIGNUP must stay false), so close GoTrue's password signup here.
+    location ^~ /auth/v1/signup {
+        return 404;
+    }
+
     location / {
         proxy_pass http://localhost:8000;
 
