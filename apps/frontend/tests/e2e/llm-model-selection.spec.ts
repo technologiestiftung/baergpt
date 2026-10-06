@@ -23,11 +23,11 @@ function captureLlmModel(page: Page): Promise<string> {
 
 testWithMockedLlm.describe("LLM model selection", () => {
 	testWithMockedLlm(
-		"Change LLM model from small to large and back",
+		"Change LLM model from fast to precise and back",
 		async ({ page }) => {
 			await page.goto("/");
 
-			// Check that the small LLM model is selected
+			// Check that the fast LLM model is selected
 			await expect(
 				page.getByRole("button", { name: fastModelLabel, exact: false }),
 			).toBeVisible();
@@ -50,10 +50,10 @@ testWithMockedLlm.describe("LLM model selection", () => {
 			// Click on the LLM model button
 			await openModelDropdown(page);
 
-			// Select the large LLM model
+			// Select the precise LLM model
 			await page.getByRole("option", { name: preciseModelOptionName }).click();
 
-			// Verify that the large LLM model is selected
+			// Verify that the precise LLM model is selected
 			await expect(
 				page.getByRole("button", { name: preciseModelLabel, exact: false }),
 			).toBeVisible();
@@ -79,13 +79,13 @@ testWithMockedLlm.describe("LLM model selection", () => {
 			// Verify that the model selection window is open
 			await expect(page.getByText("Sprachmodell auswählen")).toBeVisible();
 
-			// Select the small LLM model
+			// Select the fast LLM model
 			await page.getByRole("option", { name: fastModelOptionName }).click();
 
 			// Verify that the model selection window is closed after selecting a model
 			await expect(page.getByText("Sprachmodell auswählen")).not.toBeVisible();
 
-			// Verify that the small LLM model is selected
+			// Verify that the fast LLM model is selected
 			await expect(
 				page.getByRole("button", { name: fastModelLabel, exact: false }),
 			).toBeVisible();
