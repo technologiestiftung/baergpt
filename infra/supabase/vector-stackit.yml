@@ -1,0 +1,57 @@
+# Extra Vector config loaded next to upstream's volumes/logs/vector.yml, which must stay unedited
+# (Ansible copies it only on first provision). Ships GoTrue (auth) logs to STACKIT Loki.
+# Env: STACKIT_OBSERVABILITY_{USERNAME,PASSWORD,LOGS_LOKI_URL}, BAERGPT_ENV, BAERGPT_HOSTNAME.
+# LOGS_LOKI_URL is the base URL only; the sink appends /loki/api/v1/push.
+#
+# Vector substitutes env vars across the whole file, comments included: never write a
+# dollar-sign reference in a comment.
+
+transforms:
+  stackit_auth:
+    type: remap
+    inputs:
+      - router.auth # route defined in upstream vector.yml
+    # On a runtime error remap would otherwise forward the raw line unchanged.
+    drop_on_error: true
+    source: |-
+      ts = .timestamp
+
+      # Only GoTrue's JSON lines pass. pop's SQL trace (debug level) is plain text and
+      # carries refresh tokens and OTP hashes; component pop/sql is the same trace via logrus.
+      line, err = parse_json(.event_message)
+      if err != null || !is_object(line) {
+        abort
+      }
+      . = object!(line)
+      if includes(["pop", "sql"], .component) {
+        abort
+      }
+
+      .timestamp = ts
+      .level = downcase(string(.level) ?? "unknown")
+
+sinks:
+  stackit_loki_auth:
+    type: loki
+    inputs:
+      - stackit_auth
+    endpoint: ${STACKIT_OBSERVABILITY_LOGS_LOKI_URL:?STACKIT Loki base URL is required}
+    auth:
+      strategy: basic
+      user: ${STACKIT_OBSERVABILITY_USERNAME:?STACKIT observability username is required}
+      password: ${STACKIT_OBSERVABILITY_PASSWORD:?STACKIT observability password is required}
+    labels:
+      service_name: supabase-${BAERGPT_ENV:?BAERGPT_ENV is required}-auth
+      source: supabase-${BAERGPT_ENV:?BAERGPT_ENV is required}
+      host: ${BAERGPT_HOSTNAME:?BAERGPT_HOSTNAME is required}
+      level: "{{ level }}"
+    encoding:
+      codec: json
+    out_of_order_action: accept
+    request:
+      retry_attempts: 5
+    # Drop rather than block: a stalled sink would back-pressure the Logflare sinks too.
+    buffer:
+      type: memory
+      max_events: 5000
+      when_full: drop_newest
