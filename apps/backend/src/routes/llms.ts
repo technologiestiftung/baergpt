@@ -146,7 +146,7 @@ llms.post("/just-chatting", async (c: Context) => {
 			llmHandler,
 			messages: promptMessages,
 			userId: body.user_id,
-			sessionId: body.chat_id,
+			sessionId: String(body.chat_id),
 			langfusePrompt: langfusePrompt,
 			allowedDocumentIds: allowedDocumentIds,
 			allowedFolderIds: allowedFolderIds,
