@@ -52,12 +52,10 @@ One JSON object per line, so query fields with `| json`, e.g.
 - Only GoTrue's JSON lines are shipped. The SQL trace GoTrue prints at `GOTRUE_LOG_LEVEL=debug`
   contains refresh tokens and OTP hashes and is dropped, as is anything with `component`
   `pop`/`sql`.
-- Emails and phone numbers are removed (`actor_username`, `actor_name`, `traits.user_*`,
-  `mail_to`, then any remaining email address is redacted). `actor_id` identifies the user.
-- **These lines contain client IP addresses** (`remote_addr`, audit `ip_address`).
 - Needs `STACKIT_OBSERVABILITY_LOGS_LOKI_URL` in the Supabase `.env`: the Loki **base** URL,
   without `/loki/api/v1/push`.
 - `db` waits for `vector` to be healthy, so a broken Vector config keeps Postgres down. The
   Ansible role validates the config before starting the stack.
-- After changing `vector-stackit.yml`, check in Grafana that both of these return nothing:
-  `{service_name="supabase-<env>-auth"} |= "@"` (emails) and `|= "POP"` (SQL trace).
+- After changing `vector-stackit.yml`, check in Grafana that
+  `{service_name="supabase-<env>-auth"} | json | __error__!="" or component=~"pop|sql"`
+  returns nothing (catches both non-JSON lines and the SQL trace).

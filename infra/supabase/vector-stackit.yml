@@ -27,17 +27,6 @@ transforms:
         abort
       }
 
-      del(.auth_event.actor_username)
-      del(.auth_event.actor_name)
-      del(.auth_event.traits.user_email)
-      del(.auth_event.traits.user_phone)
-      del(.auth_audit_event.actor_username)
-      del(.auth_audit_event.actor_name)
-      del(.auth_audit_event.traits.user_email)
-      del(.auth_audit_event.traits.user_phone)
-      del(.mail_to)
-      . = redact(., filters: [r'[^\s"@]+@[^\s"@]+\.[^\s"@]+'])
-
       .timestamp = ts
       .level = downcase(string(.level) ?? "unknown")
 
