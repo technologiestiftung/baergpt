@@ -42,6 +42,11 @@ server {
         return 404;
     }
 
+    # Password recovery is unused since login is OTP-only.
+    location ^~ /auth/v1/recover {
+        return 404;
+    }
+
     location / {
         proxy_pass http://localhost:8000;
 

@@ -769,6 +769,7 @@ export type Database = {
 				Args: never;
 				Returns: undefined;
 			};
+			reject_password_verification: { Args: { event: Json }; Returns: Json };
 			remove_allowed_individual_email: {
 				Args: { p_email: string };
 				Returns: undefined;
