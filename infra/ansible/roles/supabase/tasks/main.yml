@@ -77,6 +77,19 @@
   loop_control:
     label: "{{ item.key }}"
 
+- name: Require https for STACKIT observability URLs in .env
+  ansible.builtin.command:
+    cmd: >-
+      grep -qE "^{{ item }}=[\"']?https://" .env
+  args:
+    chdir: "{{ supabase_dir }}"
+  loop:
+    - STACKIT_OBSERVABILITY_METRICS_PUSH_URL
+    - STACKIT_OBSERVABILITY_LOGS_OTLP_URL
+    - STACKIT_OBSERVABILITY_LOGS_LOKI_URL
+  changed_when: false
+  check_mode: false
+
 - name: Upload otel-collector config
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../supabase/otel-config.yml"
