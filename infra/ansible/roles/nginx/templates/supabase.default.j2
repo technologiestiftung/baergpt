@@ -47,6 +47,17 @@ server {
         return 404;
     }
 
+    # Realtime is unused; its management API accepts the public anon key.
+    location ^~ /realtime/v1/ {
+        return 404;
+    }
+
+    # Logflare's dashboard has no auth in single-tenant mode. Vector ships logs via kong:8000
+    # inside the Docker network, so blocking the public path doesn't affect ingestion.
+    location ^~ /analytics/ {
+        return 404;
+    }
+
     location / {
         proxy_pass http://localhost:8000;
 
