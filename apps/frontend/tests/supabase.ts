@@ -2,6 +2,12 @@ import { createClient } from "@supabase/supabase-js";
 import { config } from "./config.ts";
 import type { Database } from "@repo/db-schema";
 
+/**
+ * localStorage key the app's supabase client reads the session from. Mirrors
+ * supabase-js' default: `sb-<first hostname label>-auth-token`.
+ */
+export const authStorageKey = `sb-${new URL(config.supabaseUrl).hostname.split(".")[0]}-auth-token`;
+
 export const supabaseAdminClient = createClient<Database>(
 	config.supabaseUrl,
 	config.supabaseServiceKey,
