@@ -146,10 +146,12 @@ export function verifyConfig(): void {
 	}
 	if (
 		process.env.FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED === "true" &&
-		!process.env.INTEGRATION_KEYS_ENCRYPTION_KEY
+		// AES-256 needs exactly 32 bytes after decoding (empty decodes to 0)
+		Buffer.from(process.env.INTEGRATION_KEYS_ENCRYPTION_KEY ?? "", "base64")
+			.length !== 32
 	) {
 		throw new Error(
-			"INTEGRATION_KEYS_ENCRYPTION_KEY must be defined when FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED is true",
+			"INTEGRATION_KEYS_ENCRYPTION_KEY must be 32 bytes, base64-encoded (openssl rand -base64 32), when FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED is true",
 		);
 	}
 	if (

@@ -809,6 +809,34 @@ describe("Datawrapper MCP Tools Integration", () => {
 		await result?.cleanup();
 	});
 
+	it("should redact the api_key from MCP results", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		rawTools["publish_visualization"].execute.mockResolvedValueOnce({
+			content: [
+				{
+					type: "text",
+					text: `Published with key ${TEST_DATAWRAPPER_API_KEY}`,
+				},
+			],
+		});
+		const { execute } = requireToolExecute(
+			result?.tools["publish_visualization"],
+			"publish_visualization",
+		);
+
+		const output = await execute(
+			{ chart_id: "mock-chart-id" },
+			toolCallOptions,
+		);
+
+		expect(output).toEqual({
+			content: [{ type: "text", text: "Published with key [REDACTED]" }],
+		});
+		await result?.cleanup();
+	});
+
 	it("should redact the api_key from MCP error messages", async () => {
 		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
 		mockKeyCheck("valid");
