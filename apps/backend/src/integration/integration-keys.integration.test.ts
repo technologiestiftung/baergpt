@@ -168,7 +168,10 @@ describe("integration keys", () => {
 			).resolves.toBe(result);
 			expect(fetchSpy).toHaveBeenCalledWith(
 				expect.stringMatching(/\/charts\/[^/]+\/publish$/),
-				expect.objectContaining({ method: "POST" }),
+				expect.objectContaining({
+					method: "POST",
+					signal: expect.any(AbortSignal),
+				}),
 			);
 		});
 

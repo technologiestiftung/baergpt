@@ -48,6 +48,18 @@ async function diagnoseApiKey(apiKey: string): Promise<string | null> {
 }
 
 /**
+ * Our MCP server could echo the key back, e.g. in a validation error that
+ * dumps the request parameters. Results reach the model, chat history and
+ * traces, so the key must never be part of them.
+ */
+function redactApiKey<T>(value: T, apiKey: string): T {
+	const serialized = JSON.stringify(value);
+	return serialized?.includes(apiKey)
+		? JSON.parse(serialized.replaceAll(apiKey, "[REDACTED]"))
+		: value;
+}
+
+/**
  * Adds the user's stored API key to the MCP call on the server, so the key
  * never appears in the model's tool schema, tool-call arguments, chat history
  * or traces.
@@ -82,16 +94,15 @@ async function executeWithApiKey({
 		);
 		if (isErrorResult(result)) {
 			const keyProblem = await diagnoseApiKey(apiKey);
-			return keyProblem ? { error: keyProblem } : result;
+			return keyProblem ? { error: keyProblem } : redactApiKey(result, apiKey);
 		}
-		return result;
+		return redactApiKey(result, apiKey);
 	} catch (error) {
 		const keyProblem = await diagnoseApiKey(apiKey);
 		if (keyProblem) {
 			return { error: keyProblem };
 		}
 
-		// The MCP server could echo the key back in an error message
 		if (error instanceof Error && error.message.includes(apiKey)) {
 			throw new Error(error.message.replaceAll(apiKey, "[REDACTED]"));
 		}

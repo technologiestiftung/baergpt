@@ -1,5 +1,7 @@
 type KeyCheckResult = "valid" | "invalid" | "missing_scopes";
 
+const KEY_CHECK_TIMEOUT_MS = 5_000;
+
 /**
  * Publishing is the only Datawrapper endpoint that requires exactly the
  * scopes we need. We deliberately send an invalid chart id, so the request
@@ -11,7 +13,12 @@ async function checkDatawrapperKey(key: string): Promise<KeyCheckResult> {
 	const fakeId = "invalid_value";
 	const response = await fetch(
 		`https://api.datawrapper.de/v3/charts/${fakeId}/publish`,
-		{ method: "POST", headers: { Authorization: `Bearer ${key}` } },
+		{
+			method: "POST",
+			headers: { Authorization: `Bearer ${key}` },
+			// A stalled Datawrapper API must not hang saving or a chat tool call
+			signal: AbortSignal.timeout(KEY_CHECK_TIMEOUT_MS),
+		},
 	);
 
 	if (response.status === 400) {
