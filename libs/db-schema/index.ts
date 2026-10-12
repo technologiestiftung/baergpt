@@ -531,6 +531,45 @@ export type Database = {
 					},
 				];
 			};
+			user_integration_keys: {
+				Row: {
+					auth_tag: string;
+					ciphertext: string;
+					created_at: string;
+					id: string;
+					iv: string;
+					last4: string;
+					provider: string;
+					scopes: string[];
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					auth_tag: string;
+					ciphertext: string;
+					created_at?: string;
+					id?: string;
+					iv: string;
+					last4: string;
+					provider: string;
+					scopes: string[];
+					updated_at?: string;
+					user_id: string;
+				};
+				Update: {
+					auth_tag?: string;
+					ciphertext?: string;
+					created_at?: string;
+					id?: string;
+					iv?: string;
+					last4?: string;
+					provider?: string;
+					scopes?: string[];
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 		};
 		Views: {
 			[_ in never]: never;
