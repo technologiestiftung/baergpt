@@ -176,6 +176,12 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
+# This hook runs on every password login and rejects it, even with the correct password (only OTP is allowed).
+# A password signUp still creates an unconfirmed user, like OTP registration does, but its password can never be used.
+[auth.hook.password_verification_attempt]
+enabled = true
+uri = "pg-functions://postgres/public/reject_password_verification"
+
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]
 enabled = false

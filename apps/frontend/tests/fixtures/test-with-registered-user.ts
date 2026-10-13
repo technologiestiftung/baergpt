@@ -1,8 +1,4 @@
-import {
-	defaultUserFirstName,
-	defaultUserLastName,
-	defaultUserPassword,
-} from "../constants.ts";
+import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 import { Page, expect } from "@playwright/test";
 import type { Session } from "@supabase/supabase-js";
 import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
@@ -11,7 +7,6 @@ import { testWithoutSplashScreen } from "./test-without-splash-screen.ts";
 type TestWithRegisteredUser = {
 	account: {
 		email: string;
-		password: string;
 		id: string;
 	};
 };
@@ -36,7 +31,6 @@ export const testWithRegisteredUser =
 						await supabaseAdminClient.auth.admin.createUser({
 							id: userId,
 							email,
-							password: defaultUserPassword,
 							email_confirm: true,
 							user_metadata: {
 								first_name: defaultUserFirstName,
@@ -56,7 +50,7 @@ export const testWithRegisteredUser =
 					/**
 					 * This runs the test that uses this fixture (and injects the account).
 					 */
-					await use({ email, password: defaultUserPassword, id: userId });
+					await use({ email, id: userId });
 				} finally {
 					/**
 					 * This happens after each test that uses this fixture.
