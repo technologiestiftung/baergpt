@@ -530,11 +530,10 @@ testWithLoggedInUser(
 		await page.goto("/");
 
 		// Verify user is logged in
-		await expect(
-			page.getByRole("heading", {
-				name: `${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
+		await expectGreeting(
+			page,
+			`${defaultUserFirstName} ${defaultUserLastName}`,
+		);
 
 		// Step 2: Delete the account in the database, without ever signing the
 		// browser session out — simulates a still-valid access token for an
