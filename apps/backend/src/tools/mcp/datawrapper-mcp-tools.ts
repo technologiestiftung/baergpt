@@ -29,6 +29,18 @@ const isErrorResult = (result: unknown) =>
 	result.isError === true;
 
 /**
+ * True for both the MCP server's own error shape (`{isError: true}`) and the
+ * `{error: string}` shape `executeWithApiKey` synthesizes for key problems.
+ * Used to tell whether a `publish_visualization` call actually succeeded.
+ */
+export const isDatawrapperToolFailure = (result: unknown): boolean =>
+	isErrorResult(result) ||
+	(typeof result === "object" &&
+		result !== null &&
+		"error" in result &&
+		typeof (result as { error: unknown }).error === "string");
+
+/**
  * After a failed tool call, re-checks the stored key, since it may have been
  * revoked or lost scopes since it was saved. Returns a message for the model
  * if the key is the problem, null otherwise (or if the check itself fails).
