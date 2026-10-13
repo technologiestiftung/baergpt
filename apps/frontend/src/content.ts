@@ -983,17 +983,15 @@ export const Content = {
 	"mcp.options.dialog.confirmButton.ariaLabel": "Bestätigen",
 	"mcp.options.dialog.cancelButton.label": "Abbrechen",
 	"mcp.options.dialog.cancelButton.ariaLabel": "Abbrechen",
-	"mcp.options.dialog.option1.label": "Parla Berlin",
-	"mcp.options.dialog.option1.description":
-		"Schriftliche Anfragen des Abgh. Berlins",
+	"mcp.options.dialog.option1.label": "Parla",
+	"mcp.options.dialog.option1.description": "Schriftliche Anfragen durchsuchen",
 	"mcp.options.dialog.option1.ariaLabel": "Parla Berlin auswählen",
 	"mcp.options.dialog.option2.label": "Berlin Open Data",
-	"mcp.options.dialog.option2.description":
-		"Datenbestände aus dem Berliner Datenportal",
+	"mcp.options.dialog.option2.description": "Offene Daten analysieren",
 	"mcp.options.dialog.option2.ariaLabel": "Berlin Open Data auswählen",
 	"mcp.options.dialog.option3.label": "Datawrapper",
 	"mcp.options.dialog.option3.description":
-		"Datenvisualisierungen erstellen und veröffentlichen",
+		"Diagramme, Karten und Tabellen erstellen",
 	"mcp.options.dialog.option3.ariaLabel": "Datawrapper auswählen",
 
 	// Chat llm model dropdown
