@@ -22,10 +22,7 @@ import { expectGreeting } from "./helpers/greeting.ts";
  * code from Mailpit and submit it on the confirm-otp page. confirmOtp opens the
  * emailed link in a new tab and returns that (now authenticated) page.
  */
-async function loginViaOtp(
-	page: Page,
-	account: { email: string; password: string; id: string },
-) {
+async function loginViaOtp(page: Page, account: { email: string; id: string }) {
 	await page.goto("/login/");
 	await page
 		.getByRole("textbox", { name: "E-Mail-Adresse" })
@@ -40,7 +37,7 @@ async function loginViaOtp(
  */
 async function openLoggedInBrowser(
 	browser: Browser,
-	account: { email: string; password: string; id: string },
+	account: { email: string; id: string },
 ) {
 	const context = await browser.newContext();
 	await context.route(
@@ -261,7 +258,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	// one test's afterEach delete another's user. A worker runs its tests
 	// serially, so a single module-scoped variable set in beforeEach is safe.
 	let givenUserEmail: string;
-	const givenUserPassword = "123456789!";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
 
@@ -295,7 +291,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			page,
 			account: {
 				email: givenUserEmail,
-				password: givenUserPassword,
 				id: "", // id is not needed for this flow
 			},
 		});
@@ -311,7 +306,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			const { error: createUserError } =
 				await supabaseAdminClient.auth.admin.createUser({
 					email: givenUserEmail,
-					password: givenUserPassword,
 					email_confirm: true,
 				});
 
@@ -340,7 +334,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			const { error: createUserError } =
 				await supabaseAdminClient.auth.admin.createUser({
 					email: givenUserEmail,
-					password: givenUserPassword,
 					email_confirm: false,
 				});
 
