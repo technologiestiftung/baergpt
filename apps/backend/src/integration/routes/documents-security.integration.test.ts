@@ -4,6 +4,7 @@ import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
 import { serviceRoleDbClient } from "../../supabase";
+import { signInWithOtp } from "../fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -85,14 +86,8 @@ describe("Document Process Security Tests", () => {
 
 		// Get access tokens
 		const [userASession, userBSession] = await Promise.all([
-			supabaseAnonClient.auth.signInWithPassword({
-				email: USER_A_EMAIL,
-				password: USER_A_PASSWORD,
-			}),
-			supabaseAnonClient.auth.signInWithPassword({
-				email: USER_B_EMAIL,
-				password: USER_B_PASSWORD,
-			}),
+			signInWithOtp(supabaseAnonClient, USER_A_EMAIL),
+			signInWithOtp(supabaseAnonClient, USER_B_EMAIL),
 		]);
 
 		userAToken = userASession.data.session?.access_token || "";

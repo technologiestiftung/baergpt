@@ -12,6 +12,7 @@ import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
 import { serviceRoleDbClient } from "../../supabase";
+import { signInWithOtp } from "../fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -67,10 +68,10 @@ describe("/admin/", () => {
 	});
 
 	beforeEach(async () => {
-		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-			email: givenAdminEmail,
-			password: givenAdminPassword,
-		});
+		const { data, error } = await signInWithOtp(
+			supabaseAnonClient,
+			givenAdminEmail,
+		);
 
 		expect(error).toBeNull();
 		expect(data.session).toBeDefined();
@@ -124,7 +125,7 @@ describe("/admin/", () => {
 			body: JSON.stringify(givenUpdatedUser),
 		});
 
-		const responseBody = await response.json();
+		const responseBody = (await response.json()) as { message?: string };
 
 		expect(response.status).toBe(200);
 		expect(responseBody.message).toBe("Profile updated successfully");
@@ -168,17 +169,19 @@ describe("/admin/", () => {
 			},
 		);
 
-		const revertResponseBody = await revertResponse.json();
+		const revertResponseBody = (await revertResponse.json()) as {
+			message?: string;
+		};
 
 		expect(revertResponse.status).toBe(200);
 		expect(revertResponseBody.message).toBe("Profile updated successfully");
 	});
 
 	it("PUT /admin/users/:userId/profile should return a 403 if a non admin user tries to access it", async () => {
-		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-			email: givenUserEmail,
-			password: givenUserPassword,
-		});
+		const { data, error } = await signInWithOtp(
+			supabaseAnonClient,
+			givenUserEmail,
+		);
 
 		expect(error).toBeNull();
 		expect(data.session).toBeDefined();
@@ -233,10 +236,10 @@ describe("/admin/", () => {
 	});
 
 	it("PUT /admin/users/:userId/admin should return a 403 if a non admin user tries to access it", async () => {
-		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-			email: givenUserEmail,
-			password: givenUserPassword,
-		});
+		const { data, error } = await signInWithOtp(
+			supabaseAnonClient,
+			givenUserEmail,
+		);
 
 		expect(error).toBeNull();
 		expect(data.session).toBeDefined();
@@ -274,7 +277,6 @@ describe("/admin/", () => {
 		const { data: getBannedUserData, error: getBannedUserError } =
 			await serviceRoleDbClient.auth.admin.getUserById(givenUserId);
 		expect(getBannedUserError).toBeNull();
-		// @ts-expect-error: banned_until is not typed, but it can be there
 		expect(getBannedUserData.user.banned_until).toBeDefined();
 
 		const { data, error } = await serviceRoleDbClient.auth.admin.updateUserById(
@@ -284,15 +286,14 @@ describe("/admin/", () => {
 			},
 		);
 		expect(error).toBeNull();
-		// @ts-expect-error: banned_until is not typed, but it can be there
 		expect(data.user.banned_until).toBeUndefined();
 	});
 
 	it("PUT /admin/users/:userId/ban should return a 403 if a non admin user tries to access it", async () => {
-		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-			email: givenUserEmail,
-			password: givenUserPassword,
-		});
+		const { data, error } = await signInWithOtp(
+			supabaseAnonClient,
+			givenUserEmail,
+		);
 
 		expect(error).toBeNull();
 		expect(data.session).toBeDefined();
@@ -322,7 +323,6 @@ describe("/admin/", () => {
 			},
 		);
 		expect(error).toBeNull();
-		// @ts-expect-error: banned_until is not typed, but it can be there
 		expect(data.user.banned_until).toBeDefined();
 
 		const response = await app.request(`/admin/users/${givenUserId}/unban`, {
@@ -340,15 +340,14 @@ describe("/admin/", () => {
 		const { data: getUnbannedUserData, error: getUnbannedUserError } =
 			await serviceRoleDbClient.auth.admin.getUserById(givenUserId);
 		expect(getUnbannedUserError).toBeNull();
-		// @ts-expect-error: banned_until is not typed, but it can be there
 		expect(getUnbannedUserData.user.banned_until).toBeUndefined();
 	});
 
 	it("PUT /admin/users/:userId/unban should return a 403 if a non admin user tries to access it", async () => {
-		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-			email: givenUserEmail,
-			password: givenUserPassword,
-		});
+		const { data, error } = await signInWithOtp(
+			supabaseAnonClient,
+			givenUserEmail,
+		);
 
 		expect(error).toBeNull();
 		expect(data.session).toBeDefined();
@@ -414,10 +413,10 @@ describe("/admin/", () => {
 	});
 
 	it("DELETE /admin/users/:userI should return a 403 if a non admin user tries to access it", async () => {
-		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-			email: givenUserEmail,
-			password: givenUserPassword,
-		});
+		const { data, error } = await signInWithOtp(
+			supabaseAnonClient,
+			givenUserEmail,
+		);
 
 		expect(error).toBeNull();
 		expect(data.session).toBeDefined();

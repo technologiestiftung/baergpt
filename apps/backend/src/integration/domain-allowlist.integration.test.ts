@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../config";
 import { serviceRoleDbClient } from "../supabase";
+import { signInWithOtp } from "./fixtures/auth";
 
 // The domain RPCs self-authorize via auth.uid(), so they're called with a signed-in
 // admin (anon client + JWT), not the service-role client. Assertions read back through
@@ -80,7 +81,7 @@ describe("domain allowlist RPCs", () => {
 		await createConfirmedUser(nonAdminEmail, nonAdminUserId);
 
 		// Sign in so the anon client carries the admin's JWT for the RPC calls.
-		await anonClient.auth.signInWithPassword({ email: adminEmail, password });
+		await signInWithOtp(anonClient, adminEmail);
 	});
 
 	afterAll(async () => {
@@ -196,13 +197,11 @@ describe("domain allowlist RPCs", () => {
 		const { data: getNormalUserData1, error: getNormalUserDataError1 } =
 			await serviceRoleDbClient.auth.admin.getUserById(normalUserId);
 		expect(getNormalUserDataError1).toBeNull();
-		// @ts-expect-error: banned_until is not typed, but it can be there
 		expect(getNormalUserData1.user.banned_until).toBeDefined();
 
 		const { data: getAdminUserData1, error: getAdminUserError1 } =
 			await serviceRoleDbClient.auth.admin.getUserById(domainAdminId);
 		expect(getAdminUserError1).toBeNull();
-		// @ts-expect-error: banned_until is not typed, but it can be there
 		expect(getAdminUserData1.user.banned_until).toBeDefined();
 
 		// New signups for the deactivated domain are now blocked by the trigger.
@@ -234,13 +233,11 @@ describe("domain allowlist RPCs", () => {
 		const { data: getNormalUserData2, error: getNormalUserDataError2 } =
 			await serviceRoleDbClient.auth.admin.getUserById(normalUserId);
 		expect(getNormalUserDataError2).toBeNull();
-		// @ts-expect-error: banned_until is not typed, but it can be there
 		expect(getNormalUserData2.user.banned_until).toBeDefined();
 
 		const { data: getAdminUserData2, error: getAdminUserError2 } =
 			await serviceRoleDbClient.auth.admin.getUserById(domainAdminId);
 		expect(getAdminUserError2).toBeNull();
-		// @ts-expect-error: banned_until is not typed, but it can be there
 		expect(getAdminUserData2.user.banned_until).toBeDefined();
 
 		// New signups are allowed again.
@@ -259,10 +256,7 @@ describe("domain allowlist RPCs", () => {
 			config.supabaseUrl,
 			config.supabaseAnonKey,
 		);
-		await nonAdminClient.auth.signInWithPassword({
-			email: nonAdminEmail,
-			password,
-		});
+		await signInWithOtp(nonAdminClient, nonAdminEmail);
 
 		const results = await Promise.all([
 			nonAdminClient.rpc("get_allowed_email_domains_admin"),
@@ -284,10 +278,7 @@ describe("domain allowlist RPCs", () => {
 			config.supabaseUrl,
 			config.supabaseAnonKey,
 		);
-		await nonAdminClient.auth.signInWithPassword({
-			email: nonAdminEmail,
-			password,
-		});
+		await signInWithOtp(nonAdminClient, nonAdminEmail);
 
 		const { data, error } = await nonAdminClient
 			.from("allowed_email_domains")
