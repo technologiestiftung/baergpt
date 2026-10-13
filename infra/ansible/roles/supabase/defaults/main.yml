@@ -1,0 +1,8 @@
+# The Postgres image of the compose file, used to look up its postgres user.
+supabase_postgres_image: "{{ (lookup('ansible.builtin.file', playbook_dir ~ '/../supabase/docker-compose.yml') | from_yaml).services.db.image }}"
+
+# Only supabase-upgrade.yml sets this, to deploy onto a host that is not on supabase_release yet.
+supabase_upgrading: false
+
+# false deploys the .env that is already on the host instead of rendering it from 1Password.
+supabase_env_from_1password: true
