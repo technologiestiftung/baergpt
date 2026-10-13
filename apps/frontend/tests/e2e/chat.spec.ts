@@ -13,7 +13,10 @@ import {
 	sendAndWaitForLLMResponse,
 } from "../fixtures/mock-llm.ts";
 import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
-import { deleteDocumentsUploadedBy } from "../fixtures/test-with-registered-user.ts";
+import {
+	deleteDocumentsUploadedBy,
+	signInWithOtp,
+} from "../fixtures/test-with-registered-user.ts";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -22,7 +25,7 @@ import {
 	secondaryDocumentType,
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
-import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
+import { supabaseAdminClient } from "../supabase.ts";
 import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithChatSearch } from "../fixtures/test-with-chat-search.ts";
@@ -468,12 +471,10 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with public document citations", async ({ page }) => {
 		// Create an admin user to upload the public document
 		const adminEmail = `admin.test+${crypto.randomUUID()}@ts.berlin`;
-		const adminPassword = "TestPassword123!";
 
 		const { data: adminUserData, error: createAdminError } =
 			await supabaseAdminClient.auth.admin.createUser({
 				email: adminEmail,
-				password: adminPassword,
 				email_confirm: true,
 				user_metadata: {
 					first_name: "Admin",
@@ -498,19 +499,9 @@ test.describe("Chat", () => {
 			expect(adminRoleError).toBeNull();
 
 			// Sign in the admin user to get their access token
-			const { data: adminSessionData, error: adminSignInError } =
-				await createAnonClient().auth.signInWithPassword({
-					email: adminEmail,
-					password: adminPassword,
-				});
+			const adminSession = await signInWithOtp(adminEmail);
 
-			expect(adminSignInError).toBeNull();
-
-			if (adminSignInError !== null) {
-				throw adminSignInError;
-			}
-
-			const adminAccessToken = adminSessionData.session.access_token;
+			const adminAccessToken = adminSession.access_token;
 
 			const { data: accessGroupData, error: accessGroupError } =
 				await supabaseAdminClient

@@ -17,6 +17,7 @@ import { Database } from "@repo/db-schema";
 import { UserScopedDbService } from "../../services/db-service/user-scoped-db-service";
 import { GenerationService } from "../../services/generation-service";
 import { EmbeddingService } from "../../services/embedding-service";
+import { signInWithOtp } from "../fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -124,7 +125,7 @@ const deleteDocument = async (
 		return { success: true, status: 204 };
 	}
 
-	const body = await response.json();
+	const body = (await response.json()) as { error?: string };
 	return {
 		success: false,
 		status: response.status,
@@ -211,14 +212,8 @@ const createTestUser = async (args: {
 	}
 };
 
-const createValidJwtToken = async (
-	email: string,
-	password: string,
-): Promise<string> => {
-	const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-		email,
-		password,
-	});
+const createValidJwtToken = async (email: string): Promise<string> => {
+	const { data, error } = await signInWithOtp(supabaseAnonClient, email);
 
 	expect(error).toBeNull();
 
@@ -252,7 +247,7 @@ describe("Integration Tests for Routes", () => {
 		const password = "SecureTestPassword123!";
 		await createTestUser({ userId: OWNER_USER_ID, email, password });
 		// Generate JWT token
-		validToken = await createValidJwtToken(email, password);
+		validToken = await createValidJwtToken(email);
 
 		// Run a full cleanup before all tests
 		await cleanupTestDocuments();
@@ -468,7 +463,7 @@ describe("Integration Tests for Routes", () => {
 			password,
 		});
 
-		const validToken2 = await createValidJwtToken(otherUserEmail, password);
+		const validToken2 = await createValidJwtToken(otherUserEmail);
 
 		const pdfBytes = await generatePdfBytesFromText("Document to be deleted");
 

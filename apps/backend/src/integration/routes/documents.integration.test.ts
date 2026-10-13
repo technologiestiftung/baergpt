@@ -21,6 +21,7 @@ import {
 	defaultDocumentPath,
 } from "../fixtures/constants";
 import { readFileSync } from "node:fs";
+import { signInWithOtp } from "../fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -51,10 +52,7 @@ describe("Documents Route Integration", () => {
 	});
 
 	beforeEach(async () => {
-		const { data } = await supabaseAnonClient.auth.signInWithPassword({
-			email: givenUserEmail,
-			password: givenUserPassword,
-		});
+		const { data } = await signInWithOtp(supabaseAnonClient, givenUserEmail);
 		accessToken = data.session?.access_token || "";
 	});
 
