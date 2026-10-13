@@ -7,6 +7,7 @@ import { registerTelemetry } from "ai";
 import * as Sentry from "@sentry/node";
 import { SentryPropagator, SentrySampler } from "@sentry/opentelemetry";
 import { config } from "../config";
+import { redactSecretsFromEvent } from "./redact-secrets";
 
 export const sentryClient = Sentry.init({
 	dsn: config.sentryDsn || "",
@@ -14,6 +15,7 @@ export const sentryClient = Sentry.init({
 	tracesSampleRate: 1.0,
 	enabled: ["production", "staging"].includes(config.nodeEnv),
 	skipOpenTelemetrySetup: true,
+	beforeSend: redactSecretsFromEvent,
 });
 
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({

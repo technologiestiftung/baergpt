@@ -75,11 +75,13 @@ async function executeWithApiKey({
 	params: Record<string, unknown>;
 	options: Parameters<NonNullable<Tool["execute"]>>[1];
 }) {
-	const apiKey = await new IntegrationKeysService(
-		serviceRoleDbClient,
-	).getDecryptedKey(userId, "datawrapper");
-
-	if (!apiKey) {
+	let apiKey: string;
+	try {
+		apiKey = await new IntegrationKeysService(
+			serviceRoleDbClient,
+		).getDecryptedKey(userId, "datawrapper");
+	} catch (error) {
+		captureError(error);
 		return { error: MISSING_DATAWRAPPER_API_KEY_MESSAGE };
 	}
 
