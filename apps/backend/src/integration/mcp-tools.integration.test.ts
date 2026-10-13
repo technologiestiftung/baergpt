@@ -7,7 +7,7 @@ import {
 	vi,
 	onTestFinished,
 } from "vitest";
-import type { FlexibleSchema, Tool } from "ai";
+import type { FlexibleSchema, Tool, ToolExecutionOptions } from "ai";
 import type { JSONObject } from "@ai-sdk/provider";
 
 type MockMCPClientConfig = {
@@ -194,11 +194,11 @@ import { IntegrationKeysService } from "../services/integration-keys-service";
 import { integrationProviders } from "../services/integration-providers";
 import { z } from "zod";
 
-const toolCallOptions = {
+const toolCallOptions: ToolExecutionOptions<unknown> = {
 	abortSignal: new AbortController().signal,
 	toolCallId: "test-call-id",
 	messages: [],
-	context: "",
+	context: undefined,
 };
 
 function isZodObjectSchema(

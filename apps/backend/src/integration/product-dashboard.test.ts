@@ -4,6 +4,7 @@ import type { Database } from "@repo/db-schema";
 import { subDays } from "date-fns";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "../config";
+import { signInWithOtp } from "./fixtures/auth";
 
 type DailyUsers = {
 	date: string;
@@ -46,10 +47,7 @@ describe("get_product_dashboard_stats", () => {
 			password: givenAdminPassword,
 		});
 
-		await applicationAdminDbClient.auth.signInWithPassword({
-			email: givenAdminEmail,
-			password: givenAdminPassword,
-		});
+		await signInWithOtp(applicationAdminDbClient, givenAdminEmail);
 	});
 
 	afterAll(async () => {
@@ -345,10 +343,10 @@ describe("auth.users helper functions are restricted to the service role", () =>
 			password: givenUserPassword,
 		});
 
-		const { error } = await authenticatedDbClient.auth.signInWithPassword({
-			email: givenUserEmail,
-			password: givenUserPassword,
-		});
+		const { error } = await signInWithOtp(
+			authenticatedDbClient,
+			givenUserEmail,
+		);
 		expect(error).toBeNull();
 	}, TIMEOUT);
 
