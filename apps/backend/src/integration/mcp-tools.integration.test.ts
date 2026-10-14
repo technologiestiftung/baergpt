@@ -686,13 +686,20 @@ describe("Datawrapper MCP Tools Integration", () => {
 		await result?.cleanup();
 	});
 
-	it("should not call the MCP server when the stored key can't be decrypted", async () => {
+	it("should report and not call the MCP server when the stored key can't be decrypted", async () => {
+		const decryptionError = new Error(
+			"Unsupported state or unable to authenticate data",
+		);
 		const getDecryptedKeySpy = vi
 			.spyOn(IntegrationKeysService.prototype, "getDecryptedKey")
-			.mockRejectedValue(
-				new Error("Unsupported state or unable to authenticate data"),
-			);
-		onTestFinished(() => getDecryptedKeySpy.mockRestore());
+			.mockRejectedValue(decryptionError);
+		const captureErrorSpy = vi
+			.spyOn(captureErrorModule, "captureError")
+			.mockImplementation(() => {});
+		onTestFinished(() => {
+			getDecryptedKeySpy.mockRestore();
+			captureErrorSpy.mockRestore();
+		});
 		const result = await datawrapperMCPTools(TEST_USER_ID);
 		const rawTools = await getLatestRawMcpTools();
 		const { execute } = requireToolExecute(
@@ -700,9 +707,13 @@ describe("Datawrapper MCP Tools Integration", () => {
 			"publish_visualization",
 		);
 
-		await expect(
-			execute({ chart_id: "mock-chart-id" }, toolCallOptions),
-		).rejects.toThrow("unable to authenticate data");
+		const output = await execute(
+			{ chart_id: "mock-chart-id" },
+			toolCallOptions,
+		);
+
+		expect(output).toEqual({ error: MISSING_DATAWRAPPER_API_KEY_MESSAGE });
+		expect(captureErrorSpy).toHaveBeenCalledWith(decryptionError);
 		expect(rawTools["publish_visualization"].execute).not.toHaveBeenCalled();
 		await result?.cleanup();
 	});
