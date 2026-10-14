@@ -58,6 +58,8 @@
 		"mistral-tokenizer-ts": "2.2.1",
 		"pdf-lib": "1.17.1",
 		"pdfjs-dist": "6.1.200",
+		"turndown": "7.2.4",
+		"turndown-plugin-gfm": "1.0.2",
 		"unpdf": "1.8.0",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
 		"zod": "4.4.3"
@@ -68,6 +70,7 @@
 		"@types/node": "22.5.0",
 		"@types/pdf-parse": "1.1.4",
 		"@types/supertest": "6.0.3",
+		"@types/turndown": "5.0.6",
 		"date-fns": "4.1.0",
 		"globals": "15.15.0",
 		"nodemon": "3.1.4",

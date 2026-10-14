@@ -4,6 +4,8 @@ import { Mistral } from "@mistralai/mistralai";
 import { createBufferView, getHash } from "../utils";
 import { countTokens } from "./token-utils";
 import mammoth from "mammoth";
+import TurndownService from "turndown";
+import { gfm } from "turndown-plugin-gfm";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
 import { definePDFJSModule, getDocumentProxy } from "unpdf";
@@ -109,9 +111,39 @@ export class DocumentExtractionService {
 }
 
 export class WordDocumentExtractionService {
+	/**
+	 * Converts a .docx to Markdown (docx → HTML via mammoth → Markdown via turndown)
+	 * so that headings, lists and tables keep their structure for the LLM.
+	 * Images are replaced by a placeholder with their alt text.
+	 */
 	async extractWordDocument(wordDoc: Buffer): Promise<string> {
-		const result = await mammoth.extractRawText({ buffer: wordDoc });
-		return result.value.trim();
+		const { value: html } = await mammoth.convertToHtml(
+			{ buffer: wordDoc },
+			{
+				styleMap: [
+					"p[style-name='Title'] => h1:fresh",
+					"p[style-name='caption'] => p:fresh",
+				],
+				// mammoth adds the image's alt text as `alt` attribute on its own
+				convertImage: mammoth.images.imgElement(() =>
+					Promise.resolve({ src: "image" }),
+				),
+			},
+		);
+
+		const turndown = new TurndownService({
+			headingStyle: "atx",
+			bulletListMarker: "-",
+		});
+		turndown.use(gfm);
+		// mammoth wraps cell contents in <p>; without this rule, blank lines break the table apart
+		turndown.addRule("paragraphInTableCell", {
+			filter: ({ nodeName, parentNode }) =>
+				nodeName === "P" && ["TD", "TH"].includes(parentNode?.nodeName ?? ""),
+			replacement: (content) => ` ${content.trim()} `,
+		});
+
+		return turndown.turndown(html).trim();
 	}
 
 	async convertWordToPdf(args: {
