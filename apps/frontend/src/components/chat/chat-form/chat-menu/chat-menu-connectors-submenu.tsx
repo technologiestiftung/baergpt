@@ -4,6 +4,10 @@ import { useChatsStore } from "../../../../store/use-chats-store.ts";
 import type { Connector } from "../../../../common.ts";
 import { useDropdownKeyboard } from "../../../../hooks/use-dropdown-keyboard.ts";
 import { config } from "../../../../config.ts";
+import { useIntegrationsStore } from "../../../../store/use-integrations-store.ts";
+import { showDatawrapperConnectDialog } from "../../../connectors/datawrapper-connect-dialog.tsx";
+
+const CONNECTORS_REQUIRING_KEY: Connector[] = ["datawrapper"];
 
 export const CONNECTOR_VALUES: Record<string, Connector> = {
 	parla: "parla",
@@ -68,7 +72,24 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 			: []),
 	];
 
-	const handleSelect = (item: ConnectorItem) => {
+	const handleSelect = async (item: ConnectorItem) => {
+		const needsKey = CONNECTORS_REQUIRING_KEY.includes(item.value);
+		const integrationsStore = useIntegrationsStore.getState();
+
+		if (needsKey && integrationsStore.integrations === null) {
+			await integrationsStore.fetchIntegrations();
+		}
+
+		const hasKey = useIntegrationsStore
+			.getState()
+			.hasIntegration(item.value as "datawrapper");
+
+		if (needsKey && !hasKey) {
+			onItemSelect();
+			showDatawrapperConnectDialog();
+			return;
+		}
+
 		toggleChatTool(item.value);
 		onItemSelect();
 	};

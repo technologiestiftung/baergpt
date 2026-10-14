@@ -1142,6 +1142,82 @@ export const Content = {
 	"profile.chatSettings.personalPromptUpdateSuccess":
 		"Persönliche Präferenzen wurden aktualisiert",
 
+	/* -------------------- Connectors / Konnektoren -------------------- */
+	"connectors.heading": "Konnektoren",
+	"connectors.intro":
+		"Verbinden Sie Fachanwendungen oder Datenquellen, um damit in BärGPT zu arbeiten.",
+	"connectors.introLink": "Mehr zu Konnektoren erfahren",
+	"connectors.introLink.href":
+		"https://hilfe.baergpt.berlin/faq#was-sind-konnektoren",
+	"connectors.table.header.connector": "Konnektor",
+	"connectors.table.header.status": "Status",
+	"connectors.table.header.token": "API-Zugangs-Token",
+	"connectors.status.connected": "verbunden",
+	"connectors.providedByBaergpt": "Von BärGPT bereitgestellt",
+
+	"connectors.parla.name": "Parla",
+	"connectors.parla.description": "Schriftliche Anfragen analysieren",
+	"connectors.openData.name": "Berlin Open Data",
+	"connectors.openData.description": "Offene Daten analysieren",
+	"connectors.datawrapper.name": "Datawrapper",
+	"connectors.datawrapper.description":
+		"Karten, Diagramme und Tabellen erstellen",
+	"connectors.datawrapper.connectButton": "Verbinden",
+	"connectors.datawrapper.editButton.ariaLabel": "API-Zugangs-Token bearbeiten",
+	"connectors.datawrapper.deleteButton.ariaLabel":
+		"Datawrapper-Verbindung trennen",
+
+	//Datawrapper connect / replace dialog
+	"connectors.datawrapper.connect.title": "Datawrapper verbinden",
+	"connectors.datawrapper.connect.body":
+		"Bitte geben Sie Ihren API-Zugangs-Token aus der Datawrapper Anwendung ein.",
+	"connectors.datawrapper.replace.title":
+		"Datawrapper API-Zugangs-Token ersetzen",
+	"connectors.datawrapper.findTokenLink":
+		"Wo finde ich meinen API-Zugangs-Token?",
+	"connectors.datawrapper.helpLink.href":
+		"https://hilfe.baergpt.berlin/faq#wissen-quellen-und-antwortqualitaet",
+	"connectors.datawrapper.tokenLabel": "API-Zugangs-Token",
+	"connectors.datawrapper.currentTokenLabel": "Aktueller API-Zugangs-Token",
+	"connectors.datawrapper.newTokenLabel": "Neuer API-Zugangs-Token",
+	"connectors.datawrapper.error.invalid":
+		"Dieser Token ist ungültig. Bitte überprüfen Sie die Eingabe.",
+	"connectors.datawrapper.error.missingScopes":
+		"Dem Token fehlen Zugriffsrechte für Datawrapper.",
+	"connectors.datawrapper.error.generic":
+		"Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+	"connectors.datawrapper.missingScopesPanel.title":
+		"Token-Zugriffsrechte hinzufügen",
+	"connectors.datawrapper.missingScopesPanel.body":
+		"Mit diesem Token kann BärGPT keine Grafiken erstellen oder bearbeiten, da ihm Zugriffsrechte fehlen.",
+	"connectors.datawrapper.missingScopesPanel.instruction":
+		"Fügen Sie dem Token in Datawrapper diese Zugriffsrechte hinzu:",
+	"connectors.datawrapper.missingScopesPanel.link":
+		"So erstellen Sie einen Token mit allen Zugriffsrechten",
+	"connectors.datawrapper.cancelButton": "Abbrechen",
+	"connectors.datawrapper.connectSubmitButton": "Verbinden",
+	"connectors.datawrapper.replaceSubmitButton": "API-Zugangs-Token ersetzen",
+	"connectors.datawrapper.connectSuccess.title": "Datawrapper ist verbunden",
+	"connectors.datawrapper.connectSuccess.body":
+		"Erstellen Sie jetzt Diagramme, Karten und Tabellen mit BärGPT.",
+	"connectors.datawrapper.replaceSuccess.title":
+		"Ihr API-Zugangs-Token wurde erfolgreich ersetzt",
+	"connectors.datawrapper.replaceSuccess.body":
+		"Datawrapper ist jetzt verbunden.",
+	"connectors.datawrapper.successContinueButton": "Fortfahren",
+
+	//Datawrapper disconnect confirm dialog
+	"connectors.datawrapper.disconnect.title": "Datawrapper-Verbindung trennen?",
+	"connectors.datawrapper.disconnect.body1":
+		"BärGPT kann danach keine Grafiken mehr in Datawrapper erstellen. Ihre Grafiken in Datawrapper bleiben erhalten.",
+	"connectors.datawrapper.disconnect.body2":
+		"Ihr API-Zugangs-Token wird aus BärGPT entfernt. Um Datawrapper wieder zu verbinden, geben Sie erneut einen Token ein.",
+	"connectors.datawrapper.disconnect.confirmButton": "Verbindung trennen",
+
+	//Password visibility toggle (shared input primitive)
+	"passwordInput.show.ariaLabel": "Eingabe anzeigen",
+	"passwordInput.hide.ariaLabel": "Eingabe verbergen",
+
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 	"emailChanged.buttonLink": "Zu BärGPT",
