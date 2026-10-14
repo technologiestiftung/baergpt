@@ -9,7 +9,7 @@
 
 	"vulnerabilityAlerts": {
 		"enabled": true,
-		"minimumReleaseAge": null,
+		"minimumReleaseAge": "3 days",
 		"schedule": ["at any time"],
 		"labels": ["security"],
 		"automerge": true
