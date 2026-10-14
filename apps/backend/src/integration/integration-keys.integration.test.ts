@@ -38,7 +38,8 @@ const createTestUser = async (userId: string, email: string) => {
 		email_confirm: true,
 	});
 
-	if (error && !error.message.includes("already registered")) {
+	// GoTrue: "A user with this email address has already been registered"
+	if (error && !/already (been )?registered/.test(error.message)) {
 		throw error;
 	}
 };
@@ -252,6 +253,10 @@ describe("integration keys", () => {
 
 		it("deletes the key together with the user account", async () => {
 			await createTestUser(DELETED_USER_ID, DELETED_EMAIL);
+			// Don't leave the user behind if the test fails before deleting it
+			onTestFinished(async () => {
+				await serviceRoleDbClient.auth.admin.deleteUser(DELETED_USER_ID);
+			});
 			await integrationKeysService.saveKey({
 				userId: DELETED_USER_ID,
 				provider: "datawrapper",
