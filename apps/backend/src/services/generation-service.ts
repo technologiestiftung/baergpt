@@ -365,6 +365,7 @@ export class GenerationService {
 								mistral: {
 									presencePenalty: LLM_PARAMETERS.presencePenalty,
 									frequencyPenalty: LLM_PARAMETERS.frequencyPenalty,
+									promptCacheKey: String(sessionId),
 								},
 							},
 							onFinish: async ({ text, usage, steps }) => {
