@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import {
+	describe,
+	it,
+	expect,
+	beforeAll,
+	afterAll,
+	vi,
+	onTestFinished,
+} from "vitest";
 import type { FlexibleSchema, Tool } from "ai";
 import type { JSONObject } from "@ai-sdk/provider";
 
@@ -175,14 +183,22 @@ import {
 	openDataMcpToolOutputSchema,
 } from "../tools/mcp/open-data-mcp-tools";
 import type { OpenDataMCPToolsResult } from "../tools/mcp/open-data-mcp-tools";
-import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
+import {
+	datawrapperMCPTools,
+	DATAWRAPPER_API_KEY_MISSING_SCOPES_MESSAGE,
+	INVALID_DATAWRAPPER_API_KEY_MESSAGE,
+	MISSING_DATAWRAPPER_API_KEY_MESSAGE,
+} from "../tools/mcp/datawrapper-mcp-tools";
 import type { DatawrapperMCPToolsResult } from "../tools/mcp/datawrapper-mcp-tools";
+import { IntegrationKeysService } from "../services/integration-keys-service";
+import { integrationProviders } from "../services/integration-providers";
 import { z } from "zod";
 
 const toolCallOptions = {
 	abortSignal: new AbortController().signal,
 	toolCallId: "test-call-id",
 	messages: [],
+	context: "",
 };
 
 function isZodObjectSchema(
@@ -372,8 +388,8 @@ describe("Parla MCP Tools Integration", () => {
 		const createMCPClientSpy = vi
 			.spyOn(mcpModule, "createMCPClient")
 			.mockResolvedValue(
-				mockMcpClient as unknown as ReturnType<
-					typeof mcpModule.createMCPClient
+				mockMcpClient as unknown as Awaited<
+					ReturnType<typeof mcpModule.createMCPClient>
 				>,
 			);
 
@@ -555,11 +571,39 @@ describe("Berlin Open Data MCP Tools Integration", () => {
 	});
 });
 
+const TEST_DATAWRAPPER_API_KEY = "dw-test-key-1234567890";
+const TEST_USER_ID = "88888888-8888-4888-8888-888888888888";
+
+/** Stubs the stored key lookup for the current test only. */
+function mockStoredApiKey(apiKey: string | null) {
+	const getDecryptedKey = vi
+		.spyOn(IntegrationKeysService.prototype, "getDecryptedKey")
+		.mockResolvedValue(apiKey);
+	onTestFinished(() => getDecryptedKey.mockRestore());
+	return getDecryptedKey;
+}
+
+/** Stubs the re-check of the stored key after a failed tool call. */
+function mockKeyCheck(result: "valid" | "invalid" | "missing_scopes") {
+	const checkKeySpy = vi
+		.spyOn(integrationProviders.datawrapper, "checkKey")
+		.mockResolvedValue(result);
+	onTestFinished(() => checkKeySpy.mockRestore());
+	return checkKeySpy;
+}
+
+/** Raw tools of the most recently created (mocked) MCP client. */
+async function getLatestRawMcpTools(): Promise<Record<string, MockMCPTool>> {
+	const client = await vi.mocked(mcpModule.createMCPClient).mock.results.at(-1)
+		?.value;
+	return await client.tools();
+}
+
 describe("Datawrapper MCP Tools Integration", () => {
 	let mcpResult: DatawrapperMCPToolsResult | null;
 
 	beforeAll(async () => {
-		mcpResult = await datawrapperMCPTools();
+		mcpResult = await datawrapperMCPTools(TEST_USER_ID);
 	}, 60_000);
 
 	afterAll(async () => {
@@ -584,21 +628,244 @@ describe("Datawrapper MCP Tools Integration", () => {
 		).toBeDefined();
 	});
 
-	it("create_visualization should require api_key, data, and chart_type", () => {
+	it("create_visualization should require data and chart_type but not expose api_key to the model", () => {
 		const createTool = mcpResult?.tools["create_visualization"];
 		const params = requireZodObjectSchema(createTool, "create_visualization");
 
-		expect(params.shape).toHaveProperty("api_key");
+		expect(params.shape).not.toHaveProperty("api_key");
 		expect(params.shape).toHaveProperty("data");
 		expect(params.shape).toHaveProperty("chart_type");
 	});
 
-	it("publish_visualization should require api_key and chart_id", () => {
+	it("publish_visualization should require chart_id but not expose api_key to the model", () => {
 		const publishTool = mcpResult?.tools["publish_visualization"];
 		const params = requireZodObjectSchema(publishTool, "publish_visualization");
 
-		expect(params.shape).toHaveProperty("api_key");
+		expect(params.shape).not.toHaveProperty("api_key");
 		expect(params.shape).toHaveProperty("chart_id");
+	});
+
+	it("should add the stored api_key to the MCP call server-side", async () => {
+		const getDecryptedKeySpy = mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		const { execute } = requireToolExecute(
+			result?.tools["publish_visualization"],
+			"publish_visualization",
+		);
+
+		await execute({ chart_id: "mock-chart-id" }, toolCallOptions);
+
+		expect(getDecryptedKeySpy).toHaveBeenCalledWith(
+			TEST_USER_ID,
+			"datawrapper",
+		);
+		expect(rawTools["publish_visualization"].execute).toHaveBeenCalledWith(
+			{ chart_id: "mock-chart-id", api_key: TEST_DATAWRAPPER_API_KEY },
+			toolCallOptions,
+		);
+		await result?.cleanup();
+	});
+
+	it("should not call the MCP server and tell the model where to add the key when none is stored", async () => {
+		mockStoredApiKey(null);
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		const { execute } = requireToolExecute(
+			result?.tools["create_visualization"],
+			"create_visualization",
+		);
+
+		const output = await execute(
+			{ data: [{ a: 1 }], chart_type: "bar" },
+			toolCallOptions,
+		);
+
+		expect(output).toEqual({ error: MISSING_DATAWRAPPER_API_KEY_MESSAGE });
+		expect(rawTools["create_visualization"].execute).not.toHaveBeenCalled();
+		await result?.cleanup();
+	});
+
+	it("should report and not call the MCP server when the stored key can't be decrypted", async () => {
+		const decryptionError = new Error(
+			"Unsupported state or unable to authenticate data",
+		);
+		const getDecryptedKeySpy = vi
+			.spyOn(IntegrationKeysService.prototype, "getDecryptedKey")
+			.mockRejectedValue(decryptionError);
+		const captureErrorSpy = vi
+			.spyOn(captureErrorModule, "captureError")
+			.mockImplementation(() => {});
+		onTestFinished(() => {
+			getDecryptedKeySpy.mockRestore();
+			captureErrorSpy.mockRestore();
+		});
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		const { execute } = requireToolExecute(
+			result?.tools["publish_visualization"],
+			"publish_visualization",
+		);
+
+		const output = await execute(
+			{ chart_id: "mock-chart-id" },
+			toolCallOptions,
+		);
+
+		expect(output).toEqual({ error: MISSING_DATAWRAPPER_API_KEY_MESSAGE });
+		expect(captureErrorSpy).toHaveBeenCalledWith(decryptionError);
+		expect(rawTools["publish_visualization"].execute).not.toHaveBeenCalled();
+		await result?.cleanup();
+	});
+
+	it.each([
+		["invalid", INVALID_DATAWRAPPER_API_KEY_MESSAGE],
+		["missing_scopes", DATAWRAPPER_API_KEY_MISSING_SCOPES_MESSAGE],
+	] as const)(
+		"should explain a key that became %s after a failed call",
+		async (keyCheckResult, expectedMessage) => {
+			mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+			const checkKeySpy = mockKeyCheck(keyCheckResult);
+			const result = await datawrapperMCPTools(TEST_USER_ID);
+			const rawTools = await getLatestRawMcpTools();
+			rawTools["publish_visualization"].execute.mockRejectedValueOnce(
+				new Error("Datawrapper API error 403"),
+			);
+			const { execute } = requireToolExecute(
+				result?.tools["publish_visualization"],
+				"publish_visualization",
+			);
+
+			const output = await execute(
+				{ chart_id: "mock-chart-id" },
+				toolCallOptions,
+			);
+
+			expect(checkKeySpy).toHaveBeenCalledWith(TEST_DATAWRAPPER_API_KEY);
+			expect(output).toEqual({ error: expectedMessage });
+			await result?.cleanup();
+		},
+	);
+
+	it("should also re-check the key when the MCP server returns an error result", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		mockKeyCheck("missing_scopes");
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		rawTools["publish_visualization"].execute.mockResolvedValueOnce({
+			isError: true,
+			content: [{ type: "text", text: "Forbidden" }],
+		});
+		const { execute } = requireToolExecute(
+			result?.tools["publish_visualization"],
+			"publish_visualization",
+		);
+
+		const output = await execute(
+			{ chart_id: "mock-chart-id" },
+			toolCallOptions,
+		);
+
+		expect(output).toEqual({
+			error: DATAWRAPPER_API_KEY_MISSING_SCOPES_MESSAGE,
+		});
+		await result?.cleanup();
+	});
+
+	it("should pass the original error result through when the key is fine", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		mockKeyCheck("valid");
+		const errorResult = {
+			isError: true,
+			content: [{ type: "text", text: "Invalid data" }],
+		};
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		rawTools["publish_visualization"].execute.mockResolvedValueOnce(
+			errorResult,
+		);
+		const { execute } = requireToolExecute(
+			result?.tools["publish_visualization"],
+			"publish_visualization",
+		);
+
+		const output = await execute(
+			{ chart_id: "mock-chart-id" },
+			toolCallOptions,
+		);
+
+		expect(output).toEqual(errorResult);
+		await result?.cleanup();
+	});
+
+	it("should keep the original error when the key re-check itself fails", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		const checkKeySpy = vi
+			.spyOn(integrationProviders.datawrapper, "checkKey")
+			.mockRejectedValue(new Error("Datawrapper key check returned 503"));
+		onTestFinished(() => checkKeySpy.mockRestore());
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		rawTools["publish_visualization"].execute.mockRejectedValueOnce(
+			new Error("MCP server error"),
+		);
+		const { execute } = requireToolExecute(
+			result?.tools["publish_visualization"],
+			"publish_visualization",
+		);
+
+		await expect(
+			execute({ chart_id: "mock-chart-id" }, toolCallOptions),
+		).rejects.toThrow("MCP server error");
+		await result?.cleanup();
+	});
+
+	it("should redact the api_key from MCP results", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		rawTools["publish_visualization"].execute.mockResolvedValueOnce({
+			content: [
+				{
+					type: "text",
+					text: `Published with key ${TEST_DATAWRAPPER_API_KEY}`,
+				},
+			],
+		});
+		const { execute } = requireToolExecute(
+			result?.tools["publish_visualization"],
+			"publish_visualization",
+		);
+
+		const output = await execute(
+			{ chart_id: "mock-chart-id" },
+			toolCallOptions,
+		);
+
+		expect(output).toEqual({
+			content: [{ type: "text", text: "Published with key [REDACTED]" }],
+		});
+		await result?.cleanup();
+	});
+
+	it("should redact the api_key from MCP error messages", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		mockKeyCheck("valid");
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		rawTools["publish_visualization"].execute.mockRejectedValueOnce(
+			new Error(`Invalid token ${TEST_DATAWRAPPER_API_KEY}`),
+		);
+		const { execute } = requireToolExecute(
+			result?.tools["publish_visualization"],
+			"publish_visualization",
+		);
+
+		const call = execute({ chart_id: "mock-chart-id" }, toolCallOptions);
+
+		await expect(call).rejects.toThrow("Invalid token [REDACTED]");
+		await expect(call).rejects.not.toThrow(TEST_DATAWRAPPER_API_KEY);
+		await result?.cleanup();
 	});
 
 	it("should handle initialization errors gracefully", async () => {
@@ -612,7 +879,7 @@ describe("Datawrapper MCP Tools Integration", () => {
 				throw new Error("Datawrapper MCP server is down");
 			});
 
-		const result = await datawrapperMCPTools();
+		const result = await datawrapperMCPTools(TEST_USER_ID);
 		expect(result).toBeNull();
 		expect(consoleErrorSpy).toHaveBeenCalled();
 
