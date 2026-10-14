@@ -20,8 +20,7 @@ jobs:
 
       - name: Check types 🔍
         working-directory: apps/backend
-        run: |
-          npm run check-types
+        run: npm run check-types
 
       - name: Fetch backend .env from 1Password ⬇️
         working-directory: apps/backend

@@ -39,12 +39,10 @@ jobs:
       - name: Compute image tag 🏷️
         id: tag
         run: |
-          echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+          echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.npmrc', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
 
-      - name: Setup environment ⚙️
-        uses: ./.github/actions/setup
-        with:
-          install-1password: "true"
+      - name: Install 1Password CLI 🔐
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0, pinned to commit sha to avoid sha-hulud like attacks
 
       - name: Set 1Password item IDs based on branch 🌿
         id: env-config
