@@ -1,7 +1,7 @@
 # Cluster-wide policy (platform.tf) default-denies ingress from other namespaces;
 # this explicitly re-opens the one cross-namespace path the backend needs: traffic from
-# the Envoy Gateway data plane, which runs in envoy-gateway-system. Egress is untouched
-# (policyTypes: [Ingress] only) — egress to Supabase/Mistral/etc. stays open, as on CF.
+# the Envoy Gateway data plane, which runs in envoy-gateway-system. Egress is limited by
+# backend-egress below.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -19,3 +19,47 @@ spec:
               kubernetes.io/metadata.name: envoy-gateway-system
       ports:
         - port: http
+---
+# Egress: public internet (Supabase, Mistral, search and MCP APIs, Sentry), DNS and
+# Gotenberg only. Private and link-local ranges are blocked so an SSRF in the backend
+# can't reach the cloud metadata service (169.254.169.254), nodes, or other pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-egress
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Egress
+  egress:
+    # Any destination on port 53: works with CoreDNS and a node-local DNS cache, which
+    # listens on a link-local address the internet rule below excludes.
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Gotenberg in the same namespace, or staging's (sandbox has none of its own).
+    - to:
+        - podSelector:
+            matchLabels:
+              app: gotenberg
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: staging
+          podSelector:
+            matchLabels:
+              app: gotenberg
+      ports:
+        - port: 3000
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 100.64.0.0/10 # pods and Services on SKE
+              - 169.254.0.0/16
+              - 172.16.0.0/12
+              - 192.168.0.0/16

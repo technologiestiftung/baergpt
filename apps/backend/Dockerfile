@@ -29,7 +29,8 @@ FROM base AS runner
 WORKDIR /app
 RUN groupadd --system --gid 1001 nodejs \
 	&& useradd --system --uid 1001 --gid nodejs hono
-COPY --from=builder --chown=hono:nodejs /app ./
+# Root-owned: the app user can read and run its code but not rewrite it.
+COPY --from=builder /app ./
 USER hono
 WORKDIR /app/apps/backend
 # for documentation only, does not publish the port. Locally use `-p 3000:3000`.
