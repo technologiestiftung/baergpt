@@ -17,6 +17,7 @@ spec:
       labels:
         app: backend
     spec:
+      automountServiceAccountToken: false # never talks to the Kubernetes API
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001 # numeric: the image's USER is a name, which runAsNonRoot can't verify
