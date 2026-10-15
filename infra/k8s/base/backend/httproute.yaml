@@ -26,3 +26,7 @@ spec:
       backendRefs:
         - name: backend
           port: 3000
+      # Envoy otherwise ends any response not finished after 15s, which cuts off streamed
+      # chats and document processing mid-answer (ERR_HTTP2_PROTOCOL_ERROR in the browser).
+      timeouts:
+        request: 600s
