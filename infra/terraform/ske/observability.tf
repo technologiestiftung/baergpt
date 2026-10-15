@@ -18,15 +18,10 @@ locals {
   # `endpoint` appends it, so strip it if present.
   otlp_logs_endpoint = trimsuffix(trimsuffix(data.stackit_observability_instance.this.otlp_http_logs_url, "/"), "/v1/logs")
 
-  otel_chart = {
-    repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
-    chart      = "opentelemetry-collector"
-    version    = "0.174.0"
-  }
-
   # Values shared by both releases.
   otel_common_values = {
     image = {
+      # renovate: datasource=docker depName=otel/opentelemetry-collector-contrib
       repository = "otel/opentelemetry-collector-contrib"
       tag        = "0.161.0"
       digest     = "sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1"
@@ -153,9 +148,9 @@ resource "kubernetes_secret_v1" "otel_collector_stackit" {
 
 resource "helm_release" "otel_collector" {
   name       = "otel-collector"
-  repository = local.otel_chart.repository
-  chart      = local.otel_chart.chart
-  version    = local.otel_chart.version
+  repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  chart      = "opentelemetry-collector"
+  version    = "0.174.0" # keep both otel releases on the same version; Renovate updates them together
   namespace  = kubernetes_namespace_v1.observability.metadata[0].name
 
   values = [yamlencode(merge(local.otel_common_values, {
@@ -259,9 +254,9 @@ resource "helm_release" "otel_collector" {
 
 resource "helm_release" "otel_collector_cluster" {
   name       = "otel-collector-cluster"
-  repository = local.otel_chart.repository
-  chart      = local.otel_chart.chart
-  version    = local.otel_chart.version
+  repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  chart      = "opentelemetry-collector"
+  version    = "0.174.0" # keep both otel releases on the same version; Renovate updates them together
   namespace  = kubernetes_namespace_v1.observability.metadata[0].name
 
   values = [yamlencode(merge(local.otel_common_values, {

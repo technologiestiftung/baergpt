@@ -264,14 +264,15 @@ resource "kubernetes_namespace_v1" "envs" {
     name = each.key
     # Without these, Pod Security defaults to "privileged" and a deployer could run a
     # privileged/hostPath pod on a node shared with prod. The deployer can't edit
-    # namespaces, so it can't lift this. Bump the version deliberately with k8s upgrades.
+    # namespaces, so it can't lift this. "latest" follows the cluster version, so a k8s
+    # minor upgrade needs no label change (and applies any tightened rules with it).
     labels = {
       "pod-security.kubernetes.io/enforce"         = "restricted"
-      "pod-security.kubernetes.io/enforce-version" = "v1.36"
+      "pod-security.kubernetes.io/enforce-version" = "latest"
       "pod-security.kubernetes.io/warn"            = "restricted"
-      "pod-security.kubernetes.io/warn-version"    = "v1.36"
+      "pod-security.kubernetes.io/warn-version"    = "latest"
       "pod-security.kubernetes.io/audit"           = "restricted"
-      "pod-security.kubernetes.io/audit-version"   = "v1.36"
+      "pod-security.kubernetes.io/audit-version"   = "latest"
     }
   }
 }

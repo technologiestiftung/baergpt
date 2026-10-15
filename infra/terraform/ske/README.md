@@ -143,6 +143,19 @@ usage, collector health, Warning events and logs.
   empty, look up the actual metric name in Explore; the names come from the collector's
   Prometheus translation.
 
+## Updates
+
+| What                                  | Kept current by                                                                                                                                                 |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Kubernetes patch versions, node OS    | STACKIT, in the maintenance window (`cluster.tf`)                                                                                                               |
+| Kubernetes minor versions             | by hand: raise `kubernetes_version_min`, check the Envoy Gateway and cert-manager compatibility notes in `platform.tf`, bump `KUBECTL_VERSION` in the workflows |
+| Helm charts (`helm_release` versions) | Renovate                                                                                                                                                        |
+| OTel collector image                  | Renovate, via the `# renovate:` comment in `observability.tf` (grouped with the chart)                                                                          |
+| Terraform providers, lock file        | Renovate                                                                                                                                                        |
+
+A merged Renovate PR only changes the repo: the cluster picks it up on the next
+`terraform apply`. Pod Security labels use `latest`, so they follow the cluster's version.
+
 ## Remote state
 
 Same `baergpt-tfstate` STACKIT Object Storage bucket as the other Terraform modules,
