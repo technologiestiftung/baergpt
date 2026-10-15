@@ -4,6 +4,7 @@ import { createClient, type Session } from "@supabase/supabase-js";
 import { serviceRoleDbClient } from "../../supabase";
 import type { Database } from "@repo/db-schema";
 import { config } from "../../config";
+import { signInWithOtp } from "../fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -24,7 +25,6 @@ describe("basic auth middleware", () => {
 
 	describe("with valid session", () => {
 		const givenUserEmail = "basic-auth-test-suite-user@ts.berlin";
-		const givenUserPassword = "SecurePassword123!";
 
 		let session: Session | null = null;
 
@@ -32,18 +32,16 @@ describe("basic auth middleware", () => {
 			const { data, error: signUpError } =
 				await serviceRoleDbClient.auth.admin.createUser({
 					email: givenUserEmail,
-					password: givenUserPassword,
 					email_confirm: true,
 				});
 
 			expect(signUpError).toBeNull();
 			expect(data).toBeDefined();
 
-			const { data: sessionData, error: signInError } =
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+			const { data: sessionData, error: signInError } = await signInWithOtp(
+				supabaseAnonClient,
+				givenUserEmail,
+			);
 			expect(signInError).toBeNull();
 			expect(sessionData).toBeDefined();
 

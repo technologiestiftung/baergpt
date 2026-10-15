@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import type { FlexibleSchema, Tool } from "ai";
+import type { FlexibleSchema, Tool, ToolExecutionOptions } from "ai";
 import type { JSONObject } from "@ai-sdk/provider";
 
 type MockMCPClientConfig = {
@@ -179,10 +179,11 @@ import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
 import type { DatawrapperMCPToolsResult } from "../tools/mcp/datawrapper-mcp-tools";
 import { z } from "zod";
 
-const toolCallOptions = {
+const toolCallOptions: ToolExecutionOptions<unknown> = {
 	abortSignal: new AbortController().signal,
 	toolCallId: "test-call-id",
 	messages: [],
+	context: undefined,
 };
 
 function isZodObjectSchema(
@@ -372,8 +373,8 @@ describe("Parla MCP Tools Integration", () => {
 		const createMCPClientSpy = vi
 			.spyOn(mcpModule, "createMCPClient")
 			.mockResolvedValue(
-				mockMcpClient as unknown as ReturnType<
-					typeof mcpModule.createMCPClient
+				mockMcpClient as unknown as Awaited<
+					ReturnType<typeof mcpModule.createMCPClient>
 				>,
 			);
 

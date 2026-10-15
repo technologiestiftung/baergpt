@@ -65,7 +65,6 @@ const cleanupDefaultDocuments = async (
 		const documentIds = documents?.map((doc) => doc.id) ?? [];
 
 		const sourceUrls = [
-			// @ts-expect-error ts-config excludes test files atm, leading to a type error here
 			...new Set(
 				[
 					...(documents?.map((doc) => doc.source_url) ?? []),

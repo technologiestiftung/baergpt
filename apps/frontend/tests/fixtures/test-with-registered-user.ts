@@ -1,16 +1,12 @@
-import {
-	defaultUserFirstName,
-	defaultUserLastName,
-	defaultUserPassword,
-} from "../constants.ts";
+import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
 import { Page, expect } from "@playwright/test";
-import { supabaseAdminClient } from "../supabase.ts";
+import type { Session } from "@supabase/supabase-js";
+import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
 import { testWithoutSplashScreen } from "./test-without-splash-screen.ts";
 
 type TestWithRegisteredUser = {
 	account: {
 		email: string;
-		password: string;
 		id: string;
 	};
 };
@@ -35,7 +31,6 @@ export const testWithRegisteredUser =
 						await supabaseAdminClient.auth.admin.createUser({
 							id: userId,
 							email,
-							password: defaultUserPassword,
 							email_confirm: true,
 							user_metadata: {
 								first_name: defaultUserFirstName,
@@ -55,7 +50,7 @@ export const testWithRegisteredUser =
 					/**
 					 * This runs the test that uses this fixture (and injects the account).
 					 */
-					await use({ email, password: defaultUserPassword, id: userId });
+					await use({ email, id: userId });
 				} finally {
 					/**
 					 * This happens after each test that uses this fixture.
@@ -126,23 +121,20 @@ type MailpitSummary = {
  * text body, which carries both the security code and the confirmation link.
  */
 async function waitForLatestMessageTo(args: {
-	page: Page;
 	recipient: string;
 	timeoutMs?: number;
 	cutoffTime?: number; // Only consider messages created after this UTC timestamp (ms-since-epoch).
 }) {
-	const { page, recipient, timeoutMs = 30_000, cutoffTime } = args;
+	const { recipient, timeoutMs = 30_000, cutoffTime } = args;
 
 	const wanted = recipient.toLowerCase();
 	const deadline = Date.now() + timeoutMs;
 	let mailboxSize = 0;
 
 	while (Date.now() < deadline) {
-		const list = await page.request.get(
-			`${mailpitUrl}/api/v1/messages?limit=200`,
-		);
+		const list = await fetch(`${mailpitUrl}/api/v1/messages?limit=200`);
 
-		if (list.ok()) {
+		if (list.ok) {
 			const { messages } = (await list.json()) as {
 				messages: MailpitSummary[];
 			};
@@ -164,17 +156,15 @@ async function waitForLatestMessageTo(args: {
 			)[0];
 
 			if (newest) {
-				const detail = await page.request.get(
-					`${mailpitUrl}/api/v1/message/${newest.ID}`,
-				);
-				if (detail.ok()) {
+				const detail = await fetch(`${mailpitUrl}/api/v1/message/${newest.ID}`);
+				if (detail.ok) {
 					const { Text } = (await detail.json()) as { Text: string };
 					return { id: newest.ID, text: Text };
 				}
 			}
 		}
 
-		await page.waitForTimeout(500);
+		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
 
 	throw new Error(
@@ -182,17 +172,12 @@ async function waitForLatestMessageTo(args: {
 	);
 }
 
-export async function confirmOtp({
-	page,
-	account,
-}: {
-	page: Page;
-	account: TestWithRegisteredUser["account"];
-}) {
-	const { id, text } = await waitForLatestMessageTo({
-		page,
-		recipient: account.email,
-	});
+/**
+ * Reads the security code and confirmation link from the newest OTP mail to `email`,
+ * then deletes that mail so a later read in the same run cannot pick it up again.
+ */
+async function consumeOtpMail(email: string) {
+	const { id, text } = await waitForLatestMessageTo({ recipient: email });
 
 	// The security code sits on its own line; the button's href is the first confirm-otp link.
 	const otpCode = text.match(/^\s*(\d{10})\s*$/m)?.[1];
@@ -204,15 +189,28 @@ export async function confirmOtp({
 		);
 	}
 
-	// Drop the consumed mail so a later confirmOtp in the same run cannot re-read it.
-	const deletion = await page.request.delete(`${mailpitUrl}/api/v1/messages`, {
-		data: { IDs: [id] },
+	const deletion = await fetch(`${mailpitUrl}/api/v1/messages`, {
+		method: "DELETE",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ IDs: [id] }),
 	});
-	if (!deletion.ok()) {
+	if (!deletion.ok) {
 		throw new Error(
-			`Could not delete Mailpit message ${id}: ${deletion.status()} ${deletion.statusText()}`,
+			`Could not delete Mailpit message ${id}: ${deletion.status} ${deletion.statusText}`,
 		);
 	}
+
+	return { otpCode, confirmUrl };
+}
+
+export async function confirmOtp({
+	page,
+	account,
+}: {
+	page: Page;
+	account: TestWithRegisteredUser["account"];
+}) {
+	const { otpCode, confirmUrl } = await consumeOtpMail(account.email);
 
 	// The mail's button targets a new tab, so keep `page` on the app and confirm in a second one.
 	const page1 = await page.context().newPage();
@@ -226,6 +224,34 @@ export async function confirmOtp({
 	await page1.getByRole("button", { name: "Weiter" }).click();
 
 	return page1;
+}
+
+/**
+ * Signs in via email OTP, like the login page does, and returns the session.
+ * The code comes from `generateLink` instead of a sent mail. Each call creates a new session.
+ */
+export async function signInWithOtp(email: string): Promise<Session> {
+	const { data: link, error: linkError } =
+		await supabaseAdminClient.auth.admin.generateLink({
+			type: "magiclink",
+			email,
+		});
+	if (linkError) {
+		throw new Error(
+			`Failed to generate OTP for ${email}: ${linkError.message}`,
+		);
+	}
+
+	const { data, error } = await createAnonClient().auth.verifyOtp({
+		email,
+		token: link.properties.email_otp,
+		type: "email",
+	});
+	if (error || !data.session) {
+		throw new Error(`Failed to verify OTP: ${error?.message ?? "no session"}`);
+	}
+
+	return data.session;
 }
 
 /**
