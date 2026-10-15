@@ -103,6 +103,6 @@ variable "letsencrypt_email" {
 
 variable "letsencrypt_acme_server" {
   type        = string
-  default     = "https://acme-staging-v02.api.letsencrypt.org/directory"
-  description = "ACME server URL. Defaults to LE's STAGING endpoint (untrusted certs, no rate limits) — switch to https://acme-v02.api.letsencrypt.org/directory once ingress + DNS are verified working end to end."
+  default     = "https://acme-v02.api.letsencrypt.org/directory"
+  description = "ACME server URL (Let's Encrypt production). On a new cluster whose DNS/ingress isn't verified yet, set https://acme-staging-v02.api.letsencrypt.org/directory to avoid production rate limits; its certs are untrusted, so the deploy smoke check fails until you switch back."
 }

@@ -60,8 +60,8 @@ resource "helm_release" "cert_manager" {
   depends_on = [stackit_ske_cluster.this, helm_release.envoy_gateway]
 }
 
-# Let's Encrypt HTTP-01 issuer. Staging LE first in practice (swap the server URL)
-# to avoid hitting LE's production rate limits while testing ingress + DNS.
+# Let's Encrypt HTTP-01 issuer. var.letsencrypt_acme_server selects LE production (default)
+# or LE staging for a first setup, where failed attempts count against production limits.
 #
 # NOTE: `kubernetes_manifest` validates the kind against the live API server at PLAN
 # time, and `depends_on` does not defer that — so on a cluster where cert-manager's

@@ -15,8 +15,8 @@ observability_instance_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # `stackit ob
 
 # Cluster platform layer
 letsencrypt_email = "infra@ts.berlin" # verify: real contact address for ACME expiry/abuse notices
-# letsencrypt_acme_server defaults to LE's STAGING endpoint — leave as-is until ingress
-# + DNS are verified working, then switch to the production ACME URL (see variables.tf).
+# letsencrypt_acme_server defaults to LE production. For a first apply on a new cluster,
+# consider LE staging until ingress + DNS work (see variables.tf).
 
 # namespaces (staging/prod/sandbox quotas) has sensible defaults in variables.tf —
 # override here only once real pod resource requests make the defaults wrong.

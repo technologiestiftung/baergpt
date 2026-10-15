@@ -258,14 +258,11 @@ jobs:
           echo "Checking https://$host/health"
           timeout=120
           counter=0
-          # --insecure: the ClusterIssuer defaults to Let's Encrypt STAGING, whose root is
-          # not in any trust store, so a strict check would fail on cert verification even
-          # though the app is healthy. This step verifies the app serves 200 through the
-          # ingress; the certificate chain itself is verified by hand at cutover, when the
-          # issuer is switched to LE production.
-          until [ "$(curl -sS --insecure -o /dev/null -w '%{http_code}' "https://$host/health")" = "200" ]; do
+          # Verifies the TLS certificate too, so an expired or wrong certificate fails the
+          # deploy (curl then reports a certificate error and the status stays 000).
+          until [ "$(curl -sS -o /dev/null -w '%{http_code}' "https://$host/health")" = "200" ]; do
             if [ $counter -ge $timeout ]; then
-              echo "::error::https://$host/health did not return 200 within ${timeout}s."
+              echo "::error::https://$host/health did not return 200 within ${timeout}s (status 000 with a certificate error above means TLS, not the app)."
               exit 1
             fi
             sleep 5
