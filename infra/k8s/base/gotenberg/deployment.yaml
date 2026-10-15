@@ -43,6 +43,7 @@ spec:
         - name: gotenberg
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           # Public Docker Hub image, no imagePullSecret needed. 8.37.0+: older LibreOffice has
@@ -56,6 +57,9 @@ spec:
           envFrom:
             - secretRef:
                 name: gotenberg-env # GOTENBERG_API_BASIC_AUTH_USERNAME/PASSWORD
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: 500m
@@ -81,3 +85,8 @@ spec:
               port: http
             periodSeconds: 10
             failureThreshold: 18 # 180s, matches CF's app-start timeout
+      volumes:
+        # The only writable path (LibreOffice's profile and conversion files); emptied whenever the pod is replaced.
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi

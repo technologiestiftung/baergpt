@@ -43,6 +43,7 @@ spec:
         - name: backend
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           # Replaced at deploy time with the digest of the image the deploy workflow builds.
@@ -60,6 +61,9 @@ spec:
             # Keeps V8's heap below the 4Gi limit so OOMs surface as "heap out of memory", not a silent kill.
             - name: NODE_OPTIONS
               value: --max-old-space-size=3072
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: 250m
@@ -94,3 +98,8 @@ spec:
               # whatever k8s version SKE ends up on (native sleep needs 1.29+).
               exec:
                 command: ["sleep", "5"]
+      volumes:
+        # The only writable path (temp files of upload parsers and the Sentry SDK); emptied whenever the pod is replaced.
+        - name: tmp
+          emptyDir:
+            sizeLimit: 512Mi
