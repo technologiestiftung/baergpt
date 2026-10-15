@@ -1,5 +1,13 @@
 # Logs
 logs
+# Upstream Supabase config deployed by Ansible (Vector), not a log directory
+!/infra/supabase/volumes/logs/
+# Runtime data if the compose stack is started from infra/supabase
+/infra/supabase/volumes/db/data/
+/infra/supabase/volumes/db/certs/
+/infra/supabase/volumes/storage/
+/infra/supabase/volumes/snippets/
+/infra/supabase/volumes/email-templates/
 *.log
 npm-debug.log*
 yarn-debug.log*

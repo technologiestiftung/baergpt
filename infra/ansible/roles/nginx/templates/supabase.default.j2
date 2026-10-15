@@ -52,14 +52,24 @@ server {
         return 404;
     }
 
-    # Logflare's dashboard has no auth in single-tenant mode. Vector ships logs via kong:8000
+    # postgres-meta (SQL as supabase_admin). Studio reaches it inside Docker; nothing needs it publicly.
+    location ^~ /pg/ {
+        return 404;
+    }
+
+    # Edge Functions are not deployed; the API gateway still has a route for them.
+    location ^~ /functions/v1/ {
+        return 404;
+    }
+
+    # Logflare's dashboard has no auth in single-tenant mode. Vector ships logs to it directly
     # inside the Docker network, so blocking the public path doesn't affect ingestion.
     location ^~ /analytics/ {
         return 404;
     }
 
     location / {
-        proxy_pass http://localhost:8000;
+        proxy_pass http://127.0.0.1:8000;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

@@ -1,3 +1,27 @@
+- name: Read the deployed stack release
+  ansible.builtin.slurp:
+    src: "{{ supabase_release_file }}"
+  register: supabase_deployed_release
+  failed_when: false
+  tags: [email-templates]
+
+- name: Check for an existing database
+  ansible.builtin.stat:
+    path: "{{ supabase_dir }}/volumes/db/data/PG_VERSION"
+  register: supabase_existing_db
+  tags: [email-templates]
+
+# This compose file on an older stack would start Postgres 17 on Postgres 15 data, and the new
+# Auth and Storage would migrate the schema without a rollback point.
+- name: Refuse to deploy onto a host that needs supabase-upgrade.yml first
+  ansible.builtin.assert:
+    that: >-
+      (supabase_upgrading | bool) or not supabase_existing_db.stat.exists or
+      (supabase_deployed_release.content | default('') | b64decode | trim) == supabase_release
+    fail_msg: "{{ inventory_hostname }} is not on {{ supabase_release }} yet. Run supabase-upgrade.yml."
+    quiet: true
+  tags: [email-templates]
+
 - name: Check whether the Supabase stack is already provisioned
   ansible.builtin.stat:
     path: "{{ supabase_dir }}/docker-compose.yml"
@@ -35,6 +59,67 @@
     mode: "0644"
     force: true
 
+# Unchanged upstream files from self-hosted/v0.8.2 (see infra/README.md).
+- name: Upload Envoy config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/volumes/api/envoy/"
+    dest: "{{ supabase_dir }}/volumes/api/envoy/"
+    mode: "0644"
+    directory_mode: "0755"
+  notify: Recreate api-gw
+
+- name: Upload Vector config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/volumes/logs/vector.yml"
+    dest: "{{ supabase_dir }}/volumes/logs/vector.yml"
+    mode: "0644"
+  notify: Recreate vector
+
+- name: Upload pooler config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/volumes/pooler/pooler.exs"
+    dest: "{{ supabase_dir }}/volumes/pooler/pooler.exs"
+    mode: "0644"
+  notify: Recreate supavisor
+
+# Only runs when Postgres initialises an empty data directory.
+- name: Upload database init settings
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/volumes/db/jwt.sql"
+    dest: "{{ supabase_dir }}/volumes/db/jwt.sql"
+    mode: "0644"
+
+# Templates only: supabase.yml --tags email-templates.
+- name: Ensure email template dir exists
+  ansible.builtin.file:
+    path: "{{ supabase_dir }}/volumes/email-templates"
+    state: directory
+    mode: "0755"
+  tags: [email-templates]
+
+- name: Upload email templates
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../apps/backend/supabase/templates/{{ item }}.html"
+    dest: "{{ supabase_dir }}/volumes/email-templates/{{ item }}.html"
+    mode: "0644"
+  loop: "{{ supabase_email_templates }}"
+  notify: Restart auth
+  tags: [email-templates]
+
+- name: Upload email template server config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../supabase/email-templates.conf"
+    dest: "{{ supabase_dir }}/email-templates.conf"
+    mode: "0644"
+  notify: Recreate email-templates
+  tags: [email-templates]
+
+- name: Ensure Studio snippets dir exists
+  ansible.builtin.file:
+    path: "{{ supabase_dir }}/volumes/snippets"
+    state: directory
+    mode: "0755"
+
 - block:
     - name: Render .env from 1Password (local)
       ansible.builtin.command:
@@ -52,6 +137,7 @@
         mode: "0640"
       no_log: true
 
+  when: supabase_env_from_1password | bool
   always:
     - name: Delete local .env after upload
       ansible.builtin.file:
@@ -127,16 +213,36 @@
 
 - name: Pull images
   ansible.builtin.command:
-    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml pull"
+    cmd: "{{ supabase_compose_cmd }} pull"
   args:
     chdir: "{{ supabase_dir }}"
 
-# db waits for vector to be healthy, so a bad Vector config keeps Postgres down: fail before recreating.
+# The postgres user's uid differs between Postgres images, and Postgres refuses a TLS key owned by anyone else but root.
+- name: Look up the postgres user of the Postgres image
+  ansible.builtin.command:
+    cmd: "docker run --rm --entrypoint sh {{ supabase_postgres_image }} -c 'id -u postgres; id -g postgres'"
+  register: supabase_postgres_ids
+  changed_when: false
+
+- name: Give the Postgres TLS cert to that user
+  ansible.builtin.file:
+    path: "{{ supabase_dir }}/volumes/db/certs/{{ item.name }}"
+    state: file
+    owner: "{{ supabase_postgres_ids.stdout_lines[0] }}"
+    group: "{{ supabase_postgres_ids.stdout_lines[1] }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { name: server.key, mode: "0600" }
+    - { name: server.crt, mode: "0644" }
+  loop_control:
+    label: "{{ item.name }}"
+
+# A bad Vector config stops the auth logs to STACKIT: fail before recreating anything.
 # Health checks off, not --no-environment (which skips compiling remaps), so a STACKIT outage can't block deploys.
 - name: Validate Vector config
   ansible.builtin.command:
     cmd: >-
-      docker compose -f docker-compose.yml -f docker-compose.monitoring.yml
+      {{ supabase_compose_cmd }}
       run --rm --no-deps -T --entrypoint sh vector -c
       'printf "healthchecks:\n  enabled: false\n" > /tmp/no-healthchecks.yml
       && vector validate /tmp/no-healthchecks.yml /etc/vector/vector.yml /etc/vector/vector-stackit.yml'
@@ -144,8 +250,53 @@
     chdir: "{{ supabase_dir }}"
   changed_when: false
 
+# --remove-orphans stops containers of services that were removed from the compose file.
 - name: Start Supabase + monitoring stack
   ansible.builtin.command:
-    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d"
+    cmd: "{{ supabase_compose_cmd }} up -d --remove-orphans"
   args:
     chdir: "{{ supabase_dir }}"
+
+- name: Wait for the database
+  ansible.builtin.command:
+    cmd: docker exec supabase-db pg_isready -U postgres -h localhost
+  register: supabase_db_ready
+  until: supabase_db_ready.rc == 0
+  retries: 60
+  delay: 5
+  changed_when: false
+
+# Older init scripts stored the JWT signing secret as a database setting, readable by any database role.
+# Nothing reads it. Sessions opened before the reset keep it until they reconnect.
+- name: Remove the JWT secret from the database settings
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - supabase-db
+      - psql
+      - -h
+      - localhost
+      - -U
+      - supabase_admin
+      - -d
+      - postgres
+      - -v
+      - ON_ERROR_STOP=1
+      - -tA
+      - -c
+      - >-
+        SELECT 'present' FROM pg_db_role_setting s JOIN pg_database d ON d.oid = s.setdatabase, unnest(s.setconfig) c
+        WHERE d.datname = 'postgres' AND s.setrole = 0 AND split_part(c, '=', 1) = 'app.settings.jwt_secret'
+      - -c
+      - ALTER DATABASE postgres RESET "app.settings.jwt_secret"
+  register: supabase_jwt_setting
+  changed_when: "'present' in supabase_jwt_setting.stdout"
+
+# supabase-upgrade.yml records it itself once its checks pass.
+- name: Record the deployed stack release
+  ansible.builtin.copy:
+    content: "{{ supabase_release }}\n"
+    dest: "{{ supabase_release_file }}"
+    mode: "0644"
+  when: not (supabase_upgrading | bool)
