@@ -38,13 +38,11 @@ const applicationAdminDbClient = createClient<Database>(
 describe("get_product_dashboard_stats", () => {
 	const givenAdminId = crypto.randomUUID();
 	const givenAdminEmail = "admin-test-suite-product-dashboard-stats@ts.berlin";
-	const givenAdminPassword = "SecurePassword123!";
 
 	beforeAll(async () => {
 		await registerAdmin({
 			id: givenAdminId,
 			email: givenAdminEmail,
-			password: givenAdminPassword,
 		});
 
 		await signInWithOtp(applicationAdminDbClient, givenAdminEmail);
@@ -184,13 +182,11 @@ describe("get_product_dashboard_stats", () => {
 		];
 		const givenUserId = crypto.randomUUID();
 		const givenUserEmail = "user-test-suite-product-dashboard-stats@ts.berlin";
-		const givenUserPassword = "SecurePassword123!";
 
 		beforeAll(async () => {
 			await registerNonAdminUser({
 				id: givenUserId,
 				email: givenUserEmail,
-				password: givenUserPassword,
 			});
 
 			await insertDocuments({
@@ -307,7 +303,6 @@ describe("get_product_dashboard_stats", () => {
 describe("auth.users helper functions are restricted to the service role", () => {
 	const givenUserId = crypto.randomUUID();
 	const givenUserEmail = "user-test-suite-auth-helpers@ts.berlin";
-	const givenUserPassword = "SecurePassword123!";
 	const givenTimestamp = subDays(new Date(), 5).toISOString();
 
 	const anonDbClient = createClient<Database>(
@@ -340,7 +335,6 @@ describe("auth.users helper functions are restricted to the service role", () =>
 		await registerNonAdminUser({
 			id: givenUserId,
 			email: givenUserEmail,
-			password: givenUserPassword,
 		});
 
 		const { error } = await signInWithOtp(
@@ -381,18 +375,13 @@ describe("auth.users helper functions are restricted to the service role", () =>
 	});
 });
 
-async function registerAdmin(params: {
-	id: string;
-	email: string;
-	password: string;
-}) {
-	const { id, email, password } = params;
+async function registerAdmin(params: { id: string; email: string }) {
+	const { id, email } = params;
 
 	const { error: createUserError } =
 		await serviceRoleDbClient.auth.admin.createUser({
 			id,
 			email,
-			password,
 			email_confirm: true,
 		});
 
@@ -441,7 +430,6 @@ async function registerManyUsers() {
 			users.push({
 				id: crypto.randomUUID(),
 				email: `${dayIndex}-${usersPerDay}@${pickRandom(domainsWithoutWildcard)}`,
-				password: "password",
 				creationDate,
 				lastSignIn: randomDay,
 			});
@@ -454,7 +442,6 @@ async function registerManyUsers() {
 			await serviceRoleDbClient.auth.admin.createUser({
 				id: user.id,
 				email: user.email,
-				password: user.password,
 				email_confirm: true,
 			});
 
@@ -493,15 +480,13 @@ async function registerManyUsers() {
 async function registerNonAdminUser(param: {
 	id: `${string}-${string}-${string}-${string}-${string}`;
 	email: string;
-	password: string;
 }) {
-	const { id, email, password } = param;
+	const { id, email } = param;
 
 	const { error: createUserError } =
 		await serviceRoleDbClient.auth.admin.createUser({
 			id,
 			email,
-			password,
 			email_confirm: true,
 		});
 

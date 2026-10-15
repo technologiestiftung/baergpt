@@ -66,11 +66,9 @@ async function cleanupStorageFiles(userId: string) {
 describe("Integration tests for Storage", async () => {
 	const givenAdminId = "d279dcb8-ec47-410b-acfc-6d8fdf8a4d85";
 	const givenAdminEmail = "storage-test-suite-admin@ts.berlin";
-	const givenAdminPassword = "SecurePassword123!";
 
 	const givenUserId = "90ed8ecb-6d80-4369-bf80-04f973333a47";
 	const givenUserEmail = "storage-test-suite-user@ts.berlin";
-	const givenUserPassword = "SecurePassword123!";
 
 	const {
 		data: { id: accessGroupId },
@@ -84,9 +82,8 @@ describe("Integration tests for Storage", async () => {
 		{
 			id: givenAdminId,
 			email: givenAdminEmail,
-			password: givenAdminPassword,
 		},
-		{ id: givenUserId, email: givenUserEmail, password: givenUserPassword },
+		{ id: givenUserId, email: givenUserEmail },
 	];
 
 	beforeAll(async () => {
@@ -95,7 +92,6 @@ describe("Integration tests for Storage", async () => {
 				await supabaseAdminClient.auth.admin.createUser({
 					id: user.id,
 					email: user.email,
-					password: user.password,
 					email_confirm: true,
 				});
 
