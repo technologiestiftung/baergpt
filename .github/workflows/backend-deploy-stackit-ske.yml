@@ -1,11 +1,9 @@
 name: Backend deploy to STACKIT Kubernetes Engine
 
 on:
-  # Post-merge only, same reasoning as the Cloud Foundry deploy workflow: a push to
-  # staging/main only happens once a PR is merged (past review + branch protection),
-  # unlike a pull_request-triggered image build which fires for any open PR.
-  push:
-    branches: [staging, main]
+  # Manual only while the backend still runs on Render. At the cutover, add
+  # `push: branches: [staging, main]` so every merge deploys (post-merge only, same
+  # reasoning as the Cloud Foundry deploy workflow).
   workflow_dispatch:
     inputs:
       target:
@@ -110,8 +108,8 @@ jobs:
 
       # This workflow doesn't build images — it deploys whatever
       # backend-image-build-and-push.yml pushed for this exact content. That build may
-      # still be running when this deployment starts (both fire on the same push), so
-      # poll GHCR for a while before giving up rather than failing on the first miss.
+      # still be running when this deployment starts (e.g. dispatched right after a merge),
+      # so poll GHCR for a while before giving up rather than failing on the first miss.
       - name: Wait for image to exist in GHCR 🔍
         id: image
         run: |
