@@ -113,6 +113,7 @@ jobs:
       # still be running when this deployment starts (both fire on the same push), so
       # poll GHCR for a while before giving up rather than failing on the first miss.
       - name: Wait for image to exist in GHCR 🔍
+        id: image
         run: |
           set -euo pipefail
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
@@ -130,6 +131,16 @@ jobs:
             counter=$((counter + 10))
           done
           echo "Image $image found."
+
+          # Deploy by digest: GHCR tags are mutable, so the tag only locates the image and
+          # the digest pins the exact content every node pulls.
+          digest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}' | jq -r .digest)
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Could not resolve a digest for $image (got '$digest')."
+            exit 1
+          fi
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Resolved $image -> $digest"
 
       # Replaces Cloud Foundry's `cf unset-env`/`cf set-env` loop: the same 1Password
       # notesPlain blob is parsed, then applied as k8s Secrets. `kubectl apply` replaces
@@ -191,7 +202,7 @@ jobs:
           echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
           rm -f backend.env gotenberg.env
 
-      # `kubectl kustomize` (built into kubectl) renders the overlay; the image tag and
+      # `kubectl kustomize` (built into kubectl) renders the overlay; the image digest and
       # env checksum are appended as kustomize transformers rather than using
       # `kustomize edit`, which needs the standalone kustomize binary.
       - name: Render and apply manifests 🚀
@@ -204,7 +215,7 @@ jobs:
 
           images:
             - name: ${{ env.IMAGE_NAME }}
-              newTag: ${{ steps.tag.outputs.tag }}
+              digest: ${{ steps.image.outputs.digest }}
 
           commonAnnotations:
             checksum/env: "${{ steps.secrets.outputs.checksum }}"
