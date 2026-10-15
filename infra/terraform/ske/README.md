@@ -108,8 +108,8 @@ to the same Observability instance as the Supabase VMs, with their own credentia
 | `otel-collector-cluster` | Deployment, 1 replica       | Deployment/pod/container state, restarts, limits, ResourceQuota usage; Kubernetes events        |
 
 - **Logs**: only the env namespaces (`staging`, `prod`, `sandbox`), `envoy-gateway-system`
-  (access logs, which include client IPs on purpose, same as the Kong access logs) and
-  `cert-manager`. Loki stream label `service_name="ske-<namespace>"`;
+  (access logs; `downstream_remote_address` is a node address, not the client's IP, because the
+  load balancer doesn't pass it on) and `cert-manager`. Loki stream label `service_name="ske-<namespace>"`;
   narrow down by pod or container with a label filter, e.g.
   `{service_name="ske-prod"} | k8s_container_name="backend" |= "[MEMORY]"`.
 - **Events**: `service_name="ske-events"`, all namespaces; the body is the event as JSON, e.g.

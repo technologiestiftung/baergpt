@@ -152,7 +152,7 @@ jobs:
             echo "::error::The build job returned no valid image digest (got '$DIGEST')."
             exit 1
           fi
-          echo "Resolved $image -> $digest"
+          echo "Deploying ${IMAGE_NAME}@${DIGEST}"
 
       # Replaces Cloud Foundry's `cf unset-env`/`cf set-env` loop: the same 1Password
       # notesPlain blob is parsed, then applied as k8s Secrets. `kubectl apply` replaces
