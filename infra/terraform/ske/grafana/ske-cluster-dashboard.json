@@ -589,6 +589,95 @@
       }
     },
     {
+      "type": "timeseries",
+      "title": "Network I/O per pod",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_metrics}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_metrics}"
+          },
+          "expr": "sum by (k8s_pod_name, direction) (rate(k8s_pod_network_io_bytes_total{source=\"ske\", k8s_namespace_name=\"$namespace\"}[5m]))",
+          "legendFormat": "{{k8s_pod_name}} {{direction}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Pod ephemeral disk",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_metrics}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_metrics}"
+          },
+          "expr": "sum by (k8s_pod_name) (k8s_pod_filesystem_usage_bytes{source=\"ske\", k8s_namespace_name=\"$namespace\"})",
+          "legendFormat": "{{k8s_pod_name}}"
+        }
+      ],
+      "description": "Container writable layers + emptyDir + logs. Pods are evicted when the node's disk runs low.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        }
+      }
+    },
+    {
       "type": "row",
       "title": "Nodes",
       "collapsed": false,
@@ -596,7 +685,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 32
       },
       "panels": []
     },
@@ -609,9 +698,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 10,
+        "w": 7,
         "x": 0,
-        "y": 25
+        "y": 33
       },
       "targets": [
         {
@@ -676,9 +765,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 10,
-        "x": 10,
-        "y": 25
+        "w": 7,
+        "x": 7,
+        "y": 33
       },
       "targets": [
         {
@@ -712,6 +801,71 @@
       }
     },
     {
+      "type": "timeseries",
+      "title": "Node disk used %",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds_metrics}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 14,
+        "y": 33
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds_metrics}"
+          },
+          "expr": "100 * k8s_node_filesystem_usage_bytes{source=\"ske\"} / k8s_node_filesystem_capacity_bytes{source=\"ske\"}",
+          "legendFormat": "{{k8s_node_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "calcs": [
+            "last"
+          ]
+        }
+      }
+    },
+    {
       "type": "stat",
       "title": "Telemetry collectors ready",
       "datasource": {
@@ -722,7 +876,7 @@
         "h": 8,
         "w": 4,
         "x": 20,
-        "y": 25
+        "y": 33
       },
       "targets": [
         {
@@ -764,7 +918,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 41
       },
       "panels": []
     },
@@ -779,7 +933,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 42
       },
       "targets": [
         {
@@ -811,7 +965,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 50
       },
       "targets": [
         {
@@ -842,7 +996,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 56
       },
       "targets": [
         {

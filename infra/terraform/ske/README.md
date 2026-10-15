@@ -117,6 +117,10 @@ to the same Observability instance as the Supabase VMs, with their own credentia
   `k8s_container_name`. Main ones: `container_memory_working_set_bytes`,
   `k8s_container_memory_limit_bytes`, `container_cpu_usage`, `k8s_container_restarts`,
   `k8s_deployment_available`/`_desired`, `k8s_resource_quota_used`/`_hard_limit`.
+  Kubelet metrics are cut down to an allowlist (`filter/kubelet-metrics`, sampled every
+  30s; cluster metrics every 60s) to stay well under the Observability plan's
+  samples-per-minute limit. Add a kubelet metric to the allowlist before building a panel
+  or alert on it.
 
 The log collector runs as root in a `privileged` Pod Security namespace because the log files
 are root-owned and need a hostPath mount. Neither collector has network listeners.

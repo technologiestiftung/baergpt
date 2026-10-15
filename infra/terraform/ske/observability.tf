@@ -197,10 +197,25 @@ resource "helm_release" "otel_collector" {
       receivers = {
         # SKE (Gardener) signs kubelet serving certs with a CA that isn't the cluster CA pods
         # get, so verification fails with "unknown authority". Traffic is pod -> own node only.
-        kubeletstats = { insecure_skip_verify = true }
+        kubeletstats = {
+          insecure_skip_verify = true
+          collection_interval  = "30s"
+        }
       }
 
       processors = merge(local.otel_processors, {
+        # The Observability plan caps ingest in samples/min (shared with the Supabase VMs and
+        # Render); the full kubelet set at 20s exceeded the Starter plan. Keep what the
+        # dashboard and alerts use, plus pod network and disk.
+        "filter/kubelet-metrics" = {
+          error_mode = "ignore"
+          metrics = {
+            metric = [
+              "not IsMatch(name, \"^(container.cpu.usage|container.memory.working_set|container.memory.rss|k8s.pod.network.io|k8s.pod.network.errors|k8s.pod.filesystem.usage|k8s.node.cpu.usage|k8s.node.memory.working_set|k8s.node.memory.available|k8s.node.filesystem.usage|k8s.node.filesystem.capacity)$\")",
+            ]
+          }
+        }
+
         "filter/namespaces" = {
           error_mode = "ignore"
           logs = {
@@ -231,7 +246,7 @@ resource "helm_release" "otel_collector" {
           }
           metrics = {
             receivers  = []
-            processors = ["memory_limiter", "resource/source", "batch"]
+            processors = ["memory_limiter", "filter/kubelet-metrics", "resource/source", "batch"]
             exporters  = ["prometheusremotewrite/stackit"]
           }
         }
@@ -282,8 +297,8 @@ resource "helm_release" "otel_collector_cluster" {
       exporters  = local.otel_exporters
 
       receivers = {
-        # Merged into the preset's receiver; its 10s default is more resolution than we need.
-        k8s_cluster = { collection_interval = "30s" }
+        # Merged into the preset's receiver; its 10s default costs 6x the samples.
+        k8s_cluster = { collection_interval = "60s" }
       }
 
       processors = merge(local.otel_processors, {
