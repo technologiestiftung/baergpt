@@ -6,6 +6,7 @@ region     = "eu01"
 kubernetes_version_min = "1.36"
 
 observability_instance_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # `stackit observability instance list`
+# observability_project_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # only if the instance lives in another project
 
 # machine_type = "g1a.4d"
 # availability_zones = ["eu01-1", "eu01-2", "eu01-3"]

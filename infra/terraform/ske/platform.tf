@@ -320,10 +320,3 @@ resource "kubernetes_network_policy_v1" "default_deny_cross_namespace" {
     }
   }
 }
-
-# TODO: observability (OTel collector / Promtail + kube-state-metrics + node-exporter
-# -> STACKIT Observability). Not scaffolded yet — the existing pattern in
-# infra/supabase/otel-config.yml is a docker-compose/VM config, not a Helm values file,
-# so this needs its own design pass (likely the opentelemetry-collector or
-# grafana/k8s-monitoring chart) rather than a direct port. Needed before the staging
-# cutover.

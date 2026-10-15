@@ -49,7 +49,13 @@ variable "node_pool_max" {
 
 variable "observability_instance_id" {
   type        = string
-  description = "STACKIT Observability instance the SKE observability extension ships metrics to."
+  description = "STACKIT Observability instance the SKE observability extension ships metrics to and the otel-collector ships logs to."
+}
+
+variable "observability_project_id" {
+  type        = string
+  default     = null
+  description = "STACKIT project that owns the Observability instance, if not project_id. The Terraform service account needs access to it."
 }
 
 variable "maintenance_window" {

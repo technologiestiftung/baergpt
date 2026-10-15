@@ -7,18 +7,20 @@ the cutover.
 
 ## Layout
 
-| File                   | Manages                                                          |
-| ---------------------- | ----------------------------------------------------------------- |
-| `versions.tf`          | Terraform + provider pins; S3 remote-state backend                |
-| `provider.tf`          | `stackit` provider + kubeconfig resource; wires `kubernetes`/`helm` providers for the platform layer |
-| `variables.tf`         | project id, region, cluster/node-pool sizing, maintenance window  |
-| `cluster.tf`           | the `stackit_ske_cluster` resource                                |
-| `platform.tf`          | Envoy Gateway + cert-manager, the shared Gateway + its static public IP + HTTPS redirect, namespaces, quotas, network policies |
-| `dns.tf`               | the `baergpt-ske.stackit.rocks` STACKIT DNS zone and one `A` record per namespace hostname |
-| `deploy-access.tf`     | per-namespace `deployer` service account, Role and token for CI    |
-| `outputs.tf`           | cluster name, admin kubeconfig, per-namespace deploy kubeconfigs  |
-| `.op.env.ske.*`        | 1Password `op://` refs for `op run` auth (real file gitignored)   |
-| `terraform.tfvars.example` | copy → `terraform.tfvars` (gitignored)                        |
+| File                       | Manages                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `versions.tf`              | Terraform + provider pins; S3 remote-state backend                                                                             |
+| `provider.tf`              | `stackit` provider + kubeconfig resource; wires `kubernetes`/`helm` providers for the platform layer                           |
+| `variables.tf`             | project id, region, cluster/node-pool sizing, maintenance window                                                               |
+| `cluster.tf`               | the `stackit_ske_cluster` resource                                                                                             |
+| `platform.tf`              | Envoy Gateway + cert-manager, the shared Gateway + its static public IP + HTTPS redirect, namespaces, quotas, network policies |
+| `dns.tf`                   | the `baergpt-ske.stackit.rocks` STACKIT DNS zone and one `A` record per namespace hostname                                     |
+| `deploy-access.tf`         | per-namespace `deployer` service account, Role and token for CI                                                                |
+| `observability.tf`         | otel-collectors shipping logs, metrics and Kubernetes events to STACKIT Observability                                          |
+| `grafana/`                 | Grafana dashboard for the cluster (import by hand)                                                                             |
+| `outputs.tf`               | cluster name, admin kubeconfig, per-namespace deploy kubeconfigs                                                               |
+| `.op.env.ske.*`            | 1Password `op://` refs for `op run` auth (real file gitignored)                                                                |
+| `terraform.tfvars.example` | copy → `terraform.tfvars` (gitignored)                                                                                         |
 
 ## Prerequisites
 
@@ -54,8 +56,8 @@ $OP terraform apply -target=stackit_ske_kubeconfig.this
 #    does not defer that.
 $OP terraform apply -target=helm_release.envoy_gateway -target=helm_release.cert_manager
 
-# 3. everything else (GatewayClass, Gateway, ClusterIssuer, namespaces, quotas,
-#    network policies, pull secrets)
+# 3. everything else (GatewayClass, Gateway + its public IP and DNS records, ClusterIssuer,
+#    namespaces, quotas, network policies, deployer service accounts)
 $OP terraform apply
 ```
 
@@ -79,10 +81,10 @@ service account per namespace whose Role covers only that namespace, and
 `deploy_kubeconfigs` renders one kubeconfig per namespace from its token. Store each in
 1Password as a `kubeconfig` field:
 
-| Namespace | 1Password item referenced by                        |
-| --------- | --------------------------------------------------- |
-| `prod`    | `OP_SKE_DEPLOY_ITEM_ID` (GitHub "Production" env)   |
-| `staging` | `OP_SKE_DEPLOY_ITEM_ID` (GitHub "Staging" env)      |
+| Namespace | 1Password item referenced by                           |
+| --------- | ------------------------------------------------------ |
+| `prod`    | `OP_SKE_DEPLOY_ITEM_ID` (GitHub "Production" env)      |
+| `staging` | `OP_SKE_DEPLOY_ITEM_ID` (GitHub "Staging" env)         |
 | `sandbox` | `OP_SKE_DEPLOY_SANDBOX_ITEM_ID` (GitHub "Staging" env) |
 
 ```sh
@@ -92,6 +94,49 @@ $OP terraform output -json deploy_kubeconfigs | jq -r '.staging'
 The tokens don't expire. Rotate one with
 `$OP terraform apply -replace='kubernetes_secret_v1.deployer_token["<ns>"]'` and update its
 1Password item; an SKE credential rotation invalidates all of them.
+
+## Logs, metrics and events
+
+`observability.tf` installs two OpenTelemetry Collectors (namespace `observability`) that ship
+to the same Observability instance as the Supabase VMs, with their own credential
+(`stackit_observability_credential.otel_collector`). The SKE observability extension in
+`cluster.tf` only covers kube-system and node metrics.
+
+| Collector                | Runs                        | Ships                                                                                           |
+| ------------------------ | --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `otel-collector`         | DaemonSet, one pod per node | container logs from `/var/log/pods`; pod/container CPU, memory, network from the node's kubelet |
+| `otel-collector-cluster` | Deployment, 1 replica       | Deployment/pod/container state, restarts, limits, ResourceQuota usage; Kubernetes events        |
+
+- **Logs**: only the env namespaces (`staging`, `prod`, `sandbox`), `envoy-gateway-system`
+  (access logs) and `cert-manager`. Loki stream label `service_name="ske-<namespace>"`;
+  narrow down by pod or container with a label filter, e.g.
+  `{service_name="ske-prod"} | k8s_container_name="backend" |= "[MEMORY]"`.
+- **Events**: `service_name="ske-events"`, all namespaces; the body is the event as JSON, e.g.
+  `{service_name="ske-events"} | json | object_type="Warning" | object_regarding_namespace="prod"`.
+- **Metrics**: every series has `source="ske"` plus `k8s_namespace_name`, `k8s_pod_name`,
+  `k8s_container_name`. Main ones: `container_memory_working_set_bytes`,
+  `k8s_container_memory_limit_bytes`, `container_cpu_usage`, `k8s_container_restarts`,
+  `k8s_deployment_available`/`_desired`, `k8s_resource_quota_used`/`_hard_limit`.
+
+The log collector runs as root in a `privileged` Pod Security namespace because the log files
+are root-owned and need a hostPath mount. Neither collector has network listeners.
+
+### Dashboard
+
+Import [`grafana/ske-cluster-dashboard.json`](./grafana/ske-cluster-dashboard.json) in Grafana
+(Dashboards → New → Import), pick the Thanos and Loki datasources, and choose the namespace at
+the top. Panels: replica availability, restarts, quota usage, memory as % of limit, CPU, node
+usage, collector health, Warning events and logs.
+
+### Verify after an apply
+
+- `kubectl -n observability get pods -o wide`: one `otel-collector-…-agent` pod per node and one
+  `otel-collector-cluster-…` pod, all Running.
+- Grafana Explore → Loki → `{service_name=~"ske-.*"}` returns lines.
+- Grafana Explore → Thanos → `k8s_pod_phase{source="ske"}` and
+  `container_memory_working_set_bytes{source="ske"}` return series. If a dashboard panel is
+  empty, look up the actual metric name in Explore; the names come from the collector's
+  Prometheus translation.
 
 ## Remote state
 
