@@ -321,3 +321,61 @@ resource "kubernetes_network_policy_v1" "default_deny_cross_namespace" {
     }
   }
 }
+
+# The deployer may create Services (the overlays contain them), so nothing in RBAC stops
+# it from adding spec.externalIPs, which lets a Service intercept cluster traffic to any
+# IP, or a NodePort/LoadBalancer that bypasses the Gateway. This admits ClusterIP only.
+# The deployer's Role is namespaced, so it can't change these cluster-scoped objects.
+resource "kubernetes_manifest" "env_services_cluster_ip_only" {
+  manifest = {
+    apiVersion = "admissionregistration.k8s.io/v1"
+    kind       = "ValidatingAdmissionPolicy"
+    metadata = {
+      name = "env-services-cluster-ip-only"
+    }
+    spec = {
+      failurePolicy = "Fail"
+      matchConstraints = {
+        resourceRules = [{
+          apiGroups   = [""]
+          apiVersions = ["v1"]
+          operations  = ["CREATE", "UPDATE"]
+          resources   = ["services"]
+        }]
+      }
+      validations = [
+        {
+          expression = "!has(object.spec.externalIPs) || size(object.spec.externalIPs) == 0"
+          message    = "spec.externalIPs is not allowed in environment namespaces."
+        },
+        {
+          expression = "!has(object.spec.type) || object.spec.type == 'ClusterIP'"
+          message    = "Only ClusterIP Services are allowed in environment namespaces; public traffic goes through the shared Gateway."
+        },
+      ]
+    }
+  }
+}
+
+resource "kubernetes_manifest" "env_services_cluster_ip_only_binding" {
+  manifest = {
+    apiVersion = "admissionregistration.k8s.io/v1"
+    kind       = "ValidatingAdmissionPolicyBinding"
+    metadata = {
+      name = "env-services-cluster-ip-only"
+    }
+    spec = {
+      policyName        = kubernetes_manifest.env_services_cluster_ip_only.manifest.metadata.name
+      validationActions = ["Deny"]
+      matchResources = {
+        namespaceSelector = {
+          matchExpressions = [{
+            key      = "kubernetes.io/metadata.name"
+            operator = "In"
+            values   = keys(var.namespaces)
+          }]
+        }
+      }
+    }
+  }
+}

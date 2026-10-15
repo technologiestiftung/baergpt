@@ -7,20 +7,20 @@ the cutover.
 
 ## Layout
 
-| File                       | Manages                                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `versions.tf`              | Terraform + provider pins; S3 remote-state backend                                                                             |
-| `provider.tf`              | `stackit` provider + kubeconfig resource; wires `kubernetes`/`helm` providers for the platform layer                           |
-| `variables.tf`             | project id, region, cluster/node-pool sizing, maintenance window                                                               |
-| `cluster.tf`               | the `stackit_ske_cluster` resource                                                                                             |
-| `platform.tf`              | Envoy Gateway + cert-manager, the shared Gateway + its static public IP + HTTPS redirect, namespaces, quotas, network policies |
-| `dns.tf`                   | the `baergpt-ske.stackit.rocks` STACKIT DNS zone and one `A` record per namespace hostname                                     |
-| `deploy-access.tf`         | per-namespace `deployer` service account, Role and token for CI                                                                |
-| `observability.tf`         | otel-collectors shipping logs, metrics and Kubernetes events to STACKIT Observability                                          |
-| `grafana/`                 | Grafana dashboard for the cluster (import by hand)                                                                             |
-| `outputs.tf`               | cluster name, admin kubeconfig, per-namespace deploy kubeconfigs                                                               |
-| `.op.env.ske.*`            | 1Password `op://` refs for `op run` auth (real file gitignored)                                                                |
-| `terraform.tfvars.example` | copy → `terraform.tfvars` (gitignored)                                                                                         |
+| File                       | Manages                                                                                                                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `versions.tf`              | Terraform + provider pins; S3 remote-state backend                                                                                                                                                   |
+| `provider.tf`              | `stackit` provider + kubeconfig resource; wires `kubernetes`/`helm` providers for the platform layer                                                                                                 |
+| `variables.tf`             | project id, region, cluster/node-pool sizing, maintenance window                                                                                                                                     |
+| `cluster.tf`               | the `stackit_ske_cluster` resource                                                                                                                                                                   |
+| `platform.tf`              | Envoy Gateway + cert-manager, the shared Gateway + its static public IP + HTTPS redirect, namespaces, quotas, network policies, a ClusterIP-only admission policy for Services in the env namespaces |
+| `dns.tf`                   | the `baergpt-ske.stackit.rocks` STACKIT DNS zone and one `A` record per namespace hostname                                                                                                           |
+| `deploy-access.tf`         | per-namespace `deployer` service account, Role and token for CI                                                                                                                                      |
+| `observability.tf`         | otel-collectors shipping logs, metrics and Kubernetes events to STACKIT Observability                                                                                                                |
+| `grafana/`                 | Grafana dashboard for the cluster (import by hand)                                                                                                                                                   |
+| `outputs.tf`               | cluster name, admin kubeconfig, per-namespace deploy kubeconfigs                                                                                                                                     |
+| `.op.env.ske.*`            | 1Password `op://` refs for `op run` auth (real file gitignored)                                                                                                                                      |
+| `terraform.tfvars.example` | copy → `terraform.tfvars` (gitignored)                                                                                                                                                               |
 
 ## Prerequisites
 
