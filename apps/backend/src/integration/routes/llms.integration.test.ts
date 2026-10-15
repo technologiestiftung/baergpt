@@ -15,7 +15,6 @@ const supabaseAnonClient = createClient<Database>(
 
 const USER_ID = "c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c3c3";
 const USER_EMAIL = "llm-tools-validation-test@ts.berlin";
-const USER_PASSWORD = "SecurePassword789!";
 
 // feature-flagged. Pick the first enabled tool, if any.
 const externalToolEnabled: Partial<Record<ActiveTools, boolean>> = {
@@ -47,7 +46,6 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 		await serviceRoleDbClient.auth.admin.createUser({
 			id: USER_ID,
 			email: USER_EMAIL,
-			password: USER_PASSWORD,
 			email_confirm: true,
 		});
 

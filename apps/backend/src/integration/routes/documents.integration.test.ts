@@ -31,7 +31,6 @@ const supabaseAnonClient = createClient<Database>(
 describe("Documents Route Integration", () => {
 	const givenUserId = "d279dcb8-ec47-410b-acfc-6d8fdf8a4d85";
 	const givenUserEmail = "docs-test-suite-user@ts.berlin";
-	const givenUserPassword = "SecurePassword123!";
 	let accessToken: string;
 
 	beforeAll(async () => {
@@ -42,7 +41,6 @@ describe("Documents Route Integration", () => {
 		await serviceRoleDbClient.auth.admin.createUser({
 			id: givenUserId,
 			email: givenUserEmail,
-			password: givenUserPassword,
 			email_confirm: true,
 		});
 	}, 20_000);

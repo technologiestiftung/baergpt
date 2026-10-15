@@ -70,7 +70,6 @@ const deleteDocument = async (
 
 describe("Base Knowledge Integration Tests", () => {
 	const testUserEmail = "base-knowledge-test-user@ts.berlin";
-	const testUserPassword = "SecurePassword123!";
 
 	let testUserId: string;
 	let accessGroupId: string;
@@ -84,7 +83,6 @@ describe("Base Knowledge Integration Tests", () => {
 		const { data: userData, error: signupError } =
 			await supabaseAdminClient.auth.admin.createUser({
 				email: testUserEmail,
-				password: testUserPassword,
 				email_confirm: true,
 			});
 

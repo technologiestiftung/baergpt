@@ -187,19 +187,14 @@ const cleanupTestDocuments = async () => {
 /**
  * Create a test user in auth.users table
  */
-const createTestUser = async (args: {
-	userId: string;
-	email: string;
-	password: string;
-}) => {
-	const { userId, email, password } = args;
+const createTestUser = async (args: { userId: string; email: string }) => {
+	const { userId, email } = args;
 
 	try {
 		const { error: createError } =
 			await serviceRoleDbClient.auth.admin.createUser({
 				id: userId,
 				email,
-				password,
 				email_confirm: true,
 			});
 
@@ -244,8 +239,7 @@ const deleteTestUser = async () => {
 describe("Integration Tests for Routes", () => {
 	beforeAll(async () => {
 		const email = "test@ts.berlin";
-		const password = "SecureTestPassword123!";
-		await createTestUser({ userId: OWNER_USER_ID, email, password });
+		await createTestUser({ userId: OWNER_USER_ID, email });
 		// Generate JWT token
 		validToken = await createValidJwtToken(email);
 
@@ -456,11 +450,9 @@ describe("Integration Tests for Routes", () => {
 	it("should return error when deleting if user tries to delete another user's document", async () => {
 		// Create a document for a different user
 		const otherUserEmail = "test2@ts.berlin";
-		const password = "SecureTestPassword123!";
 		await createTestUser({
 			userId: OTHER_USER_ID,
 			email: otherUserEmail,
-			password,
 		});
 
 		const validToken2 = await createValidJwtToken(otherUserEmail);
