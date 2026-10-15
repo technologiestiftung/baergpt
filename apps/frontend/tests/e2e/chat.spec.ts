@@ -1119,6 +1119,72 @@ test.describe("Chat", () => {
 		},
 	);
 
+	testWithMockedLlm(
+		"Activating a second external tool does not show chat history paused info message again",
+		async ({ page, isMobile }) => {
+			testWithMockedLlm.skip(isMobile === true, "desktop-only menu flow");
+
+			if (
+				process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true" ||
+				process.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED !== "true"
+			) {
+				testWithMockedLlm.skip();
+			}
+
+			// Allows fast-forwarding the info message auto-hide timer
+			await page.clock.install();
+			await page.goto("/");
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("Hallo, wie geht es dir?");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
+
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			const webSearchOption = page.getByRole("menuitemcheckbox", {
+				name: "Websuche auswählen",
+			});
+			await webSearchOption.click();
+
+			const historyScopedInfoMessage = page.getByText("Chatverlauf pausiert");
+			await expect(historyScopedInfoMessage).toBeVisible();
+
+			await page.clock.runFor(20_000);
+			await expect(historyScopedInfoMessage).not.toBeVisible();
+
+			await chatOptionsButton.click();
+
+			const connectorsOption = page.getByRole("menuitem", {
+				name: "Konnektoren auswählen",
+			});
+			await connectorsOption.hover();
+
+			const connectorsSubmenu = page.getByTestId(
+				"chat-menu-connectors-submenu",
+			);
+			const parlaBerlinOption = connectorsSubmenu.getByRole(
+				"menuitemcheckbox",
+				{
+					name: /Parla Berlin/,
+				},
+			);
+			await parlaBerlinOption.click();
+
+			const parlaPill = page.getByRole("button", {
+				name: /Parla Berlin entfernen/,
+			});
+			await expect(parlaPill).toBeVisible();
+
+			await expect(historyScopedInfoMessage).not.toBeVisible();
+		},
+	);
+
 	testDesktopOnly(
 		"Adding document replaces chat history paused info message with auto-deactivation info message",
 		async ({ page }) => {

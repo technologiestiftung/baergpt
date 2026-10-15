@@ -187,11 +187,14 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				});
 			}
 
+			const wasExternalToolActive = selectedChatTools.some((active) =>
+				externalChatTools.includes(active),
+			);
 			const currentChat = get().getCurrentChat();
 			const hasNonToolMessage = currentChat?.messages.some(
 				({ external_tool_context }) => !external_tool_context,
 			);
-			if (hasNonToolMessage) {
+			if (hasNonToolMessage && !wasExternalToolActive) {
 				get().showInfoMessage({ type: "historyScoped" });
 			}
 		}
