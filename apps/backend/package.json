@@ -33,7 +33,7 @@
 	},
 	"dependencies": {
 		"@ai-sdk/mcp": "2.0.34",
-		"@ai-sdk/mistral": "4.0.31",
+		"@ai-sdk/mistral": "4.0.43",
 		"@dqbd/tiktoken": "1.0.22",
 		"@hono/node-server": "2.0.12",
 		"@langfuse/client": "5.10.0",
@@ -48,7 +48,7 @@
 		"@opentelemetry/sdk-trace-node": "2.10.0",
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/node": "10.68.0",
-		"@supabase/supabase-js": "2.81.1",
+		"@supabase/supabase-js": "2.117.3",
 		"ai": "7.0.73",
 		"dotenv": "16.6.1",
 		"hono": "4.13.0",
@@ -57,6 +57,7 @@
 		"mammoth": "1.12.0",
 		"mistral-tokenizer-ts": "2.2.1",
 		"pdf-lib": "1.17.1",
+		"pdfjs-dist": "6.1.200",
 		"unpdf": "1.8.0",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
 		"zod": "4.4.3"

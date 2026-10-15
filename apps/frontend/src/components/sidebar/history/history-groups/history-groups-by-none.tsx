@@ -6,7 +6,7 @@ import { HistoryEntry } from "../history-entry.tsx";
 export function HistoryGroupsByNone({
 	historyContainerRef,
 }: {
-	historyContainerRef: React.RefObject<HTMLDivElement>;
+	historyContainerRef: React.RefObject<HTMLDivElement | null>;
 }) {
 	const { chats } = useChatsStore();
 

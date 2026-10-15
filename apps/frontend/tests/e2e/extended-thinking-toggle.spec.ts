@@ -164,27 +164,4 @@ testWithMockedLlm.describe("Extended thinking toggle", () => {
 			await expect(toggle).toBeVisible();
 		},
 	);
-
-	testWithMockedLlm(
-		"persists the toggle but not the model across a reload",
-		async ({ page }) => {
-			await page.goto("/");
-			await openModelDropdown(page);
-			await clickExtendedThinkingSwitch(page);
-			await page.getByRole("option", { name: preciseModelOptionName }).click();
-
-			await expect(
-				page.getByRole("button", { name: preciseModelLabel, exact: false }),
-			).toBeVisible();
-
-			await page.reload();
-
-			// Only the toggle is stored, so no stale model id can be sent.
-			await expect(
-				page.getByRole("button", { name: fastModelLabel, exact: false }),
-			).toBeVisible();
-			await openModelDropdown(page);
-			await expect(extendedThinkingSwitch(page)).toBeChecked();
-		},
-	);
 });

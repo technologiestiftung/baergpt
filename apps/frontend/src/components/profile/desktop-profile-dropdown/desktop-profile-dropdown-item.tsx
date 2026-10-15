@@ -22,7 +22,7 @@ export const DesktopProfileDropdownItem: React.FC<
 	ariaLabel,
 }) => {
 	const classes =
-		"flex rounded-[3px] items-center justify-center pl-1.5 pr-3 py-1 w-full bg-transparent text-sm leading-5 hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default cursor-pointer";
+		"flex rounded-[3px] items-center justify-start pl-1.5 pr-3 py-1 w-full bg-transparent text-sm leading-5 hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default cursor-pointer";
 
 	if (type === "button") {
 		return (

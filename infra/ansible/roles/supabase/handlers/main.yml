@@ -5,3 +5,9 @@
     cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --force-recreate otel-collector"
   args:
     chdir: "{{ supabase_dir }}"
+
+- name: Recreate vector
+  ansible.builtin.command:
+    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --force-recreate vector"
+  args:
+    chdir: "{{ supabase_dir }}"

@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import Content from "../../content.ts";
+import type { ChatTool } from "../../common.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import { useUserStore } from "../../store/user-store.ts";
 import {
@@ -15,9 +16,14 @@ import { GetStartedButton } from "./get-started-button.tsx";
 
 const PARLA_MCP = CONNECTOR_VALUES.parla;
 
+type GreetingKey = Extract<
+	keyof typeof Content,
+	`chat.getStarted.h1.${string}`
+>;
+
 const GREETING_KEYS: {
-	formal: keyof typeof Content;
-	informal: keyof typeof Content;
+	formal: GreetingKey;
+	informal: GreetingKey;
 }[] = [
 	{ formal: "chat.getStarted.h1.1", informal: "chat.getStarted.h1.1" },
 	{ formal: "chat.getStarted.h1.2", informal: "chat.getStarted.h1.2" },
@@ -82,16 +88,26 @@ export const GetStarted: React.FC = () => {
 
 	const { formal, informal } = GREETING_KEYS[greetingIndex];
 	const greeting = isAddressedFormal
-		? `${Content[formal]} ${formalName}`
-		: `${Content[informal]} ${first_name}`;
+		? Content[formal].replace("{name}", () => formalName)
+		: Content[informal].replace("{name}", () => first_name);
+
+	// Makes sure only one tool is selected and unselects all others
+	const selectSingleChatTool = (tool: ChatTool | null) => {
+		selectedChatTools.forEach(toggleChatTool);
+
+		if (tool === null) {
+			return;
+		}
+		toggleChatTool(tool);
+	};
 
 	const promptStarters = [
 		{
 			icon: "icons/parla-icon.svg",
 			label: Content["chat.getStarted.parla.heading"],
 			onClick: () => {
-				if (isParlaAllowed && !selectedChatTools.includes(PARLA_MCP)) {
-					toggleChatTool(PARLA_MCP);
+				if (isParlaAllowed) {
+					selectSingleChatTool(PARLA_MCP);
 				}
 				focusChatForm();
 			},
@@ -100,8 +116,8 @@ export const GetStarted: React.FC = () => {
 			icon: "icons/web-search-icon.svg",
 			label: Content["chat.getStarted.webSearch.heading"],
 			onClick: () => {
-				if (isWebSearchAllowed && !selectedChatTools.includes("webSearch")) {
-					toggleChatTool("webSearch");
+				if (isWebSearchAllowed) {
+					selectSingleChatTool("webSearch");
 				}
 				focusChatForm();
 			},
@@ -110,6 +126,7 @@ export const GetStarted: React.FC = () => {
 			icon: "icons/edit-dark-blue-icon.svg",
 			label: Content["chat.getStarted.writingPrompts.heading"],
 			onClick: () => {
+				selectSingleChatTool(null);
 				setIsShowingWritingPrompts(true);
 			},
 		},
@@ -138,7 +155,6 @@ export const GetStarted: React.FC = () => {
 			<div className="flex flex-1 items-center justify-center md:flex-none md:mb-2">
 				<h1 className="text-2xl leading-8 font-semibold md:text-4xl md:leading-10 text-dunkelblau-100 text-center">
 					{greeting}
-					{Content["chat.getStarted.questionMark"]}
 				</h1>
 			</div>
 

@@ -107,10 +107,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		emailConfirmationStatus: "unknown" as EmailConfirmationStatus,
 		session: undefined,
 		isInitialized: false,
-		isPasswordResetEmailSent: false,
-		passwordResetEmail: null,
-		isPasswordResetSuccessful: false,
-		isPasswordRecoveryMode: false,
 		isEmailUpdateSuccessful: false,
 
 		resendConfirmationEmail: async () => {

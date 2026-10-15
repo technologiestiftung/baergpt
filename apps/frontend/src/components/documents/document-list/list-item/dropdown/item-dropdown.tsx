@@ -118,8 +118,8 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 			<img
 				src={
 					isSelectedForChat
-						? "/icons/minus-dark-blue-icon.svg"
-						: "/icons/plus-dark-blue-icon.svg"
+						? "/icons/minus-small-dark-blue-icon.svg"
+						: "/icons/plus-small-dark-blue-icon.svg"
 				}
 				alt={Content[`documentsList.${toggleContentKey}.imgAlt`]}
 				className="size-5"

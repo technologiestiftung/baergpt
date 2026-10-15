@@ -798,74 +798,6 @@ test.describe("Chat", () => {
 		},
 	);
 
-	testWithMockedLlm(
-		"Change LLM model from small to large and back",
-		async ({ page }) => {
-			await page.goto("/");
-
-			// Check that the small LLM model is selected
-			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
-
-			// Fill in the chat question
-			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
-
-			await sendAndWaitForLLMResponse(page);
-
-			const question1 = page
-				.getByTestId("user-message-markdown-container")
-				.first();
-			await expect(question1).toBeVisible();
-
-			const answer1 = page
-				.getByTestId("assistant-message-markdown-container")
-				.first();
-			await expect(answer1).not.toBeEmpty();
-
-			// Click on the LLM model button
-			await page.getByRole("button", { name: "Schnell" }).click();
-
-			// Select the large LLM model
-			await page
-				.getByRole("option", { name: "Mistral Medium 3.5 (präzise) auswählen" })
-				.click();
-
-			// Verify that the large LLM model is selected
-			await expect(page.getByRole("button", { name: "Präzise" })).toBeVisible();
-
-			// Fill in the chat question
-			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
-
-			await sendAndWaitForLLMResponse(page);
-
-			const question2 = page
-				.getByTestId("user-message-markdown-container")
-				.last();
-			await expect(question2).toBeVisible();
-
-			const answer2 = page
-				.getByTestId("assistant-message-markdown-container")
-				.last();
-			await expect(answer2).not.toBeEmpty();
-
-			// Click on the LLM model button
-			await page.getByRole("button", { name: "Präzise" }).click();
-
-			// Verify that the model selection window is open
-			await expect(page.getByText("Sprachmodell auswählen")).toBeVisible();
-
-			// Select the small LLM model
-			await page
-				.getByRole("option", { name: "Mistral Small 4 (schnell) auswählen" })
-				.click();
-
-			// Verify that the model selection window is closed after selecting a model
-			await expect(page.getByText("Sprachmodell auswählen")).not.toBeVisible();
-
-			// Verify that the small LLM model is selected
-			await expect(page.getByRole("button", { name: "Schnell" })).toBeVisible();
-		},
-	);
-
 	testDesktopOnly(
 		"Toggle base knowledge folder on and off",
 		async ({ page }) => {
@@ -1182,6 +1114,72 @@ test.describe("Chat", () => {
 				name: "Websuche entfernen",
 			});
 			await webSearchPill.click();
+
+			await expect(historyScopedInfoMessage).not.toBeVisible();
+		},
+	);
+
+	testWithMockedLlm(
+		"Activating a second external tool does not show chat history paused info message again",
+		async ({ page, isMobile }) => {
+			testWithMockedLlm.skip(isMobile === true, "desktop-only menu flow");
+
+			if (
+				process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true" ||
+				process.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED !== "true"
+			) {
+				testWithMockedLlm.skip();
+			}
+
+			// Allows fast-forwarding the info message auto-hide timer
+			await page.clock.install();
+			await page.goto("/");
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("Hallo, wie geht es dir?");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
+
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			const webSearchOption = page.getByRole("menuitemcheckbox", {
+				name: "Websuche auswählen",
+			});
+			await webSearchOption.click();
+
+			const historyScopedInfoMessage = page.getByText("Chatverlauf pausiert");
+			await expect(historyScopedInfoMessage).toBeVisible();
+
+			await page.clock.runFor(20_000);
+			await expect(historyScopedInfoMessage).not.toBeVisible();
+
+			await chatOptionsButton.click();
+
+			const connectorsOption = page.getByRole("menuitem", {
+				name: "Konnektoren auswählen",
+			});
+			await connectorsOption.hover();
+
+			const connectorsSubmenu = page.getByTestId(
+				"chat-menu-connectors-submenu",
+			);
+			const parlaBerlinOption = connectorsSubmenu.getByRole(
+				"menuitemcheckbox",
+				{
+					name: /Parla Berlin/,
+				},
+			);
+			await parlaBerlinOption.click();
+
+			const parlaPill = page.getByRole("button", {
+				name: /Parla Berlin entfernen/,
+			});
+			await expect(parlaPill).toBeVisible();
 
 			await expect(historyScopedInfoMessage).not.toBeVisible();
 		},

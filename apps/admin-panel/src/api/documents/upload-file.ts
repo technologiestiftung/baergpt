@@ -1,7 +1,9 @@
 import { useAuthStore } from "@/store/use-auth-store";
 import { useAccessGroupStore } from "@/store/use-access-group-store";
-import type { UploadStatusKeys } from "@/store/use-upload-document-store.ts";
-import { UPLOAD_STATUS_MAP } from "baergpt-frontend/src/store/use-file-uploads-store.ts";
+import {
+	UPLOAD_STATUS_MAP,
+	type UploadStatusKeys,
+} from "@/store/use-upload-document-store.ts";
 
 export async function uploadAndProcessDocument(
 	file: File,

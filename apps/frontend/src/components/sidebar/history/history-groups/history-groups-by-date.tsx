@@ -12,7 +12,7 @@ const sevenDaysAgo = subDays(today, 7);
 export function HistoryGroupsByDate({
 	historyContainerRef,
 }: {
-	historyContainerRef: React.RefObject<HTMLDivElement>;
+	historyContainerRef: React.RefObject<HTMLDivElement | null>;
 }) {
 	const { chats } = useChatsStore();
 

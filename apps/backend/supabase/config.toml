@@ -86,7 +86,7 @@ enabled = true
 # in emails.
 site_url = "http://localhost:5173"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://localhost:5173/account-activated/", "http://localhost:5173/new-password/", "http://localhost:5173/confirm-otp/"]
+additional_redirect_urls = ["http://localhost:5173/confirm-otp/"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # If disabled, the refresh token will never expire.
@@ -109,7 +109,7 @@ enable_signup = true
 double_confirm_changes = false
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = true
-# Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
+# Controls the minimum amount of time that must pass before sending another signup confirmation email.
 max_frequency = "1ms"
 # Number of digits in the emailed one-time code (login + confirmation OTPs).
 otp_length = 10
@@ -134,7 +134,7 @@ subject = "Willkommen bei BärGPT - Bestätige deine E-Mail-Adresse"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
-subject = "Neues Passwort vergeben"
+subject = "Einmaliger Anmelde-Code für Ihr Konto"
 content_path = "./supabase/templates/recovery.html"
 
 [auth.email.template.magic_link]

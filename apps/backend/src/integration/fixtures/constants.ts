@@ -6,6 +6,13 @@ export const defaultDocumentPath = resolve(
 	`./src/integration/fixtures/${defaultDocumentName}`,
 );
 
+// 3 blank pages, AES-256 encrypted (PDF 2.0, /V 5 /R 6) with an empty user password
+export const encryptedDocumentPath = resolve(
+	process.cwd(),
+	"./src/integration/fixtures/encrypted_document.pdf",
+);
+export const encryptedDocumentNumPages = 3;
+
 // defaultDocument data for `documents` table
 export const file_checksum = "8f846168ffdef7b234d20c330eb99260";
 export const file_size = 36884;

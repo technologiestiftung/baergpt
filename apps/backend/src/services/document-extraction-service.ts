@@ -6,11 +6,17 @@ import { countTokens } from "./token-utils";
 import mammoth from "mammoth";
 import XLSX from "xlsx";
 import { captureError } from "../monitoring/capture-error";
-import { getDocumentProxy } from "unpdf";
+import { definePDFJSModule, getDocumentProxy } from "unpdf";
 import { ocrTempFileName } from "../constants";
 import { mockOcrPages, mockWordToPdf } from "./external-mocks";
 
 const isTestMode = config.nodeEnv === "test";
+
+// unpdf bundles the modern pdf.js build, which relies on JS features Node lacks
+// (e.g. Math.sumPrecise). The legacy build ships polyfills for them.
+const pdfjsReady = definePDFJSModule(
+	() => import("pdfjs-dist/legacy/build/pdf.mjs"),
+);
 
 export class DocumentExtractionService {
 	async extractDocument(
@@ -95,6 +101,7 @@ export class DocumentExtractionService {
 	async getPdfPageCount(pdfBytes: Uint8Array): Promise<number> {
 		// Create a copy to avoid detaching the original ArrayBuffer
 		const pdfBytesCopy = new Uint8Array(pdfBytes);
+		await pdfjsReady;
 		const pdf = await getDocumentProxy(pdfBytesCopy);
 		const numPages = pdf.numPages;
 		return numPages;

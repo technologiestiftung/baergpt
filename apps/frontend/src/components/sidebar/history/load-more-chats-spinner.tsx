@@ -5,7 +5,7 @@ import Content from "../../../content.ts";
 import { useIntersectionObserver } from "./hooks/use-intersection-observer.tsx";
 
 type LoadMoreChatsSpinnerProps = {
-	containerRef: RefObject<HTMLDivElement>;
+	containerRef: RefObject<HTMLDivElement | null>;
 };
 
 export function LoadMoreChatsSpinner({

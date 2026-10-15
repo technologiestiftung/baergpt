@@ -12,6 +12,8 @@ GRANT USAGE ON SCHEMA "public" TO "authenticated";
 
 GRANT USAGE ON SCHEMA "public" TO "service_role";
 
+GRANT USAGE ON SCHEMA "public" TO "supabase_auth_admin";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public"
 GRANT ALL ON SEQUENCES TO "postgres";
 

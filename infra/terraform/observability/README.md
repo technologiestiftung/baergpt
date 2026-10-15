@@ -18,6 +18,7 @@ live pipeline. Slack isn't supported by STACKIT's Alertmanager.
 | `variables.tf`            | ids, `target_source`, thresholds; validations incl. the workspace guard |
 | `alerts_metrics.tf`       | host down / disk / memory / CPU (PromQL)                                |
 | `alerts_logs.tf`          | Kong 5xx ratio (LogQL)                                                  |
+| `alerts_anon_egress.tf`   | Tor/Mullvad blocklist stale / blocked share too high (LogQL)            |
 | `set-email-receiver.sh`   | one-time API call to set the email receiver + route                     |
 | `.op.env.observability.*` | 1Password `op://` refs for `op run` auth (real files gitignored)        |
 | `*.tfvars.example`        | copy → `staging.tfvars` / `production.tfvars` (gitignored)              |
@@ -97,6 +98,11 @@ environment in Grafana → Explore before relying on it.
   over the threshold fires on apply.
 - `{service_name="supabase-<env>"}` on Loki — access lines match `|~ "\" 5\\d\\d "`. The 5xx
   ratio has no series when there are no 5xx, so an empty graph is healthy.
+- `{service_name="supabase-<env>-anon-egress"} |= "\"status\": \"ok\""` on Loki — one line per
+  hourly refresh. **Deploy the collector change before applying `alerts_anon_egress.tf`**: with
+  no such line in the last 3h, `AnonEgressBlocklistStale` fires on apply.
+- `{service_name="supabase-<env>-anon-egress"} |~ "\" 403 "` — one line per blocked request.
+  Send one request via Tor (`torsocks curl https://<supabase-host>/`) to see it arrive.
 
 Prove delivery once per instance: add a throwaway `expression = "vector(1)"`, `for = "0s"`
 rule, apply, confirm the mail lands, delete, re-apply.
@@ -110,10 +116,10 @@ rule, apply, confirm the mail lands, delete, re-apply.
 - **Commit `.terraform.lock.hcl`** so everyone uses the same provider version.
 - **Editing any rule replaces the whole group** — `rules` forces replacement, so a one-word
   change plans as `1 to add, 1 to destroy` and leaves a sub-second gap in evaluation.
-- **A dead logs pipeline is not alerted** — metrics and logs ship independently, so
-  `HostOrCollectorDown` can stay silent while the Kong rule goes blind. `absent_over_time`
-  would cover it, but not at current traffic, where a quiet hour looks identical to a
-  broken pipeline.
+- **A dead logs pipeline is only caught indirectly** — metrics and logs ship independently, so
+  `HostOrCollectorDown` can stay silent while the Kong rule goes blind. Kong traffic is too
+  quiet for `absent_over_time`, but the blocklist refresh writes a line every hour, so
+  `AnonEgressBlocklistStale` also fires when log shipping stops (within 3h).
 - **No state locking** — STACKIT doesn't honor S3 conditional-write locks
   ([stackitcloud/terraform-provider-stackit#1534]), so `use_lockfile` is off. Don't run
   concurrent applies against one workspace.

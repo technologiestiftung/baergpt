@@ -1,6 +1,6 @@
 import { Session } from "@supabase/supabase-js";
 import { test as baseTest } from "@playwright/test";
-import { createAnonClient } from "../supabase.ts";
+import { authStorageKey, createAnonClient } from "../supabase.ts";
 import { testWithRegisteredUser } from "./test-with-registered-user.ts";
 
 type TestWithRegisteredUser = {
@@ -41,12 +41,12 @@ export const testWithLoggedInUser =
 			/**
 			 * This happens before each test that uses this fixture.
 			 */
-			await page.addInitScript((givenSession) => {
-				window.localStorage.setItem(
-					"sb-127-auth-token", // -> browser localStorage key used by a local supabase instance
-					JSON.stringify(givenSession),
-				);
-			}, session);
+			await page.addInitScript(
+				({ key, givenSession }) => {
+					window.localStorage.setItem(key, JSON.stringify(givenSession));
+				},
+				{ key: authStorageKey, givenSession: session },
+			);
 
 			/**
 			 * This runs the test that uses this fixture (and injects the page with data in the localStorage).

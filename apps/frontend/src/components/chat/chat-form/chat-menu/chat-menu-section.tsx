@@ -150,7 +150,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 			/>
 			<div
 				id={CHAT_TOOLS_MENU_ID}
-				className={`z-50 absolute -left-0.5 bottom-full mb-3 rounded-3px bg-white border border-hellblau-50 focus-visible:outline-default shadow-md min-w-[200px] ${className}`}
+				className={`z-50 absolute -left-0.5 bottom-full mb-2 rounded-3px bg-white border border-hellblau-50 focus-visible:outline-default shadow-md min-w-[200px] ${className}`}
 				onKeyDown={handleDropdownKeyDown}
 				role="menu"
 				aria-label={Content["chat.options.toggleButton.tooltip.ariaLabel"]}

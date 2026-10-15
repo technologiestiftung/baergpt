@@ -1,12 +1,22 @@
-import type { Page } from "@playwright/test";
+import type { Browser, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import type { Session } from "@supabase/supabase-js";
 import {
 	confirmOtp,
 	findUserByEmail,
 	testWithRegisteredUser,
 } from "../fixtures/test-with-registered-user.ts";
-import { supabaseAdminClient } from "../supabase.ts";
-import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
+import {
+	authStorageKey,
+	createAnonClient,
+	supabaseAdminClient,
+} from "../supabase.ts";
+import {
+	defaultUserFirstName,
+	defaultUserLastName,
+	MOCK_SPLASH_RELEASE_SHA,
+	VERSION_STORAGE_KEY,
+} from "../constants.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
 import Content from "../../src/content.ts";
@@ -27,6 +37,66 @@ async function loginViaOtp(
 		.fill(account.email);
 	await page.getByRole("button", { name: "Code anfordern" }).click();
 	return confirmOtp({ page, account });
+}
+
+/**
+ * Each password sign-in creates its own server-side session, so two calls give
+ * two independent sessions — like signing in from two different browsers.
+ */
+async function createSession(account: { email: string; password: string }) {
+	const { data, error } = await createAnonClient().auth.signInWithPassword({
+		email: account.email,
+		password: account.password,
+	});
+	if (error) {
+		throw new Error(`Failed to sign in: ${error.message}`);
+	}
+	return data.session;
+}
+
+/**
+ * Opens the app in a fresh browser context (separate localStorage) with the
+ * given session. The session is written once instead of via addInitScript, so
+ * a later reload shows what supabase-js actually left in storage.
+ */
+async function openLoggedInBrowser(browser: Browser, session: Session) {
+	const context = await browser.newContext();
+	await context.route(
+		(url) =>
+			url.hostname === "api.github.com" &&
+			/^\/repos\/[^/]+\/[^/]+\/commits\//.test(url.pathname),
+		(route) =>
+			route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({ sha: MOCK_SPLASH_RELEASE_SHA }),
+			}),
+	);
+	const page = await context.newPage();
+	await page.goto("/");
+	await page.evaluate(
+		({ authKey, session, versionKey, sha }) => {
+			localStorage.setItem(authKey, JSON.stringify(session));
+			localStorage.setItem(versionKey, sha);
+		},
+		{
+			authKey: authStorageKey,
+			session,
+			versionKey: VERSION_STORAGE_KEY,
+			sha: MOCK_SPLASH_RELEASE_SHA,
+		},
+	);
+	await page.reload();
+	await expectGreeting(page, `${defaultUserFirstName} ${defaultUserLastName}`);
+	return page;
+}
+
+async function logout(page: Page) {
+	await page.getByRole("button", { name: "Profil öffnen" }).click();
+	await page.getByRole("button", { name: "Ausloggen" }).click();
+	await expect(
+		page.getByText("BärGPT, der KI-Assistent für die Berliner Verwaltung"),
+	).toBeVisible();
 }
 
 test.describe("Login", () => {
@@ -50,6 +120,52 @@ test.describe("Login", () => {
 			page1.getByText("BärGPT, der KI-Assistent für die Berliner Verwaltung"),
 		).toBeVisible();
 	});
+
+	testWithRegisteredUser(
+		"Logout in a second browser still logs out after a global logout in the first",
+		async ({ browser, account }) => {
+			// Regression test: auth-js < 2.91.2 kept the session in localStorage when
+			// /logout answered 403 session_not_found, so a reload logged the user back in.
+			const browserA = await openLoggedInBrowser(
+				browser,
+				await createSession(account),
+			);
+			const browserB = await openLoggedInBrowser(
+				browser,
+				await createSession(account),
+			);
+
+			// Global logout (supabase-js default scope) revokes browser B's session too
+			await logout(browserA);
+
+			const logoutResponse = browserB.waitForResponse((response) =>
+				response.url().includes("/auth/v1/logout"),
+			);
+			await logout(browserB);
+			// Server rejects B's logout since its session is already gone
+			expect((await logoutResponse).status()).toBe(403);
+
+			expect(
+				await browserB.evaluate(
+					(key) => localStorage.getItem(key),
+					authStorageKey,
+				),
+			).toBeNull();
+
+			await browserB.reload();
+			await expect(
+				browserB.getByText(
+					"BärGPT, der KI-Assistent für die Berliner Verwaltung",
+				),
+			).toBeVisible();
+			await expect(
+				browserB.getByRole("button", { name: "Profil öffnen" }),
+			).toBeHidden();
+
+			await browserA.context().close();
+			await browserB.context().close();
+		},
+	);
 
 	test("Invalid Login Attempt", async ({ page }) => {
 		// Go to the login page
@@ -406,6 +522,38 @@ testWithRegisteredUser.describe("User ban", async () => {
 		},
 	);
 });
+
+testWithLoggedInUser(
+	"Logged-In User should be logged out when their account is deleted",
+	async ({ page, account }) => {
+		// Step 1: Go to the app (user is already logged in via fixture)
+		await page.goto("/");
+
+		// Verify user is logged in
+		await expectGreeting(
+			page,
+			`${defaultUserFirstName} ${defaultUserLastName}`,
+		);
+
+		// Step 2: Delete the account in the database, without ever signing the
+		// browser session out — simulates a still-valid access token for an
+		// account that has since been deleted (e.g. deleted from another
+		// session, or by an admin).
+		const { error: deleteError } =
+			await supabaseAdminClient.auth.admin.deleteUser(account.id);
+		expect(deleteError).toBeNull();
+
+		// Step 3: Reload the page to trigger the deletion check
+		await page.reload();
+
+		// Step 4: Verify user is redirected to the landing page (logged out)
+		await expect(
+			page.getByRole("heading", {
+				name: "BärGPT, der KI-Assistent für die Berliner Verwaltung",
+			}),
+		).toBeVisible();
+	},
+);
 
 testWithLoggedInUser(
 	"should allow user to change email address",

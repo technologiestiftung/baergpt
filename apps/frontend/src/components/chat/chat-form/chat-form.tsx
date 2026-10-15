@@ -21,6 +21,7 @@ import {
 	useChatsStore,
 	externalChatTools,
 } from "../../../store/use-chats-store.ts";
+import { useLlmModelStore } from "../../../store/use-llm-model-store.ts";
 import { ChatMenuToggleButton } from "./chat-menu/chat-menu-toggle-button.tsx";
 import { LlmModelToggleButton } from "./llm-model-toggle-button.tsx";
 import { ContextPill } from "../../primitives/pill/context-pill.tsx";
@@ -194,9 +195,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 			external_tool_context: selectedChatTools.some((tool) =>
 				externalChatTools.includes(tool),
 			),
+			traces: null,
 		};
 
-		const model = useChatsStore.getState().selectedLlmModel;
+		const model = useLlmModelStore.getState().selectedLlmModel;
 
 		Sentry.startSpan(
 			{
@@ -221,13 +223,9 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	const isParlaActive = selectedChatTools.includes("parla");
 	const isOpenDataActive = selectedChatTools.includes("openData");
 	const isDatawrapperActive = selectedChatTools.includes("datawrapper");
-	const activeToolsCount = [
-		isWebSearchActive,
-		isParlaActive,
-		isOpenDataActive,
-		isDatawrapperActive,
-	].filter(Boolean).length;
-	const areMultipleSourcesActive = activeToolsCount > 1;
+
+	const isOneSourceActive = selectedChatTools.length > 0;
+	const areMultipleSourcesActive = selectedChatTools.length > 1;
 
 	const getTextAreaPlaceholder = () => {
 		if (areMultipleSourcesActive) {
@@ -256,7 +254,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		<form
 			onSubmit={handleSubmit}
 			className={`relative flex flex-col max-h-[290px] mx-[1px] focus-visible:outline-2px hover:outline hover:outline-offset-[-2px] hover:outline-dunkelblau-100 border border-dunkelblau-100 rounded-[3px]
-				${isWebSearchActive && "border-[2px] bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
+				${isOneSourceActive && "bg-hellblau-40 focus-visible:outline-3px hover:outline hover:outline-offset-[-1px]"}`}
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
@@ -282,9 +280,12 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 					}`}
 				>
 					<textarea
-						className={`w-full focus:outline-none min-h-6 max-h-32 resize-none overflow-y-auto text-base leading-6 text-dunkelblau-100 placeholder:text-dunkelblau-80 ${
-							isCompact ? "overflow-x-hidden" : ""
-						}`}
+						className={`
+							w-full focus:outline-none min-h-6 max-h-32 resize-none 
+							overflow-y-auto text-base leading-6 chatsearch-scrollbar
+							text-dunkelblau-100 placeholder:text-dunkelblau-80 ${
+								isCompact ? "overflow-x-hidden" : ""
+							}`}
 						ref={textareaRef}
 						name="content"
 						rows={1}

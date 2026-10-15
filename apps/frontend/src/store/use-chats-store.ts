@@ -4,7 +4,8 @@ import type {
 	ChatMessage,
 	NewChatMessage,
 	ChatTool,
-	LlmModel,
+	MessageTraces,
+	TraceTool,
 } from "../common";
 import { useCurrentChatIdStore } from "./current-chat-id-store.ts";
 import {
@@ -46,10 +47,8 @@ interface ChatStore {
 	chats: ChatWithMessages[];
 	hasMoreChats: boolean;
 	selectedChatTools: ChatTool[];
-	selectedLlmModel: LlmModel;
 	resetToDefaultChatTools(): void;
 	toggleChatTool(tool: ChatTool): void;
-	setSelectedLlmModel(model: LlmModel): void;
 	updateChats(givenChat: ChatWithMessages): void;
 	getChatsFromDb(signal: AbortSignal): Promise<void>;
 	getNextChatsPage(): Promise<void>;
@@ -97,6 +96,8 @@ interface ChatStore {
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
 		open_data_citations: OpenDataCitationSource[] | null;
+		traces: MessageTraces | null;
+		running_tool?: TraceTool;
 	}): void;
 	visibleInfoMessage: VisibleChatInfoMessage;
 	showInfoMessage(infoMessage: VisibleChatInfoMessage): void;
@@ -116,12 +117,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	chats: [],
 	hasMoreChats: true,
 	selectedChatTools: [],
-	selectedLlmModel: "mistral-small",
 	visibleInfoMessage: null,
-
-	setSelectedLlmModel(model: LlmModel) {
-		set({ selectedLlmModel: model });
-	},
 
 	resetToDefaultChatTools() {
 		get().showInfoMessage(null);
@@ -191,11 +187,14 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				});
 			}
 
+			const wasExternalToolActive = selectedChatTools.some((active) =>
+				externalChatTools.includes(active),
+			);
 			const currentChat = get().getCurrentChat();
 			const hasNonToolMessage = currentChat?.messages.some(
 				({ external_tool_context }) => !external_tool_context,
 			);
-			if (hasNonToolMessage) {
+			if (hasNonToolMessage && !wasExternalToolActive) {
 				get().showInfoMessage({ type: "historyScoped" });
 			}
 		}
@@ -424,6 +423,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		web_citations,
 		parla_citations,
 		open_data_citations,
+		traces,
+		running_tool,
 	}) => {
 		const foundMessage = chat.messages.find(({ id }) => id === messageId);
 		if (!foundMessage) {
@@ -435,6 +436,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		foundMessage.web_citations = web_citations;
 		foundMessage.parla_citations = parla_citations;
 		foundMessage.open_data_citations = open_data_citations;
+		foundMessage.traces = traces;
+		foundMessage.running_tool = running_tool;
 		get().updateChats(chat);
 	},
 

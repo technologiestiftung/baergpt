@@ -2,8 +2,8 @@ import { type RefObject, useEffect } from "react";
 import { useChatsStore } from "../../../../store/use-chats-store.ts";
 
 type UseIntersectionObserverArgs = {
-	containerRef: RefObject<HTMLDivElement>;
-	ref: RefObject<HTMLDivElement>;
+	containerRef: RefObject<HTMLDivElement | null>;
+	ref: RefObject<HTMLDivElement | null>;
 	hasLoadedAllChats: boolean;
 	chatsCount: number;
 };

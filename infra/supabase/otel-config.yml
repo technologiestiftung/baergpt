@@ -1,4 +1,5 @@
-# OTel Collector for the Supabase VM: host + container metrics and Kong gateway logs → STACKIT.
+# OTel Collector for the Supabase VM: host + container metrics, Kong gateway logs and the host
+# nginx anon-egress logs → STACKIT.
 # Env: STACKIT_OBSERVABILITY_{USERNAME,PASSWORD,METRICS_PUSH_URL,LOGS_OTLP_URL}, BAERGPT_ENV,
 # BAERGPT_HOSTNAME. LOGS_OTLP_URL must be the full ingest path (.../otlp/v1/logs), sent verbatim.
 
@@ -49,6 +50,13 @@ receivers:
         from: attributes.container_id
         to: attributes["container.id"]
 
+  # Host files, not containers: nginx runs on the VM. Blocked-request lines contain client IPs.
+  filelog/anon-egress:
+    include:
+      - /hostfs/var/log/anon-egress-blocklist.log
+      - /hostfs/var/log/nginx/anon-egress.log
+    start_at: end
+
 processors:
   memory_limiter:
     check_interval: 5s
@@ -82,6 +90,13 @@ processors:
     attributes:
       - key: service.name
         value: supabase-${env:BAERGPT_ENV}
+        action: upsert
+
+  # Own stream so blocked 403s (same access-log shape as Kong) don't dilute the Kong 5xx ratio.
+  resource/service-anon-egress:
+    attributes:
+      - key: service.name
+        value: supabase-${env:BAERGPT_ENV}-anon-egress
         action: upsert
 
   batch:
@@ -132,4 +147,8 @@ service:
     logs/containers:
       receivers: [filelog/containers]
       processors: [memory_limiter, filter/gateway-only, resource/service, attributes/source, attributes/job-kong, batch]
+      exporters: [otlphttp/stackit]
+    logs/anon-egress:
+      receivers: [filelog/anon-egress]
+      processors: [memory_limiter, resource/service-anon-egress, attributes/source, batch]
       exporters: [otlphttp/stackit]

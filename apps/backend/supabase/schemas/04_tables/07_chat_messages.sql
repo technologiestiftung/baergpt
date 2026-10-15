@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS "public"."chat_messages" (
     "web_citations" "jsonb",
     "parla_citations" "jsonb",
     "open_data_citations" "jsonb",
-    "external_tool_context" BOOLEAN DEFAULT FALSE NOT NULL
+    "external_tool_context" BOOLEAN DEFAULT FALSE NOT NULL,
+    "traces" "jsonb"
 );
 
 ALTER TABLE "public"."chat_messages" OWNER TO "postgres";
@@ -67,7 +68,7 @@ CREATE POLICY "Allow authenticated users to CRUD their own chat_messages" ON "pu
                     )
             )
         )
-        AND (NOT "public"."is_current_user_banned" ())
+        AND (NOT "public"."is_current_user_banned_or_deleted" ())
     )
 )
 WITH
@@ -91,7 +92,7 @@ WITH
                         )
                 )
             )
-            AND (NOT "public"."is_current_user_banned" ())
+            AND (NOT "public"."is_current_user_banned_or_deleted" ())
         )
     );
 

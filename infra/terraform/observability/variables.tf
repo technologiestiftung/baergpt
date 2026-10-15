@@ -96,3 +96,25 @@ variable "kong_5xx_min_errors_5m" {
     error_message = "kong_5xx_min_errors_5m is a whole-number count >= 1."
   }
 }
+
+variable "anon_egress_blocked_ratio_max" {
+  type        = number
+  default     = 0.25
+  description = "Fire when the Tor/Mullvad block rejects more than this fraction of all requests over 30m (0-1)."
+
+  validation {
+    condition     = var.anon_egress_blocked_ratio_max > 0 && var.anon_egress_blocked_ratio_max < 1
+    error_message = "anon_egress_blocked_ratio_max is a fraction (0.25), not a percentage (25)."
+  }
+}
+
+variable "anon_egress_blocked_min_30m" {
+  type        = number
+  default     = 30
+  description = "Floor: the ratio must also be backed by this many blocked requests in the 30m window."
+
+  validation {
+    condition     = floor(var.anon_egress_blocked_min_30m) == var.anon_egress_blocked_min_30m && var.anon_egress_blocked_min_30m >= 1
+    error_message = "anon_egress_blocked_min_30m is a whole-number count >= 1."
+  }
+}

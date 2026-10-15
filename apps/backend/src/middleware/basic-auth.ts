@@ -36,8 +36,8 @@ const basicAuth = createMiddleware(async (c: Context, next: Next) => {
 	}
 
 	const userClient = createUserScopedDbClient(token);
-	const { data: isUserBanned, error } = await userClient.rpc(
-		"is_current_user_banned",
+	const { data: isUserBannedOrDeleted, error } = await userClient.rpc(
+		"is_current_user_banned_or_deleted",
 	);
 
 	if (error) {
@@ -45,7 +45,7 @@ const basicAuth = createMiddleware(async (c: Context, next: Next) => {
 		return c.json({ error: "Unauthorized: Invalid or expired session" }, 401);
 	}
 
-	if (isUserBanned) {
+	if (isUserBannedOrDeleted) {
 		captureError(new Error("User account was banned"));
 		return c.json({ error: "Unauthorized: Invalid or expired session" }, 401);
 	}

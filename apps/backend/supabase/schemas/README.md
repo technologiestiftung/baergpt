@@ -9,7 +9,8 @@ diffing these files against the database.
 1. Edit the relevant file(s) here.
 2. Run `npm run db:generate-migration <MIGRATION_NAME>`: this diffs the
    schema and writes `migrations/<DATETIME>_<MIGRATION_NAME>.sql`.
-3. Verify it's complete: `supabase db reset && supabase db diff --schema public` should print
+3. (optional) Run `supabase db reset` to apply it locally
+4. (optional) Verify it's complete: `supabase db diff --schema public` should print
    **no** diff. A leftover diff means something isn't captured.
 
 ## Load order
@@ -49,6 +50,13 @@ Each table file is organized with section delimiters:
 - **Only `public` is diffable.** Objects in `auth.*` and `storage.*` (e.g.
   triggers on `auth.users`, policies on `storage.objects`) are **not** picked up
   by declarative diff. Maintain those as hand-written migrations.
+- **Grants, revokes and comments are not diffed.** `db:generate-migration` and
+  the CI drift check ignore `GRANT`/`REVOKE` (on functions, tables and schemas)
+  and `COMMENT`. Copy them from the schema file into the generated migration by
+  hand. New functions in `public` are executable by `anon` and `authenticated`
+  through default privileges, so a function that must not be callable via the
+  API needs explicit `REVOKE … FROM "anon"` and `FROM "authenticated"` —
+  `REVOKE … FROM PUBLIC` alone doesn't remove those grants.
 - **No nested `DO $$ … $$` inside a plpgsql function.** Function bodies are
   compared as opaque strings; nested dollar-quoting never round-trips and
   produces a perpetual no-op diff. Inline the logic into the function's own

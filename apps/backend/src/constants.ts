@@ -28,6 +28,13 @@ export const retryDelay = 1000;
 
 export const EXPERIMENTAL_MAX_TOOL_CALL_STEPS = 3;
 
+/**
+ * Reasoning tokens are billed against the same output budget as the answer, so
+ * extended thinking gets a larger cap to avoid truncating the actual answer.
+ */
+export const MAX_OUTPUT_TOKENS = 8192;
+export const MAX_OUTPUT_TOKENS_EXTENDED_THINKING = 24_576;
+
 export const allowedSourceTypes = [
 	"personal_document",
 	"public_document",

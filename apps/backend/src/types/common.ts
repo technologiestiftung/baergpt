@@ -73,7 +73,7 @@ export type IncomingChatMessage = ModelMessage & {
 export type ChatMessageBody = {
 	messages: IncomingChatMessage[];
 	user_id: string;
-	chat_id: string;
+	chat_id: number;
 	search_type: string;
 	allowed_document_ids: number[];
 	allowed_folder_ids: number[];
@@ -82,6 +82,7 @@ export type ChatMessageBody = {
 	user_name: string;
 	active_tools: ActiveTools[];
 	llm_model: string;
+	extended_thinking?: boolean;
 };
 
 export type ActiveTools =

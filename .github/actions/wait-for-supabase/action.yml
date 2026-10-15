@@ -25,32 +25,43 @@ runs:
         # PostgREST root/OpenAPI endpoint — the root answers even when table privileges are missing,
         # which lets a broken stack look healthy here and only fail several steps later.
 
+        print_diagnostics() {
+          echo "=== PostgREST health check (http://localhost:54321/rest/v1/application_admins) ==="
+          echo "HTTP status: ${HTTP_STATUS:-<failed>}"
+          if [ -f /tmp/supabase-health.body ]; then
+            echo "Response body (first 500 chars):"
+            head -c 500 /tmp/supabase-health.body || true
+            echo
+          fi
+          echo "=== PostgreSQL readiness (pg_isready -U postgres -h localhost -p 54322) ==="
+          cat /tmp/pg_isready.out 2>/dev/null || echo "pg_isready output unavailable"
+          if command -v docker >/dev/null 2>&1; then
+            echo "=== Docker status (running) ==="
+            docker ps
+            echo "=== Docker status (all) ==="
+            docker ps -a
+          fi
+          if [ -f /tmp/supabase-start.log ]; then
+            echo "=== Supabase start log ==="
+            cat /tmp/supabase-start.log
+            echo "=== End Supabase start log ==="
+          fi
+        }
+
         until \
           HTTP_STATUS=$(curl -s --connect-timeout 5 --max-time 10 -o /tmp/supabase-health.body -w "%{http_code}" "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/application_admins) && \
           [ "$HTTP_STATUS" = "200" ] && \
           pg_isready -U postgres -h localhost -p 54322 >/tmp/pg_isready.out 2>&1; do
+          # Written by the setup action once `supabase start` exits; a failed start never recovers.
+          START_EXIT="$(cat /tmp/supabase-start.exit 2>/dev/null || true)"
+          if [ -n "$START_EXIT" ] && [ "$START_EXIT" != "0" ]; then
+            echo "supabase start failed with exit status ${START_EXIT} after ${SECONDS}s"
+            print_diagnostics
+            exit 1
+          fi
           if [ "$SECONDS" -ge "$deadline" ]; then
             echo "Timed out waiting for Supabase after ${SECONDS}s (limit ${timeout}s)"
-            echo "=== PostgREST health check (http://localhost:54321/rest/v1/application_admins) ==="
-            echo "HTTP status: ${HTTP_STATUS:-<failed>}"
-            if [ -f /tmp/supabase-health.body ]; then
-              echo "Response body (first 500 chars):"
-              head -c 500 /tmp/supabase-health.body || true
-              echo
-            fi
-            echo "=== PostgreSQL readiness (pg_isready -U postgres -h localhost -p 54322) ==="
-            cat /tmp/pg_isready.out 2>/dev/null || echo "pg_isready output unavailable"
-            if command -v docker >/dev/null 2>&1; then
-              echo "=== Docker status (running) ==="
-              docker ps
-              echo "=== Docker status (all) ==="
-              docker ps -a
-            fi
-            if [ -f /tmp/supabase-start.log ]; then
-              echo "=== Supabase start log ==="
-              cat /tmp/supabase-start.log
-              echo "=== End Supabase start log ==="
-            fi
+            print_diagnostics
             exit 1
           fi
           echo "Waiting for Supabase to be ready... (${SECONDS}s/${timeout}s, POSTGREST status: ${HTTP_STATUS:-<failed>})"

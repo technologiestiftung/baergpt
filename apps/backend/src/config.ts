@@ -16,10 +16,10 @@ export interface Config {
 	fileUploadLimitMb?: number;
 	nodeEnv?: string;
 	modelTemperature: number;
-	smallModelIdentifier: string;
-	mediumModelIdentifier: string;
-	glmModelIdentifier: string;
-	featureFlagGlm52Allowed: boolean;
+	fastModelIdentifier: string;
+	preciseModelIdentifier: string;
+	experimentalModelIdentifier: string;
+	featureFlagExperimentalModelAllowed: boolean;
 	defaultDocumentProcessingModel: string;
 	sentryDsn: string;
 	gotenbergUrl: string;
@@ -90,18 +90,18 @@ export function verifyConfig(): void {
 	if (!process.env.MODEL_TEMPERATURE && !process.env.CI) {
 		throw new Error("MODEL_TEMPERATURE must be defined");
 	}
-	if (!process.env.SMALL_MODEL_IDENTIFIER) {
-		throw new Error("SMALL_MODEL_IDENTIFIER must be defined");
+	if (!process.env.FAST_MODEL_IDENTIFIER) {
+		throw new Error("FAST_MODEL_IDENTIFIER must be defined");
 	}
-	if (!process.env.MEDIUM_MODEL_IDENTIFIER) {
-		throw new Error("MEDIUM_MODEL_IDENTIFIER must be defined");
+	if (!process.env.PRECISE_MODEL_IDENTIFIER) {
+		throw new Error("PRECISE_MODEL_IDENTIFIER must be defined");
 	}
 	if (
-		process.env.FEATURE_FLAG_GLM_5_2_ALLOWED === "true" &&
-		!process.env.GLM_MODEL_IDENTIFIER
+		process.env.FEATURE_FLAG_EXPERIMENTAL_MODEL_ALLOWED === "true" &&
+		!process.env.EXPERIMENTAL_MODEL_IDENTIFIER
 	) {
 		throw new Error(
-			"GLM_MODEL_IDENTIFIER must be defined when FEATURE_FLAG_GLM_5_2_ALLOWED is true",
+			"EXPERIMENTAL_MODEL_IDENTIFIER must be defined when FEATURE_FLAG_EXPERIMENTAL_MODEL_ALLOWED is true",
 		);
 	}
 	if (!process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL) {
@@ -188,10 +188,11 @@ export const config: Config = {
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
-	smallModelIdentifier: process.env.SMALL_MODEL_IDENTIFIER,
-	mediumModelIdentifier: process.env.MEDIUM_MODEL_IDENTIFIER,
-	glmModelIdentifier: process.env.GLM_MODEL_IDENTIFIER,
-	featureFlagGlm52Allowed: process.env.FEATURE_FLAG_GLM_5_2_ALLOWED === "true",
+	fastModelIdentifier: process.env.FAST_MODEL_IDENTIFIER,
+	preciseModelIdentifier: process.env.PRECISE_MODEL_IDENTIFIER,
+	experimentalModelIdentifier: process.env.EXPERIMENTAL_MODEL_IDENTIFIER,
+	featureFlagExperimentalModelAllowed:
+		process.env.FEATURE_FLAG_EXPERIMENTAL_MODEL_ALLOWED === "true",
 	defaultDocumentProcessingModel: process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL,
 	sentryDsn: process.env.SENTRY_DSN,
 	gotenbergUrl: process.env.GOTENBERG_URL,

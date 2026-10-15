@@ -35,7 +35,6 @@ const errorMessages: { [key: string]: string } = {
 		"API-Rate-Limit überschritten, bitte in einer Minute nochmal versuchen.",
 	context_length_exceeded:
 		"Kontextlänge überschritten, bitte starten Sie einen neuen Chat.",
-	wrong_password: Content["form.validation.password.wrong.error"],
 	"Failed to fetch":
 		"Etwas ist schief gelaufen, bitte starten Sie einen neuen Chat.",
 	selected_llm_not_healthy:

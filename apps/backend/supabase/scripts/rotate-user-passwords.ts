@@ -48,8 +48,7 @@ async function run() {
 	if (!isDryRun && !isConfirmed) {
 		console.error(
 			"Refusing to run: pass --dry-run to preview, or --yes to actually rotate passwords.\n" +
-				"This action locks every existing user out of password login until they use " +
-				"the password-reset flow to set a new one.",
+				"This action locks every existing user out of password login.",
 		);
 		process.exit(1);
 	}
