@@ -45,7 +45,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
-          # Replaced at deploy time with the digest of the content-sha image from backend-image-build-and-push.yml.
+          # Replaced at deploy time with the digest of the image the deploy workflow builds.
           image: ghcr.io/technologiestiftung/baergpt-backend:placeholder
           ports:
             - name: http
