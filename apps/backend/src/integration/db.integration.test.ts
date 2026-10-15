@@ -28,27 +28,29 @@ describe("Integration tests for DB", async () => {
 	describe("registration meta-data", () => {
 		it("should create a profile with the first_name and last_name from the meta-data", async () => {
 			const givenEmail = "example@ts.berlin";
-			const givenPassword = "SecurePassword123!";
 			const givenFirstName = "John";
 			const givenLastName = "Doe";
 
-			const { data, error: signupError } = await supabaseAnonClient.auth.signUp(
-				{
+			const { error: signupError } =
+				await supabaseAnonClient.auth.signInWithOtp({
 					email: givenEmail,
-					password: givenPassword,
 					options: {
+						shouldCreateUser: true,
 						data: {
 							first_name: givenFirstName,
 							last_name: givenLastName,
 						},
 					},
-				},
-			);
+				});
+			expect(signupError).toBeNull();
+
+			// signInWithOtp does not return the created user, so verify the code to get it
+			const { data } = await signInWithOtp(supabaseAnonClient, givenEmail);
+			await supabaseAnonClient.auth.signOut();
 
 			if (!data.user) {
 				throw new Error("User is undefined");
 			}
-			expect(signupError).toBeNull();
 
 			const { data: actualProfile, error: profileError } =
 				await serviceRoleDbClient
@@ -73,13 +75,11 @@ describe("Integration tests for DB", async () => {
 
 	describe("is_current_user_banned_or_deleted()", () => {
 		const givenEmail = "ban-rpc-test@ts.berlin";
-		const givenPassword = "SecurePassword123!";
 		let userId: string = "";
 
 		beforeAll(async () => {
 			const { data, error } = await serviceRoleDbClient.auth.admin.createUser({
 				email: givenEmail,
-				password: givenPassword,
 				email_confirm: true,
 			});
 			expect(error).toBeNull();
@@ -141,7 +141,6 @@ describe("Integration tests for DB", async () => {
 			const { data: createData, error: createError } =
 				await serviceRoleDbClient.auth.admin.createUser({
 					email: deletedUserEmail,
-					password: givenPassword,
 					email_confirm: true,
 				});
 			expect(createError).toBeNull();
@@ -178,11 +177,9 @@ describe("Integration tests for DB", async () => {
 	describe("application users", async () => {
 		const givenAdminId = "d18922bb-7f9a-4e15-a9c9-6788fe81842c";
 		const givenAdminEmail = "db-test-suite-admin@ts.berlin";
-		const givenAdminPassword = "SecurePassword123!";
 
 		const givenUserId = "73f1b859-1377-4f72-ac92-ea28b1fb5167";
 		const givenUserEmail = "db-test-suite-user@ts.berlin";
-		const givenUserPassword = "SecurePassword123!";
 
 		const { data: accessGroupData } = await serviceRoleDbClient
 			.from("access_groups")
@@ -197,12 +194,8 @@ describe("Integration tests for DB", async () => {
 		const accessGroupId = accessGroupData.id;
 
 		const users = [
-			{
-				id: givenAdminId,
-				email: givenAdminEmail,
-				password: givenAdminPassword,
-			},
-			{ id: givenUserId, email: givenUserEmail, password: givenUserPassword },
+			{ id: givenAdminId, email: givenAdminEmail },
+			{ id: givenUserId, email: givenUserEmail },
 		];
 
 		beforeAll(async () => {
@@ -211,7 +204,6 @@ describe("Integration tests for DB", async () => {
 					await serviceRoleDbClient.auth.admin.createUser({
 						id: user.id,
 						email: user.email,
-						password: user.password,
 						email_confirm: true,
 					});
 
@@ -247,7 +239,6 @@ describe("Integration tests for DB", async () => {
 				const { data, error: signupError } =
 					await serviceRoleDbClient.auth.admin.createUser({
 						email: validEmail,
-						password: givenUserPassword,
 						email_confirm: true,
 					});
 				expect(signupError).toBeNull();
@@ -259,7 +250,6 @@ describe("Integration tests for DB", async () => {
 				const { error: signupError } =
 					await serviceRoleDbClient.auth.admin.createUser({
 						email: invalidEmail,
-						password: givenUserPassword,
 						email_confirm: true,
 					});
 				expect(signupError).not.toBeNull();
@@ -292,7 +282,6 @@ describe("Integration tests for DB", async () => {
 			it("should reject emails with invalid format", async () => {
 				const { error } = await serviceRoleDbClient.auth.admin.createUser({
 					email: "@ts.berlin",
-					password: givenUserPassword,
 					email_confirm: true,
 				});
 				expect(error).not.toBeNull();
@@ -302,7 +291,6 @@ describe("Integration tests for DB", async () => {
 				const { data, error } = await serviceRoleDbClient.auth.admin.createUser(
 					{
 						email: "test@polizei.berlin.de",
-						password: givenUserPassword,
 						email_confirm: true,
 					},
 				);
@@ -849,7 +837,6 @@ describe("Integration tests for DB", async () => {
 					await serviceRoleDbClient.auth.admin.createUser({
 						id: givenAdminId,
 						email: givenAdminEmail,
-						password: givenAdminPassword,
 						email_confirm: true,
 					});
 

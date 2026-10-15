@@ -13,15 +13,12 @@ const anonClient = createClient<Database>(
 	config.supabaseAnonKey,
 );
 
-const password = "SecurePassword123!";
-
 // Creates a confirmed user with a fixed id, throwing (and narrowing the type) if
 // creation failed — avoids non-null assertions on the nullable `data.user`.
 async function createConfirmedUser(email: string, id: string): Promise<void> {
 	const { error } = await serviceRoleDbClient.auth.admin.createUser({
 		id,
 		email,
-		password,
 		email_confirm: true,
 	});
 	if (error) {
@@ -208,7 +205,6 @@ describe("domain allowlist RPCs", () => {
 		const { error: signupError } =
 			await serviceRoleDbClient.auth.admin.createUser({
 				email: `blocked@${testDomain}`,
-				password,
 				email_confirm: true,
 			});
 		expect(signupError).not.toBeNull();
@@ -245,7 +241,6 @@ describe("domain allowlist RPCs", () => {
 			await serviceRoleDbClient.auth.admin.createUser({
 				id: freshUserId,
 				email: `fresh@${testDomain}`,
-				password,
 				email_confirm: true,
 			});
 		expect(signupAllowedError).toBeNull();

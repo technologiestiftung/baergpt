@@ -25,7 +25,6 @@ describe("basic auth middleware", () => {
 
 	describe("with valid session", () => {
 		const givenUserEmail = "basic-auth-test-suite-user@ts.berlin";
-		const givenUserPassword = "SecurePassword123!";
 
 		let session: Session | null = null;
 
@@ -33,7 +32,6 @@ describe("basic auth middleware", () => {
 			const { data, error: signUpError } =
 				await serviceRoleDbClient.auth.admin.createUser({
 					email: givenUserEmail,
-					password: givenUserPassword,
 					email_confirm: true,
 				});
 

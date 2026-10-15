@@ -21,20 +21,15 @@ const supabaseAnonClient = createClient<Database>(
 
 describe("/admin/", () => {
 	const givenAdminEmail = "admin-test-suite-admin@ts.berlin";
-	const givenAdminPassword = "SecurePassword123!";
 
 	const givenUserEmail = "admin-test-suite-user@ts.berlin";
-	const givenUserPassword = "SecurePassword123!";
 
 	const userIds: Record<string, string> = {
 		givenAdminEmail: "",
 		givenUserEmail: "",
 	};
 
-	const users = [
-		{ email: givenAdminEmail, password: givenAdminPassword },
-		{ email: givenUserEmail, password: givenUserPassword },
-	];
+	const users = [{ email: givenAdminEmail }, { email: givenUserEmail }];
 
 	let adminSession: Session | null = null;
 
@@ -43,7 +38,6 @@ describe("/admin/", () => {
 			const { data, error: signupError } =
 				await serviceRoleDbClient.auth.admin.createUser({
 					email: user.email,
-					password: user.password,
 					email_confirm: true,
 				});
 
@@ -406,7 +400,6 @@ describe("/admin/", () => {
 		const { error: restoreError } =
 			await serviceRoleDbClient.auth.admin.createUser({
 				email: givenUserEmail,
-				password: givenUserPassword,
 				email_confirm: true,
 			});
 		expect(restoreError).toBeNull();
