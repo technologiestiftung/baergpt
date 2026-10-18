@@ -101,9 +101,10 @@ export async function getCompletion(
 		externalChatTools.includes(tool),
 	);
 
-	// Id of the optimistic placeholder, set once created — lets the catch
-	// block clean it up if the stream errors out.
-	let messageIdForCleanup: number | undefined;
+	// Persists or drops the optimistic placeholder, set once it's created —
+	// lets the catch block settle it if the stream errors out.
+	let settlePendingMessage:
+		((options: { keepPartial: boolean }) => Promise<void>) | undefined;
 
 	try {
 		// Abort any existing stream before starting a new one
@@ -172,7 +173,7 @@ export async function getCompletion(
 		}
 
 		// Optimistic placeholder — persisted only once the stream settles
-		// (see `onFinish` below).
+		// (see `settlePendingMessage` below).
 		const localMessageId = createPendingMessageInMemory(currentChat, {
 			content: "",
 			type: "text",
@@ -186,7 +187,6 @@ export async function getCompletion(
 			external_tool_context: isExternalToolContext,
 			traces: null,
 		});
-		messageIdForCleanup = localMessageId;
 
 		let currentText = "";
 		const traces: Trace[] = [];
@@ -229,6 +229,44 @@ export async function getCompletion(
 					: null,
 				running_tool: runningTool,
 			});
+
+		let isSettled = false;
+		settlePendingMessage = async ({ keepPartial }) => {
+			if (isSettled) {
+				return;
+			}
+			isSettled = true;
+
+			// Persist whatever non-whitespace text the user has already seen, even
+			// if the stream broke off later — otherwise drop the placeholder.
+			if (!keepPartial || !currentText.trim()) {
+				removePendingMessageFromMemory(currentChat, localMessageId);
+				return;
+			}
+
+			try {
+				await persistPendingMessageToDb(currentChat, localMessageId, {
+					content: currentText,
+					type: "text",
+					role: "assistant",
+					allowed_document_ids: allowedDocumentIds,
+					allowed_folder_ids: selectedFolderIds,
+					citations: documentCitations.length ? documentCitations : null,
+					web_citations: webCitations.length ? webCitations : null,
+					parla_citations: parlaCitations.length ? parlaCitations : null,
+					open_data_citations: openDataCitations.length
+						? openDataCitations
+						: null,
+					external_tool_context: isExternalToolContext,
+					traces: traces.length
+						? { traces, durationSeconds: thinkingDurationSeconds }
+						: null,
+				});
+			} catch (error) {
+				removePendingMessageFromMemory(currentChat, localMessageId);
+				handleError(error, span);
+			}
+		};
 
 		await parseStream(response.body, {
 			onTextDelta: (delta: string) => {
@@ -306,48 +344,18 @@ export async function getCompletion(
 				openDataCitations = sources;
 				writeMessage();
 			},
-			onFinish: async (wasSuccessful) => {
+			onFinish: async () => {
 				setStatus("idle");
 				setStreamingAbortController(null);
-
-				// Only persist if the stream finished cleanly with non-whitespace
-				// content — otherwise drop the placeholder.
-				if (wasSuccessful && currentText.trim()) {
-					try {
-						await persistPendingMessageToDb(currentChat, localMessageId, {
-							content: currentText,
-							type: "text",
-							role: "assistant",
-							allowed_document_ids: allowedDocumentIds,
-							allowed_folder_ids: selectedFolderIds,
-							citations: documentCitations.length ? documentCitations : null,
-							web_citations: webCitations.length ? webCitations : null,
-							parla_citations: parlaCitations.length ? parlaCitations : null,
-							open_data_citations: openDataCitations.length
-								? openDataCitations
-								: null,
-							external_tool_context: isExternalToolContext,
-							traces: traces.length
-								? { traces, durationSeconds: thinkingDurationSeconds }
-								: null,
-						});
-					} catch (error) {
-						removePendingMessageFromMemory(currentChat, localMessageId);
-						handleError(error, span);
-					}
-				} else {
-					removePendingMessageFromMemory(currentChat, localMessageId);
-				}
+				await settlePendingMessage?.({ keepPartial: true });
 			},
 		});
 	} catch (error) {
-		// Stream never settled — drop the placeholder if one was created.
-		if (messageIdForCleanup !== undefined) {
-			removePendingMessageFromMemory(currentChat, messageIdForCleanup);
-		}
-
 		// Only handle error if it's not an abort error
 		const isUserAbort = error instanceof Error && error.name === "AbortError";
+
+		// Stream broke off — keep the partial answer unless the user aborted.
+		await settlePendingMessage?.({ keepPartial: !isUserAbort });
 		if (isUserAbort) {
 			setStatus("idle");
 		} else {
