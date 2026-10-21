@@ -1176,7 +1176,7 @@ export const Content = {
 	"connectors.datawrapper.findTokenLink":
 		"Wo finde ich meinen API-Zugangs-Token?",
 	"connectors.datawrapper.helpLink.href":
-		"https://hilfe.baergpt.berlin/faq#wissen-quellen-und-antwortqualitaet",
+		"https://hilfe.baergpt.berlin/faq#wie-bekomme-ich-einen-api-zugangs-token-datawrapper",
 	"connectors.datawrapper.tokenLabel": "API-Zugangs-Token",
 	"connectors.datawrapper.currentTokenLabel": "Aktueller API-Zugangs-Token",
 	"connectors.datawrapper.newTokenLabel": "Neuer API-Zugangs-Token",

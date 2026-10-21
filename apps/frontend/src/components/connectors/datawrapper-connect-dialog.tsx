@@ -39,6 +39,7 @@ export const DatawrapperConnectDialog = ({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<DialogError | null>(null);
 	const [isSuccess, setIsSuccess] = useState(false);
+	const [successMode, setSuccessMode] = useState<DialogMode | null>(null);
 	const formRef = useRef<HTMLFormElement | null>(null);
 
 	const resetState = () => {
@@ -46,6 +47,7 @@ export const DatawrapperConnectDialog = ({
 		setIsSubmitting(false);
 		setError(null);
 		setIsSuccess(false);
+		setSuccessMode(null);
 		formRef.current?.reset();
 	};
 
@@ -62,6 +64,7 @@ export const DatawrapperConnectDialog = ({
 		setIsSubmitting(true);
 		setError(null);
 
+		const modeAtSubmit = mode;
 		const result = await saveIntegrationKey("datawrapper", token.trim());
 
 		setIsSubmitting(false);
@@ -69,6 +72,7 @@ export const DatawrapperConnectDialog = ({
 		if (result.status === "success") {
 			await useIntegrationsStore.getState().fetchIntegrations();
 			onSuccess?.();
+			setSuccessMode(modeAtSubmit);
 			setIsSuccess(true);
 			return;
 		}
@@ -96,7 +100,7 @@ export const DatawrapperConnectDialog = ({
 			afterClose={resetState}
 		>
 			{isSuccess ? (
-				<SuccessView mode={mode} onContinue={handleCancel} />
+				<SuccessView mode={successMode ?? mode} onContinue={handleCancel} />
 			) : (
 				<ConnectForm
 					mode={mode}

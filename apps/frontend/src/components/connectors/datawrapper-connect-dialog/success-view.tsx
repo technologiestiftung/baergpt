@@ -11,9 +11,32 @@ export function SuccessView({
 }) {
 	return (
 		<div className="flex flex-col items-center gap-[22px] pt-1 pb-1">
-			<img src="/icons/green-check-icon.svg" alt="" width={40} height={40} />
+			<div className="flex flex-row gap-[9px]">
+				<div
+					className={`size-10 shrink-0 rounded-3px bg-white drop-shadow-[0px_0px_2.4px_rgba(36,61,100,0.3)] items-center justify-center
+					${mode === "replace" ? "hidden" : "flex"}`}
+				>
+					<img
+						src="/icons/baer_icon_dark_blue.svg"
+						alt=""
+						className="max-w-full max-h-full object-contain"
+					/>
+				</div>
+				<img
+					className={mode === "replace" ? "hidden" : "flex"}
+					src="/icons/green_check_animation.svg"
+					alt=""
+				/>
+				<div className="shrink-0 size-10 rounded-3px bg-white drop-shadow-[0px_0px_2.4px_rgba(36,61,100,0.3)] flex items-center justify-center">
+					<img
+						src="/icons/datawrapper-icon.svg"
+						alt=""
+						className="max-w-full w-[26px] max-h-full object-contain"
+					/>
+				</div>
+			</div>
 			<div className="flex flex-col gap-1 items-center text-center">
-				<h2 className="text-2xl leading-8 font-semibold">
+				<h2 className="text-2xl leading-8 font-semibold max-w-[440px]">
 					{mode === "replace"
 						? Content["connectors.datawrapper.replaceSuccess.title"]
 						: Content["connectors.datawrapper.connectSuccess.title"]}
