@@ -15,6 +15,13 @@ on:
 permissions:
   contents: read
 
+# Workflow-level so build and deploy run as one unit: with a per-job group, a later commit
+# could finish building first and an earlier one would then deploy last. Keyed on ref AND
+# target so a sandbox dispatch from main doesn't queue behind a prod deploy.
+concurrency:
+  group: backend-deploy-ske-${{ github.ref }}-${{ github.event.inputs.target || 'auto' }}
+  cancel-in-progress: false
+
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/baergpt-backend
   KUBECTL_VERSION: v1.36.5 # within ±1 minor of the cluster version (kubectl skew policy)
@@ -25,7 +32,7 @@ jobs:
   # packages: write), so a tag could point at an image that never went through review.
   build:
     runs-on: ubuntu-latest
-    if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
+    if: ${{ github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main' }}
     permissions:
       contents: read
       packages: write
@@ -45,13 +52,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # The runner's default docker driver can't use the GitHub Actions cache (type=gha).
       - name: Set up Docker Buildx ⚙️
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0, pinned to commit sha to avoid sha-hulud like attacks
 
-      # Shares the type=gha layer cache with backend-image-build-and-push.yml, so an
-      # unchanged backend rebuilds from cache. That cache is safe to read: GitHub doesn't
-      # let caches written by PR runs be read from staging/main.
+      # No layer cache: any job running on staging/main can write to the GitHub Actions
+      # cache, so a cached layer could carry code that never went through review.
       # The commit-<sha> tag is only a label for humans (e.g. tooling scripts).
       - name: Build and push image 🐳
         id: build
@@ -61,31 +66,36 @@ jobs:
           file: apps/backend/Dockerfile
           platforms: linux/amd64
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
           tags: ${{ env.IMAGE_NAME }}:commit-${{ github.sha }}
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    concurrency:
-      # Keyed on ref AND target: a sandbox dispatch from main must not queue behind a
-      # prod deploy from that same ref.
-      group: backend-deploy-ske-${{ github.ref }}-${{ github.event.inputs.target || 'auto' }}
-      cancel-in-progress: false
     # workflow_dispatch has no branches filter, so a manual run can target any branch
-    # by default — reject anything other than staging/main here.
-    if: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
+    # by default — reject anything other than the staging/main branches here (ref, not
+    # ref_name: a tag called "main" has ref_name main too).
+    if: ${{ github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main' }}
     # Sandbox reuses the Staging environment's secrets/approvals; it has no environment
     # of its own. Deploying it needs OP_BACKEND_SANDBOX_ENV_ITEM_ID and
     # OP_SKE_DEPLOY_SANDBOX_ITEM_ID to exist there.
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'sandbox') && 'Staging' || (github.ref_name == 'main' && 'Production' || 'Staging') }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'sandbox') && 'Staging' || (github.ref == 'refs/heads/main' && 'Production' || 'Staging') }}
 
     steps:
       - name: Checkout code ⬇️
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
         with:
           persist-credentials: "false"
+
+      # Re-running an old run would put an old commit live again; roll back with a revert instead.
+      - name: Refuse an outdated commit ⛔
+        run: |
+          set -euo pipefail
+          head=$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" "$GITHUB_REF" | cut -f1)
+          if [[ "$head" != "$GITHUB_SHA" ]]; then
+            echo "::error::$GITHUB_SHA is no longer the head of $GITHUB_REF ($head). Deploy the newer commit, or revert to roll back."
+            exit 1
+          fi
 
       - name: Install 1Password CLI 🔐
         uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0, pinned to commit sha to avoid sha-hulud like attacks
@@ -107,7 +117,7 @@ jobs:
               echo "::error::OP_BACKEND_SANDBOX_ENV_ITEM_ID and OP_SKE_DEPLOY_SANDBOX_ITEM_ID must both be set. Create the sandbox 1Password items (backend env with GOTENBERG_URL pointing at http://gotenberg.staging.svc.cluster.local:3000, and the sandbox kubeconfig) before deploying sandbox."
               exit 1
             fi
-          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             namespace="prod"
             app_item_id="${{ secrets.OP_BACKEND_PRODUCTION_ENV_ITEM_ID }}"
             deploy_item_id="${{ secrets.OP_SKE_DEPLOY_ITEM_ID }}"
@@ -172,9 +182,13 @@ jobs:
           NAMESPACE: ${{ steps.target.outputs.namespace }}
         run: |
           set -euo pipefail
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.target.outputs.app_item_id }}/notesPlain" > all.env
-          : > backend.env
-          : > gotenberg.env
+          # Outside the workspace, and removed even when a command below fails.
+          dir="$RUNNER_TEMP/env"
+          mkdir -p -m 700 "$dir"
+          trap 'rm -rf "$dir"' EXIT
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.target.outputs.app_item_id }}/notesPlain" > "$dir/all.env"
+          : > "$dir/backend.env"
+          : > "$dir/gotenberg.env"
           while IFS= read -r line || [ -n "$line" ]; do
             line="${line%$'\r'}" # tolerate a CRLF-edited 1Password note
             [[ -z "$line" || "$line" == \#* ]] && continue
@@ -184,17 +198,16 @@ jobs:
             case "$key" in
               CF_*|GOTENBERG_MEMORY) continue ;;
             esac
-            echo "$key=$value" >> backend.env
+            echo "$key=$value" >> "$dir/backend.env"
             # The gotenberg container only reads its basic-auth credentials.
             if [[ "$key" == GOTENBERG_API_BASIC_AUTH_* ]]; then
-              echo "$key=$value" >> gotenberg.env
+              echo "$key=$value" >> "$dir/gotenberg.env"
             fi
-          done < all.env
-          rm -f all.env
+          done < "$dir/all.env"
 
           kubectl create secret generic backend-env \
             --namespace "$NAMESPACE" \
-            --from-env-file=backend.env \
+            --from-env-file="$dir/backend.env" \
             --save-config --dry-run=client -o yaml | kubectl apply -f -
 
           # Sandbox runs no gotenberg of its own (it uses staging's), so it gets no
@@ -202,7 +215,7 @@ jobs:
           if [[ "$NAMESPACE" != "sandbox" ]]; then
             kubectl create secret generic gotenberg-env \
               --namespace "$NAMESPACE" \
-              --from-env-file=gotenberg.env \
+              --from-env-file="$dir/gotenberg.env" \
               --save-config --dry-run=client -o yaml | kubectl apply -f -
           fi
 
@@ -210,9 +223,8 @@ jobs:
           # anything. Hashing the env into a pod-template annotation makes a secret-only
           # change produce a new pod spec, and therefore a rolling update — matching the
           # Cloud Foundry behaviour where `cf set-env` + push always restarted the app.
-          checksum=$(cat backend.env gotenberg.env | sha256sum | cut -d' ' -f1)
+          checksum=$(cat "$dir/backend.env" "$dir/gotenberg.env" | sha256sum | cut -d' ' -f1)
           echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
-          rm -f backend.env gotenberg.env
 
       # `kubectl kustomize` (built into kubectl) renders the overlay; the image digest and
       # env checksum are appended as kustomize transformers rather than using
@@ -308,4 +320,5 @@ jobs:
           set -uo pipefail
           kubectl get pods --namespace "$NAMESPACE" -o wide || true
           kubectl get events --namespace "$NAMESPACE" --sort-by=.lastTimestamp | tail -50 || true
-          kubectl logs --namespace "$NAMESPACE" --selector app=backend --tail=200 --all-containers --prefix || true
+          # No `kubectl logs` here: app logs carry user data, and this repo's Actions logs are public.
+          echo "Backend logs: STACKIT Logs / Grafana Explore, {service_name=\"ske-$NAMESPACE\"}"
