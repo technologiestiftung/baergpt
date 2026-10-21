@@ -98,7 +98,7 @@ variable "dns_zone" {
 
 variable "letsencrypt_email" {
   type        = string
-  description = "Contact email for the Let's Encrypt ACME account (expiry/abuse notices)."
+  description = "Contact email for the Let's Encrypt ACME account. Let's Encrypt no longer sends expiry warnings, so this does not replace monitoring certificate renewal."
 }
 
 variable "letsencrypt_acme_server" {

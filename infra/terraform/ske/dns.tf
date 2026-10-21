@@ -3,6 +3,12 @@ resource "stackit_dns_zone" "this" {
   project_id = var.project_id
   name       = "baergpt-ske"
   dns_name   = var.dns_zone
+
+  # Frontends and DNS caches keep pointing here; a deleted free subdomain could be claimed by
+  # someone else.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "stackit_dns_record_set" "envs" {

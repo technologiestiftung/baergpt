@@ -58,7 +58,9 @@ spec:
           env:
             - name: PORT # overrides any PORT in backend-env, which would move the app off containerPort
               value: "3000"
-            # Keeps V8's heap below the 4Gi limit so OOMs surface as "heap out of memory", not a silent kill.
+            # Keeps the JS heap below the 4Gi limit so a heap leak ends in "heap out of memory" with a
+            # stack trace. Buffers (e.g. a large upload body) live outside the heap and can still hit the
+            # limit, which kills the container silently (OOMKilled).
             - name: NODE_OPTIONS
               value: --max-old-space-size=3072
           volumeMounts:
@@ -99,7 +101,8 @@ spec:
               exec:
                 command: ["sleep", "5"]
       volumes:
-        # The only writable path (temp files of upload parsers and the Sentry SDK); emptied whenever the pod is replaced.
+        # The only writable path, for libraries that expect a temp dir (the app itself writes no files);
+        # emptied whenever the pod is replaced.
         - name: tmp
           emptyDir:
             sizeLimit: 512Mi

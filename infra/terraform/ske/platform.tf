@@ -121,6 +121,8 @@ resource "stackit_public_ip" "gateway" {
     # The load balancer attaches the IP to its own network interface and tracks it
     # through its own lb.stackit.cloud labels; Terraform must not strip either.
     ignore_changes = [network_interface_id, labels]
+    # Every API hostname resolves to it; once released, STACKIT can hand it to another customer.
+    prevent_destroy = true
   }
 }
 

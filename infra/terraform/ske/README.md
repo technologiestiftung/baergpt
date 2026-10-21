@@ -145,13 +145,13 @@ usage, collector health, Warning events and logs.
 
 ## Updates
 
-| What                                  | Kept current by                                                                                                                                                 |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Kubernetes patch versions, node OS    | STACKIT, in the maintenance window (`cluster.tf`)                                                                                                               |
-| Kubernetes minor versions             | by hand: raise `kubernetes_version_min`, check the Envoy Gateway and cert-manager compatibility notes in `platform.tf`, bump `KUBECTL_VERSION` in the workflows |
-| Helm charts (`helm_release` versions) | Renovate                                                                                                                                                        |
-| OTel collector image                  | Renovate, via the `# renovate:` comment in `observability.tf` (grouped with the chart)                                                                          |
-| Terraform providers, lock file        | Renovate                                                                                                                                                        |
+| What                                  | Kept current by                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Kubernetes patch versions, node OS    | STACKIT, in the maintenance window (`cluster.tf`)                                                                                                                                                                                                                                                                     |
+| Kubernetes minor versions             | by hand, before the current version expires (STACKIT then force-upgrades it in the maintenance window; the date is in `stackit ske cluster describe baergpt`): raise `kubernetes_version_min`, check the Envoy Gateway and cert-manager compatibility notes in `platform.tf`, bump `KUBECTL_VERSION` in the workflows |
+| Helm charts (`helm_release` versions) | Renovate                                                                                                                                                                                                                                                                                                              |
+| OTel collector image                  | Renovate, via the `# renovate:` comment in `observability.tf` (grouped with the chart)                                                                                                                                                                                                                                |
+| Terraform providers, lock file        | Renovate                                                                                                                                                                                                                                                                                                              |
 
 A merged Renovate PR only changes the repo: the cluster picks it up on the next
 `terraform apply`. Pod Security labels use `latest`, so they follow the cluster's version.
