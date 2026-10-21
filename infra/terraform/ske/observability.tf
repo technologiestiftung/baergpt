@@ -220,6 +220,19 @@ resource "helm_release" "otel_collector" {
           }
         }
 
+        # Favicon lookups put the domains cited in a user's chat next to their IP, and nobody
+        # needs them for operations. Matches only Envoy access-log lines whose path field starts
+        # with /favicon?; the quotes stop a client from faking that field in a header value,
+        # which Envoy writes with escaped quotes. A line the condition can't evaluate is kept.
+        "filter/favicon" = {
+          error_mode = "ignore"
+          logs = {
+            log_record = [
+              "resource.attributes[\"k8s.namespace.name\"] == \"envoy-gateway-system\" and IsMatch(body, \"\\\"x-envoy-origin-path\\\": ?\\\"/favicon[?]\")",
+            ]
+          }
+        }
+
         # Load-bearing: service.name becomes the Loki stream label `service_name`
         # (ske-<namespace>, e.g. ske-prod), which queries and log alerts select on.
         "transform/service-name" = {
@@ -236,7 +249,7 @@ resource "helm_release" "otel_collector" {
         pipelines = {
           logs = {
             receivers  = []
-            processors = ["memory_limiter", "filter/namespaces", "transform/service-name", "batch"]
+            processors = ["memory_limiter", "filter/namespaces", "filter/favicon", "transform/service-name", "batch"]
             exporters  = ["otlphttp/stackit"]
           }
           metrics = {

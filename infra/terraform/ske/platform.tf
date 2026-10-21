@@ -179,8 +179,8 @@ resource "kubernetes_manifest" "client_traffic_policy" {
         kind  = "Gateway"
         name  = kubernetes_manifest.gateway.manifest.metadata.name
       }]
-      # optional accepts connections with and without the header, so switching the load
-      # balancer on doesn't drop traffic. Remove it once the LB is confirmed to send it.
+      # optional also accepts connections without the header, so a load balancer that stops
+      # sending it costs the client IPs in the logs, not the whole API.
       proxyProtocol = {
         optional = true
       }
