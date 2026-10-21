@@ -145,9 +145,44 @@ resource "kubernetes_manifest" "envoy_proxy" {
               # Only takes effect when the Service is created; on an existing Service
               # STACKIT accepts only the IP it already has.
               "lb.stackit.cloud/external-address" = stackit_public_ip.gateway.ip
+              # The LB opens its own connection to Envoy, so the client's IP only reaches
+              # Envoy (and its access logs) in a PROXY protocol header. Must match the
+              # proxyProtocol setting in kubernetes_manifest.client_traffic_policy.
+              "lb.stackit.cloud/tcp-proxy-protocol" = "true"
+              # Stops kube-proxy from short-cutting in-cluster calls to the LB IP straight to
+              # Envoy without that header (cert-manager's HTTP-01 self-check makes such calls).
+              "lb.stackit.cloud/ip-mode-proxy" = "true"
             }
+            # Envoy Gateway defaults to Local, which STACKIT's load balancer doesn't support.
+            externalTrafficPolicy = "Cluster"
           }
         }
+      }
+    }
+  }
+
+  depends_on = [helm_release.envoy_gateway]
+}
+
+# Lets Envoy read the client IP from the PROXY protocol header the load balancer sends.
+resource "kubernetes_manifest" "client_traffic_policy" {
+  manifest = {
+    apiVersion = "gateway.envoyproxy.io/v1alpha1"
+    kind       = "ClientTrafficPolicy"
+    metadata = {
+      name      = "baergpt"
+      namespace = kubernetes_namespace_v1.gateway.metadata[0].name
+    }
+    spec = {
+      targetRefs = [{
+        group = "gateway.networking.k8s.io"
+        kind  = "Gateway"
+        name  = kubernetes_manifest.gateway.manifest.metadata.name
+      }]
+      # optional accepts connections with and without the header, so switching the load
+      # balancer on doesn't drop traffic. Remove it once the LB is confirmed to send it.
+      proxyProtocol = {
+        optional = true
       }
     }
   }
