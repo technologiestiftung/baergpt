@@ -36,23 +36,16 @@ jobs:
         uses: ./.github/actions/setup
         with:
           start-supabase: "true"
-          install-1password: "true"
 
-      - name: Fetch frontend .env from 1Password ⬇️
-        run: |
-          cd apps/frontend
-          echo "Fetching frontend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_FRONTEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+      - name: Write frontend .env from GitHub variable 📝
+        run: printf '%s\n' "$FRONTEND_TEST_ENV" > apps/frontend/.env
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          FRONTEND_TEST_ENV: ${{ vars.FRONTEND_TEST_ENV }}
 
-      - name: Fetch backend .env from 1Password ⬇️
-        run: |
-          cd apps/backend
-          echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > "$RUNNER_TEMP/backend.env"
+      - name: Write backend .env from GitHub variable 📝
+        run: printf '%s\n' "$BACKEND_TEST_ENV" > "$RUNNER_TEMP/backend.env"
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          BACKEND_TEST_ENV: ${{ vars.BACKEND_TEST_ENV }}
 
       - name: Install Playwright Browser 🧭
         run: |
