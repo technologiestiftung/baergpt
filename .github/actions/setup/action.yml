@@ -81,6 +81,16 @@ runs:
         npm install -g "npm@$NPM_VERSION"
         npm -v
 
+    # min-release-age in .npmrc only applies when npm resolves versions, not to `npm ci`
+    # installing a lockfile, so check the versions a PR adds before installing them.
+    - name: Check lockfile package ages 🕰️
+      if: github.event_name == 'pull_request'
+      shell: bash
+      run: |
+        git fetch --depth=1 origin "$GITHUB_BASE_REF"
+        git show FETCH_HEAD:package-lock.json > "$RUNNER_TEMP/base-package-lock.json"
+        node .github/scripts/check-lockfile-age.mts "$RUNNER_TEMP/base-package-lock.json"
+
     - name: Cache npm dependencies 💾
       id: cache-npm-deps
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0, pinned to commit sha to avoid sha-hulud like attacks
