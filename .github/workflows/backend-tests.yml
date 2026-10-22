@@ -18,6 +18,11 @@ jobs:
           start-supabase: "true"
           install-1password: "true"
 
+      - name: Check types 🔍
+        working-directory: apps/backend
+        run: |
+          npm run check-types
+
       - name: Fetch backend .env from 1Password ⬇️
         working-directory: apps/backend
         run: |
