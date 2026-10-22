@@ -24,10 +24,26 @@ import {
 	defaultBucketName,
 } from "../constants.ts";
 import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 
 export const testWithDocuments = testWithMockedLlm.extend<{
 	documentChunkId: number;
 }>({
+	page: async ({ page }, use) => {
+		/**
+		 * This happens before each test that uses this fixture.
+		 * Tests that register their own `/documents/process` route override this
+		 * one (Playwright runs the most recently registered route first).
+		 */
+		await mockDocumentProcessRoute(page);
+
+		/**
+		 * This runs the test that uses this fixture (and injects the page).
+		 */
+		await use(page);
+
+		await page.unroute("**/documents/process");
+	},
 	documentChunkId: [
 		async ({ account, session }, use) => {
 			/**
@@ -144,19 +160,32 @@ export async function mockDocumentUpload({
  * only inserts mock values into the db tables
  * for a given file that already exists in storage
  */
-export async function mockDocumentProcessing({
-	userId,
-	sourceUrl,
-	accessGroupId,
-	fileName,
-	sourceType,
-}: {
+export async function mockDocumentProcessing(
+	params: MockDocumentProcessingParams,
+) {
+	const { chunkId } = await insertMockDocumentRows(params);
+	return chunkId;
+}
+
+type MockDocumentProcessingParams = {
 	userId: string;
 	sourceUrl: string;
 	accessGroupId: string | null;
 	fileName: string;
 	sourceType: "public_document" | "personal_document" | "default_document";
-}) {
+	folderId?: number | null;
+	fileSize?: number;
+};
+
+async function insertMockDocumentRows({
+	userId,
+	sourceUrl,
+	accessGroupId,
+	fileName,
+	sourceType,
+	folderId = folder_id,
+	fileSize = file_size,
+}: MockDocumentProcessingParams) {
 	const { data: documentData, error: documentsInsertError } =
 		await supabaseAdminClient
 			.from("documents")
@@ -168,9 +197,9 @@ export async function mockDocumentProcessing({
 				source_url: sourceUrl,
 				file_name: fileName,
 				file_checksum,
-				file_size,
+				file_size: fileSize,
 				num_pages,
-				folder_id,
+				folder_id: folderId,
 				created_at,
 				processing_finished_at,
 			})
@@ -189,7 +218,7 @@ export async function mockDocumentProcessing({
 			owned_by_user_id: accessGroupId ? null : userId,
 			access_group_id: accessGroupId,
 			document_id: documentData.id,
-			folder_id,
+			folder_id: folderId,
 			summary,
 			tags,
 			short_summary,
@@ -204,7 +233,7 @@ export async function mockDocumentProcessing({
 				owned_by_user_id: accessGroupId ? null : userId,
 				access_group_id: accessGroupId,
 				document_id: documentData.id,
-				folder_id,
+				folder_id: folderId,
 				content,
 				page: pageNumber,
 				chunk_index,
@@ -219,7 +248,7 @@ export async function mockDocumentProcessing({
 		throw documentChunksInsertError;
 	}
 
-	return chunkData.id;
+	return { documentId: documentData.id, chunkId: chunkData.id };
 }
 
 /**
@@ -233,6 +262,77 @@ export function fulfillProcessedDocumentSse(route: Route, documentId: number) {
 		status: 200,
 		headers: { "content-type": "text/event-stream; charset=utf-8" },
 		body: `data: ${JSON.stringify({ status: "successful", documentId })}\n\n`,
+	});
+}
+
+// Mirrors EXTENSION_BY_MIME in the backend's validation-service.ts.
+const extensionByMime: Record<string, string> = {
+	"application/pdf": "pdf",
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+		"docx",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+	"text/csv": "csv",
+};
+
+/**
+ * Mocks the backend's `/documents/process` route so uploads never reach the
+ * real OCR / LLM / embedding APIs: stores the uploaded file under the same path
+ * scheme as the backend, inserts mock db rows and fulfills with a `successful`
+ * SSE event. Only personal documents are supported, which is all the UI uploads.
+ */
+export async function mockDocumentProcessRoute(page: Page) {
+	await page.route("**/documents/process", async (route) => {
+		const request = route.request();
+		const headers = await request.allHeaders();
+		const accessToken = headers["authorization"].replace("Bearer ", "");
+		const userId: string = JSON.parse(
+			Buffer.from(accessToken.split(".")[1], "base64url").toString(),
+		).sub;
+
+		const form = await new Request(request.url(), {
+			method: "POST",
+			headers: { "content-type": headers["content-type"] },
+			body: request.postDataBuffer(),
+		}).formData();
+		const file = form.get("file") as File;
+		const metadata = JSON.parse(form.get("metadata") as string);
+
+		const sourceUrl = `${userId}/${randomUUID()}.${extensionByMime[file.type]}`;
+		const userClient = createClient<Database>(
+			config.supabaseUrl,
+			config.supabaseAnonKey,
+			{ global: { headers: { Authorization: `Bearer ${accessToken}` } } },
+		);
+		const { error: uploadError } = await userClient.storage
+			.from("documents")
+			.upload(sourceUrl, file, { contentType: file.type });
+
+		expect(uploadError).toBeNull();
+
+		// The backend stores a PDF rendition next to docx files for the preview.
+		if (sourceUrl.endsWith(".docx")) {
+			const { error: previewUploadError } = await userClient.storage
+				.from("documents")
+				.upload(
+					sourceUrl.replace(/\.docx$/, ".pdf"),
+					new Uint8Array(readFileSync(defaultDocumentPath)),
+					{ contentType: "application/pdf" },
+				);
+
+			expect(previewUploadError).toBeNull();
+		}
+
+		const { documentId } = await insertMockDocumentRows({
+			userId,
+			sourceUrl,
+			accessGroupId: null,
+			fileName: file.name,
+			sourceType: "personal_document",
+			folderId: metadata.document.folderId,
+			fileSize: file.size,
+		});
+
+		return fulfillProcessedDocumentSse(route, documentId);
 	});
 }
 
