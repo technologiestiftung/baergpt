@@ -14,6 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { config } from "../config";
 import { readFileSync } from "node:fs";
+import { signInWithOtp } from "./fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -65,11 +66,9 @@ async function cleanupStorageFiles(userId: string) {
 describe("Integration tests for Storage", async () => {
 	const givenAdminId = "d279dcb8-ec47-410b-acfc-6d8fdf8a4d85";
 	const givenAdminEmail = "storage-test-suite-admin@ts.berlin";
-	const givenAdminPassword = "SecurePassword123!";
 
 	const givenUserId = "90ed8ecb-6d80-4369-bf80-04f973333a47";
 	const givenUserEmail = "storage-test-suite-user@ts.berlin";
-	const givenUserPassword = "SecurePassword123!";
 
 	const {
 		data: { id: accessGroupId },
@@ -83,9 +82,8 @@ describe("Integration tests for Storage", async () => {
 		{
 			id: givenAdminId,
 			email: givenAdminEmail,
-			password: givenAdminPassword,
 		},
-		{ id: givenUserId, email: givenUserEmail, password: givenUserPassword },
+		{ id: givenUserId, email: givenUserEmail },
 	];
 
 	beforeAll(async () => {
@@ -94,7 +92,6 @@ describe("Integration tests for Storage", async () => {
 				await supabaseAdminClient.auth.admin.createUser({
 					id: user.id,
 					email: user.email,
-					password: user.password,
 					email_confirm: true,
 				});
 
@@ -130,7 +127,6 @@ describe("Integration tests for Storage", async () => {
 				sourceType: "personal_document",
 				bucketName: "documents",
 				userEmail: givenAdminEmail,
-				userPassword: givenAdminPassword,
 			});
 		});
 
@@ -139,10 +135,7 @@ describe("Integration tests for Storage", async () => {
 		});
 
 		it("should allow user to download a self-owned personal file", async () => {
-			await supabaseAnonClient.auth.signInWithPassword({
-				email: givenAdminEmail,
-				password: givenAdminPassword,
-			});
+			await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 			const { data, error: downloadError } = await supabaseAnonClient.storage
 				.from("documents")
@@ -153,10 +146,7 @@ describe("Integration tests for Storage", async () => {
 		});
 
 		it("should forbid a user to download a not self-owned personal file", async () => {
-			await supabaseAnonClient.auth.signInWithPassword({
-				email: givenUserEmail,
-				password: givenUserPassword,
-			});
+			await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 			const { data, error: downloadError } = await supabaseAnonClient.storage
 				.from("documents")
@@ -186,7 +176,6 @@ describe("Integration tests for Storage", async () => {
 				sourceType: "public_document",
 				bucketName: "public_documents",
 				userEmail: givenAdminEmail,
-				userPassword: givenAdminPassword,
 			});
 		});
 
@@ -195,10 +184,7 @@ describe("Integration tests for Storage", async () => {
 		});
 
 		it("should allow default user to be able to download a public file", async () => {
-			await supabaseAnonClient.auth.signInWithPassword({
-				email: givenUserEmail,
-				password: givenUserPassword,
-			});
+			await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 			const { data, error: downloadError } = await supabaseAnonClient.storage
 				.from("public_documents")
@@ -209,10 +195,7 @@ describe("Integration tests for Storage", async () => {
 		});
 
 		it("should allow admin user to be able to download a public file", async () => {
-			await supabaseAnonClient.auth.signInWithPassword({
-				email: givenAdminEmail,
-				password: givenAdminPassword,
-			});
+			await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 			const { data, error: downloadError } = await supabaseAnonClient.storage
 				.from("public_documents")
@@ -241,10 +224,7 @@ describe("Integration tests for Storage", async () => {
 		describe("SELECT policy", () => {
 			it("should forbid user to list another user's folder", async () => {
 				// Admin uploads a file
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
@@ -256,10 +236,7 @@ describe("Integration tests for Storage", async () => {
 
 				// User tries to list admin's folder
 				await supabaseAnonClient.auth.signOut();
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 				const { data: listData, error: listError } =
 					await supabaseAnonClient.storage.from("documents").list(givenAdminId);
@@ -271,10 +248,7 @@ describe("Integration tests for Storage", async () => {
 
 			it("should forbid user to get signed URL for another user's file", async () => {
 				// Admin uploads a file
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
@@ -286,10 +260,7 @@ describe("Integration tests for Storage", async () => {
 
 				// User tries to create signed URL for admin's file
 				await supabaseAnonClient.auth.signOut();
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 				const { data: signedUrlData, error: signedUrlError } =
 					await supabaseAnonClient.storage
@@ -301,10 +272,7 @@ describe("Integration tests for Storage", async () => {
 			});
 
 			it("should forbid a banned user to list their own folder", async () => {
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { error: banError } =
 					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
@@ -330,10 +298,7 @@ describe("Integration tests for Storage", async () => {
 
 			it("should forbid a banned user to download their own file", async () => {
 				// Upload the file first while user is not banned
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 				const { error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
 					userId: givenAdminId,
@@ -344,10 +309,7 @@ describe("Integration tests for Storage", async () => {
 				await supabaseAnonClient.auth.signOut();
 
 				// Now ban the admin and try to download
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { error: banError } =
 					await supabaseAdminClient.auth.admin.updateUserById(givenAdminId, {
@@ -373,10 +335,7 @@ describe("Integration tests for Storage", async () => {
 
 		describe("INSERT policy", () => {
 			it("should forbid user to upload a file to another user's folder", async () => {
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 				// User tries to upload to admin's folder
 				const { error: uploadError } = await uploadTestFile({
@@ -393,10 +352,7 @@ describe("Integration tests for Storage", async () => {
 			});
 
 			it("should allow user to upload a file to their own folder", async () => {
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
@@ -417,10 +373,7 @@ describe("Integration tests for Storage", async () => {
 			});
 
 			it("should forbid a banned user to upload a file to their own folder", async () => {
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 				const { error: banError } =
 					await supabaseAdminClient.auth.admin.updateUserById(givenUserId, {
@@ -448,10 +401,7 @@ describe("Integration tests for Storage", async () => {
 		describe("UPDATE policy", () => {
 			it("should forbid user to update another user's file", async () => {
 				// Admin uploads a file
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
@@ -463,10 +413,7 @@ describe("Integration tests for Storage", async () => {
 
 				// User tries to update admin's file
 				await supabaseAnonClient.auth.signOut();
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 				const file = new Uint8Array(readFileSync(defaultDocumentPath));
 				const { error: updateError } = await supabaseAnonClient.storage
@@ -482,10 +429,7 @@ describe("Integration tests for Storage", async () => {
 
 			it("should forbid user to move another user's file", async () => {
 				// Admin uploads a file
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
@@ -497,10 +441,7 @@ describe("Integration tests for Storage", async () => {
 
 				// User tries to move admin's file to their folder
 				await supabaseAnonClient.auth.signOut();
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 				const { error: moveError } = await supabaseAnonClient.storage
 					.from("documents")
@@ -510,10 +451,7 @@ describe("Integration tests for Storage", async () => {
 			});
 
 			it("should allow user to update their own file", async () => {
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
@@ -538,10 +476,7 @@ describe("Integration tests for Storage", async () => {
 
 			it("should forbid a banned user to update their own file", async () => {
 				// Upload first while not banned
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
 					userId: givenAdminId,
@@ -581,10 +516,7 @@ describe("Integration tests for Storage", async () => {
 		describe("DELETE policy", () => {
 			it("should forbid user to delete another user's file", async () => {
 				// Admin uploads a file
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
@@ -596,10 +528,7 @@ describe("Integration tests for Storage", async () => {
 
 				// User tries to delete admin's file
 				await supabaseAnonClient.auth.signOut();
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenUserEmail,
-					password: givenUserPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 				// Note: Supabase storage.remove() doesn't return error for unauthorized delete,
 				// but the file should still exist
@@ -609,10 +538,7 @@ describe("Integration tests for Storage", async () => {
 
 				// Verify file still exists by having admin download it
 				await supabaseAnonClient.auth.signOut();
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { data: downloadData, error: downloadError } =
 					await supabaseAnonClient.storage
@@ -624,10 +550,7 @@ describe("Integration tests for Storage", async () => {
 			});
 
 			it("should allow user to delete their own file", async () => {
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
@@ -656,10 +579,7 @@ describe("Integration tests for Storage", async () => {
 
 			it("should forbid a banned user to delete their own file", async () => {
 				// Upload first while not banned
-				await supabaseAnonClient.auth.signInWithPassword({
-					email: givenAdminEmail,
-					password: givenAdminPassword,
-				});
+				await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 				const { storagePath, error: uploadError } = await uploadTestFile({
 					client: supabaseAnonClient,
 					userId: givenAdminId,
@@ -686,10 +606,7 @@ describe("Integration tests for Storage", async () => {
 					});
 
 					await supabaseAnonClient.auth.signOut();
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+					await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 					const { data: downloadData, error: downloadError } =
 						await supabaseAnonClient.storage

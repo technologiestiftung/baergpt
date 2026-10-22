@@ -27,6 +27,6 @@
 		// This improves issue grouping in Sentry.
 		"sourceRoot": "/"
 	},
-	"include": ["./src/**/*.ts"],
-	"exclude": ["./src/**/*.test.ts", "./src/integration/**/*"]
+	// Covers tests too, so editors and `check-types` see them. The build uses tsconfig.build.json.
+	"include": ["./src/**/*.ts"]
 }

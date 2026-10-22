@@ -191,6 +191,70 @@ The project uses a customized `docker-compose.yml` located at `supabase/docker-c
 
 During a playbook run, the `.env` is fetched from 1Password, written temporarily to `supabase/.env`, uploaded to the server, then deleted locally. The file is gitignored and never committed.
 
+### Upstream files
+
+`supabase/volumes/` holds files from upstream's `docker/volumes/` at tag `self-hosted/v0.8.2`, unchanged:
+`api/envoy/*` (the API gateway), `logs/vector.yml`, `pooler/pooler.exs`, `db/jwt.sql`. The playbook uploads them on every
+run. When bumping images to a newer upstream release, copy that release's versions too.
+
+Email templates come from `apps/backend/supabase/templates/`; the `email-templates` container serves them to GoTrue.
+They reach the hosts with every deploy. After a template change, deploy them on their own (this restarts auth):
+
+```bash
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase.yml --tags email-templates
+```
+
+### Upgrading the Supabase stack
+
+`supabase_release` in `ansible/group_vars/all.yml` names the stack generation this repo deploys (currently
+Postgres 17, self-hosted v0.8.2 services, Envoy as the API gateway). The host records the generation it runs in
+`/opt/supabase-baergpt/.baergpt-release`. `supabase.yml` refuses to deploy onto a host on an older generation;
+`supabase-upgrade.yml` moves it:
+
+```bash
+cd ansible
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase-upgrade.yml \
+  -e upgrade_backup=<snapshot>
+```
+
+The playbook:
+
+1. Checks that the upstream files it replaces are unedited and that there is room for two more copies of the database.
+2. Pulls the new images while the old stack still runs, and checks the helper scripts upstream's upgrade script
+   downloads later against recorded checksums.
+3. Asks you to confirm the backup you took right before on the backup machine (`<snapshot>` is its timestamp),
+   stops nginx (public access stays closed until step 7), stops the stack and saves a rollback point to
+   `/opt/supabase-baergpt/rollback/<release>/`: a copy of `volumes/db/data`, the `db-config` volume, and the compose,
+   upstream and `.env` files.
+4. Upgrades Postgres 15 → 17 with upstream's `utils/upgrade-pg17.sh`, fetched at a pinned commit and checksum,
+   after handing the TLS cert to the Postgres 17 `postgres` user (the uid differs per image and is looked up).
+   The script converts the data with `17.6.1.136`; the role then starts the newer 17.x image from the compose file.
+5. Deploys the Supabase role (this replaces Kong with Envoy, removes Realtime, Edge Functions and imgproxy, and
+   removes the JWT secret that older init scripts stored as a database setting). Then checks that all containers are
+   healthy, that `postgres` is not left a superuser by the upgrade script, and that auth, REST and storage answer
+   through the gateway.
+6. With the stack back up, checks the order of every index on text columns (`amcheck`, read-only): the Postgres 17
+   image's newer glibc may sort some strings differently. If it lists indexes, rebuild each:
+   `REINDEX INDEX CONCURRENTLY <name>;`, then re-run `supabase-upgrade.yml`. Only after this check passes does the
+   host record the new release.
+7. Runs `supabase.yml` for everything else (nginx, certbot, migrations user); this reopens public access.
+
+The downtime grows with the database: the rollback copy and `pg_upgrade` both copy it, and the site stays closed until
+the index check passes. Check `sudo du -sh /opt/supabase-baergpt/volumes/db/data` beforehand. If `upgrade-pg17.sh`
+fails, roll back (below) and start again. After any other failure, fix the cause and re-run the upgrade playbook. Afterwards check by hand: log in with an email code, upload a document over 16 MB,
+chat with it, take a backup on the backup machine, and on staging run `backups/dr-drill.sh`. Delete the rollback point after a few days: `sudo rm -rf /opt/supabase-baergpt/rollback`.
+
+Rollback, while the rollback point exists:
+
+```bash
+op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase-rollback.yml
+```
+
+It restores the rollback point, starts the previous stack and reopens nginx. Database writes since the upgrade started
+are lost; there are none if the upgrade did not get to step 7. Once the rollback succeeds, the point is renamed to
+`<release>.rolled-back-<time>`, so a new upgrade run takes a fresh one. Until the host is upgraded again, deploy only
+from the git revision before the upgrade.
+
 ## Backups & Restore
 
 Each snapshot holds: roles, the `public` schema, all data, the **`auth`/`storage` RLS

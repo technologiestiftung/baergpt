@@ -1003,11 +1003,10 @@ export const Content = {
 	"chat.llmModel.dropdown.li1.description": "Gut für alltägliche Aufgaben",
 	"chat.llmModel.dropdown.li1.ariaLabel": "Mistral Small 4 (schnell) auswählen",
 	"chat.llmModel.dropdown.li2.label": "Präzise",
-	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Medium 3.5 (präzise)",
+	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Large 4 (präzise)",
 	"chat.llmModel.dropdown.li2.description":
 		"Leistungsstark für komplexe Aufgaben",
-	"chat.llmModel.dropdown.li2.ariaLabel":
-		"Mistral Medium 3.5 (präzise) auswählen",
+	"chat.llmModel.dropdown.li2.ariaLabel": "Mistral Large 4 (präzise) auswählen",
 	"chat.llmModel.dropdown.li3.label": "GLM 5.3",
 	"chat.llmModel.dropdown.li3.labelExtended": "GLM 5.3",
 	"chat.llmModel.dropdown.li3.description":

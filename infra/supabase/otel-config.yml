@@ -1,4 +1,4 @@
-# OTel Collector for the Supabase VM: host + container metrics, Kong gateway logs and the host
+# OTel Collector for the Supabase VM: host + container metrics, API gateway (Envoy) logs and the host
 # nginx anon-egress logs → STACKIT.
 # Env: STACKIT_OBSERVABILITY_{USERNAME,PASSWORD,METRICS_PUSH_URL,LOGS_OTLP_URL}, BAERGPT_ENV,
 # BAERGPT_HOSTNAME. LOGS_OTLP_URL must be the full ingest path (.../otlp/v1/logs), sent verbatim.
@@ -74,17 +74,18 @@ processors:
         value: ${env:BAERGPT_HOSTNAME}
         action: upsert
 
+  # Named "kong" from before the switch to Envoy; the alert rules in infra/terraform/observability select on it.
   attributes/job-kong:
     actions:
       - key: job
         value: kong
         action: upsert
 
-  filter/gateway-only:  # keep only Kong access logs + error/crit/alert/emerg; drop everything else
+  filter/gateway-only:  # keep only gateway access logs + error/crit/critical/alert/emerg; drop everything else
     error_mode: ignore
     logs:
       log_record:
-        - 'not (IsMatch(body, "^\\S+ \\S+ \\S+ \\[.*\\] \".*\" \\d{3} ") or IsMatch(body, "\\[(error|crit|alert|emerg)\\]"))'
+        - 'not (IsMatch(body, "^\\S+ \\S+ \\S+ \\[.*\\] \".*\" \\d{3} ") or IsMatch(body, "\\[(error|crit|critical|alert|emerg)\\]"))'
 
   resource/service:  # service.name -> Loki `service_name` stream label (else `unknown_service`)
     attributes:

@@ -355,9 +355,8 @@ export class GenerationService {
 								? MAX_OUTPUT_TOKENS_EXTENDED_THINKING
 								: MAX_OUTPUT_TOKENS,
 							temperature: LLM_PARAMETERS.temperature,
-							// Mistral only knows "high" and "none"; left unset when the
-							// toggle is off, which is the API default anyway.
-							reasoning: extendedThinking ? "high" : undefined,
+							// Info: GLM 5.3 ignores "none" and has reasoning always turned on.
+							reasoning: extendedThinking ? "high" : "none",
 							tools,
 							toolChoice,
 							stopWhen:

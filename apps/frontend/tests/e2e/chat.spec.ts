@@ -13,7 +13,10 @@ import {
 	sendAndWaitForLLMResponse,
 } from "../fixtures/mock-llm.ts";
 import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
-import { deleteDocumentsUploadedBy } from "../fixtures/test-with-registered-user.ts";
+import {
+	deleteDocumentsUploadedBy,
+	signInWithOtp,
+} from "../fixtures/test-with-registered-user.ts";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -22,7 +25,7 @@ import {
 	secondaryDocumentType,
 } from "../constants.ts";
 import { testDesktopOnly } from "../fixtures/test-desktop-only.ts";
-import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
+import { supabaseAdminClient } from "../supabase.ts";
 import { testDesktopOnlyWithManyChats } from "../fixtures/test-desktop-only-with-many-chats.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithChatSearch } from "../fixtures/test-with-chat-search.ts";
@@ -468,12 +471,10 @@ test.describe("Chat", () => {
 	testDesktopOnly("Chat with public document citations", async ({ page }) => {
 		// Create an admin user to upload the public document
 		const adminEmail = `admin.test+${crypto.randomUUID()}@ts.berlin`;
-		const adminPassword = "TestPassword123!";
 
 		const { data: adminUserData, error: createAdminError } =
 			await supabaseAdminClient.auth.admin.createUser({
 				email: adminEmail,
-				password: adminPassword,
 				email_confirm: true,
 				user_metadata: {
 					first_name: "Admin",
@@ -498,19 +499,9 @@ test.describe("Chat", () => {
 			expect(adminRoleError).toBeNull();
 
 			// Sign in the admin user to get their access token
-			const { data: adminSessionData, error: adminSignInError } =
-				await createAnonClient().auth.signInWithPassword({
-					email: adminEmail,
-					password: adminPassword,
-				});
+			const adminSession = await signInWithOtp(adminEmail);
 
-			expect(adminSignInError).toBeNull();
-
-			if (adminSignInError !== null) {
-				throw adminSignInError;
-			}
-
-			const adminAccessToken = adminSessionData.session.access_token;
+			const adminAccessToken = adminSession.access_token;
 
 			const { data: accessGroupData, error: accessGroupError } =
 				await supabaseAdminClient
@@ -1114,6 +1105,72 @@ test.describe("Chat", () => {
 				name: "Websuche entfernen",
 			});
 			await webSearchPill.click();
+
+			await expect(historyScopedInfoMessage).not.toBeVisible();
+		},
+	);
+
+	testWithMockedLlm(
+		"Activating a second external tool does not show chat history paused info message again",
+		async ({ page, isMobile }) => {
+			testWithMockedLlm.skip(isMobile === true, "desktop-only menu flow");
+
+			if (
+				process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true" ||
+				process.env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED !== "true"
+			) {
+				testWithMockedLlm.skip();
+			}
+
+			// Allows fast-forwarding the info message auto-hide timer
+			await page.clock.install();
+			await page.goto("/");
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("Hallo, wie geht es dir?");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).not.toBeEmpty();
+
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			const webSearchOption = page.getByRole("menuitemcheckbox", {
+				name: "Websuche auswählen",
+			});
+			await webSearchOption.click();
+
+			const historyScopedInfoMessage = page.getByText("Chatverlauf pausiert");
+			await expect(historyScopedInfoMessage).toBeVisible();
+
+			await page.clock.runFor(20_000);
+			await expect(historyScopedInfoMessage).not.toBeVisible();
+
+			await chatOptionsButton.click();
+
+			const connectorsOption = page.getByRole("menuitem", {
+				name: "Konnektoren auswählen",
+			});
+			await connectorsOption.hover();
+
+			const connectorsSubmenu = page.getByTestId(
+				"chat-menu-connectors-submenu",
+			);
+			const parlaBerlinOption = connectorsSubmenu.getByRole(
+				"menuitemcheckbox",
+				{
+					name: /Parla Berlin/,
+				},
+			);
+			await parlaBerlinOption.click();
+
+			const parlaPill = page.getByRole("button", {
+				name: /Parla Berlin entfernen/,
+			});
+			await expect(parlaPill).toBeVisible();
 
 			await expect(historyScopedInfoMessage).not.toBeVisible();
 		},

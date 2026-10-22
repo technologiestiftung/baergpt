@@ -6,6 +6,17 @@ stackit_project_id: "{{ lookup('env','STACKIT_PROJECT_ID') }}"
 stackit_service_account_json: "{{ lookup('env','STACKIT_SERVICE_ACCOUNT_JSON') }}"
 
 supabase_repo: "https://github.com/supabase/supabase.git"
-supabase_ref: "1.25.04"
+# Upstream docker/ folder copied on first provision; same release as supabase/docker-compose.yml and supabase/volumes/.
+supabase_ref: "self-hosted/v0.8.2"
 supabase_src: "/opt/supabase-src"
 supabase_dir: "/opt/supabase-baergpt"
+
+# Stack generation this repo deploys: Postgres 17 and self-hosted Supabase v0.8.2 services.
+# A host on an older generation is moved by supabase-upgrade.yml; the supabase role refuses to
+# deploy onto it before that. The role records the value in supabase_release_file.
+supabase_release: "pg17-selfhosted-0.8.2"
+supabase_release_file: "{{ supabase_dir }}/.baergpt-release"
+supabase_compose_cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml"
+
+# Email templates GoTrue uses (apps/backend/supabase/templates/<name>.html; URLs in the compose file).
+supabase_email_templates: [invite, confirmation, recovery, magic_link, email_change]

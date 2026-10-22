@@ -255,13 +255,17 @@ export async function getCompletion(
 				writeMessage();
 			},
 			onReasoningDelta: (delta: string) => {
+				if (!isExtendedThinkingEnabled) {
+					return;
+				}
+
 				thinkingStartedAt ??= Date.now();
 				appendTraceText(delta);
 				writeMessage();
 			},
 			onToolStart: (toolName: string, toolCallId: string) => {
 				const tool = traceToolByStreamName[toolName];
-				if (!tool) {
+				if (!isExtendedThinkingEnabled || !tool) {
 					return;
 				}
 
