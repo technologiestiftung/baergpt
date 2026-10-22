@@ -1,24 +1,15 @@
-# Ships container logs, pod/container metrics, cluster state metrics and Kubernetes events to
-# the STACKIT Observability instance — same instance and transports as the Supabase VMs
-# (infra/supabase/otel-config.yml). The SKE observability extension (cluster.tf) only covers
-# kube-system + node metrics.
-#
-# Two collectors from the same chart:
-# - otel-collector (DaemonSet): per-node data — container log files and the node's kubelet stats.
-# - otel-collector-cluster (Deployment, 1 replica): cluster-wide data read from the Kubernetes
-#   API. One replica only; in the DaemonSet every node would ship each event and metric again.
+# Ships container logs, pod and cluster metrics and Kubernetes events to STACKIT Observability.
+# otel-collector (DaemonSet) reads each node's log files and kubelet; otel-collector-cluster (one
+# replica) reads the Kubernetes API, so events and cluster metrics are sent only once.
 
 locals {
   observability_project_id = coalesce(var.observability_project_id, var.project_id)
 
-  # Envoy (access logs) and cert-manager (certificate renewals) next to the app namespaces.
   log_namespaces = concat(keys(var.namespaces), ["envoy-gateway-system", "cert-manager"])
 
-  # The provider doesn't document whether otlp_http_logs_url includes /v1/logs; otlphttp's
-  # `endpoint` appends it, so strip it if present.
+  # otlphttp appends /v1/logs itself.
   otlp_logs_endpoint = trimsuffix(trimsuffix(data.stackit_observability_instance.this.otlp_http_logs_url, "/"), "/v1/logs")
 
-  # Values shared by both releases.
   otel_common_values = {
     image = {
       # renovate: datasource=docker depName=otel/opentelemetry-collector-contrib
@@ -27,8 +18,7 @@ locals {
       digest     = "sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1"
     }
 
-    # Receive nothing over the network; the defaults would open OTLP/Jaeger/Zipkin ports
-    # (hostPorts on every node in DaemonSet mode).
+    # Nothing listens; the defaults would open receiver ports on every node.
     ports = {
       otlp             = { enabled = false }
       "otlp-http"      = { enabled = false }
@@ -85,8 +75,7 @@ locals {
     "prometheusremotewrite/stackit" = merge(local.otel_retry, {
       endpoint = data.stackit_observability_instance.this.metrics_push_url
       auth     = { authenticator = "basicauth/stackit" }
-      # Turns resource attributes (k8s.namespace.name, k8s.pod.name, …) into labels
-      # (k8s_namespace_name, k8s_pod_name, …); without it metrics can't be split per pod.
+      # Resource attributes become labels (k8s_namespace_name, k8s_pod_name, …).
       resource_to_telemetry_conversion = { enabled = true }
     })
   }
@@ -98,8 +87,7 @@ locals {
       spike_limit_percentage = 25
     }
 
-    # Load-bearing: every SKE metric carries source="ske", which the dashboard and alert
-    # rules select on (Supabase VMs use source="supabase-<env>").
+    # The dashboard and alert rules select on source="ske".
     "resource/source" = {
       attributes = [{ key = "source", value = "ske", action = "upsert" }]
     }
@@ -116,8 +104,7 @@ data "stackit_observability_instance" "this" {
   instance_id = var.observability_instance_id
 }
 
-# Dedicated so it can be revoked on its own. Instance credentials can also query every log
-# on the instance (incl. Supabase auth), so treat the Secret below as read access too.
+# Revocable on its own. Like every instance credential, it can also read all logs on the instance.
 resource "stackit_observability_credential" "otel_collector" {
   project_id  = local.observability_project_id
   instance_id = var.observability_instance_id
@@ -150,25 +137,21 @@ resource "helm_release" "otel_collector" {
   name       = "otel-collector"
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
-  version    = "0.174.0" # keep both otel releases on the same version; Renovate updates them together
+  version    = "0.174.0" # same version in both releases
   namespace  = kubernetes_namespace_v1.observability.metadata[0].name
 
   values = [yamlencode(merge(local.otel_common_values, {
     mode = "daemonset"
 
     presets = {
-      # Adds the filelog receiver over /var/log/pods and the hostPath mounts.
       logsCollection = {
         enabled = true
-        # Remembers file offsets on the node, so a collector restart neither drops nor
-        # re-sends lines.
+        # Keeps read offsets across restarts.
         storeCheckpoints = true
       }
-      # Pod/container CPU, memory, network and volume usage from this node's kubelet.
       kubeletMetrics = {
         enabled = true
       }
-      # Adds deployment/node names to each record (ClusterRole: read pods/namespaces/replicasets).
       kubernetesAttributes = {
         enabled = true
       }
@@ -183,15 +166,13 @@ resource "helm_release" "otel_collector" {
       capabilities             = { drop = ["ALL"] }
     }
 
-    # Replaces the chart's default config (OTLP/Jaeger/Zipkin receivers, debug exporter);
-    # the presets above still add their receivers and processor to the pipelines.
+    # Replaces the chart's default pipelines; the presets still add their receivers.
     alternateConfig = {
       extensions = local.otel_extensions
       exporters  = local.otel_exporters
 
       receivers = {
-        # SKE (Gardener) signs kubelet serving certs with a CA that isn't the cluster CA pods
-        # get, so verification fails with "unknown authority". Traffic is pod -> own node only.
+        # Gardener signs kubelet certs with a CA pods don't have; the traffic stays on the node.
         kubeletstats = {
           insecure_skip_verify = true
           collection_interval  = "30s"
@@ -199,9 +180,8 @@ resource "helm_release" "otel_collector" {
       }
 
       processors = merge(local.otel_processors, {
-        # The Observability plan caps ingest in samples/min (shared with the Supabase VMs and
-        # Render); the full kubelet set at 20s exceeded the Starter plan. Keep what the
-        # dashboard and alerts use, plus pod network and disk.
+        # Keeps ingest within the plan's samples-per-minute limit. Add a metric here before
+        # building a panel or alert on it.
         "filter/kubelet-metrics" = {
           error_mode = "ignore"
           metrics = {
@@ -220,10 +200,8 @@ resource "helm_release" "otel_collector" {
           }
         }
 
-        # Favicon lookups put the domains cited in a user's chat next to their IP, and nobody
-        # needs them for operations. Matches only Envoy access-log lines whose path field starts
-        # with /favicon?; the quotes stop a client from faking that field in a header value,
-        # which Envoy writes with escaped quotes. A line the condition can't evaluate is kept.
+        # /favicon?domain= lines pair the domains cited in a chat with the client IP. The quoted
+        # field name can't be faked in a header value, where Envoy escapes quotes.
         "filter/favicon" = {
           error_mode = "ignore"
           logs = {
@@ -233,8 +211,7 @@ resource "helm_release" "otel_collector" {
           }
         }
 
-        # Load-bearing: service.name becomes the Loki stream label `service_name`
-        # (ske-<namespace>, e.g. ske-prod), which queries and log alerts select on.
+        # Becomes the Loki label service_name (ske-<namespace>).
         "transform/service-name" = {
           error_mode = "ignore"
           log_statements = [{
@@ -269,29 +246,26 @@ resource "helm_release" "otel_collector_cluster" {
   name       = "otel-collector-cluster"
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
-  version    = "0.174.0" # keep both otel releases on the same version; Renovate updates them together
+  version    = "0.174.0" # same version in both releases
   namespace  = kubernetes_namespace_v1.observability.metadata[0].name
 
   values = [yamlencode(merge(local.otel_common_values, {
     mode         = "deployment"
     replicaCount = 1
-    # Deployment mode creates a Service by default; with every port disabled it would have none.
+    # No ports, so no Service.
     service = { enabled = false }
 
     presets = {
-      # Deployment/pod/container state from the API: desired vs. available replicas, restarts,
-      # pod phase, container requests/limits, ResourceQuota usage.
       clusterMetrics = {
         enabled = true
       }
-      # Kubernetes events (evictions, failed scheduling, probe failures) as log records; the
-      # API server only keeps them for about an hour.
+      # The API server keeps events only about an hour.
       kubernetesEvents = {
         enabled = true
       }
     }
 
-    # Reads only the Kubernetes API, so unlike the DaemonSet it needs neither root nor hostPath.
+    # Reads only the Kubernetes API: no root, no hostPath.
     securityContext = {
       runAsNonRoot             = true
       allowPrivilegeEscalation = false

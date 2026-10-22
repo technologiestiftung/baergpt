@@ -1,5 +1,4 @@
-# maxUnavailable rather than minAvailable: with a single replica, minAvailable: 1 would
-# block every node drain, including SKE's automated maintenance rollouts.
+# maxUnavailable, not minAvailable: with one replica, minAvailable: 1 blocks every node drain.
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

@@ -1,9 +1,7 @@
 # STACKIT Kubernetes Engine (SKE) cluster (Terraform)
 
 Provisions a single SKE cluster (`baergpt`) that hosts all environments as k8s
-namespaces (`staging`, `prod`, `sandbox`). Replaces
-`infra/terraform/cloud-foundry` once the migration completes; both can coexist during
-the cutover.
+namespaces (`staging`, `prod`, `sandbox`).
 
 ## Layout
 
@@ -30,45 +28,28 @@ the cutover.
 ## Apply
 
 ```sh
-cp terraform.tfvars.example terraform.tfvars              # fill in project_id, versions
-cp .op.env.ske.example .op.env.ske                         # point op:// refs at your 1Password items
+cp terraform.tfvars.example terraform.tfvars   # fill in project_id, versions
+cp .op.env.ske.example .op.env.ske             # point the op:// refs at your 1Password items
 
-OP="op run --env-file .op.env.ske --"
-
-$OP terraform init
+op run --env-file .op.env.ske -- terraform init
 ```
 
 ### First apply is staged (three steps)
 
-This module creates a cluster **and** configures the `kubernetes`/`helm` providers from
-that cluster's credentials, so the first apply cannot be done in one pass. Same class of
-bootstrap problem the `cloud-foundry` module has, for the same reason.
+The `kubernetes`/`helm` providers are configured from the cluster this module creates, and
+`kubernetes_manifest` checks its kinds against the live cluster at plan time. On a new
+cluster the first apply therefore runs in three steps:
 
 ```sh
-# 1. cluster + its kubeconfig. Until these exist, the kubernetes/helm provider config
-#    references values Terraform cannot know at plan time.
-$OP terraform apply -target=stackit_ske_kubeconfig.this
-
-# 2. the Helm charts. Both must be installed before step 3, because the CRDs they
-#    ship (gateway.networking.k8s.io for GatewayClass/Gateway, cert-manager.io for
-#    ClusterIssuer) have to exist in the API server before `kubernetes_manifest` will
-#    even *plan* — it validates the kind against the live cluster, and `depends_on`
-#    does not defer that.
-$OP terraform apply -target=helm_release.envoy_gateway -target=helm_release.cert_manager
-
-# 3. everything else (GatewayClass, Gateway + its public IP and DNS records, ClusterIssuer,
-#    namespaces, quotas, network policies, deployer service accounts)
-$OP terraform apply
+# 1. the cluster and its kubeconfig
+op run --env-file .op.env.ske -- terraform apply -target=stackit_ske_kubeconfig.this
+# 2. the charts that install the Gateway API and cert-manager CRDs
+op run --env-file .op.env.ske -- terraform apply -target=helm_release.envoy_gateway -target=helm_release.cert_manager
+# 3. everything else
+op run --env-file .op.env.ske -- terraform apply
 ```
 
-Every later change is a plain `$OP terraform apply` — the staging is only needed while
-the cluster and the Gateway API / cert-manager CRDs don't exist yet.
-
-> If this bootstrap becomes annoying (e.g. rebuilding the cluster from scratch often),
-> the cleaner fix is to split the platform layer into its own module that takes a
-> kubeconfig path as an input variable, so no provider is ever configured from a
-> resource created in the same run. Not done yet — it would mean a second state file
-> and another `.op.env`, which isn't worth it for a cluster we expect to create once.
+Every later change is a single `terraform apply`.
 
 ## Kubeconfig
 
@@ -88,12 +69,12 @@ service account per namespace whose Role covers only that namespace, and
 | `sandbox` | `OP_SKE_DEPLOY_SANDBOX_ITEM_ID` (GitHub "Staging" env) |
 
 ```sh
-$OP terraform output -json deploy_kubeconfigs | jq -r '.staging'
+op run --env-file .op.env.ske -- terraform output -json deploy_kubeconfigs | jq -r '.staging'
 ```
 
 The tokens don't expire. Rotate one with
-`$OP terraform apply -replace='kubernetes_secret_v1.deployer_token["<ns>"]'` and update its
-1Password item; an SKE credential rotation invalidates all of them.
+`op run --env-file .op.env.ske -- terraform apply -replace='kubernetes_secret_v1.deployer_token["<ns>"]'`
+and update its 1Password item; an SKE credential rotation invalidates all of them.
 
 ## Logs, metrics and events
 

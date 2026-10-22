@@ -1,10 +1,5 @@
-# No gotenberg here — sandbox reuses staging's (staging's overlay opens the
-# cross-namespace NetworkPolicy path for it). This means: the sandbox `backend-env`
-# Secret's GOTENBERG_URL must be set to
-# "http://gotenberg.staging.svc.cluster.local:3000" in its 1Password item — not the
-# base default "http://gotenberg:3000" (that only resolves within the same
-# namespace). This is a content change in 1Password, not something patched here, to
-# keep envFrom the single source of truth.
+# No Gotenberg: sandbox uses staging's, so its GOTENBERG_URL in 1Password is
+# http://gotenberg.staging.svc.cluster.local:3000.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

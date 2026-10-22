@@ -1,24 +1,18 @@
-# Cluster platform layer. Installed once, cluster-wide, via the kubernetes/helm
-# providers wired in provider.tf (fed from stackit_ske_kubeconfig).
+# Cluster-wide platform layer, installed through the kubernetes/helm providers in provider.tf.
 
-# Gateway API implementation. Deliberately NOT ingress-nginx: that project was retired
-# on 2026-03-24 and receives no further releases or security fixes. Envoy Gateway is the
-# controller STACKIT documents for SKE, and Gateway API is the upstream successor to the
-# Ingress API.
-#
-# The chart ships the Gateway API CRDs (gateway.networking.k8s.io) as well as its own, so
-# it must be installed before anything that references those kinds.
+# Gateway API controller. The chart also installs the Gateway API CRDs, so it comes before
+# anything that uses those kinds.
 resource "helm_release" "envoy_gateway" {
   name             = "envoy-gateway"
   chart            = "oci://docker.io/envoyproxy/gateway-helm"
-  version          = "v1.9.2" # supports k8s 1.33–1.36; check the compatibility matrix before a cluster minor upgrade
+  version          = "v1.9.2" # supports k8s 1.33–1.36
   namespace        = "envoy-gateway-system"
   create_namespace = true
 
   depends_on = [stackit_ske_cluster.this]
 }
 
-# Binds our Gateways to the Envoy Gateway controller. Not shipped by the chart.
+# The chart doesn't create a GatewayClass.
 resource "kubernetes_manifest" "gateway_class" {
   manifest = {
     apiVersion = "gateway.networking.k8s.io/v1"
@@ -38,7 +32,7 @@ resource "helm_release" "cert_manager" {
   name             = "cert-manager"
   repository       = "https://charts.jetstack.io"
   chart            = "cert-manager"
-  version          = "v1.21.2" # supports k8s 1.33–1.36; check supported releases before a cluster minor upgrade
+  version          = "v1.21.2" # supports k8s 1.33–1.36
   namespace        = "cert-manager"
   create_namespace = true
 
@@ -47,10 +41,7 @@ resource "helm_release" "cert_manager" {
       name  = "crds.enabled"
       value = "true"
     },
-    # Lets cert-manager solve ACME challenges through HTTPRoutes and issue certificates
-    # for Gateway listeners. Beta since cert-manager 1.15 — no feature gate needed, but
-    # it is off by default. Requires the Gateway API CRDs to already exist, hence the
-    # dependency on the Envoy Gateway chart below.
+    # Certificates for Gateway listeners; off by default and needs the Gateway API CRDs.
     {
       name  = "config.gatewayAPI.enabled"
       value = "true"
@@ -60,13 +51,8 @@ resource "helm_release" "cert_manager" {
   depends_on = [stackit_ske_cluster.this, helm_release.envoy_gateway]
 }
 
-# Let's Encrypt HTTP-01 issuer. var.letsencrypt_acme_server selects LE production (default)
-# or LE staging for a first setup, where failed attempts count against production limits.
-#
-# NOTE: `kubernetes_manifest` validates the kind against the live API server at PLAN
-# time, and `depends_on` does not defer that — so on a cluster where cert-manager's
-# CRDs don't exist yet, `terraform plan` fails with "no matches for kind ClusterIssuer".
-# The first apply is therefore staged; see the README's "First apply is staged".
+# kubernetes_manifest checks its kind against the live cluster at plan time, so a new cluster
+# needs the staged first apply (README).
 resource "kubernetes_manifest" "cluster_issuer" {
   manifest = {
     apiVersion = "cert-manager.io/v1"
@@ -81,8 +67,7 @@ resource "kubernetes_manifest" "cluster_issuer" {
         privateKeySecretRef = {
           name = "letsencrypt-account-key"
         }
-        # The solver attaches its challenge HTTPRoute to the shared Gateway's plain
-        # HTTP listener; ACME validates over port 80 before any certificate exists.
+        # ACME validates over plain HTTP, before any certificate exists.
         solvers = [{
           http01 = {
             gatewayHTTPRoute = {
@@ -102,32 +87,26 @@ resource "kubernetes_manifest" "cluster_issuer" {
   depends_on = [helm_release.cert_manager]
 }
 
-# One shared Gateway for every environment, rather than one per namespace: each Gateway
-# gets its own Envoy deployment and its own STACKIT load balancer (and therefore its own
-# public IP and cost). Sharing keeps it to a single LB and a single IP for all three
-# hostnames to point at — consistent with the single-cluster decision.
+# One Gateway for all environments: each Gateway gets its own load balancer and public IP.
 resource "kubernetes_namespace_v1" "gateway" {
   metadata {
     name = "gateway"
   }
 }
 
-# Static IP for the Gateway's load balancer, so it survives the Envoy Service being
-# recreated and DNS (dns.tf) can point at it. STACKIT never deletes it on its own.
+# Separate from the load balancer, so the IP survives the Envoy Service being recreated.
 resource "stackit_public_ip" "gateway" {
   project_id = var.project_id
 
   lifecycle {
-    # The load balancer attaches the IP to its own network interface and tracks it
-    # through its own lb.stackit.cloud labels; Terraform must not strip either.
+    # Set by the load balancer when it attaches the IP.
     ignore_changes = [network_interface_id, labels]
-    # Every API hostname resolves to it; once released, STACKIT can hand it to another customer.
+    # A released IP can go to another customer while DNS still points at it.
     prevent_destroy = true
   }
 }
 
-# Envoy Gateway creates the LoadBalancer Service itself; this is the only way to set
-# annotations on it.
+# Settings for the LoadBalancer Service that Envoy Gateway creates.
 resource "kubernetes_manifest" "envoy_proxy" {
   manifest = {
     apiVersion = "gateway.envoyproxy.io/v1alpha1"
@@ -142,18 +121,14 @@ resource "kubernetes_manifest" "envoy_proxy" {
         kubernetes = {
           envoyService = {
             annotations = {
-              # Only takes effect when the Service is created; on an existing Service
-              # STACKIT accepts only the IP it already has.
+              # Only applied when the Service is created.
               "lb.stackit.cloud/external-address" = stackit_public_ip.gateway.ip
-              # The LB opens its own connection to Envoy, so the client's IP only reaches
-              # Envoy (and its access logs) in a PROXY protocol header. Must match the
-              # proxyProtocol setting in kubernetes_manifest.client_traffic_policy.
+              # Passes the client IP to Envoy; must match proxyProtocol in client_traffic_policy.
               "lb.stackit.cloud/tcp-proxy-protocol" = "true"
-              # Stops kube-proxy from short-cutting in-cluster calls to the LB IP straight to
-              # Envoy without that header (cert-manager's HTTP-01 self-check makes such calls).
+              # In-cluster calls to the LB IP (cert-manager's self-check) also go through the LB.
               "lb.stackit.cloud/ip-mode-proxy" = "true"
             }
-            # Envoy Gateway defaults to Local, which STACKIT's load balancer doesn't support.
+            # The default, Local, isn't supported by STACKIT's load balancer.
             externalTrafficPolicy = "Cluster"
           }
         }
@@ -164,7 +139,6 @@ resource "kubernetes_manifest" "envoy_proxy" {
   depends_on = [helm_release.envoy_gateway]
 }
 
-# Lets Envoy read the client IP from the PROXY protocol header the load balancer sends.
 resource "kubernetes_manifest" "client_traffic_policy" {
   manifest = {
     apiVersion = "gateway.envoyproxy.io/v1alpha1"
@@ -179,8 +153,7 @@ resource "kubernetes_manifest" "client_traffic_policy" {
         kind  = "Gateway"
         name  = kubernetes_manifest.gateway.manifest.metadata.name
       }]
-      # optional also accepts connections without the header, so a load balancer that stops
-      # sending it costs the client IPs in the logs, not the whole API.
+      # If the header ever goes missing, only the client IPs are lost, not the API.
       proxyProtocol = {
         optional = true
       }
@@ -198,8 +171,7 @@ resource "kubernetes_manifest" "gateway" {
       name      = "baergpt"
       namespace = kubernetes_namespace_v1.gateway.metadata[0].name
       annotations = {
-        # cert-manager's gateway-shim watches this annotation and issues a Certificate
-        # per TLS listener, writing each Secret into this namespace.
+        # cert-manager issues one certificate per HTTPS listener.
         "cert-manager.io/cluster-issuer" = "letsencrypt"
       }
     }
@@ -213,10 +185,7 @@ resource "kubernetes_manifest" "gateway" {
         }
       }
       listeners = concat(
-        # Plain HTTP, kept open for ACME HTTP-01 challenges; everything else is
-        # redirected to HTTPS (kubernetes_manifest.https_redirect). Only routes from the
-        # gateway namespace may attach, where cert-manager creates its challenge routes,
-        # so no app namespace can claim plain HTTP for another env's hostname.
+        # Only for ACME challenges and the HTTPS redirect, both in this namespace.
         [{
           name     = "http"
           protocol = "HTTP"
@@ -225,8 +194,7 @@ resource "kubernetes_manifest" "gateway" {
             namespaces = { from = "Same" }
           }
         }],
-        # One TLS listener per environment. HTTP-01 cannot issue wildcards, so each
-        # hostname needs its own listener and its own certificate.
+        # One listener and certificate per hostname: HTTP-01 can't issue wildcards.
         [for ns, cfg in var.namespaces : {
           name     = "https-${ns}"
           protocol = "HTTPS"
@@ -240,8 +208,7 @@ resource "kubernetes_manifest" "gateway" {
             }]
           }
           allowedRoutes = {
-            # Only the matching environment namespace may attach routes to its own
-            # hostname, so a route in sandbox cannot claim the prod hostname.
+            # Only the environment's own namespace, so sandbox can't claim the prod hostname.
             namespaces = {
               from = "Selector"
               selector = {
@@ -259,8 +226,7 @@ resource "kubernetes_manifest" "gateway" {
   depends_on = [helm_release.cert_manager]
 }
 
-# cert-manager's challenge routes match an Exact path, which takes precedence over this
-# catch-all, so HTTP-01 validation keeps working.
+# cert-manager's Exact-path challenge routes take precedence over this catch-all.
 resource "kubernetes_manifest" "https_redirect" {
   manifest = {
     apiVersion = "gateway.networking.k8s.io/v1"
@@ -292,17 +258,12 @@ resource "kubernetes_manifest" "https_redirect" {
   depends_on = [helm_release.envoy_gateway]
 }
 
-# staging/prod/sandbox as namespaces on the one cluster. ResourceQuota + default-deny
-# NetworkPolicy keep one namespace's workload from starving or reaching another's.
 resource "kubernetes_namespace_v1" "envs" {
   for_each = var.namespaces
 
   metadata {
     name = each.key
-    # Without these, Pod Security defaults to "privileged" and a deployer could run a
-    # privileged/hostPath pod on a node shared with prod. The deployer can't edit
-    # namespaces, so it can't lift this. "latest" follows the cluster version, so a k8s
-    # minor upgrade needs no label change (and applies any tightened rules with it).
+    # Pod Security defaults to privileged without these; the deployer can't edit namespaces.
     labels = {
       "pod-security.kubernetes.io/enforce"         = "restricted"
       "pod-security.kubernetes.io/enforce-version" = "latest"
@@ -323,10 +284,7 @@ resource "kubernetes_resource_quota_v1" "envs" {
   }
 
   spec {
-    # No "limits.cpu": once a quota constrains it, every container must declare a CPU
-    # limit or the pod is rejected outright. We deliberately set CPU *requests* only
-    # (limits cause throttling), so constraining limits.cpu here would make every
-    # Deployment unschedulable.
+    # No limits.cpu: it would reject every pod without a CPU limit, and ours set requests only.
     hard = {
       "requests.cpu"    = each.value.quota_cpu
       "requests.memory" = each.value.quota_memory
@@ -336,9 +294,7 @@ resource "kubernetes_resource_quota_v1" "envs" {
   }
 }
 
-# Default-deny ingress from other namespaces; DNS + same-namespace traffic still
-# works. Each app's own NetworkPolicy (infra/k8s) opens what it actually needs
-# (e.g. backend -> gotenberg within the same namespace).
+# Same-namespace ingress only; the app NetworkPolicies in infra/k8s open the rest.
 resource "kubernetes_network_policy_v1" "default_deny_cross_namespace" {
   for_each = var.namespaces
 
@@ -353,16 +309,14 @@ resource "kubernetes_network_policy_v1" "default_deny_cross_namespace" {
 
     ingress {
       from {
-        pod_selector {} # same-namespace traffic only
+        pod_selector {}
       }
     }
   }
 }
 
-# The deployer may create Services (the overlays contain them), so nothing in RBAC stops
-# it from adding spec.externalIPs, which lets a Service intercept cluster traffic to any
-# IP, or a NodePort/LoadBalancer that bypasses the Gateway. This admits ClusterIP only.
-# The deployer's Role is namespaced, so it can't change these cluster-scoped objects.
+# The deployer may create Services. Only ClusterIP without externalIPs is admitted: externalIPs
+# can intercept traffic to any IP, NodePort/LoadBalancer would bypass the Gateway.
 resource "kubernetes_manifest" "env_services_cluster_ip_only" {
   manifest = {
     apiVersion = "admissionregistration.k8s.io/v1"

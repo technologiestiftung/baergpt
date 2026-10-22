@@ -1,5 +1,5 @@
 # Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
-project_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # baergpt-berlin-prod, same project as cloud-foundry
+project_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # baergpt-berlin-prod
 region     = "eu01"
 
 # Check available versions before setting: `stackit ske options` or the portal.
@@ -14,9 +14,7 @@ observability_instance_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # `stackit ob
 # node_pool_max = 5
 
 # Cluster platform layer
-letsencrypt_email = "infra@ts.berlin" # verify: real contact address for ACME expiry/abuse notices
-# letsencrypt_acme_server defaults to LE production. For a first apply on a new cluster,
-# consider LE staging until ingress + DNS work (see variables.tf).
+letsencrypt_email = "infra@ts.berlin"
+# letsencrypt_acme_server: see variables.tf for using LE staging on a new cluster.
 
-# namespaces (staging/prod/sandbox quotas) has sensible defaults in variables.tf —
-# override here only once real pod resource requests make the defaults wrong.
+# namespaces: the defaults in variables.tf match the resources in infra/k8s.

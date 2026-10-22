@@ -1,10 +1,4 @@
-# Caps voluntary disruptions (node drains, cluster upgrades) at one backend pod at a
-# time.
-#
-# maxUnavailable rather than minAvailable on purpose: with `minAvailable: 1` and a
-# single replica (staging/sandbox), evicting the only pod would take availability to
-# zero, so the eviction API refuses it outright and `kubectl drain` — including SKE's
-# automated node rollouts during maintenance — hangs forever.
+# maxUnavailable, not minAvailable: with one replica, minAvailable: 1 blocks every node drain.
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

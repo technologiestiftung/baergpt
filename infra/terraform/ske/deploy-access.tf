@@ -1,5 +1,4 @@
-# Per-namespace deploy identity for CI. A staging deploy can only touch the staging
-# namespace, so the GitHub "Staging" environment never holds credentials for prod.
+# One deploy identity per namespace, so the GitHub Staging environment holds nothing that works on prod.
 resource "kubernetes_service_account_v1" "deployer" {
   for_each = var.namespaces
 
@@ -9,8 +8,7 @@ resource "kubernetes_service_account_v1" "deployer" {
   }
 }
 
-# Exactly what backend-deploy-stackit-ske.yml needs: apply the overlay and env Secrets,
-# wait for and roll back the rollout, dump pods/events/logs on failure. No delete.
+# What backend-deploy-stackit-ske.yml needs; no delete.
 resource "kubernetes_role_v1" "deployer" {
   for_each = var.namespaces
 
@@ -82,8 +80,8 @@ resource "kubernetes_role_binding_v1" "deployer" {
   }
 }
 
-# Long-lived token; rotate with `terraform apply -replace='kubernetes_secret_v1.deployer_token["<ns>"]'`
-# and update the matching 1Password item. Also invalidated by an SKE credential rotation.
+# Never expires. Rotate with `terraform apply -replace='kubernetes_secret_v1.deployer_token["<ns>"]'`
+# and update the 1Password item.
 resource "kubernetes_secret_v1" "deployer_token" {
   for_each = var.namespaces
 

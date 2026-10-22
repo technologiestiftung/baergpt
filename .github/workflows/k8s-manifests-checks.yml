@@ -46,13 +46,7 @@ jobs:
           sudo install -o root -g root -m 0755 kubeconform /usr/local/bin/kubeconform
           rm -f kubectl kubectl.sha256 kubeconform kubeconform-linux-amd64.tar.gz
 
-      # kubectl ships a kustomize build, no separate install needed. Validates every
-      # overlay builds AND every resulting manifest matches its k8s schema (-strict
-      # catches unknown/typo'd fields).
-      #
-      # The second -schema-location adds the CRDs catalog, which carries schemas for
-      # custom kinds like Gateway API's HTTPRoute. Without it kubeconform has no schema
-      # for those and would fail on every overlay.
+      # -strict fails on unknown fields; the CRDs catalog adds schemas for kinds like HTTPRoute.
       - name: Build + validate each overlay ✅
         run: |
           set -euo pipefail

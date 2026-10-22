@@ -3,8 +3,6 @@ kind: Service
 metadata:
   name: gotenberg
 spec:
-  # Cluster-internal only, no public route — unlike CF, where gotenberg was public
-  # behind basic auth.
   type: ClusterIP
   selector:
     app: gotenberg

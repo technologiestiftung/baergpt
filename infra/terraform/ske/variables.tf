@@ -1,6 +1,6 @@
 variable "project_id" {
   type        = string
-  description = "STACKIT project ID that owns the cluster (same project as cloud-foundry: baergpt-berlin-prod)."
+  description = "STACKIT project ID that owns the cluster (baergpt-berlin-prod)."
 }
 
 variable "region" {
@@ -32,9 +32,7 @@ variable "machine_type" {
   description = "VM flavor for cluster nodes. List available types with `stackit ske options`."
 }
 
-# Floor memory requests ≈ 26Gi: prod 4×4Gi backend + 2×2Gi gotenberg, staging/sandbox
-# ~3Gi, platform + observability ~3Gi. 3 nodes (~40Gi allocatable) also absorb a prod
-# rollout's surge pods; the max leaves room for node failures and new workloads.
+# ~26Gi of memory requests in total; 3 nodes (~40Gi allocatable) also fit a prod rollout.
 variable "node_pool_min" {
   type        = number
   default     = 3
@@ -80,9 +78,8 @@ variable "namespaces" {
     hostname     = string # public hostname for this env's Gateway listener
   }))
   default = {
-    # quota_memory caps requests AND limits, so it must cover the sum of memory limits
-    # plus one surge pod per Deployment during a rolling update — otherwise the surge
-    # pod is rejected and the rollout stalls. prod: 4×4Gi + 2×2Gi + 4Gi + 2Gi = 26Gi.
+    # quota_memory must fit all memory limits plus one surge pod per Deployment, or rollouts
+    # stall. prod: 4×4Gi + 2×2Gi + 4Gi + 2Gi = 26Gi.
     staging = { quota_cpu = "2", quota_memory = "12Gi", quota_pods = "15", hostname = "api-staging.baergpt-ske.stackit.rocks" }
     prod    = { quota_cpu = "4", quota_memory = "26Gi", quota_pods = "20", hostname = "api.baergpt-ske.stackit.rocks" }
     sandbox = { quota_cpu = "1", quota_memory = "8Gi", quota_pods = "10", hostname = "api-sandbox.baergpt-ske.stackit.rocks" }

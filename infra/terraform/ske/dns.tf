@@ -4,8 +4,7 @@ resource "stackit_dns_zone" "this" {
   name       = "baergpt-ske"
   dns_name   = var.dns_zone
 
-  # Frontends and DNS caches keep pointing here; a deleted free subdomain could be claimed by
-  # someone else.
+  # A deleted free subdomain could be registered by someone else.
   lifecycle {
     prevent_destroy = true
   }

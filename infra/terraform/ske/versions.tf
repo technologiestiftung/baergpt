@@ -17,8 +17,7 @@ terraform {
     }
   }
 
-  # Remote state on STACKIT Object Storage (S3-compatible), same bucket as the other
-  # modules (cloud-foundry, observability).
+  # Same state bucket as the other modules.
   backend "s3" {
     bucket                      = "baergpt-tfstate"
     key                         = "ske/terraform.tfstate"

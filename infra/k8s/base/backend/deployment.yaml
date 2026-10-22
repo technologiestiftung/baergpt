@@ -7,7 +7,7 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0 # never drop below the current replica count mid-rollout — same guarantee as CF's `--strategy rolling`
+      maxUnavailable: 0
       maxSurge: 1
   selector:
     matchLabels:
@@ -46,21 +46,19 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-          # Replaced at deploy time with the digest of the image the deploy workflow builds.
+          # Set to the built image's digest at deploy time.
           image: ghcr.io/technologiestiftung/baergpt-backend:placeholder
           ports:
             - name: http
               containerPort: 3000
           envFrom:
-            # Created by the deploy workflow from the env's 1Password notesPlain blob.
+            # Created by the deploy workflow from 1Password.
             - secretRef:
                 name: backend-env
           env:
-            - name: PORT # overrides any PORT in backend-env, which would move the app off containerPort
+            - name: PORT # wins over a PORT in backend-env
               value: "3000"
-            # Keeps the JS heap below the 4Gi limit so a heap leak ends in "heap out of memory" with a
-            # stack trace. Buffers (e.g. a large upload body) live outside the heap and can still hit the
-            # limit, which kills the container silently (OOMKilled).
+            # A heap leak then fails with a stack trace before the 4Gi limit kills the container.
             - name: NODE_OPTIONS
               value: --max-old-space-size=3072
           volumeMounts:
@@ -69,16 +67,15 @@ spec:
           resources:
             requests:
               cpu: 250m
-              memory: 1Gi # prod sets request = limit, see overlays/prod
+              memory: 1Gi # prod: request = limit
             limits:
               memory: 4Gi
-          # CF: health-check-invocation-timeout 10s, timeout (start) 180s.
           startupProbe:
             httpGet:
               path: /health
               port: http
             periodSeconds: 10
-            failureThreshold: 18 # 18 * 10s = 180s, matches CF's app-start timeout
+            failureThreshold: 18 # 180s to start
           readinessProbe:
             httpGet:
               path: /health
@@ -94,15 +91,11 @@ spec:
             failureThreshold: 3
           lifecycle:
             preStop:
-              # gives the LB time to deregister this pod's endpoint before SIGTERM is
-              # sent — needed until the graceful-shutdown code task (index.ts) lands.
-              # exec+sleep instead of the native `sleep` action for compatibility with
-              # whatever k8s version SKE ends up on (native sleep needs 1.29+).
+              # Gives Envoy time to stop routing to the pod before it gets SIGTERM.
               exec:
                 command: ["sleep", "5"]
       volumes:
-        # The only writable path, for libraries that expect a temp dir (the app itself writes no files);
-        # emptied whenever the pod is replaced.
+        # The only writable path; emptied when the pod is replaced.
         - name: tmp
           emptyDir:
             sizeLimit: 512Mi

@@ -1,8 +1,4 @@
-# Replaces the Ingress resource: Gateway API is the upstream successor, and the
-# ingress-nginx controller that would have served an Ingress was retired in March 2026.
-#
-# The Gateway itself (listeners, TLS, certificates) is platform-owned and lives in
-# Terraform — infra/terraform/ske/platform.tf. This only attaches a route to it.
+# Attaches to the shared Gateway in infra/terraform/ske/platform.tf, which owns listeners and TLS.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -12,9 +8,7 @@ spec:
     - name: baergpt
       namespace: gateway
       kind: Gateway
-      # Pins the route to this environment's own TLS listener. The Gateway only allows
-      # each listener to be claimed from its matching namespace, so sandbox cannot
-      # attach itself to the prod hostname.
+      # Each listener accepts routes only from its own namespace.
       sectionName: https-PLACEHOLDER
   hostnames:
     - PLACEHOLDER.baergpt-ske.stackit.rocks # overridden per-env
@@ -26,7 +20,6 @@ spec:
       backendRefs:
         - name: backend
           port: 3000
-      # Envoy otherwise ends any response not finished after 15s, which cuts off streamed
-      # chats and document processing mid-answer (ERR_HTTP2_PROTOCOL_ERROR in the browser).
+      # Envoy's default ends any response after 15s, which cuts off streamed chats.
       timeouts:
         request: 600s

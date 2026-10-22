@@ -1,7 +1,4 @@
-# Cluster-wide policy (platform.tf) default-denies ingress from other namespaces;
-# this explicitly re-opens the one cross-namespace path the backend needs: traffic from
-# the Envoy Gateway data plane, which runs in envoy-gateway-system. Egress is limited by
-# backend-egress below.
+# Lets Envoy (envoy-gateway-system) through the cross-namespace default-deny from platform.tf.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -20,9 +17,8 @@ spec:
       ports:
         - port: http
 ---
-# Egress: public internet (Supabase, Mistral, search and MCP APIs, Sentry), DNS and
-# Gotenberg only. Private and link-local ranges are blocked so an SSRF in the backend
-# can't reach the cloud metadata service (169.254.169.254), nodes, or other pods.
+# DNS, Gotenberg and the public internet. Private and link-local ranges are blocked, so a
+# request forged through the backend can't reach the metadata service, nodes or pods.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -34,9 +30,7 @@ spec:
   policyTypes:
     - Egress
   egress:
-    # DNS, only to the cluster's CoreDNS pods (SKE runs no node-local DNS cache). Policies
-    # see the pod's own port, not the kube-dns Service's 53, and on SKE (Gardener) CoreDNS
-    # listens on 8053.
+    # Policies see the CoreDNS pod's port, which is 8053 on SKE, not the Service's 53.
     - to:
         - namespaceSelector:
             matchLabels:

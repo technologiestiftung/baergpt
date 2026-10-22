@@ -1,6 +1,4 @@
-# Single cluster for all environments; staging/prod/sandbox are k8s namespaces on it.
-# Trade-off: a k8s version upgrade touches all envs at once, so test against the
-# sandbox/staging namespaces before relying on it in prod.
+# One cluster for all environments (namespaces), so a version upgrade reaches all of them at once.
 resource "stackit_ske_cluster" "this" {
   project_id             = var.project_id
   region                 = var.region
@@ -14,15 +12,13 @@ resource "stackit_ske_cluster" "this" {
       availability_zones = var.availability_zones
       minimum            = var.node_pool_min
       maximum            = var.node_pool_max
-      # Gardener's kubelet starts image cleanup at 50% of the image filesystem; at 20 GB the
-      # images in use alone stayed above that and the cleanup failed every 5 minutes.
+      # Image cleanup on SKE starts at 50% disk use; smaller volumes stay above it.
       volume_size = 50
       volume_type = "storage_premium_perf1"
     }
   ]
 
   extensions = {
-    # Forwards cluster and node metrics to the STACKIT Observability instance.
     observability = {
       enabled     = true
       instance_id = var.observability_instance_id

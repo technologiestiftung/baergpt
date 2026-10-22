@@ -1,9 +1,7 @@
 name: Backend deploy to STACKIT Kubernetes Engine
 
 on:
-  # Manual only while the backend still runs on Render. At the cutover, add
-  # `push: branches: [staging, main]` so every merge deploys (post-merge only, same
-  # reasoning as the Cloud Foundry deploy workflow).
+  # Manual only while production still runs on Render.
   workflow_dispatch:
     inputs:
       target:
@@ -15,9 +13,7 @@ on:
 permissions:
   contents: read
 
-# Workflow-level so build and deploy run as one unit: with a per-job group, a later commit
-# could finish building first and an earlier one would then deploy last. Keyed on ref AND
-# target so a sandbox dispatch from main doesn't queue behind a prod deploy.
+# On the whole workflow, so an older commit can't finish building later and deploy last.
 concurrency:
   group: backend-deploy-ske-${{ github.ref }}-${{ github.event.inputs.target || 'auto' }}
   cancel-in-progress: false
@@ -27,9 +23,7 @@ env:
   KUBECTL_VERSION: v1.36.5 # within ±1 minor of the cluster version (kubectl skew policy)
 
 jobs:
-  # Builds the image from exactly this commit and hands its digest to `deploy`. The deploy
-  # never looks an image up by tag: tags in GHCR can be overwritten (PR builds have
-  # packages: write), so a tag could point at an image that never went through review.
+  # deploy uses this build's digest, never a tag: PR builds can push tags too.
   build:
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main' }}
@@ -55,9 +49,8 @@ jobs:
       - name: Set up Docker Buildx ⚙️
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0, pinned to commit sha to avoid sha-hulud like attacks
 
-      # No layer cache: any job running on staging/main can write to the GitHub Actions
-      # cache, so a cached layer could carry code that never went through review.
-      # The commit-<sha> tag is only a label for humans (e.g. tooling scripts).
+      # No layer cache: any job running on staging/main can write to the Actions cache.
+      # The commit-<sha> tag is only a label.
       - name: Build and push image 🐳
         id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0, pinned to commit sha to avoid sha-hulud like attacks
@@ -72,13 +65,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # workflow_dispatch has no branches filter, so a manual run can target any branch
-    # by default — reject anything other than the staging/main branches here (ref, not
-    # ref_name: a tag called "main" has ref_name main too).
+    # Manual runs can target any ref. ref, not ref_name: a tag named main has ref_name main too.
     if: ${{ github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main' }}
-    # Sandbox reuses the Staging environment's secrets/approvals; it has no environment
-    # of its own. Deploying it needs OP_BACKEND_SANDBOX_ENV_ITEM_ID and
-    # OP_SKE_DEPLOY_SANDBOX_ITEM_ID to exist there.
+    # Sandbox has no GitHub environment of its own and uses Staging's.
     environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'sandbox') && 'Staging' || (github.ref == 'refs/heads/main' && 'Production' || 'Staging') }}
 
     steps:
@@ -102,9 +91,6 @@ jobs:
         with:
           version: 2.39.0 # the action installs "latest" otherwise
 
-      # OP_SKE_DEPLOY_ITEM_ID is an environment secret: Production and Staging each point
-      # at the 1Password item holding their own namespace-scoped kubeconfig
-      # (`terraform output deploy_kubeconfigs` in infra/terraform/ske).
       - name: Resolve deployment target 🎯
         id: target
         run: |
@@ -135,16 +121,14 @@ jobs:
       - name: Install kubectl ⚙️
         run: |
           set -euo pipefail
-          # Pinned rather than relying on whatever the runner image ships, so a runner
-          # image bump can't silently change kustomize rendering behaviour.
+          # Pinned, so a runner image update can't change how overlays render.
           curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
           curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl.sha256"
           echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check --status
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
           rm -f kubectl kubectl.sha256
 
-      # The kubeconfig carries a token for the target namespace's `deployer` service
-      # account only (infra/terraform/ske/deploy-access.tf), not cluster admin.
+      # Token of the namespace's deployer service account, not cluster admin.
       - name: Fetch kubeconfig 🔐
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
@@ -164,17 +148,8 @@ jobs:
           fi
           echo "Deploying ${IMAGE_NAME}@${DIGEST}"
 
-      # Replaces Cloud Foundry's `cf unset-env`/`cf set-env` loop: the same 1Password
-      # notesPlain blob is parsed, then applied as k8s Secrets. `kubectl apply` replaces
-      # the Secret wholesale, so keys removed in 1Password disappear here too — 1Password
-      # stays the single source of truth.
-      #
-      # CF_* keys are Cloud Foundry scaling vars (instances/memory/disk), not app env —
-      # in k8s those live in the manifests, so they are filtered out. GOTENBERG_MEMORY is
-      # the same kind of thing for gotenberg.
-      #
-      # NOTE: GOTENBERG_URL in the 1Password items must point at the in-cluster service
-      # (http://gotenberg:3000), not the old public Cloud Foundry route.
+      # Rebuilt from the 1Password note on every deploy, so removed keys disappear too.
+      # CF_* and GOTENBERG_MEMORY are Cloud Foundry sizing keys in the same note.
       - name: Sync env Secrets 🔄
         id: secrets
         env:
@@ -210,8 +185,7 @@ jobs:
             --from-env-file="$dir/backend.env" \
             --save-config --dry-run=client -o yaml | kubectl apply -f -
 
-          # Sandbox runs no gotenberg of its own (it uses staging's), so it gets no
-          # gotenberg Secret either.
+          # Sandbox uses staging's Gotenberg.
           if [[ "$NAMESPACE" != "sandbox" ]]; then
             kubectl create secret generic gotenberg-env \
               --namespace "$NAMESPACE" \
@@ -219,16 +193,11 @@ jobs:
               --save-config --dry-run=client -o yaml | kubectl apply -f -
           fi
 
-          # Pod env is injected at pod start, so changing a Secret alone does NOT restart
-          # anything. Hashing the env into a pod-template annotation makes a secret-only
-          # change produce a new pod spec, and therefore a rolling update — matching the
-          # Cloud Foundry behaviour where `cf set-env` + push always restarted the app.
+          # Pods read env only at start; this hash in the pod template rolls them on a Secret change.
           checksum=$(cat "$dir/backend.env" "$dir/gotenberg.env" | sha256sum | cut -d' ' -f1)
           echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
 
-      # `kubectl kustomize` (built into kubectl) renders the overlay; the image digest and
-      # env checksum are appended as kustomize transformers rather than using
-      # `kustomize edit`, which needs the standalone kustomize binary.
+      # kubectl's built-in Kustomize has no `edit`, so digest and checksum are appended.
       - name: Render and apply manifests 🚀
         env:
           NAMESPACE: ${{ steps.target.outputs.namespace }}
@@ -247,10 +216,7 @@ jobs:
 
           kubectl kustomize "$OVERLAY" > rendered.yaml
 
-          # `-o name` echoes every applied object as <resource>.<group>/<name>, which is
-          # exactly the form `kubectl rollout status` takes. Reading the Deployment list
-          # back out of the apply output (rather than querying the namespace) keeps the
-          # rollout gate scoped to what this overlay manages — sandbox has no gotenberg.
+          # The Deployments this overlay applied, in the form `rollout status` takes.
           kubectl apply -f rendered.yaml -o name | tee applied.txt
           grep '^deployment' applied.txt > deployments.txt || true
           if [[ ! -s deployments.txt ]]; then
@@ -258,8 +224,7 @@ jobs:
             exit 1
           fi
 
-      # Fails the job if the new pods never become ready, leaving the previous
-      # ReplicaSet serving traffic — the same guarantee `cf push --strategy rolling` gave.
+      # If the new pods never get ready, the previous ReplicaSet keeps serving.
       - name: Wait for rollout ⏳
         id: rollout
         env:
@@ -268,8 +233,7 @@ jobs:
           set -euo pipefail
           while IFS= read -r deployment || [ -n "$deployment" ]; do
             [[ -z "$deployment" ]] && continue
-            # $deployment is already in resource/name form (deployment.apps/backend),
-            # straight from `kubectl apply -o name` — do not prefix it again.
+            # Already in resource/name form.
             echo "Waiting for $deployment…"
             kubectl rollout status "$deployment" \
               --namespace "$NAMESPACE" --timeout=5m
@@ -284,8 +248,7 @@ jobs:
           echo "Checking https://$host/health"
           timeout=120
           counter=0
-          # Verifies the TLS certificate too, so an expired or wrong certificate fails the
-          # deploy (curl then reports a certificate error and the status stays 000).
+          # No --insecure: an invalid certificate fails the deploy (status 000).
           until [ "$(curl -sS -o /dev/null -w '%{http_code}' "https://$host/health")" = "200" ]; do
             if [ $counter -ge $timeout ]; then
               echo "::error::https://$host/health did not return 200 within ${timeout}s (status 000 with a certificate error above means TLS, not the app)."
@@ -296,10 +259,7 @@ jobs:
           done
           echo "Health check passed."
 
-      # Scoped to a failed rollout specifically. A failing smoke check is deliberately
-      # NOT a rollback trigger: on a first deploy it usually means DNS or the TLS cert
-      # isn't ready yet, and rolling back a healthy new ReplicaSet for that would be
-      # wrong. That case fails the job loudly and leaves the decision to a human.
+      # Not after a failed smoke check: that's usually DNS or a certificate not ready yet.
       - name: Roll back on failed rollout ↩️
         if: ${{ failure() && !cancelled() && steps.rollout.outcome == 'failure' }}
         env:
@@ -320,5 +280,5 @@ jobs:
           set -uo pipefail
           kubectl get pods --namespace "$NAMESPACE" -o wide || true
           kubectl get events --namespace "$NAMESPACE" --sort-by=.lastTimestamp | tail -50 || true
-          # No `kubectl logs` here: app logs carry user data, and this repo's Actions logs are public.
+          # No `kubectl logs`: app logs carry user data, and this repo's Actions logs are public.
           echo "Backend logs: STACKIT Logs / Grafana Explore, {service_name=\"ske-$NAMESPACE\"}"

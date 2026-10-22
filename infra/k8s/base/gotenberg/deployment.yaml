@@ -46,10 +46,9 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-          # Public Docker Hub image, no imagePullSecret needed. 8.37.0+: older LibreOffice has
-          # memory bugs in the DOCX import, and every uploaded .docx goes through it.
+          # 8.37.0+: older LibreOffice has memory bugs in the DOCX import.
           image: gotenberg/gotenberg:8.37.0@sha256:f29984bd1e226bf1b93ba90af06000afa8b315853e99d27b9aaa41b93f15c769
-          # The backend only calls /forms/libreoffice/convert, so the Chromium (HTML/URL) routes stay off.
+          # The backend only uses the LibreOffice route.
           args: ["gotenberg", "--api-enable-basic-auth", "--chromium-disable-routes"]
           ports:
             - name: http
@@ -63,7 +62,7 @@ spec:
           resources:
             requests:
               cpu: 500m
-              memory: 1Gi # prod sets request = limit, see overlays/prod
+              memory: 1Gi # prod: request = limit
             limits:
               memory: 2Gi
           readinessProbe:
@@ -84,9 +83,9 @@ spec:
               path: /health
               port: http
             periodSeconds: 10
-            failureThreshold: 18 # 180s, matches CF's app-start timeout
+            failureThreshold: 18 # 180s to start
       volumes:
-        # The only writable path (LibreOffice's profile and conversion files); emptied whenever the pod is replaced.
+        # The only writable path (LibreOffice profile and conversions); emptied when the pod is replaced.
         - name: tmp
           emptyDir:
             sizeLimit: 1Gi

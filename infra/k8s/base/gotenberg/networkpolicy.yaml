@@ -1,7 +1,5 @@
-# Allows only the same-namespace backend to reach gotenberg. Staging's overlay adds
-# a second policy opening this to the sandbox namespace too (sandbox has no gotenberg
-# of its own — reuses staging's). No egress at all: conversion needs no network, so a
-# malicious document can't make gotenberg call out (incl. the Kubernetes API).
+# Only the backend in the same namespace (staging's overlay adds sandbox). No egress:
+# conversion needs no network.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
