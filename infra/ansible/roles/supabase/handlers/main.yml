@@ -2,12 +2,38 @@
 # keeps the old inode after the file is replaced. Recreating reloads it.
 - name: Recreate otel-collector
   ansible.builtin.command:
-    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --force-recreate otel-collector"
+    cmd: "{{ supabase_compose_cmd }} up -d --force-recreate otel-collector"
   args:
     chdir: "{{ supabase_dir }}"
 
 - name: Recreate vector
   ansible.builtin.command:
-    cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --force-recreate vector"
+    cmd: "{{ supabase_compose_cmd }} up -d --force-recreate vector"
+  args:
+    chdir: "{{ supabase_dir }}"
+
+# Envoy renders its listener config from lds.template.yaml at startup.
+- name: Recreate api-gw
+  ansible.builtin.command:
+    cmd: "{{ supabase_compose_cmd }} up -d --force-recreate api-gw"
+  args:
+    chdir: "{{ supabase_dir }}"
+
+- name: Recreate supavisor
+  ansible.builtin.command:
+    cmd: "{{ supabase_compose_cmd }} up -d --force-recreate supavisor"
+  args:
+    chdir: "{{ supabase_dir }}"
+
+# GoTrue caches templates for GOTRUE_MAILER_TEMPLATE_MAX_AGE; a restart applies a change right away.
+- name: Restart auth
+  ansible.builtin.command:
+    cmd: "{{ supabase_compose_cmd }} restart auth"
+  args:
+    chdir: "{{ supabase_dir }}"
+
+- name: Recreate email-templates
+  ansible.builtin.command:
+    cmd: "{{ supabase_compose_cmd }} up -d --force-recreate email-templates"
   args:
     chdir: "{{ supabase_dir }}"

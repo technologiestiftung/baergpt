@@ -1,0 +1,45 @@
+# Post-deploy checks shared by supabase-upgrade.yml and supabase-rollback.yml.
+# Expects smoke_pg_major (e.g. "17").
+- name: Wait until every Supabase container is running and healthy
+  ansible.builtin.shell:
+    cmd: >-
+      docker ps -a --filter label=com.docker.compose.project=supabase --filter label=com.docker.compose.oneoff=False
+      --format '{% raw %}{{.Names}} {{.Status}}{% endraw %}' | grep -vE 'Up [^(]*$|\(healthy\)$' || true
+  register: smoke_unhealthy
+  until: smoke_unhealthy.stdout == ""
+  retries: 60
+  delay: 5
+  changed_when: false
+
+- name: Check the Postgres version
+  ansible.builtin.command:
+    cmd: docker exec supabase-db psql -h localhost -U supabase_admin -d postgres -tAc 'show server_version'
+  register: smoke_server_version
+  changed_when: false
+  failed_when: not smoke_server_version.stdout.startswith(smoke_pg_major ~ '.')
+
+# upgrade-pg17.sh makes postgres a superuser while it runs and revokes that at the end; an aborted run can leave it.
+# The migrations workflow logs in as postgres.
+- name: Check that postgres is not a superuser
+  ansible.builtin.command:
+    cmd: docker exec supabase-db psql -h localhost -U supabase_admin -d postgres -tAc "select rolsuper from pg_roles where rolname = 'postgres'"
+  register: smoke_postgres_super
+  changed_when: false
+  failed_when: smoke_postgres_super.stdout != "f"
+
+# Keys are read inside the shell so they never reach Ansible's output.
+- name: Check auth, REST and storage through the API gateway
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      env_get() { grep -m1 "^$1=" .env | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
+      gw="http://127.0.0.1:$(env_get KONG_HTTP_PORT)"
+      code() { curl -s -o /dev/null -w '%{http_code}' -H "apikey: $1" -H "Authorization: Bearer $1" "$gw$2"; }
+      anon=$(env_get ANON_KEY)
+      service=$(env_get SERVICE_ROLE_KEY)
+      echo "auth $(code "$anon" /auth/v1/health) rest $(code "$service" '/rest/v1/documents?select=id&limit=1') storage $(code "$service" /storage/v1/bucket)"
+    chdir: "{{ supabase_dir }}"
+    executable: /bin/bash
+  register: smoke_gateway
+  changed_when: false
+  failed_when: smoke_gateway.stdout != "auth 200 rest 200 storage 200"

@@ -5,36 +5,43 @@
     create_home: true
     shell: /bin/bash
 
-- name: Create ~/bin directory
+# sudo matches commands by path. The wrappers live outside the migrations home: that user may rename
+# anything in its home, which would let it swap in its own script and run it as root.
+- name: Create the wrapper directory
   ansible.builtin.file:
-    path: /home/migrations/bin
+    path: "{{ migrations_wrapper_dir }}"
     state: directory
     owner: root
     group: root
     mode: "0755"
 
+- name: Remove the old wrapper directory from the migrations home
+  ansible.builtin.file:
+    path: /home/migrations/bin
+    state: absent
+
 - name: Deploy docker-inspect-db-ip wrapper
   ansible.builtin.template:
     src: docker-inspect-db-ip.j2
-    dest: /home/migrations/bin/docker-inspect-db-ip
+    dest: "{{ migrations_wrapper_dir }}/docker-inspect-db-ip"
     owner: root
     group: migrations
     mode: "0750"
 
-- name: Deploy docker-restart-auth wrapper
-  ansible.builtin.template:
-    src: docker-restart-auth.j2
-    dest: /home/migrations/bin/docker-restart-auth
-    owner: root
-    group: migrations
-    mode: "0750"
+# Left over on hosts deployed by earlier versions of this role.
+- name: Remove retired wrappers
+  ansible.builtin.file:
+    path: "{{ migrations_wrapper_dir }}/{{ item }}"
+    state: absent
+  loop:
+    - docker-restart-auth
+    - update-email-templates
 
 - name: Configure sudoers for migrations user
   ansible.builtin.copy:
     dest: /etc/sudoers.d/migrations
     content: |
-      migrations ALL=(root) NOPASSWD: /home/migrations/bin/docker-inspect-db-ip
-      migrations ALL=(root) NOPASSWD: /home/migrations/bin/docker-restart-auth
+      migrations ALL=(root) NOPASSWD: {{ migrations_wrapper_dir }}/docker-inspect-db-ip
     mode: "0440"
     validate: visudo -cf %s
 
