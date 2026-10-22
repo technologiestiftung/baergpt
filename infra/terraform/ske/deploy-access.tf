@@ -54,7 +54,7 @@ resource "kubernetes_role_v1" "deployer" {
   }
   rule {
     api_groups = [""]
-    resources  = ["pods", "pods/log", "events"]
+    resources  = ["pods", "events"]
     verbs      = ["get", "list", "watch"]
   }
 }
