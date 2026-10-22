@@ -22,6 +22,7 @@ export function hideDatawrapperDisconnectDialog() {
 
 export const DatawrapperDisconnectDialog = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [hasError, setHasError] = useState(false);
 
 	const handleCancel = () => {
 		hideDatawrapperDisconnectDialog();
@@ -29,21 +30,26 @@ export const DatawrapperDisconnectDialog = () => {
 
 	const handleConfirm = async () => {
 		setIsSubmitting(true);
+		setHasError(false);
 
 		const didDelete = await deleteIntegrationKey("datawrapper");
 
 		setIsSubmitting(false);
 
-		if (didDelete) {
-			useIntegrationsStore.getState().removeIntegration("datawrapper");
-			hideDatawrapperDisconnectDialog();
+		if (!didDelete) {
+			setHasError(true);
+			return;
 		}
+
+		useIntegrationsStore.getState().removeIntegration("datawrapper");
+		hideDatawrapperDisconnectDialog();
 	};
 
 	return (
 		<DefaultDialog
 			id={datawrapperDisconnectDialogId}
 			className="w-full md:w-[500px] text-dunkelblau-100 p-5"
+			afterClose={() => setHasError(false)}
 		>
 			<div className="flex flex-col gap-7">
 				<div className="flex flex-col gap-3">
@@ -64,6 +70,14 @@ export const DatawrapperDisconnectDialog = () => {
 						<p>{Content["connectors.datawrapper.disconnect.body2"]}</p>
 					</div>
 				</div>
+				{hasError && (
+					<p
+						className="text-warning-120 text-sm leading-5 font-normal"
+						role="alert"
+					>
+						{Content["connectors.datawrapper.disconnect.error"]}
+					</p>
+				)}
 				<div className="flex gap-1 items-center justify-end">
 					<TertiaryButton type="button" onClick={handleCancel}>
 						{Content["connectors.datawrapper.cancelButton"]}

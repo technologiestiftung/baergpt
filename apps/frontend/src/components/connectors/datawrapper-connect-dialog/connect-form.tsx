@@ -5,6 +5,7 @@ import { TertiaryButton } from "../../primitives/buttons/tertiary-button.tsx";
 import { PasswordInput } from "../../primitives/text-inputs/password-input.tsx";
 import type { Integration } from "../../../api/integrations/get-integrations.ts";
 import { MissingScopesPanel } from "./missing-scopes-panel.tsx";
+import { formatMaskedToken } from "../format-masked-token.ts";
 import type { DialogError, DialogMode } from "./types.ts";
 
 interface ConnectFormProps {
@@ -80,7 +81,7 @@ export function ConnectForm({
 						</span>
 						<div className="flex items-center h-10 px-3 rounded-3px border border-dunkelblau-50 bg-hellblau-50">
 							<span className="text-sm leading-5 font-normal text-dunkelblau-100">
-								{`${"•".repeat(16)}${integration?.last4 ?? ""}`}
+								{formatMaskedToken(integration?.last4)}
 							</span>
 						</div>
 					</div>
@@ -109,7 +110,7 @@ export function ConnectForm({
 					{errorMessage && (
 						<p
 							id="datawrapper-token-error"
-							className="text-berlin-rot text-xs leading-4 font-normal"
+							className="text-warning-120 text-xs leading-4 font-normal"
 							role="alert"
 						>
 							{errorMessage}

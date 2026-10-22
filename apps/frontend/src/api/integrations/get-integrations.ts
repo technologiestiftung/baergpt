@@ -10,10 +10,10 @@ export type Integration = {
 	updated_at: string;
 };
 
-export async function getIntegrations(): Promise<Integration[]> {
+export async function getIntegrations(): Promise<Integration[] | null> {
 	const { session } = useAuthStore.getState();
 	if (!session?.access_token) {
-		return [];
+		return null;
 	}
 
 	try {
@@ -28,12 +28,12 @@ export async function getIntegrations(): Promise<Integration[]> {
 			useErrorStore
 				.getState()
 				.handleError(new Error("Failed to load integrations"));
-			return [];
+			return null;
 		}
 
 		return await response.json();
 	} catch (error) {
 		useErrorStore.getState().handleError(error);
-		return [];
+		return null;
 	}
 }

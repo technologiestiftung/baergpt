@@ -32,7 +32,7 @@ export function PasswordInput({
 			className={`flex items-center gap-2 h-10 px-3 rounded-3px border bg-white
 				${
 					isInvalid
-						? "border-berlin-rot"
+						? "border-warning-100"
 						: "border-dunkelblau-50 has-[input:focus]:border-aktiv-blau-100 has-[input:focus]:shadow-[0_0_0_2px_rgba(26,115,232,0.4)]"
 				}
 				${disabled ? "bg-hellblau-50" : ""}`}

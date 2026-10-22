@@ -10,6 +10,7 @@ interface IntegrationsStore {
 	hasIntegration(provider: IntegrationProvider): boolean;
 	getIntegration(provider: IntegrationProvider): Integration | undefined;
 	fetchIntegrations(): Promise<void>;
+	upsertIntegration(integration: Integration): void;
 	removeIntegration(provider: IntegrationProvider): void;
 }
 
@@ -26,7 +27,16 @@ export const useIntegrationsStore = create<IntegrationsStore>()((set, get) => ({
 
 	async fetchIntegrations() {
 		const integrations = await getIntegrations();
-		set({ integrations });
+		if (integrations) {
+			set({ integrations });
+		}
+	},
+
+	upsertIntegration(integration) {
+		const others = (get().integrations ?? []).filter(
+			(i) => i.provider !== integration.provider,
+		);
+		set({ integrations: [...others, integration] });
 	},
 
 	removeIntegration(provider) {

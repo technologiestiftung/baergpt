@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import Content from "../../../content.ts";
 
 export function MissingScopesPanel({
@@ -5,6 +6,9 @@ export function MissingScopesPanel({
 }: {
 	requiredScopes: string[];
 }) {
+	const [isExpanded, setIsExpanded] = useState(false);
+	const detailsId = useId();
+
 	return (
 		<div className="flex flex-col gap-2 bg-warning-10 p-2">
 			<span className="text-sm leading-5 font-bold">
@@ -13,7 +17,10 @@ export function MissingScopesPanel({
 			<p className="text-sm leading-5 font-normal">
 				{Content["connectors.datawrapper.missingScopesPanel.body"]}
 			</p>
-			<div className="flex flex-col gap-1.5">
+			<div
+				id={detailsId}
+				className={`${isExpanded ? "flex" : "hidden"} md:flex flex-col gap-1.5`}
+			>
 				<p className="text-sm leading-5 font-normal">
 					{Content["connectors.datawrapper.missingScopesPanel.instruction"]}
 				</p>
@@ -37,6 +44,26 @@ export function MissingScopesPanel({
 					/>
 				</a>
 			</div>
+			<button
+				type="button"
+				aria-expanded={isExpanded}
+				aria-controls={detailsId}
+				onClick={() => setIsExpanded((expanded) => !expanded)}
+				className="flex md:hidden items-center gap-1 p-0.5 w-fit rounded-3px text-sm leading-6 font-bold text-dunkelblau-100 focus-visible:outline-default"
+			>
+				{isExpanded
+					? Content["connectors.datawrapper.missingScopesPanel.showLess"]
+					: Content["connectors.datawrapper.missingScopesPanel.showMore"]}
+				<span className="flex items-center justify-center shrink-0 size-5">
+					<img
+						src="/icons/chevron-down-icon.svg"
+						alt=""
+						width={10}
+						height={6}
+						className={isExpanded ? "rotate-180" : ""}
+					/>
+				</span>
+			</button>
 		</div>
 	);
 }

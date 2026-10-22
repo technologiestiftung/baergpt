@@ -1166,6 +1166,13 @@ export const Content = {
 	"connectors.datawrapper.editButton.ariaLabel": "API-Zugangs-Token bearbeiten",
 	"connectors.datawrapper.deleteButton.ariaLabel":
 		"Datawrapper-Verbindung trennen",
+	"connectors.datawrapper.menuButton.ariaLabel":
+		"Weitere Aktionen für Datawrapper",
+	"connectors.datawrapper.menu.edit": "Bearbeiten",
+	"connectors.datawrapper.menu.disconnect": "Verbindung trennen",
+	"connectors.datawrapper.sheet.title": "Datawrapper Konnektor",
+	"connectors.datawrapper.sheet.close.ariaLabel": "Schließen",
+	"connectors.datawrapper.tokenIcon.alt": "API-Zugangs-Token",
 
 	//Datawrapper connect / replace dialog
 	"connectors.datawrapper.connect.title": "Datawrapper verbinden",
@@ -1194,6 +1201,8 @@ export const Content = {
 		"Fügen Sie dem Token in Datawrapper diese Zugriffsrechte hinzu:",
 	"connectors.datawrapper.missingScopesPanel.link":
 		"So erstellen Sie einen Token mit allen Zugriffsrechten",
+	"connectors.datawrapper.missingScopesPanel.showMore": "Mehr lesen",
+	"connectors.datawrapper.missingScopesPanel.showLess": "Weniger lesen",
 	"connectors.datawrapper.cancelButton": "Abbrechen",
 	"connectors.datawrapper.connectSubmitButton": "Verbinden",
 	"connectors.datawrapper.replaceSubmitButton": "API-Zugangs-Token ersetzen",
@@ -1213,6 +1222,8 @@ export const Content = {
 	"connectors.datawrapper.disconnect.body2":
 		"Ihr API-Zugangs-Token wird aus BärGPT entfernt. Um Datawrapper wieder zu verbinden, geben Sie erneut einen Token ein.",
 	"connectors.datawrapper.disconnect.confirmButton": "Verbindung trennen",
+	"connectors.datawrapper.disconnect.error":
+		"Die Verbindung konnte nicht getrennt werden. Bitte versuchen Sie es erneut.",
 
 	//Password visibility toggle (shared input primitive)
 	"passwordInput.show.ariaLabel": "Eingabe anzeigen",

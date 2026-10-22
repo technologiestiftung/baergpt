@@ -65,12 +65,20 @@ export const DatawrapperConnectDialog = ({
 		setError(null);
 
 		const modeAtSubmit = mode;
-		const result = await saveIntegrationKey("datawrapper", token.trim());
+		const trimmedToken = token.trim();
+		const result = await saveIntegrationKey("datawrapper", trimmedToken);
 
 		setIsSubmitting(false);
 
 		if (result.status === "success") {
-			await useIntegrationsStore.getState().fetchIntegrations();
+			const integrationsStore = useIntegrationsStore.getState();
+			integrationsStore.upsertIntegration({
+				provider: "datawrapper",
+				last4: trimmedToken.slice(-4),
+				scopes: integration?.scopes ?? [],
+				updated_at: new Date().toISOString(),
+			});
+			await integrationsStore.fetchIntegrations();
 			onSuccess?.();
 			setSuccessMode(modeAtSubmit);
 			setIsSuccess(true);
