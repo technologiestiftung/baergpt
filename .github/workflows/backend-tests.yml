@@ -34,6 +34,10 @@ jobs:
       # drift signal is stdout alone: empty when the schemas match, the missing SQL otherwise.
       - name: Check for schema drift 🔍
         working-directory: apps/backend
+        # `db diff` runs in the edge-runtime image, which `supabase start` excludes, so it is
+        # pulled here. Use ghcr.io like the setup action: public.ecr.aws rate-limits runners.
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
         run: |
           DRIFT="$(supabase db diff --schema public)"
 
