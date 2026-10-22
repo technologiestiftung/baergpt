@@ -64,11 +64,6 @@ jobs:
         run: |
           npm run lint:db
 
-      - name: Upload default document 📄
-        working-directory: apps/backend
-        run: |
-          npm run db:upload-default-documents
-
       - name: Run integration tests 🧪
         working-directory: apps/backend
         run: |
