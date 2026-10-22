@@ -13,10 +13,7 @@ import {
 import { ConnectorsListMobile } from "./connectors-list-mobile.tsx";
 import { StatusChip } from "./status-chip.tsx";
 import { ConnectorInfo } from "./connector-info.tsx";
-import {
-	builtInConnectors,
-	datawrapperConnector,
-} from "./connectors.ts";
+import { builtInConnectors, datawrapperConnector } from "./connectors.ts";
 import { formatMaskedToken } from "./format-masked-token.ts";
 
 export const ConnectorsSection = () => {

@@ -4,10 +4,7 @@ import type { Integration } from "../../api/integrations/get-integrations.ts";
 import { showDatawrapperConnectDialog } from "./datawrapper-connect-dialog.tsx";
 import { DatawrapperMenuButton } from "./datawrapper-menu-button.tsx";
 import { StatusChip } from "./status-chip.tsx";
-import {
-	builtInConnectors,
-	datawrapperConnector,
-} from "./connectors.ts";
+import { builtInConnectors, datawrapperConnector } from "./connectors.ts";
 import { formatMaskedToken } from "./format-masked-token.ts";
 
 export function ConnectorsListMobile({
