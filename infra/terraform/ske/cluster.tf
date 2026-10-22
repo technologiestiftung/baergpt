@@ -16,8 +16,8 @@ resource "stackit_ske_cluster" "this" {
       maximum            = var.node_pool_max
       # Gardener's kubelet starts image cleanup at 50% of the image filesystem; at 20 GB the
       # images in use alone stayed above that and the cleanup failed every 5 minutes.
-      volume_size        = 50
-      volume_type        = "storage_premium_perf1"
+      volume_size = 50
+      volume_type = "storage_premium_perf1"
     }
   ]
 
