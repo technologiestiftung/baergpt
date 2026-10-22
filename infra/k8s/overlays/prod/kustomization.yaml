@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: prod
+
+resources:
+  - ../../base/backend
+  - ../../base/gotenberg
+
+replicas:
+  - name: backend
+    count: 4
+  - name: gotenberg
+    count: 2
+
+patches:
+  - path: backend-resources-patch.yaml
+  - path: gotenberg-resources-patch.yaml
+  - path: httproute-host-patch.yaml
+    target:
+      kind: HTTPRoute
+      name: backend

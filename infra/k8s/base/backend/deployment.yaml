@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1 # overridden per-env
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      automountServiceAccountToken: false # never talks to the Kubernetes API
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001 # numeric: the image's USER is a name, which runAsNonRoot can't verify
+        runAsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: backend
+          matchLabelKeys: [pod-template-hash]
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: backend
+          matchLabelKeys: [pod-template-hash]
+      containers:
+        - name: backend
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          # Set to the built image's digest at deploy time.
+          image: ghcr.io/technologiestiftung/baergpt-backend:placeholder
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            # Created by the deploy workflow from 1Password.
+            - secretRef:
+                name: backend-env
+          env:
+            - name: PORT # wins over a PORT in backend-env
+              value: "3000"
+            # A heap leak then fails with a stack trace before the 4Gi limit kills the container.
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=3072
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi # prod: request = limit
+            limits:
+              memory: 4Gi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 18 # 180s to start
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # Gives Envoy time to stop routing to the pod before it gets SIGTERM.
+              exec:
+                command: ["sleep", "5"]
+      volumes:
+        # The only writable path; emptied when the pod is replaced.
+        - name: tmp
+          emptyDir:
+            sizeLimit: 512Mi

@@ -1,0 +1,10 @@
+# maxUnavailable, not minAvailable: with one replica, minAvailable: 1 blocks every node drain.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: backend
