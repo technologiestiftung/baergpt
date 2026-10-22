@@ -1,11 +1,6 @@
-# Alert rules over the SKE cluster's telemetry (infra/terraform/ske/observability.tf): metrics
-# carry source="ske", logs and events arrive as service_name="ske-<namespace>" / "ske-events".
-#
-# One cluster serves every environment and ships to the same Observability instance as both
-# Supabase VMs, so these groups are created once, from the production workspace.
-# Sandbox is left out on purpose: alerts about the test environment would train people to
-# ignore the emails. Per-namespace rules set severity from the namespace (prod critical,
-# staging warning) instead of duplicating every rule.
+# Alerts on the SKE cluster (infra/terraform/ske/observability.tf). Created from the production
+# workspace only: one cluster for all environments, on the same instance as the Supabase VMs.
+# Severity follows the namespace (prod critical, staging warning); sandbox has no alerts.
 
 locals {
   ske_alerts_enabled = var.env == "production"
@@ -18,13 +13,12 @@ locals {
     suffix = ", \"severity\", \"critical\", \"k8s_namespace_name\", \"prod\"), \"severity\", \"warning\", \"k8s_namespace_name\", \"staging\")"
   }
 
-  # Same thresholds as KongHigh5xxRate: a share of traffic, with a floor of errors so a lone
-  # failure at night doesn't page anyone.
+  # Same thresholds as KongHigh5xxRate.
   ske_5xx_ratio_max     = 0.20
   ske_5xx_min_errors_5m = 5
 
-  # One 5xx rule per namespace: STACKIT caps a log rule's expression at 600 characters,
-  # too short for the severity-by-namespace wrapper the metric rules use.
+  # One 5xx rule per namespace: with the severity wrapper, the query exceeds STACKIT's
+  # 600-character limit for log rules.
   ske_5xx_severity = { prod = "critical", staging = "warning" }
 }
 
@@ -146,8 +140,7 @@ resource "stackit_observability_alertgroup" "ske" {
     },
 
     # --- Are we blind? ----------------------------------------------------------------
-    # The push pipeline has no `up` metric, so absence of an always-present series is the
-    # signal; absent_over_time's window is the delay, hence for = "0s".
+    # No `up` metric in the push pipeline: a missing series is the signal, its window the delay.
     {
       alert = "SkeClusterTelemetryMissing"
       expression = trimspace(<<-EOT
@@ -216,8 +209,6 @@ resource "stackit_observability_alertgroup" "ske" {
   ]
 }
 
-# LogQL rules over Envoy's access log and the Kubernetes events. LogQL unquotes Go-style
-# escapes inside strings; HCL heredocs pass the text through verbatim.
 resource "stackit_observability_logalertgroup" "ske" {
   count = local.ske_alerts_enabled ? 1 : 0
 
@@ -227,8 +218,7 @@ resource "stackit_observability_logalertgroup" "ske" {
   interval    = "60s"
 
   rules = concat(
-    # route_name is httproute/<namespace>/<route>/…; lines without a route (scanners hitting
-    # the IP with unknown hostnames) and the HTTP->HTTPS redirect don't match.
+    # route_name is httproute/<namespace>/…; scanner traffic and the HTTPS redirect don't match.
     [for ns, severity in local.ske_5xx_severity : {
       alert = "SkeEnvoy5xxRateHigh"
       expression = trimspace(<<-EOT

@@ -279,12 +279,10 @@ resource "helm_release" "otel_collector_cluster" {
       exporters  = local.otel_exporters
 
       receivers = {
-        # Merged into the preset's receiver; its 10s default costs 6x the samples.
+        # Merged into the preset's receiver (default 10s).
         k8s_cluster = { collection_interval = "60s" }
 
-        # Certificate expiry for the SkeCertificateExpiresSoon alert: Let's Encrypt no longer
-        # mails expiry warnings, and a broken renewal is otherwise silent. Keeps only the two
-        # certificate series; the endpoint exposes hundreds of controller and Go metrics.
+        # Certificate expiry for SkeCertificateExpiresSoon; keeps only the certificate series.
         "prometheus/cert-manager" = {
           config = {
             scrape_configs = [{
