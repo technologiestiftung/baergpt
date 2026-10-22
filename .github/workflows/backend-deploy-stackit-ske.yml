@@ -52,7 +52,7 @@ jobs:
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0, pinned to commit sha to avoid sha-hulud like attacks
 
       # No layer cache: any job running on staging/main can write to the Actions cache.
-      # The commit-<sha> tag is only a label.
+      # The commit-<sha> tag is only for people; deploy uses the digest.
       - name: Build and push image 🐳
         id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0, pinned to commit sha to avoid sha-hulud like attacks
@@ -67,7 +67,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # Manual runs can target any ref. ref, not ref_name: a tag named main has ref_name main too.
+    # Manual runs can pick any branch or tag; only the staging and main branches deploy.
+    # Compares the full ref: a tag named "main" would have the same ref_name as the branch.
     if: ${{ github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main' }}
     # Sandbox has no GitHub environment of its own and uses Staging's.
     environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'sandbox') && 'Staging' || (github.ref == 'refs/heads/main' && 'Production' || 'Staging') }}
