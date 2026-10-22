@@ -34,7 +34,6 @@ const createTestUser = async (userId: string, email: string) => {
 	const { error } = await serviceRoleDbClient.auth.admin.createUser({
 		id: userId,
 		email,
-		password: "SecureTestPassword123!",
 		email_confirm: true,
 	});
 
