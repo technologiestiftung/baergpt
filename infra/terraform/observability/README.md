@@ -11,17 +11,18 @@ live pipeline. Slack isn't supported by STACKIT's Alertmanager.
 
 ## Layout
 
-| File                      | What it manages                                                         |
-| ------------------------- | ----------------------------------------------------------------------- |
-| `versions.tf`             | Terraform + provider pin; S3 remote-state backend                       |
-| `provider.tf`             | `stackit` provider, region `eu01`, env-based auth                       |
-| `variables.tf`            | ids, `target_source`, thresholds; validations incl. the workspace guard |
-| `alerts_metrics.tf`       | host down / disk / memory / CPU (PromQL)                                |
-| `alerts_logs.tf`          | Kong 5xx ratio (LogQL)                                                  |
-| `alerts_anon_egress.tf`   | Tor/Mullvad blocklist stale / blocked share too high (LogQL)            |
-| `set-email-receiver.sh`   | one-time API call to set the email receiver + route                     |
-| `.op.env.observability.*` | 1Password `op://` refs for `op run` auth (real files gitignored)        |
-| `*.tfvars.example`        | copy → `staging.tfvars` / `production.tfvars` (gitignored)              |
+| File                      | What it manages                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| `versions.tf`             | Terraform + provider pin; S3 remote-state backend                                             |
+| `provider.tf`             | `stackit` provider, region `eu01`, env-based auth                                             |
+| `variables.tf`            | ids, `target_source`, thresholds; validations incl. the workspace guard                       |
+| `alerts_metrics.tf`       | host down / disk / memory / CPU (PromQL)                                                      |
+| `alerts_logs.tf`          | Kong 5xx ratio (LogQL)                                                                        |
+| `alerts_anon_egress.tf`   | Tor/Mullvad blocklist stale / blocked share too high (LogQL)                                  |
+| `alerts_ske.tf`           | SKE cluster health, certificate expiry, Envoy 5xx, rejected pods; `production` workspace only |
+| `set-email-receiver.sh`   | one-time API call to set the email receiver + route                                           |
+| `.op.env.observability.*` | 1Password `op://` refs for `op run` auth (real files gitignored)                              |
+| `*.tfvars.example`        | copy → `staging.tfvars` / `production.tfvars` (gitignored)                                    |
 
 ## Apply
 
