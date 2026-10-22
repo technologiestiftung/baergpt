@@ -828,7 +828,7 @@ export class GenerationService {
 		}
 
 		if (activeTools.includes("datawrapperMCPTools")) {
-			const datawrapperMCPToolsResponse = await datawrapperMCPTools();
+			const datawrapperMCPToolsResponse = await datawrapperMCPTools(userId);
 			if (datawrapperMCPToolsResponse) {
 				relevantTools.tools = {
 					...relevantTools.tools,

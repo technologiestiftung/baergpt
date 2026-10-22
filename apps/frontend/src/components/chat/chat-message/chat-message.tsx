@@ -5,7 +5,7 @@ import type { ChatMessage } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
 import type { JSX } from "react";
-import { AnchorLinkTargetBlank } from "../../primitives/markdown/anchor-link-target-blank.tsx";
+import { MarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
 
 interface ChatMessageProps {
@@ -14,7 +14,7 @@ interface ChatMessageProps {
 
 const customComponents = {
 	table: MarkdownWrapperScrollableTable,
-	a: AnchorLinkTargetBlank,
+	a: MarkdownLinkWithDatawrapperEmbed,
 	img: () => null,
 };
 
