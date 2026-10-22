@@ -1,8 +1,7 @@
 name: Backend deploy to STACKIT Kubernetes Engine
 
 on:
-  # Every merge to staging deploys. Prod (main) is started by hand (Actions → Run workflow)
-  # until production moves here from Render.
+  # Every merge to staging deploys. Prod (main) is started by hand (Actions → Run workflow).
   push:
     branches: [staging]
   workflow_dispatch:
