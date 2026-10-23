@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from "react";
 import Content from "../../content.ts";
 import { BottomSheet } from "../primitives/bottom-sheet/bottom-sheet.tsx";
+import { ConnectorLogo } from "./connector-logo.tsx";
 import { showDatawrapperConnectDialog } from "./datawrapper-connect-dialog.tsx";
 import { showDatawrapperDisconnectDialog } from "./datawrapper-disconnect-dialog.tsx";
 
@@ -61,13 +62,10 @@ export function DatawrapperMenuButton() {
 			>
 				<div className="flex items-center justify-between gap-3 px-3 pb-3 border-b-[0.5px] border-dunkelblau-30">
 					<div className="flex items-center gap-5 min-w-0">
-						<div className="shrink-0 size-5 rounded-3px bg-white drop-shadow-[0px_0px_2.4px_rgba(36,61,100,0.3)] flex items-center justify-center p-1">
-							<img
-								src="/icons/datawrapper-icon.svg"
-								alt=""
-								className="max-w-full max-h-full object-contain"
-							/>
-						</div>
+						<ConnectorLogo
+							src="/icons/datawrapper-icon.svg"
+							className="size-5 p-1"
+						/>
 						<h2 id={titleId} className="text-base leading-6 font-bold truncate">
 							{Content["connectors.datawrapper.sheet.title"]}
 						</h2>

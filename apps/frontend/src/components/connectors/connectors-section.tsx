@@ -15,8 +15,9 @@ import { StatusChip } from "./status-chip.tsx";
 import { ConnectorInfo } from "./connector-info.tsx";
 import { builtInConnectors, datawrapperConnector } from "./connectors.ts";
 import { formatMaskedToken } from "./format-masked-token.ts";
+import { DatawrapperConnectButton } from "./datawrapper-connect-button.tsx";
 
-export const ConnectorsSection = () => {
+export function ConnectorsSection() {
 	const datawrapperIntegration = useIntegrationsStore((state) =>
 		state.getIntegration("datawrapper"),
 	);
@@ -132,19 +133,10 @@ export const ConnectorsSection = () => {
 										</button>
 									</>
 								) : (
-									<button
-										type="button"
-										onClick={showDatawrapperConnectDialog}
-										className="flex items-center gap-1.5 h-8 px-3 rounded-3px border border-dunkelblau-100 bg-white text-sm leading-5 font-normal text-dunkelblau-100 hover:bg-hellblau-50 focus-visible:outline-default"
-									>
-										<img
-											src="/icons/plus-dark-blue-icon.svg"
-											alt=""
-											width={16}
-											height={16}
-										/>
-										{Content["connectors.datawrapper.connectButton"]}
-									</button>
+									<DatawrapperConnectButton
+										iconPosition="leading"
+										className="px-3"
+									/>
 								)}
 							</div>
 						</div>
@@ -165,4 +157,4 @@ export const ConnectorsSection = () => {
 			)}
 		</div>
 	);
-};
+}

@@ -5,6 +5,7 @@ import { TertiaryButton } from "../primitives/buttons/tertiary-button.tsx";
 import { WarningButton } from "../primitives/buttons/warning-button.tsx";
 import { deleteIntegrationKey } from "../../api/integrations/delete-integration-key.ts";
 import { useIntegrationsStore } from "../../store/use-integrations-store.ts";
+import { ConnectorLogo } from "./connector-logo.tsx";
 
 export const datawrapperDisconnectDialogId = "datawrapper-disconnect-dialog";
 
@@ -20,7 +21,7 @@ export function hideDatawrapperDisconnectDialog() {
 	)?.close();
 }
 
-export const DatawrapperDisconnectDialog = () => {
+export function DatawrapperDisconnectDialog() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [hasError, setHasError] = useState(false);
 
@@ -54,13 +55,11 @@ export const DatawrapperDisconnectDialog = () => {
 			<div className="flex flex-col gap-7">
 				<div className="flex flex-col gap-3">
 					<div className="flex gap-[9px] items-center">
-						<div className="shrink-0 size-7 rounded-3px bg-white drop-shadow-[0px_0px_1.5px_rgba(36,61,100,0.3)] flex items-center justify-center p-1">
-							<img
-								src="/icons/datawrapper-icon.svg"
-								alt=""
-								className="max-w-full max-h-full object-contain"
-							/>
-						</div>
+						<ConnectorLogo
+							src="/icons/datawrapper-icon.svg"
+							className="size-7 p-1"
+							shadow="soft"
+						/>
 						<h2 className="text-xl leading-7 font-bold">
 							{Content["connectors.datawrapper.disconnect.title"]}
 						</h2>
@@ -96,4 +95,4 @@ export const DatawrapperDisconnectDialog = () => {
 			</div>
 		</DefaultDialog>
 	);
-};
+}

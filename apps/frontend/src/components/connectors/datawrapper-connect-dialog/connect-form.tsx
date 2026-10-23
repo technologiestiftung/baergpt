@@ -6,6 +6,7 @@ import { PasswordInput } from "../../primitives/text-inputs/password-input.tsx";
 import type { Integration } from "../../../api/integrations/get-integrations.ts";
 import { MissingScopesPanel } from "./missing-scopes-panel.tsx";
 import { formatMaskedToken } from "../format-masked-token.ts";
+import { ConnectorLogo } from "../connector-logo.tsx";
 import type { DialogError, DialogMode } from "./types.ts";
 
 interface ConnectFormProps {
@@ -37,13 +38,11 @@ export function ConnectForm({
 		<div className="flex flex-col gap-7">
 			<div className="flex flex-col gap-3">
 				<div className="flex gap-[9px] items-center">
-					<div className="shrink-0 size-7 rounded-3px bg-white drop-shadow-[0px_0px_1.5px_rgba(36,61,100,0.3)] flex items-center justify-center p-1">
-						<img
-							src="/icons/datawrapper-icon.svg"
-							alt=""
-							className="max-w-full max-h-full object-contain"
-						/>
-					</div>
+					<ConnectorLogo
+						src="/icons/datawrapper-icon.svg"
+						className="size-7 p-1"
+						shadow="soft"
+					/>
 					<h2 className="text-xl leading-7 font-bold">
 						{mode === "replace"
 							? Content["connectors.datawrapper.replace.title"]

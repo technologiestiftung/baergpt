@@ -1,11 +1,13 @@
 import { useId, useState } from "react";
 import Content from "../../../content.ts";
 
+interface MissingScopesPanelProps {
+	requiredScopes: string[];
+}
+
 export function MissingScopesPanel({
 	requiredScopes,
-}: {
-	requiredScopes: string[];
-}) {
+}: MissingScopesPanelProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const detailsId = useId();
 

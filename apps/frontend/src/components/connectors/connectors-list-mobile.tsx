@@ -1,17 +1,20 @@
 import type { ReactNode } from "react";
 import Content from "../../content.ts";
 import type { Integration } from "../../api/integrations/get-integrations.ts";
-import { showDatawrapperConnectDialog } from "./datawrapper-connect-dialog.tsx";
 import { DatawrapperMenuButton } from "./datawrapper-menu-button.tsx";
 import { StatusChip } from "./status-chip.tsx";
 import { builtInConnectors, datawrapperConnector } from "./connectors.ts";
 import { formatMaskedToken } from "./format-masked-token.ts";
+import { ConnectorLogo } from "./connector-logo.tsx";
+import { DatawrapperConnectButton } from "./datawrapper-connect-button.tsx";
+
+interface ConnectorsListMobileProps {
+	datawrapperIntegration?: Integration;
+}
 
 export function ConnectorsListMobile({
 	datawrapperIntegration,
-}: {
-	datawrapperIntegration?: Integration;
-}) {
+}: ConnectorsListMobileProps) {
 	return (
 		<ul className="flex md:hidden flex-col border-t-[0.5px] border-dunkelblau-30">
 			{builtInConnectors
@@ -57,19 +60,10 @@ export function ConnectorsListMobile({
 								<DatawrapperMenuButton />
 							</>
 						) : (
-							<button
-								type="button"
-								onClick={showDatawrapperConnectDialog}
-								className="flex items-center justify-center gap-1.5 h-8 min-w-[120px] pl-[18px] pr-3 rounded-3px border border-dunkelblau-100 bg-white text-sm leading-5 font-normal text-dunkelblau-100 hover:bg-hellblau-50 focus-visible:outline-default"
-							>
-								{Content["connectors.datawrapper.connectButton"]}
-								<img
-									src="/icons/plus-dark-blue-icon.svg"
-									alt=""
-									width={16}
-									height={16}
-								/>
-							</button>
+							<DatawrapperConnectButton
+								iconPosition="trailing"
+								className="min-w-[120px] pl-[18px] pr-3"
+							/>
 						)
 					}
 				/>
@@ -78,28 +72,24 @@ export function ConnectorsListMobile({
 	);
 }
 
+interface MobileConnectorRowProps {
+	logo: string;
+	logoAlt: string;
+	name: string;
+	meta?: ReactNode;
+	trailing: ReactNode;
+}
+
 function MobileConnectorRow({
 	logo,
 	logoAlt,
 	name,
 	meta,
 	trailing,
-}: {
-	logo: string;
-	logoAlt: string;
-	name: string;
-	meta?: ReactNode;
-	trailing: ReactNode;
-}) {
+}: MobileConnectorRowProps) {
 	return (
 		<li className="flex gap-3 items-center min-h-[74px] py-4 border-b-[0.5px] border-dunkelblau-30">
-			<div className="shrink-0 size-7 rounded-3px bg-white drop-shadow-[0px_0px_2.4px_rgba(36,61,100,0.3)] flex items-center justify-center p-1.5">
-				<img
-					src={logo}
-					alt={logoAlt}
-					className="max-w-full max-h-full object-contain"
-				/>
-			</div>
+			<ConnectorLogo src={logo} alt={logoAlt} className="size-7 p-1.5" />
 			<div className="flex flex-col gap-0.5 flex-1 min-w-0">
 				<span className="text-base leading-6 font-bold text-dunkelblau-100">
 					{name}

@@ -2,13 +2,12 @@ import Content from "../../../content.ts";
 import { PrimaryButton } from "../../primitives/buttons/primary-button.tsx";
 import type { DialogMode } from "./types.ts";
 
-export function SuccessView({
-	mode,
-	onContinue,
-}: {
+interface SuccessViewProps {
 	mode: DialogMode;
 	onContinue: () => void;
-}) {
+}
+
+export function SuccessView({ mode, onContinue }: SuccessViewProps) {
 	return (
 		<div className="flex flex-col items-center gap-[27px]">
 			<div className="flex flex-col items-center gap-[22px] w-full">

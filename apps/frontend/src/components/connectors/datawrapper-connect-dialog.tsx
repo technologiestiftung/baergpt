@@ -30,11 +30,11 @@ interface DatawrapperConnectDialogProps {
 	onSuccess?: () => void;
 }
 
-export const DatawrapperConnectDialog = ({
+export function DatawrapperConnectDialog({
 	mode,
 	integration,
 	onSuccess,
-}: DatawrapperConnectDialogProps) => {
+}: DatawrapperConnectDialogProps) {
 	const [token, setToken] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<DialogError | null>(null);
@@ -124,4 +124,4 @@ export const DatawrapperConnectDialog = ({
 			)}
 		</DefaultDialog>
 	);
-};
+}

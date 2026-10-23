@@ -6,6 +6,7 @@ import { useDropdownKeyboard } from "../../../../hooks/use-dropdown-keyboard.ts"
 import { config } from "../../../../config.ts";
 import { useIntegrationsStore } from "../../../../store/use-integrations-store.ts";
 import { showDatawrapperConnectDialog } from "../../../connectors/datawrapper-connect-dialog.tsx";
+import { ConnectorLogo } from "../../../connectors/connector-logo.tsx";
 
 const CONNECTORS_REQUIRING_KEY: Connector[] = ["datawrapper"];
 
@@ -136,13 +137,11 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 								aria-checked={isSelected}
 							>
 								<div className="flex items-center gap-1 pr-[3px]">
-									<div className="shrink-0 size-6 rounded-3px drop-shadow-[0px_0px_1.5px_rgba(36,61,100,0.3)] bg-white flex items-center justify-center p-[3px]">
-										<img
-											src={item.logo}
-											alt=""
-											className="max-w-full max-h-full object-contain"
-										/>
-									</div>
+									<ConnectorLogo
+										src={item.logo}
+										className="size-6 p-[3px]"
+										shadow="soft"
+									/>
 									<div className="flex flex-col items-start">
 										<p className="text-sm leading-5 font-semibold text-dunkelblau-90">
 											{item.label}
