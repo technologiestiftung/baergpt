@@ -4,7 +4,9 @@
  * resolves versions, not during `npm ci`, so a lockfile changed outside npm
  * (or by an npm that ignores .npmrc) would otherwise install it unchecked.
  *
- * Only versions that are not in the base lockfile are checked.
+ * Only versions that are not in the base lockfile are checked. Added entries
+ * resolved from anywhere but the registry (git, other hosts) fail the check,
+ * since their publish time can't be looked up.
  *
  * Usage: node .github/scripts/check-lockfile-age.mts <base-package-lock.json>
  */
@@ -30,10 +32,20 @@ function readMinReleaseAgeDays(): number {
 	return Number(match[1]);
 }
 
-function registryVersions(lockfile: Lockfile): Set<string> {
+function lockedVersions(lockfile: Lockfile) {
 	const versions = new Set<string>();
+	const unchecked = new Set<string>();
 	for (const [path, entry] of Object.entries(lockfile.packages)) {
-		if (!entry.resolved?.startsWith(REGISTRY) || !entry.version) {
+		// Workspaces are links or relative paths without a URL scheme.
+		if (
+			!entry.resolved ||
+			entry.link ||
+			!/^[a-z][a-z0-9+.-]*:/i.test(entry.resolved)
+		) {
+			continue;
+		}
+		if (!entry.resolved.startsWith(REGISTRY) || !entry.version) {
+			unchecked.add(`${path} (${entry.resolved})`);
 			continue;
 		}
 		// Aliased packages carry their real name in `name`; otherwise it's the path's tail.
@@ -41,7 +53,7 @@ function registryVersions(lockfile: Lockfile): Set<string> {
 			entry.name ?? path.slice(path.lastIndexOf("node_modules/") + 13);
 		versions.add(`${name}@${entry.version}`);
 	}
-	return versions;
+	return { versions, unchecked };
 }
 
 function splitNameAndVersion(nameAndVersion: string) {
@@ -70,11 +82,26 @@ async function main() {
 	}
 
 	const minAgeDays = readMinReleaseAgeDays();
-	const base = registryVersions(JSON.parse(readFileSync(basePath, "utf8")));
-	const head = registryVersions(
+	const base = lockedVersions(JSON.parse(readFileSync(basePath, "utf8")));
+	const head = lockedVersions(
 		JSON.parse(readFileSync("package-lock.json", "utf8")),
 	);
-	const added = [...head].filter((version) => !base.has(version));
+
+	const addedUnchecked = [...head.unchecked].filter(
+		(entry) => !base.unchecked.has(entry),
+	);
+	if (addedUnchecked.length > 0) {
+		console.error(
+			`These entries resolve outside ${REGISTRY}, so their age can't be checked:\n${addedUnchecked
+				.map((entry) => `  - ${entry}`)
+				.join("\n")}`,
+		);
+		process.exit(1);
+	}
+
+	const added = [...head.versions].filter(
+		(version) => !base.versions.has(version),
+	);
 
 	console.log(
 		`${added.length} package version(s) added to package-lock.json, checking they are at least ${minAgeDays} day(s) old.`,
