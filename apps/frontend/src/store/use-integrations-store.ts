@@ -12,6 +12,7 @@ interface IntegrationsStore {
 	fetchIntegrations(): Promise<void>;
 	upsertIntegration(integration: Integration): void;
 	removeIntegration(provider: IntegrationProvider): void;
+	reset(): void;
 }
 
 export const useIntegrationsStore = create<IntegrationsStore>()((set, get) => ({
@@ -42,5 +43,9 @@ export const useIntegrationsStore = create<IntegrationsStore>()((set, get) => ({
 	removeIntegration(provider) {
 		const existing = get().integrations ?? [];
 		set({ integrations: existing.filter((i) => i.provider !== provider) });
+	},
+
+	reset() {
+		set({ integrations: null });
 	},
 }));

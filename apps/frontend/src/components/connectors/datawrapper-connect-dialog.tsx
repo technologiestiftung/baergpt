@@ -41,8 +41,10 @@ export function DatawrapperConnectDialog({
 	const [isSuccess, setIsSuccess] = useState(false);
 	const [successMode, setSuccessMode] = useState<DialogMode | null>(null);
 	const formRef = useRef<HTMLFormElement | null>(null);
+	const submitGenerationRef = useRef(0);
 
 	const resetState = () => {
+		submitGenerationRef.current += 1;
 		setToken("");
 		setIsSubmitting(false);
 		setError(null);
@@ -65,10 +67,10 @@ export function DatawrapperConnectDialog({
 		setError(null);
 
 		const modeAtSubmit = mode;
+		const generationAtSubmit = submitGenerationRef.current;
 		const trimmedToken = token.trim();
 		const result = await saveIntegrationKey("datawrapper", trimmedToken);
-
-		setIsSubmitting(false);
+		const isStale = () => submitGenerationRef.current !== generationAtSubmit;
 
 		if (result.status === "success") {
 			const integrationsStore = useIntegrationsStore.getState();
@@ -80,6 +82,15 @@ export function DatawrapperConnectDialog({
 			});
 			await integrationsStore.fetchIntegrations();
 			onSuccess?.();
+		}
+
+		if (isStale()) {
+			return;
+		}
+
+		setIsSubmitting(false);
+
+		if (result.status === "success") {
 			setSuccessMode(modeAtSubmit);
 			setIsSuccess(true);
 			return;
