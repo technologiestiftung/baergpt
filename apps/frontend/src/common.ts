@@ -22,6 +22,7 @@ export type NewChatMessage = Pick<
 	| "open_data_citations"
 	| "external_tool_context"
 	| "traces"
+	| "datawrapper_chart_ids"
 >;
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
@@ -67,6 +68,7 @@ export type ChatMessage = {
 	web_citations: WebCitationSource[] | null;
 	parla_citations: ParlaCitationSource[] | null;
 	open_data_citations: OpenDataCitationSource[] | null;
+	datawrapper_chart_ids: string[] | null;
 	created_at: string;
 	external_tool_context: boolean;
 	// Reasoning trace of the message, present when extended thinking was on.

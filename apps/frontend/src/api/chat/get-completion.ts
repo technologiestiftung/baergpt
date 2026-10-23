@@ -48,7 +48,8 @@ type StreamEvent =
 	| { type: "data-citations"; data: number[] }
 	| { type: "data-web-citations"; data: WebCitationSource[] }
 	| { type: "data-parla-citations"; data: ParlaCitationSource[] }
-	| { type: "data-open-data-citations"; data: OpenDataCitationSource[] };
+	| { type: "data-open-data-citations"; data: OpenDataCitationSource[] }
+	| { type: "data-datawrapper-chart-ids"; data: string[] };
 
 /**
  * Tool names as they arrive on the stream — ours for the built-in tools, the
@@ -183,6 +184,7 @@ export async function getCompletion(
 			web_citations: null,
 			parla_citations: null,
 			open_data_citations: null,
+			datawrapper_chart_ids: null,
 			external_tool_context: isExternalToolContext,
 			traces: null,
 		});
@@ -198,6 +200,7 @@ export async function getCompletion(
 		let webCitations: WebCitationSource[] = [];
 		let parlaCitations: ParlaCitationSource[] = [];
 		let openDataCitations: OpenDataCitationSource[] = [];
+		let datawrapperChartIds: string[] = [];
 
 		let hasReceivedText = false;
 		let thinkingStartedAt: number | undefined;
@@ -223,6 +226,9 @@ export async function getCompletion(
 				parla_citations: parlaCitations.length ? parlaCitations : null,
 				open_data_citations: openDataCitations.length
 					? openDataCitations
+					: null,
+				datawrapper_chart_ids: datawrapperChartIds.length
+					? datawrapperChartIds
 					: null,
 				traces: traces.length
 					? { traces, durationSeconds: thinkingDurationSeconds }
@@ -306,6 +312,10 @@ export async function getCompletion(
 				openDataCitations = sources;
 				writeMessage();
 			},
+			onDatawrapperChartIds: (chartIds: string[]) => {
+				datawrapperChartIds = chartIds;
+				writeMessage();
+			},
 			onFinish: async (wasSuccessful) => {
 				setStatus("idle");
 				setStreamingAbortController(null);
@@ -325,6 +335,9 @@ export async function getCompletion(
 							parla_citations: parlaCitations.length ? parlaCitations : null,
 							open_data_citations: openDataCitations.length
 								? openDataCitations
+								: null,
+							datawrapper_chart_ids: datawrapperChartIds.length
+								? datawrapperChartIds
 								: null,
 							external_tool_context: isExternalToolContext,
 							traces: traces.length
@@ -371,6 +384,7 @@ async function processStreamLine(
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
+		onDatawrapperChartIds: (chartIds: string[]) => void;
 		onFinish: (wasSuccessful: boolean) => void | Promise<void>;
 	},
 ): Promise<boolean> {
@@ -431,6 +445,11 @@ async function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "data-datawrapper-chart-ids") {
+			callbacks.onDatawrapperChartIds(event.data);
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -451,6 +470,7 @@ async function parseStream(
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
+		onDatawrapperChartIds: (chartIds: string[]) => void;
 		onFinish: (wasSuccessful: boolean) => void | Promise<void>;
 	},
 ) {
