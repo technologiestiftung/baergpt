@@ -104,7 +104,7 @@ export const DatawrapperConnectDialog = ({
 	return (
 		<DefaultDialog
 			id={datawrapperConnectDialogId}
-			className="w-full md:w-[500px] text-dunkelblau-100 p-5"
+			className={`w-full md:w-[500px] text-dunkelblau-100 ${isSuccess ? "px-5 pt-[27px] pb-[18px]" : "p-5"}`}
 			afterClose={resetState}
 		>
 			{isSuccess ? (

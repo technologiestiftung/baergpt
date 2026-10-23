@@ -36,8 +36,8 @@ export function ConnectForm({
 	return (
 		<div className="flex flex-col gap-7">
 			<div className="flex flex-col gap-3">
-				<div className="flex gap-2 items-center">
-					<div className="shrink-0 size-7 rounded-3px bg-white drop-shadow-[0px_0px_2.4px_rgba(36,61,100,0.3)] flex items-center justify-center p-1">
+				<div className="flex gap-[9px] items-center">
+					<div className="shrink-0 size-7 rounded-3px bg-white drop-shadow-[0px_0px_1.5px_rgba(36,61,100,0.3)] flex items-center justify-center p-1">
 						<img
 							src="/icons/datawrapper-icon.svg"
 							alt=""
@@ -60,7 +60,7 @@ export function ConnectForm({
 						href={Content["connectors.datawrapper.helpLink.href"]}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="flex items-center gap-1 text-base leading-6 font-normal text-aktiv-blau-100 underline w-fit"
+						className="flex items-center gap-1 p-0.5 text-base leading-6 font-normal text-aktiv-blau-100 underline w-fit"
 					>
 						{Content["connectors.datawrapper.findTokenLink"]}
 						<img

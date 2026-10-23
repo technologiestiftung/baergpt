@@ -9,6 +9,7 @@ export default {
 			colors: {
 				orange: "#E69736",
 				mittelgruen: "#4CA786",
+				"mittelgruen-130": "#35755E",
 				"berlin-rot": "#E40521",
 				"warning-85": "#E45F5F",
 				"warning-100": "#DF4343",

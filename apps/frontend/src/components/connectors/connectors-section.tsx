@@ -59,13 +59,13 @@ export const ConnectorsSection = () => {
 					</span>
 				</div>
 
-				<div className="flex flex-col border-t border-dunkelblau-30">
+				<div className="flex flex-col border-t-[0.5px] border-dunkelblau-30">
 					{builtInConnectors
 						.filter((connector) => connector.isEnabled)
 						.map((connector) => (
 							<div
 								key={connector.id}
-								className="flex gap-4 items-center px-2 py-3 border-b border-dunkelblau-30 min-w-fit"
+								className="flex gap-4 items-center px-2 py-3 border-b-[0.5px] border-dunkelblau-30 min-w-fit"
 							>
 								<ConnectorInfo
 									logo={connector.logo}
@@ -83,7 +83,7 @@ export const ConnectorsSection = () => {
 						))}
 
 					{datawrapperConnector.isEnabled && (
-						<div className="flex gap-4 items-center px-2 py-3 border-b border-dunkelblau-30 min-w-fit">
+						<div className="flex gap-4 items-center px-2 py-3 border-b-[0.5px] border-dunkelblau-30 min-w-fit">
 							<ConnectorInfo
 								logo={datawrapperConnector.logo}
 								logoAlt={datawrapperConnector.logoAlt}
