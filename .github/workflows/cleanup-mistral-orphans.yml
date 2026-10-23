@@ -10,6 +10,11 @@ on:
 jobs:
   assess-orphans:
     runs-on: ubuntu-latest
+    # workflow_dispatch has no branches filter — only run for staging/main.
+    if: ${{ github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main' }}
+    # Scopes OP_SERVICE_ACCOUNT_TOKEN/OP_VAULT_ID to the environment secrets;
+    # the repo-level ones only reach the CI test vault.
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
     outputs:
       has_orphans: ${{ steps.check.outputs.has_orphans }}
 
@@ -25,7 +30,7 @@ jobs:
       - name: Set environment item ID based on branch 🌿
         id: env-config
         run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
           else
             echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
@@ -67,6 +72,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [assess-orphans, manual-approve]
     if: needs.assess-orphans.outputs.has_orphans == 'true'
+    # Scopes OP_SERVICE_ACCOUNT_TOKEN/OP_VAULT_ID to the environment secrets;
+    # the repo-level ones only reach the CI test vault.
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
 
     steps:
       - name: Checkout code ⬇️
@@ -80,7 +88,7 @@ jobs:
       - name: Set environment item ID based on branch 🌿
         id: env-config
         run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
           else
             echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
