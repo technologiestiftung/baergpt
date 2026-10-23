@@ -3,7 +3,7 @@
 #   docker buildx build --platform linux/amd64 -f apps/backend/Dockerfile -t <tag> .
 
 # ---- base -------------------------------------------------------------------
-FROM node:24.18.0-slim AS base
+FROM node:24.22.1-slim AS base
 
 # ---- reduce the monorepo to just baergpt-backend + its deps ----------
 FROM base AS pruner
