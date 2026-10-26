@@ -11,6 +11,7 @@ interface AuthErrorStore {
 const errorMessages: { [key: string]: string } = {
 	privacy_not_accepted: content["form.validation.privacy.required.error"],
 	"User is banned": content["form.validation.userBanned.error"],
+	email_not_allowed: content["form.validation.email.customError"],
 };
 
 export const useAuthErrorStore = create<AuthErrorStore>()((set) => ({

@@ -10,6 +10,7 @@ export default {
 				orange: "#E69736",
 				mittelgruen: "#4CA786",
 				"berlin-rot": "#E40521",
+				"warning-120": "#B23636",
 				"warning-100": "#DF4343",
 				"warning-85": "#E45F5F",
 				"warning-10": "#FEF4F5",

@@ -1,11 +1,13 @@
 import { useState, type FormEvent, type ClipboardEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import Content from "../../content";
+import { AuthPrimaryButton } from "../../components/primitives/buttons/auth-primary-button.tsx";
 import { ConfirmationLayout } from "../../layouts/confirmation-layout.tsx";
 import { supabase } from "../../../supabase-client";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import * as Sentry from "@sentry/react";
+import { hasCompletedRegistration } from "../../hooks/use-session-redirect.tsx";
 
 const redirectToMapping = {
 	email: "/",
@@ -27,7 +29,7 @@ export function ConfirmOtpPage() {
 
 	const email = searchParams.get("email");
 	const otpType = searchParams.get("type");
-	const origin = searchParams.get("origin");
+	const changeEmailPath = otpType === "email_change" ? "/profile/" : "/login/";
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -74,13 +76,15 @@ export function ConfirmOtpPage() {
 				op: otpTypeSpanOpMapping[otpType],
 			},
 			async (span) => {
-				const { error: verifyOtpError } =
+				const { data, error: verifyOtpError } =
 					await supabase.auth.verifyOtp(verifyParams);
 
 				setIsSubmitting(false);
 
 				if (!verifyOtpError) {
-					navigate(redirectToMapping[otpType]);
+					const isNewUser =
+						data.session && !hasCompletedRegistration(data.session);
+					navigate(isNewUser ? "/register/" : redirectToMapping[otpType]);
 					return;
 				}
 
@@ -103,6 +107,7 @@ export function ConfirmOtpPage() {
 	const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {
 		event.preventDefault();
 		event.currentTarget.value = event.clipboardData.getData("text").trim();
+		setError(null);
 	};
 
 	const handleResendEmail = async () => {
@@ -121,115 +126,93 @@ export function ConfirmOtpPage() {
 	return (
 		<ConfirmationLayout>
 			<div className="flex flex-col min-h-[95svh] h-full w-full justify-center items-center bg-hellblau-30 px-5 py-12 md:py-24">
-				<div className="flex flex-col border max-w-[580px] w-full border-black py-8 px-5 md:p-10 rounded-3px bg-white">
-					<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
-						{Content["confirmOtp.title"]}
-					</h1>
-					<p className="text-base mt-4 text-schwarz-100">
-						{email ? (
-							<>
-								{Content["confirmOtp.description.sent"]}{" "}
-								<strong>{email}</strong>
-								<br />
-								{Content["confirmOtp.description.instruction"]}
-							</>
-						) : (
-							Content["confirmOtp.description"]
-						)}
-					</p>
+				<div className="flex flex-col gap-10 border max-w-[580px] w-full border-dunkelblau-100 p-5 md:p-7 rounded-3px bg-white text-dunkelblau-100">
+					<div className="flex flex-col gap-4">
+						<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
+							{Content["confirmOtp.title"]}
+						</h1>
+						<p className="text-lg leading-7 md:text-xl md:leading-8">
+							{email ? (
+								<>
+									{Content["confirmOtp.description.sent"]}{" "}
+									<strong className="break-all">{email}</strong>{" "}
+									{Content["confirmOtp.description.sentSuffix"]}
+								</>
+							) : (
+								Content["confirmOtp.description"]
+							)}
+						</p>
+					</div>
 
-					<form className="flex flex-col mt-8 gap-6" onSubmit={handleSubmit}>
-						<label
-							htmlFor="token"
-							className="flex flex-col gap-2 text-sm md:text-base"
-						>
-							{Content["confirmOtp.token.label"]}
+					<form className="flex flex-col gap-10" onSubmit={handleSubmit}>
+						<div className="flex flex-col gap-1.5">
+							<label htmlFor="token" className="text-sm leading-5 font-bold">
+								{Content["confirmOtp.token.label"]}
+							</label>
 							<input
 								id="token"
 								name="token"
 								type="text"
 								inputMode="numeric"
+								autoComplete="one-time-code"
 								pattern="\d{10}"
-								className="border border-schwarz-40 rounded-3px px-3 py-2 focus-visible:outline-default uppercase tracking-[0.3em]"
-								placeholder={Content["confirmOtp.token.placeholder"]}
+								aria-invalid={!!error}
+								aria-describedby={error ? "token-error" : undefined}
+								className={`
+									h-12 px-3 border rounded-3px text-base leading-6
+									focus-visible:outline-default
+									${error ? "border-warning-100 text-warning-120" : "border-dunkelblau-50"}
+								`}
+								onInput={() => setError(null)}
 								onPaste={handlePaste}
 							/>
-						</label>
 
-						{error && (
-							<div className="text-berlin-rot text-sm" role="alert">
-								{error}
-							</div>
-						)}
-
-						<button
-							type="submit"
-							disabled={isSubmitting}
-							className="flex w-fit items-center gap-2 rounded-3px bg-dunkelblau-100 px-4 py-2 text-base text-white hover:bg-dunkelblau-80 focus-visible:outline-default disabled:opacity-60"
-						>
-							{isSubmitting
-								? Content["confirmOtp.button.loading"]
-								: Content["confirmOtp.button.submit"]}
-						</button>
-
-						<div className="flex flex-col gap-1">
-							<p className="text-base text-schwarz-100">
-								{Content["confirmOtp.resend.question"]}{" "}
-								{hasEmailBeenRecentlySent ? (
-									<span className="text-base font-semibold text-mittelgruen">
-										{Content["unconfirmedEmail.resend.success"]}
-									</span>
-								) : (
-									<button
-										className="text-base font-semibold underline hover:no-underline"
-										type="button"
-										onClick={handleResendEmail}
-									>
-										{Content["unconfirmedEmail.resendButton"]}
-									</button>
-								)}
-							</p>
-
-							<p className="text-base text-schwarz-100">
-								{Content["confirmOtp.checkSpam"]}
-							</p>
-
-							<p className="text-base text-schwarz-100">
-								{Content["confirmOtp.typo.question"]}{" "}
-								{origin !== "register" && (
-									<Link
-										to="/login/"
-										className="text-base font-semibold underline hover:no-underline"
-									>
-										{Content["confirmOtp.typo.loginLink"]}
-									</Link>
-								)}
-								{origin !== "login" && origin !== "register" && (
-									<> {Content["confirmOtp.typo.or"]} </>
-								)}
-								{origin !== "login" && (
-									<Link
-										to="/register/"
-										className="text-base font-semibold underline hover:no-underline"
-									>
-										{Content["confirmOtp.typo.registerLink"]}
-									</Link>
-								)}
-							</p>
-
-							{origin === "login" && (
-								<p className="text-base text-schwarz-100">
-									{Content["confirmOtp.notRegistered.question"]}{" "}
-									<Link
-										to="/register/"
-										className="text-base font-semibold underline hover:no-underline"
-									>
-										{Content["confirmOtp.notRegistered.registerLink"]}
-									</Link>
+							{error && (
+								<p
+									id="token-error"
+									className="text-xs leading-4 text-warning-120"
+									role="alert"
+								>
+									{error}
 								</p>
 							)}
 						</div>
+
+						<div className="flex flex-col gap-2">
+							<AuthPrimaryButton type="submit" disabled={isSubmitting}>
+								{isSubmitting
+									? Content["confirmOtp.button.loading"]
+									: Content["confirmOtp.button.submit"]}
+							</AuthPrimaryButton>
+
+							<button
+								type="button"
+								onClick={handleResendEmail}
+								disabled={hasEmailBeenRecentlySent}
+								aria-live="polite"
+								className={`
+									flex w-full h-11 px-5 items-center justify-center rounded-3px
+									text-base leading-6 font-normal
+									hover:bg-hellblau-100 focus-visible:outline-default
+									disabled:text-mittelgruen disabled:hover:bg-transparent
+								`}
+							>
+								{hasEmailBeenRecentlySent
+									? Content["confirmOtp.resend.success"]
+									: Content["confirmOtp.resend.button"]}
+							</button>
+						</div>
 					</form>
+
+					<p className="text-lg leading-7 text-center">
+						{Content["confirmOtp.typo.question"]}{" "}
+						<Link
+							to={changeEmailPath}
+							className="font-bold underline hover:no-underline focus-visible:outline-default rounded-3px"
+						>
+							{Content["confirmOtp.typo.changeEmailLink"]}
+						</Link>
+					</p>
 				</div>
 			</div>
 		</ConfirmationLayout>

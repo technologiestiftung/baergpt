@@ -81,7 +81,7 @@ async function redirectBasedOnSession({
 		return;
 	}
 
-	handleAuthorized(pathname, navigate);
+	handleAuthorized(session, pathname, navigate);
 }
 
 function handleUnauthorized(
@@ -90,7 +90,6 @@ function handleUnauthorized(
 ) {
 	const unprotectedPages = [
 		"/login/",
-		"/register/",
 		"/account-deleted/",
 		"/",
 		"/registration-error/",
@@ -100,10 +99,27 @@ function handleUnauthorized(
 		return;
 	}
 
+	if (pathname === "/register/") {
+		navigate("/login/");
+		return;
+	}
+
 	navigate("/");
 }
 
-function handleAuthorized(pathname: string, navigate: (path: string) => void) {
+function handleAuthorized(
+	session: Session,
+	pathname: string,
+	navigate: (path: string) => void,
+) {
+	// New accounts have no name until the registration is completed
+	if (!hasCompletedRegistration(session)) {
+		if (pathname !== "/register/") {
+			navigate("/register/");
+		}
+		return;
+	}
+
 	const protectedPages = ["/", "/profile/", "/email-changed/"];
 
 	// Allow access to protected pages
@@ -112,4 +128,9 @@ function handleAuthorized(pathname: string, navigate: (path: string) => void) {
 	}
 
 	navigate("/");
+}
+
+export function hasCompletedRegistration(session: Session) {
+	const { first_name, last_name } = session.user.user_metadata ?? {};
+	return Boolean(first_name && last_name);
 }

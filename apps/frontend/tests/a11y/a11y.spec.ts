@@ -36,9 +36,9 @@ testWithoutSplashScreen.describe("Accessibility - Auth Flow", () => {
 });
 
 test.describe("Accessibility - Public Pages", () => {
-	// test accessibility for register page
-	test("Register page should be accessible", async ({ page }) => {
-		await page.goto("/register/");
+	// test accessibility for login page
+	test("Login page should be accessible", async ({ page }) => {
+		await page.goto("/login/");
 
 		// Wait for page to be fully loaded
 		await page.waitForLoadState("networkidle");

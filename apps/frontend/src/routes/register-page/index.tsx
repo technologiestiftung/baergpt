@@ -1,48 +1,60 @@
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import Checkbox from "../../components/primitives/checkboxes/checkbox.tsx";
 import Content from "../../content.ts";
+import { AuthPrimaryButton } from "../../components/primitives/buttons/auth-primary-button.tsx";
 import { TextInput } from "../../components/primitives/text-inputs/text-input.tsx";
-import { EmailInput } from "../../components/primitives/text-inputs/email-input.tsx";
-import { ArrowWhiteRightIcon } from "../../components/primitives/icons/arrow-white-right-icon.tsx";
 import { AuthLayout } from "../../layouts/auth-layout.tsx";
+import { useUserStore } from "../../store/user-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
-import { useAuthErrorStore } from "../../store/auth-error-store.ts";
-import { ChevronIcon } from "../../components/primitives/icons/chevron-icon.tsx";
 import * as Sentry from "@sentry/react";
 
+const inputClassName =
+	"h-12 !px-3 !border-dunkelblau-50 placeholder:text-dunkelblau-65";
+
 export function RegisterPage() {
-	const { register } = useAuthStore();
-	const { error } = useAuthErrorStore();
+	const { updateUser } = useUserStore();
+	const { logout } = useAuthStore();
 	const navigate = useNavigate();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
-	const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
-	const formRef = useRef<HTMLFormElement | null>(null);
+	const [isFormValid, setIsFormValid] = useState(false);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// "required" also accepts names made of spaces only
+	const updateIsFormValid = (form: HTMLFormElement) => {
+		const hasNames = [form.firstName, form.lastName].every(
+			(input: HTMLInputElement) => input.value.trim() !== "",
+		);
+		setIsFormValid(hasNames && form.checkValidity());
+	};
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		const firstName = event.currentTarget.firstName.value;
-		const lastName = event.currentTarget.lastName.value;
-		const email = event.currentTarget.email.value;
+		const firstName = event.currentTarget.firstName.value.trim();
+		const lastName = event.currentTarget.lastName.value.trim();
+
+		if (!firstName || !lastName) {
+			return;
+		}
+
+		setIsSubmitting(true);
 
 		Sentry.startSpan(
 			{
 				name: "Registration Form Submitted",
 				op: "user.registration.submit",
 			},
-			async (span) => {
-				const { error: registerError } = await register({
-					firstName,
-					lastName,
-					email,
-					span,
+			async () => {
+				const { error } = await updateUser({
+					first_name: firstName,
+					last_name: lastName,
 				});
 
-				if (!registerError) {
-					navigate(
-						`/confirm-otp/?type=email&email=${encodeURIComponent(email)}&origin=register`,
-					);
+				setIsSubmitting(false);
+
+				if (!error) {
+					navigate("/");
 				}
 			},
 		);
@@ -51,171 +63,100 @@ export function RegisterPage() {
 	return (
 		<AuthLayout>
 			<div className="flex flex-col min-h-[100svh] h-full w-full justify-center items-center bg-hellblau-30 px-5 py-12 md:py-[100px]">
-				<div className="flex flex-col max-w-[590px] border border-black py-8 px-5 md:p-10 rounded-3px bg-white">
-					<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
-						{Content["registerPage.h1"]}
-					</h1>
-					<div className="flex gap-3 bg-hellblau-55 p-3 rounded-3px mt-5 text-start break-words">
-						<img
-							className="self-start"
-							src="/icons/info-dark-icon.svg"
-							alt="info-icon"
-						/>
-
-						<div className="flex flex-col gap-3 min-w-0" id="notice">
-							<p className="text-sm leading-5 md:text-base md:leading-6 font-semibold">
-								{Content["registerPage.notice.heading"]}
-							</p>
-							{isNoticeExpanded && (
-								<>
-									<div>
-										<p className="text-sm leading-5 md:text-base md:leading-6 font-normal">
-											{Content["registerPage.notice.content.p1"]}
-										</p>
-										<p className="text-sm leading-5 md:text-base md:leading-6 font-normal">
-											{Content["registerPage.notice.content.p2"]}
-										</p>
-									</div>
-									<p className="text-sm leading-5 md:text-base md:leading-6 font-normal">
-										{Content["registerPage.notice.content.p3"]}
-									</p>
-								</>
-							)}
-							<button
-								className="flex items-center text-sm leading-5 md:text-base md:leading-6 font-normal focus-visible:outline-default rounded-3px text-start w-fit"
-								aria-label={
-									isNoticeExpanded
-										? Content["registerPage.notice.showLess.button.ariaLabel"]
-										: Content["registerPage.notice.showMore.button.ariaLabel"]
-								}
-								aria-expanded={isNoticeExpanded}
-								aria-controls="notice"
-								onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
-							>
-								{isNoticeExpanded
-									? Content["registerPage.notice.showLess.button.label"]
-									: Content["registerPage.notice.showMore.button.label"]}
-								{isNoticeExpanded ? (
-									<ChevronIcon color="dunkelblau-200" direction="up" />
-								) : (
-									<ChevronIcon color="dunkelblau-200" direction="down" />
-								)}
-							</button>
-						</div>
+				<div className="flex flex-col gap-10 border max-w-[580px] w-full border-dunkelblau-100 p-5 md:p-7 rounded-3px bg-white text-dunkelblau-100">
+					<div className="flex flex-col gap-4">
+						<h1 className="text-3xl leading-9 md:text-4xl md:leading-10 font-bold">
+							{Content["registerPage.h1"]}
+						</h1>
+						<p className="text-lg leading-7 md:text-xl md:leading-8">
+							{Content["registerPage.intro"]}
+						</p>
 					</div>
 
 					<form
-						className="flex flex-col mt-12"
-						ref={formRef}
+						className="flex flex-col gap-10"
 						onSubmit={handleSubmit}
+						onInput={(event) => updateIsFormValid(event.currentTarget)}
+						onChange={(event) => updateIsFormValid(event.currentTarget)}
 					>
-						<div className="flex gap-5">
-							<label
-								htmlFor="firstName"
-								className="flex flex-col gap-y-1 text-sm md:text-base flex-1"
-							>
-								{Content["registerPage.firstNameLabel"]}
+						<div className="flex flex-col gap-6">
+							<div className="flex flex-col gap-1.5">
+								<label
+									htmlFor="firstName"
+									className="text-sm leading-5 font-bold"
+								>
+									{Content["registerPage.firstNameLabel"]}
+								</label>
 								<TextInput
 									id="firstName"
 									placeholder={Content["registerPage.firstNamePlaceholder"]}
+									className={inputClassName}
 								/>
-							</label>
+							</div>
 
-							<label
-								htmlFor="lastName"
-								className="flex flex-col gap-y-1 text-sm md:text-base flex-1"
-							>
-								{Content["registerPage.lastNameLabel"]}
+							<div className="flex flex-col gap-1.5">
+								<label
+									htmlFor="lastName"
+									className="text-sm leading-5 font-bold"
+								>
+									{Content["registerPage.lastNameLabel"]}
+								</label>
 								<TextInput
 									id="lastName"
 									placeholder={Content["registerPage.lastNamePlaceholder"]}
+									className={inputClassName}
 								/>
-							</label>
-						</div>
-
-						<label
-							htmlFor="email"
-							className="flex flex-col mt-4 md:mt-5 text-sm md:text-base"
-						>
-							{Content["registerPage.emailLabel"]}
-							<div className="text-schwarz-40 text-sm mb-1">
-								{Content["registerPage.emailHint"]}
 							</div>
-							<EmailInput
-								id="email"
-								placeholder={Content["registerPage.emailPlaceholder"]}
-								useEmailAllowedCheck={true}
-							/>
-						</label>
 
-						<p className="mt-4 md:mt-5 text-sm md:text-base text-schwarz-100">
-							{Content["registerPage.otpHint"]}
-						</p>
-
-						<div className="mt-6">
 							<Checkbox
 								id="has-accepted-privacy"
 								checked={hasAcceptedPrivacy}
 								onChange={setHasAcceptedPrivacy}
 								required={true}
 							>
-								<span className="flex flex-row flex-wrap gap-x-1 text-sm md:text-base">
+								<span
+									className="text-sm leading-5 font-bold"
+									data-testid="label-has-accepted-privacy-checkbox"
+								>
+									{Content["registerPage.privacyText.p1"]}{" "}
 									<a
 										href={Content["footer.privacy.link"]}
-										className="underline hover:no-underline rounded-3px focus-visible:outline-default cursor-pointer"
+										className="underline hover:no-underline rounded-3px focus-visible:outline-default"
 										target="_blank"
 									>
 										{Content["registerPage.privacyLink.label"]}
-									</a>
-									<span>{Content["registerPage.privacyText.p1"]}</span>
+									</a>{" "}
+									{Content["registerPage.privacyText.p2"]}{" "}
 									<a
 										href={Content["footer.termsOfUse.link"]}
-										className="underline hover:no-underline rounded-3px focus-visible:outline-default cursor-pointer"
+										className="underline hover:no-underline rounded-3px focus-visible:outline-default"
 										target="_blank"
 									>
 										{Content["registerPage.termsOfUse.label"]}
 									</a>
-									<span data-testid={`label-has-accepted-privacy-checkbox`}>
-										{Content["registerPage.privacyText.p2"]}
-									</span>
 								</span>
 							</Checkbox>
 						</div>
 
-						{error && (
-							<div
-								className="text-berlin-rot mt-4 text-sm"
-								dangerouslySetInnerHTML={{ __html: error }}
-							/>
-						)}
-
-						<button
+						<AuthPrimaryButton
 							type="submit"
-							className={`
-								flex gap-x-2 text-lg mt-12 self-end items-center
-								w-fit py-2 px-3 text-white rounded-3px 
-								bg-dunkelblau-100 disabled:bg-schwarz-40
-								hover:bg-dunkelblau-80 focus-visible:outline-default 
-							`}
+							disabled={!isFormValid || isSubmitting}
 						>
 							{Content["registerPage.submitButton"]}
-							<ArrowWhiteRightIcon />
-						</button>
+						</AuthPrimaryButton>
 					</form>
+
+					<p className="text-lg leading-7 text-center">
+						{Content["registerPage.wrongAccount.question"]}{" "}
+						<button
+							type="button"
+							onClick={logout}
+							className="font-bold underline hover:no-underline focus-visible:outline-default rounded-3px"
+						>
+							{Content["registerPage.wrongAccount.logoutButton"]}
+						</button>
+					</p>
 				</div>
-				<p className="mt-6 text-center md:text-left">
-					{Content["registerPage.loginPrompt"]}{" "}
-					<br className="block md:hidden" />
-					<a
-						href="/login/"
-						className={`
-							font-bold underline hover:no-underline rounded-3px
-							cursor-pointer focus-visible:outline-default
-						`}
-					>
-						{Content["registerPage.loginLink"]}
-					</a>
-				</p>
 			</div>
 		</AuthLayout>
 	);

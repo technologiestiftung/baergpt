@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "../../supabase-client.ts";
 import { useAuthErrorStore } from "./auth-error-store.ts";
+import { checkEmailAllowed } from "../api/auth/check-email-allowed.ts";
 import { handleSessionChange } from "../api/session/handle-session-change.ts";
 import { getAdminStatus } from "../api/user/get-admin-status.ts";
 import { updateEmail } from "../api/auth/update-email.ts";
@@ -30,12 +31,6 @@ interface AuthStore {
 	 * In this edge-case, we'll need to log them out.
 	 */
 	isBannedOrDeleted: boolean | null;
-	register: (args: {
-		firstName: string;
-		lastName: string;
-		email: string;
-		span: Span;
-	}) => Promise<{ error: Error | null }>;
 	updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
 	resendConfirmationEmail: () => Promise<void>;
 	resetUnconfirmedEmail: () => void;
@@ -144,31 +139,6 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		isAdminStatusLoaded: false,
 		isBannedOrDeleted: null,
 
-		async register({ firstName, lastName, email, span }) {
-			/**
-			 * Passwordless sign-up: GoTrue sends a one-time code and creates the
-			 * account (with the name metadata) only if the email doesn't exist yet.
-			 * The response is generic whether or not the email already exists, which
-			 * preserves anti-enumeration. The allowlist trigger on auth.users still
-			 * gates who may be created. The register page then navigates to the
-			 * confirm-otp page where the emailed code is entered.
-			 */
-			const { error } = await supabase.auth.signInWithOtp({
-				email,
-				options: {
-					shouldCreateUser: true,
-					data: { first_name: firstName, last_name: lastName },
-				},
-			});
-
-			if (error) {
-				useAuthErrorStore.getState().handleError(error, span);
-				return { error };
-			}
-
-			return { error: null };
-		},
-
 		async updateEmail(newEmail: string) {
 			const { error } = await updateEmail(newEmail);
 			return { error };
@@ -256,21 +226,16 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		},
 
 		async requestLoginOtp({ email, span }) {
-			/**
-			 * Passwordless login: send a one-time code to an existing user.
-			 * shouldCreateUser:false so login never silently creates an account —
-			 * account creation only happens through the register page.
-			 */
+			// Creates the account for new emails; the allowlist trigger on auth.users decides who may sign up
 			const { error } = await supabase.auth.signInWithOtp({
 				email,
-				options: { shouldCreateUser: false },
+				options: { shouldCreateUser: true },
 			});
 
-			// GoTrue's otp_disabled error means the email has no account — treated
-			// as success so an attacker can't tell registered emails apart from
-			// unregistered ones by whether the page navigates or shows an error.
-			if (error && error.code !== "otp_disabled") {
-				useAuthErrorStore.getState().handleError(error, span);
+			if (error) {
+				useAuthErrorStore
+					.getState()
+					.handleError(await getLoginError(email, error), span);
 				return { error };
 			}
 
@@ -326,3 +291,17 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 		},
 	};
 });
+
+// GoTrue reports any failing trigger on auth.users insert as this generic error
+async function getLoginError(email: string, error: Error) {
+	if (error.message !== "Database error saving new user") {
+		return error;
+	}
+
+	const { isAllowed } = await checkEmailAllowed(
+		email,
+		new AbortController().signal,
+	);
+
+	return isAllowed === false ? new Error("email_not_allowed") : error;
+}
