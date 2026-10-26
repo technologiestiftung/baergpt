@@ -417,6 +417,7 @@ export class GenerationService {
 											messages: compiledDocumentCitationExtractionPrompts,
 											allowSystemInMessages: true,
 											temperature: LLM_PARAMETERS.temperature,
+											reasoning: "none",
 											output: Output.object({
 												schema: citationAnswerSchema,
 											}),
@@ -481,6 +482,7 @@ export class GenerationService {
 												messages: compiledWebCitationExtractionPrompts,
 												allowSystemInMessages: true,
 												temperature: LLM_PARAMETERS.temperature,
+												reasoning: "none",
 												output: Output.object({
 													schema: webCitationAnswerSchema,
 												}),
@@ -546,6 +548,7 @@ export class GenerationService {
 												messages: compiledParlaCitationPrompts,
 												allowSystemInMessages: true,
 												temperature: LLM_PARAMETERS.temperature,
+												reasoning: "none",
 												output: Output.object({
 													schema: parlaCitationAnswerSchema,
 												}),
@@ -892,6 +895,7 @@ export class GenerationService {
 					messages: compiledOpenDataCitationExtractionPrompts,
 					allowSystemInMessages: true,
 					temperature: LLM_PARAMETERS.temperature,
+					reasoning: "none",
 					output: Output.object({ schema: openDataCitationAnswerSchema }),
 					runtimeContext: {
 						sessionId: sessionId ? sessionId : "unknown",
