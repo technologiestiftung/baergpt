@@ -379,7 +379,7 @@ async function processStreamLine(
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
-		onFinish: (wasSuccessful: boolean) => void | Promise<void>;
+		onFinish: () => void | Promise<void>;
 	},
 ): Promise<boolean> {
 	if (!line.startsWith("data: ")) {
@@ -389,7 +389,7 @@ async function processStreamLine(
 	const jsonStr = line.slice(6).trim();
 
 	if (jsonStr === "[DONE]") {
-		await callbacks.onFinish(true);
+		await callbacks.onFinish();
 		return true;
 	}
 
@@ -459,7 +459,7 @@ async function parseStream(
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
-		onFinish: (wasSuccessful: boolean) => void | Promise<void>;
+		onFinish: () => void | Promise<void>;
 	},
 ) {
 	const reader = body.getReader();
@@ -493,6 +493,6 @@ async function parseStream(
 					"stream was done before reaching the the last streaming line ([DONE])",
 				),
 			);
-		await callbacks.onFinish(false);
+		await callbacks.onFinish();
 	}
 }
