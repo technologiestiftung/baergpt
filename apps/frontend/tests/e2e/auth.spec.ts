@@ -172,6 +172,21 @@ test.describe("Login", () => {
 	});
 });
 
+async function getProfileAndAccessGroupCount(userId: string) {
+	const { data: profile } = await supabaseAdminClient
+		.from("profiles")
+		.select("first_name, last_name")
+		.eq("id", userId)
+		.maybeSingle();
+
+	const { count } = await supabaseAdminClient
+		.from("access_group_members")
+		.select("*", { count: "exact", head: true })
+		.eq("user_id", userId);
+
+	return { profile, accessGroupCount: count };
+}
+
 async function requestCodeOnLoginPage(page: Page, email: string) {
 	await page.goto("/login/");
 
@@ -224,6 +239,16 @@ test.describe("User Registration (uses different user to prevent side-effects on
 
 		await expect(page1).toHaveURL("/register/");
 
+		const user = await findUserByEmail(givenUserEmail);
+		if (!user) {
+			throw new Error("User was not created");
+		}
+
+		expect(await getProfileAndAccessGroupCount(user.id)).toStrictEqual({
+			profile: null,
+			accessGroupCount: 0,
+		});
+
 		const submitButton = page1.getByRole("button", { name: "Konto eröffnen" });
 		await expect(submitButton).toBeDisabled();
 
@@ -242,6 +267,11 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await expect(page1).toHaveURL("/");
 
 		await expectGreeting(page1, `${givenUserFirstName} ${givenUserLastName}`);
+
+		expect(await getProfileAndAccessGroupCount(user.id)).toStrictEqual({
+			profile: { first_name: givenUserFirstName, last_name: givenUserLastName },
+			accessGroupCount: 1,
+		});
 	});
 
 	testWithoutSplashScreen(

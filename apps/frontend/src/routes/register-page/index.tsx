@@ -13,7 +13,7 @@ const inputClassName =
 	"h-12 !px-3 !border-dunkelblau-50 placeholder:text-dunkelblau-65";
 
 export function RegisterPage() {
-	const { updateUser } = useUserStore();
+	const { completeRegistration } = useUserStore();
 	const { logout } = useAuthStore();
 	const navigate = useNavigate();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
@@ -46,7 +46,7 @@ export function RegisterPage() {
 				op: "user.registration.submit",
 			},
 			async () => {
-				const { error } = await updateUser({
+				const { error } = await completeRegistration({
 					first_name: firstName,
 					last_name: lastName,
 				});

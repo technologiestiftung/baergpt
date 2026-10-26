@@ -229,7 +229,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 			// Creates the account for new emails; the allowlist trigger on auth.users decides who may sign up
 			const { error } = await supabase.auth.signInWithOtp({
 				email,
-				options: { shouldCreateUser: true },
+				options: {
+					shouldCreateUser: true,
+					data: { pending_registration: true },
+				},
 			});
 
 			if (error) {
