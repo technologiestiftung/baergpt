@@ -25,7 +25,7 @@ port = 54322
 shadow_port = 54320
 # The database major version to use. This has to be the same as your remote database's. Run `SHOW
 # server_version;` on the remote database to check.
-major_version = 15
+major_version = 17
 
 [db.pooler]
 enabled = false
@@ -175,6 +175,12 @@ max_frequency = "5s"
 # [auth.hook.custom_access_token]
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
+
+# This hook runs on every password login and rejects it, even with the correct password (only OTP is allowed).
+# A password signUp still creates an unconfirmed user, like OTP registration does, but its password can never be used.
+[auth.hook.password_verification_attempt]
+enabled = true
+uri = "pg-functions://postgres/public/reject_password_verification"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]

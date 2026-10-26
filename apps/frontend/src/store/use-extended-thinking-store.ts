@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { config } from "../config.ts";
 
 const STORAGE_KEY = "extended-thinking";
 
@@ -13,9 +14,24 @@ export const useExtendedThinkingStore = create<ExtendedThinkingStore>()(
 		(set) => ({
 			isExtendedThinkingEnabled: false,
 
-			setIsExtendedThinkingEnabled: (isExtendedThinkingEnabled: boolean) =>
-				set({ isExtendedThinkingEnabled }),
+			setIsExtendedThinkingEnabled: (isExtendedThinkingEnabled: boolean) => {
+				if (!config.featureFlagExtendedThinkingAllowed) {
+					return;
+				}
+
+				set({ isExtendedThinkingEnabled });
+			},
 		}),
-		{ name: STORAGE_KEY },
+		{
+			name: STORAGE_KEY,
+			// A value persisted while the flag was on must not survive turning it off.
+			merge: (persistedState, currentState) => ({
+				...currentState,
+				isExtendedThinkingEnabled:
+					config.featureFlagExtendedThinkingAllowed &&
+					(persistedState as Partial<ExtendedThinkingStore> | undefined)
+						?.isExtendedThinkingEnabled === true,
+			}),
+		},
 	),
 );

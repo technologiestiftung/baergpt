@@ -1,0 +1,93 @@
+# Returns a host to the rollback point supabase-upgrade.yml took: Postgres 15 data, the previous
+# compose and upstream files, the db-config volume. Everything written since that point is lost.
+# Afterwards deploy only from the git revision before the upgrade; the supabase role in this one refuses.
+- name: Roll back the Supabase stack upgrade
+  hosts: supabase
+  become: true
+  gather_facts: false
+  serial: 1
+  vars:
+    rollback_dir: "{{ supabase_dir }}/rollback/{{ supabase_release }}"
+    rollback_pg15_image: supabase/postgres:15.8.1.085
+  tasks:
+    - name: Check for the rollback point
+      ansible.builtin.stat:
+        path: "{{ rollback_dir }}/complete"
+      register: rollback_point
+
+    - name: Require a rollback point
+      ansible.builtin.assert:
+        that: rollback_point.stat.exists
+        fail_msg: "No complete rollback point in {{ rollback_dir }}."
+        quiet: true
+
+    - name: Confirm the data loss
+      ansible.builtin.pause:
+        prompt: >-
+          Supabase on {{ inventory_hostname }} goes back to the rollback point in {{ rollback_dir }}.
+          Database writes since the upgrade started are lost. Enter to continue, Ctrl+C then A to abort
+      when: not (rollback_assume_yes | default(false) | bool)
+
+    # The compose file on the host may be the new one or the old one, depending on where the upgrade stopped.
+    - name: Stop the stack
+      ansible.builtin.command:
+        cmd: "{{ supabase_compose_cmd }} down --remove-orphans"
+        chdir: "{{ supabase_dir }}"
+      failed_when: false
+
+    - name: Remove containers the compose file did not know about
+      ansible.builtin.shell:
+        cmd: >-
+          docker ps -aq --filter label=com.docker.compose.project=supabase | xargs -r docker rm -f;
+          docker rm -f supabase-pg-upgrade supabase-pg-complete 2>/dev/null || true
+
+    - name: Remove the upgraded data and the upgrade script's leftovers
+      ansible.builtin.file:
+        path: "{{ supabase_dir }}/volumes/db/{{ item }}"
+        state: absent
+      loop:
+        - data
+        - data.bak.pg15
+        - data_migration
+
+    - name: Restore the data directory (the rollback copy stays, so this can be repeated)
+      ansible.builtin.command:
+        cmd: "cp -a {{ rollback_dir }}/data volumes/db/data"
+        chdir: "{{ supabase_dir }}"
+
+    - name: Restore the db-config volume
+      ansible.builtin.command:
+        cmd: >-
+          docker run --rm -v supabase_db-config:/v -v {{ rollback_dir }}:/b:ro --entrypoint sh {{ rollback_pg15_image }}
+          -c 'find /v -mindepth 1 -delete && tar --numeric-owner -C /v -xpf /b/db-config.tar'
+
+    - name: Restore the stack files (compose, upstream config, .env, TLS cert ownership)
+      ansible.builtin.command:
+        cmd: "tar --numeric-owner -xpf {{ rollback_dir }}/files.tar"
+        chdir: "{{ supabase_dir }}"
+
+    - name: Remove the release marker
+      ansible.builtin.file:
+        path: "{{ supabase_release_file }}"
+        state: absent
+
+    - name: Start the previous stack
+      ansible.builtin.command:
+        cmd: "{{ supabase_compose_cmd }} up -d --remove-orphans"
+        chdir: "{{ supabase_dir }}"
+
+    - name: Check the rolled-back stack
+      ansible.builtin.include_tasks: tasks/supabase-smoke.yml
+      vars:
+        smoke_pg_major: "15"
+
+    # supabase-upgrade.yml closes it for the upgrade.
+    - name: Reopen public access
+      ansible.builtin.service:
+        name: nginx
+        state: started
+
+    # A used point would make the next upgrade skip its pre-flight checks and take no new rollback point.
+    - name: Retire the used rollback point
+      ansible.builtin.command:
+        cmd: "mv {{ rollback_dir }} {{ rollback_dir }}.rolled-back-{{ now(fmt='%Y%m%d-%H%M%S') }}"

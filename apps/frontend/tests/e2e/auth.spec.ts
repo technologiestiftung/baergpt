@@ -1,16 +1,11 @@
 import type { Browser, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
-import type { Session } from "@supabase/supabase-js";
 import {
 	confirmOtp,
 	findUserByEmail,
 	testWithRegisteredUser,
 } from "../fixtures/test-with-registered-user.ts";
-import {
-	authStorageKey,
-	createAnonClient,
-	supabaseAdminClient,
-} from "../supabase.ts";
+import { authStorageKey, supabaseAdminClient } from "../supabase.ts";
 import {
 	defaultUserFirstName,
 	defaultUserLastName,
@@ -27,10 +22,7 @@ import { expectGreeting } from "./helpers/greeting.ts";
  * code from Mailpit and submit it on the confirm-otp page. confirmOtp opens the
  * emailed link in a new tab and returns that (now authenticated) page.
  */
-async function loginViaOtp(
-	page: Page,
-	account: { email: string; password: string; id: string },
-) {
+async function loginViaOtp(page: Page, account: { email: string; id: string }) {
 	await page.goto("/login/");
 	await page
 		.getByRole("textbox", { name: "E-Mail-Adresse" })
@@ -40,26 +32,13 @@ async function loginViaOtp(
 }
 
 /**
- * Each password sign-in creates its own server-side session, so two calls give
- * two independent sessions — like signing in from two different browsers.
+ * Logs the account in via OTP in a fresh browser context (separate localStorage),
+ * like signing in from a second browser. Each OTP login creates its own session.
  */
-async function createSession(account: { email: string; password: string }) {
-	const { data, error } = await createAnonClient().auth.signInWithPassword({
-		email: account.email,
-		password: account.password,
-	});
-	if (error) {
-		throw new Error(`Failed to sign in: ${error.message}`);
-	}
-	return data.session;
-}
-
-/**
- * Opens the app in a fresh browser context (separate localStorage) with the
- * given session. The session is written once instead of via addInitScript, so
- * a later reload shows what supabase-js actually left in storage.
- */
-async function openLoggedInBrowser(browser: Browser, session: Session) {
+async function openLoggedInBrowser(
+	browser: Browser,
+	account: { email: string; id: string },
+) {
 	const context = await browser.newContext();
 	await context.route(
 		(url) =>
@@ -72,21 +51,11 @@ async function openLoggedInBrowser(browser: Browser, session: Session) {
 				body: JSON.stringify({ sha: MOCK_SPLASH_RELEASE_SHA }),
 			}),
 	);
-	const page = await context.newPage();
-	await page.goto("/");
-	await page.evaluate(
-		({ authKey, session, versionKey, sha }) => {
-			localStorage.setItem(authKey, JSON.stringify(session));
-			localStorage.setItem(versionKey, sha);
-		},
-		{
-			authKey: authStorageKey,
-			session,
-			versionKey: VERSION_STORAGE_KEY,
-			sha: MOCK_SPLASH_RELEASE_SHA,
-		},
+	await context.addInitScript(
+		({ versionKey, sha }) => localStorage.setItem(versionKey, sha),
+		{ versionKey: VERSION_STORAGE_KEY, sha: MOCK_SPLASH_RELEASE_SHA },
 	);
-	await page.reload();
+	const page = await loginViaOtp(await context.newPage(), account);
 	await expectGreeting(page, `${defaultUserFirstName} ${defaultUserLastName}`);
 	return page;
 }
@@ -126,14 +95,8 @@ test.describe("Login", () => {
 		async ({ browser, account }) => {
 			// Regression test: auth-js < 2.91.2 kept the session in localStorage when
 			// /logout answered 403 session_not_found, so a reload logged the user back in.
-			const browserA = await openLoggedInBrowser(
-				browser,
-				await createSession(account),
-			);
-			const browserB = await openLoggedInBrowser(
-				browser,
-				await createSession(account),
-			);
+			const browserA = await openLoggedInBrowser(browser, account);
+			const browserB = await openLoggedInBrowser(browser, account);
 
 			// Global logout (supabase-js default scope) revokes browser B's session too
 			await logout(browserA);
@@ -295,7 +258,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	// one test's afterEach delete another's user. A worker runs its tests
 	// serially, so a single module-scoped variable set in beforeEach is safe.
 	let givenUserEmail: string;
-	const givenUserPassword = "123456789!";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
 
@@ -329,7 +291,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			page,
 			account: {
 				email: givenUserEmail,
-				password: givenUserPassword,
 				id: "", // id is not needed for this flow
 			},
 		});
@@ -345,7 +306,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			const { error: createUserError } =
 				await supabaseAdminClient.auth.admin.createUser({
 					email: givenUserEmail,
-					password: givenUserPassword,
 					email_confirm: true,
 				});
 
@@ -374,7 +334,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			const { error: createUserError } =
 				await supabaseAdminClient.auth.admin.createUser({
 					email: givenUserEmail,
-					password: givenUserPassword,
 					email_confirm: false,
 				});
 

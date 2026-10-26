@@ -4,6 +4,7 @@ import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
 import { serviceRoleDbClient } from "../../supabase";
+import { signInWithOtp } from "../fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -13,11 +14,9 @@ const supabaseAnonClient = createClient<Database>(
 // Two different users for testing authorization
 const USER_A_ID = "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1";
 const USER_A_EMAIL = "user-a-security-test@ts.berlin";
-const USER_A_PASSWORD = "SecurePassword123!";
 
 const USER_B_ID = "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2";
 const USER_B_EMAIL = "user-b-security-test@ts.berlin";
-const USER_B_PASSWORD = "SecurePassword456!";
 
 let userAToken: string;
 let userBToken: string;
@@ -72,27 +71,19 @@ describe("Document Process Security Tests", () => {
 			serviceRoleDbClient.auth.admin.createUser({
 				id: USER_A_ID,
 				email: USER_A_EMAIL,
-				password: USER_A_PASSWORD,
 				email_confirm: true,
 			}),
 			serviceRoleDbClient.auth.admin.createUser({
 				id: USER_B_ID,
 				email: USER_B_EMAIL,
-				password: USER_B_PASSWORD,
 				email_confirm: true,
 			}),
 		]);
 
 		// Get access tokens
 		const [userASession, userBSession] = await Promise.all([
-			supabaseAnonClient.auth.signInWithPassword({
-				email: USER_A_EMAIL,
-				password: USER_A_PASSWORD,
-			}),
-			supabaseAnonClient.auth.signInWithPassword({
-				email: USER_B_EMAIL,
-				password: USER_B_PASSWORD,
-			}),
+			signInWithOtp(supabaseAnonClient, USER_A_EMAIL),
+			signInWithOtp(supabaseAnonClient, USER_B_EMAIL),
 		]);
 
 		userAToken = userASession.data.session?.access_token || "";

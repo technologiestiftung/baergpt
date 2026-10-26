@@ -1,0 +1,2 @@
+# Root-owned; .github/workflows/supabase-migrations.yml calls the wrappers by this path.
+migrations_wrapper_dir: /usr/local/lib/baergpt-migrations

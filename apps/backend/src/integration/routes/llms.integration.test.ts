@@ -6,6 +6,7 @@ import { config } from "../../config";
 import { serviceRoleDbClient } from "../../supabase";
 import { EXTERNAL_TOOLS } from "../../routes/llms";
 import type { ActiveTools } from "../../types/common";
+import { signInWithOtp } from "../fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -14,7 +15,6 @@ const supabaseAnonClient = createClient<Database>(
 
 const USER_ID = "c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c3c3";
 const USER_EMAIL = "llm-tools-validation-test@ts.berlin";
-const USER_PASSWORD = "SecurePassword789!";
 
 // feature-flagged. Pick the first enabled tool, if any.
 const externalToolEnabled: Partial<Record<ActiveTools, boolean>> = {
@@ -24,7 +24,6 @@ const externalToolEnabled: Partial<Record<ActiveTools, boolean>> = {
 	datawrapperMCPTools: config.featureFlagMcpDatawrapperAllowed,
 };
 const enabledExternalTool =
-	// @ts-expect-error ts-config excludes test files atm, leading to a type error here
 	[...EXTERNAL_TOOLS].find((tool) => externalToolEnabled[tool]) ?? null;
 
 let userToken: string;
@@ -47,14 +46,10 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 		await serviceRoleDbClient.auth.admin.createUser({
 			id: USER_ID,
 			email: USER_EMAIL,
-			password: USER_PASSWORD,
 			email_confirm: true,
 		});
 
-		const session = await supabaseAnonClient.auth.signInWithPassword({
-			email: USER_EMAIL,
-			password: USER_PASSWORD,
-		});
+		const session = await signInWithOtp(supabaseAnonClient, USER_EMAIL);
 		userToken = session.data.session?.access_token || "";
 	}, 30_000);
 
@@ -70,7 +65,7 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 		});
 
 		expect(res.status).toBe(400);
-		const responseBody = await res.json();
+		const responseBody = (await res.json()) as { error?: string };
 		expect(responseBody.error).toContain("valid tool names");
 	});
 
@@ -87,7 +82,7 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 			});
 
 			expect(res.status).toBe(400);
-			const responseBody = await res.json();
+			const responseBody = (await res.json()) as { error?: string };
 			expect(responseBody.error).toContain(
 				"cannot be combined with external tools",
 			);
@@ -102,7 +97,7 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 		});
 
 		expect(res.status).toBe(400);
-		const responseBody = await res.json();
+		const responseBody = (await res.json()) as { error?: string };
 		expect(responseBody.error).toContain("extended_thinking must be a boolean");
 	});
 
