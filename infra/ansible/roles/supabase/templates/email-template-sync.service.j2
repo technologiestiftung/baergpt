@@ -1,0 +1,30 @@
+[Unit]
+Description=Sync the GoTrue email templates from the {{ email_templates_branch }} branch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User={{ email_templates_user }}
+Group={{ email_templates_user }}
+ExecStart=/usr/local/sbin/email-template-sync --repo {{ email_templates_repo }} --branch {{ email_templates_branch }} --dest {{ supabase_dir }}/volumes/email-templates --templates {{ supabase_email_templates | join(',') }}
+TimeoutStartSec=120
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths={{ supabase_dir }}/volumes/email-templates
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
