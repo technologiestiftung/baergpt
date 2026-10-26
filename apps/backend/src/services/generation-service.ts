@@ -352,7 +352,8 @@ export class GenerationService {
 								? MAX_OUTPUT_TOKENS_EXTENDED_THINKING
 								: MAX_OUTPUT_TOKENS,
 							temperature: LLM_PARAMETERS.temperature,
-							// Info: GLM 5.3 ignores "none" and has reasoning always turned on.
+							// Info: GLM 5.3 rejects "none" and always reasons; a custom fetch
+							// in llm-provider.ts sends "low" instead (see llm-provider.ts).
 							reasoning: extendedThinking ? "high" : "none",
 							tools,
 							toolChoice,
