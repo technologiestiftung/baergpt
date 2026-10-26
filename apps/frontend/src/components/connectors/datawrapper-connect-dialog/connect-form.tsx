@@ -9,6 +9,8 @@ import { formatMaskedToken } from "../format-masked-token.ts";
 import { ConnectorLogo } from "../connector-logo.tsx";
 import type { DialogError, DialogMode } from "./types.ts";
 
+export const datawrapperTokenInputId = "datawrapper-token";
+
 interface ConnectFormProps {
 	mode: DialogMode;
 	integration?: Integration;
@@ -88,7 +90,7 @@ export function ConnectForm({
 
 				<div className="flex flex-col gap-1.5">
 					<label
-						htmlFor="datawrapper-token"
+						htmlFor={datawrapperTokenInputId}
 						className="text-sm leading-5 font-bold"
 					>
 						{mode === "replace"
@@ -96,12 +98,11 @@ export function ConnectForm({
 							: Content["connectors.datawrapper.tokenLabel"]}
 					</label>
 					<PasswordInput
-						id="datawrapper-token"
+						id={datawrapperTokenInputId}
 						value={token}
 						onChange={onTokenChange}
 						isInvalid={!!error}
 						disabled={isSubmitting}
-						autoFocus
 						ariaDescribedBy={
 							errorMessage ? "datawrapper-token-error" : undefined
 						}

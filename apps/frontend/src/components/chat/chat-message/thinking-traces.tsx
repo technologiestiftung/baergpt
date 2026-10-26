@@ -2,6 +2,7 @@ import { useState, type JSX } from "react";
 import type { ChatMessage, Trace, TraceTool } from "../../../common.ts";
 import Content from "../../../content.ts";
 import { ChevronIcon } from "../../primitives/icons/chevron-icon.tsx";
+import { DatawrapperIcon } from "../../primitives/icons/datawrapper-icon.tsx";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
 import { ParlaIcon } from "../../primitives/icons/parla-icon.tsx";
@@ -12,6 +13,7 @@ const toolIcons: Record<TraceTool, () => JSX.Element> = {
 	webSearchTool: () => <WebSearchIcon width={20} height={20} />,
 	ragSearchTool: () => <DocumentIcon variant="lightBlue" />,
 	parlaMCPTools: () => <ParlaIcon />,
+	datawrapperMCPTools: () => <DatawrapperIcon />,
 };
 
 /** A tool call: icon, what was done, and a sentence describing it. */

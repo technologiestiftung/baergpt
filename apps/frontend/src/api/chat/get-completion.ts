@@ -59,6 +59,8 @@ const traceToolByStreamName: Record<string, TraceTool> = {
 	webSearchTool: "webSearchTool",
 	ragSearchTool: "ragSearchTool",
 	parla_vector_search: "parlaMCPTools",
+	create_visualization: "datawrapperMCPTools",
+	publish_visualization: "datawrapperMCPTools",
 };
 
 const activeToolsDict: Record<ChatTool, string[]> = {

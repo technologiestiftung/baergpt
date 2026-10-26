@@ -28,11 +28,6 @@ const isErrorResult = (result: unknown) =>
 	"isError" in result &&
 	result.isError === true;
 
-/**
- * True for both the MCP server's own error shape (`{isError: true}`) and the
- * `{error: string}` shape `executeWithApiKey` synthesizes for key problems.
- * Used to tell whether a `publish_visualization` call actually succeeded.
- */
 export const isDatawrapperToolFailure = (result: unknown): boolean =>
 	isErrorResult(result) ||
 	(typeof result === "object" &&

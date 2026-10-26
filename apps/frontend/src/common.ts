@@ -28,10 +28,11 @@ export type NewChatMessage = Pick<
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
 /**
- * Tools whose calls are shown in the trace. Tools outside this list (Open Data,
- * Datawrapper) are skipped rather than rendered as an unlabelled step.
+ * Tools whose calls are shown in the trace. Tools outside this list (Open Data)
+ * are skipped rather than rendered as an unlabelled step.
  */
-export type TraceTool = "webSearchTool" | "ragSearchTool" | "parlaMCPTools";
+export type TraceTool =
+	"webSearchTool" | "ragSearchTool" | "parlaMCPTools" | "datawrapperMCPTools";
 
 /** One step of the trace, in the order it was streamed. */
 export type Trace =

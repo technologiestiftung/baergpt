@@ -921,6 +921,12 @@ export const Content = {
 	"chat.thinking.tool.parlaMCPTools.done": "Parla durchsucht",
 	"chat.thinking.tool.parlaMCPTools.done.description":
 		"Ich habe passende Parlamentsdokumente gefunden.",
+	"chat.thinking.tool.datawrapperMCPTools.running": "Grafik erstellen",
+	"chat.thinking.tool.datawrapperMCPTools.running.description":
+		"Ich erstelle eine Grafik mit Datawrapper.",
+	"chat.thinking.tool.datawrapperMCPTools.done": "Grafik erstellt",
+	"chat.thinking.tool.datawrapperMCPTools.done.description":
+		"Ich habe eine Grafik mit Datawrapper erstellt.",
 	//Chat error text
 	"chat.errorText.title": "Ihre Anfrage konnte gerade nicht bearbeitet werden.",
 	"chat.errorText.p1": "Bitte versuchen Sie es später erneut. ",

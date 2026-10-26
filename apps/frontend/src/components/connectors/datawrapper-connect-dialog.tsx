@@ -3,7 +3,10 @@ import { DefaultDialog } from "../primitives/dialogs/default-dialog.tsx";
 import { saveIntegrationKey } from "../../api/integrations/save-integration-key.ts";
 import { useIntegrationsStore } from "../../store/use-integrations-store.ts";
 import type { Integration } from "../../api/integrations/get-integrations.ts";
-import { ConnectForm } from "./datawrapper-connect-dialog/connect-form.tsx";
+import {
+	ConnectForm,
+	datawrapperTokenInputId,
+} from "./datawrapper-connect-dialog/connect-form.tsx";
 import { SuccessView } from "./datawrapper-connect-dialog/success-view.tsx";
 import type {
 	DialogError,
@@ -16,6 +19,7 @@ export function showDatawrapperConnectDialog() {
 	(
 		document.getElementById(datawrapperConnectDialogId) as HTMLDialogElement
 	)?.showModal();
+	document.getElementById(datawrapperTokenInputId)?.focus();
 }
 
 export function hideDatawrapperConnectDialog() {
