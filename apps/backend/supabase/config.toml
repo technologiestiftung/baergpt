@@ -130,7 +130,7 @@ email_sent = 1000
 
 # Uncomment to customize email template
 [auth.email.template.confirmation]
-subject = "Willkommen bei BärGPT - Bestätige deine E-Mail-Adresse"
+subject = "Ihr Einmalcode – BärGPT Konto eröffnen"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
@@ -138,7 +138,8 @@ subject = "Einmaliger Anmelde-Code für Ihr Konto"
 content_path = "./supabase/templates/recovery.html"
 
 [auth.email.template.magic_link]
-subject = "Einmaliger Anmelde-Code für Ihr Konto"
+# Same registration check as magic_link.html
+subject = "Ihr Einmalcode – {{ if and .Data.first_name .Data.last_name }}Bei BärGPT anmelden{{ else }}BärGPT Konto eröffnen{{ end }}"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.email.template.invite]
