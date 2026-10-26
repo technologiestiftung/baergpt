@@ -101,6 +101,8 @@ export const Content = {
 	"userTable.tableHeader.status": "Status",
 	"userTable.tableHeader.actions": "Bearbeiten",
 	"userTable.tableHeader.actions.ariaLabel": "Benutzer bearbeiten",
+	"userTable.actions.pendingRegistration.title":
+		"Registrierung noch nicht abgeschlossen",
 
 	/* ---------------------- User Edit Modal ---------------------- */
 

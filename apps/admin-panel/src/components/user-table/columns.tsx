@@ -17,6 +17,7 @@ export const badgeColors = new Map<User["status"], string>([
 		"bg-amber-100/30 text-amber-600 dark:text-amber-200 border-amber-200",
 	],
 	["admin", "bg-slate-200 border-slate-400 text-slate-800"],
+	["pending", "bg-sky-100/50 text-sky-700 dark:text-sky-300 border-sky-300"],
 ]);
 
 export const columns: ColumnDef<User>[] = [
@@ -93,8 +94,14 @@ export const columns: ColumnDef<User>[] = [
 		header: Content["userTable.tableHeader.actions"],
 		cell: ({ row }) => (
 			<button
-				className="flex items-center rounded-3px focus-visible:outline-default size-5 hover:bg-gray-200"
+				className="flex items-center rounded-3px focus-visible:outline-default size-5 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-transparent"
 				aria-label={Content["userTable.tableHeader.actions.ariaLabel"]}
+				disabled={row.original.status === "pending"}
+				title={
+					row.original.status === "pending"
+						? Content["userTable.actions.pendingRegistration.title"]
+						: undefined
+				}
 				onClick={() => {
 					const state = useUserStore.getState();
 					if (state?.setSelectedUser) {

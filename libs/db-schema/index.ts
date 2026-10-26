@@ -703,6 +703,7 @@ export type Database = {
 					first_name: string;
 					invited_at: string;
 					is_admin: boolean;
+					is_registration_pending: boolean;
 					last_login_at: string;
 					last_name: string;
 					num_documents: number;

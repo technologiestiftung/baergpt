@@ -13,7 +13,8 @@ CREATE OR REPLACE FUNCTION "public"."get_users" () RETURNS TABLE (
     "num_embedding_tokens" BIGINT,
     "academic_title" "text",
     "is_admin" BOOLEAN,
-    "banned_until" TIMESTAMP WITH TIME ZONE
+    "banned_until" TIMESTAMP WITH TIME ZONE,
+    "is_registration_pending" BOOLEAN
 ) LANGUAGE "plpgsql" SECURITY DEFINER
 SET
     "search_path" TO '' AS $$
@@ -38,7 +39,8 @@ SELECT
     COALESCE(p.num_embedding_tokens, 0)::bigint,
     p.academic_title::text,
     (CASE WHEN a.user_id IS NOT NULL THEN TRUE ELSE FALSE END) AS is_admin,
-    u.banned_until::timestamptz AS banned_until
+    u.banned_until::timestamptz AS banned_until,
+    (p.id IS NULL) AS is_registration_pending
 FROM auth.users u
          LEFT JOIN public.profiles p ON p.id = u.id
          LEFT JOIN public.application_admins a ON a.user_id = u.id
