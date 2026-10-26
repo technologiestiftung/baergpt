@@ -63,8 +63,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
 			// Update user metadata last, as its names mark the registration as completed
 			await updateUserMetadata(first_name, last_name);
 
-			await get().getUser(new AbortController().signal);
-
 			return { error: null };
 		} catch (error) {
 			const updateError =
@@ -105,8 +103,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
 			// Update user metadata last, as its names mark the registration as completed
 			await updateUserMetadata(first_name, last_name);
-
-			await get().getUser(new AbortController().signal);
 
 			return { error: null };
 		} catch (error) {

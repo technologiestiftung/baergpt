@@ -7,7 +7,7 @@ import { supabase } from "../../../supabase-client";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import * as Sentry from "@sentry/react";
-import { hasCompletedRegistration } from "../../hooks/use-session-redirect.tsx";
+import { hasCompletedRegistration } from "../../lib/has-completed-registration.ts";
 
 const redirectToMapping = {
 	email: "/",

@@ -94,14 +94,8 @@ export const columns: ColumnDef<User>[] = [
 		header: Content["userTable.tableHeader.actions"],
 		cell: ({ row }) => (
 			<button
-				className="flex items-center rounded-3px focus-visible:outline-default size-5 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-transparent"
+				className="flex items-center rounded-3px focus-visible:outline-default size-5 hover:bg-gray-200"
 				aria-label={Content["userTable.tableHeader.actions.ariaLabel"]}
-				disabled={row.original.status === "pending"}
-				title={
-					row.original.status === "pending"
-						? Content["userTable.actions.pendingRegistration.title"]
-						: undefined
-				}
 				onClick={() => {
 					const state = useUserStore.getState();
 					if (state?.setSelectedUser) {

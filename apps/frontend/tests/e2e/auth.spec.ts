@@ -258,6 +258,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await page1
 			.getByRole("textbox", { name: "Nachname" })
 			.fill(givenUserLastName);
+
 		await page1
 			.locator('[data-testid="label-has-accepted-privacy-checkbox"]')
 			.click();

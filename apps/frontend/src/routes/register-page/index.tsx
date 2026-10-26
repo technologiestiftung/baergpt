@@ -9,9 +9,6 @@ import { useUserStore } from "../../store/user-store.ts";
 import { useAuthStore } from "../../store/auth-store.ts";
 import * as Sentry from "@sentry/react";
 
-const inputClassName =
-	"h-12 !px-3 !border-dunkelblau-50 placeholder:text-dunkelblau-65";
-
 export function RegisterPage() {
 	const { completeRegistration } = useUserStore();
 	const { logout } = useAuthStore();
@@ -33,10 +30,6 @@ export function RegisterPage() {
 
 		const firstName = event.currentTarget.firstName.value.trim();
 		const lastName = event.currentTarget.lastName.value.trim();
-
-		if (!firstName || !lastName) {
-			return;
-		}
 
 		setIsSubmitting(true);
 
@@ -90,7 +83,7 @@ export function RegisterPage() {
 								<TextInput
 									id="firstName"
 									placeholder={Content["registerPage.firstNamePlaceholder"]}
-									className={inputClassName}
+									className="h-12 !px-3 !border-dunkelblau-50 placeholder:text-dunkelblau-65"
 								/>
 							</div>
 
@@ -104,7 +97,7 @@ export function RegisterPage() {
 								<TextInput
 									id="lastName"
 									placeholder={Content["registerPage.lastNamePlaceholder"]}
-									className={inputClassName}
+									className="h-12 !px-3 !border-dunkelblau-50 placeholder:text-dunkelblau-65"
 								/>
 							</div>
 
@@ -137,7 +130,6 @@ export function RegisterPage() {
 								</span>
 							</Checkbox>
 						</div>
-
 						<AuthPrimaryButton
 							type="submit"
 							disabled={!isFormValid || isSubmitting}

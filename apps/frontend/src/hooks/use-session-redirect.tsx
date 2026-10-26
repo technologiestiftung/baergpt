@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router";
 import type { Session } from "@supabase/supabase-js";
 import { useErrorStore } from "../store/error-store.ts";
 import { useAuthErrorStore } from "../store/auth-error-store.ts";
+import { hasCompletedRegistration } from "../lib/has-completed-registration.ts";
 
 export function useSessionRedirect() {
 	const session = useAuthStore((state) => state.session);
@@ -128,9 +129,4 @@ function handleAuthorized(
 	}
 
 	navigate("/");
-}
-
-export function hasCompletedRegistration(session: Session) {
-	const { first_name, last_name } = session.user.user_metadata ?? {};
-	return Boolean(first_name && last_name);
 }

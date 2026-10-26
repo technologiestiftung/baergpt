@@ -295,16 +295,22 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
 	};
 });
 
-// GoTrue reports any failing trigger on auth.users insert as this generic error
-async function getLoginError(email: string, error: Error) {
-	if (error.message !== "Database error saving new user") {
-		return error;
+async function getLoginError(email: string, error: Error & { code?: string }) {
+	if (error.code === "over_email_send_rate_limit") {
+		return new Error("login_rate_limited", { cause: error });
 	}
 
-	const { isAllowed } = await checkEmailAllowed(
-		email,
-		new AbortController().signal,
-	);
+	// GoTrue reports any failing trigger on auth.users insert as this generic error
+	if (error.message === "Database error saving new user") {
+		const { isAllowed } = await checkEmailAllowed(
+			email,
+			new AbortController().signal,
+		);
 
-	return isAllowed === false ? new Error("email_not_allowed") : error;
+		if (isAllowed === false) {
+			return new Error("email_not_allowed", { cause: error });
+		}
+	}
+
+	return new Error("login_failed", { cause: error });
 }

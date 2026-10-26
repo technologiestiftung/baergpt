@@ -77,10 +77,10 @@ export class PrivilegedDbService extends BaseContentDbService {
 		);
 
 		if (Object.keys(updateData).length > 0) {
+			// Upsert, as users who haven't completed the registration have no profile yet
 			const { error: profileError } = await this.client
 				.from("profiles")
-				.update(updateData)
-				.eq("id", userId);
+				.upsert({ id: userId, ...updateData });
 
 			if (profileError) {
 				throw profileError;

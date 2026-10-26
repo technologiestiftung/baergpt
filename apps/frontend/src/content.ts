@@ -1165,6 +1165,10 @@ export const Content = {
 	"loginPage.otpHint":
 		"Nur dienstliche E-Mailadressen der unmittelbaren Verwaltung sind erlaubt",
 	"loginPage.submitButton": "Einmalcode erhalten",
+	"loginPage.error.rateLimited":
+		"Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+	"loginPage.error.generic":
+		"Der Einmalcode konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
 
 	/* ---------------------- OTP Confirmation Page ---------------------- */
 	"confirmOtp.title": "Einmalcode eingeben",

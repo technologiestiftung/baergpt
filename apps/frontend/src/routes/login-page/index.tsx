@@ -10,13 +10,14 @@ import { useAuthErrorStore } from "../../store/auth-error-store.ts";
 import * as Sentry from "@sentry/react";
 
 export function LoginPage() {
-	const { error } = useAuthErrorStore();
+	const { error, clearError } = useAuthErrorStore();
 	const { requestLoginOtp } = useAuthStore();
 	const navigate = useNavigate();
 	const formRef = useRef<HTMLFormElement | null>(null);
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+		clearError();
 
 		const email = event.currentTarget.email.value;
 

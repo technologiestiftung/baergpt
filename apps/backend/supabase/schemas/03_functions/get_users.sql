@@ -40,7 +40,7 @@ SELECT
     p.academic_title::text,
     (CASE WHEN a.user_id IS NOT NULL THEN TRUE ELSE FALSE END) AS is_admin,
     u.banned_until::timestamptz AS banned_until,
-    (p.id IS NULL) AS is_registration_pending
+    NOT public.is_registration_completed(u.raw_user_meta_data) AS is_registration_pending
 FROM auth.users u
          LEFT JOIN public.profiles p ON p.id = u.id
          LEFT JOIN public.application_admins a ON a.user_id = u.id
