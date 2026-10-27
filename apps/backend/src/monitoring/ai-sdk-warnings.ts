@@ -1,10 +1,20 @@
 import type { LogWarningsFunction } from "ai";
 
 /**
- * The AI SDK logs every warning to the console by default. With extended
- * thinking off, every GLM 5.3 call logs a reasoning compatibility warning
- * (it rejects "none", so the SDK sends "low" instead). That mapping is
- * intended, so those warnings are dropped; all other warnings are still logged.
+ * GLM 5.3 models reject reasoning_effort "none", so @ai-sdk/mistral sends
+ * "low" instead and logs a reasoning compatibility warning on every call with
+ * extended thinking off. Same model IDs as the SDK's
+ * modelsWithLowHighMaxReasoningEffort.
+ */
+const modelsWithIntendedReasoningMapping = new Set([
+	"zai-glm-5-3",
+	"zai-glm-5-3-flash",
+]);
+
+/**
+ * The AI SDK logs every warning to the console by default. The intended
+ * reasoning mapping for GLM 5.3 is dropped; all other warnings, including
+ * reasoning warnings for other models, are still logged.
  */
 const logAiSdkWarnings: LogWarningsFunction = ({
 	warnings,
@@ -12,15 +22,18 @@ const logAiSdkWarnings: LogWarningsFunction = ({
 	model,
 }) => {
 	const scope = provider && model ? ` (${provider} / ${model})` : "";
+	const hasIntendedReasoningMapping =
+		model !== undefined && modelsWithIntendedReasoningMapping.has(model);
 
 	for (const warning of warnings) {
-		const isReasoningCompatibilityWarning =
-			warning.type === "compatibility" && warning.feature === "reasoning";
-		if (isReasoningCompatibilityWarning) {
+		const isIntendedReasoningMappingWarning =
+			hasIntendedReasoningMapping &&
+			warning.type === "compatibility" &&
+			warning.feature === "reasoning";
+		if (isIntendedReasoningMappingWarning) {
 			continue;
 		}
 
-		/* eslint-disable-next-line no-console */
 		console.warn(`AI SDK Warning${scope}:`, warning);
 	}
 };
