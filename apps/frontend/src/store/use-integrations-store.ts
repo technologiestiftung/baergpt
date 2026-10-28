@@ -4,6 +4,9 @@ import {
 	type Integration,
 	type IntegrationProvider,
 } from "../api/integrations/get-integrations.ts";
+import { useAuthStore } from "./auth-store.ts";
+
+let resetGeneration = 0;
 
 interface IntegrationsStore {
 	integrations: Integration[] | null;
@@ -27,8 +30,13 @@ export const useIntegrationsStore = create<IntegrationsStore>()((set, get) => ({
 	},
 
 	async fetchIntegrations() {
+		const generationAtFetch = resetGeneration;
+		const userIdAtFetch = useAuthStore.getState().session?.user.id;
 		const integrations = await getIntegrations();
-		if (integrations) {
+		const isStale =
+			resetGeneration !== generationAtFetch ||
+			useAuthStore.getState().session?.user.id !== userIdAtFetch;
+		if (integrations && !isStale) {
 			set({ integrations });
 		}
 	},
@@ -46,6 +54,7 @@ export const useIntegrationsStore = create<IntegrationsStore>()((set, get) => ({
 	},
 
 	reset() {
+		resetGeneration += 1;
 		set({ integrations: null });
 	},
 }));

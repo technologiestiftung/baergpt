@@ -2,6 +2,7 @@ import { type FormEvent, useRef, useState } from "react";
 import { DefaultDialog } from "../primitives/dialogs/default-dialog.tsx";
 import { saveIntegrationKey } from "../../api/integrations/save-integration-key.ts";
 import { useIntegrationsStore } from "../../store/use-integrations-store.ts";
+import { useAuthStore } from "../../store/auth-store.ts";
 import type { Integration } from "../../api/integrations/get-integrations.ts";
 import {
 	ConnectForm,
@@ -72,11 +73,14 @@ export function DatawrapperConnectDialog({
 
 		const modeAtSubmit = mode;
 		const generationAtSubmit = submitGenerationRef.current;
+		const userIdAtSubmit = useAuthStore.getState().session?.user.id;
 		const trimmedToken = token.trim();
 		const result = await saveIntegrationKey("datawrapper", trimmedToken);
 		const isStale = () => submitGenerationRef.current !== generationAtSubmit;
+		const isOtherUser = () =>
+			useAuthStore.getState().session?.user.id !== userIdAtSubmit;
 
-		if (result.status === "success") {
+		if (result.status === "success" && !isOtherUser()) {
 			const integrationsStore = useIntegrationsStore.getState();
 			integrationsStore.upsertIntegration({
 				provider: "datawrapper",
@@ -85,7 +89,9 @@ export function DatawrapperConnectDialog({
 				updated_at: new Date().toISOString(),
 			});
 			await integrationsStore.fetchIntegrations();
-			onSuccess?.();
+			if (!isOtherUser()) {
+				onSuccess?.();
+			}
 		}
 
 		if (isStale()) {
