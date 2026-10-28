@@ -119,7 +119,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 
 - **Monorepo Tool**: [Turborepo](https://github.com/vercel/turbo)
 - **Package Manager**: [npm](https://github.com/npm/cli) 11.4.2
-- **Node Version**: 22.14.0
+- **Node Version**: 24.22.1
 - **Database & Auth**: [Supabase](https://github.com/supabase/supabase) (PostgreSQL + Auth + Storage + Realtime)
 - **Deployment**: [Vercel](https://github.com/vercel/vercel) (frontend apps), self-hosted options available (backend)
 - **Containerization**: [Docker](https://github.com/docker) (backend)
@@ -128,7 +128,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 
 ### Required
 
-- **Node.js**: Version 22.14.0 (specified in [`.nvmrc`](./.nvmrc))
+- **Node.js**: Version 24.22.1 (specified in [`.nvmrc`](./.nvmrc))
   - Install via: `nvm install && nvm use`
 - **Supabase CLI**: Version specified in [`.tool-versions`](./.tool-versions)
   - Install: https://supabase.com/docs/guides/cli
