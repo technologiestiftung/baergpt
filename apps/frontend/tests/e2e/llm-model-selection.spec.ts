@@ -8,7 +8,7 @@ const STORAGE_KEY = "llm-model";
 const fastModelLabel = "Schnell";
 const preciseModelLabel = "Präzise";
 const fastModelOptionName = "Mistral Small 4 (schnell) auswählen";
-const preciseModelOptionName = "Mistral Large 4 (präzise) auswählen";
+const preciseModelOptionName = "Mistral Large 4 (ausgewogen) auswählen";
 
 function openModelDropdown(page: Page, triggerLabel = fastModelLabel) {
 	return page.getByRole("button", { name: triggerLabel, exact: false }).click();
