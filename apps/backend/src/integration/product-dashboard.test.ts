@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { serviceRoleDbClient } from "../supabase";
 import type { Database } from "@repo/db-schema";
 import { subDays } from "date-fns";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 import { config } from "../config";
 import { signInWithOtp } from "./fixtures/auth";
 
@@ -590,18 +590,34 @@ async function insertChatsAndMessages(param: {
 }
 
 async function getExpectedAverageInferencesPerUser() {
-	const { count: chatMessageCount, error: chatMessageCountError } =
-		await serviceRoleDbClient
-			.from("chat_messages")
-			.select("*", { count: "exact", head: true })
-			.eq("role", "user");
-
-	expect(chatMessageCountError).toBeNull();
-
 	const { data, error: userCountError } =
-		await serviceRoleDbClient.auth.admin.listUsers();
+		await serviceRoleDbClient.auth.admin.listUsers({ perPage: 1000 });
 
 	expect(userCountError).toBeNull();
 
-	return chatMessageCount / data.users.length;
+	const countedUserIds = new Set(
+		data.users
+			.filter(
+				(user: User) =>
+					user.email_confirmed_at &&
+					user.user_metadata.first_name?.trim() &&
+					user.user_metadata.last_name?.trim() &&
+					(!user.banned_until || new Date(user.banned_until) < new Date()),
+			)
+			.map((user: User) => user.id),
+	);
+
+	const { data: chatMessages, error: chatMessagesError } =
+		await serviceRoleDbClient
+			.from("chat_messages")
+			.select("chats!inner(user_id)")
+			.eq("role", "user");
+
+	expect(chatMessagesError).toBeNull();
+
+	const countedChatMessages = chatMessages.filter(({ chats }) =>
+		countedUserIds.has(chats.user_id),
+	);
+
+	return countedChatMessages.length / countedUserIds.size;
 }

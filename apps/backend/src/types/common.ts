@@ -221,6 +221,15 @@ export class DocumentNotFoundError extends Error {
 	}
 }
 
+export class RegistrationPendingError extends Error {
+	constructor(userId: string) {
+		super(
+			`User ${userId} has not completed the registration, so their name and titles cannot be changed.`,
+		);
+		this.name = "RegistrationPendingError";
+	}
+}
+
 export class DefaultDocumentDeletionError extends Error {
 	constructor(documentId: number) {
 		super(`Default document ${documentId} cannot be deleted.`);

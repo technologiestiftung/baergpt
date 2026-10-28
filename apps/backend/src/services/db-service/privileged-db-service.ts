@@ -1,6 +1,7 @@
 import { captureError } from "../../monitoring/capture-error";
 import type { ServiceRoleDbClient } from "../../supabase";
 import type { TablesUpdate } from "@repo/db-schema";
+import { RegistrationPendingError } from "../../types/common";
 import { BaseContentDbService } from "./base-db-service";
 /**
  * AdminService handles operations that require the Supabase service role key.
@@ -37,6 +38,19 @@ export class PrivilegedDbService extends BaseContentDbService {
 		email?: string;
 		personal_title?: string;
 	}): Promise<void> {
+		const profileValues = [firstName, lastName, academic_title, personal_title];
+		let shouldSaveProfile = profileValues.some((value) => value !== undefined);
+
+		if (shouldSaveProfile && !(await this.hasCompletedRegistration(userId))) {
+			// Only the user completes their registration, as it includes accepting the terms
+			if (profileValues.some(Boolean)) {
+				throw new RegistrationPendingError(userId);
+			}
+
+			// Empty values change nothing for a user without a profile
+			shouldSaveProfile = false;
+		}
+
 		// Prepare auth update data
 		const authUpdateData: {
 			user_metadata?: { first_name?: string; last_name?: string };
@@ -44,7 +58,10 @@ export class PrivilegedDbService extends BaseContentDbService {
 		} = {};
 
 		// Add user metadata if firstName or lastName are provided
-		if (firstName !== undefined || lastName !== undefined) {
+		if (
+			shouldSaveProfile &&
+			(firstName !== undefined || lastName !== undefined)
+		) {
 			authUpdateData.user_metadata = {
 				first_name: firstName,
 				last_name: lastName,
@@ -76,8 +93,8 @@ export class PrivilegedDbService extends BaseContentDbService {
 			}).filter(([, value]) => value !== undefined),
 		);
 
-		if (Object.keys(updateData).length > 0) {
-			// Upsert, as users who haven't completed the registration have no profile yet
+		if (shouldSaveProfile && Object.keys(updateData).length > 0) {
+			// Upsert, so a missing profile is created instead of silently not updated
 			const { error: profileError } = await this.client
 				.from("profiles")
 				.upsert({ id: userId, ...updateData });
@@ -86,6 +103,25 @@ export class PrivilegedDbService extends BaseContentDbService {
 				throw profileError;
 			}
 		}
+	}
+
+	private async hasCompletedRegistration(userId: string): Promise<boolean> {
+		const { data, error } = await this.client.auth.admin.getUserById(userId);
+
+		if (error) {
+			throw error;
+		}
+
+		const { data: isCompleted, error: rpcError } = await this.client.rpc(
+			"is_registration_completed",
+			{ user_meta_data: data.user.user_metadata },
+		);
+
+		if (rpcError) {
+			throw rpcError;
+		}
+
+		return isCompleted;
 	}
 
 	/**
