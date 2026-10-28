@@ -69,7 +69,7 @@ import {
 } from "../tools/mcp/open-data-mcp-tools";
 import {
 	datawrapperMCPTools,
-	isDatawrapperToolFailure,
+	getEmbeddableDatawrapperChartIds,
 } from "../tools/mcp/datawrapper-mcp-tools";
 
 const modelService = new ModelService();
@@ -632,31 +632,20 @@ export class GenerationService {
 									});
 								}
 
-								/**
-								 * Only chart ids this chat itself successfully published are
-								 * trusted for embedding
-								 */
-								const publishedDatawrapperChartIds = Array.from(
-									new Set(
-										steps.flatMap((step) =>
-											step.toolResults
-												.filter(
-													(tr) =>
-														tr.toolName === "publish_visualization" &&
-														!isDatawrapperToolFailure(tr.output),
-												)
-												.map(
-													(tr) => (tr.input as { chart_id?: string }).chart_id,
-												)
-												.filter((id): id is string => Boolean(id)),
-										),
-									),
-								);
+								const embeddableDatawrapperChartIds = activeTools.includes(
+									"datawrapperMCPTools",
+								)
+									? await getEmbeddableDatawrapperChartIds({
+											userId,
+											text,
+											toolResults: steps.flatMap((step) => step.toolResults),
+										})
+									: [];
 
-								if (publishedDatawrapperChartIds.length > 0) {
+								if (embeddableDatawrapperChartIds.length > 0) {
 									writer.write({
 										type: "data-datawrapper-chart-ids",
-										data: publishedDatawrapperChartIds,
+										data: embeddableDatawrapperChartIds,
 									});
 								}
 

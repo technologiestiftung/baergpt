@@ -7,10 +7,10 @@ import { AnchorLinkTargetBlank } from "./anchor-link-target-blank.tsx";
  *
  * Model output is never rendered as raw HTML, so instead of trusting an
  * <iframe> from the model, we build it ourselves from an allowlisted URL.
- * The chart id must also be in `allowedChartIds` (the ids this message's own
- * `publish_visualization` calls actually produced) — otherwise the link could
- * be an unrelated Datawrapper chart surfaced via web search, RAG or Open Data
- * content and reproduced in the model's text.
+ * The chart id must also be in `allowedChartIds` (the ids the backend verified
+ * as published charts from the user's own Datawrapper account) — otherwise the
+ * link could be an unrelated Datawrapper chart surfaced via web search, RAG or
+ * Open Data content and reproduced in the model's text.
  */
 
 const DATAWRAPPER_ORIGIN = "https://datawrapper.dwcdn.net";
