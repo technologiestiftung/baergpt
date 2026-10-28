@@ -107,10 +107,7 @@ export function RegisterPage() {
 								onChange={setHasAcceptedPrivacy}
 								required={true}
 							>
-								<span
-									className="text-sm leading-5 font-bold"
-									data-testid="label-has-accepted-privacy-checkbox"
-								>
+								<span className="text-sm leading-5 font-bold">
 									{Content["registerPage.privacyText.p1"]}{" "}
 									<a
 										href={Content["footer.privacy.link"]}

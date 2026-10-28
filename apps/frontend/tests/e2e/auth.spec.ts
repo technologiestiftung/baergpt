@@ -260,7 +260,9 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			.fill(givenUserLastName);
 
 		await page1
-			.locator('[data-testid="label-has-accepted-privacy-checkbox"]')
+			.getByTestId("has-accepted-privacy-checkbox")
+			.locator("span")
+			.first()
 			.click();
 
 		await submitButton.click();
@@ -311,19 +313,10 @@ testWithoutSplashScreen(
 	async ({ page }) => {
 		await page.goto("/login/");
 
-		// Wait for check email allowed to be loaded before proceeding
-		const emailAllowedCheck = page
-			.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
-				timeout: 10_000,
-			})
-			.catch(() => {}); // Ignore if already completed
-
-		const emailInput = page.getByRole("textbox", { name: "E-Mail-Adresse" });
-		await emailInput.click();
-		await emailInput.pressSequentially("not-allowed@example.com");
-		await emailInput.blur();
-
-		await emailAllowedCheck;
+		await page
+			.getByRole("textbox", { name: "E-Mail-Adresse" })
+			.fill("not-allowed@example.com");
+		await page.getByRole("button", { name: "Einmalcode erhalten" }).click();
 
 		const errorMessage = page.getByText(
 			"E-Mail nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
