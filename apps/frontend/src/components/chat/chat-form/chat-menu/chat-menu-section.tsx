@@ -71,18 +71,6 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 			isSelected: false,
 			onSelect: () => fileInputRef.current?.click(),
 		},
-		...(isMcpParlaAllowed || isMcpOpenDataAllowed || isMcpDatawrapperAllowed
-			? [
-					{
-						id: "connectors",
-						label: Content["chat.options.li2.label"],
-						ariaLabel: Content["chat.options.li2.ariaLabel"],
-						icon: "icons/connectors-icon.svg",
-						isSelected: false,
-						onSelect: openConnectorsSubmenu,
-					} satisfies MenuItem,
-				]
-			: []),
 		...(isWebSearchAllowed
 			? [
 					{
@@ -91,8 +79,8 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 						ariaLabel: Content["chat.options.li3.ariaLabel"],
 						icon: (
 							<WebSearchIcon
-								width={16}
-								height={16}
+								width={20}
+								height={20}
 								variant={isWebSearchActive ? "active" : "default"}
 							/>
 						),
@@ -102,6 +90,18 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 							toggleChatTool("webSearch");
 							onClose();
 						},
+					} satisfies MenuItem,
+				]
+			: []),
+		...(isMcpParlaAllowed || isMcpOpenDataAllowed || isMcpDatawrapperAllowed
+			? [
+					{
+						id: "connectors",
+						label: Content["chat.options.li2.label"],
+						ariaLabel: Content["chat.options.li2.ariaLabel"],
+						icon: "icons/connectors-icon.svg",
+						isSelected: false,
+						onSelect: openConnectorsSubmenu,
 					} satisfies MenuItem,
 				]
 			: []),
@@ -150,63 +150,74 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 			/>
 			<div
 				id={CHAT_TOOLS_MENU_ID}
-				className={`z-50 absolute -left-0.5 bottom-full mb-2 rounded-3px bg-white border border-hellblau-50 focus-visible:outline-default shadow-md min-w-[200px] ${className}`}
+				className={`z-50 absolute p-1 -left-0.5 bottom-full mb-2 rounded-3px bg-hellblau-30 focus-visible:outline-default shadow-md min-w-[169px] ${className}`}
 				onKeyDown={handleDropdownKeyDown}
 				role="menu"
 				aria-label={Content["chat.options.toggleButton.tooltip.ariaLabel"]}
 			>
 				<ul role="none" className="flex flex-col">
 					{menuItems.map((item, index) => {
+						const divider = index === 0 && menuItems.length > 1 && (
+							<li role="separator" className="px-1.5 py-0.5">
+								<div className="h-[0.5px] bg-hellblau-100" />
+							</li>
+						);
+
 						if (item.id === "connectors") {
 							return (
-								<li
-									key={item.id}
-									role="none"
-									className="relative"
-									onMouseEnter={openConnectorsSubmenu}
-								>
+								<React.Fragment key={item.id}>
+									<li
+										role="none"
+										className="relative"
+										onMouseEnter={openConnectorsSubmenu}
+									>
+										<ChatMenuRow
+											label={item.label}
+											ariaLabel={item.ariaLabel}
+											icon={item.icon}
+											isSelected={item.isSelected}
+											isActive={isConnectorsSubmenuOpen}
+											onClick={item.onSelect}
+											onKeyDown={handleConnectorsKeyDown}
+											optionButtonRef={(el) => {
+												setOptionRef(index)(el);
+												connectorsButtonRef.current = el;
+											}}
+											hasSubmenu={true}
+										/>
+										{isConnectorsSubmenuOpen && (
+											<div className="absolute left-full -bottom-1">
+												<ChatMenuConnectorsSubmenu
+													isOpen={isConnectorsSubmenuOpen}
+													onClose={closeConnectorsSubmenu}
+													onItemSelect={onClose}
+													connectorsButtonRef={connectorsButtonRef}
+													className="ml-2"
+												/>
+											</div>
+										)}
+									</li>
+									{divider}
+								</React.Fragment>
+							);
+						}
+
+						return (
+							<React.Fragment key={item.id}>
+								<li role="none">
 									<ChatMenuRow
 										label={item.label}
 										ariaLabel={item.ariaLabel}
 										icon={item.icon}
 										isSelected={item.isSelected}
-										isActive={isConnectorsSubmenuOpen}
+										isCheckbox={item.isCheckbox}
 										onClick={item.onSelect}
-										onKeyDown={handleConnectorsKeyDown}
-										optionButtonRef={(el) => {
-											setOptionRef(index)(el);
-											connectorsButtonRef.current = el;
-										}}
-										hasSubmenu={true}
+										onMouseEnter={closeConnectorsSubmenu}
+										optionButtonRef={setOptionRef(index)}
 									/>
-									{isConnectorsSubmenuOpen && (
-										<div className="absolute left-full bottom-[1px]">
-											<ChatMenuConnectorsSubmenu
-												isOpen={isConnectorsSubmenuOpen}
-												onClose={closeConnectorsSubmenu}
-												onItemSelect={onClose}
-												connectorsButtonRef={connectorsButtonRef}
-												className="ml-1"
-											/>
-										</div>
-									)}
 								</li>
-							);
-						}
-
-						return (
-							<li key={item.id} role="none">
-								<ChatMenuRow
-									label={item.label}
-									ariaLabel={item.ariaLabel}
-									icon={item.icon}
-									isSelected={item.isSelected}
-									isCheckbox={item.isCheckbox}
-									onClick={item.onSelect}
-									onMouseEnter={closeConnectorsSubmenu}
-									optionButtonRef={setOptionRef(index)}
-								/>
-							</li>
+								{divider}
+							</React.Fragment>
 						);
 					})}
 				</ul>

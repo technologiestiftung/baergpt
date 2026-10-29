@@ -67,7 +67,10 @@ import {
 	type OpenDataCitationSource,
 	type OpenDataToolInput,
 } from "../tools/mcp/open-data-mcp-tools";
-import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
+import {
+	datawrapperMCPTools,
+	getEmbeddableDatawrapperChartIds,
+} from "../tools/mcp/datawrapper-mcp-tools";
 
 const modelService = new ModelService();
 
@@ -630,6 +633,23 @@ export class GenerationService {
 										sessionId,
 										userId,
 										writer,
+									});
+								}
+
+								const embeddableDatawrapperChartIds = activeTools.includes(
+									"datawrapperMCPTools",
+								)
+									? await getEmbeddableDatawrapperChartIds({
+											userId,
+											text: steps.map((step) => step.text).join("\n"),
+											toolResults: steps.flatMap((step) => step.toolResults),
+										})
+									: [];
+
+								if (embeddableDatawrapperChartIds.length > 0) {
+									writer.write({
+										type: "data-datawrapper-chart-ids",
+										data: embeddableDatawrapperChartIds,
 									});
 								}
 

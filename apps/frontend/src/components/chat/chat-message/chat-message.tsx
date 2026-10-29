@@ -4,25 +4,38 @@ import { UserMessage } from "./user-message.tsx";
 import type { ChatMessage } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
-import type { JSX } from "react";
-import { MarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
+import { type JSX, useMemo } from "react";
+import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
+import { config } from "../../../config.ts";
 
 interface ChatMessageProps {
 	message: ChatMessage;
 }
-
-const customComponents = {
-	table: MarkdownWrapperScrollableTable,
-	a: MarkdownLinkWithDatawrapperEmbed,
-	img: () => null,
-};
 
 export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 	const { role, content, traces } = message;
 	// An assistant message with traces but no content yet is still streaming
 	// its reasoning, so it has to render before the answer arrives.
 	const hasAssistantContent = content !== "" || Boolean(traces);
+
+	const datawrapperChartIds = message.datawrapper_chart_ids;
+
+	// A new link component type on every render would remount (and reload)
+	// each embedded chart while streaming, so only rebuild when the ids change
+	const customComponents = useMemo(() => {
+		// Only ids this message's own `publish_visualization` calls produced may
+		// auto-embed — never whatever the model's text happens to reproduce
+		const allowedDatawrapperChartIds = config.featureFlagMcpDatawrapperAllowed
+			? (datawrapperChartIds ?? [])
+			: [];
+
+		return {
+			table: MarkdownWrapperScrollableTable,
+			a: createMarkdownLinkWithDatawrapperEmbed(allowedDatawrapperChartIds),
+			img: () => null,
+		};
+	}, [datawrapperChartIds]);
 
 	return (
 		<div className="flex flex-col" data-message-id={message.id}>

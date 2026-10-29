@@ -9,9 +9,11 @@ export default {
 			colors: {
 				orange: "#E69736",
 				mittelgruen: "#4CA786",
+				"mittelgruen-130": "#35755E",
 				"berlin-rot": "#E40521",
-				"warning-100": "#DF4343",
 				"warning-85": "#E45F5F",
+				"warning-100": "#DF4343",
+				"warning-120": "#B23636",
 				"warning-10": "#FEF4F5",
 				"schwarz-40": "#737373",
 				"schwarz-60": "#666666",
@@ -81,6 +83,22 @@ export default {
 						opacity: "1",
 					},
 				},
+				"slide-in-bottom": {
+					"0%": {
+						transform: "translateY(100%)",
+					},
+					"100%": {
+						transform: "translateY(0)",
+					},
+				},
+				"slide-out-bottom": {
+					"0%": {
+						transform: "translateY(0)",
+					},
+					"100%": {
+						transform: "translateY(100%)",
+					},
+				},
 				"fade-out": {
 					"0%": {
 						opacity: "1",
@@ -102,6 +120,9 @@ export default {
 				"gradient-move": "gradient-move 3s linear infinite",
 				"shrink-grow": "shrink-grow 1s ease-in-out infinite",
 				"slide-in-right": "slide-in-right 0.3s ease-out",
+				"slide-in-bottom": "slide-in-bottom 0.3s ease-out",
+				"slide-out-bottom": "slide-out-bottom 0.2s ease-in forwards",
+				"fade-out-backdrop": "fade-out 0.2s ease-in forwards",
 				"fade-out": "fade-out 0.3s ease-out",
 				"fade-in": "fade-in 0.2s ease-in",
 				"fade-out-tooltip": "fade-out 0.2s ease-out",

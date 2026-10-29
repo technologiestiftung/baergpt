@@ -96,6 +96,7 @@ interface ChatStore {
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
 		open_data_citations: OpenDataCitationSource[] | null;
+		datawrapper_chart_ids: string[] | null;
 		traces: MessageTraces | null;
 		running_tool?: TraceTool;
 	}): void;
@@ -423,6 +424,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		web_citations,
 		parla_citations,
 		open_data_citations,
+		datawrapper_chart_ids,
 		traces,
 		running_tool,
 	}) => {
@@ -436,6 +438,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		foundMessage.web_citations = web_citations;
 		foundMessage.parla_citations = parla_citations;
 		foundMessage.open_data_citations = open_data_citations;
+		foundMessage.datawrapper_chart_ids = datawrapper_chart_ids;
 		foundMessage.traces = traces;
 		foundMessage.running_tool = running_tool;
 		get().updateChats(chat);
