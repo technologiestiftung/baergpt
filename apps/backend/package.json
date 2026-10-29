@@ -51,7 +51,7 @@
 		"@supabase/supabase-js": "2.117.3",
 		"ai": "7.0.148",
 		"dotenv": "16.6.1",
-		"hono": "4.13.0",
+		"hono": "4.13.11",
 		"ioredis": "5.11.1",
 		"jsonwebtoken": "9.0.3",
 		"mammoth": "1.12.0",
