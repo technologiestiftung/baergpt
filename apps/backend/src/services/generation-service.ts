@@ -641,7 +641,7 @@ export class GenerationService {
 								)
 									? await getEmbeddableDatawrapperChartIds({
 											userId,
-											text,
+											text: steps.map((step) => step.text).join("\n"),
 											toolResults: steps.flatMap((step) => step.toolResults),
 										})
 									: [];

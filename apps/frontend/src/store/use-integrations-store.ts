@@ -6,7 +6,7 @@ import {
 } from "../api/integrations/get-integrations.ts";
 import { useAuthStore } from "./auth-store.ts";
 
-let resetGeneration = 0;
+let generation = 0;
 
 interface IntegrationsStore {
 	integrations: Integration[] | null;
@@ -30,11 +30,11 @@ export const useIntegrationsStore = create<IntegrationsStore>()((set, get) => ({
 	},
 
 	async fetchIntegrations() {
-		const generationAtFetch = resetGeneration;
+		const generationAtFetch = generation;
 		const userIdAtFetch = useAuthStore.getState().session?.user.id;
 		const integrations = await getIntegrations();
 		const isStale =
-			resetGeneration !== generationAtFetch ||
+			generation !== generationAtFetch ||
 			useAuthStore.getState().session?.user.id !== userIdAtFetch;
 		if (integrations && !isStale) {
 			set({ integrations });
@@ -45,16 +45,18 @@ export const useIntegrationsStore = create<IntegrationsStore>()((set, get) => ({
 		const others = (get().integrations ?? []).filter(
 			(i) => i.provider !== integration.provider,
 		);
+		generation += 1;
 		set({ integrations: [...others, integration] });
 	},
 
 	removeIntegration(provider) {
 		const existing = get().integrations ?? [];
+		generation += 1;
 		set({ integrations: existing.filter((i) => i.provider !== provider) });
 	},
 
 	reset() {
-		resetGeneration += 1;
+		generation += 1;
 		set({ integrations: null });
 	},
 }));
