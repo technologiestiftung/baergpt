@@ -14,22 +14,23 @@ export function RegisterPage() {
 	const { logout } = useAuthStore();
 	const navigate = useNavigate();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
-	const [isFormValid, setIsFormValid] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-
-	// "required" also accepts names made of spaces only
-	const updateIsFormValid = (form: HTMLFormElement) => {
-		const hasNames = [form.firstName, form.lastName].every(
-			(input: HTMLInputElement) => input.value.trim() !== "",
-		);
-		setIsFormValid(hasNames && form.checkValidity());
-	};
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		const firstName = event.currentTarget.firstName.value.trim();
-		const lastName = event.currentTarget.lastName.value.trim();
+		const form = event.currentTarget;
+		if (!form.checkValidity()) {
+			form.querySelector<HTMLElement>(":invalid")?.focus();
+			return;
+		}
+
+		const firstName = form.firstName.value.trim();
+		const lastName = form.lastName.value.trim();
+
+		if (!firstName || !lastName) {
+			return;
+		}
 
 		setIsSubmitting(true);
 
@@ -69,8 +70,7 @@ export function RegisterPage() {
 					<form
 						className="flex flex-col gap-10"
 						onSubmit={handleSubmit}
-						onInput={(event) => updateIsFormValid(event.currentTarget)}
-						onChange={(event) => updateIsFormValid(event.currentTarget)}
+						noValidate
 					>
 						<div className="flex flex-col gap-6">
 							<div className="flex flex-col gap-1.5">
@@ -101,36 +101,35 @@ export function RegisterPage() {
 								/>
 							</div>
 
-							<Checkbox
-								id="has-accepted-privacy"
-								checked={hasAcceptedPrivacy}
-								onChange={setHasAcceptedPrivacy}
-								required={true}
-							>
-								<span className="text-sm leading-5 font-bold">
-									{Content["registerPage.privacyText.p1"]}{" "}
-									<a
-										href={Content["footer.privacy.link"]}
-										className="underline hover:no-underline rounded-3px focus-visible:outline-default"
-										target="_blank"
-									>
-										{Content["registerPage.privacyLink.label"]}
-									</a>{" "}
-									{Content["registerPage.privacyText.p2"]}{" "}
-									<a
-										href={Content["footer.termsOfUse.link"]}
-										className="underline hover:no-underline rounded-3px focus-visible:outline-default"
-										target="_blank"
-									>
-										{Content["registerPage.termsOfUse.label"]}
-									</a>
-								</span>
-							</Checkbox>
+							<div className="flex flex-col gap-1.5">
+								<Checkbox
+									id="has-accepted-privacy"
+									checked={hasAcceptedPrivacy}
+									onChange={setHasAcceptedPrivacy}
+									required={true}
+								>
+									<span className="text-sm leading-5 font-bold">
+										{Content["registerPage.privacyText.p1"]}{" "}
+										<a
+											href={Content["footer.privacy.link"]}
+											className="underline hover:no-underline rounded-3px focus-visible:outline-default"
+											target="_blank"
+										>
+											{Content["registerPage.privacyLink.label"]}
+										</a>{" "}
+										{Content["registerPage.privacyText.p2"]}{" "}
+										<a
+											href={Content["footer.termsOfUse.link"]}
+											className="underline hover:no-underline rounded-3px focus-visible:outline-default"
+											target="_blank"
+										>
+											{Content["registerPage.termsOfUse.label"]}
+										</a>
+									</span>
+								</Checkbox>
+							</div>
 						</div>
-						<AuthPrimaryButton
-							type="submit"
-							disabled={!isFormValid || isSubmitting}
-						>
+						<AuthPrimaryButton type="submit" disabled={isSubmitting}>
 							{Content["registerPage.submitButton"]}
 						</AuthPrimaryButton>
 					</form>

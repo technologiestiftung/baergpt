@@ -250,7 +250,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		});
 
 		const submitButton = page1.getByRole("button", { name: "Konto eröffnen" });
-		await expect(submitButton).toBeDisabled();
 
 		await page1
 			.getByRole("textbox", { name: "Vorname" })
@@ -258,6 +257,16 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await page1
 			.getByRole("textbox", { name: "Nachname" })
 			.fill(givenUserLastName);
+
+		await submitButton.click();
+
+		await expect(
+			page1.getByText(
+				"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
+				{ exact: true },
+			),
+		).toBeVisible();
+		await expect(page1).toHaveURL("/register/");
 
 		await page1
 			.getByTestId("has-accepted-privacy-checkbox")
