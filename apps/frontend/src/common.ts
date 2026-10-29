@@ -22,15 +22,17 @@ export type NewChatMessage = Pick<
 	| "open_data_citations"
 	| "external_tool_context"
 	| "traces"
+	| "datawrapper_chart_ids"
 >;
 
 export type ChatWithMessages = Chat & { messages: ChatMessage[] };
 
 /**
- * Tools whose calls are shown in the trace. Tools outside this list (Open Data,
- * Datawrapper) are skipped rather than rendered as an unlabelled step.
+ * Tools whose calls are shown in the trace. Tools outside this list (Open Data)
+ * are skipped rather than rendered as an unlabelled step.
  */
-export type TraceTool = "webSearchTool" | "ragSearchTool" | "parlaMCPTools";
+export type TraceTool =
+	"webSearchTool" | "ragSearchTool" | "parlaMCPTools" | "datawrapperMCPTools";
 
 /** One step of the trace, in the order it was streamed. */
 export type Trace =
@@ -67,6 +69,7 @@ export type ChatMessage = {
 	web_citations: WebCitationSource[] | null;
 	parla_citations: ParlaCitationSource[] | null;
 	open_data_citations: OpenDataCitationSource[] | null;
+	datawrapper_chart_ids: string[] | null;
 	created_at: string;
 	external_tool_context: boolean;
 	// Reasoning trace of the message, present when extended thinking was on.

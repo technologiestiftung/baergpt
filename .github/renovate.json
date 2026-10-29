@@ -2,6 +2,7 @@
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
 	"extends": ["github>technologiestiftung/renovate-config"],
 	"baseBranches": ["staging"],
+	"automergeType": "pr",
 
 	"lockFileMaintenance": {
 		"enabled": true

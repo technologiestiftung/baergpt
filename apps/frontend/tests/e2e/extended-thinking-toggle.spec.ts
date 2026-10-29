@@ -4,7 +4,7 @@ import { sendAndWaitForLLMResponse } from "../fixtures/mock-llm.ts";
 
 const fastModelLabel = "Schnell";
 const preciseModelLabel = "Präzise";
-const preciseModelOptionName = "Mistral Large 4 (präzise) auswählen";
+const preciseModelOptionName = "Mistral Large 4 (ausgewogen) auswählen";
 const extendedThinkingSwitchName = "Länger nachdenken auswählen";
 
 function extendedThinkingSwitch(page: Page) {

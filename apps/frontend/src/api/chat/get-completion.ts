@@ -48,7 +48,8 @@ type StreamEvent =
 	| { type: "data-citations"; data: number[] }
 	| { type: "data-web-citations"; data: WebCitationSource[] }
 	| { type: "data-parla-citations"; data: ParlaCitationSource[] }
-	| { type: "data-open-data-citations"; data: OpenDataCitationSource[] };
+	| { type: "data-open-data-citations"; data: OpenDataCitationSource[] }
+	| { type: "data-datawrapper-chart-ids"; data: string[] };
 
 /**
  * Tool names as they arrive on the stream — ours for the built-in tools, the
@@ -58,6 +59,8 @@ const traceToolByStreamName: Record<string, TraceTool> = {
 	webSearchTool: "webSearchTool",
 	ragSearchTool: "ragSearchTool",
 	parla_vector_search: "parlaMCPTools",
+	create_visualization: "datawrapperMCPTools",
+	publish_visualization: "datawrapperMCPTools",
 };
 
 const activeToolsDict: Record<ChatTool, string[]> = {
@@ -101,9 +104,10 @@ export async function getCompletion(
 		externalChatTools.includes(tool),
 	);
 
-	// Id of the optimistic placeholder, set once created — lets the catch
-	// block clean it up if the stream errors out.
-	let messageIdForCleanup: number | undefined;
+	// Persists or drops the optimistic placeholder, set once it's created —
+	// lets the catch block settle it if the stream errors out.
+	let settlePendingMessage:
+		((options: { keepPartial: boolean }) => Promise<void>) | undefined;
 
 	try {
 		// Abort any existing stream before starting a new one
@@ -172,7 +176,7 @@ export async function getCompletion(
 		}
 
 		// Optimistic placeholder — persisted only once the stream settles
-		// (see `onFinish` below).
+		// (see `settlePendingMessage` below).
 		const localMessageId = createPendingMessageInMemory(currentChat, {
 			content: "",
 			type: "text",
@@ -183,10 +187,10 @@ export async function getCompletion(
 			web_citations: null,
 			parla_citations: null,
 			open_data_citations: null,
+			datawrapper_chart_ids: null,
 			external_tool_context: isExternalToolContext,
 			traces: null,
 		});
-		messageIdForCleanup = localMessageId;
 
 		let currentText = "";
 		const traces: Trace[] = [];
@@ -198,6 +202,7 @@ export async function getCompletion(
 		let webCitations: WebCitationSource[] = [];
 		let parlaCitations: ParlaCitationSource[] = [];
 		let openDataCitations: OpenDataCitationSource[] = [];
+		let datawrapperChartIds: string[] = [];
 
 		let hasReceivedText = false;
 		let thinkingStartedAt: number | undefined;
@@ -213,6 +218,19 @@ export async function getCompletion(
 			traces.push({ type: "text", text: delta });
 		};
 
+		/**
+		 * The toggle controls how much the model reasons, not whether a trace is
+		 * shown: GLM 5.3 always reasons (lowest effort "low"), while Mistral
+		 * models send no reasoning with "none". So a trace is kept whenever
+		 * thinking is enabled or the response actually carries reasoning.
+		 */
+		const getTracesToKeep = () => {
+			const hasReasoning = traces.some(({ type }) => type === "text");
+			return traces.length && (isExtendedThinkingEnabled || hasReasoning)
+				? { traces, durationSeconds: thinkingDurationSeconds }
+				: null;
+		};
+
 		const writeMessage = () =>
 			updateMessage({
 				chat: currentChat,
@@ -224,11 +242,51 @@ export async function getCompletion(
 				open_data_citations: openDataCitations.length
 					? openDataCitations
 					: null,
-				traces: traces.length
-					? { traces, durationSeconds: thinkingDurationSeconds }
+				datawrapper_chart_ids: datawrapperChartIds.length
+					? datawrapperChartIds
 					: null,
+				traces: getTracesToKeep(),
 				running_tool: runningTool,
 			});
+
+		let isSettled = false;
+		settlePendingMessage = async ({ keepPartial }) => {
+			if (isSettled) {
+				return;
+			}
+			isSettled = true;
+
+			// Persist whatever non-whitespace text the user has already seen, even
+			// if the stream broke off later — otherwise drop the placeholder.
+			if (!keepPartial || !currentText.trim()) {
+				removePendingMessageFromMemory(currentChat, localMessageId);
+				return;
+			}
+
+			try {
+				await persistPendingMessageToDb(currentChat, localMessageId, {
+					content: currentText,
+					type: "text",
+					role: "assistant",
+					allowed_document_ids: allowedDocumentIds,
+					allowed_folder_ids: selectedFolderIds,
+					citations: documentCitations.length ? documentCitations : null,
+					web_citations: webCitations.length ? webCitations : null,
+					parla_citations: parlaCitations.length ? parlaCitations : null,
+					open_data_citations: openDataCitations.length
+						? openDataCitations
+						: null,
+					datawrapper_chart_ids: datawrapperChartIds.length
+						? datawrapperChartIds
+						: null,
+					external_tool_context: isExternalToolContext,
+					traces: getTracesToKeep(),
+				});
+			} catch (error) {
+				removePendingMessageFromMemory(currentChat, localMessageId);
+				handleError(error, span);
+			}
+		};
 
 		await parseStream(response.body, {
 			onTextDelta: (delta: string) => {
@@ -249,17 +307,13 @@ export async function getCompletion(
 				writeMessage();
 			},
 			onReasoningDelta: (delta: string) => {
-				if (!isExtendedThinkingEnabled) {
-					return;
-				}
-
 				thinkingStartedAt ??= Date.now();
 				appendTraceText(delta);
 				writeMessage();
 			},
 			onToolStart: (toolName: string, toolCallId: string) => {
 				const tool = traceToolByStreamName[toolName];
-				if (!isExtendedThinkingEnabled || !tool) {
+				if (!tool) {
 					return;
 				}
 
@@ -306,48 +360,22 @@ export async function getCompletion(
 				openDataCitations = sources;
 				writeMessage();
 			},
-			onFinish: async (wasSuccessful) => {
+			onDatawrapperChartIds: (chartIds: string[]) => {
+				datawrapperChartIds = chartIds;
+				writeMessage();
+			},
+			onFinish: async () => {
 				setStatus("idle");
 				setStreamingAbortController(null);
-
-				// Only persist if the stream finished cleanly with non-whitespace
-				// content — otherwise drop the placeholder.
-				if (wasSuccessful && currentText.trim()) {
-					try {
-						await persistPendingMessageToDb(currentChat, localMessageId, {
-							content: currentText,
-							type: "text",
-							role: "assistant",
-							allowed_document_ids: allowedDocumentIds,
-							allowed_folder_ids: selectedFolderIds,
-							citations: documentCitations.length ? documentCitations : null,
-							web_citations: webCitations.length ? webCitations : null,
-							parla_citations: parlaCitations.length ? parlaCitations : null,
-							open_data_citations: openDataCitations.length
-								? openDataCitations
-								: null,
-							external_tool_context: isExternalToolContext,
-							traces: traces.length
-								? { traces, durationSeconds: thinkingDurationSeconds }
-								: null,
-						});
-					} catch (error) {
-						removePendingMessageFromMemory(currentChat, localMessageId);
-						handleError(error, span);
-					}
-				} else {
-					removePendingMessageFromMemory(currentChat, localMessageId);
-				}
+				await settlePendingMessage?.({ keepPartial: true });
 			},
 		});
 	} catch (error) {
-		// Stream never settled — drop the placeholder if one was created.
-		if (messageIdForCleanup !== undefined) {
-			removePendingMessageFromMemory(currentChat, messageIdForCleanup);
-		}
-
 		// Only handle error if it's not an abort error
 		const isUserAbort = error instanceof Error && error.name === "AbortError";
+
+		// Stream broke off — keep the partial answer unless the user aborted.
+		await settlePendingMessage?.({ keepPartial: !isUserAbort });
 		if (isUserAbort) {
 			setStatus("idle");
 		} else {
@@ -371,7 +399,8 @@ async function processStreamLine(
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
-		onFinish: (wasSuccessful: boolean) => void | Promise<void>;
+		onDatawrapperChartIds: (chartIds: string[]) => void;
+		onFinish: () => void | Promise<void>;
 	},
 ): Promise<boolean> {
 	if (!line.startsWith("data: ")) {
@@ -381,7 +410,7 @@ async function processStreamLine(
 	const jsonStr = line.slice(6).trim();
 
 	if (jsonStr === "[DONE]") {
-		await callbacks.onFinish(true);
+		await callbacks.onFinish();
 		return true;
 	}
 
@@ -431,6 +460,11 @@ async function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "data-datawrapper-chart-ids") {
+			callbacks.onDatawrapperChartIds(event.data);
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -451,7 +485,8 @@ async function parseStream(
 		onWebCitations: (webCitationSources: WebCitationSource[]) => void;
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
-		onFinish: (wasSuccessful: boolean) => void | Promise<void>;
+		onDatawrapperChartIds: (chartIds: string[]) => void;
+		onFinish: () => void | Promise<void>;
 	},
 ) {
 	const reader = body.getReader();
@@ -485,6 +520,6 @@ async function parseStream(
 					"stream was done before reaching the the last streaming line ([DONE])",
 				),
 			);
-		await callbacks.onFinish(false);
+		await callbacks.onFinish();
 	}
 }

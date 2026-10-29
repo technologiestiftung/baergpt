@@ -7,6 +7,10 @@ import { AnchorLinkTargetBlank } from "./anchor-link-target-blank.tsx";
  *
  * Model output is never rendered as raw HTML, so instead of trusting an
  * <iframe> from the model, we build it ourselves from an allowlisted URL.
+ * The chart id must also be in `allowedChartIds` (the ids the backend verified
+ * as published charts from the user's own Datawrapper account) — otherwise the
+ * link could be an unrelated Datawrapper chart surfaced via web search, RAG or
+ * Open Data content and reproduced in the model's text.
  */
 
 const DATAWRAPPER_ORIGIN = "https://datawrapper.dwcdn.net";
@@ -43,20 +47,27 @@ function DatawrapperEmbed({ chartId, src }: { chartId: string; src: string }) {
 	);
 }
 
-/** Markdown link that additionally embeds published Datawrapper charts. */
-export function MarkdownLinkWithDatawrapperEmbed(
-	props: AnchorHTMLAttributes<HTMLAnchorElement>,
+/**
+ * Builds a markdown link renderer that additionally embeds published
+ * Datawrapper charts, restricted to `allowedChartIds`.
+ */
+export function createMarkdownLinkWithDatawrapperEmbed(
+	allowedChartIds: string[],
 ) {
-	const chartId = props.href?.match(DATAWRAPPER_CHART_URL)?.[1];
+	return function MarkdownLinkWithDatawrapperEmbed(
+		props: AnchorHTMLAttributes<HTMLAnchorElement>,
+	) {
+		const chartId = props.href?.match(DATAWRAPPER_CHART_URL)?.[1];
 
-	if (!props.href || !chartId) {
-		return <AnchorLinkTargetBlank {...props} />;
-	}
+		if (!props.href || !chartId || !allowedChartIds.includes(chartId)) {
+			return <AnchorLinkTargetBlank {...props} />;
+		}
 
-	return (
-		<>
-			<DatawrapperEmbed chartId={chartId} src={props.href} />
-			<AnchorLinkTargetBlank {...props} />
-		</>
-	);
+		return (
+			<>
+				<DatawrapperEmbed chartId={chartId} src={props.href} />
+				<AnchorLinkTargetBlank {...props} />
+			</>
+		);
+	};
 }

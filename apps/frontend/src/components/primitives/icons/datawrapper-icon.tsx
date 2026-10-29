@@ -3,11 +3,11 @@ import { Content } from "../../../content.ts";
 export function DatawrapperIcon() {
 	return (
 		<img
-			src="/icons/datawrapper-icon.png"
+			src="/icons/datawrapper-icon.svg"
 			height={16}
 			width={16}
 			alt={Content["chat.contextPill.datawrapper.icon.alt"]}
-			className="size-4 shrink-0"
+			className="size-4 shrink-0 bg-white"
 		/>
 	);
 }

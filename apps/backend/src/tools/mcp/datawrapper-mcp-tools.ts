@@ -1,5 +1,5 @@
 import { createMCPClient, MCPClient } from "@ai-sdk/mcp";
-import { tool, type Tool } from "ai";
+import { asSchema, jsonSchema, tool, type JSONSchema7, type Tool } from "ai";
 import { z } from "zod";
 import { config } from "../../config";
 import { captureError } from "../../monitoring/capture-error";
@@ -27,6 +27,13 @@ const isErrorResult = (result: unknown) =>
 	result !== null &&
 	"isError" in result &&
 	result.isError === true;
+
+export const isDatawrapperToolFailure = (result: unknown): boolean =>
+	isErrorResult(result) ||
+	(typeof result === "object" &&
+		result !== null &&
+		"error" in result &&
+		typeof (result as { error: unknown }).error === "string");
 
 /**
  * After a failed tool call, re-checks the stored key, since it may have been
@@ -117,6 +124,30 @@ async function executeWithApiKey({
 	}
 }
 
+/**
+ * Permanently deletes charts in the user's account. Not offered, so content
+ * from web search, RAG or Open Data can't trick the model into deleting them.
+ */
+const EXCLUDED_TOOL_NAMES = new Set(["delete_visualization"]);
+
+/**
+ * Every Datawrapper MCP tool takes the key as `api_key`. It is removed from the
+ * schema the model sees; executeWithApiKey adds it back on the server.
+ */
+async function withoutApiKeyParam(inputSchema: Tool["inputSchema"]) {
+	const {
+		properties = {},
+		required = [],
+		...schema
+	} = (await asSchema(inputSchema).jsonSchema) as JSONSchema7;
+	const { api_key: _apiKey, ...otherProperties } = properties;
+	return jsonSchema({
+		...schema,
+		properties: otherProperties,
+		required: required.filter((name) => name !== "api_key"),
+	});
+}
+
 export const datawrapperMCPTools = async (
 	userId: string,
 ): Promise<DatawrapperMCPToolsResult | null> => {
@@ -138,6 +169,10 @@ export const datawrapperMCPTools = async (
 		for (const [toolName, mcpTool] of Object.entries(
 			datawrapperHttpClientToolSet,
 		)) {
+			if (EXCLUDED_TOOL_NAMES.has(toolName)) {
+				continue;
+			}
+
 			if (toolName === "create_visualization") {
 				wrappedTools[toolName] = tool({
 					description:
@@ -262,7 +297,17 @@ export const datawrapperMCPTools = async (
 						executeWithApiKey({ userId, mcpTool, params, options }),
 				});
 			} else {
-				wrappedTools[toolName] = mcpTool as Tool;
+				wrappedTools[toolName] = tool({
+					description: mcpTool.description,
+					inputSchema: await withoutApiKeyParam(mcpTool.inputSchema),
+					execute: (params, options) =>
+						executeWithApiKey({
+							userId,
+							mcpTool,
+							params: params as Record<string, unknown>,
+							options,
+						}),
+				});
 			}
 		}
 
@@ -281,3 +326,88 @@ export const datawrapperMCPTools = async (
 		return null;
 	}
 };
+
+const DATAWRAPPER_CHART_URL =
+	/https:\/\/datawrapper\.dwcdn\.net\/([A-Za-z0-9_-]{5})\//g;
+
+const MAX_VERIFIED_CHART_IDS = 10;
+
+const CHART_CHECK_TIMEOUT_MS = 5_000;
+
+async function isOwnPublishedChart(
+	chartId: string,
+	apiKey: string,
+): Promise<boolean> {
+	const response = await fetch(
+		`https://api.datawrapper.de/v3/charts/${chartId}`,
+		{
+			headers: { Authorization: `Bearer ${apiKey}` },
+			signal: AbortSignal.timeout(CHART_CHECK_TIMEOUT_MS),
+		},
+	);
+	if (!response.ok) {
+		return false;
+	}
+	const chart = (await response.json()) as { publicVersion?: number };
+	return (chart.publicVersion ?? 0) > 0;
+}
+
+/**
+ * Chart ids the frontend may embed: charts published in this answer, plus
+ * linked charts the Datawrapper API confirms are published in the user's own
+ * account. Links to anyone else's charts stay plain links.
+ */
+export async function getEmbeddableDatawrapperChartIds({
+	userId,
+	text,
+	toolResults,
+}: {
+	userId: string;
+	text: string;
+	toolResults: { toolName: string; input: unknown; output: unknown }[];
+}): Promise<string[]> {
+	const publishedChartIds = new Set(
+		toolResults
+			.filter(
+				(toolResult) =>
+					toolResult.toolName === "publish_visualization" &&
+					!isDatawrapperToolFailure(toolResult.output),
+			)
+			.map((toolResult) => (toolResult.input as { chart_id?: string }).chart_id)
+			.filter((id): id is string => Boolean(id)),
+	);
+
+	const linkedChartIds = Array.from(
+		new Set(Array.from(text.matchAll(DATAWRAPPER_CHART_URL), ([, id]) => id)),
+	)
+		.filter((id) => !publishedChartIds.has(id))
+		.slice(0, MAX_VERIFIED_CHART_IDS);
+
+	if (linkedChartIds.length === 0) {
+		return Array.from(publishedChartIds);
+	}
+
+	let apiKey: string | null;
+	try {
+		apiKey = await new IntegrationKeysService(
+			serviceRoleDbClient,
+		).getDecryptedKey(userId, "datawrapper");
+	} catch (error) {
+		captureError(error);
+		return Array.from(publishedChartIds);
+	}
+
+	if (!apiKey) {
+		return Array.from(publishedChartIds);
+	}
+
+	const checks = await Promise.allSettled(
+		linkedChartIds.map((id) => isOwnPublishedChart(id, apiKey)),
+	);
+	const ownChartIds = linkedChartIds.filter((_, index) => {
+		const check = checks[index];
+		return check.status === "fulfilled" && check.value;
+	});
+
+	return [...publishedChartIds, ...ownChartIds];
+}

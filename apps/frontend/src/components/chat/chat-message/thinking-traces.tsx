@@ -2,16 +2,17 @@ import { useState, type JSX } from "react";
 import type { ChatMessage, Trace, TraceTool } from "../../../common.ts";
 import Content from "../../../content.ts";
 import { ChevronIcon } from "../../primitives/icons/chevron-icon.tsx";
+import { DatawrapperIcon } from "../../primitives/icons/datawrapper-icon.tsx";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
 import { ParlaIcon } from "../../primitives/icons/parla-icon.tsx";
 import { WebSearchIcon } from "../../primitives/icons/web-search-icon.tsx";
-import { useExtendedThinkingStore } from "../../../store/use-extended-thinking-store.ts";
 
 const toolIcons: Record<TraceTool, () => JSX.Element> = {
 	webSearchTool: () => <WebSearchIcon width={20} height={20} />,
 	ragSearchTool: () => <DocumentIcon variant="lightBlue" />,
 	parlaMCPTools: () => <ParlaIcon />,
+	datawrapperMCPTools: () => <DatawrapperIcon />,
 };
 
 /** A tool call: icon, what was done, and a sentence describing it. */
@@ -76,9 +77,8 @@ function TraceList({
 export function ThinkingTraces({ message }: { message: ChatMessage }) {
 	const { content, traces, running_tool } = message;
 	const [isExpanded, setIsExpanded] = useState(false);
-	const { isExtendedThinkingEnabled } = useExtendedThinkingStore();
 
-	if (!isExtendedThinkingEnabled || !traces) {
+	if (!traces) {
 		return null;
 	}
 
@@ -87,7 +87,9 @@ export function ThinkingTraces({ message }: { message: ChatMessage }) {
 	if (isThinking) {
 		return (
 			<div className="flex flex-col gap-y-3 text-sm leading-5 text-dunkelblau-50">
-				<p>{Content["chat.loadingText"]}</p>
+				<p className="mt-3.5 flex h-[21px] items-center">
+					{Content["chat.loadingText"]}
+				</p>
 				<TraceList traces={traces.traces} runningTool={running_tool} />
 			</div>
 		);
@@ -107,7 +109,7 @@ export function ThinkingTraces({ message }: { message: ChatMessage }) {
 				type="button"
 				onClick={() => setIsExpanded(!isExpanded)}
 				aria-expanded={isExpanded}
-				className="flex w-fit items-center gap-x-1 text-sm leading-5 text-dunkelblau-50"
+				className="mt-3.5 flex h-[21px] items-center w-fit gap-x-1 text-sm leading-5 text-dunkelblau-50"
 			>
 				{summary}
 				<ChevronIcon
