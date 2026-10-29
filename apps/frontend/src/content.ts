@@ -1002,18 +1002,17 @@ export const Content = {
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
 	"chat.llmModel.dropdown.li1.label": "Schnell",
 	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small 4 (schnell)",
-	"chat.llmModel.dropdown.li1.description": "Gut für alltägliche Aufgaben",
+	"chat.llmModel.dropdown.li1.description": "Für kurze Fragen und Antworten",
 	"chat.llmModel.dropdown.li1.ariaLabel": "Mistral Small 4 (schnell) auswählen",
 	"chat.llmModel.dropdown.li2.label": "Präzise",
-	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Large 4 (präzise)",
-	"chat.llmModel.dropdown.li2.description":
-		"Leistungsstark für komplexe Aufgaben",
-	"chat.llmModel.dropdown.li2.ariaLabel": "Mistral Large 4 (präzise) auswählen",
+	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Large 4 (ausgewogen)",
+	"chat.llmModel.dropdown.li2.description": "Für Texte und Zusammenfassungen",
+	"chat.llmModel.dropdown.li2.ariaLabel":
+		"Mistral Large 4 (ausgewogen) auswählen",
 	"chat.llmModel.dropdown.li3.label": "GLM 5.3",
-	"chat.llmModel.dropdown.li3.labelExtended": "GLM 5.3",
-	"chat.llmModel.dropdown.li3.description":
-		"Leistungsstark für komplexe Aufgaben",
-	"chat.llmModel.dropdown.li3.ariaLabel": "GLM 5.3 auswählen",
+	"chat.llmModel.dropdown.li3.labelExtended": "GLM 5.3 (präzise)",
+	"chat.llmModel.dropdown.li3.description": "Für komplexe Analysen",
+	"chat.llmModel.dropdown.li3.ariaLabel": "GLM 5.3 (präzise) auswählen",
 	"chat.llmModel.dropdown.li4.label": "Länger nachdenken",
 	"chat.llmModel.dropdown.li4.description":
 		"BärGPT plant komplexe Antworten in mehreren Schritten, bevor es antwortet. ",
