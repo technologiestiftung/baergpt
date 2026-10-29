@@ -263,6 +263,7 @@ test.describe("User Registration (uses different user to prevent side-effects on
 		await expect(
 			page1.getByText(
 				"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
+				{ exact: true },
 			),
 		).toBeVisible();
 		await expect(page1).toHaveURL("/register/");
