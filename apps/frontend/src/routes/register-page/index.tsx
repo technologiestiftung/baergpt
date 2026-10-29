@@ -19,8 +19,14 @@ export function RegisterPage() {
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		const firstName = event.currentTarget.firstName.value.trim();
-		const lastName = event.currentTarget.lastName.value.trim();
+		const form = event.currentTarget;
+		if (!form.checkValidity()) {
+			form.querySelector<HTMLElement>(":invalid")?.focus();
+			return;
+		}
+
+		const firstName = form.firstName.value.trim();
+		const lastName = form.lastName.value.trim();
 
 		if (!firstName || !lastName) {
 			return;
@@ -61,7 +67,11 @@ export function RegisterPage() {
 						</p>
 					</div>
 
-					<form className="flex flex-col gap-10" onSubmit={handleSubmit}>
+					<form
+						className="flex flex-col gap-10"
+						onSubmit={handleSubmit}
+						noValidate
+					>
 						<div className="flex flex-col gap-6">
 							<div className="flex flex-col gap-1.5">
 								<label
