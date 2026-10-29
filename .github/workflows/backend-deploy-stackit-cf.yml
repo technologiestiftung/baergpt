@@ -1,13 +1,7 @@
 name: Backend deploy to STACKIT Cloud Foundry
 
 on:
-  # Post-merge only: a push to staging/main only happens once a PR is actually
-  # merged (i.e. past review + branch protection), unlike a pull_request-triggered
-  # image build, which fires for any open PR before it's reviewed or merged.
-  # Gating the deployment on push (rather than on the PR build's workflow_run) means
-  # an unreviewed/unmerged PR can never get its image auto-deployed.
-  push:
-    branches: [staging, main]
+  # Started by hand only: the backend deploys to SKE (backend-deploy-stackit-ske.yml).
   workflow_dispatch:
 
 permissions:
