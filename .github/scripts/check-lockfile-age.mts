@@ -4,7 +4,8 @@
  * resolves versions, not during `npm ci`, so a lockfile changed outside npm
  * (or by an npm that ignores .npmrc) would otherwise install it unchecked.
  *
- * Only versions that are not in the base lockfile are checked. Added entries
+ * Only versions that are not in the base lockfile are checked, including
+ * entries without `resolved`, which npm fetches from the registry. Added entries
  * resolved from anywhere but the registry (git, other hosts) fail the check,
  * since their publish time can't be looked up.
  *
@@ -18,7 +19,13 @@ const CONCURRENCY = 8;
 type Lockfile = {
 	packages: Record<
 		string,
-		{ name?: string; version?: string; resolved?: string; link?: boolean }
+		{
+			name?: string;
+			version?: string;
+			resolved?: string;
+			link?: boolean;
+			inBundle?: boolean;
+		}
 	>;
 };
 
@@ -36,16 +43,17 @@ function lockedVersions(lockfile: Lockfile) {
 	const versions = new Set<string>();
 	const unchecked = new Set<string>();
 	for (const [path, entry] of Object.entries(lockfile.packages)) {
-		// Workspaces are links or relative paths without a URL scheme.
-		if (
-			!entry.resolved ||
-			entry.link ||
-			!/^[a-z][a-z0-9+.-]*:/i.test(entry.resolved)
-		) {
+		// Workspaces and the root live outside node_modules, workspace links are
+		// links, and bundled deps ship inside their parent's tarball.
+		if (!/(^|\/)node_modules\//.test(path) || entry.link || entry.inBundle) {
 			continue;
 		}
-		if (!entry.resolved.startsWith(REGISTRY) || !entry.version) {
-			unchecked.add(`${path} (${entry.resolved})`);
+		// Entries without `resolved` are fetched from the registry by name and version.
+		if (
+			(entry.resolved && !entry.resolved.startsWith(REGISTRY)) ||
+			!entry.version
+		) {
+			unchecked.add(`${path} (${entry.resolved ?? "no version"})`);
 			continue;
 		}
 		// Aliased packages carry their real name in `name`; otherwise it's the path's tail.
