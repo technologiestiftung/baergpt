@@ -120,6 +120,8 @@ export const Content = {
 	"userEditModal.form.firstNamePlaceholder": "Vorname eingeben",
 	"userEditModal.form.lastName": "Nachname",
 	"userEditModal.form.lastNamePlaceholder": "Nachname eingeben",
+	"userEditModal.form.registrationPendingHint":
+		"Name und Titel trägt die Person bei der Registrierung selbst ein.",
 	"userEditModal.form.email": "E-Mail-Adresse",
 	"userEditModal.form.emailPlaceholder": "E-Mail-Adresse eingeben",
 	"userEditModal.form.isAdmin": "Admin",

@@ -706,6 +706,7 @@ export type Database = {
 					first_name: string;
 					invited_at: string;
 					is_admin: boolean;
+					is_registration_pending: boolean;
 					last_login_at: string;
 					last_name: string;
 					num_documents: number;
@@ -744,6 +745,10 @@ export type Database = {
 			};
 			is_application_admin: { Args: never; Returns: boolean };
 			is_current_user_banned_or_deleted: { Args: never; Returns: boolean };
+			is_registration_completed: {
+				Args: { user_meta_data: Json };
+				Returns: boolean;
+			};
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];

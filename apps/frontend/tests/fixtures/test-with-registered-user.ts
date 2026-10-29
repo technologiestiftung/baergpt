@@ -217,10 +217,10 @@ export async function confirmOtp({
 	await page1.goto(confirmUrl);
 
 	await expect(
-		page1.getByRole("heading", { name: "Fast geschafft!" }),
+		page1.getByRole("heading", { name: "Einmalcode eingeben" }),
 	).toBeVisible();
 
-	await page1.getByRole("textbox", { name: "Sicherheitscode" }).fill(otpCode);
+	await page1.getByRole("textbox", { name: "Einmalcode" }).fill(otpCode);
 	await page1.getByRole("button", { name: "Weiter" }).click();
 
 	return page1;

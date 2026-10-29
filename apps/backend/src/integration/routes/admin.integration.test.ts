@@ -39,6 +39,7 @@ describe("/admin/", () => {
 				await serviceRoleDbClient.auth.admin.createUser({
 					email: user.email,
 					email_confirm: true,
+					user_metadata: { first_name: "Test", last_name: "User" },
 				});
 
 			expect(signupError).toBeNull();
@@ -169,6 +170,62 @@ describe("/admin/", () => {
 
 		expect(revertResponse.status).toBe(200);
 		expect(revertResponseBody.message).toBe("Profile updated successfully");
+	});
+
+	it("PUT /admin/users/:userId/profile should only allow changing the email of users who have not completed the registration", async () => {
+		const { data, error: createUserError } =
+			await serviceRoleDbClient.auth.admin.createUser({
+				email: "admin-test-suite-pending@ts.berlin",
+				email_confirm: true,
+			});
+		expect(createUserError).toBeNull();
+
+		const givenPendingUserId = data.user.id;
+
+		const requestProfileUpdate = (body: Record<string, string>) =>
+			app.request(`/admin/users/${givenPendingUserId}/profile`, {
+				method: "PUT",
+				headers: new Headers({
+					authorization: `Bearer ${adminSession?.access_token}`,
+				}),
+				body: JSON.stringify(body),
+			});
+
+		try {
+			const nameResponse = await requestProfileUpdate({
+				firstName: "Pending",
+				lastName: "User",
+			});
+			expect(nameResponse.status).toBe(409);
+
+			const { data: userData } =
+				await serviceRoleDbClient.auth.admin.getUserById(givenPendingUserId);
+			expect(userData.user?.user_metadata.first_name).toBeUndefined();
+
+			const emailResponse = await requestProfileUpdate({
+				email: "admin-test-suite-pending-updated@ts.berlin",
+				academic_title: "",
+				personal_title: "",
+			});
+			expect(emailResponse.status).toBe(200);
+		} finally {
+			await serviceRoleDbClient.auth.admin.deleteUser(givenPendingUserId);
+		}
+	});
+
+	it("PUT /admin/users/:userId/profile should reject empty names and return 400", async () => {
+		const response = await app.request(
+			`/admin/users/${userIds[givenUserEmail]}/profile`,
+			{
+				method: "PUT",
+				headers: new Headers({
+					authorization: `Bearer ${adminSession?.access_token}`,
+				}),
+				body: JSON.stringify({ lastName: "  ", email: givenUserEmail }),
+			},
+		);
+
+		expect(response.status).toBe(400);
 	});
 
 	it("PUT /admin/users/:userId/profile should return a 403 if a non admin user tries to access it", async () => {
