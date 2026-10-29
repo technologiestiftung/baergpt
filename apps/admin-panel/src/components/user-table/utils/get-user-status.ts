@@ -5,12 +5,12 @@ export function getUserStatus(user: User): User["status"] {
 		return "banned";
 	}
 
-	if (user.is_registration_pending) {
-		return "pending";
-	}
-
 	if (user.is_admin) {
 		return "admin";
+	}
+
+	if (user.is_registration_pending) {
+		return "pending";
 	}
 
 	return "active";

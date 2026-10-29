@@ -1163,7 +1163,7 @@ export const Content = {
 		"Bitte geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen Einmalcode per E-Mail.",
 	"loginPage.emailLabel": "E-Mail-Adresse",
 	"loginPage.otpHint":
-		"Nur dienstliche E-Mailadressen der unmittelbaren Verwaltung sind erlaubt",
+		"Nur dienstliche E-Mail-Adressen der unmittelbaren Verwaltung sind erlaubt",
 	"loginPage.submitButton": "Einmalcode erhalten",
 	"loginPage.error.rateLimited":
 		"Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.",

@@ -85,8 +85,13 @@ export const columns: ColumnDef<User>[] = [
 
 			// Get the user's status
 			const userStatus = row.original.status;
+			const filterStatus = filterValue.toLowerCase();
 
-			return userStatus === filterValue.toLowerCase();
+			if (filterStatus === "pending" && userStatus === "admin") {
+				return Boolean(row.original.is_registration_pending);
+			}
+
+			return userStatus === filterStatus;
 		},
 	},
 	{
