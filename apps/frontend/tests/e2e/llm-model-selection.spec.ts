@@ -6,7 +6,7 @@ import { sendAndWaitForLLMResponse } from "../fixtures/mock-llm.ts";
 const STORAGE_KEY = "llm-model";
 
 const fastModelLabel = "Schnell";
-const preciseModelLabel = "Präzise";
+const preciseModelLabel = "Ausgewogen";
 const fastModelOptionName = "Mistral Small 4 (schnell) auswählen";
 const preciseModelOptionName = "Mistral Large 4 (ausgewogen) auswählen";
 
