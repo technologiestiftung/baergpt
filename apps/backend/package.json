@@ -32,8 +32,8 @@
 		"auth:rotate-passwords": "tsx supabase/scripts/rotate-user-passwords.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/mcp": "2.0.81",
-		"@ai-sdk/mistral": "4.0.69",
+		"@ai-sdk/mcp": "2.0.85",
+		"@ai-sdk/mistral": "4.0.73",
 		"@dqbd/tiktoken": "1.0.22",
 		"@hono/node-server": "2.0.12",
 		"@langfuse/client": "5.10.0",
@@ -49,7 +49,7 @@
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/node": "10.68.0",
 		"@supabase/supabase-js": "2.117.3",
-		"ai": "7.0.148",
+		"ai": "7.0.154",
 		"dotenv": "16.6.1",
 		"hono": "4.13.11",
 		"ioredis": "5.11.1",
