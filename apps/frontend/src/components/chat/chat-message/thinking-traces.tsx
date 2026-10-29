@@ -1,7 +1,6 @@
 import { useState, type JSX } from "react";
 import type { ChatMessage, Trace, TraceTool } from "../../../common.ts";
 import Content from "../../../content.ts";
-import { ChevronIcon } from "../../primitives/icons/chevron-icon.tsx";
 import { DatawrapperIcon } from "../../primitives/icons/datawrapper-icon.tsx";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
@@ -112,9 +111,12 @@ export function ThinkingTraces({ message }: { message: ChatMessage }) {
 				className="mt-3.5 flex h-[21px] items-center w-fit gap-x-1 text-sm leading-5 text-dunkelblau-50"
 			>
 				{summary}
-				<ChevronIcon
-					color="dunkelblau-50"
-					direction={isExpanded ? "up" : "down"}
+				<img
+					src="/icons/chevron-down-small-light-icon.svg"
+					alt=""
+					width={16}
+					height={16}
+					className={isExpanded ? undefined : "-rotate-90"}
 				/>
 			</button>
 			{isExpanded && <TraceList traces={traces.traces} />}
