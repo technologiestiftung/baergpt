@@ -218,6 +218,19 @@ export async function getCompletion(
 			traces.push({ type: "text", text: delta });
 		};
 
+		/**
+		 * The toggle controls how much the model reasons, not whether a trace is
+		 * shown: GLM 5.3 always reasons (lowest effort "low"), while Mistral
+		 * models send no reasoning with "none". So a trace is kept whenever
+		 * thinking is enabled or the response actually carries reasoning.
+		 */
+		const getTracesToKeep = () => {
+			const hasReasoning = traces.some(({ type }) => type === "text");
+			return traces.length && (isExtendedThinkingEnabled || hasReasoning)
+				? { traces, durationSeconds: thinkingDurationSeconds }
+				: null;
+		};
+
 		const writeMessage = () =>
 			updateMessage({
 				chat: currentChat,
@@ -232,9 +245,7 @@ export async function getCompletion(
 				datawrapper_chart_ids: datawrapperChartIds.length
 					? datawrapperChartIds
 					: null,
-				traces: traces.length
-					? { traces, durationSeconds: thinkingDurationSeconds }
-					: null,
+				traces: getTracesToKeep(),
 				running_tool: runningTool,
 			});
 
@@ -269,9 +280,7 @@ export async function getCompletion(
 						? datawrapperChartIds
 						: null,
 					external_tool_context: isExternalToolContext,
-					traces: traces.length
-						? { traces, durationSeconds: thinkingDurationSeconds }
-						: null,
+					traces: getTracesToKeep(),
 				});
 			} catch (error) {
 				removePendingMessageFromMemory(currentChat, localMessageId);
@@ -298,17 +307,13 @@ export async function getCompletion(
 				writeMessage();
 			},
 			onReasoningDelta: (delta: string) => {
-				if (!isExtendedThinkingEnabled) {
-					return;
-				}
-
 				thinkingStartedAt ??= Date.now();
 				appendTraceText(delta);
 				writeMessage();
 			},
 			onToolStart: (toolName: string, toolCallId: string) => {
 				const tool = traceToolByStreamName[toolName];
-				if (!isExtendedThinkingEnabled || !tool) {
+				if (!tool) {
 					return;
 				}
 

@@ -26,7 +26,7 @@ export const enc = get_encoding("o200k_base");
 export const maxRetries = 2;
 export const retryDelay = 1000;
 
-export const EXPERIMENTAL_MAX_TOOL_CALL_STEPS = 3;
+export const EXPERIMENTAL_MAX_TOOL_CALL_STEPS = 10;
 
 /**
  * Reasoning tokens are billed against the same output budget as the answer, so

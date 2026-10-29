@@ -355,7 +355,8 @@ export class GenerationService {
 								? MAX_OUTPUT_TOKENS_EXTENDED_THINKING
 								: MAX_OUTPUT_TOKENS,
 							temperature: LLM_PARAMETERS.temperature,
-							// Info: GLM 5.3 ignores "none" and has reasoning always turned on.
+							// Info: GLM 5.3 rejects "none" and always reasons; @ai-sdk/mistral
+							// sends "low" instead for these models.
 							reasoning: extendedThinking ? "high" : "none",
 							tools,
 							toolChoice,
@@ -419,6 +420,7 @@ export class GenerationService {
 											messages: compiledDocumentCitationExtractionPrompts,
 											allowSystemInMessages: true,
 											temperature: LLM_PARAMETERS.temperature,
+											reasoning: "none",
 											output: Output.object({
 												schema: citationAnswerSchema,
 											}),
@@ -483,6 +485,7 @@ export class GenerationService {
 												messages: compiledWebCitationExtractionPrompts,
 												allowSystemInMessages: true,
 												temperature: LLM_PARAMETERS.temperature,
+												reasoning: "none",
 												output: Output.object({
 													schema: webCitationAnswerSchema,
 												}),
@@ -548,6 +551,7 @@ export class GenerationService {
 												messages: compiledParlaCitationPrompts,
 												allowSystemInMessages: true,
 												temperature: LLM_PARAMETERS.temperature,
+												reasoning: "none",
 												output: Output.object({
 													schema: parlaCitationAnswerSchema,
 												}),
@@ -911,6 +915,7 @@ export class GenerationService {
 					messages: compiledOpenDataCitationExtractionPrompts,
 					allowSystemInMessages: true,
 					temperature: LLM_PARAMETERS.temperature,
+					reasoning: "none",
 					output: Output.object({ schema: openDataCitationAnswerSchema }),
 					runtimeContext: {
 						sessionId: sessionId ? sessionId : "unknown",
