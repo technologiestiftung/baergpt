@@ -48,7 +48,9 @@ runs:
           fi
         }
 
+        # Also wait for `supabase start` to finish, so a late retry can't reset the stack under later steps.
         until \
+          [ "$(cat /tmp/supabase-start.exit 2>/dev/null || true)" = "0" ] && \
           HTTP_STATUS=$(curl -s --connect-timeout 5 --max-time 10 -o /tmp/supabase-health.body -w "%{http_code}" "${HEADER_ARG[@]}" http://localhost:54321/rest/v1/application_admins) && \
           [ "$HTTP_STATUS" = "200" ] && \
           pg_isready -U postgres -h localhost -p 54322 >/tmp/pg_isready.out 2>&1; do
