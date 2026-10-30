@@ -9,9 +9,14 @@ import { GenerationService } from "../../src/services/generation-service";
 import { EmbeddingService } from "../../src/services/embedding-service";
 import type { Document } from "../../src/types/common";
 import { config } from "../../src/config";
+import { getHash } from "../../src/utils";
+import {
+	defaultDocumentsBucket as bucketName,
+	defaultDocumentSourceType as sourceType,
+	type ExistingDocument,
+	replaceDefaultDocument,
+} from "./replace-default-documents";
 
-const sourceType = "default_document";
-const bucketName = "public_documents";
 const defaultDocumentsDir = resolve(process.cwd(), "./src/default_documents");
 
 function assertTargetAllowed(): void {
@@ -67,26 +72,23 @@ async function getPdfFiles(): Promise<string[]> {
 	}
 }
 
-async function checkExistingDocument(
+async function getExistingDocuments(
 	fileName: string,
 	accessGroupId: string,
-): Promise<boolean> {
+): Promise<ExistingDocument[]> {
 	const { data, error } = await serviceRoleDbClient
 		.from("documents")
-		.select("id")
+		.select("id, source_url, file_checksum, processing_finished_at")
 		.eq("file_name", fileName)
 		.eq("source_type", sourceType)
-		.eq("access_group_id", accessGroupId)
-		.not("processing_finished_at", "is", null)
-		.limit(1);
+		.eq("access_group_id", accessGroupId);
 
 	if (error) {
 		console.error("Error checking for existing document:", error);
 		process.exit(1);
 	}
 
-	// Return true if a fully processed document exists
-	return (data?.length ?? 0) > 0;
+	return data ?? [];
 }
 
 async function getDefaultAccessGroupId(): Promise<string> {
@@ -106,14 +108,13 @@ async function getDefaultAccessGroupId(): Promise<string> {
 
 async function processDocument(
 	fileName: string,
+	fileBytes: Uint8Array,
 	accessGroupId: string,
-): Promise<void> {
+): Promise<number> {
 	console.log(`Processing document: ${fileName}...`);
 
-	// Read and upload file
-	const filePath = resolve(defaultDocumentsDir, fileName);
-	const fileBuffer = readFileSync(filePath);
-	const file = new File([new Uint8Array(fileBuffer)], fileName, {
+	// Upload file
+	const file = new File([fileBytes], fileName, {
 		type: "application/pdf",
 	});
 
@@ -144,6 +145,7 @@ async function processDocument(
 		created_at: new Date().toISOString(),
 		access_group_id: accessGroupId,
 	};
+	let documentId: number;
 	try {
 		const extractionResult = await dbService.extractDocument(document, file);
 
@@ -170,8 +172,9 @@ async function processDocument(
 			),
 		]);
 
-		await dbService.logProcessedDocument(
-			documentForProcessing,
+		// Stays hidden until replaceDefaultDocument swaps it in
+		documentId = await dbService.logProcessedDocument(
+			{ ...documentForProcessing, processing_finished_at: null },
 			summaryData,
 			embeddings,
 		);
@@ -192,6 +195,8 @@ async function processDocument(
 	console.log(
 		`Default document ${fileName} uploaded and processed successfully!`,
 	);
+
+	return documentId;
 }
 
 async function uploadDefaultDocument() {
@@ -218,17 +223,52 @@ async function uploadDefaultDocument() {
 		for (const fileName of pdfFiles) {
 			console.log(`\n=== Processing ${fileName} ===`);
 
-			// Check if already processed
-			const isProcessed = await checkExistingDocument(fileName, accessGroupId);
-			if (isProcessed) {
-				console.log(
-					`Default document ${fileName} already exists and is processed. Skipping.`,
+			const fileBytes = new Uint8Array(
+				readFileSync(resolve(defaultDocumentsDir, fileName)),
+			);
+			const checksum = getHash(fileBytes);
+
+			const existingDocuments = await getExistingDocuments(
+				fileName,
+				accessGroupId,
+			);
+			// Unfinished rows are leftovers from an interrupted run and are
+			// replaced like previous versions
+			const currentDocument = existingDocuments.find(
+				(doc) =>
+					doc.file_checksum === checksum && doc.processing_finished_at !== null,
+			);
+
+			if (currentDocument) {
+				const previousDocuments = existingDocuments.filter(
+					(doc) => doc.id !== currentDocument.id,
 				);
+				if (previousDocuments.length === 0) {
+					console.log(
+						`Default document ${fileName} already exists and is processed. Skipping.`,
+					);
+					continue;
+				}
+
+				console.log(
+					`Default document ${fileName} is up to date, but an earlier replacement was interrupted. Removing the previous version(s).`,
+				);
+				await replaceDefaultDocument(currentDocument.id, previousDocuments);
 				continue;
 			}
 
-			// Process the document
-			await processDocument(fileName, accessGroupId);
+			if (existingDocuments.length > 0) {
+				console.log(
+					`Default document ${fileName} has changed. Replacing the previous version.`,
+				);
+			}
+
+			const documentId = await processDocument(
+				fileName,
+				fileBytes,
+				accessGroupId,
+			);
+			await replaceDefaultDocument(documentId, existingDocuments);
 		}
 
 		console.log("\n=== All default documents processed successfully! ===");

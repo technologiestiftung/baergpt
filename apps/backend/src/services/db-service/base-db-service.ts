@@ -153,6 +153,8 @@ export abstract class BaseContentDbService {
 
 	/**
 	 * Creates a complete document record with all metadata, summary, and embeddings in the database.
+	 * Pass `processing_finished_at: null` to keep the document hidden from users
+	 * until the caller sets it.
 	 */
 	async logProcessedDocument(
 		document: Document,
@@ -171,7 +173,10 @@ export abstract class BaseContentDbService {
 				file_checksum: document.file_checksum,
 				file_size: document.file_size,
 				num_pages: document.num_pages,
-				processing_finished_at: new Date().toISOString(),
+				processing_finished_at:
+					document.processing_finished_at === null
+						? null
+						: new Date().toISOString(),
 				folder_id: document.folder_id || null,
 				source_url: document.source_url,
 				source_type: document.source_type,

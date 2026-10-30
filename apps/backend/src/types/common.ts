@@ -11,7 +11,7 @@ export type Document = {
 	file_size?: number;
 	num_pages?: number;
 	folder_id?: number;
-	processing_finished_at?: string;
+	processing_finished_at?: string | null;
 	created_at: string;
 	uploaded_by_user_id?: string;
 };
