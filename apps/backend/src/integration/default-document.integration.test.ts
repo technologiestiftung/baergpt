@@ -378,36 +378,6 @@ describe("Default Document Replacement Integration Tests", () => {
 		}
 	};
 
-	const createChatMessage = async (
-		userId: string,
-		allowedDocumentIds: number[],
-	) => {
-		const { data: chat, error: chatError } = await serviceRoleDbClient
-			.from("chats")
-			.insert({ user_id: userId, name: "Handbuch chat" })
-			.select("id")
-			.single();
-		if (chatError) {
-			throw new Error(`Failed to create chat: ${chatError.message}`);
-		}
-
-		const { data: message, error: messageError } = await serviceRoleDbClient
-			.from("chat_messages")
-			.insert({
-				chat_id: chat.id,
-				role: "user",
-				type: "text",
-				content: "Was steht im Handbuch?",
-				allowed_document_ids: allowedDocumentIds,
-			})
-			.select("id")
-			.single();
-		if (messageError) {
-			throw new Error(`Failed to create chat message: ${messageError.message}`);
-		}
-		return message.id;
-	};
-
 	beforeAll(async () => {
 		const { data: accessGroup, error } = await serviceRoleDbClient
 			.from("access_groups")
@@ -450,7 +420,7 @@ describe("Default Document Replacement Integration Tests", () => {
 		}
 	});
 
-	it("should swap in the new version and carry over hidden state and chat references", async () => {
+	it("should swap in the new version and keep it hidden for users who hid a previous version", async () => {
 		const hidingUserId = await createUser();
 		const otherUserId = await createUser();
 
@@ -467,8 +437,6 @@ describe("Default Document Replacement Integration Tests", () => {
 		await hideDocument(hidingUserId, previousIds[0]);
 		await hideDocument(hidingUserId, previousIds[1]);
 
-		const chatMessageId = await createChatMessage(otherUserId, previousIds);
-
 		await replaceDefaultDocument(newVersion.id, previousVersions);
 
 		const { data: hiddenRows } = await serviceRoleDbClient
@@ -478,13 +446,6 @@ describe("Default Document Replacement Integration Tests", () => {
 		expect(hiddenRows).toStrictEqual([
 			{ user_id: hidingUserId, document_id: newVersion.id },
 		]);
-
-		const { data: chatMessage } = await serviceRoleDbClient
-			.from("chat_messages")
-			.select("allowed_document_ids")
-			.eq("id", chatMessageId)
-			.single();
-		expect(chatMessage?.allowed_document_ids).toStrictEqual([newVersion.id]);
 
 		const { data: remainingDocuments } = await serviceRoleDbClient
 			.from("documents")

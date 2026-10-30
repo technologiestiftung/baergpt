@@ -15,17 +15,6 @@ BEGIN
     WHERE h.document_id = ANY (p_old_document_ids)
     ON CONFLICT DO NOTHING;
 
-    -- Otherwise the delete trigger removes the reference from these messages
-    UPDATE public.chat_messages cm
-    SET allowed_document_ids = pg_catalog.array_append(
-        ARRAY(
-            SELECT d FROM pg_catalog.unnest(cm.allowed_document_ids) AS d
-            WHERE d <> ALL (p_old_document_ids) AND d <> p_new_document_id
-        ),
-        p_new_document_id
-    )
-    WHERE cm.allowed_document_ids && p_old_document_ids;
-
     DELETE FROM public.documents
     WHERE id = ANY (p_old_document_ids) AND source_type = 'default_document';
 
