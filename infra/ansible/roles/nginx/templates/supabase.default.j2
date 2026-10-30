@@ -68,6 +68,14 @@ server {
         return 404;
     }
 
+    # Written by email-template-sync. CI compares it with the repository to confirm a template change is live.
+    location = /email-templates.json {
+        alias {{ supabase_dir }}/volumes/email-templates/email-templates.json;
+        default_type application/json;
+        # The sync user owns this folder; a symlink planted there must not expose other files.
+        disable_symlinks on;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:8000;
 

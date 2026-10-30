@@ -198,10 +198,23 @@ During a playbook run, the `.env` is fetched from 1Password, written temporarily
 run. When bumping images to a newer upstream release, copy that release's versions too.
 
 Email templates come from `apps/backend/supabase/templates/`; the `email-templates` container serves them to GoTrue.
-They reach the hosts with every deploy. After a template change, deploy them on their own (this restarts auth):
+Every five minutes `email-template-sync.timer` on each host pulls them from GitHub: production from `main`, staging
+from `staging`. GoTrue picks a change up within `GOTRUE_MAILER_TEMPLATE_MAX_AGE` (5 minutes), so a merged template is
+live after about ten minutes. The `Email Templates` workflow waits for it and fails if the host doesn't serve the
+merged templates within 12 minutes. It reads `https://<supabase domain>/email-templates.json` and needs the
+`SUPABASE_URL` variable in the `Staging` and `Production` GitHub environments.
+
+The sync refuses templates whose URLs point anywhere but `https://baergpt.berlin` or `https://www.baergpt.berlin`, and
+template expressions other than `.ConfirmationURL`, `.SiteURL`, `.Token`, `.Email`, `.NewEmail`, `.Data.first_name`
+and `.Data.last_name`. The previous templates then stay. Mail clients load images from template URLs on their own, so
+one link elsewhere could leak login codes. The same check runs on pull requests. To allow another host or expression,
+change `email_template_sync.py` in the supabase role.
+
+To sync at once or look at a failure:
 
 ```bash
-op run --env-file .op.env.supabase-staging -- ansible-playbook -i inventory/supabase-staging.yml supabase.yml --tags email-templates
+sudo systemctl start email-template-sync.service
+journalctl -u email-template-sync
 ```
 
 ### Upgrading the Supabase stack

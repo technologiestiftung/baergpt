@@ -141,7 +141,8 @@ services:
       GOTRUE_MAILER_TEMPLATES_RECOVERY: http://email-templates/recovery.html
       GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: http://email-templates/magic_link.html
       GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: http://email-templates/email_change.html
-      GOTRUE_MAILER_TEMPLATE_MAX_AGE: ${GOTRUE_MAILER_TEMPLATE_MAX_AGE:-30m}
+      # GoTrue re-reads each template after this long, so a synced change is live within it.
+      GOTRUE_MAILER_TEMPLATE_MAX_AGE: 5m
       # Fetches the templates at startup instead of on the first send. Without them GoTrue sends
       # its built-in English template, which has no OTP code.
       GOTRUE_MAILER_TEMPLATE_RELOADING_ENABLED: "true"
