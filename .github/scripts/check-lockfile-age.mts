@@ -25,6 +25,7 @@ type Lockfile = {
 			resolved?: string;
 			link?: boolean;
 			inBundle?: boolean;
+			bundleDependencies?: string[] | boolean;
 		}
 	>;
 };
@@ -39,13 +40,29 @@ function readMinReleaseAgeDays(): number {
 	return Number(match[1]);
 }
 
+// npm ci fetches an `inBundle` entry from the registry anyway unless its parent
+// actually bundles it, so the marker alone must not exempt it.
+function isBundledByParent(lockfile: Lockfile, path: string) {
+	const at = path.lastIndexOf("node_modules/");
+	const parentPath = path.slice(0, Math.max(at - 1, 0));
+	const bundled = lockfile.packages[parentPath]?.bundleDependencies;
+	return (
+		bundled === true ||
+		(Array.isArray(bundled) && bundled.includes(path.slice(at + 13)))
+	);
+}
+
 function lockedVersions(lockfile: Lockfile) {
 	const versions = new Set<string>();
 	const unchecked = new Set<string>();
 	for (const [path, entry] of Object.entries(lockfile.packages)) {
 		// Workspaces and the root live outside node_modules, workspace links are
 		// links, and bundled deps ship inside their parent's tarball.
-		if (!/(^|\/)node_modules\//.test(path) || entry.link || entry.inBundle) {
+		if (
+			!/(^|\/)node_modules\//.test(path) ||
+			entry.link ||
+			(entry.inBundle && isBundledByParent(lockfile, path))
+		) {
 			continue;
 		}
 		// Entries without `resolved` are fetched from the registry by name and version.
