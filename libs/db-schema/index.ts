@@ -821,6 +821,10 @@ export type Database = {
 				Args: { p_email: string };
 				Returns: undefined;
 			};
+			replace_default_document: {
+				Args: { p_new_document_id: number; p_old_document_ids: number[] };
+				Returns: undefined;
+			};
 			search_chat_messages: {
 				Args: { result_limit?: number; search_pattern: string };
 				Returns: {
