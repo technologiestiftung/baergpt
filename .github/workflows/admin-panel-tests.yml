@@ -40,22 +40,16 @@ jobs:
         uses: ./.github/actions/setup
         with:
           start-supabase: "true"
-          install-1password: "true"
 
-      - name: Fetch admin-panel .env from 1Password ⬇️
-        run: |
-          cd apps/admin-panel
-          echo "Fetching admin panel .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_ADMIN_PANEL_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+      - name: Write admin-panel .env from GitHub variable 📝
+        run: printf '%s\n' "$ADMIN_PANEL_TEST_ENV" > apps/admin-panel/.env
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          ADMIN_PANEL_TEST_ENV: ${{ vars.ADMIN_PANEL_TEST_ENV }}
 
-      - name: Fetch backend .env from 1Password ⬇️
-        run: |
-          echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > "$RUNNER_TEMP/backend.env"
+      - name: Write backend .env from GitHub variable 📝
+        run: printf '%s\n' "$BACKEND_TEST_ENV" > "$RUNNER_TEMP/backend.env"
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          BACKEND_TEST_ENV: ${{ vars.BACKEND_TEST_ENV }}
 
       - name: Install Playwright Browser 🧭
         run: |
