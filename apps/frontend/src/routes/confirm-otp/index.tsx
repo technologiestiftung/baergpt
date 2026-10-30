@@ -134,7 +134,8 @@ export function ConfirmOtpPage() {
 						<p className="text-lg leading-7 md:text-xl md:leading-8">
 							{email ? (
 								<>
-									{Content["confirmOtp.description.sent"]}{" "}
+									{Content["confirmOtp.description.sent"]}
+									<br />
 									<strong className="break-all">{email}</strong>{" "}
 									{Content["confirmOtp.description.sentSuffix"]}
 								</>
