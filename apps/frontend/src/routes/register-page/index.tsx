@@ -6,12 +6,10 @@ import { AuthPrimaryButton } from "../../components/primitives/buttons/auth-prim
 import { TextInput } from "../../components/primitives/text-inputs/text-input.tsx";
 import { AuthLayout } from "../../layouts/auth-layout.tsx";
 import { useUserStore } from "../../store/user-store.ts";
-import { useAuthStore } from "../../store/auth-store.ts";
 import * as Sentry from "@sentry/react";
 
 export function RegisterPage() {
 	const { completeRegistration } = useUserStore();
-	const { logout } = useAuthStore();
 	const navigate = useNavigate();
 	const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,17 +131,6 @@ export function RegisterPage() {
 							{Content["registerPage.submitButton"]}
 						</AuthPrimaryButton>
 					</form>
-
-					<p className="text-lg leading-7 text-center">
-						{Content["registerPage.wrongAccount.question"]}{" "}
-						<button
-							type="button"
-							onClick={logout}
-							className="font-bold underline hover:no-underline focus-visible:outline-default rounded-3px"
-						>
-							{Content["registerPage.wrongAccount.logoutButton"]}
-						</button>
-					</p>
 				</div>
 			</div>
 		</AuthLayout>

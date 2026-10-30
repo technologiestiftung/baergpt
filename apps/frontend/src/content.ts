@@ -1293,8 +1293,6 @@ export const Content = {
 	"registerPage.privacyText.p2": "und",
 	"registerPage.termsOfUse.label": "Nutzungsbedingungen.",
 	"registerPage.submitButton": "Konto eröffnen",
-	"registerPage.wrongAccount.question": "Falsche E-Mail-Adresse?",
-	"registerPage.wrongAccount.logoutButton": "Abmelden",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
 	"unconfirmedEmail.h2": "Fast geschafft!",
