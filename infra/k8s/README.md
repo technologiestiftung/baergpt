@@ -8,6 +8,7 @@ deployer access are in [`infra/terraform/ske`](../terraform/ske/README.md).
 | `base/backend`         | backend Deployment, Service, HTTPRoute, PDB, NetworkPolicy |
 | `base/gotenberg`       | Gotenberg Deployment, Service, PDB, NetworkPolicy          |
 | `overlays/<namespace>` | per-environment replicas, resources and hostname           |
+| `deploy/`              | the deploy workflow's steps as scripts, one per step       |
 
 ## Deploying
 

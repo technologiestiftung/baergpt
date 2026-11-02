@@ -151,73 +151,15 @@ jobs:
           fi
           echo "Deploying ${IMAGE_NAME}@${DIGEST}"
 
-      # Rebuilt from the 1Password note on every deploy, so removed keys disappear too.
-      # CF_* and GOTENBERG_MEMORY are Cloud Foundry sizing keys in the same note.
-      # Two Secrets per app (<app>-env-a/-b): a changed env goes into the one not in use, so the
-      # other keeps the previous env and `rollout undo` restores code and env together.
+      # The scripts in infra/k8s/deploy/ explain what each step does and why.
       - name: Sync env Secrets 🔄
         id: secrets
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           NAMESPACE: ${{ steps.target.outputs.namespace }}
-        run: |
-          set -euo pipefail
-          # Outside the workspace, and removed even when a command below fails.
-          dir="$RUNNER_TEMP/env"
-          mkdir -p -m 700 "$dir"
-          trap 'rm -rf "$dir"' EXIT
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.target.outputs.app_item_id }}/notesPlain" > "$dir/all.env"
-          : > "$dir/backend.env"
-          : > "$dir/gotenberg.env"
-          while IFS= read -r line || [ -n "$line" ]; do
-            line="${line%$'\r'}" # tolerate a CRLF-edited 1Password note
-            [[ -z "$line" || "$line" == \#* ]] && continue
-            key="${line%%=*}"
-            value="${line#*=}"
-            echo "::add-mask::$value"
-            case "$key" in
-              CF_*|GOTENBERG_MEMORY) continue ;;
-            esac
-            echo "$key=$value" >> "$dir/backend.env"
-            # The gotenberg container only reads its basic-auth credentials.
-            if [[ "$key" == GOTENBERG_API_BASIC_AUTH_* ]]; then
-              echo "$key=$value" >> "$dir/gotenberg.env"
-            fi
-          done < "$dir/all.env"
+          ENV_NOTE_REF: op://${{ secrets.OP_VAULT_ID }}/${{ steps.target.outputs.app_item_id }}/notesPlain
+        run: bash infra/k8s/deploy/sync-env-secrets.sh
 
-          # Outputs the Secret the app's Deployment should use. An unchanged env keeps the
-          # current one, so the pods don't restart.
-          sync_secret() {
-            local app=$1 env_file=$2 active hash target
-            active=$(kubectl get deployment "$app" --namespace "$NAMESPACE" --ignore-not-found \
-              -o jsonpath="{.spec.template.spec.containers[?(@.name==\"$app\")].envFrom[0].secretRef.name}")
-            case "$active" in
-              "$app-env-a") target="$app-env-b" ;;
-              "$app-env-b") target="$app-env-a" ;;
-              *) active="" target="$app-env-a" ;;
-            esac
-            hash=$(sha256sum "$env_file" | cut -d' ' -f1)
-            if [[ -n "$active" ]] && [[ "$(kubectl get secret "$active" --namespace "$NAMESPACE" --ignore-not-found \
-                -o jsonpath='{.metadata.annotations.env-sha256}')" == "$hash" ]]; then
-              echo "$app: env unchanged, keeping $active"
-              echo "$app=$active" >> "$GITHUB_OUTPUT"
-              return
-            fi
-            echo "$app: writing env to $target"
-            kubectl create secret generic "$target" --namespace "$NAMESPACE" \
-              --from-env-file="$env_file" --dry-run=client -o yaml \
-              | kubectl annotate --local -f - "env-sha256=$hash" -o yaml \
-              | kubectl apply -f -
-            echo "$app=$target" >> "$GITHUB_OUTPUT"
-          }
-
-          sync_secret backend "$dir/backend.env"
-          # Sandbox uses staging's Gotenberg.
-          if [[ "$NAMESPACE" != "sandbox" ]]; then
-            sync_secret gotenberg "$dir/gotenberg.env"
-          fi
-
-      # Rendered through a kustomization around the overlay, so the checkout stays unchanged.
       - name: Render and apply manifests 🚀
         env:
           NAMESPACE: ${{ steps.target.outputs.namespace }}
@@ -225,110 +167,25 @@ jobs:
           DIGEST: ${{ needs.build.outputs.digest }}
           BACKEND_SECRET: ${{ steps.secrets.outputs.backend }}
           GOTENBERG_SECRET: ${{ steps.secrets.outputs.gotenberg }}
-        run: |
-          set -euo pipefail
-          dir="$RUNNER_TEMP/render"
-          mkdir -p "$dir"
-          cat > "$dir/kustomization.yaml" <<EOF
-          apiVersion: kustomize.config.k8s.io/v1beta1
-          kind: Kustomization
-          resources:
-            - $(realpath --relative-to="$dir" "$OVERLAY")
-          images:
-            - name: ${IMAGE_NAME}
-              digest: ${DIGEST}
-          patches:
-          EOF
-          # `test` fails the render if the base no longer references <app>-env there.
-          add_secret_patch() {
-            cat >> "$dir/kustomization.yaml" <<EOF
-            - target: {kind: Deployment, name: $1}
-              patch: |-
-                - op: test
-                  path: /spec/template/spec/containers/0/envFrom/0/secretRef/name
-                  value: $1-env
-                - op: replace
-                  path: /spec/template/spec/containers/0/envFrom/0/secretRef/name
-                  value: $2
-          EOF
-          }
-          add_secret_patch backend "$BACKEND_SECRET"
-          if [[ -n "$GOTENBERG_SECRET" ]]; then
-            add_secret_patch gotenberg "$GOTENBERG_SECRET"
-          fi
+        run: bash infra/k8s/deploy/render-and-apply.sh
 
-          kubectl kustomize "$dir" > rendered.yaml
-
-          # Revisions before this apply, so a failed rollout undoes only what this run changed.
-          kubectl get deployments --namespace "$NAMESPACE" \
-            -o jsonpath='{range .items[*]}deployment.apps/{.metadata.name} {.metadata.annotations.deployment\.kubernetes\.io/revision}{"\n"}{end}' \
-            > revisions-before.txt
-
-          # The Deployments this overlay applied, in the form `rollout status` takes.
-          kubectl apply -f rendered.yaml -o name | tee applied.txt
-          grep '^deployment' applied.txt > deployments.txt || true
-          if [[ ! -s deployments.txt ]]; then
-            echo "::error::No Deployments found in the applied manifests — refusing to continue."
-            exit 1
-          fi
-
-      # If the new pods never get ready, the previous ReplicaSet keeps serving.
       - name: Wait for rollout ⏳
         id: rollout
         env:
           NAMESPACE: ${{ steps.target.outputs.namespace }}
-        run: |
-          set -euo pipefail
-          while IFS= read -r deployment || [ -n "$deployment" ]; do
-            [[ -z "$deployment" ]] && continue
-            # Already in resource/name form.
-            echo "Waiting for $deployment…"
-            kubectl rollout status "$deployment" \
-              --namespace "$NAMESPACE" --timeout=5m
-          done < deployments.txt
+        run: bash infra/k8s/deploy/wait-for-rollout.sh
 
       - name: Smoke check /health 🩺
         env:
           NAMESPACE: ${{ steps.target.outputs.namespace }}
-        run: |
-          set -euo pipefail
-          host=$(kubectl get httproute backend --namespace "$NAMESPACE" -o jsonpath='{.spec.hostnames[0]}')
-          echo "Checking https://$host/health"
-          timeout=120
-          counter=0
-          # No --insecure: an invalid certificate fails the deploy (status 000).
-          until [ "$(curl -sS -o /dev/null -w '%{http_code}' "https://$host/health")" = "200" ]; do
-            if [ $counter -ge $timeout ]; then
-              echo "::error::https://$host/health did not return 200 within ${timeout}s (status 000 with a certificate error above means TLS, not the app)."
-              exit 1
-            fi
-            sleep 5
-            counter=$((counter + 5))
-          done
-          echo "Health check passed."
+        run: bash infra/k8s/deploy/smoke-check.sh
 
       # Not after a failed smoke check: that's usually DNS or a certificate not ready yet.
       - name: Roll back on failed rollout ↩️
         if: ${{ failure() && !cancelled() && steps.rollout.outcome == 'failure' }}
         env:
           NAMESPACE: ${{ steps.target.outputs.namespace }}
-        run: |
-          set -uo pipefail
-          # Plain `rollout undo` goes one revision back even if this run created none.
-          while IFS= read -r deployment || [ -n "$deployment" ]; do
-            [[ -z "$deployment" ]] && continue
-            before=$(awk -v d="$deployment" '$1 == d { print $2 }' revisions-before.txt)
-            now=$(kubectl get "$deployment" --namespace "$NAMESPACE" \
-              -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}')
-            if [[ -z "$before" ]]; then
-              echo "$deployment is new: nothing to roll back to"
-            elif [[ "$now" == "$before" ]]; then
-              echo "$deployment: unchanged by this run, left as is"
-            else
-              echo "Rolling back $deployment to revision $before"
-              kubectl rollout undo "$deployment" --namespace "$NAMESPACE" --to-revision="$before" || true
-            fi
-          done < deployments.txt
+        run: bash infra/k8s/deploy/roll-back.sh
 
       - name: Dump diagnostics on failure 🪵
         if: ${{ failure() && !cancelled() }}
