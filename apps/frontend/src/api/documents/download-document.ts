@@ -13,14 +13,18 @@ export async function downloadDocument({
 		? "public_documents"
 		: "documents";
 
-	const { data: downloadBlob, error: downloadError } = await supabase.storage
-		.from(bucket)
-		.download(sourceUrl);
+	try {
+		const { data: downloadBlob, error: downloadError } = await supabase.storage
+			.from(bucket)
+			.download(sourceUrl);
 
-	if (downloadError) {
-		useErrorStore.getState().handleError(downloadError);
+		if (downloadError) {
+			throw downloadError;
+		}
+
+		return downloadBlob;
+	} catch (error) {
+		useErrorStore.getState().handleError(error);
 		return undefined;
 	}
-
-	return downloadBlob;
 }
