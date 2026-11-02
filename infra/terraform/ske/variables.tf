@@ -23,7 +23,7 @@ variable "kubernetes_version_min" {
 variable "availability_zones" {
   type        = list(string)
   default     = ["eu01-1", "eu01-2", "eu01-3"]
-  description = "Availability zones for the node pool. Verify exact names for the project's region via the portal."
+  description = "Availability zones for the node pool. All are separate data centers in region eu01 (Heilbronn area, Germany)."
 }
 
 variable "machine_type" {
