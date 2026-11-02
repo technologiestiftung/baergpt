@@ -78,6 +78,19 @@ export const testWithDocuments = testWithMockedLlm.extend<{
 	],
 });
 
+/**
+ * Waits for the GET of the user's own and default documents. Register it
+ * before navigating, so the response can't arrive first and be missed.
+ */
+export function waitForUserDocumentsResponse(page: Page) {
+	return page.waitForResponse(
+		(response) =>
+			response.request().method() === "GET" &&
+			response.url().includes("/rest/v1/documents?") &&
+			response.url().includes("owned_by_user_id.eq."),
+	);
+}
+
 export async function openDocumentsPanel(page: Page) {
 	const panel = page.locator("#desktop-documents-panel");
 	const showButton = panel.getByRole("button", {
@@ -381,9 +394,9 @@ export async function uploadFileViaFileChooserAndWait({
 	browserName: string;
 	uploadButtonName: string;
 }) {
+	const userDocumentsResponse = waitForUserDocumentsResponse(page);
 	await page.goto("/");
-
-	await page.waitForLoadState("networkidle");
+	await userDocumentsResponse;
 
 	await openDocumentsPanel(page);
 
@@ -457,9 +470,9 @@ export async function attemptFileUploadViaFileChooser({
 	browserName: string;
 	uploadButtonName: string;
 }) {
+	const userDocumentsResponse = waitForUserDocumentsResponse(page);
 	await page.goto("/");
-
-	await page.waitForLoadState("networkidle");
+	await userDocumentsResponse;
 
 	await openDocumentsPanel(page);
 
@@ -496,9 +509,9 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	browserName: string;
 	uploadButtonName: string;
 }) {
+	const userDocumentsResponse = waitForUserDocumentsResponse(page);
 	await page.goto("/");
-
-	await page.waitForLoadState("networkidle");
+	await userDocumentsResponse;
 
 	await openDocumentsPanel(page);
 
@@ -593,9 +606,9 @@ export async function attemptMultipleFilesViaFileChooser({
 	browserName: string;
 	uploadButtonName: string;
 }) {
+	const userDocumentsResponse = waitForUserDocumentsResponse(page);
 	await page.goto("/");
-
-	await page.waitForLoadState("networkidle");
+	await userDocumentsResponse;
 
 	await openDocumentsPanel(page);
 
