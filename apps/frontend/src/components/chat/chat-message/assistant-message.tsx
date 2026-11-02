@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
 import { BaerIcon } from "../../primitives/icons/baer-icon.tsx";
-import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { CopyToClipboardButton } from "./copy-to-clipboard-button.tsx";
 import { ExportChatMessageButton } from "./export-chat-message/export-chat-message-button.tsx";
 import { CitationsButton } from "./citations-button.tsx";
 import type { ChatMessage } from "../../../common.ts";
-import { useChatsStore } from "../../../store/use-chats-store.ts";
-import { Content } from "../../../content.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
+import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
+import { ExportErrorMessage } from "./export-chat-message/export-error-message.tsx";
 
 export function AssistantMessage({
 	message,
@@ -16,8 +15,7 @@ export function AssistantMessage({
 	message: ChatMessage;
 	children: string | ReactNode;
 }) {
-	const { status } = useInferenceLoadingStatusStore();
-	const { getCurrentChat } = useChatsStore();
+	const { isLastMessage, hasChatButtons } = useChatButtonsVisibility(message);
 	const {
 		content,
 		traces,
@@ -29,10 +27,6 @@ export function AssistantMessage({
 	const { getUIError } = useErrorStore();
 
 	const exportErrorMessage = getUIError("chat-export");
-
-	const isLastMessage = message.id === getCurrentChat()?.messages.at(-1)?.id;
-	const isIdle = ["idle"].includes(status);
-	const hasChatButtons = !isLastMessage || isIdle;
 
 	const isBaerIconVisible = content.length > 0 || Boolean(traces);
 
@@ -66,17 +60,7 @@ export function AssistantMessage({
 						/>
 					</div>
 					{exportErrorMessage && (
-						<p className="flex rounded-3px items-center gap-1 pl-[6px] p-[5px] bg-red-100">
-							<img
-								src="/icons/error-icon.svg"
-								width={16}
-								height={16}
-								alt={Content["downloadIcon.imgAlt"]}
-							/>
-							<span className="text-sm leading-5 font-normal text-warning-100">
-								{exportErrorMessage}
-							</span>
-						</p>
+						<ExportErrorMessage message={exportErrorMessage} />
 					)}
 				</div>
 			)}

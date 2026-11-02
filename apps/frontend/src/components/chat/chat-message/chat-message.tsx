@@ -4,10 +4,12 @@ import { UserMessage } from "./user-message.tsx";
 import type { ChatMessage } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
+import { MarkdownExportableTable } from "../../primitives/markdown/markdown-exportable-table.tsx";
 import { type JSX, useMemo } from "react";
 import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
 import { config } from "../../../config.ts";
+import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
 
 interface ChatMessageProps {
 	message: ChatMessage;
@@ -37,6 +39,15 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 		};
 	}, [datawrapperChartIds]);
 
+	const { hasChatButtons } = useChatButtonsVisibility(message);
+	const assistantComponents = useMemo(
+		() =>
+			hasChatButtons
+				? { ...customComponents, table: MarkdownExportableTable }
+				: customComponents,
+		[customComponents, hasChatButtons],
+	);
+
 	return (
 		<div className="flex flex-col" data-message-id={message.id}>
 			{role === "assistant" && hasAssistantContent && (
@@ -47,7 +58,7 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 							<ReactMarkdown
 								remarkPlugins={[remarkGfm]}
 								className="markdown-container"
-								components={customComponents}
+								components={assistantComponents}
 							>
 								{content}
 							</ReactMarkdown>

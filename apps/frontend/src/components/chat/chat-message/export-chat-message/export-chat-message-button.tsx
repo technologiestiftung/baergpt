@@ -4,7 +4,7 @@ import { exportToDocx } from "./utils.ts";
 import { format } from "date-fns";
 import { ClockLoaderIcon } from "../../../primitives/icons/clock-loader-icon.tsx";
 import { ExportButton } from "./export-button.tsx";
-import useExportDropdownPosition from "../../hooks/use-export-dropdown-position.ts";
+import { ExportDropdownMenu } from "./export-dropdown-menu.tsx";
 import { ChatButton } from "../../../primitives/buttons/chat-button.tsx";
 
 interface ExportChatMessageButtonProps {
@@ -18,20 +18,12 @@ export const ExportChatMessageButton: React.FC<
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const [isExporting, setIsExporting] = useState(false);
 	const buttonRef = useRef<HTMLButtonElement | null>(null);
-	const { coords: dropdownCoords, updateCoords } =
-		useExportDropdownPosition(buttonRef);
 
 	const exportDate = format(new Date(), "yyyyMMdd_HHmm");
 	const fileName = `${exportDate}_BaerGPT-Chat`;
 
 	const handleToggle = () => {
-		setIsDropdownOpen((prev) => {
-			if (!prev) {
-				updateCoords();
-				return true;
-			}
-			return false;
-		});
+		setIsDropdownOpen((prev) => !prev);
 	};
 
 	const handleDocxExport = async () => {
@@ -85,39 +77,27 @@ export const ExportChatMessageButton: React.FC<
 				)}
 			</ChatButton>
 
-			{/* Dropdown */}
 			{isDropdownOpen && (
-				<>
-					<div
-						className="fixed inset-0 z-10"
-						onMouseDown={() => setIsDropdownOpen(false)}
+				<ExportDropdownMenu
+					buttonRef={buttonRef}
+					onClose={() => setIsDropdownOpen(false)}
+				>
+					<ExportButton
+						autoFocus
+						label={Content["chat.exportChatTextButton.docx.label"]}
+						ariaLabel={Content["chat.exportChatTextButton.docx.ariaLabel"]}
+						iconSrc="/icons/word-file-icon.svg"
+						onClick={handleDocxExport}
+						testId={`export-chat-message-docx-button-${messageId}`}
 					/>
-					<div
-						className="fixed z-50 bg-white rounded-[3px] shadow-custom-shadow shadow-dunkelblau-100/10 text-sm leading-5 text-dunkelblau-80"
-						style={{
-							left: dropdownCoords ? `${dropdownCoords.left}px` : undefined,
-							top: dropdownCoords ? `${dropdownCoords.top}px` : undefined,
-							minWidth: dropdownCoords
-								? `${dropdownCoords.minWidth}px`
-								: undefined,
-						}}
-					>
-						<ExportButton
-							type="docx"
-							onClick={handleDocxExport}
-							focusButtonRef={buttonRef}
-							setIsDropdownOpen={setIsDropdownOpen}
-							testId={`export-chat-message-docx-button-${messageId}`}
-						/>
-						<ExportButton
-							type="pdf"
-							onClick={handlePDFExport}
-							focusButtonRef={buttonRef}
-							testId={`export-chat-message-pdf-button-${messageId}`}
-							setIsDropdownOpen={setIsDropdownOpen}
-						/>
-					</div>
-				</>
+					<ExportButton
+						label={Content["chat.exportChatTextButton.pdf.label"]}
+						ariaLabel={Content["chat.exportChatTextButton.pdf.ariaLabel"]}
+						iconSrc="/icons/pdf-file-icon.svg"
+						onClick={handlePDFExport}
+						testId={`export-chat-message-pdf-button-${messageId}`}
+					/>
+				</ExportDropdownMenu>
 			)}
 		</div>
 	);

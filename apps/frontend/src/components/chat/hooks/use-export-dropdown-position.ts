@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 function useExportDropdownPosition(
-	buttonRef: React.RefObject<HTMLButtonElement>,
+	buttonRef: React.RefObject<HTMLButtonElement | null>,
 ) {
 	const [coords, setCoords] = useState<{
 		top: number;
@@ -13,8 +13,8 @@ function useExportDropdownPosition(
 		if (buttonRef.current) {
 			const rect = buttonRef.current.getBoundingClientRect();
 			setCoords({
-				top: rect.bottom + window.scrollY,
-				left: rect.left + window.scrollX,
+				top: rect.bottom,
+				left: rect.left,
 				minWidth: rect.width,
 			});
 		}
