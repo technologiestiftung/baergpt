@@ -54,6 +54,7 @@ spec:
             - name: http
               containerPort: 3000
           envFrom:
+            # The deploy workflow replaces this with gotenberg-env-a or -b, filled from 1Password.
             - secretRef:
                 name: gotenberg-env # GOTENBERG_API_BASIC_AUTH_USERNAME/PASSWORD
           volumeMounts:

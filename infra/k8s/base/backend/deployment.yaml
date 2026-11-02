@@ -52,7 +52,7 @@ spec:
             - name: http
               containerPort: 3000
           envFrom:
-            # Created by the deploy workflow from 1Password.
+            # The deploy workflow replaces this with backend-env-a or -b, filled from 1Password.
             - secretRef:
                 name: backend-env
           env:
