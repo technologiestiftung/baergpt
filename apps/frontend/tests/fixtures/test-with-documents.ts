@@ -25,6 +25,9 @@ import {
 } from "../constants.ts";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { dirname, resolve } from "node:path";
+
+const fixturesDir = dirname(defaultDocumentPath);
 
 export const testWithDocuments = testWithMockedLlm.extend<{
 	documentChunkId: number;
@@ -294,7 +297,17 @@ export async function mockDocumentProcessRoute(page: Page) {
 			headers: { "content-type": headers["content-type"] },
 			body: request.postDataBuffer(),
 		}).formData();
-		const file = form.get("file") as File;
+		const formFile = form.get("file") as File;
+		// WebKit leaves the file part empty in intercepted requests, so read the
+		// fixture of the same name instead.
+		const file =
+			formFile.size > 0
+				? formFile
+				: new File(
+						[readFileSync(resolve(fixturesDir, formFile.name))],
+						formFile.name,
+						{ type: formFile.type },
+					);
 		const metadata = JSON.parse(form.get("metadata") as string);
 
 		const sourceUrl = `${userId}/${randomUUID()}.${extensionByMime[file.type]}`;
