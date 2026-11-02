@@ -9,18 +9,18 @@ set -euo pipefail
 TIMEOUT_SECONDS=120
 
 main() {
-  local url waited=0
+  local url deadline
   url="https://$(public_hostname)/health"
   echo "Checking $url"
+  deadline=$((SECONDS + TIMEOUT_SECONDS))
 
   # No --insecure: an invalid certificate fails the check (status 000).
   until [[ "$(status_code "$url")" == "200" ]]; do
-    if [[ $waited -ge $TIMEOUT_SECONDS ]]; then
+    if (( SECONDS + 5 >= deadline )); then
       echo "::error::$url did not return 200 within ${TIMEOUT_SECONDS}s (status 000 with a certificate error above means TLS, not the app)."
       exit 1
     fi
     sleep 5
-    waited=$((waited + 5))
   done
   echo "Health check passed."
 }
@@ -31,7 +31,7 @@ public_hostname() {
 
 status_code() {
   local url=$1
-  curl -sS -o /dev/null -w '%{http_code}' "$url"
+  curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 10 "$url"
 }
 
 main "$@"
