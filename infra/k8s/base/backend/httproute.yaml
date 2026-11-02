@@ -20,6 +20,6 @@ spec:
       backendRefs:
         - name: backend
           port: 3000
-      # Envoy's default ends any response after 15s, which cuts off streamed chats.
+      # Envoy defaults to 15s; document processing and reasoning chats can take 20+ min.
       timeouts:
-        request: 600s
+        request: 6000s
