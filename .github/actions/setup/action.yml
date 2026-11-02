@@ -43,9 +43,19 @@ runs:
         # GitHub Actions step closing its stdout/stderr. Redirect output to a log
         # file so we can inspect it if the wait action times out. The exit status
         # is written to a file so wait-for-supabase can fail fast if the start failed.
+        # Retried because ghcr.io sometimes rate-limits the image pulls, which the CLI
+        # does not retry itself.
         nohup bash -c '
-          supabase start --exclude studio,realtime,imgproxy,edge-runtime,supavisor,postgres-meta
-          status=$?
+          for attempt in 1 2 3; do
+            supabase start --exclude studio,realtime,imgproxy,edge-runtime,supavisor,postgres-meta
+            status=$?
+            if [ "$status" -eq 0 ] || [ "$attempt" -eq 3 ]; then
+              break
+            fi
+            echo "supabase start failed with status $status (attempt $attempt/3), retrying in 10s..."
+            supabase stop --no-backup || true
+            sleep 10
+          done
           echo "$status" > /tmp/supabase-start.exit
           exit "$status"
         ' > /tmp/supabase-start.log 2>&1 &
