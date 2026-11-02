@@ -786,6 +786,8 @@ export const Content = {
 	"documentsList.addToChat.imgAlt": "Plus-Icon",
 	"documentsList.view": "Dokument anzeigen",
 	"documentsList.view.imgAlt": "Auge-Icon",
+	"documentsList.download": "Herunterladen",
+	"documentsList.downloading": "Wird heruntergeladen",
 	"documentsList.delete": "Löschen",
 	"documentsList.delete.imgAlt": "Mülleimer-Icon",
 	"documentsList.deleteDocument": "Dokument löschen",

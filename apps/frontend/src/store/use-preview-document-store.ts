@@ -31,6 +31,7 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 		if (selectedPreviewDocumentPreviewUrl) {
 			URL.revokeObjectURL(selectedPreviewDocumentPreviewUrl);
 		}
+		useErrorStore.getState().clearUIError("document-download");
 
 		set({
 			selectedPreviewDocument: document,
@@ -59,6 +60,9 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 		});
 
 		if (!blob) {
+			useErrorStore
+				.getState()
+				.setUIError("document-download", "document_download_failed");
 			return;
 		}
 

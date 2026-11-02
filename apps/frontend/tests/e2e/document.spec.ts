@@ -998,6 +998,29 @@ test.describe("Documents", () => {
 		},
 	);
 
+	testDesktopOnly("Download document via dropdown", async ({ page }) => {
+		await page.goto("/");
+
+		await openDocumentsPanel(page);
+
+		await page
+			.getByRole("listitem")
+			.filter({ hasText: defaultDocumentName })
+			.getByLabel("Menü öffnen")
+			.click();
+
+		const downloadOption = page.getByRole("option", { name: "Herunterladen" });
+		await expect(downloadOption).toBeVisible();
+
+		const downloadPromise = page.waitForEvent("download");
+		await downloadOption.click();
+		const download = await downloadPromise;
+
+		expect(download.suggestedFilename()).toBe(defaultDocumentName);
+		expect(await download.path()).toBeTruthy();
+		await expect(downloadOption).not.toBeVisible();
+	});
+
 	testDesktopOnly(
 		"Upload word document, open it in the preview, then download it",
 		async ({ page }) => {
