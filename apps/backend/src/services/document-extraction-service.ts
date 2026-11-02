@@ -126,7 +126,6 @@ export class DocumentExtractionService {
 	}
 }
 
-// Windows editors still save German text as Windows-1252 or UTF-16
 function decodeMarkdownText(fileBytes: Uint8Array): string {
 	if (fileBytes[0] === 0xff && fileBytes[1] === 0xfe) {
 		return new TextDecoder("utf-16le").decode(fileBytes);

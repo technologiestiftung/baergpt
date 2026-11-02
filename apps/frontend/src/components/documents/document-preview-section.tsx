@@ -8,18 +8,19 @@ import Content from "../../content";
 
 type PreviewType = "pdf" | "docx" | "spreadsheet" | "markdown";
 
-function getPreviewType(fileName: string | null | undefined): PreviewType {
-	const lowerCaseFileName = fileName?.toLowerCase() ?? "";
+function getPreviewType(
+	sourceUrl: string | null | undefined,
+	fileName: string | null | undefined,
+): PreviewType {
+	const lowerCasePath = (sourceUrl || fileName)?.toLowerCase() ?? "";
 
-	if (lowerCaseFileName.endsWith(".docx")) {
+	if (lowerCasePath.endsWith(".docx")) {
 		return "docx";
 	}
-	if ([".xlsx", ".csv"].some((suffix) => lowerCaseFileName.endsWith(suffix))) {
+	if ([".xlsx", ".csv"].some((suffix) => lowerCasePath.endsWith(suffix))) {
 		return "spreadsheet";
 	}
-	if (
-		[".md", ".markdown"].some((suffix) => lowerCaseFileName.endsWith(suffix))
-	) {
+	if ([".md", ".markdown"].some((suffix) => lowerCasePath.endsWith(suffix))) {
 		return "markdown";
 	}
 	return "pdf";
@@ -41,7 +42,10 @@ export const DocumentPreviewSection: React.FC = () => {
 		return null;
 	}
 
-	const previewType = getPreviewType(selectedPreviewDocument.file_name);
+	const previewType = getPreviewType(
+		selectedPreviewDocument.source_url,
+		selectedPreviewDocument.file_name,
+	);
 	const isDocxFormat = previewType === "docx";
 
 	return (

@@ -116,7 +116,6 @@ export const markdownDocumentPath = resolve(
 	__dirname,
 	`./fixtures/${markdownDocumentName}`,
 );
-// Browsers often report no mime type for .md files
 export const markdownDocumentType = "";
 
 export const longFileName =

@@ -18,7 +18,6 @@ const SUPPORTED_FILE_TYPES = [
 	{ mimeType: "text/markdown", extensions: ["md", "markdown"] },
 ];
 
-// .md often arrives as "", application/octet-stream or text/plain
 function getSupportedFile(file: File) {
 	const nameExtension = file.name.split(".").pop()?.toLowerCase() ?? "";
 	const fileType =

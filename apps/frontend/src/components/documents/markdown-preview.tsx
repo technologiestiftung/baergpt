@@ -13,6 +13,20 @@ const markdownComponents = {
 	img: () => null,
 };
 
+function decodeMarkdownText(fileBytes: Uint8Array): string {
+	if (fileBytes[0] === 0xff && fileBytes[1] === 0xfe) {
+		return new TextDecoder("utf-16le").decode(fileBytes);
+	}
+	if (fileBytes[0] === 0xfe && fileBytes[1] === 0xff) {
+		return new TextDecoder("utf-16be").decode(fileBytes);
+	}
+	try {
+		return new TextDecoder("utf-8", { fatal: true }).decode(fileBytes);
+	} catch {
+		return new TextDecoder("windows-1252").decode(fileBytes);
+	}
+}
+
 export function MarkdownPreview({ downloadUrl }: { downloadUrl: string }) {
 	const [markdown, setMarkdown] = useState("");
 	const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +40,9 @@ export function MarkdownPreview({ downloadUrl }: { downloadUrl: string }) {
 				const response = await fetch(downloadUrl, {
 					signal: abortController.signal,
 				});
-				const text = await response.text();
+				const text = decodeMarkdownText(
+					new Uint8Array(await response.arrayBuffer()),
+				);
 
 				if (abortController.signal.aborted) {
 					return;
