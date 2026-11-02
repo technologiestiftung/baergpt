@@ -65,6 +65,24 @@ export class DocumentExtractionService {
 			};
 		}
 
+		if (fileName.toLowerCase().endsWith(".md")) {
+			const markdownContent = extractMarkdownDocument(fileBytes);
+
+			return {
+				document: document,
+				fileSize: fileSize,
+				numPages: 1,
+				checksum: checksum,
+				parsedPages: [
+					{
+						content: markdownContent,
+						pageNumber: 1,
+						tokenCount: countTokens(markdownContent),
+					},
+				],
+			};
+		}
+
 		// Use lightweight parsing to determine page count without leaving memory footprint
 		const numPages = await this.getPdfPageCount(fileBytes);
 		const parsedPages = await this.extractPdfAsMarkdownPages(fileBytes);
@@ -106,6 +124,58 @@ export class DocumentExtractionService {
 		const numPages = pdf.numPages;
 		return numPages;
 	}
+}
+
+// Windows editors still save German text as Windows-1252 or UTF-16
+function decodeMarkdownText(fileBytes: Uint8Array): string {
+	if (fileBytes[0] === 0xff && fileBytes[1] === 0xfe) {
+		return new TextDecoder("utf-16le").decode(fileBytes);
+	}
+	if (fileBytes[0] === 0xfe && fileBytes[1] === 0xff) {
+		return new TextDecoder("utf-16be").decode(fileBytes);
+	}
+	try {
+		return new TextDecoder("utf-8", { fatal: true }).decode(fileBytes);
+	} catch {
+		return new TextDecoder("windows-1252").decode(fileBytes);
+	}
+}
+
+const MAX_CONTROL_CHARACTER_RATIO = 0.01;
+
+function countBinaryControlCharacters(text: string): number {
+	let count = 0;
+	for (let index = 0; index < text.length; index++) {
+		const charCode = text.charCodeAt(index);
+		const isAllowedWhitespace = [0x09, 0x0a, 0x0c, 0x0d].includes(charCode);
+		const isC0 = charCode < 0x20;
+		const isC1 = charCode >= 0x80 && charCode <= 0x9f;
+		if ((isC0 || isC1) && !isAllowedWhitespace) {
+			count++;
+		}
+	}
+	return count;
+}
+
+export function extractMarkdownDocument(fileBytes: Uint8Array): string {
+	const text = decodeMarkdownText(fileBytes);
+
+	if (
+		text.includes("\u0000") ||
+		countBinaryControlCharacters(text) >
+			text.length * MAX_CONTROL_CHARACTER_RATIO
+	) {
+		throw new Error("failed.format", {
+			cause: "markdown file contains binary content",
+		});
+	}
+
+	const content = text.trim();
+	if (!content) {
+		throw new Error("failed.format", { cause: "markdown file is empty" });
+	}
+
+	return content;
 }
 
 export class WordDocumentExtractionService {

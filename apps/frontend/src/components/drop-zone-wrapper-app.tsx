@@ -8,6 +8,7 @@ import { AddToChatIcon } from "./primitives/icons/add-to-chat-icon.tsx";
 import Content from "../content.ts";
 import { isPublicFolder } from "./documents/document-list/list-item/utils/is-public-folder.ts";
 import type { Document, PublicFolder, UserFolder } from "../common.ts";
+import { SUPPORTED_UPLOAD_FILE_TYPES } from "../lib/upload-file-types.ts";
 
 export function DropZoneWrapperApp({ children }: { children: ReactNode }) {
 	const { currentFolder } = useCurrentFolderStore();
@@ -32,13 +33,7 @@ export function DropZoneWrapperApp({ children }: { children: ReactNode }) {
 		onDrop,
 		noClick: true,
 		disabled: isDropZoneDisabled,
-		accept: {
-			"application/pdf": [],
-			"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-				[],
-			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [],
-			"text/csv": [],
-		},
+		accept: SUPPORTED_UPLOAD_FILE_TYPES,
 	});
 
 	return (

@@ -22,6 +22,9 @@ import {
 	defaultSourceType,
 	longFileName,
 	longFilePath,
+	markdownDocumentName,
+	markdownDocumentPath,
+	markdownDocumentType,
 	msExcelDocumentName,
 	msExcelDocumentPath,
 	msExcelDocumentType,
@@ -1095,6 +1098,58 @@ test.describe("Documents", () => {
 			const download = await downloadPromise;
 
 			// Verify the download was successful
+			expect(download).toBeDefined();
+			expect(await download.path()).toBeTruthy();
+		},
+	);
+
+	testDesktopOnly(
+		"Upload markdown document, open it in the preview, then download it",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await uploadFileViaDragAndDropAndWait({
+				page,
+				fileName: markdownDocumentName,
+				filePath: markdownDocumentPath,
+				fileType: markdownDocumentType,
+			});
+
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${markdownDocumentName}` })
+				.click();
+
+			await expect(
+				page.getByRole("heading", { name: markdownDocumentName }),
+			).toBeVisible();
+
+			const preview = page.getByTestId("markdown-preview");
+			await expect(
+				preview.getByRole("heading", { name: "Eine Markdown Datei" }),
+			).toBeVisible();
+			await expect(preview.locator("strong")).toHaveText("fettem Text");
+
+			await expect(preview.getByText("<script>")).toBeVisible();
+			await expect(preview.locator("script, img")).toHaveCount(0);
+			expect(
+				await page.evaluate(
+					() =>
+						(window as unknown as { __markdownInjected?: boolean })
+							.__markdownInjected,
+				),
+			).toBeUndefined();
+
+			const downloadPromise = page.waitForEvent("download", {
+				predicate: (download) =>
+					download.suggestedFilename() === markdownDocumentName,
+			});
+			await page
+				.getByRole("link", { name: `${markdownDocumentName} herunterladen` })
+				.click();
+			const download = await downloadPromise;
+
 			expect(download).toBeDefined();
 			expect(await download.path()).toBeTruthy();
 		},
