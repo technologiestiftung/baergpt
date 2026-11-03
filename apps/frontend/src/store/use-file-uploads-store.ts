@@ -23,7 +23,18 @@ export type UploadStatusKeys = keyof typeof UPLOAD_STATUS_MAP;
 export type FileUpload = {
 	file: File;
 	status: UploadStatusKeys;
+	isRemovedFromChat?: boolean;
 };
+
+export function isPendingUpload(status: UploadStatusKeys) {
+	return (
+		status === "waiting" || status === "uploading" || status === "processing"
+	);
+}
+
+export function isFailedUpload(status: UploadStatusKeys) {
+	return status.startsWith("failed");
+}
 
 const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
 
@@ -35,6 +46,8 @@ type UseFileUploadsStore = {
 	hasAvailableUploadSlots: () => boolean;
 	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
 	removeFileUpload: (fileName: string) => void;
+	removeFileUploadFromChat: (fileName: string) => void;
+	removeAllFileUploadsFromChat: () => void;
 	clearFileUploads: () => void;
 };
 
@@ -83,7 +96,11 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				.getState()
 				.userDocuments.find((doc) => doc.id === id);
 
-			if (uploadedDocument) {
+			const isRemovedFromChat = get().fileUploads.find(
+				(fileUpload) => fileUpload.file.name === file.name,
+			)?.isRemovedFromChat;
+
+			if (uploadedDocument && !isRemovedFromChat) {
 				selectUserChatDocument(uploadedDocument);
 			}
 
@@ -113,11 +130,8 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			(doc) => !deletedDefaultDocumentIds.includes(doc.id),
 		).length;
 
-		const numberOfActiveAndQueuedUploads = fileUploads.filter(
-			(upload) =>
-				upload.status === "waiting" ||
-				upload.status === "uploading" ||
-				upload.status === "processing",
+		const numberOfActiveAndQueuedUploads = fileUploads.filter((upload) =>
+			isPendingUpload(upload.status),
 		).length;
 
 		let availableUploadSlots =
@@ -227,6 +241,27 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		const { fileUploads } = get();
 		set({
 			fileUploads: fileUploads.filter(({ file }) => file.name !== fileName),
+		});
+	},
+
+	removeFileUploadFromChat: (fileName: string) => {
+		const { fileUploads } = get();
+		set({
+			fileUploads: fileUploads.map((fileUpload) =>
+				fileUpload.file.name === fileName
+					? { ...fileUpload, isRemovedFromChat: true }
+					: fileUpload,
+			),
+		});
+	},
+
+	removeAllFileUploadsFromChat: () => {
+		const { fileUploads } = get();
+		set({
+			fileUploads: fileUploads.map((fileUpload) => ({
+				...fileUpload,
+				isRemovedFromChat: true,
+			})),
 		});
 	},
 
