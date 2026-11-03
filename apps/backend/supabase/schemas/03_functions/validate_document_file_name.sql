@@ -13,6 +13,8 @@ BEGIN
     IF substring(NEW.file_name FROM '^.+(\.[^.]*)$') IS DISTINCT FROM substring(OLD.file_name FROM '^.+(\.[^.]*)$') THEN
         RAISE EXCEPTION 'Document file extension must not change';
     END IF;
+    -- Serializes renames per owner so concurrent ones see each other's committed name in the check below
+    PERFORM pg_advisory_xact_lock(hashtext(NEW.owned_by_user_id::text));
     IF EXISTS (
         SELECT 1 FROM public.documents
         WHERE owned_by_user_id = NEW.owned_by_user_id
