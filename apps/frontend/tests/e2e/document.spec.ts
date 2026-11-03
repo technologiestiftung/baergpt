@@ -1012,6 +1012,59 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
+		"A rename that finishes after the dialog was reopened does not close it",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			const openRenameDialog = async () => {
+				await page
+					.getByRole("listitem")
+					.filter({ hasText: defaultDocumentName })
+					.getByLabel("Menü öffnen")
+					.click();
+				await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+			};
+
+			let releaseRename = () => {};
+			const renameReleased = new Promise<void>((resolve) => {
+				releaseRename = resolve;
+			});
+			await page.route("**/rest/v1/documents*", async (route) => {
+				if (route.request().method() !== "PATCH") {
+					return route.continue();
+				}
+				await renameReleased;
+				return route.continue();
+			});
+
+			await openRenameDialog();
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill("renamed_document.pdf");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+			await page.getByRole("button", { name: "Abbrechen" }).click();
+			await expect(page.getByRole("dialog")).not.toBeVisible();
+
+			await openRenameDialog();
+			const patchResponse = page.waitForResponse(
+				(response) => response.request().method() === "PATCH",
+			);
+			releaseRename();
+			await patchResponse;
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await expect(page.getByText("Erfolgreich umbenannt")).not.toBeVisible();
+			await expect(
+				page.getByRole("button", { name: "Umbenennen", exact: true }),
+			).toBeEnabled();
+		},
+	);
+
+	testDesktopOnly(
 		"Default documents cannot be renamed via dropdown",
 		async ({ page }) => {
 			await page.goto("/");

@@ -42,8 +42,8 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 }) => {
 	const { setSingleItemSelectedForAction } = useDocumentsListStore();
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	// reportValidity refocuses the input, which must not overwrite the user's edits with a new selection
 	const hasSelectedInitialNameRef = useRef(false);
+	const submissionRef = useRef(0);
 
 	const validateName = (newName: string): string => {
 		if (!newName) {
@@ -81,8 +81,12 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 			return;
 		}
 
+		const submission = ++submissionRef.current;
 		setIsSubmitting(true);
 		const error = await onRename(item.id, newName);
+		if (submission !== submissionRef.current) {
+			return;
+		}
 		setIsSubmitting(false);
 
 		if (error) {
@@ -101,6 +105,8 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 			id={id}
 			className="w-full md:w-[29rem] gap-y-4 p-5"
 			afterClose={() => {
+				submissionRef.current++;
+				setIsSubmitting(false);
 				hasSelectedInitialNameRef.current = false;
 				setSingleItemSelectedForAction(null);
 			}}
