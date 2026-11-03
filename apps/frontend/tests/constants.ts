@@ -48,7 +48,6 @@ export const defaultDocumentsType = "application/pdf";
 
 // defaultDocument data for `documents` table
 export const defaultSourceType = "personal_document";
-export const file_checksum = "8f846168ffdef7b234d20c330eb99260";
 export const file_size = 36884;
 export const num_pages = 1;
 export const folder_id = null;

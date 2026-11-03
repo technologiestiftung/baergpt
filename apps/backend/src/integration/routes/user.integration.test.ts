@@ -336,6 +336,35 @@ describe("Integration Tests for Routes", () => {
 		expect(secondEvents.map((e) => e.status)).toContain("failed.duplicate");
 	}, 20_000);
 
+	it("POST /documents/process should reject a duplicate that slips past the checksum check", async () => {
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({
+			...MOCK_EXTRACTION_RESULT,
+			checksum: crypto.randomUUID(),
+		} as never);
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"hasDocumentWithChecksum",
+		).mockResolvedValue(false);
+		const pdfBytes = await generatePdfBytesFromText("Concurrent Document");
+
+		const firstEvents = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(pdfBytes, "first.pdf"),
+		});
+		const secondEvents = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(pdfBytes, "second.pdf"),
+		});
+
+		expect(firstEvents.map((e) => e.status)).toContain("successful");
+		expect(secondEvents.map((e) => e.status)).toContain("failed.duplicate");
+	}, 20_000);
+
 	it("POST /llm/just-chatting should handle a valid request", async () => {
 		// Mock prompt assembly and the LLM stream so the
 		// route smoke-test is deterministic and never depends on external APIs.

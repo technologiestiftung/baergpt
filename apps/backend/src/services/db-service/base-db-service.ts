@@ -182,6 +182,13 @@ export abstract class BaseContentDbService {
 			})
 			.select("*");
 
+		if (
+			error?.code === "23505" &&
+			error.message.includes("idx_documents_personal_checksum_unique")
+		) {
+			throw new Error("failed.duplicate");
+		}
+
 		if (error) {
 			throw error;
 		}

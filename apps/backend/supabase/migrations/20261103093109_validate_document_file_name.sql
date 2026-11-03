@@ -37,3 +37,7 @@ GRANT ALL ON FUNCTION "public"."validate_document_file_name" () TO "anon";
 GRANT ALL ON FUNCTION "public"."validate_document_file_name" () TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."validate_document_file_name" () TO "service_role";
+
+CREATE UNIQUE INDEX idx_documents_personal_checksum_unique ON public.documents USING btree (owned_by_user_id, file_checksum)
+WHERE
+    (source_type = 'personal_document'::TEXT);
