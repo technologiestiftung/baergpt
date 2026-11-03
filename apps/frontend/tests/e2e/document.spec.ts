@@ -857,7 +857,7 @@ test.describe("Documents", () => {
 		await renameInput.fill("renamed_document.docx");
 		await page.getByRole("button", { name: "Umbenennen", exact: true }).click();
 
-		await expect(page.getByText("Erfolgreich umbenannt")).toBeVisible();
+		await expect(page.getByRole("dialog")).not.toBeVisible();
 		const renamedDocument = page.getByRole("button", {
 			name: `Dokumente-Icon ${expectedDocumentName}`,
 		});
@@ -1057,7 +1057,6 @@ test.describe("Documents", () => {
 			await patchResponse;
 
 			await expect(page.getByRole("dialog")).toBeVisible();
-			await expect(page.getByText("Erfolgreich umbenannt")).not.toBeVisible();
 			await expect(
 				page.getByRole("button", { name: "Umbenennen", exact: true }),
 			).toBeEnabled();

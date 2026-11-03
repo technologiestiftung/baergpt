@@ -21,7 +21,6 @@ interface RenameItemDialogProps {
 	item: { id: number; name: string } | null;
 	onRename: (id: number, newName: string) => Promise<Error | null>;
 	failureMessage: string;
-	successMessage?: string;
 	maxLength?: number;
 	getNameError?: (newName: string) => string;
 	normalizeName?: (name: string) => string;
@@ -34,7 +33,6 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 	item,
 	onRename,
 	failureMessage,
-	successMessage,
 	maxLength,
 	getNameError,
 	normalizeName = (name) => name,
@@ -95,9 +93,6 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 		}
 
 		hideRenameItemDialog(id);
-		if (successMessage) {
-			useToastStore.getState().addSuccess(successMessage);
-		}
 	};
 
 	return (

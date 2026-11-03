@@ -868,7 +868,6 @@ export const Content = {
 		"Der Ordner konnte nicht umbenannt werden. Bitte versuchen Sie es erneut.",
 	//RenameDocumentDialog
 	"renameDocumentDialog.title": "Dokument umbenennen",
-	"renameDocumentDialog.success": "Erfolgreich umbenannt",
 	"renameDocumentDialog.error.duplicate":
 		"Ein Dokument mit diesem Namen existiert bereits.",
 	"renameDocumentDialog.error.failed":

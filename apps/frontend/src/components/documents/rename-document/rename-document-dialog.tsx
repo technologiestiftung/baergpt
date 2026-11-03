@@ -68,7 +68,6 @@ export const RenameDocumentDialog: React.FC = () => {
 			item={userDocument ? { id: userDocument.id, name: fileName } : null}
 			onRename={renameUserDocument}
 			failureMessage={Content["renameDocumentDialog.error.failed"]}
-			successMessage={Content["renameDocumentDialog.success"]}
 			maxLength={MAX_DOCUMENT_NAME_LENGTH}
 			getNameError={getDuplicateNameError}
 			normalizeName={keepOriginalExtension}
