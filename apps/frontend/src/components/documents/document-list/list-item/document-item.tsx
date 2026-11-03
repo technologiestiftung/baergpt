@@ -11,6 +11,8 @@ import { usePreviewDocumentStore } from "../../../../store/use-preview-document-
 import { usePublicDocumentsStore } from "../../../../store/use-public-documents-store.ts";
 import { isUserDocument } from "./utils/is-user-document.ts";
 import { isPublicDocument } from "./utils/is-public-document.ts";
+import { useDocumentDownloadStore } from "../../../../store/use-document-download-store.ts";
+import { LoadingSpinnerIcon } from "../../../primitives/icons/loading-spinner-icon.tsx";
 
 interface DocumentItemProps {
 	item: Document;
@@ -37,6 +39,9 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 		selectedPublicChatDocuments.some((doc) => doc.id === item.id);
 
 	const isSelectedForPreview = selectedPreviewDocument?.id === item.id;
+	const isDownloading = useDocumentDownloadStore((state) =>
+		state.downloadingSourceUrls.includes(item.source_url),
+	);
 
 	const handleCheckboxChange = (checked: boolean) => {
 		if (isPublicDocument(item)) {
@@ -80,6 +85,12 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow group`}
 			>
 				<DraggableDocumentName item={item} />
+
+				{isDownloading && (
+					<div role="status" aria-label={Content["documentsList.downloading"]}>
+						<LoadingSpinnerIcon variant="disabled" size="small" />
+					</div>
+				)}
 
 				<ToggleChatItemButton
 					handleToggleChatItem={handleToggleChatItem}
