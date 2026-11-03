@@ -189,7 +189,7 @@ export const Content = {
 	// Upload Document
 	"baseKnowledge.uploadDocument.title": "Dokument hochladen",
 	"baseKnowledge.uploadDocument.description":
-		"Lade Dokumente (PDF, Word, Excel oder CSV) in das Base Knowledge hoch",
+		"Lade Dokumente (PDF, Word, Excel, CSV oder Markdown) in das Base Knowledge hoch",
 	"baseKnowledge.uploadDocument.label": "Dokument",
 	"baseKnowledge.uploadDocument.button.label": "Dokument hochladen",
 	"baseKnowledge.uploadDocument.uploadSuccess":

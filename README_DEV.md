@@ -81,6 +81,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
   - [Gotenberg](https://github.com/gotenberg/gotenberg) (PDF conversion)
   - [mammoth](https://github.com/mwilliamson/mammoth.js) (DOCX parsing)
   - [xlsx](https://github.com/SheetJS/sheetjs) (Excel parsing)
+  - Markdown (`.md`) is read as UTF-8 text without a parser
   - [@opendocsg/pdf2md](https://github.com/opendocsg/pdf2md) (PDF to Markdown)
 - **Observability**:
   - [Langfuse](https://github.com/langfuse/langfuse) (LLM tracing and monitoring)

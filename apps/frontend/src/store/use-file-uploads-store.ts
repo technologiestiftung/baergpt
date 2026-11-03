@@ -4,6 +4,7 @@ import { uploadAndProcessDocument } from "../api/documents/upload-file.ts";
 import { useErrorStore } from "./error-store.ts";
 import * as Sentry from "@sentry/react";
 import type { Span } from "@sentry/react";
+import { isSupportedUploadFile } from "../lib/upload-file-types.ts";
 
 export const UPLOAD_STATUS_MAP = {
 	waiting: "Warte",
@@ -60,16 +61,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				throw new Error("failed.duplicate");
 			}
 
-			if (
-				!file.type.includes("pdf") &&
-				!file.type.includes(
-					"vnd.openxmlformats-officedocument.wordprocessingml.document",
-				) &&
-				!file.type.includes(
-					"vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-				) &&
-				!file.type.includes("csv")
-			) {
+			if (!isSupportedUploadFile(file)) {
 				throw new Error("failed.format");
 			}
 
