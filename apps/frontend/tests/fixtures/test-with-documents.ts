@@ -288,7 +288,22 @@ const extensionByMime: Record<string, string> = {
 		"docx",
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
 	"text/csv": "csv",
+	"text/markdown": "md",
 };
+
+// Mirrors getSupportedFile in the backend's validation-service.ts: browsers
+// often send .md files without a mime type, so fall back to the extension.
+function resolveMimeType(file: File) {
+	if (file.type in extensionByMime) {
+		return file.type;
+	}
+	const nameExtension = file.name.split(".").pop()?.toLowerCase();
+	return (
+		Object.entries(extensionByMime).find(
+			([, extension]) => extension === nameExtension,
+		)?.[0] ?? file.type
+	);
+}
 
 /**
  * Mocks the backend's `/documents/process` route so uploads never reach the
@@ -323,7 +338,8 @@ export async function mockDocumentProcessRoute(page: Page) {
 					);
 		const metadata = JSON.parse(form.get("metadata") as string);
 
-		const sourceUrl = `${userId}/${randomUUID()}.${extensionByMime[file.type]}`;
+		const mimeType = resolveMimeType(file);
+		const sourceUrl = `${userId}/${randomUUID()}.${extensionByMime[mimeType]}`;
 		const userClient = createClient<Database>(
 			config.supabaseUrl,
 			config.supabaseAnonKey,
@@ -331,7 +347,9 @@ export async function mockDocumentProcessRoute(page: Page) {
 		);
 		const { error: uploadError } = await userClient.storage
 			.from("documents")
-			.upload(sourceUrl, file, { contentType: file.type });
+			.upload(sourceUrl, new File([file], file.name, { type: mimeType }), {
+				contentType: mimeType,
+			});
 
 		expect(uploadError).toBeNull();
 
