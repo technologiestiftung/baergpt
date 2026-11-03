@@ -279,8 +279,24 @@ resource "helm_release" "otel_collector_cluster" {
       exporters  = local.otel_exporters
 
       receivers = {
-        # Merged into the preset's receiver; its 10s default costs 6x the samples.
+        # Merged into the preset's receiver (default 10s).
         k8s_cluster = { collection_interval = "60s" }
+
+        # Certificate expiry for SkeCertificateExpiresSoon; keeps only the certificate series.
+        "prometheus/cert-manager" = {
+          config = {
+            scrape_configs = [{
+              job_name        = "cert-manager"
+              scrape_interval = "60s"
+              static_configs  = [{ targets = ["cert-manager.cert-manager.svc:9402"] }]
+              metric_relabel_configs = [{
+                source_labels = ["__name__"]
+                regex         = "certmanager_certificate_(expiration_timestamp_seconds|ready_status)"
+                action        = "keep"
+              }]
+            }]
+          }
+        }
       }
 
       processors = merge(local.otel_processors, {
@@ -299,7 +315,7 @@ resource "helm_release" "otel_collector_cluster" {
             exporters  = ["otlphttp/stackit"]
           }
           metrics = {
-            receivers  = []
+            receivers  = ["prometheus/cert-manager"]
             processors = ["memory_limiter", "resource/source", "batch"]
             exporters  = ["prometheusremotewrite/stackit"]
           }

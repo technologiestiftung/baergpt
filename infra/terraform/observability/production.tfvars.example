@@ -7,10 +7,11 @@ instance_id   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 env           = "production"
 target_source = "supabase-production"
 
-# Thresholds (override defaults from variables.tf as needed)
+# Thresholds (override defaults from variables.tf as needed). Disk/memory/CPU apply to
+# both VMs (staging too).
 disk_used_ratio_max  = 0.90
 mem_used_ratio_max   = 0.90
-cpu_load_15m_max       = 4
+cpu_load_15m_max       = 2
 kong_5xx_ratio_max     = 0.20
 kong_5xx_min_errors_5m = 5
 anon_egress_blocked_ratio_max = 0.25
