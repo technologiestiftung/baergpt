@@ -9,6 +9,7 @@ import { WebSearchIcon } from "../../../primitives/icons/web-search-icon.tsx";
 import type { ChatToolsMenuItemId } from "../../../../common.ts";
 import { ChatMenuRow } from "./chat-menu-row.tsx";
 import { config } from "../../../../config.ts";
+import { SUPPORTED_UPLOAD_FILE_ACCEPT } from "../../../../lib/upload-file-types.ts";
 
 export const CHAT_TOOLS_MENU_ID = "chat-tools-menu";
 
@@ -141,9 +142,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 				type="file"
 				ref={fileInputRef}
 				onChange={handleFileSelect}
-				accept={
-					"application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-				}
+				accept={SUPPORTED_UPLOAD_FILE_ACCEPT}
 				aria-label={Content["chat.options.li1.ariaLabel"]}
 				className="hidden"
 				multiple
