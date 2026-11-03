@@ -35,6 +35,7 @@ const blockTokenCounts = markdownBlocks.map(
 	(block) => encoding.encode(block).length,
 );
 
+/** Builds markdown of exactly `targetTokens` tokens. */
 function buildMarkdown(targetTokens: number): string {
 	const parts: string[] = [];
 	let tokens = 0;
@@ -42,7 +43,10 @@ function buildMarkdown(targetTokens: number): string {
 		parts.push(markdownBlocks[i % markdownBlocks.length]);
 		tokens += blockTokenCounts[i % markdownBlocks.length];
 	}
-	return parts.join("");
+	// The last block overshoots the target, so cut at the exact token count.
+	return encoding.decode(
+		encoding.encode(parts.join("")).slice(0, targetTokens),
+	);
 }
 
 function splitIntoDeltas(text: string, tokensPerDelta = TOKENS_PER_DELTA) {
