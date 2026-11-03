@@ -435,6 +435,23 @@ export abstract class BaseContentDbService {
 		return count || 0;
 	}
 
+	async hasDocumentWithChecksum(
+		userId: string,
+		checksum: string,
+	): Promise<boolean> {
+		const { count, error } = await this.client
+			.from("documents")
+			.select("*", { count: "exact", head: true })
+			.eq("owned_by_user_id", userId)
+			.eq("file_checksum", checksum);
+
+		if (error) {
+			throw error;
+		}
+
+		return (count ?? 0) > 0;
+	}
+
 	async getBaseKnowledgeDocuments(
 		user_id: string,
 	): Promise<KnowledgeBaseDocument[]> {

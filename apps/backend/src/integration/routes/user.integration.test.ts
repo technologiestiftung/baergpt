@@ -256,10 +256,17 @@ describe("Integration Tests for Routes", () => {
 	// exercise the route + real DB/storage without hitting the API. The route
 	// still uploads the file and writes real rows via logProcessedDocument.
 	beforeEach(() => {
+		// A unique checksum per upload, since the route rejects files the user already has
 		vi.spyOn(
 			UserScopedDbService.prototype,
 			"extractDocument",
-		).mockResolvedValue(MOCK_EXTRACTION_RESULT as never);
+		).mockImplementation(
+			async () =>
+				({
+					...MOCK_EXTRACTION_RESULT,
+					checksum: crypto.randomUUID(),
+				}) as never,
+		);
 		vi.spyOn(GenerationService.prototype, "summarize").mockResolvedValue(
 			MOCK_SUMMARY_DATA as never,
 		);
@@ -302,6 +309,31 @@ describe("Integration Tests for Routes", () => {
 
 			expect(events.map((e) => e.status)).toContain("successful");
 		}
+	}, 20_000);
+
+	it("POST /documents/process should reject a file the user already uploaded under another name", async () => {
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({
+			...MOCK_EXTRACTION_RESULT,
+			checksum: crypto.randomUUID(),
+		} as never);
+		const pdfBytes = await generatePdfBytesFromText("Duplicate Document");
+
+		const firstEvents = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(pdfBytes, "original.pdf"),
+		});
+		const secondEvents = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(pdfBytes, "renamed.pdf"),
+		});
+
+		expect(firstEvents.map((e) => e.status)).toContain("successful");
+		expect(secondEvents.map((e) => e.status)).toContain("failed.duplicate");
 	}, 20_000);
 
 	it("POST /llm/just-chatting should handle a valid request", async () => {

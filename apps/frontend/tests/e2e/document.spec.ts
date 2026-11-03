@@ -833,26 +833,205 @@ test.describe("Documents", () => {
 		},
 	);
 
+	testDesktopOnly("Rename a document via dropdown", async ({ page }) => {
+		const expectedDocumentName = "renamed_document.pdf";
+
+		await page.goto("/");
+
+		await openDocumentsPanel(page);
+
+		await page
+			.getByRole("listitem")
+			.filter({ hasText: defaultDocumentName })
+			.getByLabel("Menü öffnen")
+			.click();
+		await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+		const renameInput = page.getByRole("textbox", {
+			name: "Dokument umbenennen",
+		});
+		await expect(renameInput).toHaveValue(defaultDocumentName);
+		await expect(renameInput).toHaveAttribute("maxlength", "100");
+
+		// A changed or removed extension is replaced by the original one
+		await renameInput.fill("renamed_document.docx");
+		await page.getByRole("button", { name: "Umbenennen", exact: true }).click();
+
+		await expect(page.getByText("Erfolgreich umbenannt")).toBeVisible();
+		const renamedDocument = page.getByRole("button", {
+			name: `Dokumente-Icon ${expectedDocumentName}`,
+		});
+		await expect(renamedDocument).toBeVisible();
+
+		await page.reload();
+		await openDocumentsPanel(page);
+		await renamedDocument.click();
+		await expect(
+			page.getByRole("heading", { name: expectedDocumentName }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("button", {
+				name: `Dokumente-Icon ${defaultDocumentName}`,
+			}),
+		).not.toBeVisible();
+	});
+
 	testDesktopOnly(
-		"Documents cannot be renamed via dropdown",
+		"Renaming a document to an empty name is rejected",
 		async ({ page }) => {
 			await page.goto("/");
 
 			await openDocumentsPanel(page);
 
-			const menuButtonDocument = page
+			await page
 				.getByRole("listitem")
 				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Menü öffnen");
-			await menuButtonDocument.click();
+				.getByLabel("Menü öffnen")
+				.click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill("   ");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Renaming a document to the name of another document is rejected",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen")
+				.click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill(seedDefaultDocumentName);
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Submitting an unchanged name longer than the limit closes the rename dialog",
+		async ({ page, account, session }) => {
+			const tooLongFileName = `${"a".repeat(120)}.pdf`;
+			await mockDocumentUpload({
+				userId: account.id,
+				accessToken: session.access_token,
+				accessGroupId: null,
+				fileName: tooLongFileName,
+				filePath: defaultDocumentPath,
+				sourceType: defaultSourceType,
+				bucketName: defaultBucketName,
+			});
+
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await page
+				.getByRole("listitem")
+				.filter({ hasText: tooLongFileName })
+				.getByLabel("Menü öffnen")
+				.click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await expect(
+				page.getByRole("textbox", { name: "Dokument umbenennen" }),
+			).toHaveValue(tooLongFileName);
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(page.getByRole("dialog")).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"A failed document rename shows an error and keeps the dialog open",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await page
+				.getByRole("listitem")
+				.filter({ hasText: defaultDocumentName })
+				.getByLabel("Menü öffnen")
+				.click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await page.route("**/rest/v1/documents*", (route) =>
+				route.request().method() === "PATCH"
+					? route.fulfill({
+							status: 500,
+							contentType: "application/json",
+							body: JSON.stringify({ message: "internal error" }),
+						})
+					: route.continue(),
+			);
+
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill("renamed_document.pdf");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(
+				page.getByText("Das Dokument konnte nicht umbenannt werden."),
+			).toBeVisible();
+			await expect(page.getByRole("dialog")).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Default documents cannot be renamed via dropdown",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await page
+				.locator("#desktop-documents-panel")
+				.getByRole("listitem")
+				.filter({ hasText: seedDefaultDocumentName })
+				.getByLabel("Menü öffnen")
+				.first()
+				.click();
 
 			await expect(
 				page.getByRole("option", { name: "Dokument anzeigen" }),
 			).toBeVisible();
 
-			// Renaming is only available for the user's own folders
 			await expect(
-				page.getByRole("option", { name: "Ordner umbenennen" }),
+				page.getByRole("option", { name: "Dokument umbenennen" }),
 			).not.toBeVisible();
 		},
 	);

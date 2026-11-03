@@ -76,6 +76,16 @@ documents.post("/process", async (c: Context) =>
 				reqId,
 			);
 
+			if (
+				sourceType === "personal_document" &&
+				(await userScopedDbService.hasDocumentWithChecksum(
+					userId,
+					extractionResult.checksum,
+				))
+			) {
+				throw new Error("failed.duplicate");
+			}
+
 			// Step 2: Process document (embed and summarize)
 			// Always use authenticated user ID, never trust client input for owned_by_user_id
 			const documentForProcessing: Document = {
@@ -154,6 +164,14 @@ documents.post("/process", async (c: Context) =>
 				return stream.writeSSE({
 					data: JSON.stringify({
 						status: "failed.size",
+					}),
+				});
+			}
+
+			if (error instanceof Error && error.message === "failed.duplicate") {
+				return stream.writeSSE({
+					data: JSON.stringify({
+						status: "failed.duplicate",
 					}),
 				});
 			}

@@ -793,6 +793,7 @@ export const Content = {
 	"documentsList.rename": "Umbenennen",
 	"documentsList.rename.imgAlt": "Stift-Icon",
 	"documentsList.renameFolder": "Ordner umbenennen",
+	"documentsList.renameDocument": "Dokument umbenennen",
 
 	"documentsList.menuIcon.imgAlt": "Menü-Icon",
 	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
@@ -855,10 +856,23 @@ export const Content = {
 	"createFolderDialog.folderName": "Unbenannter Ordner",
 	"createFolderDialog.cancel": "Abbrechen",
 	"createFolderDialog.create": "Erstellen",
+	//RenameItemDialog
+	"renameItemDialog.cancel": "Abbrechen",
+	"renameItemDialog.rename": "Umbenennen",
+	"renameItemDialog.error.empty": "Bitte geben Sie einen Namen ein.",
+	"renameItemDialog.error.tooLong":
+		"Der Name darf maximal {maxLength} Zeichen lang sein.",
 	//RenameFolderDialog
 	"renameFolderDialog.title": "Ordner umbenennen",
-	"renameFolderDialog.cancel": "Abbrechen",
-	"renameFolderDialog.rename": "Umbenennen",
+	"renameFolderDialog.error.failed":
+		"Der Ordner konnte nicht umbenannt werden. Bitte versuchen Sie es erneut.",
+	//RenameDocumentDialog
+	"renameDocumentDialog.title": "Dokument umbenennen",
+	"renameDocumentDialog.success": "Erfolgreich umbenannt",
+	"renameDocumentDialog.error.duplicate":
+		"Ein Dokument mit diesem Namen existiert bereits.",
+	"renameDocumentDialog.error.failed":
+		"Das Dokument konnte nicht umbenannt werden. Bitte versuchen Sie es erneut.",
 	//DeleteHistoryEntryDialog
 	"deleteHistoryEntryDialog.title": "Chat löschen?",
 	"deleteHistoryEntryDialog.confirmation.p1": "Möchten Sie",
