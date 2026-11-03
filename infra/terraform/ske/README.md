@@ -117,9 +117,13 @@ usage, collector health, Warning events and logs.
 ### Alerts
 
 Rules live in `infra/terraform/observability/alerts_ske.tf` (applied from that module's
-`production` workspace). They cover `prod` (critical) and `staging` (warning); `sandbox` has no
-alerts. Certificate expiry comes from cert-manager's metrics, which `otel-collector-cluster`
-scrapes (`prometheus/cert-manager`, only the `certmanager_certificate_*` series).
+`production` workspace). Workload rules cover `prod` (critical) and `staging` (warning);
+`sandbox` has none. Node, certificate and collector rules are cluster-wide with a fixed
+severity set in each rule.
+
+The certificate alerts need cert-manager's metrics. `otel-collector-cluster` fetches them from
+cert-manager every minute (receiver `prometheus/cert-manager` in `observability.tf`) and keeps
+only the certificate expiry and ready series.
 
 ### Verify after an apply
 

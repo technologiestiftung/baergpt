@@ -1,6 +1,7 @@
 # Alerts on the SKE cluster (infra/terraform/ske/observability.tf). Created from the production
 # workspace only: one cluster for all environments, on the same instance as the Supabase VMs.
-# Severity follows the namespace (prod critical, staging warning); sandbox has no alerts.
+# Workload rules: prod critical, staging warning, sandbox none. Node, certificate and collector
+# rules are cluster-wide with a fixed severity.
 
 locals {
   ske_alert_namespaces = "prod|staging"
