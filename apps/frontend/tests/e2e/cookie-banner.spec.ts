@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { mockSplashCommitRoute } from "../fixtures/test-without-splash-screen.ts";
 
 test.describe("Cookie Banner", () => {
 	test.beforeEach(async ({ page }, testInfo) => {
+		await mockSplashCommitRoute(page.context());
+
 		// Clear localStorage for tests that need a fresh start
 		// Skip clearing for tests that need to test persistence
 		if (!testInfo.title.includes("subsequent visits after consent")) {
@@ -15,9 +18,6 @@ test.describe("Cookie Banner", () => {
 		page,
 	}) => {
 		await page.goto("/privacy-policy/");
-
-		// Wait for page to load
-		await page.waitForLoadState("networkidle");
 
 		// Check if cookie banner appears at all
 		await expect(page.getByRole("region", { name: /Cookie/ })).toBeVisible();
@@ -203,7 +203,7 @@ test.describe("Cookie Banner", () => {
 
 		// Reload page - cookie banner should not appear
 		await page.reload();
-		await page.waitForLoadState("networkidle");
+		await expect(page.getByRole("main")).toBeVisible();
 		await expect(
 			page.getByRole("region", { name: /Cookie/ }),
 		).not.toBeVisible();

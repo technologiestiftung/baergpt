@@ -1409,7 +1409,6 @@ test.describe("Documents", () => {
 			}
 
 			await page.goto("/");
-			await page.waitForLoadState("networkidle");
 
 			await openDocumentsPanel(page);
 
@@ -1453,7 +1452,6 @@ test.describe("Documents", () => {
 			}
 
 			await page.goto("/");
-			await page.waitForLoadState("networkidle");
 
 			await openDocumentsPanel(page);
 

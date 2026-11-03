@@ -18,6 +18,10 @@
 			_paq.push(["trackPageView"]);
 			_paq.push(["enableLinkTracking"]);
 			(function () {
+				if ("%VITE_VERCEL_ENV%" === "test") {
+					return;
+				}
+
 				var u = "%VITE_MATOMO_URL%";
 				_paq.push(["setTrackerUrl", u + "matomo.php"]);
 				_paq.push(["setSiteId", "%VITE_MATOMO_SITE_ID%"]);
