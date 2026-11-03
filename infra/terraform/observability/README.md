@@ -16,7 +16,8 @@ live pipeline. Slack isn't supported by STACKIT's Alertmanager.
 | `versions.tf`             | Terraform + provider pin; S3 remote-state backend                                             |
 | `provider.tf`             | `stackit` provider, region `eu01`, env-based auth                                             |
 | `variables.tf`            | ids, `target_source`, thresholds; validations incl. the workspace guard                       |
-| `alerts_metrics.tf`       | host down / disk / memory / CPU (PromQL)                                                      |
+| `locals.tf`               | `shared_alerts_enabled`: groups covering every environment                                    |
+| `alerts_metrics.tf`       | host down / disk / memory / CPU on both VMs (PromQL); `production` workspace only             |
 | `alerts_logs.tf`          | Kong 5xx ratio (LogQL)                                                                        |
 | `alerts_anon_egress.tf`   | Tor/Mullvad blocklist stale / blocked share too high (LogQL)                                  |
 | `alerts_ske.tf`           | SKE cluster health, certificate expiry, Envoy 5xx, rejected pods; `production` workspace only |
@@ -70,6 +71,11 @@ Each environment is a named **workspace** — the same config, a separate state 
 _which state_; the _values_ come from `-var-file`. Every run sets two dials that must
 agree, and `variables.tf` validates `terraform.workspace == var.env` — a mismatched run
 fails before it can write to the wrong state.
+
+Groups that cover every environment (`supabase-host` for both VMs, and the SKE groups)
+are created from the `production` workspace only, so they exist once. The `staging`
+workspace keeps only staging's log rules. Apply `production` from a branch that contains
+every shared group; otherwise the apply deletes the groups that branch lacks.
 
 ```sh
 OP="op run --env-file .op.env.observability.staging --"
