@@ -110,6 +110,13 @@ export const csvDocumentPath = resolve(
 );
 export const csvDocumentType = "text/csv";
 
+export const markdownDocumentName = "markdown-document.md";
+export const markdownDocumentPath = resolve(
+	__dirname,
+	`./fixtures/${markdownDocumentName}`,
+);
+export const markdownDocumentType = "";
+
 export const longFileName =
 	"This_is_a_very_long_document_name_that_should_be_truncated.pdf";
 export const longFilePath = resolve(__dirname, `./fixtures/${longFileName}`);

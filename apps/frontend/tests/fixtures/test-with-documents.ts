@@ -376,6 +376,15 @@ export function waitForProcessResponse(page: Page) {
 	);
 }
 
+// Scoped to the upload status list: once the upload finishes, the file name
+// also shows up in the document list, which breaks strict-mode text lookups
+function uploadStatusItem(page: Page, fileName: string) {
+	return page
+		.locator("#desktop-documents-panel")
+		.getByRole("listitem")
+		.filter({ has: page.getByText(fileName, { exact: true }) });
+}
+
 /**
  * Makes a real file upload of a single file via the file chooser and waits for
  * the file to be fully processed and appear in the document list.
@@ -422,11 +431,7 @@ export async function uploadFileViaFileChooserAndWait({
 	}
 
 	await testWithDocuments
-		.expect(
-			page.locator("#desktop-documents-panel").getByText(fileName, {
-				exact: true,
-			}),
-		)
+		.expect(uploadStatusItem(page, fileName))
 		.toBeVisible();
 
 	const response = await responsePromise;
@@ -550,11 +555,7 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	// Wait for all files to be visible in the upload dialog
 	for (const file of files) {
 		await testWithDocuments
-			.expect(
-				page.locator("#desktop-documents-panel").getByText(file.name, {
-					exact: true,
-				}),
-			)
+			.expect(uploadStatusItem(page, file.name))
 			.toBeVisible();
 	}
 

@@ -268,6 +268,41 @@ describe("POST /documents/process – captureError is called for every error cas
 		expect(captureErrorMock).toHaveBeenCalledOnce();
 	});
 
+	it.each(["", "application/octet-stream", "text/plain"])(
+		"accepts a .md file sent with the mime type %j as text/markdown",
+		async (givenMimeType) => {
+			const givenFile = new File([DUMMY_BYTES], "notes.md", {
+				type: givenMimeType,
+			});
+
+			const actualResponse = await app.fetch(
+				createRequest(VALID_PDF_BODY, givenFile),
+			);
+
+			expect(await getStatuses(actualResponse)).not.toContain("failed.format");
+			const [actualDocument, actualFile] = extractDocumentSpy.mock.calls[0] as [
+				{ source_url: string },
+				File,
+			];
+			expect(actualDocument.source_url).toMatch(/\.md$/);
+			expect(actualFile.type).toBe("text/markdown");
+		},
+	);
+
+	it("accepts a .markdown file and stores it as .md", async () => {
+		const givenFile = new File([DUMMY_BYTES], "notes.markdown", { type: "" });
+
+		const actualResponse = await app.fetch(
+			createRequest(VALID_PDF_BODY, givenFile),
+		);
+
+		expect(await getStatuses(actualResponse)).not.toContain("failed.format");
+		const [actualDocument] = extractDocumentSpy.mock.calls[0] as [
+			{ source_url: string },
+		];
+		expect(actualDocument.source_url).toMatch(/\.md$/);
+	});
+
 	it("calls captureError when the request body fails Zod validation", async () => {
 		const givenRequest = createRequest({
 			document: {

@@ -5,6 +5,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import { styles } from "./pdf-export-styles";
 import { registerPdfFonts } from "./pdf-export-fonts";
+import { downloadBlob } from "../../../../lib/download-blob.ts";
 
 interface MarkdownNode {
 	type: string;
@@ -173,12 +174,7 @@ export async function exportMarkdownToPdf(markdown: string, fileName: string) {
 		);
 
 		const blob = await pdf(doc).toBlob();
-
-		// Download
-		const link = document.createElement("a");
-		link.href = URL.createObjectURL(blob);
-		link.download = `${fileName}.pdf`;
-		link.click();
+		downloadBlob(blob, `${fileName}.pdf`);
 	} catch (error) {
 		const { captureError } =
 			await import("../../../../monitoring/capture-error.ts");

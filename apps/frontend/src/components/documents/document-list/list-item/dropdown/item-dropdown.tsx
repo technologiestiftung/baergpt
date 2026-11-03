@@ -16,6 +16,7 @@ import { isUserFolder } from "../utils/is-user-folder.ts";
 import { showRenameFolderDialog } from "../../../rename-folder/rename-folder-dialog.tsx";
 import { isPersonalDocument } from "../utils/is-personal-document.ts";
 import { showRenameDocumentDialog } from "../../../rename-document/rename-document-dialog.tsx";
+import { useDocumentDownloadStore } from "../../../../../store/use-document-download-store.ts";
 
 interface ItemDropdownProps {
 	item: Document | UserFolder | PublicFolder;
@@ -32,6 +33,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 }) => {
 	const { selectPreviewDocument } = usePreviewDocumentStore();
 	const { setSingleItemSelectedForAction } = useDocumentsListStore();
+	const { downloadDocumentFile } = useDocumentDownloadStore();
 	const [position, setPosition] = useState<{
 		top: number;
 		right: number;
@@ -99,6 +101,11 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		selectPreviewDocument(item as Document);
 	};
 
+	const handleDownloadItem = () => {
+		onClose();
+		void downloadDocumentFile(item as Document);
+	};
+
 	const handleRenameItem = () => {
 		if (!isRenamable) {
 			return;
@@ -153,6 +160,22 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		),
 	};
 
+	const downloadItem = {
+		action: handleDownloadItem,
+		label: Content["documentsList.download"],
+		ariaLabel: Content["documentsList.download"],
+		style: "text-dunkelblau-80",
+		icon: (
+			<img
+				src="/icons/download-icon.svg"
+				alt={Content["downloadIcon.imgAlt"]}
+				className="size-5"
+				width={20}
+				height={20}
+			/>
+		),
+	};
+
 	const renameItem = {
 		action: handleRenameItem,
 		label: Content["documentsList.rename"],
@@ -180,7 +203,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const dropdownItems = [
 		addToChatItem,
 		...(isRenamable ? [renameItem] : []),
-		...(isDoc ? [viewItem] : []),
+		...(isDoc ? [viewItem, downloadItem] : []),
 		...(isReadOnly ? [] : [deleteItem]),
 	];
 

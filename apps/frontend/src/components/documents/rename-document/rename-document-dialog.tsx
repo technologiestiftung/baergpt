@@ -7,13 +7,16 @@ import {
 	RenameItemDialog,
 	showRenameItemDialog,
 } from "../rename-item/rename-item-dialog.tsx";
+import { SUPPORTED_UPLOAD_FILE_TYPES } from "../../../lib/upload-file-types.ts";
 import Content from "../../../content.ts";
 
 const renameDocumentDialogId = "rename-document-dialog";
 
 const MAX_DOCUMENT_NAME_LENGTH = 100;
 
-const SUPPORTED_FILE_EXTENSIONS = [".pdf", ".docx", ".xlsx", ".csv"];
+const SUPPORTED_FILE_EXTENSIONS = Object.values(
+	SUPPORTED_UPLOAD_FILE_TYPES,
+).flat();
 
 export function showRenameDocumentDialog() {
 	showRenameItemDialog(renameDocumentDialogId);
