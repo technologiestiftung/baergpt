@@ -3,7 +3,7 @@ SET
     "search_path" TO '' AS $$
 BEGIN
     -- Only renames are validated; uploads keep the original file name, which may be longer
-    IF NEW.file_name IS NULL OR btrim(NEW.file_name) = '' THEN
+    IF NEW.file_name IS NULL OR btrim(NEW.file_name, E' \t\r\n') = '' THEN
         RAISE EXCEPTION 'Document name must not be empty';
     END IF;
     IF char_length(NEW.file_name) > 100 THEN
