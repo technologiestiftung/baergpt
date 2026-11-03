@@ -3,8 +3,6 @@
 # Severity follows the namespace (prod critical, staging warning); sandbox has no alerts.
 
 locals {
-  ske_alerts_enabled = var.env == "production"
-
   ske_alert_namespaces = "prod|staging"
 
   # Wraps a PromQL expression whose series carry k8s_namespace_name.
@@ -23,7 +21,7 @@ locals {
 }
 
 resource "stackit_observability_alertgroup" "ske" {
-  count = local.ske_alerts_enabled ? 1 : 0
+  count = local.shared_alerts_enabled ? 1 : 0
 
   project_id  = var.project_id
   instance_id = var.instance_id
@@ -210,7 +208,7 @@ resource "stackit_observability_alertgroup" "ske" {
 }
 
 resource "stackit_observability_logalertgroup" "ske" {
-  count = local.ske_alerts_enabled ? 1 : 0
+  count = local.shared_alerts_enabled ? 1 : 0
 
   project_id  = var.project_id
   instance_id = var.instance_id
