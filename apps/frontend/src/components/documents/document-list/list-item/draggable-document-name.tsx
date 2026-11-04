@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { usePreviewDocumentStore } from "../../../../store/use-preview-document-store.ts";
 import { useDrag } from "react-dnd";
 import type { Document } from "../../../../common.ts";
@@ -82,6 +82,13 @@ export function DraggableDocumentName({ item }: DragableProps) {
 		preview(getEmptyImage(), { captureDraggingState: true });
 	}, [preview]);
 
+	const dragRefCallback = useCallback(
+		(node: HTMLElement | null) => {
+			dragRef(node);
+		},
+		[dragRef],
+	);
+
 	const isSelectedForPreview = selectedPreviewDocument?.id === item.id;
 
 	return (
@@ -89,7 +96,7 @@ export function DraggableDocumentName({ item }: DragableProps) {
 			draggable="true"
 			className="flex w-0 grow rounded-3px focus-visible:outline-default"
 			onClick={() => selectPreviewDocument(item)}
-			ref={dragRef}
+			ref={dragRefCallback}
 			onMouseEnter={handleMouseEnter}
 			onMouseLeave={handleMouseLeave}
 			onMouseDown={handleMouseLeave}
