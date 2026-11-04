@@ -122,6 +122,22 @@ test.describe("Domain Allowlist", () => {
 		).toBeVisible();
 	});
 
+	test("shows error when adding a domain that already exists in the allowlist", async ({
+		page,
+		testDomain,
+	}) => {
+		await insertActiveTestDomain(testDomain);
+
+		await page.locator("#domain").fill(testDomain);
+		await page.getByRole("button", { name: "Domain hinzufügen" }).click();
+
+		const errorMessage = page.getByText("Die Domain wurde schon hinzugefügt.");
+		await expect(errorMessage).toBeVisible();
+		await expect(
+			page.getByRole("button", { name: "Domain hinzugefügt" }),
+		).not.toBeVisible();
+	});
+
 	test("canceling status change dialog leaves domain active", async ({
 		page,
 		testDomain,
