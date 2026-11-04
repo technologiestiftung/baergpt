@@ -38,7 +38,7 @@
 	.markdown-container h4,
 	.markdown-container h5,
 	.markdown-container h6 {
-		@apply font-bold pt-2 text-dunkelblau-100;
+		@apply font-bold pt-1.5 text-dunkelblau-100;
 	}
 
 	.markdown-container h1 {
