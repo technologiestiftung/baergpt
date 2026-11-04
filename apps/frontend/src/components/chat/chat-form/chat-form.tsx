@@ -30,6 +30,7 @@ import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 import { useCurrentChatIdStore } from "../../../store/current-chat-id-store.ts";
 import { ChatSubmitButton } from "./chat-submit-button.tsx";
+import { usePromptHistory } from "./hooks/use-prompt-history.ts";
 
 export const chatFormId = "chat-form";
 
@@ -80,6 +81,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	const { currentChatId } = useCurrentChatIdStore();
 
 	const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+		resetPromptHistory();
 		setTextareaContent(event.target.value);
 		onContentChange?.(event.target.value);
 	};
@@ -95,6 +97,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		shouldMoveCaretToEnd.current = true;
 		focusTextArea();
 	};
+
+	const { handlePromptHistoryKeyDown, resetPromptHistory } = usePromptHistory({
+		content: textareaContent,
+		setContent,
+	});
 
 	useLayoutEffect(() => {
 		const textareaElement = textareaRef.current;
@@ -143,6 +150,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
 	const handleTextAreaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+		if (handlePromptHistoryKeyDown(event)) {
+			return;
+		}
+
 		const isEnterWithoutShiftPressed = event.key === "Enter" && !event.shiftKey;
 		if (isEnterWithoutShiftPressed) {
 			event.preventDefault();
@@ -174,6 +185,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		showInfoMessage(null);
 
 		// Clear textarea on submit
+		resetPromptHistory();
 		setTextareaContent("");
 		onContentChange?.("");
 
