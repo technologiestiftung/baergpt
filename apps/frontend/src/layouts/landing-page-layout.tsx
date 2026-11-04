@@ -1,6 +1,6 @@
 import React from "react";
 import { LandingPageHeader } from "../components/headers/landing-page/landing-page-header.tsx";
-import { FooterLandingPage } from "../components/footer/footer-landing-page.tsx";
+import { Footer } from "../components/footer/footer.tsx";
 import { CookieBanner } from "../components/cookie-banner/cookie-banner.tsx";
 import { useSessionRedirect } from "../hooks/use-session-redirect.tsx";
 
@@ -11,7 +11,8 @@ interface AppLayoutProps {
 export const LandingPageLayout: React.FC<AppLayoutProps> = ({ children }) => {
 	const shouldRedirect =
 		location.pathname !== "/privacy-policy/" &&
-		location.pathname !== "/terms-of-use/";
+		location.pathname !== "/terms-of-use/" &&
+		location.pathname !== "/accessibility-statement/";
 
 	if (shouldRedirect) {
 		useSessionRedirect();
@@ -22,7 +23,7 @@ export const LandingPageLayout: React.FC<AppLayoutProps> = ({ children }) => {
 			<LandingPageHeader />
 			<main className="mt-20">{children}</main>
 
-			<FooterLandingPage />
+			<Footer showCookieSettings />
 			<CookieBanner />
 		</div>
 	);
