@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useDrop } from "react-dnd";
 import type { Document } from "../../../common.ts";
 import { useDragAndDropStore } from "../../../store/drag-and-drop-store.ts";
@@ -55,5 +55,12 @@ export function useFolderDropTarget({
 		}
 	}, [isHoveredForDrop, folderId, setHoveredFolderId]);
 
-	return { dropRef, isHoveredForDrop };
+	const dropRefCallback = useCallback(
+		(node: HTMLElement | null) => {
+			dropRef(node);
+		},
+		[dropRef],
+	);
+
+	return { dropRef: dropRefCallback, isHoveredForDrop };
 }

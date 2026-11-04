@@ -291,18 +291,20 @@ const extensionByMime: Record<string, string> = {
 	"text/markdown": "md",
 };
 
-// Mirrors getSupportedFile in the backend's validation-service.ts: browsers
-// often send .md files without a mime type, so fall back to the extension.
-function resolveMimeType(file: File) {
-	if (file.type in extensionByMime) {
+// Browsers send .md files without a MIME type, so like the backend fall back to
+// the file extension.
+function getMimeType(file: File) {
+	if (extensionByMime[file.type]) {
 		return file.type;
 	}
-	const nameExtension = file.name.split(".").pop()?.toLowerCase();
-	return (
-		Object.entries(extensionByMime).find(
-			([, extension]) => extension === nameExtension,
-		)?.[0] ?? file.type
+	const extension = file.name.split(".").pop()?.toLowerCase();
+	const mimeType = Object.keys(extensionByMime).find(
+		(type) => extensionByMime[type] === extension,
 	);
+	if (!mimeType) {
+		throw new Error(`Unsupported file type: ${file.name}`);
+	}
+	return mimeType;
 }
 
 /**
@@ -328,17 +330,18 @@ export async function mockDocumentProcessRoute(page: Page) {
 		const formFile = form.get("file") as File;
 		// WebKit leaves the file part empty in intercepted requests, so read the
 		// fixture of the same name instead.
-		const file =
-			formFile.size > 0
-				? formFile
-				: new File(
-						[readFileSync(resolve(fixturesDir, formFile.name))],
-						formFile.name,
-						{ type: formFile.type },
-					);
+		const mimeType = getMimeType(formFile);
+		const file = new File(
+			[
+				formFile.size > 0
+					? formFile
+					: new Uint8Array(readFileSync(resolve(fixturesDir, formFile.name))),
+			],
+			formFile.name,
+			{ type: mimeType },
+		);
 		const metadata = JSON.parse(form.get("metadata") as string);
 
-		const mimeType = resolveMimeType(file);
 		const sourceUrl = `${userId}/${randomUUID()}.${extensionByMime[mimeType]}`;
 		const userClient = createClient<Database>(
 			config.supabaseUrl,

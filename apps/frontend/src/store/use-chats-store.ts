@@ -431,19 +431,24 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		traces,
 		running_tool,
 	}) => {
-		const foundMessage = chat.messages.find(({ id }) => id === messageId);
-		if (!foundMessage) {
+		const messageIndex = chat.messages.findIndex(({ id }) => id === messageId);
+		if (messageIndex === -1) {
 			return;
 		}
 
-		foundMessage.content = content;
-		foundMessage.citations = citations;
-		foundMessage.web_citations = web_citations;
-		foundMessage.parla_citations = parla_citations;
-		foundMessage.open_data_citations = open_data_citations;
-		foundMessage.datawrapper_chart_ids = datawrapper_chart_ids;
-		foundMessage.traces = traces;
-		foundMessage.running_tool = running_tool;
+		// Replace instead of mutating, so the memoized `ChatMessage` of every
+		// other message can skip re-rendering on each streamed delta.
+		chat.messages[messageIndex] = {
+			...chat.messages[messageIndex],
+			content,
+			citations,
+			web_citations,
+			parla_citations,
+			open_data_citations,
+			datawrapper_chart_ids,
+			traces,
+			running_tool,
+		};
 		get().updateChats(chat);
 	},
 

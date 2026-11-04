@@ -17,7 +17,11 @@ export function AssistantMessage({
 	children: string | ReactNode;
 }) {
 	const { status } = useInferenceLoadingStatusStore();
-	const { getCurrentChat } = useChatsStore();
+	// Select only this boolean, so a streamed delta in another message does
+	// not re-render this one.
+	const isLastMessage = useChatsStore(
+		(state) => state.getCurrentChat()?.messages.at(-1)?.id === message.id,
+	);
 	const {
 		content,
 		traces,
@@ -30,7 +34,6 @@ export function AssistantMessage({
 
 	const exportErrorMessage = getUIError("chat-export");
 
-	const isLastMessage = message.id === getCurrentChat()?.messages.at(-1)?.id;
 	const isIdle = ["idle"].includes(status);
 	const hasChatButtons = !isLastMessage || isIdle;
 
