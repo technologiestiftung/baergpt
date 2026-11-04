@@ -1440,7 +1440,7 @@ export const Content = {
 	"footer.privacy.link": "/privacy-policy/",
 	"footer.termsOfUse": "Nutzungsbedingungen",
 	"footer.termsOfUse.link": "/terms-of-use/",
-	"footer.accessibilityStatement": "Erklärung zur digitalen Barrierefreiheit",
+	"footer.accessibilityStatement": "Erklärung zur Barrierefreiheit",
 	"footer.accessibilityStatement.link": "/accessibility-statement/",
 	"footer.citylabLogo.alt": "CityLAB Berlin",
 	"footer.citylabLogo.link": "https://citylab-berlin.org/",

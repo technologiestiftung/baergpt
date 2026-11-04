@@ -25,7 +25,9 @@ export const AccessibilityStatementPage: React.FC = () => {
 						</a>{" "}
 						{Content["accessibilityStatementPage.section1.p2.part2"]}{" "}
 						<a
-							href={Content["accessibilityStatementPage.section1.p2.link2.href"]}
+							href={
+								Content["accessibilityStatementPage.section1.p2.link2.href"]
+							}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="underline underline-offset-2"
