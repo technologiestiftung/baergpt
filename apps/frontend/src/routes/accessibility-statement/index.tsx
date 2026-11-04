@@ -2,6 +2,29 @@ import type React from "react";
 import { LandingPageLayout } from "../../layouts/landing-page-layout.tsx";
 import Content from "../../content.ts";
 
+const section6Links = [
+	{
+		label: Content["accessibilityStatementPage.section6.li1"],
+		href: Content["accessibilityStatementPage.section6.li1.link"],
+		external: false,
+	},
+	{
+		label: Content["accessibilityStatementPage.section6.li2"],
+		href: Content["accessibilityStatementPage.section6.li2.link"],
+		external: false,
+	},
+	{
+		label: Content["accessibilityStatementPage.section6.li3"],
+		href: Content["accessibilityStatementPage.section6.li3.link"],
+		external: true,
+	},
+	{
+		label: Content["accessibilityStatementPage.section6.li4"],
+		href: Content["accessibilityStatementPage.section6.li4.link"],
+		external: true,
+	},
+];
+
 export const AccessibilityStatementPage: React.FC = () => {
 	const sections = [
 		{
@@ -190,26 +213,3 @@ export const AccessibilityStatementPage: React.FC = () => {
 		</LandingPageLayout>
 	);
 };
-
-const section6Links = [
-	{
-		label: Content["accessibilityStatementPage.section6.li1"],
-		href: Content["accessibilityStatementPage.section6.li1.link"],
-		external: false,
-	},
-	{
-		label: Content["accessibilityStatementPage.section6.li2"],
-		href: Content["accessibilityStatementPage.section6.li2.link"],
-		external: false,
-	},
-	{
-		label: Content["accessibilityStatementPage.section6.li3"],
-		href: Content["accessibilityStatementPage.section6.li3.link"],
-		external: true,
-	},
-	{
-		label: Content["accessibilityStatementPage.section6.li4"],
-		href: Content["accessibilityStatementPage.section6.li4.link"],
-		external: true,
-	},
-];
