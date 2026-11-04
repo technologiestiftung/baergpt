@@ -110,6 +110,17 @@ export async function openDocumentsPanel(page: Page) {
 	await expect(hideButton).toBeVisible();
 }
 
+// Row actions are collapsed until the row is hovered or focused
+export async function getListItemAction(
+	page: Page,
+	itemName: string,
+	actionLabel: "In den Chat" | "Menü öffnen",
+) {
+	const listItem = page.getByRole("listitem").filter({ hasText: itemName });
+	await listItem.hover();
+	return listItem.getByLabel(actionLabel);
+}
+
 /**
  * Mocks a full document upload:
  * - uploads file to storage
