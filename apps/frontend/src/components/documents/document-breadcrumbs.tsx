@@ -34,10 +34,10 @@ export function DocumentBreadcrumbs() {
 	return (
 		<div className="w-full flex flex-col h-8 mb-4 md:mb-0 md:flex-row md:justify-between">
 			<div
-				className={`flex flex-row items-center gap-1 text-base leading-6 font-normal text-dunkelblau-100`}
+				className={`flex flex-row items-center gap-1 min-w-0 text-base leading-6 font-normal text-dunkelblau-100`}
 			>
 				<button
-					className={`focus-visible:outline-default rounded-3px hover:underline underline-offset-4 px-0.5 ${isHoveredForDrop && "bg-hellblau-100 outline outline-1 outline-dunkelblau-100"}`}
+					className={`shrink-0 whitespace-nowrap focus-visible:outline-default rounded-3px hover:underline underline-offset-4 px-0.5 ${isHoveredForDrop && "bg-hellblau-100 outline outline-1 outline-dunkelblau-100"}`}
 					onClick={resetCurrentFolder}
 					ref={dropRef}
 				>
@@ -48,7 +48,9 @@ export function DocumentBreadcrumbs() {
 				{currentFolder && (
 					<>
 						<ChevronSmallIcon direction="right" />
-						<span className="break-all">{currentFolder.name}</span>
+						<span className="truncate" title={currentFolder.name}>
+							{currentFolder.name}
+						</span>
 					</>
 				)}
 			</div>
