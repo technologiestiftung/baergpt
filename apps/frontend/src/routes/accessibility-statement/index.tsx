@@ -1,6 +1,7 @@
 import type React from "react";
 import { LandingPageLayout } from "../../layouts/landing-page-layout.tsx";
 import Content from "../../content.ts";
+import { ContactInfo } from "../../components/privacy-policy/contact-info.tsx";
 
 const section6Links = [
 	{
@@ -132,34 +133,20 @@ export const AccessibilityStatementPage: React.FC = () => {
 				<div className="flex flex-col gap-1">
 					<p>{Content["accessibilityStatementPage.section5.p1"]}</p>
 					<p>{Content["accessibilityStatementPage.section5.p2"]}</p>
-					<div className="flex flex-col">
-						<span>
-							{
-								Content[
-									"accessibilityStatementPage.section5.contact.organisation"
-								]
-							}
-						</span>
-						<span>
-							{Content["accessibilityStatementPage.section5.contact.address"]}
-						</span>
-						<span>
-							{
-								Content[
-									"accessibilityStatementPage.section5.contact.email.label"
-								]
-							}{" "}
-							{Content["accessibilityStatementPage.section5.contact.email"]}
-						</span>
-						<span>
-							{
-								Content[
-									"accessibilityStatementPage.section5.contact.phone.label"
-								]
-							}{" "}
-							{Content["accessibilityStatementPage.section5.contact.phone"]}
-						</span>
-					</div>
+					<ContactInfo
+						data={{
+							heading: Content["privacyPolicyPage.section2.tsb.name"],
+							address: {
+								street:
+									Content["privacyPolicyPage.section2.tsb.address.street"],
+								city: Content["privacyPolicyPage.section2.tsb.address.city"],
+							},
+							email:
+								Content["accessibilityStatementPage.section5.contact.email"],
+							phone:
+								Content["accessibilityStatementPage.section5.contact.phone"],
+						}}
+					/>
 				</div>
 			),
 		},

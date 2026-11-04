@@ -2,22 +2,12 @@ import React from "react";
 import { LandingPageHeader } from "../components/headers/landing-page/landing-page-header.tsx";
 import { Footer } from "../components/footer/footer.tsx";
 import { CookieBanner } from "../components/cookie-banner/cookie-banner.tsx";
-import { useSessionRedirect } from "../hooks/use-session-redirect.tsx";
 
 interface AppLayoutProps {
 	children: React.ReactNode;
 }
 
 export const LandingPageLayout: React.FC<AppLayoutProps> = ({ children }) => {
-	const shouldRedirect =
-		location.pathname !== "/privacy-policy/" &&
-		location.pathname !== "/terms-of-use/" &&
-		location.pathname !== "/accessibility-statement/";
-
-	if (shouldRedirect) {
-		useSessionRedirect();
-	}
-
 	return (
 		<div className="flex w-full flex-col font-arial text-dunkelblau-200 lining-nums proportional-nums">
 			<LandingPageHeader />

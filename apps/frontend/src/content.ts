@@ -687,13 +687,7 @@ export const Content = {
 		"Sie möchten Informationen zur Umsetzung der Barrierefreiheit oder bestehende Barrieren melden? Sie können etwas auf unserer Website oder der mobilen Anwendung nicht ausreichend wahrnehmen, bedienen oder verstehen? Sie benötigen Informationen in einer barrierefreien Form? Dann informieren Sie uns bitte.",
 	"accessibilityStatementPage.section5.p2":
 		"Kontakt zur Ansprechperson der öffentlichen Stelle:",
-	"accessibilityStatementPage.section5.contact.organisation":
-		"Technologiestiftung Berlin",
-	"accessibilityStatementPage.section5.contact.address":
-		"Grunewaldstraße 61-62, 10825 Berlin",
-	"accessibilityStatementPage.section5.contact.email.label": "E-Mail:",
 	"accessibilityStatementPage.section5.contact.email": "support@baergpt.berlin",
-	"accessibilityStatementPage.section5.contact.phone.label": "Telefon:",
 	"accessibilityStatementPage.section5.contact.phone": "030959996410",
 
 	"accessibilityStatementPage.section6.title":
