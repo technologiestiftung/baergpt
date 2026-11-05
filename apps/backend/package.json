@@ -60,7 +60,7 @@
 		"pdfjs-dist": "6.2.108",
 		"unpdf": "1.8.0",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
-		"zod": "4.4.3"
+		"zod": "4.6.6"
 	},
 	"devDependencies": {
 		"@aws-sdk/client-s3": "3.1007.0",
