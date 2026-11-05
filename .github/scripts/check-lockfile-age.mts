@@ -18,8 +18,12 @@ const CONCURRENCY = 8;
 
 // TEMPORARY: exact versions exempt from the age check. Remove after
 // 2026-11-08T01:12Z, when they are old enough. Needed for the Mistral Large 4
-// reasoning "none" fix (vercel/ai#24352) in @ai-sdk/mistral@4.0.80.
+// reasoning "none" fix (vercel/ai#24352) in @ai-sdk/mistral@4.0.80, plus the
+// ai and @ai-sdk/mcp versions that share its @ai-sdk/provider types.
 const ALLOWLIST = new Set([
+	"ai@7.0.163",
+	"@ai-sdk/gateway@4.0.136",
+	"@ai-sdk/mcp@2.0.91",
 	"@ai-sdk/mistral@4.0.80",
 	"@ai-sdk/provider@4.0.36",
 	"@ai-sdk/provider-utils@5.0.75",
