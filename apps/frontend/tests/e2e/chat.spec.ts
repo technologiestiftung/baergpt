@@ -193,7 +193,6 @@ test.describe("Chat", () => {
 		"Chat submit is disabled while a newly attached document is still processing",
 		async ({ page, account }) => {
 			await page.goto("/");
-			await page.waitForLoadState("networkidle");
 
 			// The server generates the storage path now, so we fabricate one to key
 			// the mocked document rows on; the client no longer sends a source_url.

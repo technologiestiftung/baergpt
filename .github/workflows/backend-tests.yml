@@ -16,19 +16,16 @@ jobs:
         uses: ./.github/actions/setup
         with:
           start-supabase: "true"
-          install-1password: "true"
 
       - name: Check types 🔍
         working-directory: apps/backend
         run: npm run check-types
 
-      - name: Fetch backend .env from 1Password ⬇️
+      - name: Write backend .env from GitHub variable 📝
         working-directory: apps/backend
-        run: |
-          echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+        run: printf '%s\n' "$BACKEND_TEST_ENV" > .env
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          BACKEND_TEST_ENV: ${{ vars.BACKEND_TEST_ENV }}
 
       - name: Wait for Supabase to be ready ⏳
         uses: ./.github/actions/wait-for-supabase

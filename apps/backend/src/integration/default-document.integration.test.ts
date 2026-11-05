@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@repo/db-schema";
 import { resolve } from "node:path";
 import { config } from "../config";
 import { GenerationService } from "../services/generation-service";
@@ -8,10 +10,19 @@ import { EmbeddingService } from "../services/embedding-service";
 import type { Document } from "../types/common";
 import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import { serviceRoleDbClient } from "../supabase";
+import {
+	defaultDocumentsBucket as PUBLIC_DOCUMENTS_BUCKET,
+	defaultDocumentSourceType as DEFAULT_DOCUMENT_SOURCE_TYPE,
+	replaceDefaultDocument,
+} from "../../supabase/scripts/replace-default-documents";
+import { defaultDocumentPath } from "./fixtures/constants";
 
 const DEFAULT_DOCUMENT_FILE_NAME = "BaerGPT-Handbuch.pdf";
-const DEFAULT_DOCUMENT_SOURCE_TYPE = "default_document";
-const PUBLIC_DOCUMENTS_BUCKET = "public_documents";
+
+const supabaseAnonClient = createClient<Database>(
+	config.supabaseUrl,
+	config.supabaseAnonKey,
+);
 
 // Mocked processing outputs so the test exercises real storage + DB writes
 // without hitting the (flaky) API OCR / LLM / embedding APIs. The chunk
@@ -290,4 +301,190 @@ describe("Default Document Integration Tests", () => {
 		expect(downloadError).toBeNull();
 		expect(downloadedFile).toBeDefined();
 	}, 20_000);
+});
+
+describe("Default Document Replacement Integration Tests", () => {
+	// Separate file name so this suite doesn't touch the real handbook rows
+	const replacedFileName = `Replaced-Default-Document-${randomUUID()}.pdf`;
+
+	const dbService = new PrivilegedDbService(serviceRoleDbClient);
+
+	let accessGroupId: string;
+	const userIds: string[] = [];
+	const sourceUrls: string[] = [];
+
+	const createUser = async () => {
+		const { data, error } = await serviceRoleDbClient.auth.admin.createUser({
+			email: `default-doc-${randomUUID()}@ts.berlin`,
+			email_confirm: true,
+		});
+		if (error || !data.user) {
+			throw new Error(`Failed to create user: ${error?.message}`);
+		}
+		userIds.push(data.user.id);
+		return data.user.id;
+	};
+
+	const createDefaultDocument = async (
+		checksum: string,
+		{ isFinished }: { isFinished: boolean },
+	) => {
+		const sourceUrl = `${accessGroupId}/${randomUUID()}.pdf`;
+		const { error: uploadError } = await serviceRoleDbClient.storage
+			.from(PUBLIC_DOCUMENTS_BUCKET)
+			.upload(
+				sourceUrl,
+				new File([new Uint8Array(readFileSync(defaultDocumentPath))], "x.pdf", {
+					type: "application/pdf",
+				}),
+			);
+		if (uploadError) {
+			throw new Error(
+				`Error uploading file to storage: ${uploadError.message}`,
+			);
+		}
+		sourceUrls.push(sourceUrl);
+
+		const documentId = await dbService.logProcessedDocument(
+			{
+				source_url: sourceUrl,
+				source_type: DEFAULT_DOCUMENT_SOURCE_TYPE,
+				file_name: replacedFileName,
+				created_at: new Date().toISOString(),
+				file_checksum: checksum,
+				file_size: MOCK_EXTRACTION_RESULT.fileSize,
+				num_pages: MOCK_EXTRACTION_RESULT.numPages,
+				access_group_id: accessGroupId,
+				...(isFinished ? {} : { processing_finished_at: null }),
+			},
+			MOCK_SUMMARY_DATA,
+			MOCK_EMBEDDINGS as never,
+		);
+
+		return {
+			id: documentId,
+			source_url: sourceUrl,
+			file_checksum: checksum,
+			processing_finished_at: null,
+		};
+	};
+
+	const hideDocument = async (userId: string, documentId: number) => {
+		const { error } = await serviceRoleDbClient
+			.from("user_hidden_default_documents")
+			.insert({ user_id: userId, document_id: documentId });
+		if (error) {
+			throw new Error(`Failed to hide document: ${error.message}`);
+		}
+	};
+
+	beforeAll(async () => {
+		const { data: accessGroup, error } = await serviceRoleDbClient
+			.from("access_groups")
+			.select("id")
+			.eq("name", "Alle")
+			.single();
+
+		if (error || !accessGroup) {
+			throw new Error(
+				"Default access group 'Alle' must exist for tests to run",
+			);
+		}
+
+		accessGroupId = accessGroup.id;
+	});
+
+	afterAll(async () => {
+		for (const userId of userIds) {
+			const { error } = await serviceRoleDbClient.auth.admin.deleteUser(userId);
+			if (error) {
+				console.error(`Failed to delete test user ${userId}:`, error);
+			}
+		}
+
+		const { error: documentsError } = await serviceRoleDbClient
+			.from("documents")
+			.delete()
+			.eq("file_name", replacedFileName);
+		if (documentsError) {
+			console.error("Failed to delete test documents:", documentsError);
+		}
+
+		if (sourceUrls.length > 0) {
+			const { error: storageError } = await serviceRoleDbClient.storage
+				.from(PUBLIC_DOCUMENTS_BUCKET)
+				.remove(sourceUrls);
+			if (storageError) {
+				console.error("Failed to delete test files:", storageError);
+			}
+		}
+	});
+
+	it("should swap in the new version and keep it hidden for users who hid a previous version", async () => {
+		const hidingUserId = await createUser();
+		const otherUserId = await createUser();
+
+		const previousVersions = [
+			await createDefaultDocument("old-checksum-1", { isFinished: true }),
+			await createDefaultDocument("old-checksum-2", { isFinished: true }),
+		];
+		const newVersion = await createDefaultDocument("new-checksum", {
+			isFinished: false,
+		});
+		const previousIds = previousVersions.map(({ id }) => id);
+
+		// Hidden in both, to check it is carried over only once
+		await hideDocument(hidingUserId, previousIds[0]);
+		await hideDocument(hidingUserId, previousIds[1]);
+
+		await replaceDefaultDocument(newVersion.id, previousVersions);
+
+		const { data: hiddenRows } = await serviceRoleDbClient
+			.from("user_hidden_default_documents")
+			.select("user_id, document_id")
+			.in("user_id", [hidingUserId, otherUserId]);
+		expect(hiddenRows).toStrictEqual([
+			{ user_id: hidingUserId, document_id: newVersion.id },
+		]);
+
+		const { data: remainingDocuments } = await serviceRoleDbClient
+			.from("documents")
+			.select("id, processing_finished_at")
+			.eq("file_name", replacedFileName);
+		expect(remainingDocuments).toHaveLength(1);
+		expect(remainingDocuments?.[0].id).toBe(newVersion.id);
+		expect(remainingDocuments?.[0].processing_finished_at).not.toBeNull();
+
+		const { data: previousChunks } = await serviceRoleDbClient
+			.from("document_chunks")
+			.select("id")
+			.in("document_id", previousIds);
+		expect(previousChunks).toStrictEqual([]);
+
+		const { data: previousSummaries } = await serviceRoleDbClient
+			.from("document_summaries")
+			.select("id")
+			.in("document_id", previousIds);
+		expect(previousSummaries).toStrictEqual([]);
+
+		for (const { source_url } of previousVersions) {
+			const { error: downloadError } = await serviceRoleDbClient.storage
+				.from(PUBLIC_DOCUMENTS_BUCKET)
+				.download(source_url);
+			expect(downloadError).not.toBeNull();
+		}
+
+		const { error: newFileError } = await serviceRoleDbClient.storage
+			.from(PUBLIC_DOCUMENTS_BUCKET)
+			.download(newVersion.source_url);
+		expect(newFileError).toBeNull();
+	}, 20_000);
+
+	it("should not be callable through the public API", async () => {
+		const { error } = await supabaseAnonClient.rpc("replace_default_document", {
+			p_new_document_id: 1,
+			p_old_document_ids: [],
+		});
+		expect(error?.code).toBe("42501");
+	});
 });

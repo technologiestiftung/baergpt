@@ -6,6 +6,7 @@ import { useUserDocumentStore } from "../../../store/use-user-document-store.ts"
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import Content from "../../../content.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
+import { SUPPORTED_UPLOAD_FILE_ACCEPT } from "../../../lib/upload-file-types.ts";
 
 type FileUploadProps = {
 	hasItems: boolean;
@@ -64,9 +65,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 						type="file"
 						ref={fileInputRef}
 						onChange={handleFileSelect}
-						accept={
-							"application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-						}
+						accept={SUPPORTED_UPLOAD_FILE_ACCEPT}
 						aria-label={Content["fileUpload.upload"]}
 						style={{ display: "none" }}
 						multiple
@@ -92,9 +91,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 									type="file"
 									ref={fileInputRef}
 									onChange={handleFileSelect}
-									accept={
-										"application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-									}
+									accept={SUPPORTED_UPLOAD_FILE_ACCEPT}
 									aria-label={Content["fileUpload.upload"]}
 									style={{ display: "none" }}
 									multiple

@@ -24,10 +24,29 @@ import {
 	defaultBucketName,
 } from "../constants.ts";
 import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { dirname, resolve } from "node:path";
+
+const fixturesDir = dirname(defaultDocumentPath);
 
 export const testWithDocuments = testWithMockedLlm.extend<{
 	documentChunkId: number;
 }>({
+	page: async ({ page }, use) => {
+		/**
+		 * This happens before each test that uses this fixture.
+		 * Tests that register their own `/documents/process` route override this
+		 * one (Playwright runs the most recently registered route first).
+		 */
+		await mockDocumentProcessRoute(page);
+
+		/**
+		 * This runs the test that uses this fixture (and injects the page).
+		 */
+		await use(page);
+
+		await page.unroute("**/documents/process");
+	},
 	documentChunkId: [
 		async ({ account, session }, use) => {
 			/**
@@ -58,6 +77,19 @@ export const testWithDocuments = testWithMockedLlm.extend<{
 		{ auto: true },
 	],
 });
+
+/**
+ * Waits for the GET of the user's own and default documents. Register it
+ * before navigating, so the response can't arrive first and be missed.
+ */
+export function waitForUserDocumentsResponse(page: Page) {
+	return page.waitForResponse(
+		(response) =>
+			response.request().method() === "GET" &&
+			response.url().includes("/rest/v1/documents?") &&
+			response.url().includes("owned_by_user_id.eq."),
+	);
+}
 
 export async function openDocumentsPanel(page: Page) {
 	const panel = page.locator("#desktop-documents-panel");
@@ -144,19 +176,32 @@ export async function mockDocumentUpload({
  * only inserts mock values into the db tables
  * for a given file that already exists in storage
  */
-export async function mockDocumentProcessing({
-	userId,
-	sourceUrl,
-	accessGroupId,
-	fileName,
-	sourceType,
-}: {
+export async function mockDocumentProcessing(
+	params: MockDocumentProcessingParams,
+) {
+	const { chunkId } = await insertMockDocumentRows(params);
+	return chunkId;
+}
+
+type MockDocumentProcessingParams = {
 	userId: string;
 	sourceUrl: string;
 	accessGroupId: string | null;
 	fileName: string;
 	sourceType: "public_document" | "personal_document" | "default_document";
-}) {
+	folderId?: number | null;
+	fileSize?: number;
+};
+
+async function insertMockDocumentRows({
+	userId,
+	sourceUrl,
+	accessGroupId,
+	fileName,
+	sourceType,
+	folderId = folder_id,
+	fileSize = file_size,
+}: MockDocumentProcessingParams) {
 	const { data: documentData, error: documentsInsertError } =
 		await supabaseAdminClient
 			.from("documents")
@@ -168,9 +213,9 @@ export async function mockDocumentProcessing({
 				source_url: sourceUrl,
 				file_name: fileName,
 				file_checksum,
-				file_size,
+				file_size: fileSize,
 				num_pages,
-				folder_id,
+				folder_id: folderId,
 				created_at,
 				processing_finished_at,
 			})
@@ -189,7 +234,7 @@ export async function mockDocumentProcessing({
 			owned_by_user_id: accessGroupId ? null : userId,
 			access_group_id: accessGroupId,
 			document_id: documentData.id,
-			folder_id,
+			folder_id: folderId,
 			summary,
 			tags,
 			short_summary,
@@ -204,7 +249,7 @@ export async function mockDocumentProcessing({
 				owned_by_user_id: accessGroupId ? null : userId,
 				access_group_id: accessGroupId,
 				document_id: documentData.id,
-				folder_id,
+				folder_id: folderId,
 				content,
 				page: pageNumber,
 				chunk_index,
@@ -219,7 +264,7 @@ export async function mockDocumentProcessing({
 		throw documentChunksInsertError;
 	}
 
-	return chunkData.id;
+	return { documentId: documentData.id, chunkId: chunkData.id };
 }
 
 /**
@@ -236,6 +281,106 @@ export function fulfillProcessedDocumentSse(route: Route, documentId: number) {
 	});
 }
 
+// Mirrors EXTENSION_BY_MIME in the backend's validation-service.ts.
+const extensionByMime: Record<string, string> = {
+	"application/pdf": "pdf",
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+		"docx",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+	"text/csv": "csv",
+	"text/markdown": "md",
+};
+
+// Browsers send .md files without a MIME type, so like the backend fall back to
+// the file extension.
+function getMimeType(file: File) {
+	if (extensionByMime[file.type]) {
+		return file.type;
+	}
+	const extension = file.name.split(".").pop()?.toLowerCase();
+	const mimeType = Object.keys(extensionByMime).find(
+		(type) => extensionByMime[type] === extension,
+	);
+	if (!mimeType) {
+		throw new Error(`Unsupported file type: ${file.name}`);
+	}
+	return mimeType;
+}
+
+/**
+ * Mocks the backend's `/documents/process` route so uploads never reach the
+ * real OCR / LLM / embedding APIs: stores the uploaded file under the same path
+ * scheme as the backend, inserts mock db rows and fulfills with a `successful`
+ * SSE event. Only personal documents are supported, which is all the UI uploads.
+ */
+export async function mockDocumentProcessRoute(page: Page) {
+	await page.route("**/documents/process", async (route) => {
+		const request = route.request();
+		const headers = await request.allHeaders();
+		const accessToken = headers["authorization"].replace("Bearer ", "");
+		const userId: string = JSON.parse(
+			Buffer.from(accessToken.split(".")[1], "base64url").toString(),
+		).sub;
+
+		const form = await new Request(request.url(), {
+			method: "POST",
+			headers: { "content-type": headers["content-type"] },
+			body: request.postDataBuffer(),
+		}).formData();
+		const formFile = form.get("file") as File;
+		// WebKit leaves the file part empty in intercepted requests, so read the
+		// fixture of the same name instead.
+		const mimeType = getMimeType(formFile);
+		const file = new File(
+			[
+				formFile.size > 0
+					? formFile
+					: new Uint8Array(readFileSync(resolve(fixturesDir, formFile.name))),
+			],
+			formFile.name,
+			{ type: mimeType },
+		);
+		const metadata = JSON.parse(form.get("metadata") as string);
+
+		const sourceUrl = `${userId}/${randomUUID()}.${extensionByMime[mimeType]}`;
+		const userClient = createClient<Database>(
+			config.supabaseUrl,
+			config.supabaseAnonKey,
+			{ global: { headers: { Authorization: `Bearer ${accessToken}` } } },
+		);
+		const { error: uploadError } = await userClient.storage
+			.from("documents")
+			.upload(sourceUrl, file, { contentType: file.type });
+
+		expect(uploadError).toBeNull();
+
+		// The backend stores a PDF rendition next to docx files for the preview.
+		if (sourceUrl.endsWith(".docx")) {
+			const { error: previewUploadError } = await userClient.storage
+				.from("documents")
+				.upload(
+					sourceUrl.replace(/\.docx$/, ".pdf"),
+					new Uint8Array(readFileSync(defaultDocumentPath)),
+					{ contentType: "application/pdf" },
+				);
+
+			expect(previewUploadError).toBeNull();
+		}
+
+		const { documentId } = await insertMockDocumentRows({
+			userId,
+			sourceUrl,
+			accessGroupId: null,
+			fileName: file.name,
+			sourceType: "personal_document",
+			folderId: metadata.document.folderId,
+			fileSize: file.size,
+		});
+
+		return fulfillProcessedDocumentSse(route, documentId);
+	});
+}
+
 /**
  * Waits for a POST to `/documents/process`. The combined route flushes its 200
  * SSE headers immediately (before processing finishes), so this MUST be called
@@ -249,6 +394,15 @@ export function waitForProcessResponse(page: Page) {
 			response.request().method() === "POST",
 		{ timeout: 60_000 },
 	);
+}
+
+// Scoped to the upload status list: once the upload finishes, the file name
+// also shows up in the document list, which breaks strict-mode text lookups
+function uploadStatusItem(page: Page, fileName: string) {
+	return page
+		.locator("#desktop-documents-panel")
+		.getByRole("listitem")
+		.filter({ has: page.getByText(fileName, { exact: true }) });
 }
 
 /**
@@ -268,9 +422,9 @@ export async function uploadFileViaFileChooserAndWait({
 	browserName: string;
 	uploadButtonName: string;
 }) {
+	const userDocumentsResponse = waitForUserDocumentsResponse(page);
 	await page.goto("/");
-
-	await page.waitForLoadState("networkidle");
+	await userDocumentsResponse;
 
 	await openDocumentsPanel(page);
 
@@ -297,11 +451,7 @@ export async function uploadFileViaFileChooserAndWait({
 	}
 
 	await testWithDocuments
-		.expect(
-			page.locator("#desktop-documents-panel").getByText(fileName, {
-				exact: true,
-			}),
-		)
+		.expect(uploadStatusItem(page, fileName))
 		.toBeVisible();
 
 	const response = await responsePromise;
@@ -344,9 +494,9 @@ export async function attemptFileUploadViaFileChooser({
 	browserName: string;
 	uploadButtonName: string;
 }) {
+	const userDocumentsResponse = waitForUserDocumentsResponse(page);
 	await page.goto("/");
-
-	await page.waitForLoadState("networkidle");
+	await userDocumentsResponse;
 
 	await openDocumentsPanel(page);
 
@@ -383,9 +533,9 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	browserName: string;
 	uploadButtonName: string;
 }) {
+	const userDocumentsResponse = waitForUserDocumentsResponse(page);
 	await page.goto("/");
-
-	await page.waitForLoadState("networkidle");
+	await userDocumentsResponse;
 
 	await openDocumentsPanel(page);
 
@@ -425,11 +575,7 @@ export async function uploadMultipleFilesViaFileChooserAndWait({
 	// Wait for all files to be visible in the upload dialog
 	for (const file of files) {
 		await testWithDocuments
-			.expect(
-				page.locator("#desktop-documents-panel").getByText(file.name, {
-					exact: true,
-				}),
-			)
+			.expect(uploadStatusItem(page, file.name))
 			.toBeVisible();
 	}
 
@@ -480,9 +626,9 @@ export async function attemptMultipleFilesViaFileChooser({
 	browserName: string;
 	uploadButtonName: string;
 }) {
+	const userDocumentsResponse = waitForUserDocumentsResponse(page);
 	await page.goto("/");
-
-	await page.waitForLoadState("networkidle");
+	await userDocumentsResponse;
 
 	await openDocumentsPanel(page);
 

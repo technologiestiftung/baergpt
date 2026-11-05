@@ -1,21 +1,27 @@
 import { AssistantMessage } from "./assistant-message.tsx";
 import ReactMarkdown from "react-markdown";
 import { UserMessage } from "./user-message.tsx";
-import type { ChatMessage } from "../../../common.ts";
+import type { ChatMessage as ChatMessageType } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
 import { MarkdownExportableTable } from "../../primitives/markdown/markdown-exportable-table.tsx";
-import { type JSX, useMemo } from "react";
+import { type JSX, memo, useMemo } from "react";
 import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
 import { config } from "../../../config.ts";
 import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
 
 interface ChatMessageProps {
-	message: ChatMessage;
+	message: ChatMessageType;
 }
 
-export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
+/**
+ * Memoized: while an answer streams, only the streaming message gets a new
+ * object (see `updateMessage`), so the markdown of all others is not re-parsed.
+ */
+export const ChatMessage = memo(function ChatMessage({
+	message,
+}: ChatMessageProps): JSX.Element {
 	const { role, content, traces } = message;
 	// An assistant message with traces but no content yet is still streaming
 	// its reasoning, so it has to render before the answer arrives.
@@ -80,4 +86,4 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 			)}
 		</div>
 	);
-}
+});
