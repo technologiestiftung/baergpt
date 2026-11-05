@@ -261,6 +261,8 @@ export const Content = {
 		"Bitte geben Sie eine gültige Domain ein (z. B. senjustv.berlin.de).",
 	"addNewDomain.form.unsuccessful.error":
 		"Die Domain konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+	"addNewDomain.form.domainAlreadyExistsError":
+		"Die Domain wurde schon hinzugefügt.",
 
 	// Domain Allowlist Table Headers
 	"domainAllowlistTable.tableHeader.domain": "Domain",
