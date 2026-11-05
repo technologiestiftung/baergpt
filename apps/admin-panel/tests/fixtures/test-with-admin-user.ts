@@ -1,11 +1,8 @@
 import { test as baseTest } from "@playwright/test";
 import { supabaseAdminClient } from "../supabase.ts";
 
-const ADMIN_PASSWORD = "password123";
-
 type AdminAccount = {
 	email: string;
-	password: string;
 	id: string;
 };
 
@@ -40,7 +37,6 @@ export const testWithAdminUser = baseTest.extend<
 			const { data, error: createUserError } =
 				await supabaseAdminClient.auth.admin.createUser({
 					email,
-					password: ADMIN_PASSWORD,
 					email_confirm: true,
 					user_metadata: {
 						first_name: "Domain",
@@ -68,7 +64,7 @@ export const testWithAdminUser = baseTest.extend<
 
 			baseTest.expect(adminError).toBeNull();
 
-			await use({ email, password: ADMIN_PASSWORD, id });
+			await use({ email, id });
 
 			const { error: deleteUserError } =
 				await supabaseAdminClient.auth.admin.deleteUser(id);

@@ -17,6 +17,7 @@ import {
 	defaultDocumentPath,
 } from "./fixtures/constants";
 import { cleanupDocuments, mockDocumentUpload } from "./fixtures/documents";
+import { signInWithOtp } from "./fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -24,61 +25,104 @@ const supabaseAnonClient = createClient<Database>(
 );
 
 describe("Integration tests for DB", async () => {
-	describe("registration meta-data", () => {
-		it("should create a profile with the first_name and last_name from the meta-data", async () => {
-			const givenEmail = "example@ts.berlin";
-			const givenPassword = "SecurePassword123!";
-			const givenFirstName = "John";
-			const givenLastName = "Doe";
+	describe("registration", () => {
+		const givenFirstName = "John";
+		const givenLastName = "Doe";
 
-			const { data, error: signupError } = await supabaseAnonClient.auth.signUp(
-				{
+		async function getProfileAndAccessGroupCount(userId: string) {
+			const { data: profile, error: profileError } = await serviceRoleDbClient
+				.from("profiles")
+				.select("first_name, last_name")
+				.eq("id", userId)
+				.maybeSingle();
+			expect(profileError).toBeNull();
+
+			const { count, error: membershipError } = await serviceRoleDbClient
+				.from("access_group_members")
+				.select("*", { count: "exact", head: true })
+				.eq("user_id", userId);
+			expect(membershipError).toBeNull();
+
+			return { profile, accessGroupCount: count };
+		}
+
+		it("should not create a profile for users signing up on the login page", async () => {
+			const givenEmail = "otp-signup@ts.berlin";
+
+			const { error: signupError } =
+				await supabaseAnonClient.auth.signInWithOtp({
 					email: givenEmail,
-					password: givenPassword,
 					options: {
-						data: {
-							first_name: givenFirstName,
-							last_name: givenLastName,
-						},
+						shouldCreateUser: true,
+						data: { pending_registration: true },
 					},
-				},
-			);
+				});
+			expect(signupError).toBeNull();
+
+			const { data } = await signInWithOtp(supabaseAnonClient, givenEmail);
 
 			if (!data.user) {
 				throw new Error("User is undefined");
 			}
-			expect(signupError).toBeNull();
 
-			const { data: actualProfile, error: profileError } =
-				await serviceRoleDbClient
+			try {
+				expect(await getProfileAndAccessGroupCount(data.user.id)).toStrictEqual(
+					{ profile: null, accessGroupCount: 0 },
+				);
+
+				const { error: upsertError } = await supabaseAnonClient
 					.from("profiles")
-					.select("first_name, last_name")
-					.eq("id", data.user.id)
-					.single();
+					.upsert({
+						id: data.user.id,
+						first_name: givenFirstName,
+						last_name: givenLastName,
+					});
+				expect(upsertError).toBeNull();
 
-			const expectedProfile = {
-				first_name: givenFirstName,
-				last_name: givenLastName,
-			};
-
-			expect(profileError).toBeNull();
-			expect(actualProfile).toStrictEqual(expectedProfile);
-
-			const { error: deleteError } =
+				expect(await getProfileAndAccessGroupCount(data.user.id)).toStrictEqual(
+					{
+						profile: { first_name: givenFirstName, last_name: givenLastName },
+						accessGroupCount: 1,
+					},
+				);
+			} finally {
+				await supabaseAnonClient.auth.signOut();
 				await serviceRoleDbClient.auth.admin.deleteUser(data.user.id);
-			expect(deleteError).toBeNull();
+			}
+		});
+
+		it("should create a profile with the names from the meta-data for users created by an admin", async () => {
+			const { data, error } = await serviceRoleDbClient.auth.admin.createUser({
+				email: "admin-created@ts.berlin",
+				email_confirm: true,
+				user_metadata: { first_name: givenFirstName, last_name: givenLastName },
+			});
+			expect(error).toBeNull();
+
+			if (!data.user) {
+				throw new Error("User is undefined");
+			}
+
+			try {
+				expect(await getProfileAndAccessGroupCount(data.user.id)).toStrictEqual(
+					{
+						profile: { first_name: givenFirstName, last_name: givenLastName },
+						accessGroupCount: 1,
+					},
+				);
+			} finally {
+				await serviceRoleDbClient.auth.admin.deleteUser(data.user.id);
+			}
 		});
 	});
 
 	describe("is_current_user_banned_or_deleted()", () => {
 		const givenEmail = "ban-rpc-test@ts.berlin";
-		const givenPassword = "SecurePassword123!";
 		let userId: string = "";
 
 		beforeAll(async () => {
 			const { data, error } = await serviceRoleDbClient.auth.admin.createUser({
 				email: givenEmail,
-				password: givenPassword,
 				email_confirm: true,
 			});
 			expect(error).toBeNull();
@@ -96,10 +140,7 @@ describe("Integration tests for DB", async () => {
 		});
 
 		it("should return false for an non-banned user", async () => {
-			await supabaseAnonClient.auth.signInWithPassword({
-				email: givenEmail,
-				password: givenPassword,
-			});
+			await signInWithOtp(supabaseAnonClient, givenEmail);
 
 			const { data: isBannedOrDeleted, error } = await supabaseAnonClient.rpc(
 				"is_current_user_banned_or_deleted",
@@ -110,10 +151,7 @@ describe("Integration tests for DB", async () => {
 		});
 
 		it("should return true for banned user then return false after unbanning the user", async () => {
-			await supabaseAnonClient.auth.signInWithPassword({
-				email: givenEmail,
-				password: givenPassword,
-			});
+			await signInWithOtp(supabaseAnonClient, givenEmail);
 
 			const { error: banError } =
 				await serviceRoleDbClient.auth.admin.updateUserById(userId, {
@@ -146,7 +184,6 @@ describe("Integration tests for DB", async () => {
 			const { data: createData, error: createError } =
 				await serviceRoleDbClient.auth.admin.createUser({
 					email: deletedUserEmail,
-					password: givenPassword,
 					email_confirm: true,
 				});
 			expect(createError).toBeNull();
@@ -154,11 +191,10 @@ describe("Integration tests for DB", async () => {
 			expect(deletedUserId).not.toBe("");
 
 			try {
-				const { error: signInError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: deletedUserEmail,
-						password: givenPassword,
-					});
+				const { error: signInError } = await signInWithOtp(
+					supabaseAnonClient,
+					deletedUserEmail,
+				);
 				expect(signInError).toBeNull();
 
 				const { error: deleteError } =
@@ -184,11 +220,9 @@ describe("Integration tests for DB", async () => {
 	describe("application users", async () => {
 		const givenAdminId = "d18922bb-7f9a-4e15-a9c9-6788fe81842c";
 		const givenAdminEmail = "db-test-suite-admin@ts.berlin";
-		const givenAdminPassword = "SecurePassword123!";
 
 		const givenUserId = "73f1b859-1377-4f72-ac92-ea28b1fb5167";
 		const givenUserEmail = "db-test-suite-user@ts.berlin";
-		const givenUserPassword = "SecurePassword123!";
 
 		const { data: accessGroupData } = await serviceRoleDbClient
 			.from("access_groups")
@@ -203,12 +237,8 @@ describe("Integration tests for DB", async () => {
 		const accessGroupId = accessGroupData.id;
 
 		const users = [
-			{
-				id: givenAdminId,
-				email: givenAdminEmail,
-				password: givenAdminPassword,
-			},
-			{ id: givenUserId, email: givenUserEmail, password: givenUserPassword },
+			{ id: givenAdminId, email: givenAdminEmail },
+			{ id: givenUserId, email: givenUserEmail },
 		];
 
 		beforeAll(async () => {
@@ -217,7 +247,6 @@ describe("Integration tests for DB", async () => {
 					await serviceRoleDbClient.auth.admin.createUser({
 						id: user.id,
 						email: user.email,
-						password: user.password,
 						email_confirm: true,
 					});
 
@@ -253,7 +282,6 @@ describe("Integration tests for DB", async () => {
 				const { data, error: signupError } =
 					await serviceRoleDbClient.auth.admin.createUser({
 						email: validEmail,
-						password: givenUserPassword,
 						email_confirm: true,
 					});
 				expect(signupError).toBeNull();
@@ -265,18 +293,16 @@ describe("Integration tests for DB", async () => {
 				const { error: signupError } =
 					await serviceRoleDbClient.auth.admin.createUser({
 						email: invalidEmail,
-						password: givenUserPassword,
 						email_confirm: true,
 					});
 				expect(signupError).not.toBeNull();
 			});
 
 			it("should allow email change to valid domain", async () => {
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: validEmail,
-						password: givenUserPassword,
-					});
+				const { data: sessionData, error: sessionError } = await signInWithOtp(
+					supabaseAnonClient,
+					validEmail,
+				);
 				expect(sessionError).toBeNull();
 				expect(sessionData.session).not.toBeNull();
 				expect(userId).not.toBe("");
@@ -299,7 +325,6 @@ describe("Integration tests for DB", async () => {
 			it("should reject emails with invalid format", async () => {
 				const { error } = await serviceRoleDbClient.auth.admin.createUser({
 					email: "@ts.berlin",
-					password: givenUserPassword,
 					email_confirm: true,
 				});
 				expect(error).not.toBeNull();
@@ -309,7 +334,6 @@ describe("Integration tests for DB", async () => {
 				const { data, error } = await serviceRoleDbClient.auth.admin.createUser(
 					{
 						email: "test@polizei.berlin.de",
-						password: givenUserPassword,
 						email_confirm: true,
 					},
 				);
@@ -328,11 +352,10 @@ describe("Integration tests for DB", async () => {
 
 		describe("is_application_admin()", () => {
 			it("Non-admin users should be able to see their own admin status", async () => {
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+				const { data: sessionData, error: sessionError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenUserEmail,
+				);
 				expect(sessionError).toBeNull();
 				expect(sessionData.session).not.toBeNull();
 
@@ -345,11 +368,10 @@ describe("Integration tests for DB", async () => {
 			});
 
 			it("Admin users should be able to see their own admin status", async () => {
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+				const { data: sessionData, error: sessionError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenAdminEmail,
+				);
 				expect(sessionError).toBeNull();
 				expect(sessionData.session).not.toBeNull();
 
@@ -362,11 +384,10 @@ describe("Integration tests for DB", async () => {
 			});
 
 			it("Banned admin users should get false from is_application_admin()", async () => {
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+				const { data: sessionData, error: sessionError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenAdminEmail,
+				);
 				expect(sessionError).toBeNull();
 				expect(sessionData.session).not.toBeNull();
 
@@ -394,11 +415,10 @@ describe("Integration tests for DB", async () => {
 
 		describe("applications_admins table permissions", () => {
 			it("Users should not be able to read the applications_admins table", async () => {
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+				const { data: sessionData, error: sessionError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenUserEmail,
+				);
 				expect(sessionError).toBeNull();
 				expect(sessionData.session).not.toBeNull();
 
@@ -411,11 +431,10 @@ describe("Integration tests for DB", async () => {
 			});
 
 			it("Banned users should also not be able to read the application_admins table", async () => {
-				const { error: signInError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+				const { error: signInError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenUserEmail,
+				);
 				expect(signInError).toBeNull();
 
 				const { error: banError } =
@@ -441,11 +460,10 @@ describe("Integration tests for DB", async () => {
 
 		describe("profiles table permissions", () => {
 			it("Users should be able to read and update only their own profile", async () => {
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+				const { data: sessionData, error: sessionError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenUserEmail,
+				);
 				expect(sessionError).toBeNull();
 
 				if (!sessionData.session?.user) {
@@ -485,11 +503,10 @@ describe("Integration tests for DB", async () => {
 			});
 
 			it("Banned users should not be able to read their own profile", async () => {
-				const { data: sessionData, error: signInError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+				const { data: sessionData, error: signInError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenUserEmail,
+				);
 				expect(signInError).toBeNull();
 				expect(sessionData.session?.user).toBeDefined();
 
@@ -515,11 +532,10 @@ describe("Integration tests for DB", async () => {
 			});
 
 			it("Banned users should not be able to update their own profile", async () => {
-				const { error: signInError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+				const { error: signInError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenUserEmail,
+				);
 				expect(signInError).toBeNull();
 
 				const { error: banError } =
@@ -558,11 +574,10 @@ describe("Integration tests for DB", async () => {
 		describe("get_users function", () => {
 			it("Should return all users", async () => {
 				// Sign in as the admin user
-				const { data: sessionData, error: sessionError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+				const { data: sessionData, error: sessionError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenAdminEmail,
+				);
 				expect(sessionError).toBeNull();
 				expect(sessionData.session).not.toBeNull();
 
@@ -586,11 +601,10 @@ describe("Integration tests for DB", async () => {
 
 			it("Should return permission error if non admin user tries to get users", async () => {
 				// Sign in as the non-admin user
-				const { data, error } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+				const { data, error } = await signInWithOtp(
+					supabaseAnonClient,
+					givenUserEmail,
+				);
 
 				expect(error).toBeNull();
 				expect(data.session).toBeDefined();
@@ -605,11 +619,10 @@ describe("Integration tests for DB", async () => {
 			});
 
 			it("Should return permission error if a banned admin tries to get users", async () => {
-				const { error: signInError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+				const { error: signInError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenAdminEmail,
+				);
 				expect(signInError).toBeNull();
 
 				const { error: banError } =
@@ -742,7 +755,6 @@ describe("Integration tests for DB", async () => {
 					sourceType: "personal_document",
 					bucketName: "documents",
 					userEmail: givenAdminEmail,
-					userPassword: givenAdminPassword,
 				});
 			});
 
@@ -752,11 +764,10 @@ describe("Integration tests for DB", async () => {
 
 			it("should delete the admin user", async () => {
 				// Sign in as the admin user
-				const { data: signinData, error: signinError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+				const { data: signinData, error: signinError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenAdminEmail,
+				);
 				if (!signinData.session?.user) {
 					throw new Error("User is undefined");
 				}
@@ -869,7 +880,6 @@ describe("Integration tests for DB", async () => {
 					await serviceRoleDbClient.auth.admin.createUser({
 						id: givenAdminId,
 						email: givenAdminEmail,
-						password: givenAdminPassword,
 						email_confirm: true,
 					});
 
@@ -884,11 +894,10 @@ describe("Integration tests for DB", async () => {
 			});
 
 			it("should return an error if a banned user tries to delete their own account", async () => {
-				const { error: signInError } =
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+				const { error: signInError } = await signInWithOtp(
+					supabaseAnonClient,
+					givenUserEmail,
+				);
 				expect(signInError).toBeNull();
 
 				const { error: banError } =
@@ -930,17 +939,13 @@ describe("Integration tests for DB", async () => {
 						sourceType: "personal_document",
 						bucketName: "documents",
 						userEmail: givenAdminEmail,
-						userPassword: givenAdminPassword,
 					});
 				});
 
 				afterEach(async () => await cleanupDocuments(givenAdminId));
 
 				it("should return citation details for an self-owned document", async () => {
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+					await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 					const { data: citationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
@@ -966,10 +971,7 @@ describe("Integration tests for DB", async () => {
 				});
 
 				it("should return no citation details for a not self-owned document", async () => {
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+					await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
@@ -996,17 +998,13 @@ describe("Integration tests for DB", async () => {
 						sourceType: "public_document",
 						bucketName: "public_documents",
 						userEmail: givenAdminEmail,
-						userPassword: givenAdminPassword,
 					});
 				});
 
 				afterEach(async () => await cleanupDocuments(givenAdminId));
 
 				it("should return citation details for a (self-owned) public document", async () => {
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+					await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
@@ -1030,11 +1028,10 @@ describe("Integration tests for DB", async () => {
 				});
 
 				it("should return citation details for a (not self-owned) public document", async () => {
-					const { error: signInError } =
-						await supabaseAnonClient.auth.signInWithPassword({
-							email: givenUserEmail,
-							password: givenUserPassword,
-						});
+					const { error: signInError } = await signInWithOtp(
+						supabaseAnonClient,
+						givenUserEmail,
+					);
 
 					expect(signInError).toBeNull();
 
@@ -1071,17 +1068,13 @@ describe("Integration tests for DB", async () => {
 						sourceType: "default_document",
 						bucketName: "public_documents",
 						userEmail: givenAdminEmail,
-						userPassword: givenAdminPassword,
 					});
 				});
 
 				afterEach(async () => await cleanupDocuments(givenAdminId));
 
 				it("should return citation details for a (self-owned) default document", async () => {
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+					await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",
@@ -1105,11 +1098,10 @@ describe("Integration tests for DB", async () => {
 				});
 
 				it("should return citation details for a (not self-owned) default document", async () => {
-					const { error: signInError } =
-						await supabaseAnonClient.auth.signInWithPassword({
-							email: givenUserEmail,
-							password: givenUserPassword,
-						});
+					const { error: signInError } = await signInWithOtp(
+						supabaseAnonClient,
+						givenUserEmail,
+					);
 
 					expect(signInError).toBeNull();
 
@@ -1146,17 +1138,13 @@ describe("Integration tests for DB", async () => {
 						sourceType: "personal_document",
 						bucketName: "documents",
 						userEmail: givenAdminEmail,
-						userPassword: givenAdminPassword,
 					});
 				});
 
 				afterEach(async () => await cleanupDocuments(givenAdminId));
 
 				it("should return no citation details for a banned user", async () => {
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenAdminEmail,
-						password: givenAdminPassword,
-					});
+					await signInWithOtp(supabaseAnonClient, givenAdminEmail);
 
 					const { error: banError } =
 						await serviceRoleDbClient.auth.admin.updateUserById(givenAdminId, {
@@ -1190,17 +1178,13 @@ describe("Integration tests for DB", async () => {
 						sourceType: "personal_document",
 						bucketName: "documents",
 						userEmail: givenAdminEmail,
-						userPassword: givenAdminPassword,
 					});
 				});
 
 				afterEach(async () => await cleanupDocuments(givenAdminId));
 
 				it("should return no citation details when given an empty array", async () => {
-					await supabaseAnonClient.auth.signInWithPassword({
-						email: givenUserEmail,
-						password: givenUserPassword,
-					});
+					await signInWithOtp(supabaseAnonClient, givenUserEmail);
 
 					const { data: actualCitationDetails } = await supabaseAnonClient.rpc(
 						"get_citation_details",

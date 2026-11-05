@@ -7,7 +7,7 @@ type modelIdentifiers = "fast" | "precise" | "experimental";
 export class ModelService {
 	contextSizes: Record<modelIdentifiers, number> = {
 		fast: 256_000,
-		precise: 256_000,
+		precise: 1_000_000,
 		experimental: 1_000_000,
 	};
 

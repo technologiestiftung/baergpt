@@ -45,7 +45,7 @@ export function UnconfirmedEmail() {
 						<li>
 							{Content["unconfirmedEmail.wrongEmail.question"]}{" "}
 							<Link
-								to="/register/"
+								to="/login/"
 								onClick={resetUnconfirmedEmail}
 								className="font-semibold underline hover:no-underline"
 							>

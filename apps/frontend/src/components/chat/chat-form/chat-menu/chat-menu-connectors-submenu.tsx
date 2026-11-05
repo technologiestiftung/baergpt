@@ -4,6 +4,11 @@ import { useChatsStore } from "../../../../store/use-chats-store.ts";
 import type { Connector } from "../../../../common.ts";
 import { useDropdownKeyboard } from "../../../../hooks/use-dropdown-keyboard.ts";
 import { config } from "../../../../config.ts";
+import { useIntegrationsStore } from "../../../../store/use-integrations-store.ts";
+import { showDatawrapperConnectDialog } from "../../../connectors/datawrapper-connect-dialog.tsx";
+import { ConnectorLogo } from "../../../connectors/connector-logo.tsx";
+
+const CONNECTORS_REQUIRING_KEY: Connector[] = ["datawrapper"];
 
 export const CONNECTOR_VALUES: Record<string, Connector> = {
 	parla: "parla",
@@ -13,6 +18,7 @@ export const CONNECTOR_VALUES: Record<string, Connector> = {
 
 interface ConnectorItem {
 	label: string;
+	description: string;
 	value: Connector;
 	ariaLabel: string;
 	logo: string;
@@ -32,10 +38,22 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 	const { selectedChatTools, toggleChatTool } = useChatsStore();
 
 	const connectorItems: ConnectorItem[] = [
+		...(config.featureFlagMcpDatawrapperAllowed
+			? [
+					{
+						label: Content["mcp.options.dialog.option3.label"],
+						description: Content["mcp.options.dialog.option3.description"],
+						value: CONNECTOR_VALUES.datawrapper,
+						ariaLabel: Content["mcp.options.dialog.option3.ariaLabel"],
+						logo: "/icons/datawrapper-icon.svg",
+					},
+				]
+			: []),
 		...(config.featureFlagMcpParlaAllowed
 			? [
 					{
 						label: Content["mcp.options.dialog.option1.label"],
+						description: Content["mcp.options.dialog.option1.description"],
 						value: CONNECTOR_VALUES.parla,
 						ariaLabel: Content["mcp.options.dialog.option1.ariaLabel"],
 						logo: "/icons/parla-logo-icon.svg",
@@ -46,25 +64,33 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 			? [
 					{
 						label: Content["mcp.options.dialog.option2.label"],
+						description: Content["mcp.options.dialog.option2.description"],
 						value: CONNECTOR_VALUES.openData,
 						ariaLabel: Content["mcp.options.dialog.option2.ariaLabel"],
 						logo: "/icons/berlin-open-data-logo-icon.svg",
 					},
 				]
 			: []),
-		...(config.featureFlagMcpDatawrapperAllowed
-			? [
-					{
-						label: Content["mcp.options.dialog.option3.label"],
-						value: CONNECTOR_VALUES.datawrapper,
-						ariaLabel: Content["mcp.options.dialog.option3.ariaLabel"],
-						logo: "/icons/datawrapper-icon.png",
-					},
-				]
-			: []),
 	];
 
-	const handleSelect = (item: ConnectorItem) => {
+	const handleSelect = async (item: ConnectorItem) => {
+		const needsKey = CONNECTORS_REQUIRING_KEY.includes(item.value);
+		const integrationsStore = useIntegrationsStore.getState();
+
+		if (needsKey && integrationsStore.integrations === null) {
+			await integrationsStore.fetchIntegrations();
+		}
+
+		const hasKey = useIntegrationsStore
+			.getState()
+			.hasIntegration(item.value as "datawrapper");
+
+		if (needsKey && !hasKey) {
+			onItemSelect();
+			showDatawrapperConnectDialog();
+			return;
+		}
+
 		toggleChatTool(item.value);
 		onItemSelect();
 	};
@@ -83,7 +109,7 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 
 	return (
 		<div
-			className={`z-50 rounded-3px bg-white border border-hellblau-50 shadow-md min-w-[200px] ${className}`}
+			className={`z-50 p-1 rounded-3px bg-hellblau-30 shadow-md ${className}`}
 			onKeyDown={handleKeyDown}
 			role="menu"
 			aria-label={Content["chat.options.li2.ariaLabel"]}
@@ -104,33 +130,34 @@ export const ChatMenuConnectorsSubmenu: React.FC<
 										optionButtonRefs.current.delete(index);
 									}
 								}}
-								className="flex items-center justify-between w-full px-1.5 py-0.5 text-left gap-6 hover:bg-hellblau-30 focus-visible:bg-hellblau-30 focus-visible:outline-default rounded-3px"
+								className="flex items-center justify-between w-full px-3 py-1.5 text-left gap-2 hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default rounded-3px"
 								onClick={() => handleSelect(item)}
 								aria-label={item.ariaLabel}
 								role="menuitemcheckbox"
 								aria-checked={isSelected}
 							>
-								<div className="flex items-center">
-									<img
+								<div className="flex items-center gap-1 pr-[3px]">
+									<ConnectorLogo
 										src={item.logo}
-										alt=""
-										width={20}
-										height={20}
-										className="m-1"
+										className="size-6 p-[3px]"
+										shadow="soft"
 									/>
-									<div
-										className={`text-sm leading-6 ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
-									>
-										{item.label}
+									<div className="flex flex-col items-start">
+										<p className="text-sm leading-5 font-semibold text-dunkelblau-90">
+											{item.label}
+										</p>
+										<p className="text-xs leading-4 font-normal text-dunkelblau-65 whitespace-nowrap">
+											{item.description}
+										</p>
 									</div>
 								</div>
 
 								<img
 									src="/icons/check-active-icon.svg"
 									alt={Content["chat.options.selected.icon.imgAlt"]}
-									width={20}
-									height={20}
-									className={`${isSelected ? "block" : "hidden"}`}
+									width={24}
+									height={24}
+									className={`${isSelected ? "block shrink-0" : "hidden"}`}
 								/>
 							</button>
 						</li>

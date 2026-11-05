@@ -145,8 +145,8 @@ llms.post("/just-chatting", async (c: Context) => {
 		const response = await generationService.generateTextStreamResponse({
 			llmHandler,
 			messages: promptMessages,
-			userId: body.user_id,
-			sessionId: body.chat_id,
+			userId: authenticatedUserId,
+			sessionId: String(body.chat_id),
 			langfusePrompt: langfusePrompt,
 			allowedDocumentIds: allowedDocumentIds,
 			allowedFolderIds: allowedFolderIds,

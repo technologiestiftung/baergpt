@@ -7,10 +7,19 @@ import type { Session } from "@supabase/supabase-js";
 import { useErrorStore } from "../../store/error-store.ts";
 import { useMaintenanceModeStore } from "../../store/use-maintenance-mode-store.ts";
 import { usePublicDocumentsStore } from "../../store/use-public-documents-store.ts";
+import { useIntegrationsStore } from "../../store/use-integrations-store.ts";
 
 let abortController: null | AbortController = null;
+let lastUserId: string | null = null;
 
 export async function handleSessionChange(session: Session | null) {
+	const userId = session?.user.id ?? null;
+
+	if (userId !== lastUserId) {
+		useIntegrationsStore.getState().reset();
+		lastUserId = userId;
+	}
+
 	if (!session) {
 		return;
 	}

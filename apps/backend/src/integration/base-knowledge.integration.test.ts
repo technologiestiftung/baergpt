@@ -15,6 +15,7 @@ import { PrivilegedDbService } from "../services/db-service/privileged-db-servic
 import { EmbeddingService } from "../services/embedding-service";
 import type { KnowledgeBaseDocument } from "../types/common";
 import app from "../index";
+import { signInWithOtp } from "./fixtures/auth";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -29,14 +30,8 @@ const createDeterministicEmbedding = (length = EMBEDDING_LENGTH) =>
 	Array.from({ length }, (_, i) => (i % 10) / 10);
 
 // Helper to create JWT token for testing
-const createTestToken = async (
-	email: string,
-	password: string,
-): Promise<string> => {
-	const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-		email,
-		password,
-	});
+const createTestToken = async (email: string): Promise<string> => {
+	const { data, error } = await signInWithOtp(supabaseAnonClient, email);
 
 	expect(error).toBeNull();
 
@@ -65,7 +60,7 @@ const deleteDocument = async (
 		return { success: true, status: 204 };
 	}
 
-	const body = await response.json();
+	const body = (await response.json()) as { error?: string };
 	return {
 		success: false,
 		status: response.status,
@@ -75,7 +70,6 @@ const deleteDocument = async (
 
 describe("Base Knowledge Integration Tests", () => {
 	const testUserEmail = "base-knowledge-test-user@ts.berlin";
-	const testUserPassword = "SecurePassword123!";
 
 	let testUserId: string;
 	let accessGroupId: string;
@@ -89,7 +83,6 @@ describe("Base Knowledge Integration Tests", () => {
 		const { data: userData, error: signupError } =
 			await supabaseAdminClient.auth.admin.createUser({
 				email: testUserEmail,
-				password: testUserPassword,
 				email_confirm: true,
 			});
 
@@ -184,10 +177,10 @@ describe("Base Knowledge Integration Tests", () => {
 
 	beforeEach(async () => {
 		// Sign in test user
-		const { data, error } = await supabaseAnonClient.auth.signInWithPassword({
-			email: testUserEmail,
-			password: testUserPassword,
-		});
+		const { data, error } = await signInWithOtp(
+			supabaseAnonClient,
+			testUserEmail,
+		);
 
 		expect(error).toBeNull();
 		expect(data.session).toBeDefined();
@@ -430,7 +423,7 @@ describe("Base Knowledge Integration Tests", () => {
 			expect(docExists).not.toBeNull();
 
 			// Test admin deletion through the backend route
-			const adminToken = await createTestToken(testUserEmail, testUserPassword);
+			const adminToken = await createTestToken(testUserEmail);
 			const deleteResult = await deleteDocument(testDoc.id, adminToken);
 			expect(deleteResult.success).toBe(true);
 			expect(deleteResult.status).toBe(204);
@@ -662,10 +655,7 @@ describe("Base Knowledge Integration Tests", () => {
 			expect(adminCheck).toBeNull();
 
 			// Attempt to delete the public document as a non-admin user should fail
-			const nonAdminToken = await createTestToken(
-				testUserEmail,
-				testUserPassword,
-			);
+			const nonAdminToken = await createTestToken(testUserEmail);
 			const deleteResult = await deleteDocument(testDoc.id, nonAdminToken);
 			expect(deleteResult.success).toBe(false);
 			expect(deleteResult.status).toBe(404);
@@ -748,6 +738,7 @@ describe("Base Knowledge Integration Tests", () => {
 		type MutableTable = (typeof tableFixtures)[number]["table"];
 
 		type InsertRow = Database["public"]["Tables"][MutableTable]["Insert"];
+		type UpdateRow = Database["public"]["Tables"][MutableTable]["Update"];
 
 		const insertRowWithServiceRole = async (
 			table: MutableTable,
@@ -755,7 +746,7 @@ describe("Base Knowledge Integration Tests", () => {
 		): Promise<number> => {
 			const { data, error } = await serviceRoleClient
 				.from(table)
-				.insert(row)
+				.insert([row])
 				.select("id")
 				.single();
 			expect(error).toBeNull();
@@ -796,11 +787,13 @@ describe("Base Knowledge Integration Tests", () => {
 		const updateRowAsUser = async (
 			table: MutableTable,
 			id: number,
+			// The callers build `values` with a computed `[textColumn]` key, which TS widens to
+			// an index signature, so it can't be checked against a specific table's columns.
 			values: Record<string, unknown>,
 		): Promise<number[]> => {
 			const { data, error } = await signedInUserClient
 				.from(table)
-				.update(values)
+				.update(values as UpdateRow)
 				.eq("id", id)
 				.select("id");
 			expect(error).toBeNull();

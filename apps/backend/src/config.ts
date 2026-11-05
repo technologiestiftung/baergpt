@@ -32,6 +32,7 @@ export interface Config {
 	featureFlagMcpOpenDataAllowed: boolean;
 	featureFlagMcpDatawrapperAllowed: boolean;
 	datawrapperMcpUrl?: string;
+	integrationKeysEncryptionKey?: string;
 	openDataMcpUrl?: string;
 	braveSearchApiKey?: string;
 	braveSearchApiUrl?: string;
@@ -144,6 +145,16 @@ export function verifyConfig(): void {
 		);
 	}
 	if (
+		process.env.FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED === "true" &&
+		// AES-256 needs exactly 32 bytes after decoding (empty decodes to 0)
+		Buffer.from(process.env.INTEGRATION_KEYS_ENCRYPTION_KEY ?? "", "base64")
+			.length !== 32
+	) {
+		throw new Error(
+			"INTEGRATION_KEYS_ENCRYPTION_KEY must be 32 bytes, base64-encoded (openssl rand -base64 32), when FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED is true",
+		);
+	}
+	if (
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true" &&
 		!(
 			(process.env.BRAVE_SEARCH_API_KEY &&
@@ -208,6 +219,7 @@ export const config: Config = {
 	featureFlagMcpDatawrapperAllowed:
 		process.env.FEATURE_FLAG_MCP_DATAWRAPPER_ALLOWED === "true",
 	datawrapperMcpUrl: process.env.DATAWRAPPER_MCP_URL,
+	integrationKeysEncryptionKey: process.env.INTEGRATION_KEYS_ENCRYPTION_KEY,
 	openDataMcpUrl: process.env.OPEN_DATA_MCP_URL,
 	braveSearchApiKey: process.env.BRAVE_SEARCH_API_KEY,
 	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,

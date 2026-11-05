@@ -55,6 +55,8 @@ export const UserEditForm: React.FC = () => {
 
 	const { error } = useUserErrorStore();
 
+	const isRegistrationPending = selectedUser?.is_registration_pending ?? false;
+
 	const formRef = useRef<HTMLFormElement>(null);
 
 	// Check if any field has changed
@@ -127,20 +129,28 @@ export const UserEditForm: React.FC = () => {
 			return;
 		}
 
-		if (
+		const hasProfileChanged =
 			formData.academicTitle !== (selectedUser.academic_title || "") ||
-			formData.firstName !== selectedUser.first_name ||
-			formData.lastName !== selectedUser.last_name ||
+			formData.firstName !== (selectedUser.first_name || "") ||
+			formData.lastName !== (selectedUser.last_name || "") ||
+			formData.personalTitle !== (selectedUser.personal_title || "");
+
+		if (
 			newEmail !== originalEmail ||
-			formData.personalTitle !== (selectedUser.personal_title || "")
+			(!isRegistrationPending && hasProfileChanged)
 		) {
-			await updateUserProfile(selectedUser.user_id, {
-				academicTitle: formData.academicTitle,
-				firstName: formData.firstName,
-				lastName: formData.lastName,
-				email: newEmail,
-				personalTitle: formData.personalTitle,
-			});
+			await updateUserProfile(
+				selectedUser.user_id,
+				isRegistrationPending
+					? { email: newEmail }
+					: {
+							academicTitle: formData.academicTitle,
+							firstName: formData.firstName,
+							lastName: formData.lastName,
+							email: newEmail,
+							personalTitle: formData.personalTitle,
+						},
+			);
 
 			// If the email was changed successfully, update the reference so the next
 			// change detection cycle compares against the new saved value.
@@ -183,6 +193,7 @@ export const UserEditForm: React.FC = () => {
 						}
 						options={Content["userEditModal.form.academicTitle.options"]}
 						onValueChange={handleAcademicTitleChange}
+						disabled={isRegistrationPending}
 					/>
 					<SelectField
 						id="personalTitle"
@@ -196,6 +207,7 @@ export const UserEditForm: React.FC = () => {
 						}
 						options={Content["userEditModal.form.personalTitle.options"]}
 						onValueChange={handlePersonalTitleChange}
+						disabled={isRegistrationPending}
 					/>
 					<div className="space-y-2">
 						<Label htmlFor="firstName">
@@ -206,7 +218,8 @@ export const UserEditForm: React.FC = () => {
 							value={formData.firstName}
 							onChange={handleInputChange("firstName")}
 							placeholder={Content["userEditModal.form.firstNamePlaceholder"]}
-							required
+							required={!isRegistrationPending}
+							disabled={isRegistrationPending}
 						/>
 					</div>
 					<div className="space-y-2">
@@ -218,9 +231,15 @@ export const UserEditForm: React.FC = () => {
 							value={formData.lastName}
 							onChange={handleInputChange("lastName")}
 							placeholder={Content["userEditModal.form.lastNamePlaceholder"]}
-							required
+							required={!isRegistrationPending}
+							disabled={isRegistrationPending}
 						/>
 					</div>
+					{isRegistrationPending && (
+						<p className="text-sm text-muted-foreground">
+							{Content["userEditModal.form.registrationPendingHint"]}
+						</p>
+					)}
 					<div className="space-y-2">
 						<EmailInputField
 							defaultValue={formData.email}

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router";
 import type { Session } from "@supabase/supabase-js";
 import { useErrorStore } from "../store/error-store.ts";
 import { useAuthErrorStore } from "../store/auth-error-store.ts";
+import { hasCompletedRegistration } from "../lib/has-completed-registration.ts";
 
 export function useSessionRedirect() {
 	const session = useAuthStore((state) => state.session);
@@ -81,7 +82,7 @@ async function redirectBasedOnSession({
 		return;
 	}
 
-	handleAuthorized(pathname, navigate);
+	handleAuthorized(session, pathname, navigate);
 }
 
 function handleUnauthorized(
@@ -90,7 +91,6 @@ function handleUnauthorized(
 ) {
 	const unprotectedPages = [
 		"/login/",
-		"/register/",
 		"/account-deleted/",
 		"/",
 		"/registration-error/",
@@ -100,10 +100,27 @@ function handleUnauthorized(
 		return;
 	}
 
+	if (pathname === "/register/") {
+		navigate("/login/");
+		return;
+	}
+
 	navigate("/");
 }
 
-function handleAuthorized(pathname: string, navigate: (path: string) => void) {
+function handleAuthorized(
+	session: Session,
+	pathname: string,
+	navigate: (path: string) => void,
+) {
+	// New accounts have no name until the registration is completed
+	if (!hasCompletedRegistration(session)) {
+		if (pathname !== "/register/") {
+			navigate("/register/");
+		}
+		return;
+	}
+
 	const protectedPages = ["/", "/profile/", "/email-changed/"];
 
 	// Allow access to protected pages

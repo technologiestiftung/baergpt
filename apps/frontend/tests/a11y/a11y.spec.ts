@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
@@ -35,40 +35,49 @@ testWithoutSplashScreen.describe("Accessibility - Auth Flow", () => {
 	);
 });
 
-test.describe("Accessibility - Public Pages", () => {
-	// test accessibility for register page
-	test("Register page should be accessible", async ({ page }) => {
-		await page.goto("/register/");
+testWithoutSplashScreen.describe("Accessibility - Public Pages", () => {
+	// test accessibility for login page
+	testWithoutSplashScreen(
+		"Login page should be accessible",
+		async ({ page }) => {
+			await page.goto("/login/");
 
-		// Wait for page to be fully loaded
-		await page.waitForLoadState("networkidle");
+			// The page is static, so wait for it to render before scanning
+			await expect(page.getByRole("main")).toBeVisible();
 
-		// Run accessibility scan on the privacy policy page
-		const a11yResults = await new AxeBuilder({ page }).analyze();
-		expect(a11yResults.violations).toEqual([]);
-	});
+			// Run accessibility scan on the privacy policy page
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
 
 	// test accessibility for privacy policy page
-	test("Privacy policy page should be accessible", async ({ page }) => {
-		await page.goto("/privacy-policy/");
+	testWithoutSplashScreen(
+		"Privacy policy page should be accessible",
+		async ({ page }) => {
+			await page.goto("/privacy-policy/");
 
-		// Wait for page to be fully loaded
-		await page.waitForLoadState("networkidle");
+			// The page is static, so wait for it to render before scanning
+			await expect(page.getByRole("main")).toBeVisible();
 
-		// Run accessibility scan on the privacy policy page
-		const a11yResults = await new AxeBuilder({ page }).analyze();
-		expect(a11yResults.violations).toEqual([]);
-	});
+			// Run accessibility scan on the privacy policy page
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
 
 	// test accessibility for terms of use page
-	test("Terms of use page should be accessible", async ({ page }) => {
-		await page.goto("/terms-of-use/");
+	testWithoutSplashScreen(
+		"Terms of use page should be accessible",
+		async ({ page }) => {
+			await page.goto("/terms-of-use/");
 
-		// Wait for page to be fully loaded
-		await page.waitForLoadState("networkidle");
+			// The page is static, so wait for it to render before scanning
+			await expect(page.getByRole("main")).toBeVisible();
 
-		// Run accessibility scan on the terms of use page
-		const a11yResults = await new AxeBuilder({ page }).analyze();
-		expect(a11yResults.violations).toEqual([]);
-	});
+			// Run accessibility scan on the terms of use page
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
 });

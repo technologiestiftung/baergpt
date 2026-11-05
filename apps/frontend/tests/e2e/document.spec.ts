@@ -22,6 +22,9 @@ import {
 	defaultSourceType,
 	longFileName,
 	longFilePath,
+	markdownDocumentName,
+	markdownDocumentPath,
+	markdownDocumentType,
 	msExcelDocumentName,
 	msExcelDocumentPath,
 	msExcelDocumentType,
@@ -998,6 +1001,29 @@ test.describe("Documents", () => {
 		},
 	);
 
+	testDesktopOnly("Download document via dropdown", async ({ page }) => {
+		await page.goto("/");
+
+		await openDocumentsPanel(page);
+
+		await page
+			.getByRole("listitem")
+			.filter({ hasText: defaultDocumentName })
+			.getByLabel("Menü öffnen")
+			.click();
+
+		const downloadOption = page.getByRole("option", { name: "Herunterladen" });
+		await expect(downloadOption).toBeVisible();
+
+		const downloadPromise = page.waitForEvent("download");
+		await downloadOption.click();
+		const download = await downloadPromise;
+
+		expect(download.suggestedFilename()).toBe(defaultDocumentName);
+		expect(await download.path()).toBeTruthy();
+		await expect(downloadOption).not.toBeVisible();
+	});
+
 	testDesktopOnly(
 		"Upload word document, open it in the preview, then download it",
 		async ({ page }) => {
@@ -1101,6 +1127,58 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
+		"Upload markdown document, open it in the preview, then download it",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await uploadFileViaDragAndDropAndWait({
+				page,
+				fileName: markdownDocumentName,
+				filePath: markdownDocumentPath,
+				fileType: markdownDocumentType,
+			});
+
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${markdownDocumentName}` })
+				.click();
+
+			await expect(
+				page.getByRole("heading", { name: markdownDocumentName }),
+			).toBeVisible();
+
+			const preview = page.getByTestId("markdown-preview");
+			await expect(
+				preview.getByRole("heading", { name: "Eine Markdown Datei" }),
+			).toBeVisible();
+			await expect(preview.locator("strong")).toHaveText("fettem Text");
+
+			await expect(preview.getByText("<script>")).toBeVisible();
+			await expect(preview.locator("script, img")).toHaveCount(0);
+			expect(
+				await page.evaluate(
+					() =>
+						(window as unknown as { __markdownInjected?: boolean })
+							.__markdownInjected,
+				),
+			).toBeUndefined();
+
+			const downloadPromise = page.waitForEvent("download", {
+				predicate: (download) =>
+					download.suggestedFilename() === markdownDocumentName,
+			});
+			await page
+				.getByRole("link", { name: `${markdownDocumentName} herunterladen` })
+				.click();
+			const download = await downloadPromise;
+
+			expect(download).toBeDefined();
+			expect(await download.path()).toBeTruthy();
+		},
+	);
+
+	testDesktopOnly(
 		"Upload csv document, open it in the preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
@@ -1177,7 +1255,6 @@ test.describe("Documents", () => {
 			}
 
 			await page.goto("/");
-			await page.waitForLoadState("networkidle");
 
 			await openDocumentsPanel(page);
 
@@ -1221,7 +1298,6 @@ test.describe("Documents", () => {
 			}
 
 			await page.goto("/");
-			await page.waitForLoadState("networkidle");
 
 			await openDocumentsPanel(page);
 

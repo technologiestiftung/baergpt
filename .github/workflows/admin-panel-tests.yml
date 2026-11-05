@@ -34,28 +34,22 @@ jobs:
       - name: Compute backend image tag 🏷️
         id: backend-image
         run: |
-          echo "image=ghcr.io/${{ github.repository_owner }}/baergpt-backend:content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${{ github.repository_owner }}/baergpt-backend:content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.npmrc', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
 
       - name: Setup environment ⚙️
         uses: ./.github/actions/setup
         with:
           start-supabase: "true"
-          install-1password: "true"
 
-      - name: Fetch admin-panel .env from 1Password ⬇️
-        run: |
-          cd apps/admin-panel
-          echo "Fetching admin panel .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_ADMIN_PANEL_TEST_ENV_ITEM_ID }}/notesPlain" > .env
+      - name: Write admin-panel .env from GitHub variable 📝
+        run: printf '%s\n' "$ADMIN_PANEL_TEST_ENV" > apps/admin-panel/.env
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          ADMIN_PANEL_TEST_ENV: ${{ vars.ADMIN_PANEL_TEST_ENV }}
 
-      - name: Fetch backend .env from 1Password ⬇️
-        run: |
-          echo "Fetching backend .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ secrets.OP_BACKEND_TEST_ENV_ITEM_ID }}/notesPlain" > "$RUNNER_TEMP/backend.env"
+      - name: Write backend .env from GitHub variable 📝
+        run: printf '%s\n' "$BACKEND_TEST_ENV" > "$RUNNER_TEMP/backend.env"
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          BACKEND_TEST_ENV: ${{ vars.BACKEND_TEST_ENV }}
 
       - name: Install Playwright Browser 🧭
         run: |
@@ -103,7 +97,7 @@ jobs:
           fi
 
       - name: Upload admin-panel E2E test results ⬆️
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2, pinned to commit sha to avoid sha-hulud like attacks
         if: ${{ failure() && !cancelled() }}
         with:
           name: admin-panel-e2e-${{ matrix.browser }}-test-results

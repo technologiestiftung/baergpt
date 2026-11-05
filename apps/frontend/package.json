@@ -26,7 +26,7 @@
 		"@react-pdf/renderer": "4.5.1",
 		"@repo/db-schema": "file:../../libs/db-schema",
 		"@sentry/react": "10.68.0",
-		"@supabase/supabase-js": "2.81.1",
+		"@supabase/supabase-js": "2.117.3",
 		"date-fns": "3.6.0",
 		"dotenv": "16.6.1",
 		"js-tiktoken": "1.0.21",
@@ -60,8 +60,8 @@
 		"strip-literal": "2.1.0",
 		"tailwindcss": "3.4.7",
 		"typescript": "5.8.3",
-		"vite": "8.1.5",
-		"vitest": "4.1.10"
+		"vite": "8.1.6",
+		"vitest": "4.1.11"
 	},
 	"overrides": {
 		"whatwg-url": "14.2.0"

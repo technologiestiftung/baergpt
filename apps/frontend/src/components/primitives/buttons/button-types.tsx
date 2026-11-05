@@ -5,6 +5,7 @@ export interface ButtonProps {
 	onClick?: () => void;
 	disabled?: boolean;
 	type?: "button" | "submit";
+	href?: string;
 	ariaLabel?: string;
 	title?: string;
 	isLoading?: boolean;

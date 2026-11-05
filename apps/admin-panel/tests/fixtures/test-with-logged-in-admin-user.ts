@@ -1,6 +1,6 @@
 import { Session } from "@supabase/supabase-js";
-import { test as baseTest } from "@playwright/test";
-import { createAnonClient, supabaseAdminClient } from "../supabase.ts";
+import { supabaseAdminClient } from "../supabase.ts";
+import { signInWithOtp } from "../auth.ts";
 import { testWithAdminUser } from "./test-with-admin-user.ts";
 
 type TestWithLoggedInAdminUser = {
@@ -13,22 +13,9 @@ export const testWithLoggedInAdminUser =
 	testWithAdminUser.extend<TestWithLoggedInAdminUser>({
 		session: [
 			async ({ adminAccount }, use) => {
-				const { email, password } = adminAccount;
+				const session = await signInWithOtp(adminAccount.email);
 
-				const { data, error } =
-					await createAnonClient().auth.signInWithPassword({
-						email,
-						password,
-					});
-
-				baseTest.expect(error).toBeNull();
-				baseTest.expect(data).toBeDefined();
-
-				if (error) {
-					throw new Error(`Failed to sign in as admin: ${error.message}`);
-				}
-
-				await use(data.session);
+				await use(session);
 			},
 			{ scope: "test", auto: true },
 		],

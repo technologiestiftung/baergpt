@@ -96,6 +96,7 @@ interface ChatStore {
 		web_citations: WebCitationSource[] | null;
 		parla_citations: ParlaCitationSource[] | null;
 		open_data_citations: OpenDataCitationSource[] | null;
+		datawrapper_chart_ids: string[] | null;
 		traces: MessageTraces | null;
 		running_tool?: TraceTool;
 	}): void;
@@ -187,11 +188,14 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				});
 			}
 
+			const wasExternalToolActive = selectedChatTools.some((active) =>
+				externalChatTools.includes(active),
+			);
 			const currentChat = get().getCurrentChat();
 			const hasNonToolMessage = currentChat?.messages.some(
 				({ external_tool_context }) => !external_tool_context,
 			);
-			if (hasNonToolMessage) {
+			if (hasNonToolMessage && !wasExternalToolActive) {
 				get().showInfoMessage({ type: "historyScoped" });
 			}
 		}
@@ -420,21 +424,28 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		web_citations,
 		parla_citations,
 		open_data_citations,
+		datawrapper_chart_ids,
 		traces,
 		running_tool,
 	}) => {
-		const foundMessage = chat.messages.find(({ id }) => id === messageId);
-		if (!foundMessage) {
+		const messageIndex = chat.messages.findIndex(({ id }) => id === messageId);
+		if (messageIndex === -1) {
 			return;
 		}
 
-		foundMessage.content = content;
-		foundMessage.citations = citations;
-		foundMessage.web_citations = web_citations;
-		foundMessage.parla_citations = parla_citations;
-		foundMessage.open_data_citations = open_data_citations;
-		foundMessage.traces = traces;
-		foundMessage.running_tool = running_tool;
+		// Replace instead of mutating, so the memoized `ChatMessage` of every
+		// other message can skip re-rendering on each streamed delta.
+		chat.messages[messageIndex] = {
+			...chat.messages[messageIndex],
+			content,
+			citations,
+			web_citations,
+			parla_citations,
+			open_data_citations,
+			datawrapper_chart_ids,
+			traces,
+			running_tool,
+		};
 		get().updateChats(chat);
 	},
 

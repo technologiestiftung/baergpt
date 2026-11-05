@@ -9,5 +9,9 @@ export function getUserStatus(user: User): User["status"] {
 		return "admin";
 	}
 
+	if (user.is_registration_pending) {
+		return "pending";
+	}
+
 	return "active";
 }

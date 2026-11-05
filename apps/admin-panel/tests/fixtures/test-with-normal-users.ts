@@ -2,8 +2,6 @@ import { testWithLoggedInAdminUser as test } from "./test-with-logged-in-admin-u
 import { supabaseAdminClient } from "../supabase.ts";
 import { expect } from "@playwright/test";
 
-const USER_PASSWORD = "password123";
-
 type TestUser = { id: string; email: string };
 type UserManagementFixtures = { testUser: TestUser };
 
@@ -40,7 +38,6 @@ async function createTestUser(
 
 	const { data, error } = await supabaseAdminClient.auth.admin.createUser({
 		email,
-		password: USER_PASSWORD,
 		email_confirm: true,
 		user_metadata: { first_name: "Test", last_name: suffix },
 	});

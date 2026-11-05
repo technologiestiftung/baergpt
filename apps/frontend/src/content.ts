@@ -13,14 +13,14 @@ export const Content = {
 	"header.navigation.landingPage.register.label": "Neu registrieren",
 	"header.navigation.landingPage.register.ariaLabel":
 		"Zur Registrierungs-Seite",
-	"header.navigation.landingPage.register.link": "/register/",
+	"header.navigation.landingPage.register.link": "/login/",
 
 	/* -------------------- Landing Page -------------------- */
 	"landingPage.hero.h1": "BärGPT, der KI-Assistent für die Berliner Verwaltung",
 	"landingPage.hero.h3": "Sicher. Datenschutzkonform. Open Source.",
 	"landingPage.hero.register.label": "Neu registrieren",
 	"landingPage.hero.register.ariaLabel": "Zur Registrierungs-Seite",
-	"landingPage.hero.register.link": "/register/",
+	"landingPage.hero.register.link": "/login/",
 
 	"landingPage.cards.title1": "Freien Chat nutzen",
 	"landingPage.cards.description1":
@@ -78,7 +78,7 @@ export const Content = {
 	"landingPage.registerCTA.p": "Für alle Beschäftigten der Berliner Verwaltung",
 	"landingPage.registerCTA.label": "Jetzt registrieren",
 	"landingPage.registerCTA.ariaLabel": "Zur Registrierungs-Seite",
-	"landingPage.registerCTA.link": "/register/",
+	"landingPage.registerCTA.link": "/login/",
 
 	/* -------------------- Privacy Policy Page -------------------- */
 	"privacyPolicyPage.h1": "Datenschutzerklärung",
@@ -786,6 +786,7 @@ export const Content = {
 	"documentsList.addToChat.imgAlt": "Plus-Icon",
 	"documentsList.view": "Dokument anzeigen",
 	"documentsList.view.imgAlt": "Auge-Icon",
+	"documentsList.download": "Herunterladen",
 	"documentsList.delete": "Löschen",
 	"documentsList.delete.imgAlt": "Mülleimer-Icon",
 	"documentsList.deleteDocument": "Dokument löschen",
@@ -921,6 +922,12 @@ export const Content = {
 	"chat.thinking.tool.parlaMCPTools.done": "Parla durchsucht",
 	"chat.thinking.tool.parlaMCPTools.done.description":
 		"Ich habe passende Parlamentsdokumente gefunden.",
+	"chat.thinking.tool.datawrapperMCPTools.running": "Grafik erstellen",
+	"chat.thinking.tool.datawrapperMCPTools.running.description":
+		"Ich erstelle eine Grafik mit Datawrapper.",
+	"chat.thinking.tool.datawrapperMCPTools.done": "Grafik erstellt",
+	"chat.thinking.tool.datawrapperMCPTools.done.description":
+		"Ich habe eine Grafik mit Datawrapper erstellt.",
 	//Chat error text
 	"chat.errorText.title": "Ihre Anfrage konnte gerade nicht bearbeitet werden.",
 	"chat.errorText.p1": "Bitte versuchen Sie es später erneut. ",
@@ -983,17 +990,15 @@ export const Content = {
 	"mcp.options.dialog.confirmButton.ariaLabel": "Bestätigen",
 	"mcp.options.dialog.cancelButton.label": "Abbrechen",
 	"mcp.options.dialog.cancelButton.ariaLabel": "Abbrechen",
-	"mcp.options.dialog.option1.label": "Parla Berlin",
-	"mcp.options.dialog.option1.description":
-		"Schriftliche Anfragen des Abgh. Berlins",
+	"mcp.options.dialog.option1.label": "Parla",
+	"mcp.options.dialog.option1.description": "Schriftliche Anfragen durchsuchen",
 	"mcp.options.dialog.option1.ariaLabel": "Parla Berlin auswählen",
 	"mcp.options.dialog.option2.label": "Berlin Open Data",
-	"mcp.options.dialog.option2.description":
-		"Datenbestände aus dem Berliner Datenportal",
+	"mcp.options.dialog.option2.description": "Offene Daten analysieren",
 	"mcp.options.dialog.option2.ariaLabel": "Berlin Open Data auswählen",
 	"mcp.options.dialog.option3.label": "Datawrapper",
 	"mcp.options.dialog.option3.description":
-		"Datenvisualisierungen erstellen und veröffentlichen",
+		"Diagramme, Karten und Tabellen erstellen",
 	"mcp.options.dialog.option3.ariaLabel": "Datawrapper auswählen",
 
 	// Chat llm model dropdown
@@ -1002,19 +1007,17 @@ export const Content = {
 	"chat.llmModel.dropdown.title": "Sprachmodell auswählen",
 	"chat.llmModel.dropdown.li1.label": "Schnell",
 	"chat.llmModel.dropdown.li1.labelExtended": "Mistral Small 4 (schnell)",
-	"chat.llmModel.dropdown.li1.description": "Gut für alltägliche Aufgaben",
+	"chat.llmModel.dropdown.li1.description": "Für kurze Fragen und Antworten",
 	"chat.llmModel.dropdown.li1.ariaLabel": "Mistral Small 4 (schnell) auswählen",
-	"chat.llmModel.dropdown.li2.label": "Präzise",
-	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Medium 3.5 (präzise)",
-	"chat.llmModel.dropdown.li2.description":
-		"Leistungsstark für komplexe Aufgaben",
+	"chat.llmModel.dropdown.li2.label": "Ausgewogen",
+	"chat.llmModel.dropdown.li2.labelExtended": "Mistral Large 4 (ausgewogen)",
+	"chat.llmModel.dropdown.li2.description": "Für Texte und Zusammenfassungen",
 	"chat.llmModel.dropdown.li2.ariaLabel":
-		"Mistral Medium 3.5 (präzise) auswählen",
-	"chat.llmModel.dropdown.li3.label": "GLM 5.3",
-	"chat.llmModel.dropdown.li3.labelExtended": "GLM 5.3",
-	"chat.llmModel.dropdown.li3.description":
-		"Leistungsstark für komplexe Aufgaben",
-	"chat.llmModel.dropdown.li3.ariaLabel": "GLM 5.3 auswählen",
+		"Mistral Large 4 (ausgewogen) auswählen",
+	"chat.llmModel.dropdown.li3.label": "Präzise",
+	"chat.llmModel.dropdown.li3.labelExtended": "GLM 5.3 (präzise)",
+	"chat.llmModel.dropdown.li3.description": "Für komplexe Analysen",
+	"chat.llmModel.dropdown.li3.ariaLabel": "GLM 5.3 (präzise) auswählen",
 	"chat.llmModel.dropdown.li4.label": "Länger nachdenken",
 	"chat.llmModel.dropdown.li4.description":
 		"BärGPT plant komplexe Antworten in mehreren Schritten, bevor es antwortet. ",
@@ -1144,6 +1147,93 @@ export const Content = {
 	"profile.chatSettings.personalPromptUpdateSuccess":
 		"Persönliche Präferenzen wurden aktualisiert",
 
+	/* -------------------- Connectors / Konnektoren -------------------- */
+	"connectors.heading": "Konnektoren",
+	"connectors.intro":
+		"Verbinden Sie Fachanwendungen oder Datenquellen, um damit in BärGPT zu arbeiten.",
+	"connectors.introLink": "Mehr zu Konnektoren erfahren",
+	"connectors.introLink.href":
+		"https://hilfe.baergpt.berlin/faq#was-sind-konnektoren",
+	"connectors.table.header.connector": "Konnektor",
+	"connectors.table.header.status": "Status",
+	"connectors.table.header.token": "API-Zugangs-Token",
+	"connectors.status.connected": "verbunden",
+	"connectors.providedByBaergpt": "Von BärGPT bereitgestellt",
+
+	"connectors.parla.name": "Parla",
+	"connectors.parla.description": "Schriftliche Anfragen analysieren",
+	"connectors.openData.name": "Berlin Open Data",
+	"connectors.openData.description": "Offene Daten analysieren",
+	"connectors.datawrapper.name": "Datawrapper",
+	"connectors.datawrapper.description":
+		"Karten, Diagramme und Tabellen erstellen",
+	"connectors.datawrapper.connectButton": "Verbinden",
+	"connectors.datawrapper.editButton.ariaLabel": "API-Zugangs-Token bearbeiten",
+	"connectors.datawrapper.deleteButton.ariaLabel":
+		"Datawrapper-Verbindung trennen",
+	"connectors.datawrapper.menuButton.ariaLabel":
+		"Weitere Aktionen für Datawrapper",
+	"connectors.datawrapper.menu.edit": "Bearbeiten",
+	"connectors.datawrapper.menu.disconnect": "Verbindung trennen",
+	"connectors.datawrapper.sheet.title": "Datawrapper Konnektor",
+	"connectors.datawrapper.sheet.close.ariaLabel": "Schließen",
+	"connectors.datawrapper.tokenIcon.alt": "API-Zugangs-Token",
+
+	//Datawrapper connect / replace dialog
+	"connectors.datawrapper.connect.title": "Datawrapper verbinden",
+	"connectors.datawrapper.connect.body":
+		"Bitte geben Sie Ihren API-Zugangs-Token aus der Datawrapper Anwendung ein.",
+	"connectors.datawrapper.replace.title":
+		"Datawrapper API-Zugangs-Token ersetzen",
+	"connectors.datawrapper.findTokenLink":
+		"Wo finde ich meinen API-Zugangs-Token?",
+	"connectors.datawrapper.helpLink.href":
+		"https://hilfe.baergpt.berlin/faq#wie-bekomme-ich-einen-api-zugangs-token-datawrapper",
+	"connectors.datawrapper.tokenLabel": "API-Zugangs-Token",
+	"connectors.datawrapper.currentTokenLabel": "Aktueller API-Zugangs-Token",
+	"connectors.datawrapper.newTokenLabel": "Neuer API-Zugangs-Token",
+	"connectors.datawrapper.error.invalid":
+		"Dieser Token ist ungültig. Bitte überprüfen Sie die Eingabe.",
+	"connectors.datawrapper.error.missingScopes":
+		"Dem Token fehlen Zugriffsrechte für Datawrapper.",
+	"connectors.datawrapper.error.generic":
+		"Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+	"connectors.datawrapper.missingScopesPanel.title":
+		"Token-Zugriffsrechte hinzufügen",
+	"connectors.datawrapper.missingScopesPanel.body":
+		"Mit diesem Token kann BärGPT keine Grafiken erstellen oder bearbeiten, da ihm Zugriffsrechte fehlen.",
+	"connectors.datawrapper.missingScopesPanel.instruction":
+		"Fügen Sie dem Token in Datawrapper diese Zugriffsrechte hinzu:",
+	"connectors.datawrapper.missingScopesPanel.link":
+		"So erstellen Sie einen Token mit allen Zugriffsrechten",
+	"connectors.datawrapper.missingScopesPanel.showMore": "Mehr lesen",
+	"connectors.datawrapper.missingScopesPanel.showLess": "Weniger lesen",
+	"connectors.datawrapper.cancelButton": "Abbrechen",
+	"connectors.datawrapper.connectSubmitButton": "Verbinden",
+	"connectors.datawrapper.replaceSubmitButton": "API-Zugangs-Token ersetzen",
+	"connectors.datawrapper.connectSuccess.title": "Datawrapper ist verbunden",
+	"connectors.datawrapper.connectSuccess.body":
+		"Erstellen Sie jetzt Diagramme, Karten und Tabellen mit BärGPT.",
+	"connectors.datawrapper.replaceSuccess.title":
+		"Ihr API-Zugangs-Token wurde erfolgreich ersetzt",
+	"connectors.datawrapper.replaceSuccess.body":
+		"Datawrapper ist jetzt verbunden.",
+	"connectors.datawrapper.successContinueButton": "Fortfahren",
+
+	//Datawrapper disconnect confirm dialog
+	"connectors.datawrapper.disconnect.title": "Datawrapper-Verbindung trennen?",
+	"connectors.datawrapper.disconnect.body1":
+		"BärGPT kann danach keine Grafiken mehr in Datawrapper erstellen. Ihre Grafiken in Datawrapper bleiben erhalten.",
+	"connectors.datawrapper.disconnect.body2":
+		"Ihr API-Zugangs-Token wird aus BärGPT entfernt. Um Datawrapper wieder zu verbinden, geben Sie erneut einen Token ein.",
+	"connectors.datawrapper.disconnect.confirmButton": "Verbindung trennen",
+	"connectors.datawrapper.disconnect.error":
+		"Die Verbindung konnte nicht getrennt werden. Bitte versuchen Sie es erneut.",
+
+	//Password visibility toggle (shared input primitive)
+	"passwordInput.show.ariaLabel": "Eingabe anzeigen",
+	"passwordInput.hide.ariaLabel": "Eingabe verbergen",
+
 	/* -------------------- Email Changed -------------------- */
 	"emailChanged.title": "Ihre neue E-Mail-Adresse wurde erfolgreich geändert.",
 	"emailChanged.buttonLink": "Zu BärGPT",
@@ -1159,79 +1249,51 @@ export const Content = {
 	"accountDeleted.buttonLink": "https://citylabberlin.typeform.com/to/GhoCHw0J",
 
 	/* ---------------------- Login Form ---------------------- */
-	"loginPage.h1": "Willkommen zurück",
-	"loginPage.h2": "Bitte melden Sie sich an",
-	"loginPage.notice.heading": "Wir stellen auf Anmeldung ohne Passwort um.",
-	"loginPage.notice.body":
-		"Zur Verbesserung der Sicherheit haben wir die Anmeldung bei BärGPT auf ein passwortloses Verfahren umgestellt.",
-	"loginPage.notice.showMore.button.label": "Mehr Infos",
-	"loginPage.notice.showMore.button.ariaLabel": "Mehr Infos anzeigen",
-	"loginPage.notice.showLess.button.label": "Weniger Infos",
-	"loginPage.notice.showLess.button.ariaLabel": "Weniger Infos anzeigen",
+	"loginPage.h1": "Anmelden oder neues Konto erstellen",
+	"loginPage.h2":
+		"Bitte geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen Einmalcode per E-Mail.",
 	"loginPage.emailLabel": "E-Mail-Adresse",
 	"loginPage.otpHint":
-		"Wir senden Ihnen einen einmaligen Sicherheitscode per E-Mail, den Sie dann im nächsten Schritt eingeben können.",
-	"loginPage.submitButton": "Code anfordern",
-	"loginPage.registerPrompt": "Sie haben noch keinen Account?",
-	"loginPage.registerLink": "Jetzt registrieren",
+		"Nur dienstliche E-Mail-Adressen der unmittelbaren Verwaltung sind erlaubt",
+	"loginPage.submitButton": "Einmalcode erhalten",
+	"loginPage.error.rateLimited":
+		"Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+	"loginPage.error.generic":
+		"Der Einmalcode konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
 
 	/* ---------------------- OTP Confirmation Page ---------------------- */
-	"confirmOtp.title": "Fast geschafft!",
+	"confirmOtp.title": "Einmalcode eingeben",
 	"confirmOtp.description":
-		"Bitte geben Sie den Sicherheitscode aus Ihrer E-Mail ein.",
-	"confirmOtp.description.sent":
-		"Wir haben eine E-Mail an folgende Adresse geschickt:",
-	"confirmOtp.description.instruction":
-		"Bitte geben Sie den Code aus der E-Mail hier ein, um fortzufahren:",
-	"confirmOtp.resend.question": "Keinen Code erhalten oder Code ungültig?",
-	"confirmOtp.checkSpam": "Bitte überprüfen Sie auch Ihren Spam-Ordner.",
+		"Bitte geben Sie den Einmalcode aus Ihrer E-Mail ein.",
+	"confirmOtp.description.sent": "Eine E-Mail mit dem Einmalcode haben wir an",
+	"confirmOtp.description.sentSuffix": "geschickt.",
+	"confirmOtp.resend.button": "Einmalcode nochmal senden",
+	"confirmOtp.resend.success": "Einmalcode wurde erneut gesendet",
 	"confirmOtp.typo.question": "Tippfehler?",
-	"confirmOtp.typo.or": "oder",
-	"confirmOtp.typo.registerLink": "Zurück zur Registrierung",
-	"confirmOtp.typo.loginLink": "Zurück zum Login",
-	"confirmOtp.notRegistered.question": "Noch nicht registriert?",
-	"confirmOtp.notRegistered.registerLink": "Zur Registrierung",
-	"confirmOtp.token.label": "Sicherheitscode",
-	"confirmOtp.token.placeholder": "z. B. 1234567890",
+	"confirmOtp.typo.changeEmailLink": "E-Mail-Adresse ändern",
+	"confirmOtp.token.label": "Einmalcode",
 	"confirmOtp.button.submit": "Weiter",
 	"confirmOtp.button.loading": "Überprüfe …",
 	"confirmOtp.error.missingFields":
-		"E-Mail-Adresse und Sicherheitscode werden benötigt.",
+		"E-Mail-Adresse und Einmalcode werden benötigt.",
 	"confirmOtp.error.tokenExpiredOrInvalid":
-		"Der angegebene Sicherheitscode ist fehlerhaft oder ungültig.",
+		"Der Einmalcode ist ungültig. Überprüfen Sie die Eingabe.",
 	"confirmOtp.error.generic":
 		"Die Bestätigung ist fehlgeschlagen. Bitte versuchen Sie es erneut oder fordern Sie einen neuen Link an.",
 
 	/* ---------------------- Register Form ---------------------- */
-	"registerPage.h1": "Registrieren Sie sich",
-	"registerPage.notice.heading":
-		"BärGPT steht aktuell ausschließlich für Beschäftigte der Berliner Verwaltung zur Verfügung.",
-	"registerPage.notice.showMore.button.label": "Mehr Infos",
-	"registerPage.notice.showMore.button.ariaLabel": "Mehr Infos anzeigen",
-	"registerPage.notice.showLess.button.label": "Weniger Infos",
-	"registerPage.notice.showLess.button.ariaLabel": "Weniger Infos anzeigen",
-	"registerPage.notice.content.p1":
-		"Mit einigen Ausnahmen beschränkt sich die Registrierung daher auf E-Mail-Adressen im Format",
-	"registerPage.notice.content.p2": "vorname.nachname@subdomain.berlin.de.",
-	"registerPage.notice.content.p3":
-		"Wir bitten um Verständnis, dass eine Bereitstellung darüber hinaus aktuell noch nicht möglich ist.",
+	"registerPage.h1": "Fast geschafft!",
+	"registerPage.intro":
+		"Teilen Sie uns nur noch Ihren Namen mit, damit wir Sie verifizieren können.",
 	"registerPage.firstNameLabel": "Vorname",
 	"registerPage.firstNamePlaceholder": "Maria",
 	"registerPage.lastNameLabel": "Nachname",
-	"registerPage.lastNamePlaceholder": "Müller",
-	"registerPage.emailLabel": "E-Mail-Adresse",
-	"registerPage.emailHint":
-		"Nur dienstliche E-Mail-Adressen der Berliner Verwaltung sind erlaubt.",
-	"registerPage.emailPlaceholder": "vorname.name@subdomain.berlin.de",
-	"registerPage.otpHint":
-		"Nach der Registrierung schicken wir Ihnen eine E-Mail mit einem Code. Damit bestätigen Sie Ihr Konto und melden sich an.",
-	"registerPage.privacyLink.label": "Datenschutzbestimmungen",
-	"registerPage.privacyText.p1": "und",
-	"registerPage.termsOfUse.label": "Nutzungsbedingungen",
-	"registerPage.privacyText.p2": "zustimmen",
-	"registerPage.submitButton": "Registrieren",
-	"registerPage.loginPrompt": "Sie haben bereits einen Account?",
-	"registerPage.loginLink": "Jetzt einloggen",
+	"registerPage.lastNamePlaceholder": "Musterfrau",
+	"registerPage.privacyText.p1": "Ich akzeptiere die",
+	"registerPage.privacyLink.label": "Datenschutzerklärung",
+	"registerPage.privacyText.p2": "und",
+	"registerPage.termsOfUse.label": "Nutzungsbedingungen.",
+	"registerPage.submitButton": "Konto eröffnen",
 
 	/* ---------------------- Unconfirmed Email ---------------------- */
 	"unconfirmedEmail.h2": "Fast geschafft!",

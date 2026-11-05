@@ -1,5 +1,5 @@
 name: Setup BaerGPT environment
-description: Installs Node.js, upgrades npm, caches and installs npm dependencies, and optionally installs the Supabase CLI and 1Password CLI
+description: Installs Node.js, pins npm to packageManager, caches and installs npm dependencies, and optionally installs the Supabase CLI and 1Password CLI
 
 inputs:
   start-supabase:
@@ -43,9 +43,19 @@ runs:
         # GitHub Actions step closing its stdout/stderr. Redirect output to a log
         # file so we can inspect it if the wait action times out. The exit status
         # is written to a file so wait-for-supabase can fail fast if the start failed.
+        # Retried because ghcr.io sometimes rate-limits the image pulls, which the CLI
+        # does not retry itself.
         nohup bash -c '
-          supabase start --exclude studio,realtime,imgproxy,edge-runtime,supavisor,postgres-meta
-          status=$?
+          for attempt in 1 2 3; do
+            supabase start --exclude studio,realtime,imgproxy,edge-runtime,supavisor,postgres-meta
+            status=$?
+            if [ "$status" -eq 0 ] || [ "$attempt" -eq 3 ]; then
+              break
+            fi
+            echo "supabase start failed with status $status (attempt $attempt/3), retrying in 10s..."
+            supabase stop --no-backup || true
+            sleep 10
+          done
           echo "$status" > /tmp/supabase-start.exit
           exit "$status"
         ' > /tmp/supabase-start.log 2>&1 &
@@ -71,6 +81,25 @@ runs:
       uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0, pinned to commit sha to avoid sha-hulud like attacks
       with:
         node-version-file: ".nvmrc"
+
+    # The bundled npm may be older than the one that understands strict-allow-scripts and
+    # min-release-age in .npmrc (older versions ignore them silently), so pin it to packageManager.
+    - name: Install npm from packageManager ⚙️
+      shell: bash
+      run: |
+        NPM_VERSION="$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")"
+        npm install -g "npm@$NPM_VERSION"
+        npm -v
+
+    # min-release-age in .npmrc only applies when npm resolves versions, not to `npm ci`
+    # installing a lockfile, so check the versions a PR adds before installing them.
+    - name: Check lockfile package ages 🕰️
+      if: github.event_name == 'pull_request'
+      shell: bash
+      run: |
+        git fetch --depth=1 origin "$GITHUB_BASE_REF"
+        git show FETCH_HEAD:package-lock.json > "$RUNNER_TEMP/base-package-lock.json"
+        node .github/scripts/check-lockfile-age.mts "$RUNNER_TEMP/base-package-lock.json"
 
     - name: Cache npm dependencies 💾
       id: cache-npm-deps

@@ -9,10 +9,13 @@ import llms from "./routes/llms";
 import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
 import favicon from "./routes/favicon";
+import integrations from "./routes/integrations";
 import { captureError } from "./monitoring/capture-error";
 import { logMemory } from "./monitoring/memory-logger";
+import { configureAiSdkWarnings } from "./monitoring/ai-sdk-warnings";
 
 verifyConfig();
+configureAiSdkWarnings();
 
 const app = new Hono();
 
@@ -44,6 +47,7 @@ app.route("/documents", documents);
 app.route("/favicon", favicon);
 app.route("/llm", llms);
 app.route("/admin", admin);
+app.route("/integrations", integrations);
 
 app.onError((error, c) => {
 	captureError(error);

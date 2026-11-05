@@ -11,7 +11,7 @@ export type Document = {
 	file_size?: number;
 	num_pages?: number;
 	folder_id?: number;
-	processing_finished_at?: string;
+	processing_finished_at?: string | null;
 	created_at: string;
 	uploaded_by_user_id?: string;
 };
@@ -73,7 +73,7 @@ export type IncomingChatMessage = ModelMessage & {
 export type ChatMessageBody = {
 	messages: IncomingChatMessage[];
 	user_id: string;
-	chat_id: string;
+	chat_id: number;
 	search_type: string;
 	allowed_document_ids: number[];
 	allowed_folder_ids: number[];
@@ -218,6 +218,15 @@ export class DocumentNotFoundError extends Error {
 			`Document with ID ${documentId} not found, it may not exist or you may not have access to it.`,
 		);
 		this.name = "DocumentNotFoundError";
+	}
+}
+
+export class RegistrationPendingError extends Error {
+	constructor(userId: string) {
+		super(
+			`User ${userId} has not completed the registration, so their name and titles cannot be changed.`,
+		);
+		this.name = "RegistrationPendingError";
 	}
 }
 

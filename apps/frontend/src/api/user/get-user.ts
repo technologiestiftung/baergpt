@@ -11,7 +11,7 @@ export async function getUser(
 		.select("*")
 		.eq("id", userId)
 		.abortSignal(signal)
-		.single();
+		.maybeSingle();
 
 	if (signal.aborted) {
 		return null;

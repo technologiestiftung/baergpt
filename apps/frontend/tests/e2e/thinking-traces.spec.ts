@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
 import {
 	mockLlmCompletion,
@@ -43,6 +43,15 @@ async function getLatestTraces(userId: string): Promise<Array<unknown>> {
 	return (messages ?? []).map(({ traces }) => traces);
 }
 
+async function setExtendedThinking(page: Page, isEnabled: boolean) {
+	await page.addInitScript((isExtendedThinkingEnabled) => {
+		localStorage.setItem(
+			"extended-thinking",
+			JSON.stringify({ state: { isExtendedThinkingEnabled }, version: 0 }),
+		);
+	}, isEnabled);
+}
+
 /**
  * The reasoning-only phase (trace shown in full under "BärGPT überlegt...",
  * before any answer text arrives) is not covered here: Playwright buffers a
@@ -52,6 +61,7 @@ test.describe("Thinking traces", () => {
 	testWithMockedLlm(
 		"collapses the trace behind a summary and persists it",
 		async ({ page, account, isMobile }) => {
+			await setExtendedThinking(page, true);
 			await mockLlmCompletion(page, {
 				events: [
 					{ type: "reasoning-delta", id: "r1", delta: TRACE_TEXT },
@@ -101,6 +111,7 @@ test.describe("Thinking traces", () => {
 	testWithMockedLlm(
 		"renders one step per tool, collapsing consecutive calls of the same tool",
 		async ({ page, account }) => {
+			await setExtendedThinking(page, true);
 			await mockLlmCompletion(page, {
 				events: [
 					{ type: "reasoning-delta", id: "r1", delta: TRACE_TEXT },
@@ -166,6 +177,7 @@ test.describe("Thinking traces", () => {
 	testWithMockedLlm(
 		"renders no summary when the response carries no trace",
 		async ({ page, account }) => {
+			await setExtendedThinking(page, true);
 			await page.goto("/");
 
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
@@ -180,6 +192,122 @@ test.describe("Thinking traces", () => {
 			).toHaveCount(0);
 
 			await expect.poll(() => getLatestTraces(account.id)).toEqual([null]);
+		},
+	);
+
+	testWithMockedLlm(
+		"shows the reasoning trace when extended thinking is off but the model reasons",
+		async ({ page, account }) => {
+			await setExtendedThinking(page, false);
+			await mockLlmCompletion(page, {
+				events: [
+					{ type: "reasoning-delta", id: "r1", delta: TRACE_TEXT },
+					{ type: "text-delta", id: "1", delta: ANSWER_TEXT },
+				],
+			});
+			await page.goto("/");
+
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByText(ANSWER_TEXT);
+			await expect(answer).toBeVisible();
+
+			const summary = page.getByRole("button", { name: summaryName });
+			const traceText = page.getByText(TRACE_TEXT);
+			await expect(summary).toBeVisible();
+			await expect(traceText).toBeHidden();
+
+			await summary.click();
+			await expect(traceText).toBeVisible();
+
+			await expect
+				.poll(() => getLatestTraces(account.id))
+				.toEqual([
+					{
+						traces: [{ type: "text", text: TRACE_TEXT }],
+						durationSeconds: expect.any(Number),
+					},
+				]);
+		},
+	);
+
+	testWithMockedLlm(
+		"shows no trace when extended thinking is off and the response carries no reasoning",
+		async ({ page, account }) => {
+			await setExtendedThinking(page, false);
+			await mockLlmCompletion(page, {
+				events: [
+					{
+						type: "tool-input-start",
+						toolCallId: "c1",
+						toolName: "webSearchTool",
+					},
+					{ type: "tool-output-available", toolCallId: "c1" },
+					{ type: "text-delta", id: "1", delta: ANSWER_TEXT },
+				],
+			});
+			await page.goto("/");
+
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByText(ANSWER_TEXT);
+			const summary = page.getByRole("button", { name: summaryName });
+			const summaryWithoutDuration = page.getByRole("button", {
+				name: summaryWithoutDurationName,
+			});
+			const webSearchStep = page.getByText("Web durchsucht");
+			await expect(answer).toBeVisible();
+			await expect(summary).toHaveCount(0);
+			await expect(summaryWithoutDuration).toHaveCount(0);
+			await expect(webSearchStep).toHaveCount(0);
+
+			await expect.poll(() => getLatestTraces(account.id)).toEqual([null]);
+		},
+	);
+
+	testWithMockedLlm(
+		"keeps tool steps in the trace when extended thinking is off but the model reasons",
+		async ({ page, account }) => {
+			await setExtendedThinking(page, false);
+			await mockLlmCompletion(page, {
+				events: [
+					{ type: "reasoning-delta", id: "r1", delta: TRACE_TEXT },
+					{
+						type: "tool-input-start",
+						toolCallId: "c1",
+						toolName: "webSearchTool",
+					},
+					{ type: "tool-output-available", toolCallId: "c1" },
+					{ type: "text-delta", id: "1", delta: ANSWER_TEXT },
+				],
+			});
+			await page.goto("/");
+
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByText(ANSWER_TEXT);
+			const summary = page.getByRole("button", { name: summaryName });
+			const webSearchStep = page.getByText("Web durchsucht");
+			await expect(answer).toBeVisible();
+			await expect(summary).toBeVisible();
+
+			await summary.click();
+			await expect(webSearchStep).toHaveCount(1);
+
+			await expect
+				.poll(() => getLatestTraces(account.id))
+				.toEqual([
+					{
+						traces: [
+							{ type: "text", text: TRACE_TEXT },
+							{ type: "tool", tool: "webSearchTool" },
+						],
+						durationSeconds: expect.any(Number),
+					},
+				]);
 		},
 	);
 });

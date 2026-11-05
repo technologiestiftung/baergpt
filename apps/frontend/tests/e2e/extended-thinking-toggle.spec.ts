@@ -3,8 +3,8 @@ import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
 import { sendAndWaitForLLMResponse } from "../fixtures/mock-llm.ts";
 
 const fastModelLabel = "Schnell";
-const preciseModelLabel = "Präzise";
-const preciseModelOptionName = "Mistral Medium 3.5 (präzise) auswählen";
+const preciseModelLabel = "Ausgewogen";
+const preciseModelOptionName = "Mistral Large 4 (ausgewogen) auswählen";
 const extendedThinkingSwitchName = "Länger nachdenken auswählen";
 
 function extendedThinkingSwitch(page: Page) {

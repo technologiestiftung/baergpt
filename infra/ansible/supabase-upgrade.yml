@@ -1,0 +1,334 @@
+# Moves a host to supabase_release (group_vars/all.yml): Postgres 15 -> 17 with upstream's
+# utils/upgrade-pg17.sh, then the supabase role (Supabase services at self-hosted v0.8.2, Envoy instead of Kong),
+# then a full supabase.yml run. After a failure in upgrade-pg17.sh, roll back with supabase-rollback.yml and
+# start again; after any other failure, fix the cause and re-run.
+# Needs -e upgrade_backup=<snapshot> naming the backup taken right before. See infra/README.md.
+- name: Upgrade the Supabase stack
+  hosts: supabase
+  become: true
+  gather_facts: false
+  serial: 1
+  vars:
+    upgrade_upstream_commit: ff80bb14991e68667c04f74248b954e8babe6fde
+    upgrade_upstream_files:
+      - { path: utils/upgrade-pg17.sh, sha256: 0a3fd8a6bd095c9982418aae544ce4143190c0872757f1a57faa72091a4bf220 }
+      - { path: docker-compose.pg17.yml, sha256: bd61c0d7ea268d9c3dbe103277899266a5adeaeb1645a3a35198fed35a617112 }
+    # Upstream 1.25.04 versions of the files the upgrade replaces or retires (kong.yml). Another checksum means
+    # someone edited them on the host, and the edit would be lost.
+    upgrade_replaced_files:
+      - { path: volumes/api/kong.yml, sha256: e30e333c471548c31ac0e961336ca0543d39d6c4c90baf1fba6a9b1608cc6c86 }
+      - { path: volumes/logs/vector.yml, sha256: 1e0247f9f21316711824b3b49a4d1a8e5b2dd7564682f74d9d1fee057f6bd254 }
+      - { path: volumes/pooler/pooler.exs, sha256: 312e963efcfad533af647574692277c238937ec995907682063cfd026cd43234 }
+      - { path: volumes/db/jwt.sql, sha256: 1cc94a4f16f6e2932b383cd68e211a96bcae298437ca4120d8a5106396c58465 }
+    # upgrade-pg17.sh downloads these at a tag without checking them; a mismatch stops the playbook before the downtime.
+    upgrade_helpers_ref: 17.6.1.063
+    upgrade_helpers:
+      - { name: initiate.sh, sha256: 341d0094ab1c585c7e2272dd086ca369c9dd9d798f9f744c0bb5cc56380ffe62 }
+      - { name: complete.sh, sha256: 92302d905c561af31c3d1ea918e2a5426ff89f267dcd499132045f7e04f3d137 }
+      - { name: common.sh, sha256: b742e043acd3b4d129604c8332815f171f66cd6e387092a7af2f4c06f93310dc }
+      - { name: pgsodium_getkey.sh, sha256: a7e226f8aebc8943b6ab346c2b8370b7db42bdd0b82a3306a383b462242a6412 }
+      - { name: check.sh, sha256: b9546f1e9b97549a82760b81dee00f818c833e7dc942288faf2c61ac04e9fe85 }
+      - { name: prepare.sh, sha256: 7d7caa3de2236c740f7a4e95fcc656cd6d408f858b22e82ec22486291afdc4a3 }
+    # The image the hosts run before the upgrade, and the images upgrade-pg17.sh uses (PG17_TARGET_IMAGE,
+    # PG17_UPGRADE_IMAGE, alpine).
+    upgrade_pg15_image: supabase/postgres:15.8.1.085
+    upgrade_pg17_script_image: supabase/postgres:17.6.1.136
+    upgrade_script_images: [supabase/postgres:17.6.1.136, "supabase/postgres:{{ upgrade_helpers_ref }}", alpine]
+    upgrade_rollback_dir: "{{ supabase_dir }}/rollback/{{ supabase_release }}"
+  tasks:
+    - name: Read the deployed stack release
+      ansible.builtin.slurp:
+        src: "{{ supabase_release_file }}"
+      register: upgrade_release
+      failed_when: false
+
+    - name: Skip hosts already on {{ supabase_release }}
+      ansible.builtin.meta: end_host
+      when: (upgrade_release.content | default('') | b64decode | trim) == supabase_release
+
+    - name: Read the Postgres major version of the data directory
+      ansible.builtin.slurp:
+        src: "{{ supabase_dir }}/volumes/db/data/PG_VERSION"
+      register: upgrade_pg_version
+
+    - name: Check the Postgres major version
+      ansible.builtin.assert:
+        that: (upgrade_pg_version.content | b64decode | trim) in ['15', '17']
+        fail_msg: "Unexpected PG_VERSION {{ upgrade_pg_version.content | b64decode | trim }}."
+        quiet: true
+
+    - name: Require the name of a fresh backup
+      ansible.builtin.assert:
+        that: upgrade_backup | default('') | length > 0
+        fail_msg: >-
+          Run backups/backup_env.sh for this environment on the backup machine first, then pass its snapshot
+          name: -e upgrade_backup=2026-10-14_0900
+        quiet: true
+
+    - name: Check for a rollback point from an earlier run
+      ansible.builtin.stat:
+        path: "{{ upgrade_rollback_dir }}/complete"
+      register: upgrade_rollback_point
+
+    - name: Pre-flight checks before the first run
+      when: not upgrade_rollback_point.stat.exists
+      block:
+        - name: Require Postgres 15 (a host on 17 without a rollback point was not upgraded by this playbook)
+          ansible.builtin.assert:
+            that: (upgrade_pg_version.content | b64decode | trim) == '15'
+            quiet: true
+
+        - name: Refuse to overwrite files that were edited on the host
+          ansible.builtin.command:
+            cmd: sha256sum --check --quiet
+            chdir: "{{ supabase_dir }}"
+            stdin: "{% for f in upgrade_replaced_files %}{{ f.sha256 }}  {{ f.path }}\n{% endfor %}"
+          changed_when: false
+
+        - name: Measure the database and the free disk
+          ansible.builtin.shell:
+            cmd: echo "$(du -sb volumes/db/data | cut -f1) $(df -B1 --output=avail . | tail -n1)"
+            chdir: "{{ supabase_dir }}"
+          register: upgrade_disk
+          changed_when: false
+
+        # Peak use: the data directory, its rollback copy, and the upgraded copy the script builds.
+        - name: Require room for two more copies of the database
+          ansible.builtin.assert:
+            that: (upgrade_disk.stdout.split()[1] | int) > 2 * (upgrade_disk.stdout.split()[0] | int) + 5 * 1024 ** 3
+            fail_msg: "Database {{ upgrade_disk.stdout.split()[0] | int | human_readable }}, free {{ upgrade_disk.stdout.split()[1] | int | human_readable }}."
+            quiet: true
+
+        # Pulling during the downtime would add the whole download to it.
+        - name: Pull the new images while the old stack still runs
+          ansible.builtin.command:
+            cmd: "docker pull {{ item }}"
+          loop: >-
+            {{ ((lookup('ansible.builtin.file', playbook_dir ~ '/../supabase/docker-compose.yml') | from_yaml).services.values()
+               | map(attribute='image') | list) + upgrade_script_images }}
+          changed_when: false
+
+        - name: Confirm the backup and the downtime
+          ansible.builtin.pause:
+            prompt: >-
+              Backup {{ upgrade_backup }} is the latest snapshot of {{ baergpt_env }}.
+              Supabase on {{ inventory_hostname }} goes down now and comes back on {{ supabase_release }}.
+              Enter to continue, Ctrl+C then A to abort
+          when: not (upgrade_assume_yes | default(false) | bool)
+
+    # Writes before verification would be lost on a rollback. The converge play (nginx role) reopens it.
+    - name: Close public access until the upgraded stack is verified
+      ansible.builtin.service:
+        name: nginx
+        state: stopped
+
+    - name: Ensure utils dir exists
+      ansible.builtin.file:
+        path: "{{ supabase_dir }}/utils"
+        state: directory
+        mode: "0755"
+
+    - name: Fetch the upgrade script and its compose override at the reviewed commit
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/supabase/supabase/{{ upgrade_upstream_commit }}/docker/{{ item.path }}"
+        dest: "{{ supabase_dir }}/{{ item.path }}"
+        checksum: "sha256:{{ item.sha256 }}"
+        mode: "0644"
+      loop: "{{ upgrade_upstream_files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      when: (upgrade_pg_version.content | b64decode | trim) == '15'
+
+    - name: Ensure the helper check dir exists
+      ansible.builtin.file:
+        path: "{{ supabase_dir }}/utils/pg17-upgrade-helpers"
+        state: directory
+        mode: "0755"
+      when: (upgrade_pg_version.content | b64decode | trim) == '15'
+
+    - name: Check the helper scripts upgrade-pg17.sh will download
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/supabase/postgres/{{ upgrade_helpers_ref }}/ansible/files/admin_api_scripts/pg_upgrade_scripts/{{ item.name }}"
+        dest: "{{ supabase_dir }}/utils/pg17-upgrade-helpers/{{ item.name }}"
+        checksum: "sha256:{{ item.sha256 }}"
+        mode: "0644"
+      loop: "{{ upgrade_helpers }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: (upgrade_pg_version.content | b64decode | trim) == '15'
+
+    - name: Take the rollback point (stack stopped for a consistent copy)
+      when: not upgrade_rollback_point.stat.exists
+      block:
+        - name: Stop the stack
+          ansible.builtin.command:
+            cmd: "{{ supabase_compose_cmd }} down"
+            chdir: "{{ supabase_dir }}"
+
+        # Leftovers of an interrupted earlier attempt are incomplete.
+        - name: Remove an unfinished rollback point
+          ansible.builtin.file:
+            path: "{{ upgrade_rollback_dir }}"
+            state: absent
+
+        - name: Create the rollback directory
+          ansible.builtin.file:
+            path: "{{ upgrade_rollback_dir }}"
+            state: directory
+            mode: "0700"
+
+        - name: Copy the data directory
+          ansible.builtin.command:
+            cmd: "cp -a volumes/db/data {{ upgrade_rollback_dir }}/data.partial"
+            chdir: "{{ supabase_dir }}"
+
+        - name: Keep the copy only once it is complete
+          ansible.builtin.command:
+            cmd: "mv data.partial data"
+            chdir: "{{ upgrade_rollback_dir }}"
+
+        - name: Save the db-config volume (pgsodium root key)
+          ansible.builtin.command:
+            cmd: >-
+              docker run --rm -v supabase_db-config:/v:ro -v {{ upgrade_rollback_dir }}:/b
+              --entrypoint tar {{ upgrade_pg15_image }} --numeric-owner -C /v -cf /b/db-config.tar .
+
+        - name: Save the stack files
+          ansible.builtin.command:
+            cmd: >-
+              tar --numeric-owner -cf {{ upgrade_rollback_dir }}/files.tar
+              .env docker-compose.yml docker-compose.monitoring.yml monitoring.env otel-config.yml vector-stackit.yml
+              volumes/api volumes/logs volumes/pooler volumes/functions volumes/db/certs volumes/db/jwt.sql
+            chdir: "{{ supabase_dir }}"
+
+        - name: Flush the rollback point to disk
+          ansible.builtin.command:
+            cmd: "sync -f {{ upgrade_rollback_dir }}"
+
+        - name: Mark the rollback point complete
+          ansible.builtin.copy:
+            content: "{{ upgrade_pg_version.content | b64decode }}"
+            dest: "{{ upgrade_rollback_dir }}/complete"
+            mode: "0600"
+
+    - name: Upgrade Postgres 15 to 17
+      when: (upgrade_pg_version.content | b64decode | trim) == '15'
+      block:
+        # The postgres user's uid differs between the images (105:106 in 15.8.1.085, 100:101 in 17.6.1.136).
+        - name: Look up the postgres user of the Postgres 15 and 17 images
+          ansible.builtin.command:
+            cmd: "docker run --rm --entrypoint sh {{ item }} -c 'id -u postgres; id -g postgres'"
+          loop:
+            - "{{ upgrade_pg15_image }}"
+            - "{{ upgrade_pg17_script_image }}"
+          register: upgrade_postgres_ids
+          changed_when: false
+
+        # The script needs Postgres 15 running. A failed earlier attempt may have left it stopped
+        # with the cert already handed to the Postgres 17 user.
+        - name: Give the TLS cert to the Postgres 15 postgres user
+          ansible.builtin.file:
+            path: "{{ supabase_dir }}/volumes/db/certs/{{ item }}"
+            owner: "{{ upgrade_postgres_ids.results[0].stdout_lines[0] }}"
+            group: "{{ upgrade_postgres_ids.results[0].stdout_lines[1] }}"
+          loop: &upgrade_cert_files
+            - server.key
+            - server.crt
+
+        - name: Start the stack
+          ansible.builtin.command:
+            cmd: "{{ supabase_compose_cmd }} up -d"
+            chdir: "{{ supabase_dir }}"
+
+        - name: Wait for the database
+          ansible.builtin.command:
+            cmd: docker exec supabase-db pg_isready -U postgres -h localhost
+          register: upgrade_db_ready
+          until: upgrade_db_ready.rc == 0
+          retries: 60
+          delay: 5
+          changed_when: false
+
+        # Postgres reads the key only at startup. The script starts Postgres 17 at the end, which refuses
+        # a key owned by the Postgres 15 user.
+        - name: Hand the TLS cert to the Postgres 17 postgres user
+          ansible.builtin.file:
+            path: "{{ supabase_dir }}/volumes/db/certs/{{ item }}"
+            owner: "{{ upgrade_postgres_ids.results[1].stdout_lines[0] }}"
+            group: "{{ upgrade_postgres_ids.results[1].stdout_lines[1] }}"
+          loop: *upgrade_cert_files
+
+        - name: Run upstream's upgrade script (pg_upgrade; takes minutes, longer for large databases)
+          ansible.builtin.command:
+            cmd: bash utils/upgrade-pg17.sh --yes
+            chdir: "{{ supabase_dir }}"
+          async: 7200
+          poll: 15
+
+        - name: Read the new Postgres major version
+          ansible.builtin.slurp:
+            src: "{{ supabase_dir }}/volumes/db/data/PG_VERSION"
+          register: upgrade_pg_version_after
+
+        - name: Check the data directory is Postgres 17
+          ansible.builtin.assert:
+            that: (upgrade_pg_version_after.content | b64decode | trim) == '17'
+            quiet: true
+
+        - name: Remove the script's copies of the old data and pgsodium key (the rollback point has both)
+          ansible.builtin.file:
+            path: "{{ supabase_dir }}/volumes/db/{{ item }}"
+            state: absent
+          loop:
+            - data.bak.pg15
+            - pgsodium_root.key.bak.pg15
+
+    - name: Deploy the Supabase services
+      ansible.builtin.include_role:
+        name: supabase
+      vars:
+        supabase_upgrading: true
+
+    - name: Run the role's pending handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Check the upgraded stack
+      ansible.builtin.include_tasks: tasks/supabase-smoke.yml
+      vars:
+        smoke_pg_major: "17"
+
+    - name: Upload the index order check
+      ansible.builtin.copy:
+        src: files/amcheck-collated-indexes.sql
+        dest: "{{ supabase_dir }}/utils/amcheck-collated-indexes.sql"
+        mode: "0644"
+
+    # Read-only, with the stack already up; takes longer the more text indexes there are.
+    - name: Check the order of text indexes (newer glibc collation in the Postgres 17 image)
+      ansible.builtin.shell:
+        cmd: docker exec -i supabase-db psql -h localhost -U supabase_admin -d postgres -f - < utils/amcheck-collated-indexes.sql
+        chdir: "{{ supabase_dir }}"
+      async: 14400
+      poll: 30
+      register: upgrade_amcheck
+      changed_when: false
+      failed_when: upgrade_amcheck.rc != 0 or upgrade_amcheck.stdout | length > 0
+
+    # Only now: a re-run skips hosts with this marker, and supabase.yml (the converge) requires it.
+    - name: Record the upgraded stack release
+      ansible.builtin.copy:
+        content: "{{ supabase_release }}\n"
+        dest: "{{ supabase_release_file }}"
+        mode: "0644"
+
+    - name: What to check by hand
+      ansible.builtin.debug:
+        msg:
+          - "Log in with an email code (German template), upload a document over 16 MB, chat with it."
+          - "Then take a backup on the backup machine; on staging also run backups/dr-drill.sh."
+          - "Rollback point: {{ upgrade_rollback_dir }} (supabase-rollback.yml). Delete it once the host has run fine for a few days."
+
+# Everything else the normal deploy manages (nginx, certbot, migrations user), now that the guard passes.
+- name: Converge with the normal deploy
+  ansible.builtin.import_playbook: supabase.yml
+  tags: [converge]

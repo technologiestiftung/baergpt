@@ -2,7 +2,6 @@ import { supabaseAdminClient } from "./supabase.ts";
 import { mockDocumentUpload } from "./fixtures/test-with-documents.ts";
 import {
 	defaultDocumentPath,
-	defaultUserPassword,
 	seedDefaultDocumentName,
 	seedPublicDocumentName,
 } from "./constants.ts";
@@ -41,7 +40,6 @@ async function ensureSeedUser(): Promise<string> {
 
 	const { data, error } = await supabaseAdminClient.auth.admin.createUser({
 		email: SEED_USER_EMAIL,
-		password: defaultUserPassword,
 		email_confirm: true,
 	});
 	if (error || !data.user) {

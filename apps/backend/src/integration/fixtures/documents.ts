@@ -17,6 +17,7 @@ import {
 	tags,
 } from "./constants";
 import { expect } from "vitest";
+import { signInWithOtp } from "./auth";
 
 export async function mockDocumentUpload({
 	userId,
@@ -26,7 +27,6 @@ export async function mockDocumentUpload({
 	sourceType,
 	bucketName,
 	userEmail,
-	userPassword,
 }: {
 	userId: string;
 	accessGroupId: string | null;
@@ -35,7 +35,6 @@ export async function mockDocumentUpload({
 	sourceType: "public_document" | "personal_document" | "default_document";
 	bucketName: "documents" | "public_documents";
 	userEmail: string;
-	userPassword: string;
 }) {
 	const source_url = `${accessGroupId ?? userId}/${fileName}`;
 	const file = readFileSync(filePath);
@@ -45,10 +44,7 @@ export async function mockDocumentUpload({
 		process.env.SUPABASE_ANON_KEY as string,
 	);
 
-	const { error: signInError } = await userClient.auth.signInWithPassword({
-		email: userEmail,
-		password: userPassword,
-	});
+	const { error: signInError } = await signInWithOtp(userClient, userEmail);
 
 	expect(signInError).toBeNull();
 
@@ -56,7 +52,7 @@ export async function mockDocumentUpload({
 		.from(bucketName)
 		.upload(
 			source_url,
-			new File([file], fileName, { type: "application/pdf" }),
+			new File([new Uint8Array(file)], fileName, { type: "application/pdf" }),
 			{ upsert: true },
 		);
 

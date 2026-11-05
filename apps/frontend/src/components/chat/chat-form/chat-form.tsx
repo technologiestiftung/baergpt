@@ -190,6 +190,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 			web_citations: null,
 			parla_citations: null,
 			open_data_citations: null,
+			datawrapper_chart_ids: null,
 			allowed_document_ids,
 			allowed_folder_ids: selectedUserChatFolders.map((folder) => folder.id),
 			external_tool_context: selectedChatTools.some((tool) =>

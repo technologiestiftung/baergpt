@@ -2,8 +2,10 @@
 
 An OpenTelemetry Collector runs on each Supabase VM (Compose overlay) and ships to
 STACKIT Observability: **metrics** via Prometheus remote-write, **logs** via OTLP/HTTP.
+Supabase's own Vector additionally pushes **auth (GoTrue) logs** to STACKIT Loki.
 
 - Collector config: [`otel-config.yml`](./otel-config.yml)
+- Vector sink config: [`vector-stackit.yml`](./vector-stackit.yml)
 - Overlay: [`docker-compose.monitoring.yml`](./docker-compose.monitoring.yml)
 - Provisioned by the Ansible `supabase` role; STACKIT creds come from the Supabase `.env`
   (1Password), per-env metadata from `monitoring.env` (rendered from the inventory).
@@ -35,6 +37,25 @@ The **Tor/Mullvad block** (host nginx, not a container) ships under its own stre
 
 - `/var/log/anon-egress-blocklist.log` — one JSON status line per hourly refresh.
 - `/var/log/nginx/anon-egress.log` — one access-log line per blocked request. **These lines
-  contain client IP addresses**, the only log stream here that does (Kong sees nginx's address,
-  not the client's). Retention is whatever the STACKIT Observability instance is set to; it is
-  configured in the STACKIT portal, not in this repo.
+  contain client IP addresses** (Kong sees nginx's address, not the client's). Retention is
+  whatever the STACKIT Observability instance is set to; it is configured in the STACKIT
+  portal, not in this repo.
+
+### Auth (GoTrue)
+
+Shipped by Supabase's Vector, not the collector: `vector-stackit.yml` adds a Loki sink on
+upstream's `router.auth` route, loaded as a second `--config` so upstream's `vector.yml` stays
+untouched. Stream labels: `service_name=supabase-<env>-auth`, `source`, `host`, `level`.
+One JSON object per line, so query fields with `| json`, e.g.
+`{service_name="supabase-production-auth"} | json | status >= 400`.
+
+- Only GoTrue's JSON lines are shipped. The SQL trace GoTrue prints at `GOTRUE_LOG_LEVEL=debug`
+  contains refresh tokens and OTP hashes and is dropped, as is anything with `component`
+  `pop`/`sql`.
+- Needs `STACKIT_OBSERVABILITY_LOGS_LOKI_URL` in the Supabase `.env`: the Loki **base** URL,
+  without `/loki/api/v1/push`.
+- `db` waits for `vector` to be healthy, so a broken Vector config keeps Postgres down. The
+  Ansible role validates the config before starting the stack.
+- After changing `vector-stackit.yml`, check in Grafana that
+  `{service_name="supabase-<env>-auth"} | json | __error__!="" or component=~"pop|sql"`
+  returns nothing (catches both non-JSON lines and the SQL trace).

@@ -4,8 +4,8 @@ import { useAuthStore } from "../../store/auth-store";
 interface UpdateProfilesTableParams {
 	first_name: string;
 	last_name: string;
-	academic_title: string;
-	personal_title: string;
+	academic_title?: string;
+	personal_title?: string;
 }
 
 export async function updateProfilesTable(
@@ -16,8 +16,12 @@ export async function updateProfilesTable(
 		.update({
 			first_name: userData.first_name,
 			last_name: userData.last_name,
-			academic_title: userData.academic_title,
-			personal_title: userData.personal_title,
+			...(userData.academic_title !== undefined && {
+				academic_title: userData.academic_title,
+			}),
+			...(userData.personal_title !== undefined && {
+				personal_title: userData.personal_title,
+			}),
 		})
 		.eq("id", useAuthStore.getState().session?.user?.id ?? "")
 		.select();

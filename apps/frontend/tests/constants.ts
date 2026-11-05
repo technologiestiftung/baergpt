@@ -6,7 +6,6 @@ const __dirname = dirname(__filename);
 
 export const defaultBucketName = "documents";
 
-export const defaultUserPassword = "123456789!";
 export const defaultUserFirstName = "john";
 export const defaultUserLastName = "doe";
 export const defaultUserEmail = `${defaultUserFirstName}.${defaultUserLastName}@ts.berlin`;
@@ -111,6 +110,13 @@ export const csvDocumentPath = resolve(
 	`./fixtures/${csvDocumentName}`,
 );
 export const csvDocumentType = "text/csv";
+
+export const markdownDocumentName = "markdown-document.md";
+export const markdownDocumentPath = resolve(
+	__dirname,
+	`./fixtures/${markdownDocumentName}`,
+);
+export const markdownDocumentType = "";
 
 export const longFileName =
 	"This_is_a_very_long_document_name_that_should_be_truncated.pdf";

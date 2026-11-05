@@ -16,6 +16,7 @@ interface SelectFieldProps {
 	defaultOption: string;
 	options: readonly string[];
 	onValueChange: (value: string) => void;
+	disabled?: boolean;
 }
 
 export const SelectField: React.FC<SelectFieldProps> = ({
@@ -26,6 +27,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
 	defaultOption,
 	options,
 	onValueChange,
+	disabled,
 }) => {
 	// use a controlled value - convert empty string to "default" for display
 	const selectValue = value === "" ? "default" : value;
@@ -33,7 +35,11 @@ export const SelectField: React.FC<SelectFieldProps> = ({
 	return (
 		<div className="space-y-2">
 			<Label htmlFor={id}>{label}</Label>
-			<Select value={selectValue} onValueChange={onValueChange}>
+			<Select
+				value={selectValue}
+				onValueChange={onValueChange}
+				disabled={disabled}
+			>
 				<SelectTrigger id={id}>
 					<SelectValue placeholder={placeholder} />
 				</SelectTrigger>

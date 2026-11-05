@@ -120,6 +120,8 @@ export const Content = {
 	"userEditModal.form.firstNamePlaceholder": "Vorname eingeben",
 	"userEditModal.form.lastName": "Nachname",
 	"userEditModal.form.lastNamePlaceholder": "Nachname eingeben",
+	"userEditModal.form.registrationPendingHint":
+		"Name und Titel trägt die Person bei der Registrierung selbst ein.",
 	"userEditModal.form.email": "E-Mail-Adresse",
 	"userEditModal.form.emailPlaceholder": "E-Mail-Adresse eingeben",
 	"userEditModal.form.isAdmin": "Admin",
@@ -187,7 +189,7 @@ export const Content = {
 	// Upload Document
 	"baseKnowledge.uploadDocument.title": "Dokument hochladen",
 	"baseKnowledge.uploadDocument.description":
-		"Lade Dokumente (PDF, Word, Excel oder CSV) in das Base Knowledge hoch",
+		"Lade Dokumente (PDF, Word, Excel, CSV oder Markdown) in das Base Knowledge hoch",
 	"baseKnowledge.uploadDocument.label": "Dokument",
 	"baseKnowledge.uploadDocument.button.label": "Dokument hochladen",
 	"baseKnowledge.uploadDocument.uploadSuccess":

@@ -44,13 +44,13 @@ async function getMessagesForLatestChat(
 
 test.describe("Chat message persistence", () => {
 	testWithMockedLlm(
-		"a stream that ends abnormally (no [DONE]) leaves no empty assistant message behind",
+		"a stream that ends abnormally (no [DONE]) persists the partial answer",
 		async ({ page, account }) => {
 			await page.goto("/");
 
 			// SSE body that ends without the `data: [DONE]` trailer — simulates a
 			// dropped connection. `parseStream`'s fallback path should kick in and
-			// the optimistic assistant placeholder should never reach the DB.
+			// persist the text the user has already seen.
 			await page.route("**/llm/just-chatting", async (route) => {
 				await route.fulfill({
 					status: 200,
@@ -66,17 +66,18 @@ test.describe("Chat message persistence", () => {
 			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 			await sendAndWaitForLLMResponse(page);
 
-			// The local placeholder is dropped from the UI once the abnormal end
-			// is detected.
+			// The partial answer stays visible after the abnormal end...
 			await expect(
 				page.getByTestId("assistant-message-markdown-container"),
-			).toHaveCount(0);
+			).toHaveText("Partial answer");
 
-			// Only the user's message was ever written to the database — no
-			// empty-content assistant row.
+			// ...and is written to the database.
 			await expect
 				.poll(() => getMessagesForLatestChat(account.id))
-				.toEqual([{ role: "user", content: "hallo" }]);
+				.toEqual([
+					{ role: "user", content: "hallo" },
+					{ role: "assistant", content: "Partial answer" },
+				]);
 		},
 	);
 

@@ -169,6 +169,7 @@ export type Database = {
 					citations: Json | null;
 					content: string;
 					created_at: string;
+					datawrapper_chart_ids: Json | null;
 					external_tool_context: boolean;
 					id: number;
 					open_data_citations: Json | null;
@@ -185,6 +186,7 @@ export type Database = {
 					citations?: Json | null;
 					content: string;
 					created_at?: string;
+					datawrapper_chart_ids?: Json | null;
 					external_tool_context?: boolean;
 					id?: number;
 					open_data_citations?: Json | null;
@@ -201,6 +203,7 @@ export type Database = {
 					citations?: Json | null;
 					content?: string;
 					created_at?: string;
+					datawrapper_chart_ids?: Json | null;
 					external_tool_context?: boolean;
 					id?: number;
 					open_data_citations?: Json | null;
@@ -531,6 +534,45 @@ export type Database = {
 					},
 				];
 			};
+			user_integration_keys: {
+				Row: {
+					auth_tag: string;
+					ciphertext: string;
+					created_at: string;
+					id: string;
+					iv: string;
+					last4: string;
+					provider: string;
+					scopes: string[];
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					auth_tag: string;
+					ciphertext: string;
+					created_at?: string;
+					id?: string;
+					iv: string;
+					last4: string;
+					provider: string;
+					scopes: string[];
+					updated_at?: string;
+					user_id: string;
+				};
+				Update: {
+					auth_tag?: string;
+					ciphertext?: string;
+					created_at?: string;
+					id?: string;
+					iv?: string;
+					last4?: string;
+					provider?: string;
+					scopes?: string[];
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 		};
 		Views: {
 			[_ in never]: never;
@@ -664,6 +706,7 @@ export type Database = {
 					first_name: string;
 					invited_at: string;
 					is_admin: boolean;
+					is_registration_pending: boolean;
 					last_login_at: string;
 					last_name: string;
 					num_documents: number;
@@ -702,6 +745,10 @@ export type Database = {
 			};
 			is_application_admin: { Args: never; Returns: boolean };
 			is_current_user_banned_or_deleted: { Args: never; Returns: boolean };
+			is_registration_completed: {
+				Args: { user_meta_data: Json };
+				Returns: boolean;
+			};
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];
@@ -769,8 +816,13 @@ export type Database = {
 				Args: never;
 				Returns: undefined;
 			};
+			reject_password_verification: { Args: { event: Json }; Returns: Json };
 			remove_allowed_individual_email: {
 				Args: { p_email: string };
+				Returns: undefined;
+			};
+			replace_default_document: {
+				Args: { p_new_document_id: number; p_old_document_ids: number[] };
 				Returns: undefined;
 			};
 			search_chat_messages: {

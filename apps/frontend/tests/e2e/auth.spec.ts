@@ -1,12 +1,17 @@
-import type { Page } from "@playwright/test";
+import type { Browser, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import {
 	confirmOtp,
 	findUserByEmail,
 	testWithRegisteredUser,
 } from "../fixtures/test-with-registered-user.ts";
-import { supabaseAdminClient } from "../supabase.ts";
-import { defaultUserFirstName, defaultUserLastName } from "../constants.ts";
+import { authStorageKey, supabaseAdminClient } from "../supabase.ts";
+import {
+	defaultUserFirstName,
+	defaultUserLastName,
+	MOCK_SPLASH_RELEASE_SHA,
+	VERSION_STORAGE_KEY,
+} from "../constants.ts";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
 import Content from "../../src/content.ts";
@@ -17,16 +22,50 @@ import { expectGreeting } from "./helpers/greeting.ts";
  * code from Mailpit and submit it on the confirm-otp page. confirmOtp opens the
  * emailed link in a new tab and returns that (now authenticated) page.
  */
-async function loginViaOtp(
-	page: Page,
-	account: { email: string; password: string; id: string },
-) {
+async function loginViaOtp(page: Page, account: { email: string; id: string }) {
 	await page.goto("/login/");
 	await page
 		.getByRole("textbox", { name: "E-Mail-Adresse" })
 		.fill(account.email);
-	await page.getByRole("button", { name: "Code anfordern" }).click();
+	await page.getByRole("button", { name: "Einmalcode erhalten" }).click();
 	return confirmOtp({ page, account });
+}
+
+/**
+ * Logs the account in via OTP in a fresh browser context (separate localStorage),
+ * like signing in from a second browser. Each OTP login creates its own session.
+ */
+async function openLoggedInBrowser(
+	browser: Browser,
+	account: { email: string; id: string },
+) {
+	const context = await browser.newContext();
+	await context.route(
+		(url) =>
+			url.hostname === "api.github.com" &&
+			/^\/repos\/[^/]+\/[^/]+\/commits\//.test(url.pathname),
+		(route) =>
+			route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({ sha: MOCK_SPLASH_RELEASE_SHA }),
+			}),
+	);
+	await context.addInitScript(
+		({ versionKey, sha }) => localStorage.setItem(versionKey, sha),
+		{ versionKey: VERSION_STORAGE_KEY, sha: MOCK_SPLASH_RELEASE_SHA },
+	);
+	const page = await loginViaOtp(await context.newPage(), account);
+	await expectGreeting(page, `${defaultUserFirstName} ${defaultUserLastName}`);
+	return page;
+}
+
+async function logout(page: Page) {
+	await page.getByRole("button", { name: "Profil öffnen" }).click();
+	await page.getByRole("button", { name: "Ausloggen" }).click();
+	await expect(
+		page.getByText("BärGPT, der KI-Assistent für die Berliner Verwaltung"),
+	).toBeVisible();
 }
 
 test.describe("Login", () => {
@@ -51,12 +90,52 @@ test.describe("Login", () => {
 		).toBeVisible();
 	});
 
+	testWithRegisteredUser(
+		"Logout in a second browser still logs out after a global logout in the first",
+		async ({ browser, account }) => {
+			// Regression test: auth-js < 2.91.2 kept the session in localStorage when
+			// /logout answered 403 session_not_found, so a reload logged the user back in.
+			const browserA = await openLoggedInBrowser(browser, account);
+			const browserB = await openLoggedInBrowser(browser, account);
+
+			// Global logout (supabase-js default scope) revokes browser B's session too
+			await logout(browserA);
+
+			const logoutResponse = browserB.waitForResponse((response) =>
+				response.url().includes("/auth/v1/logout"),
+			);
+			await logout(browserB);
+			// Server rejects B's logout since its session is already gone
+			expect((await logoutResponse).status()).toBe(403);
+
+			expect(
+				await browserB.evaluate(
+					(key) => localStorage.getItem(key),
+					authStorageKey,
+				),
+			).toBeNull();
+
+			await browserB.reload();
+			await expect(
+				browserB.getByText(
+					"BärGPT, der KI-Assistent für die Berliner Verwaltung",
+				),
+			).toBeVisible();
+			await expect(
+				browserB.getByRole("button", { name: "Profil öffnen" }),
+			).toBeHidden();
+
+			await browserA.context().close();
+			await browserB.context().close();
+		},
+	);
+
 	test("Invalid Login Attempt", async ({ page }) => {
 		// Go to the login page
 		await page.goto("/login/");
 
 		// Try to request a code with an empty email field
-		await page.getByRole("button", { name: "Code anfordern" }).click();
+		await page.getByRole("button", { name: "Einmalcode erhalten" }).click();
 
 		// Email field should show a validation error
 		await expect(page.getByText("Bitte füllen Sie dieses Feld")).toBeVisible();
@@ -65,112 +144,60 @@ test.describe("Login", () => {
 		await page.locator("#email").fill("some-invalid-email");
 
 		// Try to request a code again
-		await page.getByRole("button", { name: "Code anfordern" }).click();
+		await page.getByRole("button", { name: "Einmalcode erhalten" }).click();
 
 		// Email field should show a format validation error
 		await expect(page.getByText("Das E-Mail-Format ist falsch.")).toBeVisible();
 	});
 
-	test("Login with an unregistered email is indistinguishable from a registered one", async ({
+	test("Confirm-otp page reached via login links back to login to change the email", async ({
 		page,
 	}) => {
-		// Regression test: an unregistered email must navigate to /confirm-otp/
-		// exactly like a registered one, so the login form can't be used to probe
-		// which emails have accounts (see requestLoginOtp's otp_disabled handling).
-		const nonExistentEmail = "nonexistent-login-attempt@ts.berlin";
+		// Requesting a code creates the account, so it is deleted afterwards
+		const email = `confirm-otp-footer-check+${crypto.randomUUID()}@ts.berlin`;
 
-		const { data: listUsersDataBefore, error: listUsersErrorBefore } =
-			await supabaseAdminClient.auth.admin.listUsers();
-		expect(listUsersErrorBefore).toBeNull();
-		expect(
-			listUsersDataBefore?.users.some(
-				({ email }) => email === nonExistentEmail,
-			),
-		).toBe(false);
+		try {
+			await requestCodeOnLoginPage(page, email);
 
-		await page.goto("/login/");
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill(nonExistentEmail);
-		await page.getByRole("button", { name: "Code anfordern" }).click();
-
-		await expect(page).toHaveURL(/\/confirm-otp\//);
-
-		// shouldCreateUser:false must still hold — navigating must not have
-		// silently created an account for the unregistered email.
-		const { data: listUsersDataAfter, error: listUsersErrorAfter } =
-			await supabaseAdminClient.auth.admin.listUsers();
-		expect(listUsersErrorAfter).toBeNull();
-		expect(
-			listUsersDataAfter?.users.some(({ email }) => email === nonExistentEmail),
-		).toBe(false);
-	});
-
-	test("Confirm-otp page reached via login shows the login-specific footer links", async ({
-		page,
-	}) => {
-		// Regression test: the confirm-otp page tailors its "wrong email" /
-		// "not registered" footer links based on the ?origin= param set by
-		// login-page/register-page. Reaching it via login must never show the
-		// "not yet registered" escape hatch. See confirm-otp/index.tsx.
-		await page.goto("/login/");
-		await page
-			.getByRole("textbox", { name: "E-Mail-Adresse" })
-			.fill("confirm-otp-footer-check@ts.berlin");
-		await page.getByRole("button", { name: "Code anfordern" }).click();
-
-		await expect(page).toHaveURL(/[?&]origin=login(&|$)/);
-		await expect(
-			page.getByRole("link", { name: "Zurück zum Login" }),
-		).toBeVisible();
-		await expect(
-			page.getByRole("link", { name: "Zurück zur Registrierung" }),
-		).not.toBeVisible();
-		await expect(
-			page.getByRole("link", { name: "Zur Registrierung" }),
-		).toBeVisible();
+			await expect(page).toHaveURL(/\/confirm-otp\//);
+			await expect(
+				page.getByRole("link", { name: "E-Mail-Adresse ändern" }),
+			).toHaveAttribute("href", "/login/");
+		} finally {
+			const foundUser = await findUserByEmail(email);
+			if (foundUser) {
+				await supabaseAdminClient.auth.admin.deleteUser(foundUser.id);
+			}
+		}
 	});
 });
 
-async function fillAndSubmitRegistrationForm(
-	page: Page,
-	{
-		email,
-		firstName,
-		lastName,
-	}: { email: string; firstName: string; lastName: string },
-) {
-	await page.goto("/register/");
+async function getProfileAndAccessGroupCount(userId: string) {
+	const { data: profile } = await supabaseAdminClient
+		.from("profiles")
+		.select("first_name, last_name")
+		.eq("id", userId)
+		.maybeSingle();
 
-	const firstNameInput = page.getByRole("textbox", { name: "Vorname" });
-	await firstNameInput.fill(firstName);
+	const { count } = await supabaseAdminClient
+		.from("access_group_members")
+		.select("*", { count: "exact", head: true })
+		.eq("user_id", userId);
 
-	const lastNameInput = page.getByRole("textbox", { name: "Nachname" });
-	await lastNameInput.fill(lastName);
+	return { profile, accessGroupCount: count };
+}
 
-	const emailInput = page.getByRole("textbox", {
-		name: "E-Mail-Adresse Nur",
-	});
-	await emailInput.fill(email);
+async function requestCodeOnLoginPage(page: Page, email: string) {
+	await page.goto("/login/");
 
-	// Wait for check email allowed to be loaded before proceeding
-	await page
-		.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
-			timeout: 10_000,
-		})
-		.catch(() => {}); // Ignore if already completed
-
-	const privacyCheckboxInput = page.locator(
-		'[data-testid="label-has-accepted-privacy-checkbox"]',
-	);
-	await privacyCheckboxInput.check();
+	await page.getByRole("textbox", { name: "E-Mail-Adresse" }).fill(email);
 
 	// Wait for the passwordless sign-up (OTP) request to complete
 	await Promise.all([
 		page.waitForResponse(
 			(resp) => resp.url().includes("/auth/v1/otp") && resp.status() === 200,
 		),
-		page.getByRole("button", { name: "Registrieren" }).click(),
+		page.getByRole("button", { name: "Einmalcode erhalten" }).click(),
 	]);
 }
 
@@ -179,7 +206,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	// one test's afterEach delete another's user. A worker runs its tests
 	// serially, so a single module-scoped variable set in beforeEach is safe.
 	let givenUserEmail: string;
-	const givenUserPassword = "123456789!";
 	const givenUserFirstName = "User";
 	const givenUserLastName = "Registration";
 
@@ -190,8 +216,6 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	testWithoutSplashScreen.afterEach(async () => {
 		const foundUser = await findUserByEmail(givenUserEmail);
 
-		// A brand-new registration might not have created the user yet if the OTP
-		// was never confirmed; only delete when present.
 		if (!foundUser) {
 			return;
 		}
@@ -203,100 +227,76 @@ test.describe("User Registration (uses different user to prevent side-effects on
 	});
 
 	testWithoutSplashScreen("Default Registration Flow", async ({ page }) => {
-		await fillAndSubmitRegistrationForm(page, {
-			email: givenUserEmail,
-			firstName: givenUserFirstName,
-			lastName: givenUserLastName,
-		});
+		await requestCodeOnLoginPage(page, givenUserEmail);
 
 		const page1 = await confirmOtp({
 			page,
 			account: {
 				email: givenUserEmail,
-				password: givenUserPassword,
 				id: "", // id is not needed for this flow
 			},
 		});
 
+		await expect(page1).toHaveURL("/register/");
+
+		const user = await findUserByEmail(givenUserEmail);
+		if (!user) {
+			throw new Error("User was not created");
+		}
+
+		expect(await getProfileAndAccessGroupCount(user.id)).toStrictEqual({
+			profile: null,
+			accessGroupCount: 0,
+		});
+
+		const submitButton = page1.getByRole("button", { name: "Konto eröffnen" });
+
+		await page1
+			.getByRole("textbox", { name: "Vorname" })
+			.fill(givenUserFirstName);
+		await page1
+			.getByRole("textbox", { name: "Nachname" })
+			.fill(givenUserLastName);
+
+		await submitButton.click();
+
+		await expect(
+			page1.getByText(
+				"Bitte stimmen Sie den Datenschutz- und Nutzungsbedingungen zu.",
+				{ exact: true },
+			),
+		).toBeVisible();
+		await expect(page1).toHaveURL("/register/");
+
+		await page1
+			.getByTestId("has-accepted-privacy-checkbox")
+			.locator("span")
+			.first()
+			.click();
+
+		await submitButton.click();
+
 		await expect(page1).toHaveURL("/");
 
 		await expectGreeting(page1, `${givenUserFirstName} ${givenUserLastName}`);
+
+		expect(await getProfileAndAccessGroupCount(user.id)).toStrictEqual({
+			profile: { first_name: givenUserFirstName, last_name: givenUserLastName },
+			accessGroupCount: 1,
+		});
 	});
-
-	testWithoutSplashScreen(
-		"Registering with an existing confirmed email shows the same generic screen",
-		async ({ page }) => {
-			const { error: createUserError } =
-				await supabaseAdminClient.auth.admin.createUser({
-					email: givenUserEmail,
-					password: givenUserPassword,
-					email_confirm: true,
-				});
-
-			expect(createUserError).toBeNull();
-
-			await fillAndSubmitRegistrationForm(page, {
-				email: givenUserEmail,
-				firstName: givenUserFirstName,
-				lastName: givenUserLastName,
-			});
-
-			// The uniform confirm-code screen must be shown -
-			// never an error revealing that the account already exists.
-			await expect(
-				page.getByRole("heading", { name: "Fast geschafft!" }),
-			).toBeVisible({ timeout: 10_000 });
-			await expect(
-				page.getByText("Benutzer ist bereits registriert."),
-			).not.toBeVisible();
-		},
-	);
-
-	testWithoutSplashScreen(
-		"Registering with an existing unconfirmed email shows the same generic screen",
-		async ({ page }) => {
-			const { error: createUserError } =
-				await supabaseAdminClient.auth.admin.createUser({
-					email: givenUserEmail,
-					password: givenUserPassword,
-					email_confirm: false,
-				});
-
-			expect(createUserError).toBeNull();
-
-			await fillAndSubmitRegistrationForm(page, {
-				email: givenUserEmail,
-				firstName: givenUserFirstName,
-				lastName: givenUserLastName,
-			});
-
-			// Behaviorally indistinguishable from the "new user" case from the UI -
-			// that's expected, the whole point is uniformity.
-			await expect(
-				page.getByRole("heading", { name: "Fast geschafft!" }),
-			).toBeVisible({ timeout: 10_000 });
-			await expect(
-				page.getByText("Benutzer ist bereits registriert."),
-			).not.toBeVisible();
-		},
-	);
 
 	testWithoutSplashScreen(
 		"Resend button re-requests a one-time code with just the email",
 		async ({ page }) => {
-			await fillAndSubmitRegistrationForm(page, {
-				email: givenUserEmail,
-				firstName: givenUserFirstName,
-				lastName: givenUserLastName,
-			});
+			await requestCodeOnLoginPage(page, givenUserEmail);
 
-			// Registration navigates straight to the confirm-code screen.
 			await expect(
-				page.getByRole("heading", { name: "Fast geschafft!" }),
+				page.getByRole("heading", { name: "Einmalcode eingeben" }),
 			).toBeVisible({ timeout: 10_000 });
 
 			const resendButton = page.getByRole("button", {
-				name: "E-Mail erneut senden",
+				name: "Einmalcode nochmal senden",
 			});
 
 			const [resendRequest] = await Promise.all([
@@ -311,33 +311,21 @@ test.describe("User Registration (uses different user to prevent side-effects on
 			expect(resendRequest.postDataJSON().email).toEqual(givenUserEmail);
 
 			await expect(
-				page.getByText(Content["unconfirmedEmail.resend.success"]),
+				page.getByText(Content["confirmOtp.resend.success"]),
 			).toBeVisible();
 		},
 	);
 });
 
 testWithoutSplashScreen(
-	"Try to register with not allowed user",
+	"Try to log in with not allowed user",
 	async ({ page }) => {
-		// Go to the registration page
-		await page.goto("/register/");
+		await page.goto("/login/");
 
-		// Wait for check email allowed to be loaded before proceeding
-		const emailAllowedCheck = page
-			.waitForResponse((resp) => resp.url().includes("check_email_allowed"), {
-				timeout: 10_000,
-			})
-			.catch(() => {}); // Ignore if already completed
-
-		const emailInput = page.getByRole("textbox", {
-			name: "E-Mail-Adresse Nur",
-		});
-		await emailInput.click();
-		await emailInput.pressSequentially("not-allowed@example.com");
-		await emailInput.blur();
-
-		await emailAllowedCheck;
+		await page
+			.getByRole("textbox", { name: "E-Mail-Adresse" })
+			.fill("not-allowed@example.com");
+		await page.getByRole("button", { name: "Einmalcode erhalten" }).click();
 
 		const errorMessage = page.getByText(
 			"E-Mail nicht zulässig. Bei Fragen support@baergpt.berlin kontaktieren.",
@@ -414,11 +402,10 @@ testWithLoggedInUser(
 		await page.goto("/");
 
 		// Verify user is logged in
-		await expect(
-			page.getByRole("heading", {
-				name: `${defaultUserFirstName} ${defaultUserLastName}`,
-			}),
-		).toBeVisible();
+		await expectGreeting(
+			page,
+			`${defaultUserFirstName} ${defaultUserLastName}`,
+		);
 
 		// Step 2: Delete the account in the database, without ever signing the
 		// browser session out — simulates a still-valid access token for an

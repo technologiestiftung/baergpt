@@ -6,7 +6,7 @@
 	<body
 		style="
 			font-family: Arial, Helvetica, sans-serif;
-			background-color: #f2f4f6;
+			background-color: #eef2f7;
 			margin: 0;
 			padding: 0;
 		"
@@ -15,161 +15,161 @@
 			width="100%"
 			cellpadding="0"
 			cellspacing="0"
-			style="background-color: #f2f4f6"
+			style="background-color: #eef2f7"
 			class="email-wrapper"
 		>
 			<tr>
-				<td align="center">
+				<td align="center" style="padding: 48px 16px">
+					<!-- Confirmed users who have not completed their registration (no name yet) get the registration wording, like confirmation.html -->
 					<table
-						width="570"
+						width="600"
 						cellpadding="0"
 						cellspacing="0"
 						style="
+							width: 100%;
+							max-width: 600px;
 							background-color: #ffffff;
-							margin: 20px auto;
-							padding: 35px;
-							border-radius: 4px;
+							border-radius: 3px;
 						"
 						class="email-content"
 					>
 						<tr>
 							<td
-								width="100%"
-								style="padding: 25px 0; text-align: center"
-								align="center"
+								style="
+									padding: 40px;
+									font-family: Arial, Helvetica, sans-serif;
+									color: #0c2753;
+									font-size: 16px;
+									line-height: 24px;
+								"
 							>
-								<a
+								<table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td align="center" style="padding-bottom: 40px">
+											<a href="https://www.baergpt.berlin/">
+												<img
+													src="https://www.baergpt.berlin/logos/baergpt-logo.svg"
+													alt="BärGPT Logo"
+													width="179"
+													height="42"
+													style="display: block; border: 0"
+												/>
+											</a>
+										</td>
+									</tr>
+								</table>
+
+								<h1
 									style="
-										font-family:
-											Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;
-										-webkit-box-sizing: border-box;
-										box-sizing: border-box;
-										font-size: 16px;
+										margin: 0 0 24px;
+										font-size: 24px;
+										line-height: 24px;
 										font-weight: bold;
-										color: #2f3133;
-										text-decoration: none;
-										text-shadow: 0 1px 0 white;
+										color: #0c2753;
 									"
-									href="https://www.baergpt.berlin/"
-									class="email-masthead_name"
 								>
-									<img
-										style="
-											font-family:
-												Arial, &quot;Helvetica Neue&quot;, Helvetica, sans-serif;
-											-webkit-box-sizing: border-box;
-											box-sizing: border-box;
-											max-height: 50px;
-										"
-										src="https://www.baergpt.berlin/logos/baergpt-logo.svg"
-										alt="BärGPT Logo"
-									/>
-								</a>
-							</td>
-						</tr>
-						<tr>
-							<td>
-								<h1 style="font-size: 16px; color: #000000; line-height: 1.5">
-									Hallo {{ .Data.first_name }} {{ .Data.last_name }},
+									{{ if and .Data.first_name .Data.last_name }} Willkommen
+									zurück {{ .Data.first_name }} {{ .Data.last_name }}! {{ else
+									}} Herzlich willkommen bei BärGPT! {{ end }}
 								</h1>
 
-								<p style="font-size: 16px; color: #000000; line-height: 1.5">
-									Sie haben eine Anmeldung bei BärGPT angefordert. Bitte
-									bestätigen Sie Ihre Identität, um sich anzumelden.
+								<p style="margin: 0 0 8px">
+									{{ if and .Data.first_name .Data.last_name }} Melden Sie sich
+									mit dem <strong>Einmalcode</strong> an: {{ else }} Eröffnen
+									Sie Ihr Konto mit dem <strong>Einmalcode</strong>
+									{{ end }}
 								</p>
 
-								<p style="font-size: 14px; color: #000000; line-height: 1.5">
-									Ihr Sicherheitscode (bitte im Formular eingeben):
-								</p>
-
+								<!-- The code must stay alone on its line: the e2e tests read it from the plain-text version -->
 								<div
 									style="
-										background-color: #ffffff;
 										border: 1px solid #0c2753;
-										color: #0c2753;
-										font-size: 20px;
-										letter-spacing: 0.2em;
+										border-radius: 3px;
+										padding: 20px 16px;
+										margin: 0 0 24px;
 										text-align: center;
-										word-break: break-word;
-										font-family: &quot;Courier New&quot;, Courier, monospace;
-										border-radius: 6px;
-										padding: 16px;
-										margin: 24px 0;
+										font-size: 28px;
+										line-height: normal;
+										font-weight: bold;
+										letter-spacing: 8px;
+										color: #0c2753;
 									"
 								>
 									<p style="margin: 0">{{ .Token }}</p>
 								</div>
 
 								<!-- Trailing "&" prevents Brevo click tracking from corrupting the email param -->
-								<table
-									cellpadding="0"
-									cellspacing="0"
-									width="100%"
-									style="text-align: left; margin: 30px 0"
-								>
+								<table cellpadding="0" cellspacing="0" style="margin: 0 0 32px">
 									<tr>
-										<td align="left">
+										<td style="background-color: #0c2753; border-radius: 3px">
 											<a
 												href="{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}&"
 												target="_blank"
 												rel="noopener noreferrer"
 												style="
-													background-color: #0c2753;
-													color: #ffffff;
-													padding: 14px 24px;
-													font-size: 16px;
-													text-decoration: none;
-													border-radius: 6px;
 													display: inline-block;
+													padding: 12px 20px;
+													font-size: 16px;
+													line-height: 24px;
+													color: #f5f8fc;
+													text-decoration: none;
 												"
 											>
-												Identität bestätigen &amp; anmelden
+												{{ if and .Data.first_name .Data.last_name }}Anmelden{{
+												else }}Konto eröffnen{{ end }}
 											</a>
 										</td>
 									</tr>
 								</table>
 
-								<p
-									style="
-										font-size: 14px;
-										color: #666666;
-										line-height: 1.5;
-										margin-top: 30px;
-									"
-								>
-									Der Link und der Code sind aus Sicherheitsgründen jeweils 30
-									Minuten gültig. Wenn Sie sich nicht bei BärGPT anmelden
-									wollten, können Sie diese Nachricht ignorieren.
-								</p>
-
-								<p style="font-size: 14px; color: #666666; line-height: 1.5">
-									Funktioniert der Button nicht? Öffnen Sie folgenden Link
-									manuell:
-									<br />
+								<p style="margin: 0 0 20px">
+									Geben Sie den Einmalcode {{ .Token }} unter folgendem Link
+									ein:
 									<a
 										href="{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}&"
 										target="_blank"
 										rel="noopener noreferrer"
-										style="color: #0c2753; word-break: break-word"
+										style="color: #0c2753; word-break: break-all"
 									>
 										{{ .SiteURL }}/confirm-otp/?type=email&email={{ .Email }}&
 									</a>
-									<br /><br />
-									Ihr Code (bitte im Formular eingeben):
-									<strong>{{ .Token }}</strong>
 								</p>
 
-								<p style="font-size: 14px; color: #666666; line-height: 1.5">
-									Bei Fragen stehen wir Ihnen gerne zur Verfügung: <br />
-									<a href="mailto:support@baergpt.berlin"
+								<p style="margin: 0 0 20px">
+									<strong>Sie haben Fragen?</strong> Melden Sie sich gerne bei
+									uns unter
+									<a href="mailto:support@baergpt.berlin" style="color: #0c2753"
 										>support@baergpt.berlin</a
 									>
 								</p>
 
-								<p style="font-size: 14px; color: #666666; line-height: 1.5">
-									Viele Grüße <br />
-									Ihr <strong>BärGPT-Team</strong>
+								<p style="margin: 0 0 35px">
+									Viele Grüße<br />
+									Ihr BärGPT-Team
 								</p>
+
+								<ul
+									style="
+										margin: 0;
+										padding-left: 20px;
+										font-size: 14px;
+										color: #9da8ba;
+									"
+								>
+									<li style="line-height: 24px">
+										Der Link und der Code sind aus Sicherheitsgründen
+										<strong>30 Minuten gültig</strong>.
+									</li>
+									<li style="line-height: 1.4">
+										{{ if and .Data.first_name .Data.last_name }}
+										<strong>Sie wollten sich nicht anmelden?</strong> Dann
+										ignorieren Sie einfach diese Nachricht. Ohne den Einmalcode
+										kann sich niemand bei Ihrem Konto anmelden. {{ else }}
+										<strong>Sie haben sich nicht registriert?</strong> Dann
+										ignorieren Sie diese Nachricht. Ohne den Einmalcode kann
+										sich niemand registrieren. {{ end }}
+									</li>
+								</ul>
 							</td>
 						</tr>
 					</table>

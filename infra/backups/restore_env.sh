@@ -106,8 +106,11 @@ echo
 # 2. Truncate auth/storage data
 # -----------------------------------------------------------------------------
 echo "[$ENV][DB] Truncating auth/storage data..."
+# Skips tables postgres may not truncate (e.g. storage.buckets_vectors, owned by supabase_storage_admin);
+# one denied table would roll back the whole block.
 ssh -p "$SSH_PORT" -i "$SSH_KEY" "$SSH_USER@$SERVER_IP" \
-  "docker exec -i $DB_CONTAINER psql -U postgres -d $DB_NAME" <<'SQL'
+  "docker exec -i $DB_CONTAINER psql -U postgres -d $DB_NAME -v ON_ERROR_STOP=1" <<'SQL' \
+  || { echo "❌ Truncating auth/storage failed; the old rows would remain and clash with the restored data."; exit 1; }
 DO $$
 DECLARE r record;
 BEGIN
@@ -116,6 +119,7 @@ BEGIN
     FROM pg_tables
     WHERE schemaname IN ('auth','storage')
       AND tablename NOT IN ('schema_migrations','migrations')
+      AND has_table_privilege(quote_ident(schemaname)||'.'||quote_ident(tablename), 'TRUNCATE')
   ) LOOP
     EXECUTE 'TRUNCATE TABLE '||r.tbl||' CASCADE';
   END LOOP;

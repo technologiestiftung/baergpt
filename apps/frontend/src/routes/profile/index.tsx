@@ -7,6 +7,7 @@ import { ChangeEmailForm } from "../../components/profile/edit-profile-forms/cha
 import { DeleteAccount } from "../../components/profile/delete-account/delete-account.tsx";
 import { useSessionRedirect } from "../../hooks/use-session-redirect.tsx";
 import { ChatSettings } from "../../components/profile/chat-settings/chat-settings.tsx";
+import { ConnectorsSection } from "../../components/connectors/connectors-section.tsx";
 
 export function ProfilePage() {
 	const { session } = useAuthStore();
@@ -62,6 +63,7 @@ export function ProfilePage() {
 					<PersonalInfoForm />
 					<ChangeEmailForm />
 					<ChatSettings />
+					<ConnectorsSection />
 					<DeleteAccount />
 				</div>
 			</div>
