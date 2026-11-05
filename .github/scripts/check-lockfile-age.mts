@@ -16,6 +16,15 @@ import { readFileSync } from "node:fs";
 const REGISTRY = "https://registry.npmjs.org/";
 const CONCURRENCY = 8;
 
+// TEMPORARY: exact versions exempt from the age check. Remove after
+// 2026-11-08T01:12Z, when they are old enough. Needed for the Mistral Large 4
+// reasoning "none" fix (vercel/ai#24352) in @ai-sdk/mistral@4.0.80.
+const ALLOWLIST = new Set([
+	"@ai-sdk/mistral@4.0.80",
+	"@ai-sdk/provider@4.0.36",
+	"@ai-sdk/provider-utils@5.0.75",
+]);
+
 type Lockfile = {
 	packages: Record<
 		string,
@@ -125,7 +134,7 @@ async function main() {
 	}
 
 	const added = [...head.versions].filter(
-		(version) => !base.versions.has(version),
+		(version) => !base.versions.has(version) && !ALLOWLIST.has(version),
 	);
 
 	console.log(
