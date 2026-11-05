@@ -3,7 +3,6 @@ import Content from "../../../../content.ts";
 import { exportToDocx } from "./utils.ts";
 import { format } from "date-fns";
 import { ClockLoaderIcon } from "../../../primitives/icons/clock-loader-icon.tsx";
-import { ExportButton } from "./export-button.tsx";
 import { ExportDropdownMenu } from "./export-dropdown-menu.tsx";
 import { ChatButton } from "../../../primitives/buttons/chat-button.tsx";
 
@@ -81,23 +80,23 @@ export const ExportChatMessageButton: React.FC<
 				<ExportDropdownMenu
 					buttonRef={buttonRef}
 					onClose={() => setIsDropdownOpen(false)}
-				>
-					<ExportButton
-						autoFocus
-						label={Content["chat.exportChatTextButton.docx.label"]}
-						ariaLabel={Content["chat.exportChatTextButton.docx.ariaLabel"]}
-						iconSrc="/icons/word-file-icon.svg"
-						onClick={handleDocxExport}
-						testId={`export-chat-message-docx-button-${messageId}`}
-					/>
-					<ExportButton
-						label={Content["chat.exportChatTextButton.pdf.label"]}
-						ariaLabel={Content["chat.exportChatTextButton.pdf.ariaLabel"]}
-						iconSrc="/icons/pdf-file-icon.svg"
-						onClick={handlePDFExport}
-						testId={`export-chat-message-pdf-button-${messageId}`}
-					/>
-				</ExportDropdownMenu>
+					items={[
+						{
+							label: Content["chat.exportChatTextButton.docx.label"],
+							ariaLabel: Content["chat.exportChatTextButton.docx.ariaLabel"],
+							iconSrc: "/icons/word-file-icon.svg",
+							onClick: handleDocxExport,
+							testId: `export-chat-message-docx-button-${messageId}`,
+						},
+						{
+							label: Content["chat.exportChatTextButton.pdf.label"],
+							ariaLabel: Content["chat.exportChatTextButton.pdf.ariaLabel"],
+							iconSrc: "/icons/pdf-file-icon.svg",
+							onClick: handlePDFExport,
+							testId: `export-chat-message-pdf-button-${messageId}`,
+						},
+					]}
+				/>
 			)}
 		</div>
 	);

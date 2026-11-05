@@ -2,7 +2,6 @@ import React, { useRef, useState } from "react";
 import { format } from "date-fns";
 import Content from "../../../../content.ts";
 import { ChatButton } from "../../buttons/chat-button.tsx";
-import { ExportButton } from "../../../chat/chat-message/export-chat-message/export-button.tsx";
 import { ExportDropdownMenu } from "../../../chat/chat-message/export-chat-message/export-dropdown-menu.tsx";
 import { ExportErrorMessage } from "../../../chat/chat-message/export-chat-message/export-error-message.tsx";
 import { captureError } from "../../../../monitoring/capture-error.ts";
@@ -61,21 +60,15 @@ export const TableExportButton: React.FC<TableExportButtonProps> = ({
 				<ExportDropdownMenu
 					buttonRef={buttonRef}
 					onClose={() => setIsDropdownOpen(false)}
-				>
-					{FORMATS.map((exportFormat, index) => (
-						<ExportButton
-							key={exportFormat}
-							autoFocus={index === 0}
-							label={Content[`chat.exportTableButton.${exportFormat}.label`]}
-							ariaLabel={
-								Content[`chat.exportTableButton.${exportFormat}.ariaLabel`]
-							}
-							iconSrc={`/icons/${exportFormat}-file-icon.svg`}
-							onClick={() => handleExport(exportFormat)}
-							testId={`export-table-${exportFormat}-button`}
-						/>
-					))}
-				</ExportDropdownMenu>
+					items={FORMATS.map((exportFormat) => ({
+						label: Content[`chat.exportTableButton.${exportFormat}.label`],
+						ariaLabel:
+							Content[`chat.exportTableButton.${exportFormat}.ariaLabel`],
+						iconSrc: `/icons/${exportFormat}-file-icon.svg`,
+						onClick: () => handleExport(exportFormat),
+						testId: `export-table-${exportFormat}-button`,
+					}))}
+				/>
 			)}
 
 			{hasExportFailed && (

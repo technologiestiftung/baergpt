@@ -5,8 +5,8 @@ interface ExportButtonProps {
 	ariaLabel?: string;
 	iconSrc?: string;
 	onClick: () => void;
-	autoFocus?: boolean;
 	testId?: string;
+	ref?: React.Ref<HTMLButtonElement>;
 }
 
 export const ExportButton: React.FC<ExportButtonProps> = ({
@@ -14,11 +14,12 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
 	ariaLabel,
 	iconSrc,
 	onClick,
-	autoFocus,
 	testId,
+	ref,
 }) => (
 	<button
-		autoFocus={autoFocus}
+		ref={ref}
+		type="button"
 		className="flex w-full items-center gap-2 px-3 py-1.5 first:rounded-t-[3px] last:rounded-b-[3px] hover:bg-hellblau-50 focus-visible:outline-default"
 		aria-label={ariaLabel}
 		onClick={onClick}
