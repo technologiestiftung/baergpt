@@ -30,11 +30,12 @@ import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 import { useCurrentChatIdStore } from "../../../store/current-chat-id-store.ts";
 import { ChatSubmitButton } from "./chat-submit-button.tsx";
-import { usePromptHistory } from "./hooks/use-prompt-history.ts";
+import {
+	getTextareaLineHeight,
+	usePromptHistory,
+} from "./hooks/use-prompt-history.ts";
 
 export const chatFormId = "chat-form";
-
-const singleLineHeightFallback = 24;
 
 interface ChatFormHandle {
 	focus: () => void;
@@ -113,9 +114,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		const contentHeight = textareaElement.scrollHeight;
 		textareaElement.style.height = `${contentHeight}px`;
 
-		const lineHeight =
-			Number.parseFloat(getComputedStyle(textareaElement).lineHeight) ||
-			singleLineHeightFallback;
+		const lineHeight = getTextareaLineHeight(textareaElement);
 
 		const overflowsSingleLine =
 			textareaElement.scrollWidth > textareaElement.clientWidth;

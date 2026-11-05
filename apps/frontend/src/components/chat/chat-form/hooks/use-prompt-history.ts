@@ -22,10 +22,14 @@ const getPrompts = () =>
 		.map((message) => message.content)
 		.filter((prompt, index, all) => prompt !== all[index - 1]) ?? [];
 
-const isSingleVisualLine = (textarea: HTMLTextAreaElement) => {
-	const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
-	return textarea.scrollHeight <= lineHeight * 1.5;
-};
+const singleLineHeightFallback = 24;
+
+export const getTextareaLineHeight = (textarea: HTMLTextAreaElement) =>
+	Number.parseFloat(getComputedStyle(textarea).lineHeight) ||
+	singleLineHeightFallback;
+
+const isSingleVisualLine = (textarea: HTMLTextAreaElement) =>
+	textarea.scrollHeight <= getTextareaLineHeight(textarea) * 1.5;
 
 export function usePromptHistory({
 	content,
