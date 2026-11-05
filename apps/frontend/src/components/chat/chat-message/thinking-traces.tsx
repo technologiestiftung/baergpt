@@ -86,7 +86,7 @@ export function ThinkingTraces({ message }: { message: ChatMessage }) {
 	if (isThinking) {
 		return (
 			<div className="flex flex-col gap-y-3 text-sm leading-5 text-dunkelblau-50">
-				<p className="mt-3.5 flex h-[21px] items-center">
+				<p className="mt-2 flex h-[21px] items-center">
 					{Content["chat.loadingText"]}
 				</p>
 				<TraceList traces={traces.traces} runningTool={running_tool} />
@@ -108,7 +108,7 @@ export function ThinkingTraces({ message }: { message: ChatMessage }) {
 				type="button"
 				onClick={() => setIsExpanded(!isExpanded)}
 				aria-expanded={isExpanded}
-				className="mt-3.5 flex h-[21px] items-center w-fit gap-x-1 text-sm leading-5 text-dunkelblau-50"
+				className="mt-2 flex h-[21px] items-center w-fit gap-x-1 text-sm leading-5 text-dunkelblau-50"
 			>
 				{summary}
 				<img
