@@ -33,7 +33,7 @@
 	},
 	"dependencies": {
 		"@ai-sdk/mcp": "2.0.85",
-		"@ai-sdk/mistral": "4.0.73",
+		"@ai-sdk/mistral": "4.0.80",
 		"@dqbd/tiktoken": "1.0.22",
 		"@hono/node-server": "2.0.12",
 		"@langfuse/client": "5.10.0",
