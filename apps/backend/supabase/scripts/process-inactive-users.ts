@@ -17,6 +17,7 @@ import {
 	buildReminderEmail,
 	buildWarningEmail,
 	inactiveSinceCutoff,
+	isRecipientRejectedPermanently,
 	planInactivityAction,
 	readInactivityConfig,
 	toBerlinDate,
@@ -112,16 +113,18 @@ async function sendEmail(
 		return "sent";
 	} catch (error) {
 		// The error message may contain the recipient address, so only the code is logged
-		const responseCode = (error as { responseCode?: number }).responseCode;
-		const code = (error as { code?: string }).code;
-		if (responseCode !== undefined && responseCode >= 500) {
+		const { responseCode, code } = error as {
+			responseCode?: number;
+			code?: string;
+		};
+		if (isRecipientRejectedPermanently(error, user.email)) {
 			console.warn(
 				`Email rejected permanently (SMTP ${responseCode}). Deletion stays scheduled.`,
 			);
 			return "undeliverable";
 		}
 		console.error(
-			`Email failed temporarily (${responseCode ?? code ?? "unknown error"}), retrying on the next run.`,
+			`Email not sent (${responseCode ?? code ?? "unknown error"}), retrying on the next run.`,
 		);
 		return "failed";
 	}
@@ -191,25 +194,16 @@ async function sendReminder(
 }
 
 async function deleteInactiveUser(user: InactiveUser): Promise<boolean> {
-	// Re-check right before deleting, in case the user was active during this run
-	const { data, error } = await supabase.rpc("get_inactive_users", {
-		inactive_since: new Date().toISOString(),
-		for_user_id: user.user_id,
+	if (!user.deletion_date) {
+		throw new Error("Planned a deletion without a deletion date.");
+	}
+	const deleted = await privilegedDbService.deleteInactiveUser(user.user_id, {
+		lastActiveAt: user.last_active_at,
+		deletionDate: user.deletion_date,
 	});
-	if (error) {
-		throw error;
-	}
-	const [current] = data as InactiveUser[];
-	if (
-		!current ||
-		current.is_banned ||
-		new Date(current.last_active_at).getTime() !==
-			new Date(user.last_active_at).getTime()
-	) {
+	if (!deleted) {
 		console.log("Skipped a deletion: the account changed during this run.");
-		return true;
 	}
-	await privilegedDbService.deleteUser(user.user_id);
 	return true;
 }
 

@@ -95,7 +95,7 @@ export function readInactivityConfig(
 
 /**
  * All scheduling works on calendar dates (YYYY-MM-DD) in Berlin time, so the
- * deletion date in the email is the day the job actually deletes the account.
+ * deletion date in the email is the last day a login keeps the account.
  */
 export function toBerlinDate(date: Date): string {
 	return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(
@@ -160,7 +160,8 @@ export function planInactivityAction(
 		if (hasBeenActiveSinceWarning || user.is_banned) {
 			return { type: "cancel" };
 		}
-		if (today >= user.deletion_date) {
+		// The emails promise a login is possible until the end of the deletion date
+		if (today > user.deletion_date) {
 			return { type: "delete" };
 		}
 		if (
@@ -192,6 +193,27 @@ export function planInactivityAction(
 				? regularDeletionDate
 				: earliestDeletionDate,
 	};
+}
+
+// Mailbox unavailable, user not local, mailbox name not allowed
+const PERMANENT_RECIPIENT_CODES = [550, 551, 553];
+
+// Other 5xx (e.g. a wrong SMTP login or sender) mean nobody was warned, so they must not count as sent
+export function isRecipientRejectedPermanently(
+	error: unknown,
+	recipient: string,
+): boolean {
+	const { responseCode, rejected } = error as {
+		responseCode?: number;
+		rejected?: string[];
+	};
+	return (
+		responseCode !== undefined &&
+		PERMANENT_RECIPIENT_CODES.includes(responseCode) &&
+		(rejected ?? []).some(
+			(address) => address.toLowerCase() === recipient.toLowerCase(),
+		)
+	);
 }
 
 function formatGermanDate(date: string): string {

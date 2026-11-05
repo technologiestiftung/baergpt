@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
+import { createServer, type AddressInfo } from "node:net";
 import { resolve } from "node:path";
+import nodemailer from "nodemailer";
 import { describe, it, expect } from "vitest";
 import {
 	addDays,
@@ -7,6 +9,7 @@ import {
 	buildReminderEmail,
 	buildWarningEmail,
 	inactiveSinceCutoff,
+	isRecipientRejectedPermanently,
 	planInactivityAction,
 	readInactivityConfig,
 	renderTemplate,
@@ -170,8 +173,15 @@ describe("planInactivityAction", () => {
 		});
 	});
 
-	it("deletes on the deletion date, also without a reminder", () => {
-		expect(planInactivityAction(warnedUser(), config, "2026-09-10")).toEqual({
+	it("keeps the account on the deletion date", () => {
+		const user = warnedUser({ reminder_sent_at: "2026-09-03T03:00:00+00:00" });
+		expect(planInactivityAction(user, config, "2026-09-10")).toEqual({
+			type: "none",
+		});
+	});
+
+	it("deletes the day after the deletion date, also without a reminder", () => {
+		expect(planInactivityAction(warnedUser(), config, "2026-09-11")).toEqual({
 			type: "delete",
 		});
 	});
@@ -194,7 +204,7 @@ describe("planInactivityAction", () => {
 		const user = warnedUser({
 			notified_last_active_at: "2025-03-10T10:00:00+01:00",
 		});
-		expect(planInactivityAction(user, config, "2026-09-10")).toEqual({
+		expect(planInactivityAction(user, config, "2026-09-11")).toEqual({
 			type: "delete",
 		});
 	});
@@ -282,6 +292,98 @@ describe("emails", () => {
 	it("fails on placeholders without a value", () => {
 		expect(() => renderTemplate("{{unknown}}", {})).toThrow(
 			"Missing value for template placeholder {{unknown}}",
+		);
+	});
+});
+
+type SmtpReplies = { mail?: string; rcpt?: string; data?: string };
+
+// Minimal SMTP server, so the tests see the errors nodemailer really throws
+async function sendWithReplies(replies: SmtpReplies): Promise<unknown> {
+	const server = createServer((socket) => {
+		let inData = false;
+		socket.write("220 test\r\n");
+		socket.on("data", (chunk) => {
+			for (const line of chunk.toString().split("\r\n")) {
+				if (inData) {
+					if (line === ".") {
+						inData = false;
+						socket.write(`${replies.data ?? "250 OK"}\r\n`);
+					}
+				} else if (/^EHLO/i.test(line)) {
+					socket.write("250 test\r\n");
+				} else if (/^MAIL/i.test(line)) {
+					socket.write(`${replies.mail ?? "250 OK"}\r\n`);
+				} else if (/^RCPT/i.test(line)) {
+					socket.write(`${replies.rcpt ?? "250 OK"}\r\n`);
+				} else if (/^DATA/i.test(line)) {
+					inData = true;
+					socket.write("354 go ahead\r\n");
+				} else if (/^QUIT/i.test(line)) {
+					socket.end("221 bye\r\n");
+				}
+			}
+		});
+	});
+	await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+	const { port } = server.address() as AddressInfo;
+	const transport = nodemailer.createTransport({
+		host: "127.0.0.1",
+		port,
+		secure: false,
+		ignoreTLS: true,
+	});
+	try {
+		await transport.sendMail({
+			from: "noreply@baergpt.berlin",
+			to: "Gone@Example.com",
+			subject: "test",
+			text: "test",
+		});
+		return null;
+	} catch (error) {
+		return error;
+	} finally {
+		transport.close();
+		server.close();
+	}
+}
+
+describe("isRecipientRejectedPermanently", () => {
+	it("is true when the server rejects the recipient permanently", async () => {
+		const error = await sendWithReplies({ rcpt: "550 5.1.1 No such user" });
+		expect(isRecipientRejectedPermanently(error, "gone@example.com")).toBe(
+			true,
+		);
+	});
+
+	it("is false when the recipient is only deferred", async () => {
+		const error = await sendWithReplies({ rcpt: "450 4.2.1 Try again later" });
+		expect(isRecipientRejectedPermanently(error, "gone@example.com")).toBe(
+			false,
+		);
+	});
+
+	it("is false when the server rejects the sender", async () => {
+		const error = await sendWithReplies({
+			mail: "553 5.7.1 Sender not allowed",
+		});
+		expect(isRecipientRejectedPermanently(error, "gone@example.com")).toBe(
+			false,
+		);
+	});
+
+	it("is false when the server rejects the message", async () => {
+		const error = await sendWithReplies({ data: "554 5.7.1 Message rejected" });
+		expect(isRecipientRejectedPermanently(error, "gone@example.com")).toBe(
+			false,
+		);
+	});
+
+	it("is false when another recipient was rejected", () => {
+		const error = { responseCode: 550, rejected: ["other@example.com"] };
+		expect(isRecipientRejectedPermanently(error, "gone@example.com")).toBe(
+			false,
 		);
 	});
 });

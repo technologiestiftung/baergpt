@@ -225,6 +225,58 @@ export class PrivilegedDbService extends BaseContentDbService {
 		}
 	}
 
+	/**
+	 * Delete an account with a pending inactivity deletion, unless it changed
+	 * since the deletion was planned. Returns whether it was deleted.
+	 */
+	async deleteInactiveUser(
+		userId: string,
+		expected: { lastActiveAt: string; deletionDate: string },
+	): Promise<boolean> {
+		const { data, error } = await this.client.rpc("delete_inactive_user", {
+			target_user_id: userId,
+			expected_last_active_at: expected.lastActiveAt,
+			expected_deletion_date: expected.deletionDate,
+		});
+
+		if (error) {
+			throw error;
+		}
+
+		const [{ deleted, documents }] = data;
+		if (!deleted) {
+			return false;
+		}
+
+		// Not deleteFileFromStorage: it logs file paths, which contain the user id and file names
+		const pathsByBucket = new Map<string, string[]>();
+		for (const doc of documents as {
+			source_url: string;
+			source_type: string;
+		}[]) {
+			const bucket = ["public_document", "default_document"].includes(
+				doc.source_type,
+			)
+				? "public_documents"
+				: "documents";
+			pathsByBucket.set(bucket, [
+				...(pathsByBucket.get(bucket) ?? []),
+				...this.getStoragePaths(doc.source_url),
+			]);
+		}
+		for (const [bucket, paths] of pathsByBucket) {
+			const { error: removeError } = await this.client.storage
+				.from(bucket)
+				.remove(paths);
+			if (removeError) {
+				throw new Error(
+					`Deleted the account, but removing its files failed (${removeError.name}).`,
+				);
+			}
+		}
+		return true;
+	}
+
 	async updateUserColumnValue(
 		_userId: string,
 		_columnName: string,

@@ -18,10 +18,6 @@ on:
         type: boolean
         default: true
 
-concurrency:
-  group: process-inactive-users-${{ github.event_name }}-${{ inputs.environment }}
-  cancel-in-progress: false
-
 jobs:
   process-inactive-users:
     runs-on: ubuntu-latest
@@ -33,6 +29,10 @@ jobs:
     # Scopes OP_SERVICE_ACCOUNT_TOKEN/OP_VAULT_ID to the environment secrets;
     # the repo-level ones only reach the CI test vault.
     environment: ${{ matrix.environment }}
+    # Job level, so scheduled and manual runs serialize per environment
+    concurrency:
+      group: process-inactive-users-${{ matrix.environment }}
+      cancel-in-progress: false
 
     steps:
       - name: Checkout code ⬇️

@@ -24,11 +24,13 @@ SELECT
     n.warning_sent_at,
     n.reminder_sent_at
 FROM auth.users u
-         -- last_sign_in_at only changes on an explicit login, a session refresh only updates auth.sessions
+         -- last_sign_in_at only changes on an explicit login, a session refresh only updates auth.sessions,
+         -- and a removed session's last refresh is kept in user_session_activity
          CROSS JOIN LATERAL (
              SELECT GREATEST(
                  COALESCE(u.last_sign_in_at, u.created_at),
-                 (SELECT max(s.updated_at) FROM auth.sessions s WHERE s.user_id = u.id)
+                 (SELECT max(s.updated_at) FROM auth.sessions s WHERE s.user_id = u.id),
+                 (SELECT sa.last_active_at FROM public.user_session_activity sa WHERE sa.user_id = u.id)
              )::timestamptz AS last_active_at
          ) a
          LEFT JOIN public.profiles p ON p.id = u.id

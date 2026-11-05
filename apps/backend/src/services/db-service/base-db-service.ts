@@ -106,17 +106,22 @@ export abstract class BaseContentDbService {
 		}
 	}
 
+	// Word documents also have a PDF preview
+	protected getStoragePaths(source_url: string): string[] {
+		const paths = [source_url];
+		if (/\.(docx?)$/i.test(source_url)) {
+			paths.push(source_url.replace(/\.(docx?)$/i, ".pdf"));
+		}
+		return paths;
+	}
+
 	async deleteFileFromStorage(
 		source_url: string,
 		bucket: string,
 	): Promise<void> {
-		const pathsToRemove = [source_url];
-		if (/\.(docx?)$/i.test(source_url)) {
-			pathsToRemove.push(source_url.replace(/\.(docx?)$/i, ".pdf"));
-		}
 		const { error: deletionError } = await this.client.storage
 			.from(bucket)
-			.remove(pathsToRemove);
+			.remove(this.getStoragePaths(source_url));
 
 		if (!deletionError) {
 			return;
