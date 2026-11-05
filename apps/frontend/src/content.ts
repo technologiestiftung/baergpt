@@ -1053,8 +1053,10 @@ export const Content = {
 
 	"chat.exportTableButton.label": "Tabelle herunterladen",
 	"chat.exportTableButton.ariaLabel": "Tabelle herunterladen",
-	"chat.exportTableButton.xlsx.label": "Als Excel (XLSX)",
-	"chat.exportTableButton.csv.label": "Als CSV",
+	"chat.exportTableButton.xlsx.label": "XLSX exportieren",
+	"chat.exportTableButton.xlsx.ariaLabel": "Tabelle als XLSX exportieren",
+	"chat.exportTableButton.csv.label": "CSV exportieren",
+	"chat.exportTableButton.csv.ariaLabel": "Tabelle als CSV exportieren",
 	"chat.exportTableButton.sheetName": "Tabelle 1",
 	"chat.exportTableButton.emptyHeaderPrefix": "Spalte",
 

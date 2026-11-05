@@ -67,6 +67,10 @@ export const TableExportButton: React.FC<TableExportButtonProps> = ({
 							key={exportFormat}
 							autoFocus={index === 0}
 							label={Content[`chat.exportTableButton.${exportFormat}.label`]}
+							ariaLabel={
+								Content[`chat.exportTableButton.${exportFormat}.ariaLabel`]
+							}
+							iconSrc={`/icons/${exportFormat}-file-icon.svg`}
 							onClick={() => handleExport(exportFormat)}
 							testId={`export-table-${exportFormat}-button`}
 						/>
