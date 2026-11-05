@@ -25,13 +25,6 @@
   args:
     chdir: "{{ supabase_dir }}"
 
-# GoTrue caches templates for GOTRUE_MAILER_TEMPLATE_MAX_AGE; a restart applies a change right away.
-- name: Restart auth
-  ansible.builtin.command:
-    cmd: "{{ supabase_compose_cmd }} restart auth"
-  args:
-    chdir: "{{ supabase_dir }}"
-
 - name: Recreate email-templates
   ansible.builtin.command:
     cmd: "{{ supabase_compose_cmd }} up -d --force-recreate email-templates"
