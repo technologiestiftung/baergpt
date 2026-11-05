@@ -44,15 +44,21 @@ const today = toBerlinDate(new Date());
 const privilegedDbService = new PrivilegedDbService(supabase);
 
 function createTransport() {
-	const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SENDER } =
-		process.env;
-	if (!SMTP_HOST || !SMTP_PORT || !SMTP_SENDER) {
-		console.error("Missing SMTP_HOST, SMTP_PORT or SMTP_SENDER.");
+	const {
+		SMTP_HOST,
+		SMTP_PORT,
+		SMTP_USER,
+		SMTP_PASS,
+		SMTP_ADMIN_EMAIL,
+		SMTP_SENDER_NAME,
+	} = process.env;
+	if (!SMTP_HOST || !SMTP_PORT || !SMTP_ADMIN_EMAIL) {
+		console.error("Missing SMTP_HOST, SMTP_PORT or SMTP_ADMIN_EMAIL.");
 		process.exit(1);
 	}
 	const port = Number(SMTP_PORT);
 	return {
-		sender: SMTP_SENDER,
+		sender: { name: SMTP_SENDER_NAME ?? "", address: SMTP_ADMIN_EMAIL },
 		transport: nodemailer.createTransport({
 			host: SMTP_HOST,
 			port,
