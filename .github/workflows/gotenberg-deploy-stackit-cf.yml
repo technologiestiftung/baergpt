@@ -1,15 +1,7 @@
 name: Gotenberg deploy to STACKIT Cloud Foundry
 
 on:
-  push:
-    branches: [staging, main]
-    # Gotenberg won't change much, so we're letting
-    # this workflow only run when these paths change
-    # (or manually via workflow_dispatch)
-    paths:
-      - "infra/gotenberg/manifest.yml"
-      - "infra/gotenberg/autoscaler-policy-production.json"
-      - ".github/workflows/gotenberg-deploy-stackit-cf.yml"
+  # Started by hand only: Gotenberg runs on SKE (infra/k8s/base/gotenberg).
   workflow_dispatch:
 
 permissions:
