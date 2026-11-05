@@ -51,9 +51,9 @@ function formatCsvNumber(cell: NumberCell): string {
 }
 
 // Text may come from web pages or documents. Excel shows the escaping "'", so
-// "+"/"-" are only escaped before a function call or DDE payload
+// "+"/"-" are only escaped when an operator follows that Excel would evaluate
 function isFormulaLike(text: string): boolean {
-	return /^[=@\t\r]/.test(text) || /^[+-].*[(|!=]/.test(text);
+	return /^[=@\t\r]/.test(text) || /^[+-].*[-+*/^&(|!=]/.test(text);
 }
 
 export function toCsvField(cell: ParsedCell): string {

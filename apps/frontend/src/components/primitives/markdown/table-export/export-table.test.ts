@@ -66,6 +66,9 @@ describe("csv export", () => {
 		["@SUM(A1)", "'@SUM(A1)"],
 		["+HYPERLINK(1)", "'+HYPERLINK(1)"],
 		["-2+3+cmd|' /C calc'!A0", "'-2+3+cmd|' /C calc'!A0"],
+		["+2+3", "'+2+3"],
+		["-2-3", "'-2-3"],
+		["+49-30-123456", "'+49-30-123456"],
 	])("neutralises formula %s", (text, expected) => {
 		expect(toCsvField({ kind: "text", value: text })).toBe(expected);
 	});
