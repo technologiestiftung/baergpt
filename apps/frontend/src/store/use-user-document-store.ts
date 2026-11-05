@@ -3,9 +3,12 @@ import type { UserDocument } from "../common";
 import { getDocuments } from "../api/documents/get-documents";
 import { deleteDocument } from "../api/documents/delete-document";
 import { updateDocumentFolder } from "../api/documents/update-document-folder";
+import { renameDocument } from "../api/documents/rename-document";
 import { hideDefaultDocument } from "../api/documents/hide-default-document";
 import { getHiddenDefaultDocumentIds } from "../api/documents/get-hidden-default-document-ids";
 import { useChatsStore } from "./use-chats-store.ts";
+import { usePreviewDocumentStore } from "./use-preview-document-store.ts";
+import { captureError } from "../monitoring/capture-error.ts";
 
 interface UserDocumentStore {
 	userDocuments: UserDocument[];
@@ -17,6 +20,10 @@ interface UserDocumentStore {
 	deleteUserDocument: (documentId: number) => Promise<Error | null>;
 	removeItemsFromFolder: (documentIds: number[]) => Promise<void>;
 	moveItemsToFolder: (documentIds: number[], folderId: number) => Promise<void>;
+	renameUserDocument: (
+		documentId: number,
+		newName: string,
+	) => Promise<Error | null>;
 
 	selectedUserChatDocuments: UserDocument[];
 	selectUserChatDocument: (document: UserDocument) => void;
@@ -132,6 +139,47 @@ export const useUserDocumentStore = create<UserDocumentStore>((set, get) => ({
 				succeededIds.has(doc.id) ? { ...doc, folder_id: folderId } : doc,
 			),
 		}));
+	},
+
+	renameUserDocument: async (documentId: number, newName: string) => {
+		try {
+			await renameDocument(documentId, newName);
+		} catch (error) {
+			captureError(error);
+			return error instanceof Error
+				? error
+				: new Error("Document rename failed");
+		}
+
+		const withRenamedDocument = (documents: UserDocument[]) =>
+			documents.map((doc) =>
+				doc.id === documentId ? { ...doc, file_name: newName } : doc,
+			);
+
+		set(
+			({
+				userDocuments,
+				selectedUserChatDocuments,
+				selectedUserDocumentsForAction,
+			}) => ({
+				userDocuments: withRenamedDocument(userDocuments),
+				selectedUserChatDocuments: withRenamedDocument(
+					selectedUserChatDocuments,
+				),
+				selectedUserDocumentsForAction: withRenamedDocument(
+					selectedUserDocumentsForAction,
+				),
+			}),
+		);
+
+		usePreviewDocumentStore.setState(({ selectedPreviewDocument }) => ({
+			selectedPreviewDocument:
+				selectedPreviewDocument?.id === documentId
+					? { ...selectedPreviewDocument, file_name: newName }
+					: selectedPreviewDocument,
+		}));
+
+		return null;
 	},
 
 	selectedUserChatDocuments: [],

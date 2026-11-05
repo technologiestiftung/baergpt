@@ -14,6 +14,8 @@ import { isPublicFolder } from "../utils/is-public-folder.ts";
 import { isPublicDocument } from "../utils/is-public-document.ts";
 import { isUserFolder } from "../utils/is-user-folder.ts";
 import { showRenameFolderDialog } from "../../../rename-folder/rename-folder-dialog.tsx";
+import { isPersonalDocument } from "../utils/is-personal-document.ts";
+import { showRenameDocumentDialog } from "../../../rename-document/rename-document-dialog.tsx";
 import { useDocumentDownloadStore } from "../../../../../store/use-document-download-store.ts";
 
 interface ItemDropdownProps {
@@ -42,6 +44,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const isMobile = useIsMobile();
 	const isReadOnly =
 		isPublicFolder(item) || (isDoc && item.source_type === "public_document");
+	const isRenamable = isUserFolder(item) || isPersonalDocument(item);
 
 	const calculatePosition = () => {
 		if (triggerRef.current) {
@@ -104,17 +107,22 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	};
 
 	const handleRenameItem = () => {
-		if (!isUserFolder(item)) {
+		if (!isRenamable) {
 			return;
 		}
 
 		onClose();
 		setSingleItemSelectedForAction(item);
-		showRenameFolderDialog();
+		if (isUserFolder(item)) {
+			showRenameFolderDialog();
+		} else {
+			showRenameDocumentDialog();
+		}
 	};
 
 	const toggleContentKey = isSelectedForChat ? "removeFromChat" : "addToChat";
 	const deleteItemKey = isDoc ? "deleteDocument" : "deleteFolder";
+	const renameItemKey = isDoc ? "renameDocument" : "renameFolder";
 
 	const addToChatItem = {
 		action: handleAddToChat,
@@ -171,7 +179,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	const renameItem = {
 		action: handleRenameItem,
 		label: Content["documentsList.rename"],
-		ariaLabel: Content["documentsList.renameFolder"],
+		ariaLabel: Content[`documentsList.${renameItemKey}`],
 		style: "text-dunkelblau-80",
 		icon: (
 			<img
@@ -194,7 +202,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	const dropdownItems = [
 		addToChatItem,
-		...(isUserFolder(item) ? [renameItem] : []),
+		...(isRenamable ? [renameItem] : []),
 		...(isDoc ? [viewItem, downloadItem] : []),
 		...(isReadOnly ? [] : [deleteItem]),
 	];
