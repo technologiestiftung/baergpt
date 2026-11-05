@@ -1443,4 +1443,44 @@ test.describe("Chat", () => {
 			).toBeVisible();
 		},
 	);
+
+	testWithMockedLlm(
+		"Arrow keys browse previously sent prompts",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			for (const prompt of ["erste Frage", "zweite Frage"]) {
+				await chatInput.fill(prompt);
+				await sendAndWaitForLLMResponse(page);
+				await expect(
+					page.getByTestId("assistant-message-markdown-container").last(),
+				).not.toBeEmpty();
+			}
+
+			await chatInput.fill("Entwurf");
+
+			await chatInput.press("ArrowUp");
+			await expect(chatInput).toHaveValue("Entwurf");
+
+			await chatInput.evaluate((textarea: HTMLTextAreaElement) =>
+				textarea.setSelectionRange(0, 0),
+			);
+			await chatInput.press("ArrowUp");
+			await expect(chatInput).toHaveValue("zweite Frage");
+			await expect(chatInput).toHaveJSProperty("selectionStart", 12);
+
+			await chatInput.press("ArrowUp");
+			await expect(chatInput).toHaveValue("erste Frage");
+
+			await chatInput.press("ArrowUp");
+			await expect(chatInput).toHaveValue("erste Frage");
+
+			await chatInput.press("ArrowDown");
+			await expect(chatInput).toHaveValue("zweite Frage");
+
+			await chatInput.press("ArrowDown");
+			await expect(chatInput).toHaveValue("Entwurf");
+		},
+	);
 });
