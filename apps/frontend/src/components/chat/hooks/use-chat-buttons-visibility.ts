@@ -8,9 +8,9 @@ export function useChatButtonsVisibility(message: ChatMessage) {
 	const isLastMessage = useChatsStore(
 		(state) => state.getCurrentChat()?.messages.at(-1)?.id === message.id,
 	);
-	const isGenerating = useInferenceLoadingStatusStore(
-		(state) => isLastMessage && state.isLoading(),
+	const isNotIdle = useInferenceLoadingStatusStore(
+		(state) => isLastMessage && state.status !== "idle",
 	);
 
-	return { isLastMessage, hasChatButtons: !isGenerating };
+	return { isLastMessage, hasChatButtons: !isNotIdle };
 }
