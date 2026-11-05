@@ -54,6 +54,7 @@ describe("parseCell", () => {
 		"DE89370400440532013000",
 		"1234567890123456",
 		"+49 30 123456",
+		"0,0000000000000000000001",
 	])("keeps %s as text", (text) => {
 		expect(parseCell(text, "de")).toEqual({ kind: "text", value: text });
 	});
@@ -65,10 +66,24 @@ describe("parseTable", () => {
 			["Bezirk", "Einwohner", "Fläche"],
 			["Mitte", "397.134", "39.47"],
 			["Pankow", "410.716", "103.2"],
+			["Berlin", "3.755.251", "891.1"],
 		]);
 
 		expect(table.rows[0][1]).toMatchObject({ value: 397134 });
 		expect(table.rows[0][2]).toMatchObject({ value: 39.47 });
+	});
+
+	it("reads a leading zero with three decimals as a decimal", () => {
+		const table = parseTable([["Quote"], ["0.125"], ["0.375"]]);
+
+		expect(table.rows[0][0]).toMatchObject({ kind: "number", value: 0.125 });
+	});
+
+	it("keeps a column as text when its locale is ambiguous", () => {
+		const table = parseTable([["Breite"], ["52.520"], ["13.405"], ["7"]]);
+
+		expect(table.rows[0][0]).toEqual({ kind: "text", value: "52.520" });
+		expect(table.rows[2][0]).toMatchObject({ kind: "number", value: 7 });
 	});
 
 	it("names empty headers and pads ragged rows", () => {

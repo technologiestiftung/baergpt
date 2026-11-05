@@ -12,18 +12,21 @@ export type ParsedCell =
 			unit?: NumberUnit;
 	  };
 
-export type ParsedTable = {
+export interface ParsedTable {
 	header: string[];
 	rows: ParsedCell[][];
-};
+}
 
 type NumberLocale = "de" | "en";
 
-const DE_NUMBER = /^\d{1,3}(\.\d{3})+(,\d+)?$|^\d+(,\d+)?$/;
-const EN_NUMBER = /^\d{1,3}(,\d{3})+(\.\d+)?$|^\d+(\.\d+)?$/;
+// A leading 0 is never a thousands group, so "0.125" can only be a decimal
+const DE_NUMBER = /^[1-9]\d{0,2}(\.\d{3})+(,\d+)?$|^\d+(,\d+)?$/;
+const EN_NUMBER = /^[1-9]\d{0,2}(,\d{3})+(\.\d+)?$|^\d+(\.\d+)?$/;
 
 // Beyond this Excel silently rounds, which would corrupt IDs like IBANs
 const MAX_SIGNIFICANT_DIGITS = 15;
+// toLocaleString throws beyond this in older engines
+const MAX_DECIMALS = 20;
 
 function splitUnit(text: string): { core: string; unit?: NumberUnit } {
 	const suffix = text.match(/^(.*?)\s*(%|€|EUR)$/);
@@ -49,7 +52,7 @@ function splitSign(core: string): { negative: boolean; digits: string } {
 
 // "1.234" means different numbers in German and English, so only
 // unambiguous cells decide the column's locale
-function detectColumnLocale(cells: string[]): NumberLocale {
+function detectColumnLocale(cells: string[]): NumberLocale | undefined {
 	let germanVotes = 0;
 	let englishVotes = 0;
 	for (const cell of cells) {
@@ -62,15 +65,27 @@ function detectColumnLocale(cells: string[]): NumberLocale {
 			englishVotes++;
 		}
 	}
+	if (germanVotes === 0 && englishVotes === 0) {
+		return undefined;
+	}
 	return englishVotes > germanVotes ? "en" : "de";
 }
 
-export function parseCell(text: string, locale: NumberLocale): ParsedCell {
+export function parseCell(
+	text: string,
+	locale: NumberLocale | undefined,
+): ParsedCell {
 	const trimmed = text.trim();
 	const { core, unit } = splitUnit(trimmed);
 	const { negative, digits } = splitSign(core);
 
-	const pattern = locale === "de" ? DE_NUMBER : EN_NUMBER;
+	// Guessing could silently turn 52.520 into 52520, so keep the original text
+	if (!locale && /[.,]/.test(digits)) {
+		return { kind: "text", value: trimmed };
+	}
+
+	const resolvedLocale = locale ?? "de";
+	const pattern = resolvedLocale === "de" ? DE_NUMBER : EN_NUMBER;
 	const isLeadingZeroId = /^0\d/.test(digits);
 	const significantDigits = digits.replace(/\D/g, "").replace(/^0+/, "");
 
@@ -83,8 +98,11 @@ export function parseCell(text: string, locale: NumberLocale): ParsedCell {
 	}
 
 	const [groupSeparator, decimalSeparator] =
-		locale === "de" ? [".", ","] : [",", "."];
+		resolvedLocale === "de" ? [".", ","] : [",", "."];
 	const [integerPart, fractionPart = ""] = digits.split(decimalSeparator);
+	if (fractionPart.length > MAX_DECIMALS) {
+		return { kind: "text", value: trimmed };
+	}
 	const magnitude = Number(
 		`${integerPart.split(groupSeparator).join("")}.${fractionPart || "0"}`,
 	);

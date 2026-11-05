@@ -19,7 +19,10 @@ function excelNumberFormat(cell: NumberCell) {
 	if (cell.unit === "euro") {
 		return `#,##0${decimals} "€"`;
 	}
-	return cell.grouped ? `#,##0${decimals}` : undefined;
+	if (cell.grouped) {
+		return `#,##0${decimals}`;
+	}
+	return decimals ? `0${decimals}` : undefined;
 }
 
 function toXlsxCell(cell: ParsedCell): CellObject {

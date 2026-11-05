@@ -59,7 +59,7 @@ export const ExportChatMessageButton: React.FC<
 				className={`flex gap-0.5 rounded-[3px] pr-1.5 p-1 w-fit hover:bg-hellblau-50 focus-visible:outline-default text-sm leading-5 text-dunkelblau-80 ${
 					isDropdownOpen && "bg-hellblau-50"
 				}`}
-				aria-label={Content["chat.exportChatTextButton.ariaLabel"]}
+				ariaLabel={Content["chat.exportChatTextButton.ariaLabel"]}
 				onClick={handleToggle}
 			>
 				{isExporting ? (

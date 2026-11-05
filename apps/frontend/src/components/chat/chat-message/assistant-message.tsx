@@ -5,17 +5,19 @@ import { ExportChatMessageButton } from "./export-chat-message/export-chat-messa
 import { CitationsButton } from "./citations-button.tsx";
 import type { ChatMessage } from "../../../common.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
-import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
 import { ExportErrorMessage } from "./export-chat-message/export-error-message.tsx";
 
 export function AssistantMessage({
 	message,
+	isLastMessage,
+	hasChatButtons,
 	children,
 }: {
 	message: ChatMessage;
+	isLastMessage: boolean;
+	hasChatButtons: boolean;
 	children: string | ReactNode;
 }) {
-	const { isLastMessage, hasChatButtons } = useChatButtonsVisibility(message);
 	const {
 		content,
 		traces,
