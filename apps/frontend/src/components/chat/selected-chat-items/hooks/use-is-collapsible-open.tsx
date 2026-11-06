@@ -3,7 +3,7 @@ import { useUserFolderStore } from "../../../../store/use-user-folder-store.ts";
 import { useUserDocumentStore } from "../../../../store/use-user-document-store.ts";
 import { usePublicDocumentsStore } from "../../../../store/use-public-documents-store.ts";
 
-export function useIsCollapsibleOpen() {
+export function useIsCollapsibleOpen(chatFileUploadsCount: number) {
 	const { selectedUserChatFolders: selectedUserChatFolders } =
 		useUserFolderStore();
 	const { selectedUserChatDocuments } = useUserDocumentStore();
@@ -14,7 +14,8 @@ export function useIsCollapsibleOpen() {
 		selectedUserChatDocuments.length > 0 ||
 		selectedPublicChatDocuments.length > 0 ||
 		selectedUserChatFolders.length > 0 ||
-		selectedPublicChatFolders.length > 0;
+		selectedPublicChatFolders.length > 0 ||
+		chatFileUploadsCount > 0;
 
 	const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
 
@@ -30,6 +31,7 @@ export function useIsCollapsibleOpen() {
 		selectedPublicChatDocuments,
 		selectedUserChatFolders,
 		selectedPublicChatFolders,
+		chatFileUploadsCount,
 	]);
 
 	return [isCollapsibleOpen, setIsCollapsibleOpen] as const;
