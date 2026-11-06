@@ -4,12 +4,7 @@ import Content from "../../src/content";
 import type { Integration } from "../../src/api/integrations/get-integrations.ts";
 import { formatMaskedToken } from "../../src/components/connectors/format-masked-token.ts";
 
-const REQUIRED_SCOPES = [
-	"chart:read",
-	"chart:write",
-	"theme:read",
-	"visualization:read",
-];
+const REQUIRED_SCOPES = ["chart:read", "chart:write", "theme:read"];
 const VALID_TOKEN = "dw-test-token-valid-4f2b";
 const STORED_INTEGRATION: Integration = {
 	provider: "datawrapper",
