@@ -1136,6 +1136,15 @@ export const Content = {
 	"chat.exportChatTextButton.pdf.ariaLabel": "Chat als PDF exportieren",
 	"chat.exportChatTextButton.error": "Export fehlgeschlagen",
 
+	"chat.exportTableButton.label": "Tabelle herunterladen",
+	"chat.exportTableButton.ariaLabel": "Tabelle herunterladen",
+	"chat.exportTableButton.xlsx.label": "XLSX exportieren",
+	"chat.exportTableButton.xlsx.ariaLabel": "Tabelle als XLSX exportieren",
+	"chat.exportTableButton.csv.label": "CSV exportieren",
+	"chat.exportTableButton.csv.ariaLabel": "Tabelle als CSV exportieren",
+	"chat.exportTableButton.sheetName": "Tabelle 1",
+	"chat.exportTableButton.emptyHeaderPrefix": "Spalte",
+
 	"chat.contextPill.webSearch.label": "Websuche",
 	"chat.contextPill.webSearch.ariaLabel": "Websuche entfernen",
 	"chat.contextPill.webSearch.icon.alt": "Websuche icon",

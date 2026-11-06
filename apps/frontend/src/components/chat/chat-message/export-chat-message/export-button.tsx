@@ -1,45 +1,31 @@
 import React from "react";
-import Content from "../../../../content";
 
 interface ExportButtonProps {
-	type: "docx" | "pdf";
+	label: string;
+	ariaLabel?: string;
+	iconSrc?: string;
 	onClick: () => void;
-	focusButtonRef: React.RefObject<HTMLButtonElement>;
-	setIsDropdownOpen: React.Dispatch<React.SetStateAction<boolean>>;
 	testId?: string;
+	ref?: React.Ref<HTMLButtonElement>;
 }
 
 export const ExportButton: React.FC<ExportButtonProps> = ({
-	type,
+	label,
+	ariaLabel,
+	iconSrc,
 	onClick,
-	focusButtonRef,
-	setIsDropdownOpen,
 	testId,
+	ref,
 }) => (
 	<button
-		autoFocus
-		onKeyDown={(e) => {
-			if (e.key === "Escape") {
-				setIsDropdownOpen(false);
-				focusButtonRef.current?.focus();
-			}
-		}}
-		className={`flex w-full items-center gap-2 px-3 py-1.5 ${
-			type === "docx" ? "rounded-t-[3px]" : "rounded-b-[3px]"
-		} hover:bg-hellblau-50 focus-visible:outline-default`}
-		aria-label={
-			type === "docx"
-				? Content["chat.exportChatTextButton.docx.ariaLabel"]
-				: Content["chat.exportChatTextButton.pdf.ariaLabel"]
-		}
+		ref={ref}
+		type="button"
+		className="flex w-full items-center gap-2 px-3 py-1.5 first:rounded-t-[3px] last:rounded-b-[3px] hover:bg-hellblau-50 focus-visible:outline-default"
+		aria-label={ariaLabel}
 		onClick={onClick}
 		data-testid={testId}
 	>
-		{type === "docx" ? (
-			<img src="/icons/word-file-icon.svg" alt="" className="size-5" />
-		) : (
-			<img src="/icons/pdf-file-icon.svg" alt="" className="size-5" />
-		)}
-		{Content[`chat.exportChatTextButton.${type}.label`]}
+		{iconSrc && <img src={iconSrc} alt="" className="size-5" />}
+		{label}
 	</button>
 );
