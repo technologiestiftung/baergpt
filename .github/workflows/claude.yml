@@ -41,20 +41,8 @@ jobs:
         with:
           fetch-depth: 1
 
-      # The golden VM holds an installed checkout of staging. If the lockfile matches, move its
-      # node_modules into place (instant, same disk); otherwise install from the baked npm cache.
       - name: Install dependencies 📦
-        run: |
-          WARM=/home/admin/warm/baergpt
-          if [ -d "$WARM" ] && cmp -s package-lock.json "$WARM/package-lock.json"; then
-            echo "Lockfile matches golden image, reusing node_modules"
-            (cd "$WARM" && find . -maxdepth 3 -name node_modules -type d -prune) | while read -r d; do
-              mkdir -p "$(dirname "$d")" && mv "$WARM/$d" "$d"
-            done
-          else
-            echo "Lockfile differs from golden image, running npm ci"
-            npm ci --prefer-offline --no-audit --no-fund
-          fi
+        uses: ./.github/actions/warm-node-modules
 
       - name: Run Claude 🤖
         uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267, pinned to commit sha to avoid sha-hulud like attacks
