@@ -43,12 +43,7 @@ async function checkDatawrapperKey(key: string): Promise<KeyCheckResult> {
  */
 export const integrationProviders = {
 	datawrapper: {
-		requiredScopes: [
-			"chart:read",
-			"chart:write",
-			"theme:read",
-			"visualization:read",
-		],
+		requiredScopes: ["chart:read", "chart:write", "theme:read"],
 		checkKey: checkDatawrapperKey,
 	},
 };
