@@ -73,15 +73,17 @@ PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH
 PATH=/home/admin/.local/bin:/home/admin/.bun/bin:$NODE_DIR/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EOF
 
-# Warm caches from the repo: npm cache and Supabase Docker images.
+# Warm checkout: installed node_modules (claude.yml moves them into the job if the lockfile
+# matches), npm cache and Supabase Docker images.
+WARM_DIR=/home/admin/warm/baergpt
 sudo systemctl start docker
-git clone --depth 1 --branch "$WARM_BRANCH" https://github.com/technologiestiftung/baergpt.git /tmp/baergpt
-(cd /tmp/baergpt && npm ci --ignore-scripts)
-(cd /tmp/baergpt/apps/backend \
+git clone --depth 1 --branch "$WARM_BRANCH" https://github.com/technologiestiftung/baergpt.git "$WARM_DIR"
+(cd "$WARM_DIR" && npm ci --no-audit --no-fund)
+(cd "$WARM_DIR/apps/backend" \
   && sudo env PATH="$PATH" SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io supabase start \
        --exclude studio,realtime,imgproxy,edge-runtime,supavisor,postgres-meta \
   && sudo env PATH="$PATH" supabase stop --no-backup)
-sudo rm -rf /tmp/baergpt
+sudo chown -R admin:admin "$WARM_DIR"
 
 # Shrink the image.
 sudo apt-get clean
