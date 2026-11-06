@@ -22,5 +22,17 @@ for LABEL in berlin.technologiestiftung.baergpt-runner berlin.technologiestiftun
   launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
   launchctl bootstrap "gui/$(id -u)" "$PLIST"
 done
+
+ASANA_LABEL=berlin.technologiestiftung.baergpt-asana-listener
+launchctl bootout "gui/$(id -u)/$ASANA_LABEL" 2>/dev/null || true
+if [ -n "$ASANA_PROJECT_GID" ]; then
+  security find-generic-password -s "$ASANA_KEYCHAIN_SERVICE" -w >/dev/null 2>&1 \
+    || { echo "Asana token missing. Run: security add-generic-password -a \"\$USER\" -s $ASANA_KEYCHAIN_SERVICE -w"; exit 1; }
+  NODE_BIN="$(command -v node)" || { echo "node missing"; exit 1; }
+  sed -e "s#__RUNNER_DIR__#$HERE#g" -e "s#__LOG_DIR__#$LOG_DIR#g" -e "s#__NODE_BIN__#$NODE_BIN#g" \
+    "$HERE/$ASANA_LABEL.plist" > "$HOME/Library/LaunchAgents/$ASANA_LABEL.plist"
+  launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/$ASANA_LABEL.plist"
+  echo "Asana listener started for project $ASANA_PROJECT_GID. Logs: $LOG_DIR/asana.log"
+fi
 echo "Runner loop started. Logs: tail -f $LOG_DIR/runner.log"
 echo "Nightly rebuild check at 03:00. Logs: $LOG_DIR/rebuild.log"
