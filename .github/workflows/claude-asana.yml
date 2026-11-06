@@ -48,8 +48,11 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/asana"
           base64 -d <<<"$CONTEXT_B64" > "$RUNNER_TEMP/asana/task.md"
+          # Copied now, because Claude may switch branches.
+          cp .github/scripts/claude-usage.mts "$RUNNER_TEMP/claude-usage.mts"
 
       - name: Run Claude 🤖
+        id: claude
         uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267, pinned to commit sha to avoid sha-hulud like attacks
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -70,7 +73,15 @@ jobs:
             Finally, write your reply for the Asana task to ${{ runner.temp }}/asana/reply.md.
             Plain text, no Markdown headings, short. Include links to any PRs, commits or comments you made.
           claude_args: |
+            --model sonnet
             --allowedTools "Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(git:*),Bash(gh:*),Bash(supabase:*),Bash(docker:*),Bash(ls:*),Bash(cat:*),Bash(grep:*),Bash(find:*),Edit,Write,Read,Glob,Grep"
+
+      - name: Add usage to reply 📊
+        if: always() && steps.claude.outputs.execution_file != ''
+        continue-on-error: true
+        run: |
+          [ -f "$RUNNER_TEMP/asana/reply.md" ] && printf '\n\n(%s)\n' \
+            "$(node "$RUNNER_TEMP/claude-usage.mts" summary "${{ steps.claude.outputs.execution_file }}")" >> "$RUNNER_TEMP/asana/reply.md"
 
       - name: Upload reply for Asana ⬆️
         if: always()
