@@ -11,7 +11,7 @@ runner-loop.sh (LaunchAgent)
 ## Golden image contents
 
 Node (`.nvmrc`, in the Actions tool cache), npm (`packageManager`), Supabase CLI (`.tool-versions`) and its Docker images, Playwright browsers and deps, Docker, `gh`, 1Password CLI, Actions runner, npm cache, and an installed `staging` checkout (`~/warm/baergpt`) whose `node_modules` jobs reuse.
-Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA from `claude.yml`. 
+Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA from `claude.yml`.
 
 ## Setup
 
@@ -60,6 +60,7 @@ Claude answers, or opens a PR against `staging`, or pushes to an existing PR. Th
 The Asana token stays in the keychain on this Mac. It never reaches GitHub or Claude.
 
 Setup:
+
 1. Runner App: add repository permission **Actions: Read and write**, and give its installation access to `baergpt`.
 2. Store an Asana personal access token:
    ```sh

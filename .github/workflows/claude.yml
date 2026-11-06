@@ -45,14 +45,25 @@ jobs:
         uses: ./.github/actions/warm-node-modules
 
       - name: Run Claude 🤖
+        id: claude
         uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267, pinned to commit sha to avoid sha-hulud like attacks
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ github.token }} # TEMP: branch testing, remove before merge
           # Pre-installed in the golden VM at the versions this action pins (see build-golden.sh).
           path_to_bun_executable: /home/admin/.bun/bin/bun
           path_to_claude_code_executable: /home/admin/.local/bin/claude
           additional_permissions: |
             actions: read
           claude_args: |
+            --model sonnet
             --allowedTools "Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(git:*),Bash(gh:*),Bash(supabase:*),Bash(docker:*),Bash(ls:*),Bash(cat:*),Bash(grep:*),Bash(find:*),Edit,Write,Read,Glob,Grep"
+
+      # Claude may switch branches, so read the script from the commit this run started on.
+      - name: Add usage to Claude's comment 📊
+        if: always() && steps.claude.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.claude.outputs.github_token }}
+        run: |
+          git show ${{ github.sha }}:.github/scripts/claude-usage.mts > "$RUNNER_TEMP/claude-usage.mts"
+          node "$RUNNER_TEMP/claude-usage.mts" annotate "${{ steps.claude.outputs.execution_file }}"
