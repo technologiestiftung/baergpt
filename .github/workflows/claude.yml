@@ -41,14 +41,26 @@ jobs:
         with:
           fetch-depth: 1
 
-      # Node and the npm cache are baked into the golden VM, so this is fast and offline-friendly.
+      # The golden VM holds an installed checkout of staging. If the lockfile matches, move its
+      # node_modules into place (instant, same disk); otherwise install from the baked npm cache.
       - name: Install dependencies 📦
-        run: npm ci
+        run: |
+          WARM=/home/admin/warm/baergpt
+          if [ -d "$WARM" ] && cmp -s package-lock.json "$WARM/package-lock.json"; then
+            echo "Lockfile matches golden image, reusing node_modules"
+            (cd "$WARM" && find . -maxdepth 3 -name node_modules -type d -prune) | while read -r d; do
+              mkdir -p "$(dirname "$d")" && mv "$WARM/$d" "$d"
+            done
+          else
+            echo "Lockfile differs from golden image, running npm ci"
+            npm ci --prefer-offline --no-audit --no-fund
+          fi
 
       - name: Run Claude 🤖
         uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267, pinned to commit sha to avoid sha-hulud like attacks
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }} # TEMP: branch testing, remove before merge
           # Pre-installed in the golden VM at the versions this action pins (see build-golden.sh).
           path_to_bun_executable: /home/admin/.bun/bin/bun
           path_to_claude_code_executable: /home/admin/.local/bin/claude
