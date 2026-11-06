@@ -73,7 +73,10 @@ describe("csv export", () => {
 		expect(toCsvField({ kind: "text", value: text })).toBe(expected);
 	});
 
-	it.each(["-", "+49 30 123456", "-5 Tage"])("leaves %s unescaped", (text) => {
-		expect(toCsvField({ kind: "text", value: text })).toBe(text);
-	});
+	it.each(["-", "+49 30 123456", "-5 Tage", "00123", "1234567890123456"])(
+		"leaves %s unescaped",
+		(text) => {
+			expect(toCsvField({ kind: "text", value: text })).toBe(text);
+		},
+	);
 });

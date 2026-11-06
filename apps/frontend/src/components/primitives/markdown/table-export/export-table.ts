@@ -50,12 +50,13 @@ function formatCsvNumber(cell: NumberCell): string {
 	return `${number}${cell.unit ? UNIT_SUFFIX[cell.unit] : ""}`;
 }
 
-// Text may come from web pages or documents. Excel shows the escaping "'", so
-// "+"/"-" are only escaped when an operator follows that Excel would evaluate
+// Excel shows the escaping "'", so "+"/"-" are only escaped before an operator
 function isFormulaLike(text: string): boolean {
 	return /^[=@\t\r]/.test(text) || /^[+-].*[-+*/^&(|!=]/.test(text);
 }
 
+// Excel still reads "00123" as 123 here; its workarounds break other tools, so
+// XLSX is the lossless format for such values
 export function toCsvField(cell: ParsedCell): string {
 	let text: string;
 	if (cell.kind === "number") {

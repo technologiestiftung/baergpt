@@ -36,9 +36,9 @@ function splitUnit(text: string): { core: string; unit?: NumberUnit } {
 			unit: suffix[2] === "%" ? "percent" : "euro",
 		};
 	}
-	const prefix = text.match(/^€\s*(.*)$/);
+	const prefix = text.match(/^([-−+]?)\s*€\s*(.*)$/);
 	if (prefix) {
-		return { core: prefix[1], unit: "euro" };
+		return { core: `${prefix[1]}${prefix[2]}`, unit: "euro" };
 	}
 	return { core: text };
 }
@@ -65,7 +65,7 @@ function detectColumnLocale(cells: string[]): NumberLocale | undefined {
 			englishVotes++;
 		}
 	}
-	if (germanVotes === 0 && englishVotes === 0) {
+	if (germanVotes === englishVotes) {
 		return undefined;
 	}
 	return englishVotes > germanVotes ? "en" : "de";

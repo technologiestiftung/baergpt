@@ -45,6 +45,17 @@ describe("parseCell", () => {
 	});
 
 	it.each([
+		["-€1.234,50", -1234.5],
+		["€-980", -980],
+	])("reads the sign around a leading € in %s", (text, expected) => {
+		expect(parseCell(text, "de")).toMatchObject({
+			kind: "number",
+			value: expected,
+			unit: "euro",
+		});
+	});
+
+	it.each([
 		"00123",
 		"01067",
 		"12.03.2024",
@@ -83,6 +94,14 @@ describe("parseTable", () => {
 		const table = parseTable([["Breite"], ["52.520"], ["13.405"], ["7"]]);
 
 		expect(table.rows[0][0]).toEqual({ kind: "text", value: "52.520" });
+		expect(table.rows[2][0]).toMatchObject({ kind: "number", value: 7 });
+	});
+
+	it("keeps a column as text when German and English formats tie", () => {
+		const table = parseTable([["Betrag"], ["1.234,5"], ["1,234.5"], ["7"]]);
+
+		expect(table.rows[0][0]).toEqual({ kind: "text", value: "1.234,5" });
+		expect(table.rows[1][0]).toEqual({ kind: "text", value: "1,234.5" });
 		expect(table.rows[2][0]).toMatchObject({ kind: "number", value: 7 });
 	});
 

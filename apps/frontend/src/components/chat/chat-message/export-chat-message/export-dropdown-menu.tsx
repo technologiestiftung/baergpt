@@ -31,6 +31,11 @@ export const ExportDropdownMenu: React.FC<ExportDropdownMenuProps> = ({
 
 	useClickOutside(true, onClose, [buttonRef, menuRef]);
 
+	const activateItem = (item: ExportMenuItem) => {
+		buttonRef.current?.focus();
+		item.onClick();
+	};
+
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
 		items,
 		isOpen: true,
@@ -38,7 +43,7 @@ export const ExportDropdownMenu: React.FC<ExportDropdownMenuProps> = ({
 			onClose();
 			buttonRef.current?.focus();
 		},
-		onItemClick: (item) => item.onClick(),
+		onItemClick: activateItem,
 	});
 
 	useLayoutEffect(() => {
@@ -75,7 +80,7 @@ export const ExportDropdownMenu: React.FC<ExportDropdownMenuProps> = ({
 					label={item.label}
 					ariaLabel={item.ariaLabel}
 					iconSrc={item.iconSrc}
-					onClick={item.onClick}
+					onClick={() => activateItem(item)}
 					testId={item.testId}
 				/>
 			))}
