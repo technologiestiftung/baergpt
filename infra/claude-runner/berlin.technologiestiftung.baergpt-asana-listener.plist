@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Asana listener. install.sh replaces __RUNNER_DIR__, __LOG_DIR__ and __NODE_BIN__. -->
+
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>berlin.technologiestiftung.baergpt-asana-listener</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__RUNNER_DIR__/asana-listener.sh</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NODE_BIN</key>
+    <string>__NODE_BIN__</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>__LOG_DIR__/asana.log</string>
+  <key>StandardErrorPath</key>
+  <string>__LOG_DIR__/asana.log</string>
+</dict>
+</plist>

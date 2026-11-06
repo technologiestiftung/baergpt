@@ -52,6 +52,24 @@ Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA f
 - Tune `RUNNER_SLOTS`, `VM_CPU`, `VM_MEMORY_MB`, `WARM_BRANCH`, `GOLDEN_MAX_AGE_DAYS` in `config.sh`.
 - The host must stay logged in (LaunchAgent). Disable sleep: `sudo pmset -a sleep 0`.
 
+## Asana
+
+Write `@claude` in a task comment or description on the configured Asana board.
+`asana-listener.mts` (LaunchAgent) polls the board every 10 s (`ASANA_POLL_SECONDS`) and starts `.github/workflows/claude-asana.yml` with the task as input.
+Claude answers, or opens a PR against `staging`, or pushes to an existing PR. The listener posts the reply as an Asana comment starting with 🤖; those never re-trigger.
+The Asana token stays in the keychain on this Mac. It never reaches GitHub or Claude.
+
+Setup:
+1. Runner App: add repository permission **Actions: Read and write**, and give its installation access to `baergpt`.
+2. Store an Asana personal access token:
+   ```sh
+   security add-generic-password -a "$USER" -s baergpt-asana-token -w
+   ```
+3. Set `ASANA_PROJECT_GID` in `config.sh` (the number in the board URL), then run `./install.sh`. Log: `~/Library/Logs/baergpt-runner/asana.log`.
+4. `claude-asana.yml` must be on `main`: GitHub only starts manually dispatched workflows from the default branch.
+
+Tasks on that board are sent to the Claude API. Keep personal and confidential data out of them.
+
 ## Security
 
 - Public repo: only `OWNER`/`MEMBER`/`COLLABORATOR` can trigger the workflow.

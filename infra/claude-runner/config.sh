@@ -22,3 +22,8 @@ SSH_KEY="${SSH_KEY:-$HOME/.config/baergpt-runner/id_ed25519}"
 GITHUB_APP_ID="${GITHUB_APP_ID:-5593578}"
 KEYCHAIN_SERVICE="${KEYCHAIN_SERVICE:-baergpt-runner-app-key}"
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5"
+# Asana listener (optional): project to watch for "@claude". Empty disables it.
+# Token in the keychain: security add-generic-password -a "$USER" -s baergpt-asana-token -w
+ASANA_PROJECT_GID="${ASANA_PROJECT_GID:-}"
+ASANA_KEYCHAIN_SERVICE="${ASANA_KEYCHAIN_SERVICE:-baergpt-asana-token}"
+ASANA_POLL_SECONDS="${ASANA_POLL_SECONDS:-10}"   # 1 Asana request per poll; limit is 1,500/min per token
