@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 # Builds the "golden" Tart VM that every runner VM is cloned from.
-# Rebuild when .nvmrc, npm, Supabase CLI or Playwright versions change, or monthly for OS patches.
+# Versions come from $WARM_BRANCH on GitHub. rebuild-if-needed.sh runs this nightly when they change.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 source "$HERE/config.sh"
+source "$HERE/lib.sh"
+
+LOCK="$HOME/.config/baergpt-runner/build.lock"
+mkdir -p "$(dirname "$LOCK")"
+mkdir "$LOCK" 2>/dev/null || { echo "Another build is running ($LOCK)"; exit 1; }
+trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
 
 BUILD_VM="$GOLDEN_VM-build"
-NODE_VERSION="$(tr -d 'v \n' < "$REPO_ROOT/.nvmrc")"
-NPM_VERSION="$(node -p "require('$REPO_ROOT/package.json').packageManager.split('@')[1].split('+')[0]")"
-PLAYWRIGHT_VERSION="$(node -p "require('$REPO_ROOT/package.json').overrides['playwright-core']")"
-SUPABASE_VERSION="$(awk '$1=="supabase-cli"{print $2}' "$REPO_ROOT/.tool-versions")"
+NODE_VERSION="$(repo_file .nvmrc | tr -d 'v \n')"
+NPM_VERSION="$(repo_file package.json | jq -r '.packageManager | split("@")[1] | split("+")[0]')"
+PLAYWRIGHT_VERSION="$(repo_file package.json | jq -r '.overrides["playwright-core"]')"
+SUPABASE_VERSION="$(repo_file .tool-versions | awk '$1=="supabase-cli"{print $2}')"
 
 # Bun and Claude Code: the versions the pinned claude-code-action would install itself.
-ACTION_SHA="$(grep -o 'anthropics/claude-code-action@[0-9a-f]\{40\}' "$REPO_ROOT/.github/workflows/claude.yml" | cut -d@ -f2)"
+ACTION_SHA="$(repo_file .github/workflows/claude.yml | grep -o 'anthropics/claude-code-action@[0-9a-f]\{40\}' | cut -d@ -f2)"
 ACTION_RAW="https://raw.githubusercontent.com/anthropics/claude-code-action/$ACTION_SHA"
 ACTION_YML="$(curl -fsSL "$ACTION_RAW/action.yml")"
 RUN_TS="$(curl -fsSL "$ACTION_RAW/src/entrypoints/run.ts")"
@@ -24,7 +29,7 @@ CLAUDE_CODE_VERSION="$(grep -o 'claudeCodeVersion = "[^"]*"' <<<"$RUN_TS" | head
 
 [ -f "$SSH_KEY" ] || { mkdir -p "$(dirname "$SSH_KEY")"; ssh-keygen -q -t ed25519 -N '' -f "$SSH_KEY"; }
 
-cleanup() { tart stop "$BUILD_VM" >/dev/null 2>&1 || true; }
+cleanup() { tart stop "$BUILD_VM" >/dev/null 2>&1 || true; rmdir "$LOCK" 2>/dev/null || true; }
 trap cleanup EXIT
 
 tart delete "$BUILD_VM" >/dev/null 2>&1 || true
@@ -52,4 +57,5 @@ while tart list --format json | jq -e --arg n "$BUILD_VM" '.[] | select(.Name==$
 
 tart delete "$GOLDEN_VM" >/dev/null 2>&1 || true
 tart rename "$BUILD_VM" "$GOLDEN_VM"
+fingerprint > "$FINGERPRINT_FILE"
 echo "Golden image ready: $GOLDEN_VM (node $NODE_VERSION, npm $NPM_VERSION, supabase $SUPABASE_VERSION, playwright $PLAYWRIGHT_VERSION, runner $RUNNER_VERSION, bun $BUN_VERSION, claude $CLAUDE_CODE_VERSION)"

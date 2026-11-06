@@ -10,8 +10,8 @@ runner-loop.sh (LaunchAgent)
 
 ## Golden image contents
 
-Node (`.nvmrc`, in the Actions tool cache), npm (`packageManager`), Supabase CLI (`.tool-versions`) and its Docker images, Playwright browsers and deps, Docker, `gh`, 1Password CLI, Actions runner, warm npm cache.
-Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA from `claude.yml`. Rebuild after bumping that SHA.
+Node (`.nvmrc`, in the Actions tool cache), npm (`packageManager`), Supabase CLI (`.tool-versions`) and its Docker images, Playwright browsers and deps, Docker, `gh`, 1Password CLI, Actions runner, npm cache, and an installed `staging` checkout (`~/warm/baergpt`) whose `node_modules` jobs reuse.
+Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA from `claude.yml`. 
 
 ## Setup
 
@@ -45,9 +45,11 @@ Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA f
 
 ## Operations
 
-- Rebuild the golden image after version bumps or monthly: `./build-golden.sh`. Running VMs are unaffected; new clones use the new image.
-- Stop: `launchctl bootout gui/$(id -u)/berlin.technologiestiftung.baergpt-runner`
-- Tune `RUNNER_SLOTS`, `VM_CPU`, `VM_MEMORY_MB` in `config.sh`.
+- Nightly at 03:00, `rebuild-if-needed.sh` rebuilds the golden image when its inputs on `staging` changed (lockfile, `package.json`, `.nvmrc`, `.tool-versions`, `claude.yml`, these scripts) or it is older than 7 days. Log: `~/Library/Logs/baergpt-runner/rebuild.log`.
+- Manual rebuild: `./build-golden.sh`. Running VMs are unaffected; new clones use the new image.
+- Jobs reuse the image's `node_modules` when `package-lock.json` matches the baked `staging` checkout, else they run `npm ci` from the baked cache.
+- Stop: `launchctl bootout gui/$(id -u)/berlin.technologiestiftung.baergpt-runner` (and `...-rebuild`).
+- Tune `RUNNER_SLOTS`, `VM_CPU`, `VM_MEMORY_MB`, `WARM_BRANCH`, `GOLDEN_MAX_AGE_DAYS` in `config.sh`.
 - The host must stay logged in (LaunchAgent). Disable sleep: `sudo pmset -a sleep 0`.
 
 ## Security
