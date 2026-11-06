@@ -37,7 +37,7 @@
 		"@ai-sdk/mcp": "2.0.91",
 		"@ai-sdk/mistral": "4.0.80",
 		"@dqbd/tiktoken": "1.0.22",
-		"@hono/node-server": "2.0.12",
+		"@hono/node-server": "2.1.3",
 		"@langfuse/client": "5.10.0",
 		"@langfuse/core": "5.10.0",
 		"@langfuse/otel": "5.10.0",
@@ -62,7 +62,7 @@
 		"pdfjs-dist": "6.2.108",
 		"unpdf": "1.8.0",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
-		"zod": "4.4.3"
+		"zod": "4.6.6"
 	},
 	"devDependencies": {
 		"@aws-sdk/client-s3": "3.1007.0",

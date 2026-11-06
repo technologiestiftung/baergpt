@@ -133,7 +133,7 @@ export default {
 		},
 	},
 	plugins: [
-		plugin(function ({ addComponents, addVariant }) {
+		plugin(function ({ addComponents, addVariant, theme }) {
 			addComponents({
 				".outline-default": {
 					outlineWidth: "3px",
@@ -149,6 +149,10 @@ export default {
 			});
 			addVariant("user-invalid", "&:user-invalid");
 			addVariant("user-valid", "&:user-valid");
+			addVariant(
+				"hoverable",
+				`@media (min-width: ${theme("screens.md")}) and (hover: hover)`,
+			);
 		}),
 	],
 };

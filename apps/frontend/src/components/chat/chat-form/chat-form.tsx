@@ -30,10 +30,12 @@ import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 import { useCurrentChatIdStore } from "../../../store/current-chat-id-store.ts";
 import { ChatSubmitButton } from "./chat-submit-button.tsx";
+import {
+	getTextareaLineHeight,
+	usePromptHistory,
+} from "./hooks/use-prompt-history.ts";
 
 export const chatFormId = "chat-form";
-
-const singleLineHeightFallback = 24;
 
 interface ChatFormHandle {
 	focus: () => void;
@@ -80,6 +82,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	const { currentChatId } = useCurrentChatIdStore();
 
 	const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+		resetPromptHistory();
 		setTextareaContent(event.target.value);
 		onContentChange?.(event.target.value);
 	};
@@ -96,6 +99,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		focusTextArea();
 	};
 
+	const { handlePromptHistoryKeyDown, resetPromptHistory } = usePromptHistory({
+		content: textareaContent,
+		setContent,
+	});
+
 	useLayoutEffect(() => {
 		const textareaElement = textareaRef.current;
 		if (!textareaElement) {
@@ -106,9 +114,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		const contentHeight = textareaElement.scrollHeight;
 		textareaElement.style.height = `${contentHeight}px`;
 
-		const lineHeight =
-			Number.parseFloat(getComputedStyle(textareaElement).lineHeight) ||
-			singleLineHeightFallback;
+		const lineHeight = getTextareaLineHeight(textareaElement);
 
 		const overflowsSingleLine =
 			textareaElement.scrollWidth > textareaElement.clientWidth;
@@ -143,6 +149,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
 	const handleTextAreaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+		if (handlePromptHistoryKeyDown(event)) {
+			return;
+		}
+
 		const isEnterWithoutShiftPressed = event.key === "Enter" && !event.shiftKey;
 		if (isEnterWithoutShiftPressed) {
 			event.preventDefault();
@@ -174,6 +184,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		showInfoMessage(null);
 
 		// Clear textarea on submit
+		resetPromptHistory();
 		setTextareaContent("");
 		onContentChange?.("");
 
