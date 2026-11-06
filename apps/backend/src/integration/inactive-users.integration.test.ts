@@ -366,12 +366,14 @@ describe("delete_inactive_user", () => {
 			ban_duration: "87600h",
 		});
 
-		expect(await deleteInactiveUser()).toBe(false);
-		expect(await userExists()).toBe(true);
-
-		await serviceRoleDbClient.auth.admin.updateUserById(PENDING_USER_ID, {
-			ban_duration: "none",
-		});
+		try {
+			expect(await deleteInactiveUser()).toBe(false);
+			expect(await userExists()).toBe(true);
+		} finally {
+			await serviceRoleDbClient.auth.admin.updateUserById(PENDING_USER_ID, {
+				ban_duration: "none",
+			});
+		}
 	});
 
 	it("deletes unchanged users with a pending deletion", async () => {

@@ -264,15 +264,19 @@ export class PrivilegedDbService extends BaseContentDbService {
 				...this.getStoragePaths(doc.source_url),
 			]);
 		}
+		const removeErrorNames: string[] = [];
 		for (const [bucket, paths] of pathsByBucket) {
 			const { error: removeError } = await this.client.storage
 				.from(bucket)
 				.remove(paths);
 			if (removeError) {
-				throw new Error(
-					`Deleted the account, but removing its files failed (${removeError.name}).`,
-				);
+				removeErrorNames.push(removeError.name);
 			}
+		}
+		if (removeErrorNames.length > 0) {
+			throw new Error(
+				`Deleted the account, but removing its files failed (${removeErrorNames.join(", ")}).`,
+			);
 		}
 		return true;
 	}
