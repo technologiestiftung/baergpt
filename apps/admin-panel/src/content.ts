@@ -217,6 +217,8 @@ export const Content = {
 
 	/* ---------------------- Product Dashboard ---------------------- */
 	"productDashboard.error": "Es gab einen Fehler beim Laden der Daten.",
+	"productDashboard.users.title": "Benutzerübersicht",
+	"productDashboard.chats.title": "Chat-Aktivität",
 
 	"productDashboard.userEvolution.title": "Total Users & Daily New Users",
 	"productDashboard.userEvolution.description":
@@ -246,6 +248,36 @@ export const Content = {
 	"productDashboard.domainsTable.head.domain": "Domain",
 	"productDashboard.domainsTable.head.users": "Users",
 	"productDashboard.domainsTable.showAllButton": "Alle anzeigen",
+
+	"productDashboard.matomo.title": "Nutzungsverhalten & Endgeräte",
+	"productDashboard.matomo.error":
+		"Es gab einen Fehler beim Laden der Matomo-Daten.",
+	"productDashboard.matomo.unavailable":
+		"Matomo-Daten sind derzeit nicht verfügbar.",
+
+	"productDashboard.matomo.metricCards.averageSessionDuration.label":
+		"Durchschnittliche Sitzungsdauer",
+	"productDashboard.matomo.metricCards.averageSessionDuration.details":
+		"Letzte 30 Tage",
+	"productDashboard.matomo.metricCards.profilePageViews.label":
+		"Profilseiten-Aufrufe",
+	"productDashboard.matomo.metricCards.profilePageViews.details":
+		"Letzte 30 Tage",
+
+	"productDashboard.matomo.deviceBreakdown.title": "Endgeräte",
+	"productDashboard.matomo.deviceBreakdown.description":
+		"Besuche nach Endgerät, letzte 6 Monate.",
+	"productDashboard.matomo.deviceBreakdown.desktop.label": "Desktop",
+	"productDashboard.matomo.deviceBreakdown.mobile.label": "Mobil",
+	"productDashboard.matomo.deviceBreakdown.tablet.label": "Tablet",
+	"productDashboard.matomo.osBreakdown.title": "Betriebssysteme",
+	"productDashboard.matomo.osBreakdown.description":
+		"Verteilung der Besuche nach OS (%) in den letzten 30 Tagen",
+	"productDashboard.matomo.osBreakdown.seriesLabel": "Anteil",
+	"productDashboard.matomo.browserBreakdown.title": "Browser",
+	"productDashboard.matomo.browserBreakdown.description":
+		"Verteilung nach Browser-Typ in den letzten 30 Tagen",
+	"productDashboard.matomo.browserBreakdown.seriesLabel": "Anteil",
 
 	/* ---------------------- Add New Domain ---------------------- */
 	"addNewDomain.title": "Neue Domain hinzufügen",

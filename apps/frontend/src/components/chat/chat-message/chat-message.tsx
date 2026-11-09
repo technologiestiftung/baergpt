@@ -4,10 +4,15 @@ import { UserMessage } from "./user-message.tsx";
 import type { ChatMessage as ChatMessageType } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
+import {
+	MarkdownExportableTable,
+	TableExportVisibleContext,
+} from "../../primitives/markdown/markdown-exportable-table.tsx";
 import { type JSX, memo, useMemo } from "react";
 import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
 import { config } from "../../../config.ts";
+import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
 
 interface ChatMessageProps {
 	message: ChatMessageType;
@@ -43,20 +48,32 @@ export const ChatMessage = memo(function ChatMessage({
 		};
 	}, [datawrapperChartIds]);
 
+	const { isLastMessage, hasChatButtons } = useChatButtonsVisibility(message);
+	const assistantComponents = useMemo(
+		() => ({ ...customComponents, table: MarkdownExportableTable }),
+		[customComponents],
+	);
+
 	return (
 		<div className="flex flex-col" data-message-id={message.id}>
 			{role === "assistant" && hasAssistantContent && (
 				<div className="mb-8">
-					<AssistantMessage message={message}>
+					<AssistantMessage
+						message={message}
+						isLastMessage={isLastMessage}
+						hasChatButtons={hasChatButtons}
+					>
 						<ThinkingTraces message={message} />
 						{content !== "" && (
-							<ReactMarkdown
-								remarkPlugins={[remarkGfm]}
-								className="markdown-container"
-								components={customComponents}
-							>
-								{content}
-							</ReactMarkdown>
+							<TableExportVisibleContext.Provider value={hasChatButtons}>
+								<ReactMarkdown
+									remarkPlugins={[remarkGfm]}
+									className="markdown-container"
+									components={assistantComponents}
+								>
+									{content}
+								</ReactMarkdown>
+							</TableExportVisibleContext.Provider>
 						)}
 					</AssistantMessage>
 				</div>
