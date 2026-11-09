@@ -63,7 +63,12 @@ export function BarChartBreakdown({
 						/>
 						<ChartTooltip
 							cursor={false}
-							content={<ChartTooltipContent hideLabel />}
+							content={
+								<ChartTooltipContent
+									hideLabel
+									valueFormatter={(value) => `${value}%`}
+								/>
+							}
 						/>
 						<Bar
 							dataKey="percentage"

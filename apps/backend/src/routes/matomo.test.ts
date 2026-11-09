@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+	findProfilePageViews,
 	getCompletedMonthsWindow,
 	toDeviceTrendPoint,
 	toPercentageBreakdown,
@@ -136,5 +137,23 @@ describe("toPercentageBreakdown", () => {
 		const rows = [{ label: "Windows", nb_visits: 0 }];
 
 		expect(toPercentageBreakdown(rows, { topN: 5 })).toEqual([]);
+	});
+});
+
+describe("findProfilePageViews", () => {
+	it("sums hits for the profile path with and without trailing slash", () => {
+		expect(
+			findProfilePageViews([
+				{ label: "/profile/", nb_hits: 42 },
+				{ label: "/profile", nb_hits: 8 },
+				{ label: "/profile" },
+				{ label: "/profile-other", nb_hits: 100 },
+				{ nb_hits: 5 },
+			]),
+		).toBe(50);
+	});
+
+	it("returns 0 for non-array input", () => {
+		expect(findProfilePageViews(undefined)).toBe(0);
 	});
 });

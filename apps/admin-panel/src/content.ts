@@ -272,7 +272,7 @@ export const Content = {
 	"productDashboard.matomo.deviceBreakdown.tablet.label": "Tablet",
 	"productDashboard.matomo.osBreakdown.title": "Betriebssysteme",
 	"productDashboard.matomo.osBreakdown.description":
-		"Verteilung der Nutzer:innen nach OS (%) in den letzten 30 Tagen",
+		"Verteilung der Besuche nach OS (%) in den letzten 30 Tagen",
 	"productDashboard.matomo.osBreakdown.seriesLabel": "Anteil",
 	"productDashboard.matomo.browserBreakdown.title": "Browser",
 	"productDashboard.matomo.browserBreakdown.description":

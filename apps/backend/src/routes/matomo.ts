@@ -105,16 +105,20 @@ function isErrorResult(value: unknown): value is MatomoErrorResult {
 	);
 }
 
-function findProfilePageViews(rows: unknown): number {
+export function findProfilePageViews(rows: unknown): number {
 	if (!Array.isArray(rows)) {
 		return 0;
 	}
 
-	const profileRow = (rows as MatomoPageUrlRow[]).find(
-		(row) => row.label === PROFILE_PAGE_PATH,
-	);
+	const normalizedProfilePath = PROFILE_PAGE_PATH.replace(/\/+$/, "");
 
-	return profileRow?.nb_hits ?? 0;
+	return (rows as MatomoPageUrlRow[])
+		.filter(
+			(row) =>
+				typeof row.label === "string" &&
+				row.label.replace(/\/+$/, "") === normalizedProfilePath,
+		)
+		.reduce((sum, row) => sum + (row.nb_hits ?? 0), 0);
 }
 
 const DEVICE_LABEL_MAP: Record<string, "desktop" | "mobile" | "tablet"> = {
