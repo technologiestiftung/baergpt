@@ -1,7 +1,7 @@
 import { supabase } from "../../../supabase-client";
 import type { ProductDashboardStats } from "@/components/charts/types.ts";
 
-export async function getData(
+export async function getProductDashboardStats(
 	signal: AbortSignal,
 ): Promise<
 	{ data: ProductDashboardStats; error: null } | { data: null; error: Error }

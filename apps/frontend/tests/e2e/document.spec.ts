@@ -5,6 +5,7 @@ import {
 	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
+	getListItemAction,
 	openDocumentsPanel,
 	attemptFileUploadViaFileChooser,
 	attemptMultipleFilesViaFileChooser,
@@ -665,10 +666,11 @@ test.describe("Documents", () => {
 
 			await openDocumentsPanel(page);
 
-			const menuButtonDocument = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Menü öffnen");
+			const menuButtonDocument = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"Menü öffnen",
+			);
 			await expect(menuButtonDocument).toBeVisible();
 
 			await menuButtonDocument.click();
@@ -706,10 +708,11 @@ test.describe("Documents", () => {
 				page.getByRole("listitem").filter({ hasText: givenFolderName }),
 			).toBeVisible();
 
-			const menuButtonFolder = page
-				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("Menü öffnen");
+			const menuButtonFolder = await getListItemAction(
+				page,
+				givenFolderName,
+				"Menü öffnen",
+			);
 			await expect(menuButtonFolder).toBeVisible();
 
 			await menuButtonFolder.click();
@@ -755,10 +758,11 @@ test.describe("Documents", () => {
 		});
 		await expect(folderElement).toBeVisible();
 
-		const menuButtonFolder = page
-			.getByRole("listitem")
-			.filter({ hasText: givenFolderName })
-			.getByLabel("Menü öffnen");
+		const menuButtonFolder = await getListItemAction(
+			page,
+			givenFolderName,
+			"Menü öffnen",
+		);
 		await menuButtonFolder.click();
 
 		// Expect rename button in dropdown to be visible and click it
@@ -810,10 +814,11 @@ test.describe("Documents", () => {
 				.click();
 
 			// Open the rename dialog via the dropdown
-			const menuButtonFolder = page
-				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("Menü öffnen");
+			const menuButtonFolder = await getListItemAction(
+				page,
+				givenFolderName,
+				"Menü öffnen",
+			);
 			await menuButtonFolder.click();
 			await page.getByRole("option", { name: "Ordner umbenennen" }).click();
 
@@ -843,10 +848,11 @@ test.describe("Documents", () => {
 
 			await openDocumentsPanel(page);
 
-			const menuButtonDocument = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Menü öffnen");
+			const menuButtonDocument = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"Menü öffnen",
+			);
 			await menuButtonDocument.click();
 
 			await expect(
@@ -980,10 +986,11 @@ test.describe("Documents", () => {
 
 			await openDocumentsPanel(page);
 
-			const menuButtonDocument = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Menü öffnen");
+			const menuButtonDocument = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"Menü öffnen",
+			);
 			await expect(menuButtonDocument).toBeVisible();
 
 			await menuButtonDocument.click();
@@ -1006,11 +1013,9 @@ test.describe("Documents", () => {
 
 		await openDocumentsPanel(page);
 
-		await page
-			.getByRole("listitem")
-			.filter({ hasText: defaultDocumentName })
-			.getByLabel("Menü öffnen")
-			.click();
+		await (
+			await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+		).click();
 
 		const downloadOption = page.getByRole("option", { name: "Herunterladen" });
 		await expect(downloadOption).toBeVisible();

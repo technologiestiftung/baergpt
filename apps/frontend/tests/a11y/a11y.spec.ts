@@ -80,4 +80,19 @@ testWithoutSplashScreen.describe("Accessibility - Public Pages", () => {
 			expect(a11yResults.violations).toEqual([]);
 		},
 	);
+
+	// test accessibility for accessibility statement page
+	testWithoutSplashScreen(
+		"Accessibility statement page should be accessible",
+		async ({ page }) => {
+			await page.goto("/accessibility-statement/");
+
+			// The page is static, so wait for it to render before scanning
+			await expect(page.getByRole("main")).toBeVisible();
+
+			// Run accessibility scan on the accessibility statement page
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
 });
