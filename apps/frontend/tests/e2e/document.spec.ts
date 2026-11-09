@@ -1045,6 +1045,59 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
+		"Renames of the same document are applied in the order they were submitted",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			const renameTo = async (newName: string) => {
+				await (
+					await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+				).click();
+				await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+				await page
+					.getByRole("textbox", { name: "Dokument umbenennen" })
+					.fill(newName);
+				await page
+					.getByRole("button", { name: "Umbenennen", exact: true })
+					.click();
+			};
+
+			let releaseFirstRename = () => {};
+			const firstRenameReleased = new Promise<void>((resolve) => {
+				releaseFirstRename = resolve;
+			});
+			const renameRequests: string[] = [];
+			await page.route("**/rest/v1/documents*", async (route) => {
+				if (route.request().method() !== "PATCH") {
+					return route.continue();
+				}
+				renameRequests.push(route.request().postDataJSON().file_name);
+				if (renameRequests.length === 1) {
+					await firstRenameReleased;
+				}
+				return route.continue();
+			});
+
+			await renameTo("first_name.pdf");
+			await page.getByRole("button", { name: "Abbrechen" }).click();
+			await renameTo("second_name.pdf");
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+			expect(renameRequests).toEqual(["first_name.pdf"]);
+
+			releaseFirstRename();
+
+			await expect(page.getByRole("dialog")).not.toBeVisible();
+			expect(renameRequests).toEqual(["first_name.pdf", "second_name.pdf"]);
+			await expect(
+				page.getByRole("button", { name: "Dokumente-Icon second_name.pdf" }),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
 		"A rename that finishes after the dialog was reopened does not close it",
 		async ({ page }) => {
 			await page.goto("/");

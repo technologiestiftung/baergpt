@@ -62,6 +62,78 @@ GRANT ALL ON FUNCTION "public"."validate_document_file_name" () TO "authenticate
 
 GRANT ALL ON FUNCTION "public"."validate_document_file_name" () TO "service_role";
 
+CREATE TEMPORARY TABLE duplicate_personal_documents AS
+SELECT
+    id,
+    survivor_id,
+    owned_by_user_id
+FROM
+    (
+        SELECT
+            id,
+            owned_by_user_id,
+            FIRST_VALUE(id) OVER (
+                PARTITION BY
+                    owned_by_user_id,
+                    file_checksum
+                ORDER BY
+                    id
+            ) AS survivor_id
+        FROM
+            public.documents
+        WHERE
+            source_type = 'personal_document'
+            AND file_checksum IS NOT NULL
+    ) ranked
+WHERE
+    id <> survivor_id;
+
+UPDATE public.chat_messages cm
+SET
+    allowed_document_ids = (
+        SELECT
+            ARRAY_AGG(DISTINCT COALESCE(d.survivor_id, a.id))
+        FROM
+            UNNEST(cm.allowed_document_ids) AS a (id)
+            LEFT JOIN duplicate_personal_documents d ON d.id = a.id
+    )
+WHERE
+    cm.allowed_document_ids && (
+        SELECT
+            ARRAY_AGG(id)
+        FROM
+            duplicate_personal_documents
+    );
+
+DELETE FROM public.documents
+WHERE
+    id IN (
+        SELECT
+            id
+        FROM
+            duplicate_personal_documents
+    );
+
+UPDATE public.profiles p
+SET
+    num_documents = (
+        SELECT
+            COUNT(*)
+        FROM
+            public.documents d
+        WHERE
+            d.owned_by_user_id = p.id
+    )
+WHERE
+    p.id IN (
+        SELECT
+            owned_by_user_id
+        FROM
+            duplicate_personal_documents
+    );
+
+DROP TABLE duplicate_personal_documents;
+
 CREATE UNIQUE INDEX idx_documents_personal_checksum_unique ON public.documents USING btree (owned_by_user_id, file_checksum)
 WHERE
     (source_type = 'personal_document'::TEXT);

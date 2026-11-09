@@ -10,6 +10,8 @@ import { useChatsStore } from "./use-chats-store.ts";
 import { usePreviewDocumentStore } from "./use-preview-document-store.ts";
 import { captureError } from "../monitoring/capture-error.ts";
 
+const pendingRenamesByDocumentId = new Map<number, Promise<Error | null>>();
+
 interface UserDocumentStore {
 	userDocuments: UserDocument[];
 	isDocumentFirstLoad: boolean;
@@ -141,45 +143,58 @@ export const useUserDocumentStore = create<UserDocumentStore>((set, get) => ({
 		}));
 	},
 
-	renameUserDocument: async (documentId: number, newName: string) => {
-		try {
-			await renameDocument(documentId, newName);
-		} catch (error) {
-			captureError(error);
-			return error instanceof Error
-				? error
-				: new Error("Document rename failed");
-		}
+	renameUserDocument: (documentId: number, newName: string) => {
+		const previousRename =
+			pendingRenamesByDocumentId.get(documentId) ?? Promise.resolve(null);
+		const rename = previousRename.then(async () => {
+			try {
+				await renameDocument(documentId, newName);
+			} catch (error) {
+				captureError(error);
+				return error instanceof Error
+					? error
+					: new Error("Document rename failed");
+			}
 
-		const withRenamedDocument = (documents: UserDocument[]) =>
-			documents.map((doc) =>
-				doc.id === documentId ? { ...doc, file_name: newName } : doc,
+			const withRenamedDocument = (documents: UserDocument[]) =>
+				documents.map((doc) =>
+					doc.id === documentId ? { ...doc, file_name: newName } : doc,
+				);
+
+			set(
+				({
+					userDocuments,
+					selectedUserChatDocuments,
+					selectedUserDocumentsForAction,
+				}) => ({
+					userDocuments: withRenamedDocument(userDocuments),
+					selectedUserChatDocuments: withRenamedDocument(
+						selectedUserChatDocuments,
+					),
+					selectedUserDocumentsForAction: withRenamedDocument(
+						selectedUserDocumentsForAction,
+					),
+				}),
 			);
 
-		set(
-			({
-				userDocuments,
-				selectedUserChatDocuments,
-				selectedUserDocumentsForAction,
-			}) => ({
-				userDocuments: withRenamedDocument(userDocuments),
-				selectedUserChatDocuments: withRenamedDocument(
-					selectedUserChatDocuments,
-				),
-				selectedUserDocumentsForAction: withRenamedDocument(
-					selectedUserDocumentsForAction,
-				),
-			}),
-		);
+			usePreviewDocumentStore.setState(({ selectedPreviewDocument }) => ({
+				selectedPreviewDocument:
+					selectedPreviewDocument?.id === documentId
+						? { ...selectedPreviewDocument, file_name: newName }
+						: selectedPreviewDocument,
+			}));
 
-		usePreviewDocumentStore.setState(({ selectedPreviewDocument }) => ({
-			selectedPreviewDocument:
-				selectedPreviewDocument?.id === documentId
-					? { ...selectedPreviewDocument, file_name: newName }
-					: selectedPreviewDocument,
-		}));
+			return null;
+		});
 
-		return null;
+		pendingRenamesByDocumentId.set(documentId, rename);
+		void rename.then(() => {
+			if (pendingRenamesByDocumentId.get(documentId) === rename) {
+				pendingRenamesByDocumentId.delete(documentId);
+			}
+		});
+
+		return rename;
 	},
 
 	selectedUserChatDocuments: [],
