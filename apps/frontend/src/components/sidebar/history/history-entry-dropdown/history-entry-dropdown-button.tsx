@@ -21,13 +21,25 @@ export const HistoryEntryDropdownButton: React.FC<
 		dropdownRef,
 	]);
 
+	const closeDropdown = () => {
+		// Closing unmounts the focused option, so focus would fall back to <body>
+		const isFocusInDropdown = dropdownRef.current?.contains(
+			document.activeElement,
+		);
+		setIsDropdownOpen(false);
+		if (isFocusInDropdown) {
+			dropdownButtonRef.current?.focus();
+		}
+	};
+
 	return (
 		<div className="relative" ref={dropdownRef}>
 			<button
 				ref={dropdownButtonRef}
 				type="button"
 				aria-label={Content["historyEntryDropdown.menuIcon.ariaLabel"]}
-				className="rounded-3px size-5 flex items-center justify-center hover:bg-dunkelblau-95 group-hover:opacity-100 focus-within:opacity-100 focus-visible:outline-2px md:opacity-0 transition-opacity duration-150"
+				aria-expanded={isDropdownOpen}
+				className="rounded-3px size-5 flex items-center justify-center hover:bg-dunkelblau-95 group-hover:opacity-100 group-focus-within:opacity-100 aria-expanded:opacity-100 focus-visible:outline-2px hoverable:opacity-0 transition-opacity duration-150"
 				onClick={() => setIsDropdownOpen((open) => !open)}
 			>
 				<img
@@ -40,7 +52,7 @@ export const HistoryEntryDropdownButton: React.FC<
 			<HistoryEntryDropdown
 				chat={chat}
 				isOpen={isDropdownOpen}
-				onClose={() => setIsDropdownOpen(false)}
+				onClose={closeDropdown}
 				onRename={onRename}
 				triggerRef={dropdownButtonRef}
 			/>

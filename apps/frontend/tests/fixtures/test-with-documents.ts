@@ -109,6 +109,17 @@ export async function openDocumentsPanel(page: Page) {
 	await expect(hideButton).toBeVisible();
 }
 
+// Row actions are collapsed until the row is hovered or focused
+export async function getListItemAction(
+	page: Page,
+	itemName: string,
+	actionLabel: "In den Chat" | "Menü öffnen",
+) {
+	const listItem = page.getByRole("listitem").filter({ hasText: itemName });
+	await listItem.hover();
+	return listItem.getByLabel(actionLabel);
+}
+
 /**
  * Mocks a full document upload:
  * - uploads file to storage
@@ -287,7 +298,24 @@ const extensionByMime: Record<string, string> = {
 		"docx",
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
 	"text/csv": "csv",
+	"text/markdown": "md",
 };
+
+// Browsers send .md files without a MIME type, so like the backend fall back to
+// the file extension.
+function getMimeType(file: File) {
+	if (extensionByMime[file.type]) {
+		return file.type;
+	}
+	const extension = file.name.split(".").pop()?.toLowerCase();
+	const mimeType = Object.keys(extensionByMime).find(
+		(type) => extensionByMime[type] === extension,
+	);
+	if (!mimeType) {
+		throw new Error(`Unsupported file type: ${file.name}`);
+	}
+	return mimeType;
+}
 
 /**
  * Mocks the backend's `/documents/process` route so uploads never reach the
@@ -312,17 +340,19 @@ export async function mockDocumentProcessRoute(page: Page) {
 		const formFile = form.get("file") as File;
 		// WebKit leaves the file part empty in intercepted requests, so read the
 		// fixture of the same name instead.
-		const file =
-			formFile.size > 0
-				? formFile
-				: new File(
-						[readFileSync(resolve(fixturesDir, formFile.name))],
-						formFile.name,
-						{ type: formFile.type },
-					);
+		const mimeType = getMimeType(formFile);
+		const file = new File(
+			[
+				formFile.size > 0
+					? formFile
+					: new Uint8Array(readFileSync(resolve(fixturesDir, formFile.name))),
+			],
+			formFile.name,
+			{ type: mimeType },
+		);
 		const metadata = JSON.parse(form.get("metadata") as string);
 
-		const sourceUrl = `${userId}/${randomUUID()}.${extensionByMime[file.type]}`;
+		const sourceUrl = `${userId}/${randomUUID()}.${extensionByMime[mimeType]}`;
 		const userClient = createClient<Database>(
 			config.supabaseUrl,
 			config.supabaseAnonKey,
