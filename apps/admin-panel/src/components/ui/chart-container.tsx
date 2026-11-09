@@ -243,7 +243,7 @@ function ChartTooltipContent({
 													{itemConfig?.label || item.name}
 												</span>
 											</div>
-											{item.value !== undefined && (
+											{item.value !== null && (
 												<span className="font-mono font-medium text-foreground tabular-nums">
 													{formatTooltipValue(item.value, valueFormatter)}
 												</span>

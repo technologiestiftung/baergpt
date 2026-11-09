@@ -3,7 +3,8 @@ import { AdminSidebar } from "@/components/admin-sidebar/admin-sidebar.tsx";
 import { LineChartUserEvolution } from "@/components/charts/line-chart-user-evolution.tsx";
 import { MetricCardsActiveUsers } from "@/components/charts/metric-cards-active-users.tsx";
 import { DomainsTable } from "@/components/charts/domains-table.tsx";
-import { useProductDashboardData } from "@/hooks/use-product-dashboard-data.tsx";
+import { getProductDashboardStats } from "@/api/product-dashboard/get-product-dashboard-stats.ts";
+import { useAbortableFetch } from "@/hooks/use-abortable-fetch.tsx";
 import { useMatomoDashboardData } from "@/hooks/use-matomo-dashboard-data.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import Content from "@/content.ts";
@@ -14,7 +15,9 @@ import { RadarChartBreakdown } from "@/components/charts/radar-chart-breakdown.t
 import { BarChartBreakdown } from "@/components/charts/bar-chart-breakdown.tsx";
 
 export const ProductDashboardPage = () => {
-	const { data, isLoading, error } = useProductDashboardData();
+	const { data, isLoading, error } = useAbortableFetch(
+		getProductDashboardStats,
+	);
 	const {
 		data: matomoData,
 		isLoading: isMatomoLoading,
