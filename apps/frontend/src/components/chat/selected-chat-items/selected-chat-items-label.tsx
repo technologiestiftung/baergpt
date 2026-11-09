@@ -6,11 +6,9 @@ import type { ListItem } from "../../documents/document-list/list-item/utils/typ
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 import {
 	type FileUpload,
-	isFailedUpload,
 	isPendingUpload,
 } from "../../../store/use-file-uploads-store.ts";
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
-import { RedErrorIcon } from "../../primitives/icons/red-error-icon.tsx";
 
 export function SelectedChatItemsLabel({
 	chatFileUploads,
@@ -29,21 +27,18 @@ export function SelectedChatItemsLabel({
 		...selectedPublicChatFolders,
 		...selectedPublicChatDocuments,
 	];
-	const selectedChatItemsAmount =
-		selectedChatItems.length + chatFileUploads.length;
-
-	const hasPendingUploads = chatFileUploads.some(({ status }) =>
+	const pendingUploadsAmount = chatFileUploads.filter(({ status }) =>
 		isPendingUpload(status),
-	);
-	const hasFailedUploads = chatFileUploads.some(({ status }) =>
-		isFailedUpload(status),
-	);
+	).length;
+	const selectedChatItemsAmount =
+		selectedChatItems.length + pendingUploadsAmount;
+	const hasPendingUploads = pendingUploadsAmount > 0;
 
 	return (
 		<span className="flex items-center gap-x-2 text-sm leading-5 text-dunkelblau-100">
 			<span>
 				<span className="font-semibold px-0.5">{selectedChatItemsAmount}</span>{" "}
-				{getSelectedItemsLabel(selectedChatItems, chatFileUploads.length)}
+				{getSelectedItemsLabel(selectedChatItems, pendingUploadsAmount)}
 			</span>
 
 			{hasPendingUploads && (
@@ -54,15 +49,6 @@ export function SelectedChatItemsLabel({
 					{Content["fileUploadButtonStatus.uploading"]}
 				</span>
 			)}
-
-			{!hasPendingUploads && hasFailedUploads && (
-				<span className="flex items-center gap-x-1">
-					<span aria-hidden="true" className="flex">
-						<RedErrorIcon size="small" />
-					</span>
-					{Content["fileUploadButtonStatus.failed"]}
-				</span>
-			)}
 		</span>
 	);
 }
@@ -71,7 +57,7 @@ function getSelectedItemsLabel(
 	selectedItems: ListItem[],
 	fileUploadsAmount: number,
 ) {
-	if (selectedItems.length + fileUploadsAmount > 1) {
+	if (selectedItems.length + fileUploadsAmount !== 1) {
 		return Content["chat.selectedChatItems.items"];
 	}
 

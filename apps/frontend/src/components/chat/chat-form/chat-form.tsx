@@ -14,7 +14,10 @@ import { FileUploadStatusAnnouncer } from "../selected-chat-items/file-upload-st
 import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
-import { isPendingUpload } from "../../../store/use-file-uploads-store.ts";
+import {
+	isPendingUpload,
+	useFileUploadsStore,
+} from "../../../store/use-file-uploads-store.ts";
 import { useChatFileUploads } from "../selected-chat-items/hooks/use-chat-file-uploads.ts";
 import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
@@ -176,6 +179,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		clearError();
 
 		showInfoMessage(null);
+
+		useFileUploadsStore.getState().removeAllFileUploadsFromChat();
 
 		// Clear textarea on submit
 		setTextareaContent("");

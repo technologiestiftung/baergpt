@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import DocumentBreadcrumbs from "./document-breadcrumbs.tsx";
 import { CreateFolderButton } from "./create-folder/create-folder-button.tsx";
 import { DocumentsList } from "./document-list/documents-list.tsx";
@@ -16,6 +16,10 @@ import { useCurrentFolderStore } from "../../store/use-current-folder-store.ts";
 import { isPublicFolder } from "./document-list/list-item/utils/is-public-folder.ts";
 import { isUserFolder } from "./document-list/list-item/utils/is-user-folder.ts";
 import { PublicFolders } from "./document-list/public-folders.tsx";
+import {
+	isFailedUpload,
+	useFileUploadsStore,
+} from "../../store/use-file-uploads-store.ts";
 
 const MIN_WIDTH = 350;
 const MAX_WIDTH = 700;
@@ -32,7 +36,18 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 	const { getUserDocuments, isLoading } = useUserDocumentStore();
 	const { currentFolder } = useCurrentFolderStore();
 
+	const failedUploadsCount = useFileUploadsStore(
+		({ fileUploads }) =>
+			fileUploads.filter(({ status }) => isFailedUpload(status)).length,
+	);
+
 	const errorMessage = getUIError("documents-fetch");
+
+	useEffect(() => {
+		if (failedUploadsCount > 0) {
+			setIsCollapsed(false);
+		}
+	}, [failedUploadsCount]);
 
 	const handleResize = (newWidth: number) => {
 		setIsResizing(true);

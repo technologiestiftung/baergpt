@@ -33,9 +33,8 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 		selectedPublicChatDocuments.length > 0 ||
 		chatFileUploads.length > 0;
 
-	const [isCollapsibleOpen, setIsCollapsibleOpen] = useIsCollapsibleOpen(
-		chatFileUploads.length,
-	);
+	const [isCollapsibleOpen, setIsCollapsibleOpen] =
+		useIsCollapsibleOpen(chatFileUploads);
 
 	if (!hasSelectedChatItems) {
 		return null;
