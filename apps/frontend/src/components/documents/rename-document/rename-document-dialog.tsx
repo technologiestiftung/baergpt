@@ -41,7 +41,6 @@ export const RenameDocumentDialog: React.FC = () => {
 	const fileName = userDocument?.file_name ?? "";
 	const originalExtension = getFileExtension(fileName);
 
-	// Only strip known extensions, so a name like "Bericht v1.2" keeps its ".2"
 	const keepOriginalExtension = (name: string) => {
 		const typedExtension = [originalExtension, ...SUPPORTED_FILE_EXTENSIONS]
 			.filter(Boolean)

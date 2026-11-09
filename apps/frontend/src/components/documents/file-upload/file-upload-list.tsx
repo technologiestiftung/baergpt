@@ -19,47 +19,52 @@ export function FileUploadList() {
 	return (
 		<ul className="overflow-y-auto max-h-[228px] relative rounded-b-3px">
 			<div className="flex flex-col py-1 px-2.5 bg-dunkelblau-100 rounded-b-3px">
-				{fileUploads.map(({ file, status }) => (
-					<li
-						key={file.name}
-						className="flex justify-between w-full items-center py-2 gap-x-2.5 overflow-hidden"
-					>
-						<div className="flex justify-between gap-x-2.5 items-center min-w-0 w-full">
-							<span className="flex items-center gap-2 min-w-0 flex-1 truncate text-hellblau-30">
-								<DocumentIcon variant="white" className="size-3.5 shrink-0" />
-								<span className="truncate text-sm leading-5 font-normal min-w-0">
-									{file.name}
-								</span>
-							</span>
-							<span className="flex gap-x-2.5 items-center shrink-0">
-								{/* Status */}
-								{hasFailed(status) ? (
-									<a
-										href={getLink(status)}
-										className="text-[10px] leading-4 text-hellblau-30 underline underline-offset-2"
-										aria-label={Content["fileUpload.helpLink.ariaLabel"]}
-										target="_blank"
-										rel="noopener noreferrer"
-									>
-										{UPLOAD_STATUS_MAP[status]}
-									</a>
-								) : (
-									<span className="text-[10px] leading-4 text-hellblau-30">
-										{UPLOAD_STATUS_MAP[status]}
+				{fileUploads.map(({ id, file, status, existingFileName }) => {
+					const statusLabel = getStatusLabel(status, existingFileName);
+
+					return (
+						<li
+							key={id}
+							className="flex justify-between w-full items-center py-2 gap-x-2.5 overflow-hidden"
+						>
+							<div className="flex justify-between gap-x-2.5 items-center min-w-0 w-full">
+								<span className="flex items-center gap-2 min-w-0 flex-1 truncate text-hellblau-30">
+									<DocumentIcon variant="white" className="size-3.5 shrink-0" />
+									<span className="truncate text-sm leading-5 font-normal min-w-0">
+										{file.name}
 									</span>
-								)}
-								{/* Icons */}
-								{(status === "uploading" || status === "processing") && (
-									<LoadingSpinnerIcon variant="disabled" size="small" />
-								)}
-								{status === "successful" && <GreenCheckIcon size="small" />}
-								{status === "canceled" && <GreyXIcon size="small" />}
-								{status.includes("failed") && <RedErrorIcon size="small" />}
-								{status === "waiting" && <ClockIcon size="small" />}
-							</span>
-						</div>
-					</li>
-				))}
+								</span>
+								<span className="flex gap-x-2.5 items-center shrink-0 max-w-[55%]">
+									{/* Status */}
+									{hasFailed(status) ? (
+										<a
+											href={getLink(status)}
+											className="min-w-0 truncate text-[10px] leading-4 text-hellblau-30 underline underline-offset-2"
+											aria-label={`${statusLabel}, ${Content["fileUpload.helpLink.ariaLabel"]}`}
+											title={statusLabel}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											{statusLabel}
+										</a>
+									) : (
+										<span className="text-[10px] leading-4 text-hellblau-30">
+											{statusLabel}
+										</span>
+									)}
+									{/* Icons */}
+									{(status === "uploading" || status === "processing") && (
+										<LoadingSpinnerIcon variant="disabled" size="small" />
+									)}
+									{status === "successful" && <GreenCheckIcon size="small" />}
+									{status === "canceled" && <GreyXIcon size="small" />}
+									{status.includes("failed") && <RedErrorIcon size="small" />}
+									{status === "waiting" && <ClockIcon size="small" />}
+								</span>
+							</div>
+						</li>
+					);
+				})}
 			</div>
 		</ul>
 	);
@@ -67,6 +72,14 @@ export function FileUploadList() {
 
 function hasFailed(status: UploadStatusKeys): status is FailedStatus {
 	return status.includes("failed");
+}
+
+function getStatusLabel(status: UploadStatusKeys, existingFileName?: string) {
+	if (status === "failed.duplicate" && existingFileName) {
+		return `${Content["fileUpload.duplicate.existingFileName"]} „${existingFileName}“`;
+	}
+
+	return UPLOAD_STATUS_MAP[status];
 }
 
 function getLink(status: FailedStatus) {

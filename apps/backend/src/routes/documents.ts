@@ -9,6 +9,7 @@ import {
 	Document,
 	DefaultDocumentDeletionError,
 	DocumentNotFoundError,
+	DuplicateDocumentError,
 } from "../types/common";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
@@ -76,14 +77,17 @@ documents.post("/process", async (c: Context) =>
 				reqId,
 			);
 
-			if (
-				sourceType === "personal_document" &&
-				(await userScopedDbService.hasDocumentWithChecksum(
-					userId,
-					extractionResult.checksum,
-				))
-			) {
-				throw new Error("failed.duplicate");
+			if (sourceType === "personal_document") {
+				const existingDocument =
+					await userScopedDbService.findDocumentByChecksum(
+						userId,
+						extractionResult.checksum,
+					);
+				if (existingDocument) {
+					throw new DuplicateDocumentError(
+						existingDocument.file_name ?? undefined,
+					);
+				}
 			}
 
 			// Step 2: Process document (embed and summarize)
@@ -168,10 +172,11 @@ documents.post("/process", async (c: Context) =>
 				});
 			}
 
-			if (error instanceof Error && error.message === "failed.duplicate") {
+			if (error instanceof DuplicateDocumentError) {
 				return stream.writeSSE({
 					data: JSON.stringify({
 						status: "failed.duplicate",
+						existingFileName: error.existingFileName,
 					}),
 				});
 			}

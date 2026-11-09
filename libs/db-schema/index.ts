@@ -745,6 +745,14 @@ export type Database = {
 			};
 			is_application_admin: { Args: never; Returns: boolean };
 			is_current_user_banned_or_deleted: { Args: never; Returns: boolean };
+			is_document_file_name_taken: {
+				Args: {
+					p_excluded_document_id?: number;
+					p_file_name: string;
+					p_user_id: string;
+				};
+				Returns: boolean;
+			};
 			is_registration_completed: {
 				Args: { user_meta_data: Json };
 				Returns: boolean;

@@ -819,6 +819,7 @@ export const Content = {
 	"fileUpload.helpLink.generic.link":
 		"https://hilfe.baergpt.berlin/faq#warum-kann-ich-eine-datei-nicht-hochladen",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
+	"fileUpload.duplicate.existingFileName": "Bereits vorhanden als",
 	// file upload counter message
 	"fileUpload.infoMessage.counter.p1": `von`,
 	"fileUpload.infoMessage.counter.p2": `möglichen Dateien hochgeladen.`,

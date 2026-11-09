@@ -41,7 +41,12 @@ const generatePdfBytesFromText = async (text: string): Promise<Uint8Array> => {
 const pdfFileFromBytes = (bytes: Uint8Array, fileName: string): File =>
 	new File([bytes.slice()], fileName, { type: "application/pdf" });
 
-type SseEvent = { status: string; error?: string; documentId?: number };
+type SseEvent = {
+	status: string;
+	error?: string;
+	documentId?: number;
+	existingFileName?: string;
+};
 
 // Failures/success are delivered in-band as SSE events on a 200 response.
 const readSseEvents = async (response: Response): Promise<SseEvent[]> => {
@@ -256,7 +261,6 @@ describe("Integration Tests for Routes", () => {
 	// exercise the route + real DB/storage without hitting the API. The route
 	// still uploads the file and writes real rows via logProcessedDocument.
 	beforeEach(() => {
-		// A unique checksum per upload, since the route rejects files the user already has
 		vi.spyOn(
 			UserScopedDbService.prototype,
 			"extractDocument",
@@ -332,8 +336,111 @@ describe("Integration Tests for Routes", () => {
 			file: pdfFileFromBytes(pdfBytes, "renamed.pdf"),
 		});
 
-		expect(firstEvents.map((e) => e.status)).toContain("successful");
-		expect(secondEvents.map((e) => e.status)).toContain("failed.duplicate");
+		const firstDocumentId = firstEvents.find(
+			(e) => e.status === "successful",
+		)?.documentId;
+		expect(firstDocumentId).toBeDefined();
+		const { data: firstDocument } = await serviceRoleDbClient
+			.from("documents")
+			.select("file_name")
+			.eq("id", firstDocumentId as number)
+			.single();
+
+		expect(secondEvents).toContainEqual({
+			status: "failed.duplicate",
+			existingFileName: firstDocument?.file_name,
+		});
+	}, 20_000);
+
+	it("POST /documents/process should suffix the name of a different file uploaded under an existing name", async () => {
+		const baseName = `same-name-${crypto.randomUUID()}`;
+		const fileName = `${baseName}.pdf`;
+		const uploadedFileNames = [
+			fileName,
+			fileName,
+			fileName,
+			`${baseName} (2).pdf`,
+		];
+		const documentIds: number[] = [];
+
+		for (const [index, uploadedFileName] of uploadedFileNames.entries()) {
+			const events = await processViaRoute({
+				metadata: personalMetadata,
+				token: validToken,
+				file: pdfFileFromBytes(
+					await generatePdfBytesFromText(`Content ${index}`),
+					uploadedFileName,
+				),
+			});
+			const documentId = events.find(
+				(e) => e.status === "successful",
+			)?.documentId;
+			expect(documentId).toBeDefined();
+			documentIds.push(documentId as number);
+		}
+
+		const { data: documents } = await serviceRoleDbClient
+			.from("documents")
+			.select("id, file_name")
+			.in("id", documentIds)
+			.order("id");
+
+		expect(documents?.map((d) => d.file_name)).toEqual([
+			fileName,
+			`${baseName} (2).pdf`,
+			`${baseName} (3).pdf`,
+			`${baseName} (4).pdf`,
+		]);
+	}, 20_000);
+
+	it("POST /documents/process should suffix the name of a file uploaded under a default document's name", async () => {
+		const baseName = `default-name-${crypto.randomUUID()}`;
+		const fileName = `${baseName}.pdf`;
+		const { data: accessGroup } = await serviceRoleDbClient
+			.from("access_groups")
+			.select("id")
+			.eq("name", "Alle")
+			.single();
+		const { data: defaultDocument, error: insertError } =
+			await serviceRoleDbClient
+				.from("documents")
+				.insert({
+					source_url: `default/${fileName}`,
+					source_type: "default_document",
+					file_name: fileName,
+					file_checksum: crypto.randomUUID(),
+					access_group_id: accessGroup?.id,
+				})
+				.select("id")
+				.single();
+		expect(insertError).toBeNull();
+
+		try {
+			const events = await processViaRoute({
+				metadata: personalMetadata,
+				token: validToken,
+				file: pdfFileFromBytes(
+					await generatePdfBytesFromText("Own content"),
+					fileName,
+				),
+			});
+			const documentId = events.find(
+				(e) => e.status === "successful",
+			)?.documentId;
+			expect(documentId).toBeDefined();
+
+			const { data: document } = await serviceRoleDbClient
+				.from("documents")
+				.select("file_name")
+				.eq("id", documentId as number)
+				.single();
+			expect(document?.file_name).toBe(`${baseName} (2).pdf`);
+		} finally {
+			await serviceRoleDbClient
+				.from("documents")
+				.delete()
+				.eq("id", defaultDocument?.id as number);
+		}
 	}, 20_000);
 
 	it("POST /documents/process should reject a duplicate that slips past the checksum check", async () => {
@@ -344,10 +451,9 @@ describe("Integration Tests for Routes", () => {
 			...MOCK_EXTRACTION_RESULT,
 			checksum: crypto.randomUUID(),
 		} as never);
-		vi.spyOn(
-			UserScopedDbService.prototype,
-			"hasDocumentWithChecksum",
-		).mockResolvedValue(false);
+		vi.spyOn(UserScopedDbService.prototype, "findDocumentByChecksum")
+			.mockResolvedValueOnce(null)
+			.mockResolvedValueOnce(null);
 		const pdfBytes = await generatePdfBytesFromText("Concurrent Document");
 
 		const firstEvents = await processViaRoute({
@@ -361,8 +467,20 @@ describe("Integration Tests for Routes", () => {
 			file: pdfFileFromBytes(pdfBytes, "second.pdf"),
 		});
 
-		expect(firstEvents.map((e) => e.status)).toContain("successful");
-		expect(secondEvents.map((e) => e.status)).toContain("failed.duplicate");
+		const firstDocumentId = firstEvents.find(
+			(e) => e.status === "successful",
+		)?.documentId;
+		expect(firstDocumentId).toBeDefined();
+		const { data: firstDocument } = await serviceRoleDbClient
+			.from("documents")
+			.select("file_name")
+			.eq("id", firstDocumentId as number)
+			.single();
+
+		expect(secondEvents).toContainEqual({
+			status: "failed.duplicate",
+			existingFileName: firstDocument?.file_name,
+		});
 	}, 20_000);
 
 	it("POST /llm/just-chatting should handle a valid request", async () => {

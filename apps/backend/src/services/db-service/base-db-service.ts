@@ -11,6 +11,7 @@ import {
 	type KnowledgeBaseDocument,
 	DocumentNotFoundError,
 	DefaultDocumentDeletionError,
+	DuplicateDocumentError,
 } from "../../types/common";
 import { ragSearchDefaults } from "../../constants";
 import {
@@ -189,9 +190,17 @@ export abstract class BaseContentDbService {
 
 		if (
 			error?.code === "23505" &&
-			error.message.includes("idx_documents_personal_checksum_unique")
+			error.message.includes("idx_documents_personal_checksum_unique") &&
+			document.owned_by_user_id &&
+			document.file_checksum
 		) {
-			throw new Error("failed.duplicate");
+			const existingDocument = await this.findDocumentByChecksum(
+				document.owned_by_user_id,
+				document.file_checksum,
+			);
+			throw new DuplicateDocumentError(
+				existingDocument?.file_name ?? undefined,
+			);
 		}
 
 		if (error) {
@@ -447,21 +456,23 @@ export abstract class BaseContentDbService {
 		return count || 0;
 	}
 
-	async hasDocumentWithChecksum(
+	async findDocumentByChecksum(
 		userId: string,
 		checksum: string,
-	): Promise<boolean> {
-		const { count, error } = await this.client
+	): Promise<{ file_name: string | null } | null> {
+		const { data, error } = await this.client
 			.from("documents")
-			.select("*", { count: "exact", head: true })
+			.select("file_name")
 			.eq("owned_by_user_id", userId)
-			.eq("file_checksum", checksum);
+			.eq("file_checksum", checksum)
+			.limit(1)
+			.maybeSingle();
 
 		if (error) {
 			throw error;
 		}
 
-		return (count ?? 0) > 0;
+		return data;
 	}
 
 	async getBaseKnowledgeDocuments(

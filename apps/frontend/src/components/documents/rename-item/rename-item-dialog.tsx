@@ -66,7 +66,6 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 		const input = event.currentTarget.itemName as HTMLInputElement;
 		const newName = normalizeName(input.value.trim());
 
-		// Checked before validation so an unchanged name that predates the rules can still be submitted
 		if (newName === item.name) {
 			hideRenameItemDialog(id);
 			return;

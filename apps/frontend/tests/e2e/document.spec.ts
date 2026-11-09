@@ -158,8 +158,13 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
-		"Should reject uploading a file with a name that already exists",
+		"Should suffix the name of a different file uploaded under an existing name",
 		async ({ page, browserName }) => {
+			const suffixedDocumentName = secondaryDocumentName.replace(
+				/\.pdf$/,
+				" (2).pdf",
+			);
+
 			await uploadFileViaFileChooserAndWait({
 				page,
 				fileName: secondaryDocumentName,
@@ -176,14 +181,45 @@ test.describe("Documents", () => {
 			});
 
 			await expect(
-				page
-					.locator("#desktop-documents-panel")
-					.getByText(`${secondaryDocumentName}Datei existiert bereits`, {
-						exact: true,
-					}),
+				page.locator("#desktop-documents-panel").getByRole("button", {
+					name: `Dokumente-Icon ${suffixedDocumentName}`,
+				}),
 			).toBeVisible();
 
+			await deleteFileViaUI({ page, fileName: suffixedDocumentName });
 			await deleteFileViaUI({ page, fileName: secondaryDocumentName });
+		},
+	);
+
+	testDesktopOnly(
+		"Should reject uploading a file whose content already exists and name the existing file",
+		async ({ page, browserName }) => {
+			await page.route("**/documents/process", (route) =>
+				route.fulfill({
+					status: 200,
+					headers: { "content-type": "text/event-stream; charset=utf-8" },
+					body: `data: ${JSON.stringify({
+						status: "failed.duplicate",
+						existingFileName: defaultDocumentName,
+					})}\n\n`,
+				}),
+			);
+
+			await attemptFileUploadViaFileChooser({
+				page,
+				filePath: secondaryDocumentPath,
+				browserName,
+				uploadButtonName: "Datei hochladen",
+			});
+
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText(
+						`${secondaryDocumentName}Bereits vorhanden als „${defaultDocumentName}“`,
+						{ exact: true },
+					),
+			).toBeVisible();
 		},
 	);
 
@@ -856,7 +892,6 @@ test.describe("Documents", () => {
 		await expect(renameInput).toHaveValue(defaultDocumentName);
 		await expect(renameInput).toHaveAttribute("maxlength", "100");
 
-		// A changed or removed extension is replaced by the original one
 		await renameInput.fill("renamed_document.docx");
 		await page.getByRole("button", { name: "Umbenennen", exact: true }).click();
 

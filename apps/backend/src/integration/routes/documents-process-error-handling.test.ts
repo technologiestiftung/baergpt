@@ -175,8 +175,8 @@ describe("POST /documents/process – captureError is called for every error cas
 
 		vi.spyOn(
 			UserScopedDbService.prototype,
-			"hasDocumentWithChecksum",
-		).mockResolvedValue(false);
+			"findDocumentByChecksum",
+		).mockResolvedValue(null);
 
 		// Stub the cleanup calls so the route's cleanup() (deleteDocument +
 		// deleteFileFromStorage) is a no-op by default and doesn't add spurious
