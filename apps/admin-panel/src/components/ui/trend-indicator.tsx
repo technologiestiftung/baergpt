@@ -41,7 +41,7 @@ export function TrendIndicator({
 		<span
 			className={cn(
 				"inline-flex items-center gap-0.5 text-base",
-				direction === "up" && "text-green-500",
+				direction === "up" && "text-chart-2",
 				direction === "down" && "text-red-500",
 				direction === "flat" && "text-muted-foreground",
 				className,
