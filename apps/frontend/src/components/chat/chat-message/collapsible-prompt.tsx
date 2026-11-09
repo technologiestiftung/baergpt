@@ -1,4 +1,5 @@
 import {
+	type FocusEvent,
 	type ReactNode,
 	useId,
 	useLayoutEffect,
@@ -76,6 +77,22 @@ export function CollapsiblePrompt({
 		keepTopInView();
 	};
 
+	const revealFocused = (event: FocusEvent<HTMLDivElement>) => {
+		const clip = clipRef.current;
+		if (isExpanded || !clip) {
+			return;
+		}
+		const target = event.target;
+		if (
+			target.getBoundingClientRect().bottom <=
+			clip.getBoundingClientRect().bottom
+		) {
+			return;
+		}
+		flushSync(() => setIsExpanded(true));
+		target.scrollIntoView({ block: "nearest" });
+	};
+
 	return (
 		<div
 			ref={bubbleRef}
@@ -84,8 +101,11 @@ export function CollapsiblePrompt({
 			<div
 				ref={clipRef}
 				id={contentId}
+				onFocus={revealFocused}
 				className={
-					isExpanded ? undefined : "overflow-clip max-h-collapsed-prompt"
+					isExpanded
+						? "break-words"
+						: "break-words overflow-clip max-h-collapsed-prompt"
 				}
 			>
 				{children}
