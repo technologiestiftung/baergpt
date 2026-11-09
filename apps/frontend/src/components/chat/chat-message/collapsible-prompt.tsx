@@ -84,11 +84,8 @@ export function CollapsiblePrompt({
 			<div
 				ref={clipRef}
 				id={contentId}
-				// 540px = 22.5 lines, so the last visible line is cut as a nudge.
 				className={
-					isExpanded
-						? undefined
-						: "overflow-clip max-h-[min(540px,calc(100dvh-24rem))]"
+					isExpanded ? undefined : "overflow-clip max-h-collapsed-prompt"
 				}
 			>
 				{children}

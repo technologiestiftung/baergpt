@@ -10,10 +10,10 @@ const LONG_PROMPT = Array.from(
 
 const toggleName = /^(Mehr|Weniger) anzeigen$/;
 
-/** Mirrors `max-h-[min(540px,calc(100dvh-24rem))]` in `collapsible-prompt.tsx`. */
+/** Mirrors `.max-h-collapsed-prompt` in `index.css`. */
 function getMaxCollapsedHeight(page: Page) {
 	const viewportHeight = page.viewportSize()?.height ?? 0;
-	return Math.min(540, viewportHeight - 384);
+	return Math.min(540, Math.floor((viewportHeight - 384 - 12) / 24) * 24 + 12);
 }
 
 async function getPromptHeight(page: Page) {

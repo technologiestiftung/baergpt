@@ -140,6 +140,15 @@
 }
 
 @layer utilities {
+	/* Snapped to n × 24px lines + 12px, so the last visible line is cut in half. */
+	.max-h-collapsed-prompt {
+		max-height: min(540px, calc(100dvh - 24rem));
+		max-height: min(
+			540px,
+			calc(round(down, 100dvh - 24rem - 12px, 24px) + 12px)
+		);
+	}
+
 	.history-scrollbar {
 		/* Firefox */
 		scrollbar-width: auto;
