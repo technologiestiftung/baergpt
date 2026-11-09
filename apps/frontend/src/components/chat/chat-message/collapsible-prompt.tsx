@@ -84,9 +84,11 @@ export function CollapsiblePrompt({
 			<div
 				ref={clipRef}
 				id={contentId}
-				// Clipped rather than hidden so screen readers reach the full text.
+				// 540px = 22.5 lines, so the last visible line is cut as a nudge.
 				className={
-					isExpanded ? undefined : "overflow-clip max-h-[min(32rem,40dvh)]"
+					isExpanded
+						? undefined
+						: "overflow-clip max-h-[min(540px,calc(100dvh-24rem))]"
 				}
 			>
 				{children}

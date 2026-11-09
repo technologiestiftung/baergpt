@@ -10,10 +10,10 @@ const LONG_PROMPT = Array.from(
 
 const toggleName = /^(Mehr|Weniger) anzeigen$/;
 
-/** Mirrors `max-h-[min(32rem,40dvh)]` in `collapsible-prompt.tsx`. */
+/** Mirrors `max-h-[min(540px,calc(100dvh-24rem))]` in `collapsible-prompt.tsx`. */
 function getMaxCollapsedHeight(page: Page) {
 	const viewportHeight = page.viewportSize()?.height ?? 0;
-	return Math.min(512, viewportHeight * 0.4);
+	return Math.min(540, viewportHeight - 384);
 }
 
 async function getPromptHeight(page: Page) {
@@ -35,9 +35,7 @@ testWithMockedLlm(
 		const showMore = page.getByRole("button", { name: "Mehr anzeigen" });
 		await expect(showMore).toHaveAttribute("aria-expanded", "false");
 		const collapsedHeight = await getPromptHeight(page);
-		expect(collapsedHeight).toBeLessThanOrEqual(
-			Math.ceil(getMaxCollapsedHeight(page)),
-		);
+		expect(collapsedHeight).toBeCloseTo(getMaxCollapsedHeight(page), 0);
 
 		await showMore.click();
 		const showLess = page.getByRole("button", { name: "Weniger anzeigen" });
