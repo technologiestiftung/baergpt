@@ -94,7 +94,9 @@ testWithChatSearch(
 			page.getByRole("button", { name: "Weniger anzeigen" }),
 		).toHaveAttribute("aria-expanded", "true");
 		await expect(
-			page.getByText("Wie hoch ist die Grundsteuer?"),
+			page
+				.getByTestId("user-message-markdown-container")
+				.getByText("Wie hoch ist die Grundsteuer?"),
 		).toBeInViewport();
 	},
 );
