@@ -31,7 +31,8 @@
 		"auth:assess-password-rotation": "tsx supabase/scripts/rotate-user-passwords.ts -- --dry-run",
 		"auth:rotate-passwords": "tsx supabase/scripts/rotate-user-passwords.ts",
 		"auth:assess-inactive-users": "tsx supabase/scripts/process-inactive-users.ts -- --dry-run",
-		"auth:process-inactive-users": "tsx supabase/scripts/process-inactive-users.ts"
+		"auth:notify-inactive-users": "tsx supabase/scripts/process-inactive-users.ts -- --skip-deletions",
+		"auth:delete-inactive-users": "tsx supabase/scripts/process-inactive-users.ts -- --deletions-only"
 	},
 	"dependencies": {
 		"@ai-sdk/mcp": "2.0.91",

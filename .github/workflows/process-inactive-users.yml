@@ -20,55 +20,13 @@ on:
 
 jobs:
   process-inactive-users:
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         # Scheduled runs always start from the default branch, so they cover both environments
         environment: ${{ fromJSON(github.event_name == 'schedule' && '["Staging","Production"]' || format('["{0}"]', inputs.environment)) }}
-    # Scopes OP_SERVICE_ACCOUNT_TOKEN/OP_VAULT_ID to the environment secrets;
-    # the repo-level ones only reach the CI test vault.
-    environment: ${{ matrix.environment }}
-    # Job level, so scheduled and manual runs serialize per environment
-    concurrency:
-      group: process-inactive-users-${{ matrix.environment }}
-      cancel-in-progress: false
-
-    steps:
-      - name: Checkout code ⬇️
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
-        with:
-          # Run the code that is deployed to the environment, matching its database schema
-          ref: ${{ matrix.environment == 'Production' && 'main' || 'staging' }}
-
-      - name: Setup environment ⚙️
-        uses: ./.github/actions/setup
-        with:
-          install-1password: "true"
-
-      - name: Set environment item ID 🌿
-        id: env-config
-        run: |
-          if [[ "${{ matrix.environment }}" == "Production" ]]; then
-            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
-          else
-            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Fetch .env from 1Password ⬇️
-        run: |
-          cd apps/backend
-          echo "Fetching .env from 1Password..."
-          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > .env
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Assess inactive users 🔬
-        if: github.event_name == 'workflow_dispatch' && inputs.dry-run
-        working-directory: apps/backend
-        run: npm run auth:assess-inactive-users
-
-      - name: Process inactive users 🗑️
-        if: github.event_name == 'schedule' || !inputs.dry-run
-        working-directory: apps/backend
-        run: npm run auth:process-inactive-users
+    uses: ./.github/workflows/process-inactive-users-in-environment.yml
+    with:
+      environment: ${{ matrix.environment }}
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}
+    secrets: inherit

@@ -1,13 +1,15 @@
 /* eslint-disable no-console */
 /**
  * Warns, reminds and finally deletes accounts without a login for
- * INACTIVITY_DELETION_MONTHS. Runs daily via .github/workflows/process-inactive-users.yml.
+ * INACTIVITY_DELETION_MONTHS. Runs daily via .github/workflows/process-inactive-users.yml,
+ * where deletions run separately and only after a manual approval.
  *
  * Logs contain only counts and SMTP status codes, never user ids, names or addresses.
  *
- * Run: npm run auth:assess-inactive-users (dry run) or npm run auth:process-inactive-users
+ * Run: npm run auth:assess-inactive-users (dry run), npm run auth:notify-inactive-users
+ * (everything except deletions) or npm run auth:delete-inactive-users (only deletions)
  */
-import { readFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import nodemailer from "nodemailer";
 import { serviceRoleDbClient as supabase } from "../../src/supabase";
@@ -40,8 +42,32 @@ const reminderTemplate = readFileSync(
 type SendResult = "sent" | "undeliverable" | "failed";
 
 const isDryRun = process.argv.includes("--dry-run");
+const skipDeletions = process.argv.includes("--skip-deletions");
+const deletionsOnly = process.argv.includes("--deletions-only");
+// The approved deletion job plans with the date of the run that asked for the
+// approval, so it can't delete accounts that became due while it was pending.
+const planDate = process.argv
+	.find((arg) => arg.startsWith("--plan-date="))
+	?.split("=")[1];
+if (skipDeletions && deletionsOnly) {
+	console.error("Use either --skip-deletions or --deletions-only.");
+	process.exit(1);
+}
+if (planDate !== undefined && !deletionsOnly) {
+	console.error("--plan-date only works with --deletions-only.");
+	process.exit(1);
+}
+if (
+	planDate !== undefined &&
+	(!/^\d{4}-\d{2}-\d{2}$/.test(planDate) || planDate > toBerlinDate(new Date()))
+) {
+	console.error(
+		`--plan-date must be a past date (YYYY-MM-DD), got "${planDate}".`,
+	);
+	process.exit(1);
+}
 const inactivityConfig = readInactivityConfig(process.env);
-const today = toBerlinDate(new Date());
+const today = planDate ?? toBerlinDate(new Date());
 const privilegedDbService = new PrivilegedDbService(supabase);
 
 function createTransport() {
@@ -92,6 +118,13 @@ async function fetchInactiveUsers(): Promise<InactiveUser[]> {
 }
 
 type Mailer = ReturnType<typeof createTransport>;
+
+// Created on first use, so deletion runs don't need the SMTP settings
+let sharedMailer: Mailer | undefined;
+function getMailer(): Mailer {
+	sharedMailer ??= createTransport();
+	return sharedMailer;
+}
 
 async function sendEmail(
 	mailer: Mailer,
@@ -208,7 +241,6 @@ async function deleteInactiveUser(user: InactiveUser): Promise<boolean> {
 }
 
 function applyAction(
-	mailer: Mailer,
 	user: InactiveUser,
 	action: InactivityAction,
 ): Promise<boolean> {
@@ -216,9 +248,9 @@ function applyAction(
 		case "cancel":
 			return cancelDeletion(user);
 		case "warn":
-			return sendWarning(mailer, user, action.deletionDate);
+			return sendWarning(getMailer(), user, action.deletionDate);
 		case "remind":
-			return sendReminder(mailer, user, action.deletionDate);
+			return sendReminder(getMailer(), user, action.deletionDate);
 		case "delete":
 			return deleteInactiveUser(user);
 		default:
@@ -253,16 +285,28 @@ async function run() {
 			`${counts.delete} deletion(s), ${counts.cancel} cancellation(s) after a login.`,
 	);
 
+	// Lets the workflow ask for an approval before the deletion job runs
+	if (process.env.GITHUB_OUTPUT) {
+		appendFileSync(
+			process.env.GITHUB_OUTPUT,
+			`has_deletions=${counts.delete > 0}\nplan_date=${today}\n`,
+		);
+	}
+
 	if (isDryRun) {
 		return;
 	}
 
-	const mailer = createTransport();
+	const toApply = planned.filter(({ action }) =>
+		deletionsOnly
+			? action.type === "delete"
+			: !(skipDeletions && action.type === "delete"),
+	);
 	let failures = 0;
 
-	for (const { user, action } of planned) {
+	for (const { user, action } of toApply) {
 		try {
-			if (!(await applyAction(mailer, user, action))) {
+			if (!(await applyAction(user, action))) {
 				failures += 1;
 			}
 		} catch (error) {
@@ -272,7 +316,7 @@ async function run() {
 		}
 	}
 
-	mailer.transport.close();
+	sharedMailer?.transport.close();
 	console.log(`Done. ${failures} failure(s).`);
 	if (failures > 0) {
 		process.exit(1);
