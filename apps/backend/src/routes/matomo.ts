@@ -17,18 +17,23 @@ const PROFILE_PAGE_PATH = "/profile/";
 const DEVICE_TREND_MONTHS = 6;
 const TOP_OS_COUNT = 5;
 const TOP_BROWSER_COUNT = 5;
-const EXPECTED_BULK_RESULT_COUNT = 4 + DEVICE_TREND_MONTHS;
+const EXPECTED_BULK_RESULT_COUNT = 6 + DEVICE_TREND_MONTHS;
 
 const UNAVAILABLE_STATS: MatomoDashboardStats = {
 	available: false,
 	averageSessionDurationSeconds: 0,
+	previousAverageSessionDurationSeconds: null,
 	profilePageViews: 0,
+	previousProfilePageViews: null,
 	deviceMonthlyTrend: [],
 	osBreakdown: [],
 	browserBreakdown: [],
 };
 
-type MatomoVisitsSummaryResult = { avg_time_on_site?: number };
+type MatomoVisitsSummaryResult = {
+	avg_time_on_site?: number;
+	nb_visits?: number;
+};
 type MatomoPageUrlRow = { label?: string; nb_hits?: number };
 type MatomoBreakdownRow = { label?: string; nb_visits?: number };
 const OTHER_LABEL = "Andere";
@@ -72,13 +77,26 @@ function getStatsWindow(): { fromDate: string; toDate: string } {
 	return { fromDate: toDateParam(fromDate), toDate: toDateParam(toDate) };
 }
 
+function getPreviousStatsWindow(): { fromDate: string; toDate: string } {
+	const toDate = new Date();
+	toDate.setDate(toDate.getDate() - STATS_WINDOW_DAYS);
+	const fromDate = new Date(toDate);
+	fromDate.setDate(fromDate.getDate() - (STATS_WINDOW_DAYS - 1));
+	return { fromDate: toDateParam(fromDate), toDate: toDateParam(toDate) };
+}
+
 function buildBulkRequestBody(monthStarts: string[]): URLSearchParams {
 	const { fromDate, toDate } = getStatsWindow();
 	const commonParams = `idSite=${config.matomoSiteId}&period=range&date=${fromDate},${toDate}`;
 
+	const previousWindow = getPreviousStatsWindow();
+	const previousCommonParams = `idSite=${config.matomoSiteId}&period=range&date=${previousWindow.fromDate},${previousWindow.toDate}`;
+
 	const subRequests = [
 		`method=VisitsSummary.get&${commonParams}`,
 		`method=Actions.getPageUrls&flat=1&filter_limit=-1&${commonParams}`,
+		`method=VisitsSummary.get&${previousCommonParams}`,
+		`method=Actions.getPageUrls&flat=1&filter_limit=-1&${previousCommonParams}`,
 		`method=DevicesDetection.getOsFamilies&${commonParams}`,
 		`method=DevicesDetection.getBrowsers&${commonParams}`,
 		...monthStarts.map(
@@ -219,14 +237,31 @@ async function fetchMatomoStats(): Promise<MatomoDashboardStats> {
 		return UNAVAILABLE_STATS;
 	}
 
-	const [visitsSummary, pageUrls, osFamilies, browsers, ...deviceMonthlyRows] =
-		bulkResults;
+	const [
+		visitsSummary,
+		pageUrls,
+		previousVisitsSummary,
+		previousPageUrls,
+		osFamilies,
+		browsers,
+		...deviceMonthlyRows
+	] = bulkResults;
+
+	const hasPreviousPeriodData =
+		((previousVisitsSummary as MatomoVisitsSummaryResult)?.nb_visits ?? 0) > 0;
 
 	return {
 		available: true,
 		averageSessionDurationSeconds:
 			(visitsSummary as MatomoVisitsSummaryResult)?.avg_time_on_site ?? 0,
+		previousAverageSessionDurationSeconds: hasPreviousPeriodData
+			? ((previousVisitsSummary as MatomoVisitsSummaryResult)
+					?.avg_time_on_site ?? 0)
+			: null,
 		profilePageViews: findProfilePageViews(pageUrls),
+		previousProfilePageViews: hasPreviousPeriodData
+			? findProfilePageViews(previousPageUrls)
+			: null,
 		deviceMonthlyTrend: monthStarts.map((month, index) =>
 			toDeviceTrendPoint(month, deviceMonthlyRows[index]),
 		),

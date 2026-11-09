@@ -51,7 +51,9 @@ function matomoCallCount(fetchSpy: ReturnType<typeof vi.spyOn>) {
 const UNAVAILABLE_STATS: MatomoDashboardStats = {
 	available: false,
 	averageSessionDurationSeconds: 0,
+	previousAverageSessionDurationSeconds: null,
 	profilePageViews: 0,
+	previousProfilePageViews: null,
 	deviceMonthlyTrend: [],
 	osBreakdown: [],
 	browserBreakdown: [],
@@ -68,6 +70,8 @@ const MONTHLY_DEVICE_BREAKDOWNS = DEVICE_TREND_MONTH_STARTS.map((_, index) => [
 const SUCCESSFUL_BULK_RESPONSE = [
 	{ avg_time_on_site: 123, nb_visits: 10 },
 	[{ label: "/profile/", nb_hits: 42, nb_visits: 30 }],
+	{ avg_time_on_site: 100, nb_visits: 8 },
+	[{ label: "/profile/", nb_hits: 35, nb_visits: 25 }],
 	[
 		{ label: "Windows", nb_visits: 60 },
 		{ label: "macOS", nb_visits: 40 },
@@ -82,7 +86,9 @@ const SUCCESSFUL_BULK_RESPONSE = [
 const EXPECTED_SHAPED_STATS: MatomoDashboardStats = {
 	available: true,
 	averageSessionDurationSeconds: 123,
+	previousAverageSessionDurationSeconds: 100,
 	profilePageViews: 42,
+	previousProfilePageViews: 35,
 	deviceMonthlyTrend: DEVICE_TREND_MONTH_STARTS.map((month, index) => ({
 		month,
 		desktop: 10 * (index + 1),
@@ -222,6 +228,36 @@ describe("/admin/matomo-stats", () => {
 
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual(EXPECTED_SHAPED_STATS);
+	});
+
+	it("reports no previous-period values when the previous 30-day window had no visits", async () => {
+		mockMatomoFetch(
+			new Response(
+				JSON.stringify([
+					{ avg_time_on_site: 123, nb_visits: 10 },
+					[{ label: "/profile/", nb_hits: 42, nb_visits: 30 }],
+					{ avg_time_on_site: 0, nb_visits: 0 },
+					[],
+					[
+						{ label: "Windows", nb_visits: 60 },
+						{ label: "macOS", nb_visits: 40 },
+					],
+					[
+						{ label: "Chrome", nb_visits: 70 },
+						{ label: "Firefox", nb_visits: 30 },
+					],
+					...MONTHLY_DEVICE_BREAKDOWNS,
+				]),
+				{ status: 200 },
+			),
+		);
+
+		const response = await requestMatomoStats(adminSession);
+
+		expect(response.status).toBe(200);
+		const stats = (await response.json()) as MatomoDashboardStats;
+		expect(stats.previousAverageSessionDurationSeconds).toBeNull();
+		expect(stats.previousProfilePageViews).toBeNull();
 	});
 
 	it("returns the unavailable shape (not a 5xx) when the Matomo response is non-ok", async () => {
