@@ -2,14 +2,15 @@ CREATE OR REPLACE FUNCTION "public"."validate_document_file_name" () RETURNS "tr
 SET
     "search_path" TO '' AS $$
 BEGIN
-    IF NEW.file_name IS NULL OR btrim(NEW.file_name, E' \t\r\n') = '' THEN
+    IF NEW.file_name IS NULL OR btrim(NEW.file_name, E' \t\r\n\u00A0') = '' THEN
         RAISE EXCEPTION 'Document name must not be empty';
     END IF;
     IF char_length(NEW.file_name) > 100 THEN
         RAISE EXCEPTION 'Document name must not be longer than 100 characters';
     END IF;
     -- Keep in sync with getFileExtension in the frontend
-    IF substring(NEW.file_name FROM '^.+(\.[^.]*)$') IS DISTINCT FROM substring(OLD.file_name FROM '^.+(\.[^.]*)$') THEN
+    IF OLD.file_name IS NOT NULL
+       AND substring(NEW.file_name FROM '^.+(\.[^.]*)$') IS DISTINCT FROM substring(OLD.file_name FROM '^.+(\.[^.]*)$') THEN
         RAISE EXCEPTION 'Document file extension must not change';
     END IF;
     PERFORM pg_advisory_xact_lock(hashtext(NEW.owned_by_user_id::text));

@@ -893,7 +893,6 @@ test.describe("Documents", () => {
 			name: "Dokument umbenennen",
 		});
 		await expect(renameInput).toHaveValue(defaultDocumentName);
-		await expect(renameInput).toHaveAttribute("maxlength", "100");
 
 		await renameInput.fill("renamed_document.docx");
 		await page.getByRole("button", { name: "Umbenennen", exact: true }).click();
@@ -969,6 +968,42 @@ test.describe("Documents", () => {
 			await expect(
 				page.getByRole("button", {
 					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Renaming accepts up to 100 characters including emoji and rejects longer names",
+		async ({ page }) => {
+			const maxLengthBaseName = "😀".repeat(96);
+
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await (
+				await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+			).click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			const renameInput = page.getByRole("textbox", {
+				name: "Dokument umbenennen",
+			});
+			await renameInput.fill(`${maxLengthBaseName}😀.pdf`);
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+			await expect(page.getByRole("dialog")).toBeVisible();
+
+			await renameInput.fill(`${maxLengthBaseName}.pdf`);
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+			await expect(page.getByRole("dialog")).not.toBeVisible();
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${maxLengthBaseName}.pdf`,
 				}),
 			).toBeVisible();
 		},

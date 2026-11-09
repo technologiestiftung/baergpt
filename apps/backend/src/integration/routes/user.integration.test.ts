@@ -483,6 +483,84 @@ describe("Integration Tests for Routes", () => {
 		});
 	}, 20_000);
 
+	const insertInProgressDocument = async (checksum: string) => {
+		const { data, error } = await serviceRoleDbClient
+			.from("documents")
+			.insert({
+				owned_by_user_id: OWNER_USER_ID,
+				source_type: "personal_document",
+				source_url: `${OWNER_USER_ID}/in-progress-${checksum}.pdf`,
+				file_name: `in-progress-${checksum}.pdf`,
+				file_checksum: checksum,
+				processing_finished_at: null,
+			})
+			.select("id, file_name")
+			.single();
+		expect(error).toBeNull();
+		return data as { id: number; file_name: string };
+	};
+
+	it("POST /documents/process should upload a file once a matching in-progress upload fails", async () => {
+		const checksum = crypto.randomUUID();
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({ ...MOCK_EXTRACTION_RESULT, checksum } as never);
+		const inProgressDocument = await insertInProgressDocument(checksum);
+
+		const eventsPromise = processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(
+				await generatePdfBytesFromText("Retried Document"),
+				"retried.pdf",
+			),
+		});
+		await new Promise((resolve) => setTimeout(resolve, 1_500));
+		await serviceRoleDbClient
+			.from("documents")
+			.delete()
+			.eq("id", inProgressDocument.id);
+
+		const events = await eventsPromise;
+		expect(events.find((e) => e.status === "successful")).toBeDefined();
+	}, 20_000);
+
+	it("POST /documents/process should reject a duplicate once a matching in-progress upload finishes", async () => {
+		const checksum = crypto.randomUUID();
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({ ...MOCK_EXTRACTION_RESULT, checksum } as never);
+		const inProgressDocument = await insertInProgressDocument(checksum);
+
+		try {
+			const eventsPromise = processViaRoute({
+				metadata: personalMetadata,
+				token: validToken,
+				file: pdfFileFromBytes(
+					await generatePdfBytesFromText("Waiting Document"),
+					"waiting.pdf",
+				),
+			});
+			await new Promise((resolve) => setTimeout(resolve, 1_500));
+			await serviceRoleDbClient
+				.from("documents")
+				.update({ processing_finished_at: new Date().toISOString() })
+				.eq("id", inProgressDocument.id);
+
+			expect(await eventsPromise).toContainEqual({
+				status: "failed.duplicate",
+				existingFileName: inProgressDocument.file_name,
+			});
+		} finally {
+			await serviceRoleDbClient
+				.from("documents")
+				.delete()
+				.eq("id", inProgressDocument.id);
+		}
+	}, 20_000);
+
 	it("POST /llm/just-chatting should handle a valid request", async () => {
 		// Mock prompt assembly and the LLM stream so the
 		// route smoke-test is deterministic and never depends on external APIs.

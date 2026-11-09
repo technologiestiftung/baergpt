@@ -42,13 +42,24 @@ export const RenameDocumentDialog: React.FC = () => {
 	const originalExtension = getFileExtension(fileName);
 
 	const keepOriginalExtension = (name: string) => {
-		const typedExtension = [originalExtension, ...SUPPORTED_FILE_EXTENSIONS]
+		if (userDocument?.file_name === null) {
+			return name;
+		}
+		const typedExtensionSuffix = [
+			originalExtension,
+			...SUPPORTED_FILE_EXTENSIONS,
+		]
 			.filter(Boolean)
-			.find((extension) =>
-				name.toLowerCase().endsWith(extension.toLowerCase()),
-			);
+			.map((extension) => ({
+				extension,
+				suffix: name.slice(-extension.length),
+			}))
+			.find(
+				({ extension, suffix }) =>
+					suffix.toLowerCase() === extension.toLowerCase(),
+			)?.suffix;
 		const baseName = (
-			typedExtension ? name.slice(0, -typedExtension.length) : name
+			typedExtensionSuffix ? name.slice(0, -typedExtensionSuffix.length) : name
 		).trim();
 		return baseName ? `${baseName}${originalExtension}` : "";
 	};

@@ -22,6 +22,11 @@ import { captureError } from "../../monitoring/capture-error";
 const documentExtraction = new DocumentExtractionService();
 const wordExtractionService = new WordDocumentExtractionService();
 
+const IN_PROGRESS_UPLOAD_TIMEOUT_MS = 120_000;
+const IN_PROGRESS_UPLOAD_POLL_INTERVAL_MS = 1_000;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export abstract class BaseContentDbService {
 	protected abstract client: SupabaseClient<Database>;
 
@@ -167,40 +172,47 @@ export abstract class BaseContentDbService {
 		embeddings: Embedding[],
 	): Promise<number> {
 		// 1. Insert Document
-		const { data, error } = await this.client
-			.from("documents")
-			.insert({
-				owned_by_user_id: document.owned_by_user_id || null,
-				file_checksum: document.file_checksum,
-				file_size: document.file_size,
-				num_pages: document.num_pages,
-				processing_finished_at:
-					document.processing_finished_at === null
-						? null
-						: new Date().toISOString(),
-				folder_id: document.folder_id || null,
-				source_url: document.source_url,
-				source_type: document.source_type,
-				file_name: document.file_name ?? document.source_url?.split("/").pop(),
-				created_at: document.created_at || new Date().toISOString(),
-				access_group_id: document.access_group_id || null,
-				uploaded_by_user_id: document.uploaded_by_user_id || null,
-			})
-			.select("*");
+		const insertDocument = () =>
+			this.client
+				.from("documents")
+				.insert({
+					owned_by_user_id: document.owned_by_user_id || null,
+					file_checksum: document.file_checksum,
+					file_size: document.file_size,
+					num_pages: document.num_pages,
+					processing_finished_at:
+						document.processing_finished_at === null
+							? null
+							: new Date().toISOString(),
+					folder_id: document.folder_id || null,
+					source_url: document.source_url,
+					source_type: document.source_type,
+					file_name:
+						document.file_name ?? document.source_url?.split("/").pop(),
+					created_at: document.created_at || new Date().toISOString(),
+					access_group_id: document.access_group_id || null,
+					uploaded_by_user_id: document.uploaded_by_user_id || null,
+				})
+				.select("*");
 
-		if (
+		let { data, error } = await insertDocument();
+
+		while (
 			error?.code === "23505" &&
 			error.message.includes("idx_documents_personal_checksum_unique") &&
 			document.owned_by_user_id &&
 			document.file_checksum
 		) {
-			const existingDocument = await this.findDocumentByChecksum(
+			const existingDocument = await this.findAvailableDocumentByChecksum(
 				document.owned_by_user_id,
 				document.file_checksum,
 			);
-			throw new DuplicateDocumentError(
-				existingDocument?.file_name ?? undefined,
-			);
+			if (existingDocument) {
+				throw new DuplicateDocumentError(
+					existingDocument.file_name ?? undefined,
+				);
+			}
+			({ data, error } = await insertDocument());
 		}
 
 		if (error) {
@@ -459,12 +471,16 @@ export abstract class BaseContentDbService {
 	async findDocumentByChecksum(
 		userId: string,
 		checksum: string,
-	): Promise<{ file_name: string | null } | null> {
+	): Promise<{
+		file_name: string | null;
+		processing_finished_at: string | null;
+	} | null> {
 		const { data, error } = await this.client
 			.from("documents")
-			.select("file_name")
+			.select("file_name, processing_finished_at")
 			.eq("owned_by_user_id", userId)
 			.eq("file_checksum", checksum)
+			.eq("source_type", "personal_document")
 			.limit(1)
 			.maybeSingle();
 
@@ -473,6 +489,38 @@ export abstract class BaseContentDbService {
 		}
 
 		return data;
+	}
+
+	/**
+	 * Returns the finished document with this checksum, or null if there is none.
+	 * Waits while a matching upload is still in progress, because it may still fail and be deleted.
+	 */
+	async findAvailableDocumentByChecksum(
+		userId: string,
+		checksum: string,
+	): Promise<{ file_name: string | null } | null> {
+		const deadline = Date.now() + IN_PROGRESS_UPLOAD_TIMEOUT_MS;
+
+		while (Date.now() < deadline) {
+			const document = await this.findDocumentByChecksum(userId, checksum);
+			if (!document || document.processing_finished_at !== null) {
+				return document;
+			}
+			await wait(IN_PROGRESS_UPLOAD_POLL_INTERVAL_MS);
+		}
+
+		throw new Error("Timed out waiting for an in-progress upload");
+	}
+
+	async markDocumentProcessed(documentId: number): Promise<void> {
+		const { error } = await this.client
+			.from("documents")
+			.update({ processing_finished_at: new Date().toISOString() })
+			.eq("id", documentId);
+
+		if (error) {
+			throw error;
+		}
 	}
 
 	async getBaseKnowledgeDocuments(

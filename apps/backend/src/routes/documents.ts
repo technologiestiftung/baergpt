@@ -79,7 +79,7 @@ documents.post("/process", async (c: Context) =>
 
 			if (sourceType === "personal_document") {
 				const existingDocument =
-					await userScopedDbService.findDocumentByChecksum(
+					await userScopedDbService.findAvailableDocumentByChecksum(
 						userId,
 						extractionResult.checksum,
 					);
@@ -106,6 +106,7 @@ documents.post("/process", async (c: Context) =>
 				file_checksum: extractionResult.checksum,
 				file_size: extractionResult.fileSize,
 				num_pages: extractionResult.numPages,
+				processing_finished_at: null,
 			};
 
 			const parsedPages = extractionResult.parsedPages;
@@ -145,6 +146,8 @@ documents.post("/process", async (c: Context) =>
 					}),
 				});
 			}
+
+			await userScopedDbService.markDocumentProcessed(documentId);
 
 			return stream.writeSSE({
 				data: JSON.stringify({

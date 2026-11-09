@@ -47,7 +47,7 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 		if (!newName) {
 			return Content["renameItemDialog.error.empty"];
 		}
-		if (maxLength && newName.length > maxLength) {
+		if (maxLength && [...newName].length > maxLength) {
 			return Content["renameItemDialog.error.tooLong"].replace(
 				"{maxLength}",
 				String(maxLength),
@@ -119,7 +119,6 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 						name="itemName"
 						type="text"
 						defaultValue={item?.name}
-						maxLength={maxLength}
 						autoFocus
 						onInput={({ currentTarget }) => currentTarget.setCustomValidity("")}
 						onFocus={({ currentTarget }) => {
