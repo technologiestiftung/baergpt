@@ -13,14 +13,14 @@ b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 
 # Short-lived installation token for the runner GitHub App (no personal token involved).
 app_token() {
-  local key now header payload unsigned sig jwt installation_id
-  key="$(mktemp)"; trap 'rm -f "$key"' RETURN
-  security find-generic-password -s "$KEYCHAIN_SERVICE" -w | base64 -d > "$key"
+  local now header payload unsigned sig jwt installation_id
   now="$(date +%s)"
   header="$(printf '{"alg":"RS256","typ":"JWT"}' | b64url)"
   payload="$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((now - 60)) $((now + 540)) "$GITHUB_APP_ID" | b64url)"
   unsigned="$header.$payload"
-  sig="$(printf '%s' "$unsigned" | openssl dgst -sha256 -sign "$key" | b64url)"
+  # Key goes through a pipe, never to disk.
+  sig="$(printf '%s' "$unsigned" | openssl dgst -sha256 \
+    -sign <(security find-generic-password -s "$KEYCHAIN_SERVICE" -w | base64 -d) | b64url)"
   jwt="$unsigned.$sig"
   installation_id="$(gh_api "$jwt" GET "/orgs/$ORG/installation" | jq -er .id)"
   gh_api "$jwt" POST "/app/installations/$installation_id/access_tokens" | jq -er .token
