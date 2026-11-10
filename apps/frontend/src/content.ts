@@ -1112,6 +1112,8 @@ export const Content = {
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
 	"chat.copyToClipboardButton.ariaLabel": "In Zwischenablage kopieren",
+	"chat.userMessage.showMore": "Mehr anzeigen",
+	"chat.userMessage.showLess": "Weniger anzeigen",
 	"chat.disclaimer.p1": "BärGPT kann",
 	"chat.disclaimer.p2": "Fehler",
 	"chat.disclaimer.p2.link":
