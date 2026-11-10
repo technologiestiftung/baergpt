@@ -10,6 +10,8 @@ import { flushSync } from "react-dom";
 import Content from "../../../content.ts";
 import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store.ts";
 
+const MAX_COLLAPSED_HEIGHT = 530;
+
 export function CollapsiblePrompt({
 	messageId,
 	children,
@@ -21,7 +23,8 @@ export function CollapsiblePrompt({
 		(state) => state.pendingScrollToMessage?.messageId === messageId,
 	);
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [isOverflowing, setIsOverflowing] = useState(false);
+	const [collapsedHeight, setCollapsedHeight] = useState<number | null>(null);
+	const isOverflowing = collapsedHeight !== null;
 	const bubbleRef = useRef<HTMLDivElement>(null);
 	const clipRef = useRef<HTMLDivElement>(null);
 	const contentId = useId();
@@ -32,7 +35,11 @@ export function CollapsiblePrompt({
 			return () => {};
 		}
 		const measure = () =>
-			setIsOverflowing(clip.scrollHeight > clip.clientHeight);
+			setCollapsedHeight(
+				clip.scrollHeight > MAX_COLLAPSED_HEIGHT
+					? getLineCutHeight(clip, MAX_COLLAPSED_HEIGHT)
+					: null,
+			);
 		measure();
 		const observer = new ResizeObserver(measure);
 		observer.observe(clip);
@@ -102,10 +109,11 @@ export function CollapsiblePrompt({
 				ref={clipRef}
 				id={contentId}
 				onFocus={revealFocused}
-				className={
-					isExpanded
-						? "break-words"
-						: "break-words overflow-clip max-h-collapsed-prompt"
+				className={isExpanded ? "break-words" : "break-words overflow-clip"}
+				style={
+					isExpanded || collapsedHeight === null
+						? undefined
+						: { maxHeight: collapsedHeight }
 				}
 			>
 				{children}
@@ -134,4 +142,23 @@ export function CollapsiblePrompt({
 			)}
 		</div>
 	);
+}
+
+// A partly visible last line hints that the prompt continues.
+function getLineCutHeight(clip: HTMLElement, maxHeight: number) {
+	const clipTop = clip.getBoundingClientRect().top;
+	const walker = document.createTreeWalker(clip, NodeFilter.SHOW_TEXT);
+	const range = document.createRange();
+	let cutHeight = maxHeight;
+	for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+		range.selectNodeContents(node);
+		for (const line of Array.from(range.getClientRects())) {
+			const lineMiddle = line.top - clipTop + line.height / 2;
+			if (lineMiddle > maxHeight) {
+				return cutHeight;
+			}
+			cutHeight = lineMiddle;
+		}
+	}
+	return cutHeight;
 }

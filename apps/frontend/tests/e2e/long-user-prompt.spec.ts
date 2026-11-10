@@ -10,11 +10,8 @@ const LONG_PROMPT = Array.from(
 
 const toggleName = /^(Mehr|Weniger) anzeigen$/;
 
-/** Mirrors `.max-h-collapsed-prompt` in `index.css`. */
-function getMaxCollapsedHeight(page: Page) {
-	const viewportHeight = page.viewportSize()?.height ?? 0;
-	return Math.min(540, Math.floor((viewportHeight - 384 - 12) / 24) * 24 + 12);
-}
+/** Mirrors `MAX_COLLAPSED_HEIGHT` in `collapsible-prompt.tsx`. */
+const MAX_COLLAPSED_HEIGHT = 530;
 
 async function getPromptHeight(page: Page) {
 	const controlsId = await page
@@ -27,6 +24,8 @@ async function getPromptHeight(page: Page) {
 testWithMockedLlm(
 	"collapses a long prompt and toggles it with mouse and keyboard",
 	async ({ page }) => {
+		// The collapsed prompt is up to 530px tall, so the toggle needs room below it.
+		await page.setViewportSize({ width: 1280, height: 1080 });
 		await page.goto("/");
 		await page.getByPlaceholder("Stellen Sie eine Frage").fill(LONG_PROMPT);
 		await sendAndWaitForLLMResponse(page);
@@ -35,7 +34,7 @@ testWithMockedLlm(
 		const showMore = page.getByRole("button", { name: "Mehr anzeigen" });
 		await expect(showMore).toHaveAttribute("aria-expanded", "false");
 		const collapsedHeight = await getPromptHeight(page);
-		expect(collapsedHeight).toBeCloseTo(getMaxCollapsedHeight(page), 0);
+		expect(collapsedHeight).toBeLessThanOrEqual(MAX_COLLAPSED_HEIGHT);
 
 		await showMore.click();
 		const showLess = page.getByRole("button", { name: "Weniger anzeigen" });
@@ -63,7 +62,7 @@ testWithMockedLlm("shows no toggle for a short prompt", async ({ page }) => {
 	await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
 	await sendAndWaitForLLMResponse(page);
 
-	await expect(page.getByText("Test response.")).toBeVisible();
+	await expect(page.getByText("Test response.")).toBeInViewport();
 	await expect(page.getByRole("button", { name: toggleName })).toHaveCount(0);
 });
 
