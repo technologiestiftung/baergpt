@@ -18,6 +18,7 @@ import { renameChat as renameChatInDb } from "../api/chat/rename-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
 import { useErrorStore } from "./error-store.ts";
+import { useFileUploadsStore } from "./use-file-uploads-store.ts";
 import type {
 	WebCitationSource,
 	ParlaCitationSource,
@@ -173,6 +174,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 			selectedPublicChatFolders.forEach((folder) =>
 				unselectPublicChatFolder(folder.id),
 			);
+
+			useFileUploadsStore.getState().removeAllFileUploadsFromChat();
 
 			// Drop "XY wurde deaktiviert" info if tool gets reactivated
 			const currentInfoMessage = get().visibleInfoMessage;

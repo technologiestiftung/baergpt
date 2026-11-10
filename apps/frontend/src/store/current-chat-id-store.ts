@@ -8,6 +8,7 @@ import { useInferenceLoadingStatusStore } from "./use-inference-loading-status-s
 import { useChatStreamingStore } from "./use-chat-streaming-store.ts";
 import { usePreviewDocumentStore } from "./use-preview-document-store.ts";
 import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
+import { useFileUploadsStore } from "./use-file-uploads-store.ts";
 
 interface CurrentChatIdStore {
 	currentChatId: number | null;
@@ -38,6 +39,7 @@ const resetPreviousChatState = () => {
 	selectedPublicChatDocuments.forEach((doc) =>
 		unselectPublicChatDocument(doc.id),
 	);
+	useFileUploadsStore.getState().removeAllFileUploadsFromChat();
 };
 
 const loadChatCitations = (chatId: number) => {
