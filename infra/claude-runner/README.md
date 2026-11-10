@@ -67,9 +67,17 @@ Setup:
    ```sh
    security add-generic-password -a "$USER" -s baergpt-asana-token -w
    ```
-3. Set `ASANA_PROJECT_GID` in `config.sh` (the number in the board URL), then run `./install.sh`. Log: `~/Library/Logs/baergpt-runner/asana.log`.
-4. `claude-asana.yml` must be on `main`: GitHub only starts manually dispatched workflows from the default branch.
+3. Create the key that encrypts tasks and replies (run logs and artifacts are public). It goes to the keychain and the secret `ASANA_CONTEXT_KEY` of the environment `asana` (deployment branches: `main` only), and never appears on screen:
+   ```sh
+   KEY="$(openssl rand -base64 32)"
+   security add-generic-password -a "$USER" -s baergpt-asana-context-key -w "$KEY"
+   gh secret set ASANA_CONTEXT_KEY -R technologiestiftung/baergpt --env asana --body "$KEY"
+   unset KEY
+   ```
+4. Set `ASANA_PROJECT_GID` (the number in the board URL) and `ASANA_ALLOWED_USERS` (Asana user GIDs, comma-separated; command in `config.sh`) in `~/.config/baergpt-runner/env` (per host, not in git), or store them in 1Password and set `ASANA_PROJECT_GID_OP` / `ASANA_ALLOWED_USERS_OP` there instead (e.g. `op://Vault/Item/field`; `install.sh` reads them with `op read`). Then run `./install.sh`. Log: `~/Library/Logs/baergpt-runner/asana.log`.
+5. `claude-asana.yml` must be on `main`: GitHub only starts manually dispatched workflows from the default branch.
 
+Only users in `ASANA_ALLOWED_USERS` can trigger Claude; other board members get a reply asking them to get their user ID added. To add someone, edit the env file and re-run `./install.sh`. The context still contains everyone's comments on that task.
 Tasks on that board are sent to the Claude API. Keep personal and confidential data out of them.
 
 ## Security

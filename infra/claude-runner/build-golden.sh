@@ -27,6 +27,12 @@ BUN_VERSION="$(awk '/bun-version:/{print $2}' <<<"$ACTION_YML" | head -n1)"
 CLAUDE_CODE_VERSION="$(grep -o 'claudeCodeVersion = "[^"]*"' <<<"$RUN_TS" | head -n1 | cut -d'"' -f2)"
 [ -n "$BUN_VERSION" ] && [ -n "$CLAUDE_CODE_VERSION" ] || { echo "Could not read bun/Claude Code versions from action $ACTION_SHA"; exit 1; }
 
+# These come from files on GitHub and end up in a remote shell command: allow plain versions only.
+for v in NODE_VERSION NPM_VERSION PLAYWRIGHT_VERSION SUPABASE_VERSION RUNNER_VERSION BUN_VERSION CLAUDE_CODE_VERSION; do
+  [[ "${!v}" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]] || { echo "Unexpected $v: '${!v}'"; exit 1; }
+done
+[[ "$WARM_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "Unexpected WARM_BRANCH: '$WARM_BRANCH'"; exit 1; }
+
 [ -f "$SSH_KEY" ] || { mkdir -p "$(dirname "$SSH_KEY")"; ssh-keygen -q -t ed25519 -N '' -f "$SSH_KEY"; }
 
 cleanup() { tart stop "$BUILD_VM" >/dev/null 2>&1 || true; rmdir "$LOCK" 2>/dev/null || true; }
@@ -35,7 +41,8 @@ trap cleanup EXIT
 tart delete "$BUILD_VM" >/dev/null 2>&1 || true
 tart clone "$BASE_IMAGE" "$BUILD_VM"
 tart set "$BUILD_VM" --cpu "$VM_CPU" --memory "$VM_MEMORY_MB" --disk-size "$VM_DISK_GB"
-tart run --no-graphics "$BUILD_VM" >/dev/null 2>&1 &
+# Same isolation as runner VMs: installers and npm postinstall scripts run here, so no host/LAN access.
+tart run --no-graphics $VM_NET_FLAGS "$BUILD_VM" >/dev/null 2>&1 &
 IP="$(tart ip --wait 180 "$BUILD_VM")"
 
 # Base image ships with admin/admin. Use it once to install our key, then disable password auth.

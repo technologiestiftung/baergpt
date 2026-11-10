@@ -5,7 +5,7 @@
 // Secrets stay on this Mac (keychain): the Asana token never reaches GitHub or Claude.
 
 import { execFile } from "node:child_process";
-import { createHash, createSign, randomUUID } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createSign, randomBytes, randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
@@ -25,13 +25,16 @@ const GITHUB_APP_ID = env("GITHUB_APP_ID");
 const APP_KEY_SERVICE = env("KEYCHAIN_SERVICE");
 const ASANA_PROJECT_GID = env("ASANA_PROJECT_GID");
 const ASANA_TOKEN_SERVICE = env("ASANA_KEYCHAIN_SERVICE", "baergpt-asana-token");
+const CONTEXT_KEY_SERVICE = env("ASANA_CONTEXT_KEY_SERVICE", "baergpt-asana-context-key");
 const WORKFLOW = env("ASANA_WORKFLOW", "claude-asana.yml");
 const WORKFLOW_REF = env("ASANA_WORKFLOW_REF", "main");
 const POLL_SECONDS = Number(env("ASANA_POLL_SECONDS", "10"));
+// Only these Asana users can trigger Claude. Board membership alone is not trusted.
+const ALLOWED_USERS = new Set(env("ASANA_ALLOWED_USERS").split(",").map((gid) => gid.trim()).filter(Boolean));
 
 const TRIGGER = /@claude\b/i;
 const BOT_PREFIX = "🤖";
-const MAX_CONTEXT_BYTES = 45_000; // UTF-8 bytes; base64 grows ~33%; workflow inputs are capped at 65,535 chars
+const MAX_CONTEXT_BYTES = 45_000; // UTF-8 bytes; +28 B crypto header, base64 grows ~33%; inputs are capped at 65,535 chars
 const STATE_FILE = join(homedir(), ".config/baergpt-runner/asana-state.json");
 
 type State = { sync?: string; handled: string[] };
@@ -42,6 +45,26 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function keychain(service: string): Promise<string> {
 	const { stdout } = await run("security", ["find-generic-password", "-s", service, "-w"]);
 	return stdout.trim();
+}
+
+// ---------- encryption ----------
+// Run logs and artifacts of the public repo are public. Task and reply travel as
+// base64(iv[12] | tag[16] | AES-256-GCM ciphertext); claude-asana.yml uses the same format.
+
+const contextKey = async () => Buffer.from(await keychain(CONTEXT_KEY_SERVICE), "base64");
+
+function encrypt(key: Buffer, text: string): string {
+	const iv = randomBytes(12);
+	const cipher = createCipheriv("aes-256-gcm", key, iv);
+	const data = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+	return Buffer.concat([iv, cipher.getAuthTag(), data]).toString("base64");
+}
+
+function decrypt(key: Buffer, b64: string): string {
+	const raw = Buffer.from(b64, "base64");
+	const decipher = createDecipheriv("aes-256-gcm", key, raw.subarray(0, 12));
+	decipher.setAuthTag(raw.subarray(12, 28));
+	return Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]).toString("utf8");
 }
 
 // ---------- state ----------
@@ -89,7 +112,13 @@ type AsanaEvent = {
 	resource: { gid: string; resource_type: string; resource_subtype?: string };
 	parent?: { gid: string; resource_type: string } | null;
 	change?: { field?: string } | null;
+	user?: { gid: string } | null;
 };
+
+// undefined if the user may trigger Claude, else the user's GID (or "unknown").
+function denied(userGid: string | undefined): string | undefined {
+	return userGid && ALLOWED_USERS.has(userGid) ? undefined : (userGid ?? "unknown");
+}
 
 // Returns new events since the last sync token. A missing or expired token yields a fresh
 // one and no events, so the listener only reacts to mentions written after it started.
@@ -113,7 +142,7 @@ async function pollEvents(state: State): Promise<AsanaEvent[]> {
 	}
 }
 
-type Trigger = { key: string; taskGid: string; request: string };
+type Trigger = { key: string; taskGid: string; request: string; deniedUser?: string };
 
 async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger[]> {
 	const triggers: Trigger[] = [];
@@ -123,12 +152,17 @@ async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger
 		const { resource, parent } = event;
 
 		if (resource.resource_type === "story" && event.action === "added" && parent?.resource_type === "task") {
-			const story = await asanaJson<{ text: string; resource_subtype: string }>(
-				`/stories/${resource.gid}?opt_fields=text,resource_subtype`,
+			const story = await asanaJson<{ text: string; resource_subtype: string; created_by?: { gid: string } | null }>(
+				`/stories/${resource.gid}?opt_fields=text,resource_subtype,created_by.gid`,
 			);
 			if (story.resource_subtype !== "comment_added") continue;
 			if (story.text.startsWith(BOT_PREFIX) || !TRIGGER.test(story.text)) continue;
-			triggers.push({ key: `story:${resource.gid}`, taskGid: parent.gid, request: story.text });
+			triggers.push({
+				key: `story:${resource.gid}`,
+				taskGid: parent.gid,
+				request: story.text,
+				deniedUser: denied(story.created_by?.gid),
+			});
 		}
 
 		const notesChanged =
@@ -140,7 +174,13 @@ async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger
 			if (!TRIGGER.test(task.notes)) continue;
 			// Key on the description's content, so editing it again re-triggers but saving it unchanged does not.
 			const hash = createHash("sha256").update(task.notes).digest("hex").slice(0, 16);
-			triggers.push({ key: `notes:${resource.gid}:${hash}`, taskGid: resource.gid, request: task.notes });
+			triggers.push({
+				key: `notes:${resource.gid}:${hash}`,
+				taskGid: resource.gid,
+				request: task.notes,
+				// The event's user is whoever created the task or edited its description.
+				deniedUser: denied(event.user?.gid),
+			});
 		}
 	}
 	return triggers.filter((t) => !state.handled.includes(t.key));
@@ -216,7 +256,7 @@ async function dispatchAndWait(context: string, taskUrl: string, onStarted: (url
 		method: "POST",
 		body: JSON.stringify({
 			ref: WORKFLOW_REF,
-			inputs: { request_id: requestId, task_url: taskUrl, context_b64: Buffer.from(context).toString("base64") },
+			inputs: { request_id: requestId, task_url: taskUrl, context_enc: encrypt(await contextKey(), context) },
 		}),
 	});
 
@@ -255,8 +295,8 @@ async function downloadReply(token: string, runId: number): Promise<string | und
 	const dir = await mkdtemp(join(tmpdir(), "asana-reply-"));
 	try {
 		await writeFile(join(dir, "reply.zip"), zip);
-		const { stdout } = await run("unzip", ["-p", join(dir, "reply.zip"), "reply.md"]);
-		return stdout.trim() || undefined;
+		const { stdout } = await run("unzip", ["-p", join(dir, "reply.zip"), "reply.enc"]);
+		return stdout.trim() ? decrypt(await contextKey(), stdout.trim()).trim() || undefined : undefined;
 	} finally {
 		await rm(dir, { recursive: true, force: true });
 	}
@@ -265,6 +305,14 @@ async function downloadReply(token: string, runId: number): Promise<string | und
 // ---------- main loop ----------
 
 async function handle(trigger: Trigger): Promise<void> {
+	if (trigger.deniedUser) {
+		log(`Denied ${trigger.key}: user ${trigger.deniedUser} is not in ASANA_ALLOWED_USERS`);
+		await comment(
+			trigger.taskGid,
+			`Claude only answers allowlisted users. Ask the BärGPT dev team to add your Asana user ID ${trigger.deniedUser} to ASANA_ALLOWED_USERS.`,
+		).catch((error) => log(`Failed to post denial for ${trigger.key}:`, error));
+		return;
+	}
 	log(`Trigger ${trigger.key} on task ${trigger.taskGid}`);
 	try {
 		const { markdown, url } = await buildContext(trigger.taskGid, trigger.request);

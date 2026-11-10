@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Asana listener. install.sh replaces __RUNNER_DIR__, __LOG_DIR__ and __NODE_BIN__. -->
+<!-- Asana listener. install.sh replaces the __PLACEHOLDERS__ (Asana values may come from 1Password). -->
 
 <plist version="1.0">
 <dict>
@@ -15,6 +15,10 @@
   <dict>
     <key>NODE_BIN</key>
     <string>__NODE_BIN__</string>
+    <key>ASANA_PROJECT_GID</key>
+    <string>__ASANA_PROJECT_GID__</string>
+    <key>ASANA_ALLOWED_USERS</key>
+    <string>__ASANA_ALLOWED_USERS__</string>
   </dict>
   <key>RunAtLoad</key>
   <true/>

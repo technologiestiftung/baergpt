@@ -1,4 +1,7 @@
-# Shared settings for build-golden.sh and runner-loop.sh. Override via environment.
+# Shared settings for build-golden.sh and runner-loop.sh. Override via environment, or
+# per host (not in git) in ~/.config/baergpt-runner/env, e.g. ASANA_ALLOWED_USERS_OP="op://Vault/Item/field".
+# shellcheck disable=SC1091
+[ -f "$HOME/.config/baergpt-runner/env" ] && source "$HOME/.config/baergpt-runner/env"
 REPO="${REPO:-technologiestiftung/baergpt}"
 ORG="${ORG:-${REPO%%/*}}"
 # Org runner group limited to the baergpt repo (Org settings → Actions → Runner groups).
@@ -26,4 +29,13 @@ SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLeve
 # Token in the keychain: security add-generic-password -a "$USER" -s baergpt-asana-token -w
 ASANA_PROJECT_GID="${ASANA_PROJECT_GID:-}"
 ASANA_KEYCHAIN_SERVICE="${ASANA_KEYCHAIN_SERVICE:-baergpt-asana-token}"
+ASANA_CONTEXT_KEY_SERVICE="${ASANA_CONTEXT_KEY_SERVICE:-baergpt-asana-context-key}"  # same value as repo secret ASANA_CONTEXT_KEY
+# Comma-separated Asana user GIDs allowed to trigger Claude (required; set it in the env file above). Find yours:
+#   curl -s -H "Authorization: Bearer $(security find-generic-password -s baergpt-asana-token -w)" \
+#     https://app.asana.com/api/1.0/users/me | jq -r .data.gid
+ASANA_ALLOWED_USERS="${ASANA_ALLOWED_USERS:-}"
+# Instead of the two values above: 1Password references. install.sh reads them with `op read`
+# (Touch ID, so run it at the Mac) and hands the values to the listener.
+ASANA_PROJECT_GID_OP="${ASANA_PROJECT_GID_OP:-}"
+ASANA_ALLOWED_USERS_OP="${ASANA_ALLOWED_USERS_OP:-}"
 ASANA_POLL_SECONDS="${ASANA_POLL_SECONDS:-10}"   # 1 Asana request per poll; limit is 1,500/min per token
