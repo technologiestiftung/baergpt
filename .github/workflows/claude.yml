@@ -43,7 +43,10 @@ jobs:
           PR: ${{ github.event.pull_request.number || (github.event.issue.pull_request && github.event.issue.number) || '' }}
         run: |
           [ -z "$PR" ] && exit 0
-          if [ "$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json isCrossRepository -q .isCrossRepository)" = true ]; then
+          # Fail closed: a failed lookup or unexpected output also stops the job.
+          cross="$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json isCrossRepository -q .isCrossRepository)" \
+            || { echo "::error::Could not check whether PR #$PR is from a fork."; exit 1; }
+          if [ "$cross" != false ]; then
             echo "::error::Claude does not run on fork PRs."
             exit 1
           fi
@@ -68,6 +71,7 @@ jobs:
             actions: read
           claude_args: |
             --model sonnet
+            --append-system-prompt "Never push to main or staging directly. Never merge or approve pull requests. Open a PR against staging and leave merging to a human."
             --allowedTools "Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(git:*),Bash(gh:*),Bash(supabase:*),Bash(docker:*),Bash(ls:*),Bash(cat:*),Bash(grep:*),Bash(find:*),Edit,Write,Read,Glob,Grep"
 
       # Claude may switch branches, so read the script from the commit this run started on.
