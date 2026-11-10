@@ -36,6 +36,18 @@ jobs:
       actions: read
 
     steps:
+      # Fork PR code is untrusted and would run with write credentials.
+      - name: Refuse fork PRs 🚫
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number || (github.event.issue.pull_request && github.event.issue.number) || '' }}
+        run: |
+          [ -z "$PR" ] && exit 0
+          if [ "$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json isCrossRepository -q .isCrossRepository)" = true ]; then
+            echo "::error::Claude does not run on fork PRs."
+            exit 1
+          fi
+
       - name: Checkout code ⬇️
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
         with:
@@ -63,7 +75,8 @@ jobs:
         if: always() && steps.claude.outputs.execution_file != ''
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ steps.claude.outputs.github_token }}
+          # The action revokes its own App token before this step.
+          GH_TOKEN: ${{ github.token }}
         run: |
           git show ${{ github.sha }}:.github/scripts/claude-usage.mts > "$RUNNER_TEMP/claude-usage.mts"
           node "$RUNNER_TEMP/claude-usage.mts" annotate "${{ steps.claude.outputs.execution_file }}"

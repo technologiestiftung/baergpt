@@ -31,7 +31,7 @@ const POLL_SECONDS = Number(env("ASANA_POLL_SECONDS", "10"));
 
 const TRIGGER = /@claude\b/i;
 const BOT_PREFIX = "🤖";
-const MAX_CONTEXT_CHARS = 45_000; // base64 grows ~33%; workflow inputs are capped at 65,535 chars
+const MAX_CONTEXT_BYTES = 45_000; // UTF-8 bytes; base64 grows ~33%; workflow inputs are capped at 65,535 chars
 const STATE_FILE = join(homedir(), ".config/baergpt-runner/asana-state.json");
 
 type State = { sync?: string; handled: string[] };
@@ -100,12 +100,14 @@ async function pollEvents(state: State): Promise<AsanaEvent[]> {
 		if (state.sync) query.set("sync", state.sync);
 		const res = await asana(`/events?${query}`);
 		const body = (await res.json()) as { data?: AsanaEvent[]; sync: string; has_more?: boolean };
-		state.sync = body.sync;
 		if (res.status === 412) {
+			state.sync = body.sync;
 			log("Asana sync token (re)initialized");
 			return [];
 		}
+		// Keep the old token on other errors, so the next poll retries the same events.
 		if (!res.ok) throw new Error(`Asana events: ${res.status} ${JSON.stringify(body)}`);
+		state.sync = body.sync;
 		events.push(...(body.data ?? []));
 		if (!body.has_more) return events;
 	}
@@ -169,8 +171,10 @@ async function buildContext(taskGid: string, request: string): Promise<{ markdow
 		"## The request you are answering",
 		request,
 	].join("\n");
-	if (markdown.length > MAX_CONTEXT_CHARS) {
-		markdown = `(truncated, oldest content dropped)\n${markdown.slice(-MAX_CONTEXT_CHARS)}`;
+	const bytes = Buffer.from(markdown);
+	if (bytes.length > MAX_CONTEXT_BYTES) {
+		// Drop the oldest content. Cutting mid-character yields one U+FFFD at the start, which is fine.
+		markdown = `(truncated, oldest content dropped)\n${bytes.subarray(-(MAX_CONTEXT_BYTES - 100)).toString("utf8")}`;
 	}
 	return { markdown, url: task.permalink_url };
 }

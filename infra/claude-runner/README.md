@@ -17,10 +17,11 @@ Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA f
 
 1. Install tools:
    ```sh
-   brew install openai/tools/tart openai/tools/softnet
+   brew install openai/tools/tart openai/tools/softnet gh
+   gh auth login
    sudo chown root:wheel "$(readlink -f "$(which softnet)")" && sudo chmod u+s "$(readlink -f "$(which softnet)")"
    ```
-   `jq` ships with macOS. Runner VMs use `softnet` (internet only, no host/LAN access), which needs the SUID bit. Re-run the `chmod` after `brew upgrade softnet`.
+   `jq` ships with macOS. The Asana listener also needs Node ≥ 24 on the host. Runner VMs use `softnet` (internet only, no host/LAN access), which needs the SUID bit. Re-run the `chmod` after `brew upgrade softnet`.
 2. Org admin: create a runner group `baergpt-claude` (Org settings → Actions → Runner groups) with repository access limited to `baergpt`. Turn on **Allow public repositories**. Leave workflow access unrestricted: GitHub requires a pinned ref there, and PR review comments run from the PR ref. Put its ID in `RUNNER_GROUP_ID` in `config.sh`:
    ```sh
    gh api orgs/technologiestiftung/actions/runner-groups -q '.runner_groups[] | "\(.id) \(.name)"'
@@ -48,7 +49,7 @@ Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA f
 - Nightly at 03:00, `rebuild-if-needed.sh` rebuilds the golden image when its inputs on `staging` changed (lockfile, `package.json`, `.nvmrc`, `.tool-versions`, `claude.yml`, these scripts) or it is older than 7 days. Log: `~/Library/Logs/baergpt-runner/rebuild.log`.
 - Manual rebuild: `./build-golden.sh`. Running VMs are unaffected; new clones use the new image.
 - Jobs reuse the image's `node_modules` when `package-lock.json` matches the baked `staging` checkout, else they run `npm ci` from the baked cache.
-- Stop: `launchctl bootout gui/$(id -u)/berlin.technologiestiftung.baergpt-runner` (and `...-rebuild`).
+- Stop: `launchctl bootout gui/$(id -u)/berlin.technologiestiftung.baergpt-runner` (and `...-rebuild`, `berlin.technologiestiftung.baergpt-asana-listener`).
 - Tune `RUNNER_SLOTS`, `VM_CPU`, `VM_MEMORY_MB`, `WARM_BRANCH`, `GOLDEN_MAX_AGE_DAYS` in `config.sh`.
 - The host must stay logged in (LaunchAgent). Disable sleep: `sudo pmset -a sleep 0`.
 
@@ -74,8 +75,10 @@ Tasks on that board are sent to the Claude API. Keep personal and confidential d
 ## Security
 
 - Public repo: only `OWNER`/`MEMBER`/`COLLABORATOR` can trigger the workflow.
-- Only `claude.yml` targets the `baergpt-claude` label. Keep other workflows on GitHub-hosted runners.
+- Only `claude.yml` and `claude-asana.yml` target the `baergpt-claude` label. Keep other workflows on GitHub-hosted runners.
 - Keep "Require approval for all outside collaborators" enabled under Settings → Actions. Fork PR runs need a maintainer's approval and get no secrets.
 - Runner VMs run with `--net-softnet` (see `VM_NET_FLAGS`), so a job cannot reach the LAN.
 - The runner App can only manage org runners. It cannot read code, settings or secrets.
+  With Asana enabled, it can also start and read workflow runs in `baergpt` (Actions: Read and write).
+- `claude.yml` refuses fork PRs: their code would run with write credentials.
 - The App key stays on the host. Installation tokens live 1 h. VMs receive only a single-use JIT runner config.

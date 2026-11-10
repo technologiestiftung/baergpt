@@ -49,9 +49,12 @@ ssh $SSH_OPTS -i "$SSH_KEY" "admin@$IP" \
    RUNNER_VERSION=$RUNNER_VERSION PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION \
    BUN_VERSION=$BUN_VERSION CLAUDE_CODE_VERSION=$CLAUDE_CODE_VERSION WARM_BRANCH=$WARM_BRANCH bash -s" < "$HERE/golden/provision.sh"
 
+# Must succeed, or the image would keep admin/admin.
 ssh $SSH_OPTS -i "$SSH_KEY" "admin@$IP" \
   "echo 'PasswordAuthentication no' | sudo tee /etc/ssh/sshd_config.d/99-no-password.conf >/dev/null \
-   && echo 'admin:$(openssl rand -hex 24)' | sudo chpasswd && sudo shutdown -h now" || true
+   && echo 'admin:$(openssl rand -hex 24)' | sudo chpasswd"
+# The connection drops on shutdown, so its exit code is meaningless.
+ssh $SSH_OPTS -i "$SSH_KEY" "admin@$IP" "sudo shutdown -h now" || true
 
 while tart list --format json | jq -e --arg n "$BUILD_VM" '.[] | select(.Name==$n and .State=="running")' >/dev/null; do sleep 2; done
 
