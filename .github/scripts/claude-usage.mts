@@ -75,7 +75,7 @@ async function annotate(summary: string): Promise<void> {
 		if (comment.body.includes(" tokens")) return;
 		await github(`/repos/${repo}/${kind}/comments/${comment.id}`, {
 			method: "PATCH",
-			body: JSON.stringify({ body: comment.body.replace(header, `$1 · ${summary}**`) }),
+			body: JSON.stringify({ body: comment.body.replace(header, (_, head: string) => `${head} · ${summary}**`) }),
 		});
 		console.log(`Annotated ${kind} comment ${comment.id}: ${summary}`);
 		return;
