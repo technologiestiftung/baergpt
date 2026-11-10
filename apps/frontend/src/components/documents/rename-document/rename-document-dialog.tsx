@@ -58,16 +58,17 @@ export const RenameDocumentDialog: React.FC = () => {
 
 	const getNameError = (newName: string, rawName: string) => {
 		const changesExtension =
-			originalExtension &&
-			!endsWithExtension(rawName, originalExtension) &&
+			(!originalExtension || !endsWithExtension(rawName, originalExtension)) &&
 			SUPPORTED_FILE_EXTENSIONS.some((extension) =>
 				endsWithExtension(rawName, extension),
 			);
 		if (changesExtension) {
-			return Content["renameDocumentDialog.error.extensionChanged"].replace(
-				"{extension}",
-				originalExtension,
-			);
+			return originalExtension
+				? Content["renameDocumentDialog.error.extensionChanged"].replace(
+						"{extension}",
+						originalExtension,
+					)
+				: Content["renameDocumentDialog.error.extensionAdded"];
 		}
 
 		return userDocuments.some(

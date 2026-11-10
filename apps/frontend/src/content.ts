@@ -959,6 +959,8 @@ export const Content = {
 		"Ein Dokument mit diesem Namen existiert bereits.",
 	"renameDocumentDialog.error.extensionChanged":
 		"Der Dateityp kann nicht geändert werden. Bitte behalten Sie {extension} bei.",
+	"renameDocumentDialog.error.extensionAdded":
+		"Der Dateityp kann nicht geändert werden. Bitte geben Sie den Namen ohne Dateiendung ein.",
 	"renameDocumentDialog.error.failed":
 		"Das Dokument konnte nicht umbenannt werden. Bitte versuchen Sie es erneut.",
 	//DeleteHistoryEntryDialog

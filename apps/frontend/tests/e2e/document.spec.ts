@@ -894,7 +894,7 @@ test.describe("Documents", () => {
 		});
 		await expect(renameInput).toHaveValue(defaultDocumentName);
 
-		await renameInput.fill("renamed_document.docx");
+		await renameInput.fill("renamed_document");
 		await page.getByRole("button", { name: "Umbenennen", exact: true }).click();
 
 		await expect(page.getByRole("dialog")).not.toBeVisible();
@@ -942,6 +942,39 @@ test.describe("Documents", () => {
 					name: `Dokumente-Icon ${defaultDocumentName}`,
 				}),
 			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Renaming a document to a different file type is rejected",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await (
+				await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+			).click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill("renamed_document.docx");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await expect(
+				page.getByRole("button", {
+					name: "Dokumente-Icon renamed_document.docx",
+				}),
+			).not.toBeVisible();
+			await expect(
+				page.getByRole("button", {
+					name: "Dokumente-Icon renamed_document.pdf",
+				}),
+			).not.toBeVisible();
 		},
 	);
 
