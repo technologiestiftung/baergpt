@@ -102,6 +102,15 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+type TooltipValueFormatter = (value: number | string) => React.ReactNode;
+
+function formatTooltipValue(
+	value: number | string,
+	valueFormatter?: TooltipValueFormatter,
+) {
+	return valueFormatter ? valueFormatter(value) : value.toLocaleString();
+}
+
 function ChartTooltipContent({
 	active,
 	payload,
@@ -116,6 +125,7 @@ function ChartTooltipContent({
 	color,
 	nameKey,
 	labelKey,
+	valueFormatter,
 }: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
 	React.ComponentProps<"div"> & {
 		hideLabel?: boolean;
@@ -123,6 +133,7 @@ function ChartTooltipContent({
 		indicator?: "line" | "dot" | "dashed";
 		nameKey?: string;
 		labelKey?: string;
+		valueFormatter?: TooltipValueFormatter;
 	}) {
 	const { config } = useChart();
 
@@ -232,9 +243,9 @@ function ChartTooltipContent({
 													{itemConfig?.label || item.name}
 												</span>
 											</div>
-											{item.value && (
+											{item.value !== null && (
 												<span className="font-mono font-medium text-foreground tabular-nums">
-													{item.value.toLocaleString()}
+													{formatTooltipValue(item.value, valueFormatter)}
 												</span>
 											)}
 										</div>

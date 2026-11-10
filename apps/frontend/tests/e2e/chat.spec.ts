@@ -228,6 +228,14 @@ test.describe("Chat", () => {
 				.poll(() => releaseProcessing !== undefined, { timeout: 15_000 })
 				.toBe(true);
 
+			const uploadPill = page.getByTestId(
+				`file-upload-pill-${secondaryDocumentName}`,
+			);
+			await expect(uploadPill).toBeVisible();
+			await expect(page.locator("#chat-form").getByRole("status")).toHaveText(
+				"Hochladen läuft",
+			);
+
 			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
 			await chatInput.fill("Worum geht es?");
 
@@ -265,6 +273,7 @@ test.describe("Chat", () => {
 			await expect(
 				page.getByTestId(`remove-item-${secondaryDocumentName}`),
 			).toBeVisible();
+			await expect(uploadPill).not.toBeVisible();
 
 			// Submit is unblocked again
 			await expect(sendButton).toBeEnabled();

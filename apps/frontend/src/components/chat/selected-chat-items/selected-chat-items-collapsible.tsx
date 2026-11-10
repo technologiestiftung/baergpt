@@ -6,6 +6,9 @@ import { SelectedChatItemsLabel } from "./selected-chat-items-label.tsx";
 import { useIsCollapsibleOpen } from "./hooks/use-is-collapsible-open.tsx";
 import { getListItemName } from "../../documents/document-list/list-item/utils/get-list-item-name.ts";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
+import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
+import { useChatFileUploadPills } from "./hooks/use-chat-file-uploads.ts";
+import { FileUploadPill } from "./file-upload-pill.tsx";
 
 export const SelectedChatItemsCollapsible: React.FC = () => {
 	const {
@@ -20,14 +23,18 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 	} = usePublicDocumentsStore();
 	const { selectedUserChatDocuments, unselectUserChatDocument } =
 		useUserDocumentStore();
+	const { removeFileUploadFromChat } = useFileUploadsStore();
+	const chatFileUploads = useChatFileUploadPills();
 
 	const hasSelectedChatItems =
 		selectedUserChatFolders.length > 0 ||
 		selectedUserChatDocuments.length > 0 ||
 		selectedPublicChatFolders.length > 0 ||
-		selectedPublicChatDocuments.length > 0;
+		selectedPublicChatDocuments.length > 0 ||
+		chatFileUploads.length > 0;
 
-	const [isCollapsibleOpen, setIsCollapsibleOpen] = useIsCollapsibleOpen();
+	const [isCollapsibleOpen, setIsCollapsibleOpen] =
+		useIsCollapsibleOpen(chatFileUploads);
 
 	if (!hasSelectedChatItems) {
 		return null;
@@ -44,7 +51,9 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 				focus-visible:outline-2px hover:bg-hellblau-50 ${isCollapsibleOpen && "pb-2.5"}`}
 			aria-expanded={isCollapsibleOpen}
 		>
-			{!isCollapsibleOpen && <SelectedChatItemsLabel />}
+			{!isCollapsibleOpen && (
+				<SelectedChatItemsLabel chatFileUploads={chatFileUploads} />
+			)}
 
 			{isCollapsibleOpen && (
 				<div className="flex flex-wrap gap-2 max-h-20 overflow-auto pt-1 pl-1 pb-0.5">
@@ -85,6 +94,15 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 							name={getListItemName(item)}
 							isFolder={false}
 							onRemove={unselectUserChatDocument}
+						/>
+					))}
+
+					{chatFileUploads.map(({ id, file, status }) => (
+						<FileUploadPill
+							key={`upload-${id}`}
+							name={file.name}
+							status={status}
+							onRemove={() => removeFileUploadFromChat(id)}
 						/>
 					))}
 				</div>

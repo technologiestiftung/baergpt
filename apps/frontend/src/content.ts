@@ -1072,6 +1072,7 @@ export const Content = {
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
+	"chat.fileUploadPill.remove.ariaLabel": "entfernen",
 	//Chat options dropdown
 	"chat.options.toggleButton.tooltip": "Weitere Funktionen aktivieren",
 	"chat.options.toggleButton.tooltip.ariaLabel":

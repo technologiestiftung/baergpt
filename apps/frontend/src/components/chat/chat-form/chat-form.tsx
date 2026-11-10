@@ -10,10 +10,15 @@ import React, {
 } from "react";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
+import { FileUploadStatusAnnouncer } from "../selected-chat-items/file-upload-status-announcer.tsx";
 import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
-import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
+import {
+	isPendingUpload,
+	useFileUploadsStore,
+} from "../../../store/use-file-uploads-store.ts";
+import { useChatFileUploads } from "../selected-chat-items/hooks/use-chat-file-uploads.ts";
 import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
@@ -72,7 +77,9 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		useChatsStore();
 	const { showInfoMessage } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
-	const { isUploadingOver } = useFileUploadsStore();
+	const hasPendingChatUploads = useChatFileUploads().some((fileUpload) =>
+		isPendingUpload(fileUpload.status),
+	);
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const shouldMoveCaretToEnd = useRef(false);
@@ -160,7 +167,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 
 		const isSubmitEnabled =
 			!isLoading() &&
-			isUploadingOver() &&
+			!hasPendingChatUploads &&
 			event.currentTarget.value.trim().length > 0;
 		if (isEnterWithoutShiftPressed && isSubmitEnabled) {
 			event.currentTarget.form?.requestSubmit();
@@ -182,6 +189,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		clearError();
 
 		showInfoMessage(null);
+
+		useFileUploadsStore.getState().removeAllFileUploadsFromChat();
 
 		// Clear textarea on submit
 		resetPromptHistory();
@@ -270,6 +279,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
+			<FileUploadStatusAnnouncer />
 			<ExternalToolWarningBanner />
 
 			<div
@@ -341,7 +351,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 					<ChatSubmitButton
 						showLoading={isLoading() && !hasError}
 						handleStop={handleStop}
-						isDisabled={!textareaContent.trim() || !isUploadingOver()}
+						isDisabled={!textareaContent.trim() || hasPendingChatUploads}
 					/>
 				</div>
 			</div>

@@ -360,7 +360,9 @@ export async function mockDocumentProcessRoute(page: Page) {
 		);
 		const { error: uploadError } = await userClient.storage
 			.from("documents")
-			.upload(sourceUrl, file, { contentType: file.type });
+			.upload(sourceUrl, new File([file], file.name, { type: mimeType }), {
+				contentType: mimeType,
+			});
 
 		expect(uploadError).toBeNull();
 

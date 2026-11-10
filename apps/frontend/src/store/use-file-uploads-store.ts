@@ -26,7 +26,18 @@ export type FileUpload = {
 	file: File;
 	status: UploadStatusKeys;
 	existingFileName?: string;
+	isRemovedFromChat?: boolean;
 };
+
+export function isPendingUpload(status: UploadStatusKeys) {
+	return (
+		status === "waiting" || status === "uploading" || status === "processing"
+	);
+}
+
+export function isFailedUpload(status: UploadStatusKeys) {
+	return status.startsWith("failed");
+}
 
 const SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS = 10_000;
 
@@ -42,6 +53,8 @@ type UseFileUploadsStore = {
 		existingFileName?: string,
 	) => void;
 	removeFileUpload: (id: string) => void;
+	removeFileUploadFromChat: (id: string) => void;
+	removeAllFileUploadsFromChat: () => void;
 	clearFileUploads: () => void;
 };
 
@@ -76,7 +89,11 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				.getState()
 				.userDocuments.find((doc) => doc.id === documentId);
 
-			if (uploadedDocument) {
+			const isRemovedFromChat = get().fileUploads.find(
+				(fileUpload) => fileUpload.id === id,
+			)?.isRemovedFromChat;
+
+			if (uploadedDocument && !isRemovedFromChat) {
 				selectUserChatDocument(uploadedDocument);
 			}
 
@@ -106,8 +123,9 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 			(doc) => !deletedDefaultDocumentIds.includes(doc.id),
 		).length;
 
-		const numberOfActiveAndQueuedUploads =
-			fileUploads.filter(isActiveOrQueued).length;
+		const numberOfActiveAndQueuedUploads = fileUploads.filter((upload) =>
+			isPendingUpload(upload.status),
+		).length;
 
 		let availableUploadSlots =
 			Number(import.meta.env.VITE_MAX_TOTAL_FILES_UPLOADED) -
@@ -133,7 +151,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 
 		const previousFileUploads = fileUploads.filter(
 			(upload) =>
-				isActiveOrQueued(upload) ||
+				isPendingUpload(upload.status) ||
 				!files.some(({ name }) => name === upload.file.name),
 		);
 
@@ -228,16 +246,31 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		});
 	},
 
+	removeFileUploadFromChat: (id: string) => {
+		const { fileUploads } = get();
+		set({
+			fileUploads: fileUploads.map((fileUpload) =>
+				fileUpload.id === id
+					? { ...fileUpload, isRemovedFromChat: true }
+					: fileUpload,
+			),
+		});
+	},
+
+	removeAllFileUploadsFromChat: () => {
+		const { fileUploads } = get();
+		set({
+			fileUploads: fileUploads.map((fileUpload) => ({
+				...fileUpload,
+				isRemovedFromChat: true,
+			})),
+		});
+	},
+
 	clearFileUploads: () => {
 		set({ fileUploads: [] });
 	},
 }));
-
-function isActiveOrQueued({ status }: FileUpload) {
-	return (
-		status === "waiting" || status === "uploading" || status === "processing"
-	);
-}
 
 function isKnownError(error: unknown): error is { message: UploadStatusKeys } {
 	return error instanceof Error && error.message in UPLOAD_STATUS_MAP;
