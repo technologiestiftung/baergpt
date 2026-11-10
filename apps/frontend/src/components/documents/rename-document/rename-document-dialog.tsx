@@ -41,31 +41,36 @@ export const RenameDocumentDialog: React.FC = () => {
 	const fileName = userDocument?.file_name ?? "";
 	const originalExtension = getFileExtension(fileName);
 
+	const endsWithExtension = (name: string, extension: string) =>
+		name.toLowerCase().endsWith(extension.toLowerCase());
+
 	const keepOriginalExtension = (name: string) => {
-		if (userDocument?.file_name === null) {
+		if (!originalExtension) {
 			return name;
 		}
-		const typedExtensionSuffix = [
-			originalExtension,
-			...SUPPORTED_FILE_EXTENSIONS,
-		]
-			.filter(Boolean)
-			.map((extension) => ({
-				extension,
-				suffix: name.slice(-extension.length),
-			}))
-			.find(
-				({ extension, suffix }) =>
-					suffix.toLowerCase() === extension.toLowerCase(),
-			)?.suffix;
 		const baseName = (
-			typedExtensionSuffix ? name.slice(0, -typedExtensionSuffix.length) : name
+			endsWithExtension(name, originalExtension)
+				? name.slice(0, -originalExtension.length)
+				: name
 		).trim();
 		return baseName ? `${baseName}${originalExtension}` : "";
 	};
 
-	const getDuplicateNameError = (newName: string) =>
-		userDocuments.some(
+	const getNameError = (newName: string, rawName: string) => {
+		const changesExtension =
+			originalExtension &&
+			!endsWithExtension(rawName, originalExtension) &&
+			SUPPORTED_FILE_EXTENSIONS.some((extension) =>
+				endsWithExtension(rawName, extension),
+			);
+		if (changesExtension) {
+			return Content["renameDocumentDialog.error.extensionChanged"].replace(
+				"{extension}",
+				originalExtension,
+			);
+		}
+
+		return userDocuments.some(
 			(doc) =>
 				doc.id !== userDocument?.id &&
 				doc.file_name === newName &&
@@ -73,6 +78,7 @@ export const RenameDocumentDialog: React.FC = () => {
 		)
 			? Content["renameDocumentDialog.error.duplicate"]
 			: "";
+	};
 
 	return (
 		<RenameItemDialog
@@ -82,7 +88,7 @@ export const RenameDocumentDialog: React.FC = () => {
 			onRename={renameUserDocument}
 			failureMessage={Content["renameDocumentDialog.error.failed"]}
 			maxLength={MAX_DOCUMENT_NAME_LENGTH}
-			getNameError={getDuplicateNameError}
+			getNameError={getNameError}
 			normalizeName={keepOriginalExtension}
 			selectBaseNameOnly
 		/>

@@ -22,7 +22,7 @@ interface RenameItemDialogProps {
 	onRename: (id: number, newName: string) => Promise<Error | null>;
 	failureMessage: string;
 	maxLength?: number;
-	getNameError?: (newName: string) => string;
+	getNameError?: (newName: string, rawName: string) => string;
 	normalizeName?: (name: string) => string;
 	selectBaseNameOnly?: boolean;
 }
@@ -43,7 +43,7 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 	const hasSelectedInitialNameRef = useRef(false);
 	const submissionRef = useRef(0);
 
-	const validateName = (newName: string): string => {
+	const validateName = (newName: string, rawName: string): string => {
 		if (!newName) {
 			return Content["renameItemDialog.error.empty"];
 		}
@@ -53,7 +53,7 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 				String(maxLength),
 			);
 		}
-		return getNameError?.(newName) ?? "";
+		return getNameError?.(newName, rawName) ?? "";
 	};
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -64,14 +64,15 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 		}
 
 		const input = event.currentTarget.itemName as HTMLInputElement;
-		const newName = normalizeName(input.value.trim());
+		const rawName = input.value.trim();
+		const newName = normalizeName(rawName);
 
 		if (newName === item.name) {
 			hideRenameItemDialog(id);
 			return;
 		}
 
-		const nameError = validateName(newName);
+		const nameError = validateName(newName, rawName);
 		input.setCustomValidity(nameError);
 		if (nameError) {
 			input.reportValidity();
