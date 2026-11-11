@@ -32,6 +32,20 @@ export function HistoryGroupByDropdown() {
 		});
 	};
 
+	const handlePointerEnter = (event: React.PointerEvent<HTMLElement>) => {
+		if (event.pointerType !== "mouse") {
+			return;
+		}
+		handleShowTooltip(event);
+	};
+
+	const handleFocus = (event: React.FocusEvent<HTMLElement>) => {
+		if (!event.currentTarget.matches(":focus-visible")) {
+			return;
+		}
+		handleShowTooltip(event);
+	};
+
 	const handleToggleDropdown = () => {
 		hideTooltip();
 		setIsDropdownOpen(!isDropdownOpen);
@@ -55,9 +69,9 @@ export function HistoryGroupByDropdown() {
 					aria-haspopup="menu"
 					aria-label={Content["chatHistory.groupBy.dropdown.ariaLabel"]}
 					onClick={handleToggleDropdown}
-					onMouseEnter={handleShowTooltip}
-					onMouseLeave={hideTooltip}
-					onFocus={handleShowTooltip}
+					onPointerEnter={handlePointerEnter}
+					onPointerLeave={hideTooltip}
+					onFocus={handleFocus}
 					onBlur={hideTooltip}
 				>
 					<SettingsIcon />
