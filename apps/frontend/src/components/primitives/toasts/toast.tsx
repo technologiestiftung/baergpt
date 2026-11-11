@@ -26,8 +26,6 @@ export const Toast: React.FC<ToastProps> = ({
 		<div className="pointer-events-auto">
 			<div
 				className={`flex w-fit flex-row items-center rounded-3px pl-3 pr-2 py-2.5 bg-white border border-l-[6px] ${borderColorByType[type]} text-base leading-6 font-normal ${isExiting ? "animate-fade-out" : "animate-slide-in-right"}`}
-				// Each toast mounts fresh, and only role="alert" is reliably announced on insertion
-				role="alert"
 			>
 				{type === "success" && (
 					<img
