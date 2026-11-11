@@ -97,12 +97,12 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 						/>
 					))}
 
-					{chatFileUploads.map(({ file, status }) => (
+					{chatFileUploads.map(({ id, file, status }) => (
 						<FileUploadPill
-							key={`upload-${file.name}`}
+							key={`upload-${id}`}
 							name={file.name}
 							status={status}
-							onRemove={removeFileUploadFromChat}
+							onRemove={() => removeFileUploadFromChat(id)}
 						/>
 					))}
 				</div>

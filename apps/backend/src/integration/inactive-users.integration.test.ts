@@ -4,7 +4,7 @@ import type { Database } from "@repo/db-schema";
 import { config } from "../config";
 import { serviceRoleDbClient } from "../supabase";
 import { signInWithOtp } from "./fixtures/auth";
-import { file_checksum, file_size, num_pages } from "./fixtures/constants";
+import { file_size, num_pages } from "./fixtures/constants";
 import { PrivilegedDbService } from "../services/db-service/privileged-db-service";
 import {
 	addDays,
@@ -402,7 +402,7 @@ describe("delete_inactive_user", () => {
 				source_type: "personal_document",
 				source_url: sourceUrl,
 				file_name: "inactive.docx",
-				file_checksum,
+				file_checksum: crypto.randomUUID(),
 				file_size,
 				num_pages,
 			});

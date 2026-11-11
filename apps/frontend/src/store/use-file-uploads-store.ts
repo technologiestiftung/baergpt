@@ -22,8 +22,10 @@ export const UPLOAD_STATUS_MAP = {
 export type UploadStatusKeys = keyof typeof UPLOAD_STATUS_MAP;
 
 export type FileUpload = {
+	id: string;
 	file: File;
 	status: UploadStatusKeys;
+	existingFileName?: string;
 	isRemovedFromChat?: boolean;
 };
 
@@ -45,9 +47,13 @@ type UseFileUploadsStore = {
 	uploadFiles: (files: File[]) => Promise<void>;
 	isUploadingOver: () => boolean;
 	hasAvailableUploadSlots: () => boolean;
-	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => void;
-	removeFileUpload: (fileName: string) => void;
-	removeFileUploadFromChat: (fileName: string) => void;
+	updateFileUploadStatus: (
+		id: string,
+		status: UploadStatusKeys,
+		existingFileName?: string,
+	) => void;
+	removeFileUpload: (id: string) => void;
+	removeFileUploadFromChat: (id: string) => void;
 	removeAllFileUploadsFromChat: () => void;
 	clearFileUploads: () => void;
 };
@@ -55,9 +61,9 @@ type UseFileUploadsStore = {
 export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 	fileUploads: [],
 
-	async uploadFile({ fileUpload: { file }, span }) {
+	async uploadFile({ fileUpload: { id, file }, span }) {
 		const { updateFileUploadStatus } = get();
-		const { userDocuments, getUserDocuments, selectUserChatDocument } =
+		const { getUserDocuments, selectUserChatDocument } =
 			useUserDocumentStore.getState();
 
 		const uploadFileSizeLimit = import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB;
@@ -67,49 +73,44 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				throw new Error("failed.size");
 			}
 
-			const fileExists = userDocuments.some(
-				(doc) => doc.file_name === file.name,
-			);
-			if (fileExists) {
-				throw new Error("failed.duplicate");
-			}
-
 			if (!isSupportedUploadFile(file)) {
 				throw new Error("failed.format");
 			}
 
-			const id = await uploadAndProcessDocument(file, (status) =>
-				updateFileUploadStatus(file, status),
+			const documentId = await uploadAndProcessDocument(
+				file,
+				(status, existingFileName) =>
+					updateFileUploadStatus(id, status, existingFileName),
 			);
 
 			await getUserDocuments(new AbortController().signal);
 
 			const uploadedDocument = useUserDocumentStore
 				.getState()
-				.userDocuments.find((doc) => doc.id === id);
+				.userDocuments.find((doc) => doc.id === documentId);
 
 			const isRemovedFromChat = get().fileUploads.find(
-				(fileUpload) => fileUpload.file.name === file.name,
+				(fileUpload) => fileUpload.id === id,
 			)?.isRemovedFromChat;
 
 			if (uploadedDocument && !isRemovedFromChat) {
 				selectUserChatDocument(uploadedDocument);
 			}
 
-			updateFileUploadStatus(file, "successful");
+			updateFileUploadStatus(id, "successful");
 
 			setTimeout(() => {
-				get().removeFileUpload(file.name);
+				get().removeFileUpload(id);
 			}, SUCCESSFUL_UPLOAD_REMOVAL_DELAY_MS);
 		} catch (error) {
 			useErrorStore.getState().handleError(error, span);
 
 			if (isKnownError(error)) {
-				updateFileUploadStatus(file, error.message);
+				updateFileUploadStatus(id, error.message);
 				return;
 			}
 
-			updateFileUploadStatus(file, "failed.generic");
+			updateFileUploadStatus(id, "failed.generic");
 		}
 	},
 
@@ -137,17 +138,21 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		const filesToCancel = files.slice(availableUploadSlots);
 
 		const newFileUploads = filesToUpload.map((file) => ({
+			id: crypto.randomUUID(),
 			file,
 			status: "waiting" as UploadStatusKeys,
 		}));
 
 		const canceledFileUploads = filesToCancel.map((file) => ({
+			id: crypto.randomUUID(),
 			file,
 			status: "failed.tooMany" as UploadStatusKeys,
 		}));
 
 		const previousFileUploads = fileUploads.filter(
-			({ file }) => !files.some(({ name }) => name === file.name),
+			(upload) =>
+				isPendingUpload(upload.status) ||
+				!files.some(({ name }) => name === upload.file.name),
 		);
 
 		const updatedFileUploads = [
@@ -213,14 +218,19 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		return activeUploads.length < maxFileUploads;
 	},
 
-	updateFileUploadStatus: (file: File, status: UploadStatusKeys) => {
+	updateFileUploadStatus: (
+		id: string,
+		status: UploadStatusKeys,
+		existingFileName?: string,
+	) => {
 		const { fileUploads } = get();
 
 		const updatedFileUploads = fileUploads.map((fileUpload) => {
-			if (fileUpload.file.name === file.name) {
+			if (fileUpload.id === id) {
 				return {
 					...fileUpload,
 					status,
+					existingFileName: existingFileName ?? fileUpload.existingFileName,
 				};
 			}
 			return fileUpload;
@@ -229,18 +239,18 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 		set({ fileUploads: updatedFileUploads });
 	},
 
-	removeFileUpload: (fileName: string) => {
+	removeFileUpload: (id: string) => {
 		const { fileUploads } = get();
 		set({
-			fileUploads: fileUploads.filter(({ file }) => file.name !== fileName),
+			fileUploads: fileUploads.filter((fileUpload) => fileUpload.id !== id),
 		});
 	},
 
-	removeFileUploadFromChat: (fileName: string) => {
+	removeFileUploadFromChat: (id: string) => {
 		const { fileUploads } = get();
 		set({
 			fileUploads: fileUploads.map((fileUpload) =>
-				fileUpload.file.name === fileName
+				fileUpload.id === id
 					? { ...fileUpload, isRemovedFromChat: true }
 					: fileUpload,
 			),

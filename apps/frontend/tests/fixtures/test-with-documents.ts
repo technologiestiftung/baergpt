@@ -11,7 +11,6 @@ import {
 	chunk_mistral_embedding,
 	content,
 	created_at,
-	file_checksum,
 	file_size,
 	folder_id,
 	num_pages,
@@ -108,6 +107,10 @@ export async function openDocumentsPanel(page: Page) {
 
 	await showButton.click();
 	await expect(hideButton).toBeVisible();
+	// Rows shift while the panel width animates
+	await panel.evaluate((element) =>
+		Promise.all(element.getAnimations().map((animation) => animation.finished)),
+	);
 }
 
 // Row actions are collapsed until the row is hovered or focused
@@ -223,7 +226,7 @@ async function insertMockDocumentRows({
 				source_type: sourceType,
 				source_url: sourceUrl,
 				file_name: fileName,
-				file_checksum,
+				file_checksum: randomUUID(),
 				file_size: fileSize,
 				num_pages,
 				folder_id: folderId,

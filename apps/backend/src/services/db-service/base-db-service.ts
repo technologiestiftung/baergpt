@@ -11,6 +11,7 @@ import {
 	type KnowledgeBaseDocument,
 	DocumentNotFoundError,
 	DefaultDocumentDeletionError,
+	DuplicateDocumentError,
 } from "../../types/common";
 import { ragSearchDefaults } from "../../constants";
 import {
@@ -20,6 +21,12 @@ import {
 import { captureError } from "../../monitoring/capture-error";
 const documentExtraction = new DocumentExtractionService();
 const wordExtractionService = new WordDocumentExtractionService();
+
+const IN_PROGRESS_UPLOAD_TIMEOUT_MS = 120_000;
+const IN_PROGRESS_UPLOAD_POLL_INTERVAL_MS = 1_000;
+const ABANDONED_UPLOAD_AGE_MS = 30 * 60_000;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export abstract class BaseContentDbService {
 	protected abstract client: SupabaseClient<Database>;
@@ -171,26 +178,48 @@ export abstract class BaseContentDbService {
 		embeddings: Embedding[],
 	): Promise<number> {
 		// 1. Insert Document
-		const { data, error } = await this.client
-			.from("documents")
-			.insert({
-				owned_by_user_id: document.owned_by_user_id || null,
-				file_checksum: document.file_checksum,
-				file_size: document.file_size,
-				num_pages: document.num_pages,
-				processing_finished_at:
-					document.processing_finished_at === null
-						? null
-						: new Date().toISOString(),
-				folder_id: document.folder_id || null,
-				source_url: document.source_url,
-				source_type: document.source_type,
-				file_name: document.file_name ?? document.source_url?.split("/").pop(),
-				created_at: document.created_at || new Date().toISOString(),
-				access_group_id: document.access_group_id || null,
-				uploaded_by_user_id: document.uploaded_by_user_id || null,
-			})
-			.select("*");
+		const insertDocument = () =>
+			this.client
+				.from("documents")
+				.insert({
+					owned_by_user_id: document.owned_by_user_id || null,
+					file_checksum: document.file_checksum,
+					file_size: document.file_size,
+					num_pages: document.num_pages,
+					processing_finished_at:
+						document.processing_finished_at === null
+							? null
+							: new Date().toISOString(),
+					folder_id: document.folder_id || null,
+					source_url: document.source_url,
+					source_type: document.source_type,
+					file_name:
+						document.file_name ?? document.source_url?.split("/").pop(),
+					created_at: document.created_at || new Date().toISOString(),
+					access_group_id: document.access_group_id || null,
+					uploaded_by_user_id: document.uploaded_by_user_id || null,
+				})
+				.select("*");
+
+		let { data, error } = await insertDocument();
+
+		while (
+			error?.code === "23505" &&
+			error.message.includes("idx_documents_personal_checksum_unique") &&
+			document.owned_by_user_id &&
+			document.file_checksum
+		) {
+			const existingDocument = await this.findAvailableDocumentByChecksum(
+				document.owned_by_user_id,
+				document.file_checksum,
+			);
+			if (existingDocument) {
+				throw new DuplicateDocumentError(
+					existingDocument.file_name ?? undefined,
+				);
+			}
+			({ data, error } = await insertDocument());
+		}
 
 		if (error) {
 			throw error;
@@ -445,6 +474,94 @@ export abstract class BaseContentDbService {
 		return count || 0;
 	}
 
+	async findDocumentByChecksum(
+		userId: string,
+		checksum: string,
+	): Promise<{
+		id: number;
+		file_name: string | null;
+		processing_finished_at: string | null;
+		created_at: string | null;
+	} | null> {
+		const { data, error } = await this.client
+			.from("documents")
+			.select("id, file_name, processing_finished_at, created_at")
+			.eq("owned_by_user_id", userId)
+			.eq("file_checksum", checksum)
+			.eq("source_type", "personal_document")
+			.limit(1)
+			.maybeSingle();
+
+		if (error) {
+			throw error;
+		}
+
+		return data;
+	}
+
+	/**
+	 * Returns the finished document with this checksum, or null if there is none.
+	 * Waits while a matching upload is still in progress, because it may still fail and be deleted.
+	 */
+	async findAvailableDocumentByChecksum(
+		userId: string,
+		checksum: string,
+	): Promise<{ file_name: string | null } | null> {
+		const deadline = Date.now() + IN_PROGRESS_UPLOAD_TIMEOUT_MS;
+
+		while (Date.now() < deadline) {
+			const document = await this.findDocumentByChecksum(userId, checksum);
+			if (!document || document.processing_finished_at !== null) {
+				return document;
+			}
+			if (isAbandonedUpload(document)) {
+				try {
+					if (await this.deleteAbandonedUpload(document.id)) {
+						await this.updateUserDocumentCount(userId);
+					}
+					continue;
+				} catch (deleteError) {
+					captureError(deleteError);
+				}
+			}
+			await wait(IN_PROGRESS_UPLOAD_POLL_INTERVAL_MS);
+		}
+
+		throw new Error("Timed out waiting for an in-progress upload");
+	}
+
+	async deleteAbandonedUpload(documentId: number): Promise<boolean> {
+		const { data, error } = await this.client
+			.from("documents")
+			.delete()
+			.eq("id", documentId)
+			.is("processing_finished_at", null)
+			.select("source_url");
+
+		if (error) {
+			throw error;
+		}
+		if (!data.length) {
+			return false;
+		}
+
+		await this.deleteFileFromStorage(data[0].source_url, "documents");
+		return true;
+	}
+
+	async markDocumentProcessed(documentId: number): Promise<void> {
+		const { error } = await this.client
+			.from("documents")
+			.update({ processing_finished_at: new Date().toISOString() })
+			.eq("id", documentId)
+			.select("id")
+			.single();
+
+		if (error) {
+			throw error;
+		}
+	}
+
 	async getBaseKnowledgeDocuments(
 		user_id: string,
 	): Promise<KnowledgeBaseDocument[]> {
@@ -539,4 +656,12 @@ export abstract class BaseContentDbService {
 
 		return { bucket, sourceUrl: data.source_url };
 	}
+}
+
+// created_at is set by the server when the upload request starts
+function isAbandonedUpload({ created_at }: { created_at: string | null }) {
+	return (
+		created_at !== null &&
+		Date.now() - Date.parse(created_at) > ABANDONED_UPLOAD_AGE_MS
+	);
 }
