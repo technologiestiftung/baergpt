@@ -1,0 +1,86 @@
+name: Claude
+
+# Runs on the self-hosted Tart runner (infra/claude-runner): one fresh VM per job.
+# Only org members and collaborators can trigger it, since this is a public repo.
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  issues:
+    types: [opened, assigned]
+
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  claude:
+    if: |
+      (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      ) && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+        github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association)
+    runs-on: [self-hosted, tart, baergpt-claude]
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+
+    steps:
+      # Fork PR code is untrusted and would run with write credentials.
+      - name: Refuse fork PRs 🚫
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number || (github.event.issue.pull_request && github.event.issue.number) || '' }}
+        run: |
+          [ -z "$PR" ] && exit 0
+          # Fail closed: a failed lookup or unexpected output also stops the job.
+          cross="$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json isCrossRepository -q .isCrossRepository)" \
+            || { echo "::error::Could not check whether PR #$PR is from a fork."; exit 1; }
+          if [ "$cross" != false ]; then
+            echo "::error::Claude does not run on fork PRs."
+            exit 1
+          fi
+
+      - name: Checkout code ⬇️
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies 📦
+        uses: ./.github/actions/warm-node-modules
+
+      - name: Run Claude 🤖
+        id: claude
+        uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Pre-installed in the golden VM at the versions this action pins (see build-golden.sh).
+          path_to_bun_executable: /home/admin/.bun/bin/bun
+          path_to_claude_code_executable: /home/admin/.local/bin/claude
+          additional_permissions: |
+            actions: read
+          claude_args: |
+            --model sonnet
+            --append-system-prompt "Never push to main or staging directly. Never merge or approve pull requests. Open a PR against staging and leave merging to a human."
+            --allowedTools "Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(git:*),Bash(gh:*),Bash(supabase:*),Bash(docker:*),Bash(ls:*),Bash(cat:*),Bash(grep:*),Bash(find:*),Edit,Write,Read,Glob,Grep"
+
+      # Claude may switch branches, so read the script from the commit this run started on.
+      - name: Add usage to Claude's comment 📊
+        if: always() && steps.claude.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          # The action revokes its own App token before this step.
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git show ${{ github.sha }}:.github/scripts/claude-usage.mts > "$RUNNER_TEMP/claude-usage.mts"
+          node "$RUNNER_TEMP/claude-usage.mts" annotate "${{ steps.claude.outputs.execution_file }}"
