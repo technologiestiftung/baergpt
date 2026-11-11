@@ -1,7 +1,13 @@
-import { expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
+import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
+import {
+	mockLlmCompletion,
+	sendAndWaitForLLMResponse,
+} from "../fixtures/mock-llm.ts";
+import Content from "../../src/content.ts";
 
 testWithoutSplashScreen.describe("Accessibility - Chat form", () => {
 	testWithLoggedInUser(
@@ -93,6 +99,56 @@ testWithoutSplashScreen.describe("Accessibility - Public Pages", () => {
 			// Run accessibility scan on the accessibility statement page
 			const a11yResults = await new AxeBuilder({ page }).analyze();
 			expect(a11yResults.violations).toEqual([]);
+		},
+	);
+});
+
+test.describe("Accessibility - Code block", () => {
+	testWithMockedLlm(
+		"Code block copy button is keyboard-operable and copies plain text",
+		async ({ page, browserName }) => {
+			await mockLlmCompletion(page, {
+				textDelta: "```python\nprint('hello')\n```",
+			});
+
+			await page.goto("/");
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			const codeBlock = answer.locator(".code-block");
+			await expect(codeBlock).toBeVisible();
+			await expect(codeBlock.locator(".code-block-language")).toHaveText(
+				"python",
+			);
+
+			const a11yResults = await new AxeBuilder({ page })
+				.include('[data-testid="assistant-message-markdown-container"]')
+				.analyze();
+			expect(a11yResults.violations).toEqual([]);
+
+			if (browserName === "webkit") {
+				return;
+			}
+
+			const copyButton = codeBlock.getByRole("button", {
+				name: Content["chat.codeBlockCopyButton.ariaLabel"],
+			});
+
+			await copyButton.focus();
+			await expect(copyButton).toBeFocused();
+			await copyButton.press("Enter");
+
+			await expect(
+				codeBlock.getByRole("button", {
+					name: Content["chat.codeBlockCopyButton.ariaLabel.copied"],
+				}),
+			).toBeVisible();
+
+			const clipboardText = await page.evaluate(() =>
+				navigator.clipboard.readText(),
+			);
+			expect(clipboardText).toBe("print('hello')");
 		},
 	);
 });
