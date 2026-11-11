@@ -24,6 +24,7 @@ const wordExtractionService = new WordDocumentExtractionService();
 
 const IN_PROGRESS_UPLOAD_TIMEOUT_MS = 120_000;
 const IN_PROGRESS_UPLOAD_POLL_INTERVAL_MS = 1_000;
+const ABANDONED_UPLOAD_AGE_MS = 30 * 60_000;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -477,12 +478,14 @@ export abstract class BaseContentDbService {
 		userId: string,
 		checksum: string,
 	): Promise<{
+		id: number;
 		file_name: string | null;
 		processing_finished_at: string | null;
+		created_at: string | null;
 	} | null> {
 		const { data, error } = await this.client
 			.from("documents")
-			.select("file_name, processing_finished_at")
+			.select("id, file_name, processing_finished_at, created_at")
 			.eq("owned_by_user_id", userId)
 			.eq("file_checksum", checksum)
 			.eq("source_type", "personal_document")
@@ -511,6 +514,14 @@ export abstract class BaseContentDbService {
 			if (!document || document.processing_finished_at !== null) {
 				return document;
 			}
+			if (isAbandonedUpload(document)) {
+				try {
+					await this.deleteDocumentById(document.id);
+				} catch (deleteError) {
+					captureError(deleteError);
+				}
+				continue;
+			}
 			await wait(IN_PROGRESS_UPLOAD_POLL_INTERVAL_MS);
 		}
 
@@ -521,7 +532,9 @@ export abstract class BaseContentDbService {
 		const { error } = await this.client
 			.from("documents")
 			.update({ processing_finished_at: new Date().toISOString() })
-			.eq("id", documentId);
+			.eq("id", documentId)
+			.select("id")
+			.single();
 
 		if (error) {
 			throw error;
@@ -622,4 +635,12 @@ export abstract class BaseContentDbService {
 
 		return { bucket, sourceUrl: data.source_url };
 	}
+}
+
+// created_at is set by the server when the upload request starts
+function isAbandonedUpload({ created_at }: { created_at: string | null }) {
+	return (
+		created_at !== null &&
+		Date.now() - Date.parse(created_at) > ABANDONED_UPLOAD_AGE_MS
+	);
 }

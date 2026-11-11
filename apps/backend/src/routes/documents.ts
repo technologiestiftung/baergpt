@@ -106,7 +106,8 @@ documents.post("/process", async (c: Context) =>
 				file_checksum: extractionResult.checksum,
 				file_size: extractionResult.fileSize,
 				num_pages: extractionResult.numPages,
-				processing_finished_at: null,
+				processing_finished_at:
+					sourceType === "personal_document" ? null : undefined,
 			};
 
 			const parsedPages = extractionResult.parsedPages;
@@ -147,7 +148,10 @@ documents.post("/process", async (c: Context) =>
 				});
 			}
 
-			await userScopedDbService.markDocumentProcessed(documentId);
+			// Users can't update public documents
+			if (sourceType === "personal_document") {
+				await userScopedDbService.markDocumentProcessed(documentId);
+			}
 
 			return stream.writeSSE({
 				data: JSON.stringify({

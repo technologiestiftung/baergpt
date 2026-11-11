@@ -78,6 +78,7 @@ FROM
                     owned_by_user_id,
                     file_checksum
                 ORDER BY
+                    processing_finished_at IS NULL,
                     id
             ) AS survivor_id
         FROM
@@ -105,6 +106,85 @@ WHERE
         FROM
             duplicate_personal_documents
     );
+
+CREATE TEMPORARY TABLE cited_duplicate_chunks AS
+SELECT
+    chunk.id AS chunk_id,
+    duplicate.survivor_id,
+    (
+        SELECT
+            survivor_chunk.id
+        FROM
+            public.document_chunks survivor_chunk
+        WHERE
+            survivor_chunk.document_id = duplicate.survivor_id
+            AND survivor_chunk.content = chunk.content
+        ORDER BY
+            survivor_chunk.id
+        LIMIT
+            1
+    ) AS survivor_chunk_id
+FROM
+    public.document_chunks chunk
+    JOIN duplicate_personal_documents duplicate ON duplicate.id = chunk.document_id
+WHERE
+    EXISTS (
+        SELECT
+            1
+        FROM
+            public.chat_messages cm
+        WHERE
+            jsonb_typeof(cm.citations) = 'array'
+            AND cm.citations @> to_jsonb(ARRAY[chunk.id])
+    );
+
+UPDATE public.chat_messages cm
+SET
+    citations = (
+        SELECT
+            jsonb_agg(
+                remapped.value
+                ORDER BY
+                    remapped.position
+            )
+        FROM
+            (
+                SELECT
+                    COALESCE(to_jsonb(cited.survivor_chunk_id), citation.value) AS value,
+                    MIN(citation.position) AS position
+                FROM
+                    jsonb_array_elements(cm.citations)
+                WITH
+                    ORDINALITY AS citation (value, position)
+                    LEFT JOIN cited_duplicate_chunks cited ON citation.value = to_jsonb(cited.chunk_id)
+                GROUP BY
+                    1
+            ) remapped
+    )
+WHERE
+    jsonb_typeof(cm.citations) = 'array'
+    AND EXISTS (
+        SELECT
+            1
+        FROM
+            cited_duplicate_chunks cited
+        WHERE
+            cited.survivor_chunk_id IS NOT NULL
+            AND cm.citations @> to_jsonb(ARRAY[cited.chunk_id])
+    );
+
+UPDATE public.document_chunks chunk
+SET
+    document_id = survivor.id,
+    folder_id = survivor.folder_id
+FROM
+    cited_duplicate_chunks cited
+    JOIN public.documents survivor ON survivor.id = cited.survivor_id
+WHERE
+    chunk.id = cited.chunk_id
+    AND cited.survivor_chunk_id IS NULL;
+
+DROP TABLE cited_duplicate_chunks;
 
 DELETE FROM public.documents
 WHERE

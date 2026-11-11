@@ -123,7 +123,10 @@ export const RenameItemDialog: React.FC<RenameItemDialogProps> = ({
 						autoFocus
 						onInput={({ currentTarget }) => currentTarget.setCustomValidity("")}
 						onFocus={({ currentTarget }) => {
-							if (hasSelectedInitialNameRef.current) {
+							if (
+								hasSelectedInitialNameRef.current ||
+								currentTarget.value !== item?.name
+							) {
 								return;
 							}
 							hasSelectedInitialNameRef.current = true;
