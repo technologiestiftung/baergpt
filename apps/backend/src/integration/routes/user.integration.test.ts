@@ -15,6 +15,7 @@ import { PDFDocument } from "pdf-lib";
 import { serviceRoleDbClient } from "../../supabase";
 import { Database } from "@repo/db-schema";
 import { UserScopedDbService } from "../../services/db-service/user-scoped-db-service";
+import { PrivilegedDbService } from "../../services/db-service/privileged-db-service";
 import { GenerationService } from "../../services/generation-service";
 import { EmbeddingService } from "../../services/embedding-service";
 import { signInWithOtp } from "../fixtures/auth";
@@ -483,7 +484,10 @@ describe("Integration Tests for Routes", () => {
 		});
 	}, 20_000);
 
-	const insertInProgressDocument = async (checksum: string) => {
+	const insertInProgressDocument = async (
+		checksum: string,
+		createdAt = new Date().toISOString(),
+	) => {
 		const { data, error } = await serviceRoleDbClient
 			.from("documents")
 			.insert({
@@ -493,6 +497,7 @@ describe("Integration Tests for Routes", () => {
 				file_name: `in-progress-${checksum}.pdf`,
 				file_checksum: checksum,
 				processing_finished_at: null,
+				created_at: createdAt,
 			})
 			.select("id, file_name")
 			.single();
@@ -560,6 +565,64 @@ describe("Integration Tests for Routes", () => {
 				.eq("id", inProgressDocument.id);
 		}
 	}, 20_000);
+
+	it("POST /documents/process should replace an abandoned upload with the same content", async () => {
+		const checksum = crypto.randomUUID();
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({ ...MOCK_EXTRACTION_RESULT, checksum } as never);
+		const abandonedDocument = await insertInProgressDocument(
+			checksum,
+			new Date(Date.now() - 60 * 60_000).toISOString(),
+		);
+
+		const events = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(
+				await generatePdfBytesFromText("Recovered Document"),
+				"recovered.pdf",
+			),
+		});
+
+		expect(events.find((e) => e.status === "successful")).toBeDefined();
+		const { data: remaining } = await serviceRoleDbClient
+			.from("documents")
+			.select("id")
+			.eq("id", abandonedDocument.id);
+		expect(remaining).toEqual([]);
+	}, 20_000);
+
+	it("deleteAbandonedUpload should keep an upload that finished before the cleanup", async () => {
+		const inProgressDocument = await insertInProgressDocument(
+			crypto.randomUUID(),
+			new Date(Date.now() - 60 * 60_000).toISOString(),
+		);
+
+		try {
+			await serviceRoleDbClient
+				.from("documents")
+				.update({ processing_finished_at: new Date().toISOString() })
+				.eq("id", inProgressDocument.id);
+
+			const deleted = await new PrivilegedDbService(
+				serviceRoleDbClient,
+			).deleteAbandonedUpload(inProgressDocument.id);
+
+			expect(deleted).toBe(false);
+			const { data: remaining } = await serviceRoleDbClient
+				.from("documents")
+				.select("id")
+				.eq("id", inProgressDocument.id);
+			expect(remaining).toHaveLength(1);
+		} finally {
+			await serviceRoleDbClient
+				.from("documents")
+				.delete()
+				.eq("id", inProgressDocument.id);
+		}
+	});
 
 	it("POST /llm/just-chatting should handle a valid request", async () => {
 		// Mock prompt assembly and the LLM stream so the

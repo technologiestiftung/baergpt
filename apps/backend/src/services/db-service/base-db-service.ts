@@ -516,8 +516,9 @@ export abstract class BaseContentDbService {
 			}
 			if (isAbandonedUpload(document)) {
 				try {
-					await this.deleteDocumentById(document.id);
-					await this.updateUserDocumentCount(userId);
+					if (await this.deleteAbandonedUpload(document.id)) {
+						await this.updateUserDocumentCount(userId);
+					}
 					continue;
 				} catch (deleteError) {
 					captureError(deleteError);
@@ -527,6 +528,25 @@ export abstract class BaseContentDbService {
 		}
 
 		throw new Error("Timed out waiting for an in-progress upload");
+	}
+
+	async deleteAbandonedUpload(documentId: number): Promise<boolean> {
+		const { data, error } = await this.client
+			.from("documents")
+			.delete()
+			.eq("id", documentId)
+			.is("processing_finished_at", null)
+			.select("source_url");
+
+		if (error) {
+			throw error;
+		}
+		if (!data.length) {
+			return false;
+		}
+
+		await this.deleteFileFromStorage(data[0].source_url, "documents");
+		return true;
 	}
 
 	async markDocumentProcessed(documentId: number): Promise<void> {
