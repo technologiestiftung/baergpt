@@ -25,7 +25,9 @@ export function CodeBlock({ node: _node, children, ...props }: CodeBlockProps) {
 		<div className="code-block">
 			<div className="code-block-header">
 				{language && <span className="code-block-language">{language}</span>}
-				<CopyCodeButton getCode={() => preRef.current?.textContent ?? ""} />
+				<CopyCodeButton
+					getCode={() => (preRef.current?.textContent ?? "").replace(/\n$/, "")}
+				/>
 			</div>
 			<pre {...props} ref={preRef} className="code-block-pre">
 				{children}
