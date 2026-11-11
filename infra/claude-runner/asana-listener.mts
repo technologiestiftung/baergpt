@@ -114,7 +114,6 @@ type AsanaEvent = {
 	resource: { gid: string; resource_type: string; resource_subtype?: string };
 	parent?: { gid: string; resource_type: string } | null;
 	change?: { field?: string } | null;
-	user?: { gid: string } | null;
 };
 
 // undefined if the user may trigger Claude, else the user's GID (or "unknown").
@@ -157,6 +156,29 @@ async function pollAllEvents(state: State): Promise<AsanaEvent[]> {
 	return events;
 }
 
+// The current description and who wrote it: the author of the latest "notes_changed" story,
+// or the task's creator if it was never edited. Not the event's user, which can be an older edit.
+// Returns undefined if the description changed while reading; that edit's own event retries it.
+async function currentNotes(taskGid: string): Promise<{ notes: string; editor?: string } | undefined> {
+	type Story = { gid: string; resource_subtype: string; created_by?: { gid: string } | null };
+	const lastEdit = async () =>
+		(await asanaJson<Story[]>(`/tasks/${taskGid}/stories?opt_fields=resource_subtype,created_by.gid`))
+			.filter((story) => story.resource_subtype === "notes_changed")
+			.at(-1);
+
+	const before = await lastEdit();
+	const task = await asanaJson<{ notes: string; created_by?: { gid: string } | null }>(
+		`/tasks/${taskGid}?opt_fields=notes,created_by.gid`,
+	);
+	const after = await lastEdit();
+	if (before?.gid !== after?.gid) {
+		log(`Description of task ${taskGid} changed while reading it; waiting for the next event`);
+		return undefined;
+	}
+	// No created_by (deleted user, integration) leaves editor undefined, so denied() refuses it.
+	return { notes: task.notes, editor: after ? after.created_by?.gid : task.created_by?.gid };
+}
+
 type Trigger = { key: string; taskGid: string; request: string; deniedUser?: string };
 
 async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger[]> {
@@ -183,18 +205,19 @@ async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger
 		const notesChanged =
 			resource.resource_type === "task" &&
 			(event.action === "added" || (event.action === "changed" && event.change?.field === "notes"));
+		// One check per task and batch is enough: it reads the current description and its editor,
+		// independent of which event led here.
 		if (notesChanged && !seen.has(resource.gid)) {
 			seen.add(resource.gid);
-			const task = await asanaJson<{ notes: string }>(`/tasks/${resource.gid}?opt_fields=notes`);
-			if (!TRIGGER.test(task.notes)) continue;
+			const current = await currentNotes(resource.gid);
+			if (!current || !TRIGGER.test(current.notes)) continue;
 			// Key on the description's content, so editing it again re-triggers but saving it unchanged does not.
-			const hash = createHash("sha256").update(task.notes).digest("hex").slice(0, 16);
+			const hash = createHash("sha256").update(current.notes).digest("hex").slice(0, 16);
 			triggers.push({
 				key: `notes:${resource.gid}:${hash}`,
 				taskGid: resource.gid,
-				request: task.notes,
-				// The event's user is whoever created the task or edited its description.
-				deniedUser: denied(event.user?.gid),
+				request: current.notes,
+				deniedUser: denied(current.editor),
 			});
 		}
 	}
@@ -292,7 +315,8 @@ async function dispatchAndWait(context: string, taskUrl: string, onStarted: (url
 				await gh(token, `/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=20`)
 			).json()) as { workflow_runs: Run[] };
 			found = runs.workflow_runs.find((r) => r.display_title.includes(requestId));
-			if (found) await onStarted(found.html_url);
+			// The progress comment is optional: if it fails, keep tracking the run and still post the reply.
+			if (found) await onStarted(found.html_url).catch((error) => log("Failed to post progress comment:", error));
 			continue;
 		}
 		const current = (await (await gh(token, `/repos/${REPO}/actions/runs/${found.id}`)).json()) as Run;

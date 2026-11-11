@@ -12,7 +12,7 @@ tart get "$GOLDEN_VM" >/dev/null 2>&1 || { echo "Golden VM missing. Run ./build-
 [ -n "$GITHUB_APP_ID" ] || { echo "Set GITHUB_APP_ID in config.sh"; exit 1; }
 [ -n "$RUNNER_GROUP_ID" ] || { echo "Set RUNNER_GROUP_ID in config.sh"; exit 1; }
 security find-generic-password -s "$KEYCHAIN_SERVICE" -w >/dev/null 2>&1 \
-  || { echo "App key missing. Run: security add-generic-password -a \"\$USER\" -s $KEYCHAIN_SERVICE -w \"\$(base64 -i app.pem)\""; exit 1; }
+  || { echo "App key missing. See README, setup step 2 (stores it via security -i)."; exit 1; }
 
 mkdir -p "$LOG_DIR" "$HOME/Library/LaunchAgents"
 # Runner loop (always on) and nightly golden image rebuild check.
@@ -28,14 +28,19 @@ op_resolve() {
   local name="$1" ref_name="${1}_OP"
   [ -z "${!name}" ] && [ -n "${!ref_name}" ] || return 0
   command -v op >/dev/null || { echo "1Password CLI missing: brew install 1password-cli"; exit 1; }
-  printf -v "$name" '%s' "$(op read "${!ref_name}" | tr -d '[:space:]')"
+  local value
+  value="$(op read "${!ref_name}")" || { echo "op read failed for $ref_name (${!ref_name})"; exit 1; }
+  value="$(tr -d '[:space:]' <<<"$value")"
+  [ -n "$value" ] || { echo "$ref_name (${!ref_name}) is empty in 1Password"; exit 1; }
+  printf -v "$name" '%s' "$value"
 }
 op_resolve ASANA_PROJECT_GIDS
 op_resolve ASANA_ALLOWED_USERS
 
 ASANA_LABEL=berlin.technologiestiftung.baergpt-asana-listener
-launchctl bootout "gui/$(id -u)/$ASANA_LABEL" 2>/dev/null || true
+ASANA_PLIST="$HOME/Library/LaunchAgents/$ASANA_LABEL.plist"
 if [ -n "$ASANA_PROJECT_GIDS" ]; then
+  # Validate everything first: on failure the running listener stays untouched.
   security find-generic-password -s "$ASANA_KEYCHAIN_SERVICE" -w >/dev/null 2>&1 \
     || { echo "Asana token missing. Run: security add-generic-password -a \"\$USER\" -s $ASANA_KEYCHAIN_SERVICE -w"; exit 1; }
   [[ "$ASANA_PROJECT_GIDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || { echo "ASANA_PROJECT_GIDS: comma-separated Asana project GIDs"; exit 1; }
@@ -44,11 +49,21 @@ if [ -n "$ASANA_PROJECT_GIDS" ]; then
   security find-generic-password -s "$ASANA_CONTEXT_KEY_SERVICE" -w >/dev/null 2>&1 \
     || { echo "Asana context key missing. See README, Asana setup."; exit 1; }
   NODE_BIN="$(command -v node)" || { echo "node missing"; exit 1; }
+  NEW_PLIST="$(mktemp)"
   sed -e "s#__RUNNER_DIR__#$HERE#g" -e "s#__LOG_DIR__#$LOG_DIR#g" -e "s#__NODE_BIN__#$NODE_BIN#g" \
     -e "s#__ASANA_PROJECT_GIDS__#$ASANA_PROJECT_GIDS#g" -e "s#__ASANA_ALLOWED_USERS__#$ASANA_ALLOWED_USERS#g" \
-    "$HERE/$ASANA_LABEL.plist" > "$HOME/Library/LaunchAgents/$ASANA_LABEL.plist"
-  launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/$ASANA_LABEL.plist"
+    "$HERE/$ASANA_LABEL.plist" > "$NEW_PLIST"
+  plutil -lint -s "$NEW_PLIST" || { rm -f "$NEW_PLIST"; echo "Generated Asana plist is invalid"; exit 1; }
+
+  launchctl bootout "gui/$(id -u)/$ASANA_LABEL" 2>/dev/null || true
+  mv "$NEW_PLIST" "$ASANA_PLIST"
+  launchctl bootstrap "gui/$(id -u)" "$ASANA_PLIST"
   echo "Asana listener started for projects $ASANA_PROJECT_GIDS. Logs: $LOG_DIR/asana.log"
+else
+  # Disabled on purpose: stop it and remove its plist, so it does not come back at login.
+  launchctl bootout "gui/$(id -u)/$ASANA_LABEL" 2>/dev/null || true
+  rm -f "$ASANA_PLIST"
+  echo "Asana listener disabled (ASANA_PROJECT_GIDS is empty)."
 fi
 echo "Runner loop started. Logs: tail -f $LOG_DIR/runner.log"
 echo "Nightly rebuild check at 03:00. Logs: $LOG_DIR/rebuild.log"
