@@ -88,14 +88,6 @@
 
 	.code-block {
 		--code-block-surface: theme("colors.hellblau-30");
-		/*
-		 * mittelblau-100, not hellblau-50: a user message's own bubble
-		 * (user-message.tsx) is already bg-hellblau-30, so a code block
-		 * nested inside one needs a border that still reads against that
-		 * backdrop, not just against the assistant side's plain white.
-		 * mittelblau-100 clears ~3:1 (the non-text UI-boundary guideline)
-		 * against both.
-		 */
 		--code-block-border: theme("colors.mittelblau-100");
 		--code-block-text: theme("colors.dunkelblau-100");
 		--code-block-string: theme("colors.mittelgruen-130");
