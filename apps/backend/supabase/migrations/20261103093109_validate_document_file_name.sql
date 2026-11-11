@@ -134,15 +134,15 @@ WHERE
         FROM
             public.chat_messages cm
         WHERE
-            jsonb_typeof(cm.citations) = 'array'
-            AND cm.citations @> to_jsonb(ARRAY[chunk.id])
+            JSONB_TYPEOF(cm.citations) = 'array'
+            AND cm.citations @> TO_JSONB(ARRAY[chunk.id])
     );
 
 UPDATE public.chat_messages cm
 SET
     citations = (
         SELECT
-            jsonb_agg(
+            JSONB_AGG(
                 remapped.value
                 ORDER BY
                     remapped.position
@@ -150,19 +150,17 @@ SET
         FROM
             (
                 SELECT
-                    COALESCE(to_jsonb(cited.survivor_chunk_id), citation.value) AS value,
+                    COALESCE(TO_JSONB(cited.survivor_chunk_id), citation.value) AS value,
                     MIN(citation.position) AS position
                 FROM
-                    jsonb_array_elements(cm.citations)
-                WITH
-                    ORDINALITY AS citation (value, position)
-                    LEFT JOIN cited_duplicate_chunks cited ON citation.value = to_jsonb(cited.chunk_id)
+                    JSONB_ARRAY_ELEMENTS(cm.citations) WITH ORDINALITY AS citation (value, position)
+                    LEFT JOIN cited_duplicate_chunks cited ON citation.value = TO_JSONB(cited.chunk_id)
                 GROUP BY
                     1
             ) remapped
     )
 WHERE
-    jsonb_typeof(cm.citations) = 'array'
+    JSONB_TYPEOF(cm.citations) = 'array'
     AND EXISTS (
         SELECT
             1
@@ -170,7 +168,7 @@ WHERE
             cited_duplicate_chunks cited
         WHERE
             cited.survivor_chunk_id IS NOT NULL
-            AND cm.citations @> to_jsonb(ARRAY[cited.chunk_id])
+            AND cm.citations @> TO_JSONB(ARRAY[cited.chunk_id])
     );
 
 UPDATE public.document_chunks chunk
