@@ -71,6 +71,13 @@ export default defineConfig({
 						if (id.includes("@react-pdf/renderer")) {
 							return "vendor-pdf";
 						}
+						if (
+							["highlight.js", "rehype-highlight", "lowlight"].some((pkg) =>
+								id.includes(`node_modules/${pkg}/`),
+							)
+						) {
+							return "vendor-syntax-highlight";
+						}
 					}
 				},
 			},

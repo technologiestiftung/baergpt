@@ -3,12 +3,15 @@ import ReactMarkdown from "react-markdown";
 import { UserMessage } from "./user-message.tsx";
 import type { ChatMessage as ChatMessageType } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import { common } from "lowlight";
+import { CodeBlock } from "./code-block/code-block.tsx";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
 import {
 	MarkdownExportableTable,
 	TableExportVisibleContext,
 } from "../../primitives/markdown/markdown-exportable-table.tsx";
-import { type JSX, memo, useMemo } from "react";
+import { type ComponentProps, type JSX, memo, useMemo } from "react";
 import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
 import { config } from "../../../config.ts";
@@ -17,6 +20,10 @@ import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.t
 interface ChatMessageProps {
 	message: ChatMessageType;
 }
+
+const rehypePlugins: NonNullable<
+	ComponentProps<typeof ReactMarkdown>["rehypePlugins"]
+> = [[rehypeHighlight, { languages: common }]];
 
 /**
  * Memoized: while an answer streams, only the streaming message gets a new
@@ -45,6 +52,7 @@ export const ChatMessage = memo(function ChatMessage({
 			table: MarkdownWrapperScrollableTable,
 			a: createMarkdownLinkWithDatawrapperEmbed(allowedDatawrapperChartIds),
 			img: () => null,
+			pre: CodeBlock,
 		};
 	}, [datawrapperChartIds]);
 
@@ -68,6 +76,7 @@ export const ChatMessage = memo(function ChatMessage({
 							<TableExportVisibleContext.Provider value={hasChatButtons}>
 								<ReactMarkdown
 									remarkPlugins={[remarkGfm]}
+									rehypePlugins={rehypePlugins}
 									className="markdown-container"
 									components={assistantComponents}
 								>
@@ -83,6 +92,7 @@ export const ChatMessage = memo(function ChatMessage({
 				<UserMessage message={message}>
 					<ReactMarkdown
 						remarkPlugins={[remarkGfm]}
+						rehypePlugins={rehypePlugins}
 						className="markdown-container markdown-container-user"
 						components={customComponents}
 					>
