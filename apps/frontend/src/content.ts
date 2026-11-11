@@ -835,7 +835,6 @@ export const Content = {
 	"greyXIcon.imgAlt": "Ein graues X-Icon",
 	"loadingSpinnerIcon.imgAlt": "Ein sich drehendes Spinner-Icon",
 	"previewIcon.imgAlt": "Preview-Icon",
-	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
 	"redErrorIcon.imgAlt": "Ein Error Icon mit weißem ! in rotem Kreis",
 	"clockIcon.imgAlt": "Ein Uhr-Icon",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
