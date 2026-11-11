@@ -30,6 +30,9 @@ WORKDIR /app
 RUN groupadd --system --gid 1001 nodejs \
 	&& useradd --system --uid 1001 --gid nodejs hono
 COPY --from=builder --chown=hono:nodejs /app ./
+# The code sandbox tool manages its pods through kubectl.
+ARG TARGETARCH
+ADD --chmod=755 https://dl.k8s.io/release/v1.36.0/bin/linux/${TARGETARCH}/kubectl /usr/local/bin/kubectl
 USER hono
 WORKDIR /app/apps/backend
 # for documentation only, does not publish the port. Locally use `-p 3000:3000`.

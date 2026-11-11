@@ -90,7 +90,8 @@ export type ActiveTools =
 	| "webSearchTool"
 	| "parlaMCPTools"
 	| "datawrapperMCPTools"
-	| "openDataMCPTools";
+	| "openDataMCPTools"
+	| "codeExecutionTool";
 
 export type Embedding = {
 	content: string;

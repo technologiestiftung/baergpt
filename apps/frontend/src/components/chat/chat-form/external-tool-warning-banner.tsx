@@ -1,11 +1,14 @@
 import React from "react";
 import Content from "../../../content.ts";
-import { useChatsStore } from "../../../store/use-chats-store.ts";
+import {
+	externalChatTools,
+	useChatsStore,
+} from "../../../store/use-chats-store.ts";
 
 export const ExternalToolWarningBanner: React.FC = () => {
 	const { selectedChatTools } = useChatsStore();
 
-	if (selectedChatTools.length === 0) {
+	if (!selectedChatTools.some((tool) => externalChatTools.includes(tool))) {
 		return null;
 	}
 

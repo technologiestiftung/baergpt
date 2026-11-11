@@ -37,6 +37,11 @@ export interface Config {
 	braveSearchApiKey?: string;
 	braveSearchApiUrl?: string;
 	featureFlagWebSearchAllowed: boolean;
+	featureFlagCodeSandboxAllowed: boolean;
+	codeSandboxNamespace: string;
+	codeSandboxImage: string;
+	codeSandboxKubeContext?: string;
+	codeSandboxKubectlPath: string;
 	featureFlagMemoryLog: boolean;
 	isTracingEnabled: boolean;
 	staanSearchApiKey?: string;
@@ -228,6 +233,13 @@ export const config: Config = {
 	braveSearchApiUrl: process.env.BRAVE_SEARCH_API_URL,
 	featureFlagWebSearchAllowed:
 		process.env.FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
+	featureFlagCodeSandboxAllowed:
+		process.env.FEATURE_FLAG_CODE_SANDBOX_ALLOWED === "true",
+	codeSandboxNamespace: process.env.CODE_SANDBOX_NAMESPACE ?? "baergpt-sandbox",
+	codeSandboxImage:
+		process.env.CODE_SANDBOX_IMAGE ?? "baergpt-code-sandbox:dev",
+	codeSandboxKubeContext: process.env.CODE_SANDBOX_KUBE_CONTEXT,
+	codeSandboxKubectlPath: process.env.CODE_SANDBOX_KUBECTL_PATH ?? "kubectl",
 	featureFlagMemoryLog: process.env.FEATURE_FLAG_MEMORY_LOG === "true",
 	isTracingEnabled:
 		process.env.NODE_ENV !== undefined &&

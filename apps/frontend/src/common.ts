@@ -32,7 +32,11 @@ export type ChatWithMessages = Chat & { messages: ChatMessage[] };
  * are skipped rather than rendered as an unlabelled step.
  */
 export type TraceTool =
-	"webSearchTool" | "ragSearchTool" | "parlaMCPTools" | "datawrapperMCPTools";
+	| "webSearchTool"
+	| "ragSearchTool"
+	| "parlaMCPTools"
+	| "datawrapperMCPTools"
+	| "codeExecutionTool";
 
 /** One step of the trace, in the order it was streamed. */
 export type Trace =
@@ -48,7 +52,7 @@ export type MessageTraces = {
 };
 
 export type Connector = "parla" | "openData" | "datawrapper";
-export type ChatTool = "webSearch" | Connector;
+export type ChatTool = "webSearch" | "codeSandbox" | Connector;
 
 export type ChatToolsMenuItemId = ChatTool | "fileUpload" | "connectors";
 

@@ -9,6 +9,7 @@ const VALID_ACTIVE_TOOLS = new Set<ActiveTools>([
 	"parlaMCPTools",
 	"datawrapperMCPTools",
 	"openDataMCPTools",
+	"codeExecutionTool",
 ]);
 
 export const EXTERNAL_TOOLS = new Set<ActiveTools>([
@@ -42,6 +43,10 @@ function isValidActiveTool(value: unknown): value is ActiveTools {
 		value === "datawrapperMCPTools" &&
 		!config.featureFlagMcpDatawrapperAllowed
 	) {
+		return false;
+	}
+
+	if (value === "codeExecutionTool" && !config.featureFlagCodeSandboxAllowed) {
 		return false;
 	}
 

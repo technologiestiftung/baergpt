@@ -61,6 +61,7 @@ const traceToolByStreamName: Record<string, TraceTool> = {
 	parla_vector_search: "parlaMCPTools",
 	create_visualization: "datawrapperMCPTools",
 	publish_visualization: "datawrapperMCPTools",
+	runCode: "codeExecutionTool",
 };
 
 const activeToolsDict: Record<ChatTool, string[]> = {
@@ -68,6 +69,7 @@ const activeToolsDict: Record<ChatTool, string[]> = {
 	openData: ["openDataMCPTools"],
 	datawrapper: ["datawrapperMCPTools"],
 	webSearch: ["webSearchTool"],
+	codeSandbox: ["codeExecutionTool"],
 };
 
 export async function getCompletion(

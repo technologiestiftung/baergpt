@@ -37,6 +37,7 @@ import type {
 	ParsedPage,
 } from "../types/common";
 import { ragSearchTool } from "../tools/rag-search-tool";
+import { codeExecutionTool } from "../tools/code-sandbox/code-execution-tool";
 import {
 	parlaMCPTools,
 	parseParlaToolOutput,
@@ -337,6 +338,7 @@ export class GenerationService {
 			allowedFolderIds,
 			activeTools,
 			userId,
+			sessionId,
 		});
 
 		const nonEmptyAssistantMessage = (message: ModelMessage) =>
@@ -809,9 +811,15 @@ export class GenerationService {
 		allowedFolderIds: number[];
 		activeTools: string[];
 		userId?: string;
+		sessionId?: string;
 	}): Promise<RelevantTools> {
-		const { allowedDocumentIds, allowedFolderIds, activeTools, userId } =
-			options;
+		const {
+			allowedDocumentIds,
+			allowedFolderIds,
+			activeTools,
+			userId,
+			sessionId,
+		} = options;
 
 		const relevantTools: RelevantTools = {
 			tools: {},
@@ -835,6 +843,16 @@ export class GenerationService {
 
 		if (activeTools.includes("webSearchTool")) {
 			relevantTools.tools.webSearchTool = webSearchTool;
+			relevantTools.toolChoice = "auto";
+		}
+
+		if (activeTools.includes("codeExecutionTool") && userId && sessionId) {
+			relevantTools.tools.runCode = await codeExecutionTool({
+				dbService: this.dbService,
+				userId,
+				sessionId,
+				allowedDocumentIds,
+			});
 			relevantTools.toolChoice = "auto";
 		}
 

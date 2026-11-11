@@ -11,6 +11,10 @@ import {
 import { type JSX, memo, useMemo } from "react";
 import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
+import {
+	createSandboxFileLink,
+	createSandboxImage,
+} from "../../primitives/markdown/sandbox-file.tsx";
 import { config } from "../../../config.ts";
 import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
 
@@ -31,6 +35,7 @@ export const ChatMessage = memo(function ChatMessage({
 	const hasAssistantContent = content !== "" || Boolean(traces);
 
 	const datawrapperChartIds = message.datawrapper_chart_ids;
+	const chatId = message.chat_id;
 
 	// A new link component type on every render would remount (and reload)
 	// each embedded chart while streaming, so only rebuild when the ids change
@@ -43,10 +48,13 @@ export const ChatMessage = memo(function ChatMessage({
 
 		return {
 			table: MarkdownWrapperScrollableTable,
-			a: createMarkdownLinkWithDatawrapperEmbed(allowedDatawrapperChartIds),
-			img: () => null,
+			a: createSandboxFileLink(
+				chatId,
+				createMarkdownLinkWithDatawrapperEmbed(allowedDatawrapperChartIds),
+			),
+			img: createSandboxImage(chatId),
 		};
-	}, [datawrapperChartIds]);
+	}, [datawrapperChartIds, chatId]);
 
 	const { isLastMessage, hasChatButtons } = useChatButtonsVisibility(message);
 	const assistantComponents = useMemo(

@@ -1013,6 +1013,12 @@ export const Content = {
 	"chat.thinking.tool.datawrapperMCPTools.done": "Grafik erstellt",
 	"chat.thinking.tool.datawrapperMCPTools.done.description":
 		"Ich habe eine Grafik mit Datawrapper erstellt.",
+	"chat.thinking.tool.codeExecutionTool.running": "Code ausführen",
+	"chat.thinking.tool.codeExecutionTool.running.description":
+		"Ich arbeite in einer abgeschotteten Umgebung ohne Internetzugang.",
+	"chat.thinking.tool.codeExecutionTool.done": "Code ausgeführt",
+	"chat.thinking.tool.codeExecutionTool.done.description":
+		"Ich habe die Dateien in der abgeschotteten Umgebung bearbeitet.",
 	//Chat error text
 	"chat.errorText.title": "Ihre Anfrage konnte gerade nicht bearbeitet werden.",
 	"chat.errorText.p1": "Bitte versuchen Sie es später erneut. ",
@@ -1047,6 +1053,8 @@ export const Content = {
 
 	"chat.textarea.placeholder": "Stellen Sie eine Frage",
 	"chat.textarea.placeholder.webSearch": "Das Web durchsuchen",
+	"chat.textarea.placeholder.codeSandbox":
+		"Dateien analysieren, umwandeln oder erstellen",
 	"chat.textarea.placeholder.parla": "Parla Berlin durchsuchen",
 	"chat.textarea.placeholder.openData": "Open Data Portal durchsuchen",
 	"chat.textarea.placeholder.datawrapper": "Datawrapper nutzen",
@@ -1069,6 +1077,8 @@ export const Content = {
 	"chat.options.li2.ariaLabel": "Konnektoren auswählen",
 	"chat.options.li3.label": "Websuche",
 	"chat.options.li3.ariaLabel": "Websuche auswählen",
+	"chat.options.li4.label": "Dateien bearbeiten",
+	"chat.options.li4.ariaLabel": "Dateien bearbeiten und analysieren auswählen",
 	// MCP Options Dialog
 	"mcp.options.dialog.title": "MCP Server auswählen",
 	"mcp.options.dialog.confirmButton.label": "Bestätigen",
@@ -1148,6 +1158,8 @@ export const Content = {
 	"chat.contextPill.webSearch.label": "Websuche",
 	"chat.contextPill.webSearch.ariaLabel": "Websuche entfernen",
 	"chat.contextPill.webSearch.icon.alt": "Websuche icon",
+	"chat.contextPill.codeSandbox.label": "Dateien bearbeiten",
+	"chat.contextPill.codeSandbox.ariaLabel": "Dateien bearbeiten entfernen",
 	"chat.contextPill.parla.label": "Parla Berlin",
 	"chat.contextPill.parla.ariaLabel": "Parla Berlin entfernen",
 	"chat.contextPill.parla.icon.alt": "Parla Berlin icon",

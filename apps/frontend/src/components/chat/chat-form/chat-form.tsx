@@ -255,6 +255,9 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		if (isWebSearchActive) {
 			return Content["chat.textarea.placeholder.webSearch"];
 		}
+		if (selectedChatTools.includes("codeSandbox")) {
+			return Content["chat.textarea.placeholder.codeSandbox"];
+		}
 		return Content["chat.textarea.placeholder"];
 	};
 

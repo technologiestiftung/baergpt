@@ -10,6 +10,7 @@ import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
 import favicon from "./routes/favicon";
 import integrations from "./routes/integrations";
+import sandbox from "./routes/sandbox";
 import { captureError } from "./monitoring/capture-error";
 import { logMemory } from "./monitoring/memory-logger";
 import { configureAiSdkWarnings } from "./monitoring/ai-sdk-warnings";
@@ -48,6 +49,7 @@ app.route("/favicon", favicon);
 app.route("/llm", llms);
 app.route("/admin", admin);
 app.route("/integrations", integrations);
+app.route("/sandbox", sandbox);
 
 app.onError((error, c) => {
 	captureError(error);

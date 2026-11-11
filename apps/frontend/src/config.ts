@@ -57,6 +57,8 @@ function parseConfig(env: Record<string, string>) {
 		defaultDocumentProcessingModel: env.VITE_DEFAULT_DOCUMENT_PROCESSING_MODEL,
 		featureFlagWebSearchAllowed:
 			env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true",
+		featureFlagCodeSandboxAllowed:
+			env.VITE_FEATURE_FLAG_CODE_SANDBOX_ALLOWED === "true",
 		featureFlagMcpParlaAllowed:
 			env.VITE_FEATURE_FLAG_MCP_PARLA_ALLOWED === "true",
 		featureFlagMcpOpenDataAllowed:

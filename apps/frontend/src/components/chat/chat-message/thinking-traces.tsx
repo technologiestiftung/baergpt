@@ -5,6 +5,7 @@ import { DatawrapperIcon } from "../../primitives/icons/datawrapper-icon.tsx";
 import { DocumentIcon } from "../../primitives/icons/document-icon.tsx";
 import { LoadingSpinnerIcon } from "../../primitives/icons/loading-spinner-icon.tsx";
 import { ParlaIcon } from "../../primitives/icons/parla-icon.tsx";
+import { CodeSandboxIcon } from "../../primitives/icons/code-sandbox-icon.tsx";
 import { WebSearchIcon } from "../../primitives/icons/web-search-icon.tsx";
 
 const toolIcons: Record<TraceTool, () => JSX.Element> = {
@@ -12,6 +13,7 @@ const toolIcons: Record<TraceTool, () => JSX.Element> = {
 	ragSearchTool: () => <DocumentIcon variant="lightBlue" />,
 	parlaMCPTools: () => <ParlaIcon />,
 	datawrapperMCPTools: () => <DatawrapperIcon />,
+	codeExecutionTool: () => <CodeSandboxIcon size={20} />,
 };
 
 /** A tool call: icon, what was done, and a sentence describing it. */

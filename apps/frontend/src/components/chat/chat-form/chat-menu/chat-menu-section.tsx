@@ -6,6 +6,7 @@ import { useChatsStore } from "../../../../store/use-chats-store.ts";
 import { useFileUploadsStore } from "../../../../store/use-file-uploads-store.ts";
 import { useErrorStore } from "../../../../store/error-store.ts";
 import { WebSearchIcon } from "../../../primitives/icons/web-search-icon.tsx";
+import { CodeSandboxIcon } from "../../../primitives/icons/code-sandbox-icon.tsx";
 import type { ChatToolsMenuItemId } from "../../../../common.ts";
 import { ChatMenuRow } from "./chat-menu-row.tsx";
 import { config } from "../../../../config.ts";
@@ -62,6 +63,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 	};
 
 	const isWebSearchActive = selectedChatTools.includes("webSearch");
+	const isCodeSandboxActive = selectedChatTools.includes("codeSandbox");
 
 	const menuItems: MenuItem[] = [
 		{
@@ -89,6 +91,27 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 						isCheckbox: true,
 						onSelect: () => {
 							toggleChatTool("webSearch");
+							onClose();
+						},
+					} satisfies MenuItem,
+				]
+			: []),
+		...(config.featureFlagCodeSandboxAllowed
+			? [
+					{
+						id: "codeSandbox",
+						label: Content["chat.options.li4.label"],
+						ariaLabel: Content["chat.options.li4.ariaLabel"],
+						icon: (
+							<CodeSandboxIcon
+								size={20}
+								variant={isCodeSandboxActive ? "active" : "default"}
+							/>
+						),
+						isSelected: isCodeSandboxActive,
+						isCheckbox: true,
+						onSelect: () => {
+							toggleChatTool("codeSandbox");
 							onClose();
 						},
 					} satisfies MenuItem,

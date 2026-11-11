@@ -516,10 +516,10 @@ export abstract class BaseContentDbService {
 
 	async getStorageInformationForDocumentId(
 		documentId: number,
-	): Promise<{ bucket: string; sourceUrl: string }> {
+	): Promise<{ bucket: string; sourceUrl: string; fileName: string | null }> {
 		const { data, error } = await this.client
 			.from("documents")
-			.select("source_url, source_type")
+			.select("source_url, source_type, file_name")
 			.eq("id", documentId)
 			.single();
 		if (error) {
@@ -532,6 +532,16 @@ export abstract class BaseContentDbService {
 			? "public_documents"
 			: "documents";
 
-		return { bucket, sourceUrl: data.source_url };
+		return { bucket, sourceUrl: data.source_url, fileName: data.file_name };
+	}
+
+	async downloadFileFromStorage(bucket: string, path: string): Promise<Buffer> {
+		const { data, error } = await this.client.storage
+			.from(bucket)
+			.download(path);
+		if (error) {
+			throw error;
+		}
+		return Buffer.from(await data.arrayBuffer());
 	}
 }

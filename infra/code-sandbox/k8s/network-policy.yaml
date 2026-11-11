@@ -1,0 +1,12 @@
+# Sandbox pods get no network at all, DNS included. The backend reaches them
+# through the Kubernetes API (kubectl exec), which is not pod network traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+  namespace: baergpt-sandbox
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

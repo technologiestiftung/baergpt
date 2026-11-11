@@ -5,6 +5,7 @@ import { WebSearchIcon } from "../icons/web-search-icon.tsx";
 import { ParlaIcon } from "../icons/parla-icon.tsx";
 import { OpenDataIcon } from "../icons/open-data-icon.tsx";
 import { DatawrapperIcon } from "../icons/datawrapper-icon.tsx";
+import { CodeSandboxIcon } from "../icons/code-sandbox-icon.tsx";
 
 interface ContextPillProps {
 	tool: ChatTool;
@@ -13,6 +14,7 @@ interface ContextPillProps {
 
 const icons: Record<ChatTool, JSX.Element> = {
 	webSearch: <WebSearchIcon variant="active" />,
+	codeSandbox: <CodeSandboxIcon variant="active" />,
 	parla: <ParlaIcon />,
 	openData: <OpenDataIcon />,
 	datawrapper: <DatawrapperIcon />,
