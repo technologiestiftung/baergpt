@@ -620,6 +620,91 @@ export const Content = {
 	"termsOfUsePage.contact.website": "https://www.baergpt.berlin",
 	"termsOfUsePage.contact.helpcenter.website": "https://hilfe.baergpt.berlin",
 
+	/* -------------------- Accessibility Statement Page -------------------- */
+	"accessibilityStatementPage.h1": "Erklärung zur digitalen Barrierefreiheit",
+
+	"accessibilityStatementPage.section1.title":
+		"Öffentliche Stelle / Geltungsbereich",
+	"accessibilityStatementPage.section1.org": "Technologiestiftung Berlin",
+	"accessibilityStatementPage.section1.p1":
+		"Wir bemühen uns, unseren Webauftritt oder unsere mobile Anwendung barrierefrei zu gestalten. Die Erklärung zur digitalen Barrierefreiheit wird im Gesetz über die barrierefreie Informations- und Kommunikationstechnik Berlin (BIKTG Bln) verlangt. Die technischen Anforderungen zur Barrierefreiheit ergeben sich aus der BITV 2.0.",
+	"accessibilityStatementPage.section1.p2.part1":
+		"Diese Erklärung zur digitalen Barrierefreiheit gilt für den KI-Assistenten BärGPT unter",
+	"accessibilityStatementPage.section1.p2.link": "www.baergpt.berlin",
+	"accessibilityStatementPage.section1.p2.link.href":
+		"https://www.baergpt.berlin",
+	"accessibilityStatementPage.section1.p2.part2":
+		"einschließlich der Anmelde-, Registrierungs- und Profilseiten sowie für das Hilfeangebot unter",
+	"accessibilityStatementPage.section1.p2.link2": "hilfe.baergpt.berlin",
+	"accessibilityStatementPage.section1.p2.link2.href":
+		"https://hilfe.baergpt.berlin/",
+	"accessibilityStatementPage.section1.p3":
+		"BärGPT wurde vom CityLAB Berlin in enger Zusammenarbeit mit der Senatskanzlei Berlin entwickelt. Betrieb und technische Umsetzung liegen bei der Technologiestiftung Berlin. Datenschutzrechtlich verantwortlich für den Probeechtbetrieb ist die Senatskanzlei Berlin; Einzelheiten dazu stehen in der Datenschutzerklärung.",
+
+	"accessibilityStatementPage.section2.title":
+		"Erstellung dieser Erklärung zur Barrierefreiheit",
+	"accessibilityStatementPage.section2.p1.part1": "Diese Erklärung wurde am",
+	"accessibilityStatementPage.section2.p1.part2": "erstellt.",
+	"accessibilityStatementPage.section2.p2.part1":
+		"Die Aussagen dieser Erklärung wurden zuletzt am",
+	"accessibilityStatementPage.section2.p2.part2": "überprüft.",
+	"accessibilityStatementPage.section2.date": "30.10.2026",
+	"accessibilityStatementPage.section2.p3":
+		"Die Überprüfung der digitalen Barrierefreiheit wurde durchgeführt von der oben aufgeführten öffentlichen Stelle durch eine Selbstbewertung.",
+
+	"accessibilityStatementPage.section3.title":
+		"Wie barrierefrei ist das Angebot?",
+	"accessibilityStatementPage.section3.p1":
+		"Dieser Webauftritt / Diese mobile Anwendung ist teilweise barrierefrei. Es werden nur teilweise die Anforderungen der BITV 2.0 erfüllt.",
+
+	"accessibilityStatementPage.section4.title":
+		"Welche Bereiche sind nicht barrierefrei?",
+	"accessibilityStatementPage.section4.p1":
+		"Die nachstehend aufgeführten Bereiche sind aus folgenden Gründen nicht barrierefrei:",
+	"accessibilityStatementPage.section4.label1": "Unvereinbarkeit mit BITV 2.0",
+	"accessibilityStatementPage.section4.p2":
+		"Teilbereiche, die nicht barrierefrei sind:",
+	"accessibilityStatementPage.section4.label2":
+		"Barriere: Chatverlauf ist nicht als Liste ausgezeichnet",
+	"accessibilityStatementPage.section4.p3":
+		"Beschreibung: Der Chatverlauf ist eine Abfolge zusammengehöriger Beiträge, wird technisch aber nicht als Liste ausgezeichnet. Screenreader kündigen dadurch weder die Anzahl der Beiträge noch deren Reihenfolge an, sodass die Orientierung im Verlauf erschwert ist (Anforderung 9.1.3.1 Info und Beziehungen der EN 301 549).",
+	"accessibilityStatementPage.section4.label3": "Alternative",
+	"accessibilityStatementPage.section4.li1":
+		"Die Beiträge sind einzeln vollständig lesbar und in der richtigen Reihenfolge zugänglich; es fehlt allein die Strukturansage.",
+	"accessibilityStatementPage.section4.label4": "Kein Anwendungsfall",
+	"accessibilityStatementPage.section4.p4":
+		"Diese Inhalte fallen nicht in den Anwendungsbereich des Barrierefreien IKT Gesetzes Berlin.",
+	"accessibilityStatementPage.section4.p5":
+		"Ausnahmen, die nicht barrierefrei sein müssen (aufgrund des BIKTG Bln, § 4 Absatz 4)",
+	"accessibilityStatementPage.section4.label5":
+		"Von Nutzenden hochgeladene Dateien",
+	"accessibilityStatementPage.section4.p6":
+		"Nutzende können eigene Dokumente in BärGPT hochladen und auswerten lassen. Diese Dateien stammen nicht von uns und sind nicht barrierefrei, wenn sie es bereits beim Hochladen nicht waren. Sie sind ausschließlich für die hochladende Person sichtbar.",
+
+	"accessibilityStatementPage.section5.title":
+		"Feedbackmechanismus/ Barrieren melden",
+	"accessibilityStatementPage.section5.p1":
+		"Sie möchten Informationen zur Umsetzung der Barrierefreiheit oder bestehende Barrieren melden? Sie können etwas auf unserer Website oder der mobilen Anwendung nicht ausreichend wahrnehmen, bedienen oder verstehen? Sie benötigen Informationen in einer barrierefreien Form? Dann informieren Sie uns bitte.",
+	"accessibilityStatementPage.section5.p2":
+		"Kontakt zur Ansprechperson der öffentlichen Stelle:",
+	"accessibilityStatementPage.section5.contact.email": "support@baergpt.berlin",
+	"accessibilityStatementPage.section5.contact.phone": "030959996410",
+
+	"accessibilityStatementPage.section6.title":
+		"Weitere Informationen zu BärGPT",
+	"accessibilityStatementPage.section6.p1":
+		"BärGPT ist ein Open-Source-Projekt der Technologiestiftung Berlin und des CityLAB Berlin, entwickelt in enger Zusammenarbeit mit der Senatskanzlei Berlin.",
+	"accessibilityStatementPage.section6.li1": "Datenschutzerklärung",
+	"accessibilityStatementPage.section6.li1.link": "/privacy-policy/",
+	"accessibilityStatementPage.section6.li2": "Nutzungsbedingungen",
+	"accessibilityStatementPage.section6.li2.link": "/terms-of-use/",
+	"accessibilityStatementPage.section6.li3": "Impressum",
+	"accessibilityStatementPage.section6.li3.link":
+		"https://www.technologiestiftung-berlin.de/impressum",
+	"accessibilityStatementPage.section6.li4": "Quellcode auf GitHub",
+	"accessibilityStatementPage.section6.li4.link":
+		"https://github.com/technologiestiftung/baergpt",
+
 	/* -------------------- Video player -------------------- */
 	"videoPlayer.cookies.buttonLabel": "Cookies akzeptieren",
 	"videoPlayer.cookies.buttonAriaLabel":
@@ -794,6 +879,7 @@ export const Content = {
 	"documentsList.rename": "Umbenennen",
 	"documentsList.rename.imgAlt": "Stift-Icon",
 	"documentsList.renameFolder": "Ordner umbenennen",
+	"documentsList.renameDocument": "Dokument umbenennen",
 
 	"documentsList.menuIcon.imgAlt": "Menü-Icon",
 	"documentsList.menuIcon.ariaLabel": "Menü öffnen",
@@ -817,6 +903,7 @@ export const Content = {
 	"fileUpload.helpLink.generic.link":
 		"https://hilfe.baergpt.berlin/faq#warum-kann-ich-eine-datei-nicht-hochladen",
 	"fileUpload.helpLink.ariaLabel": "Hilfe-seite öffnen",
+	"fileUpload.duplicate.existingFileName": "Bereits vorhanden als",
 	// file upload counter message
 	"fileUpload.infoMessage.counter.p1": `von`,
 	"fileUpload.infoMessage.counter.p2": `möglichen Dateien hochgeladen.`,
@@ -856,10 +943,26 @@ export const Content = {
 	"createFolderDialog.folderName": "Unbenannter Ordner",
 	"createFolderDialog.cancel": "Abbrechen",
 	"createFolderDialog.create": "Erstellen",
+	//RenameItemDialog
+	"renameItemDialog.cancel": "Abbrechen",
+	"renameItemDialog.rename": "Umbenennen",
+	"renameItemDialog.error.empty": "Bitte geben Sie einen Namen ein.",
+	"renameItemDialog.error.tooLong":
+		"Der Name darf maximal {maxLength} Zeichen lang sein.",
 	//RenameFolderDialog
 	"renameFolderDialog.title": "Ordner umbenennen",
-	"renameFolderDialog.cancel": "Abbrechen",
-	"renameFolderDialog.rename": "Umbenennen",
+	"renameFolderDialog.error.failed":
+		"Der Ordner konnte nicht umbenannt werden. Bitte versuchen Sie es erneut.",
+	//RenameDocumentDialog
+	"renameDocumentDialog.title": "Dokument umbenennen",
+	"renameDocumentDialog.error.duplicate":
+		"Ein Dokument mit diesem Namen existiert bereits.",
+	"renameDocumentDialog.error.extensionChanged":
+		"Der Dateityp kann nicht geändert werden. Bitte behalten Sie {extension} bei.",
+	"renameDocumentDialog.error.extensionAdded":
+		"Der Dateityp kann nicht geändert werden. Bitte geben Sie den Namen ohne Dateiendung ein.",
+	"renameDocumentDialog.error.failed":
+		"Das Dokument konnte nicht umbenannt werden. Bitte versuchen Sie es erneut.",
 	//DeleteHistoryEntryDialog
 	"deleteHistoryEntryDialog.title": "Chat löschen?",
 	"deleteHistoryEntryDialog.confirmation.p1": "Möchten Sie",
@@ -973,6 +1076,7 @@ export const Content = {
 	"chat.selectedChatItems.document": "Datei in diesem Chat",
 	"chat.selectedChatItems.folder": "Ordner in diesem Chat",
 	"chat.selectedChatItems.items": "Elemente in diesem Chat",
+	"chat.fileUploadPill.remove.ariaLabel": "entfernen",
 	//Chat options dropdown
 	"chat.options.toggleButton.tooltip": "Weitere Funktionen aktivieren",
 	"chat.options.toggleButton.tooltip.ariaLabel":
@@ -1026,6 +1130,8 @@ export const Content = {
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
 	"chat.copyToClipboardButton.ariaLabel": "In Zwischenablage kopieren",
+	"chat.userMessage.showMore": "Mehr anzeigen",
+	"chat.userMessage.showLess": "Weniger anzeigen",
 	"chat.disclaimer.p1": "BärGPT kann",
 	"chat.disclaimer.p2": "Fehler",
 	"chat.disclaimer.p2.link":
@@ -1050,6 +1156,15 @@ export const Content = {
 	"chat.exportChatTextButton.pdf.label": "PDF exportieren",
 	"chat.exportChatTextButton.pdf.ariaLabel": "Chat als PDF exportieren",
 	"chat.exportChatTextButton.error": "Export fehlgeschlagen",
+
+	"chat.exportTableButton.label": "Tabelle herunterladen",
+	"chat.exportTableButton.ariaLabel": "Tabelle herunterladen",
+	"chat.exportTableButton.xlsx.label": "XLSX exportieren",
+	"chat.exportTableButton.xlsx.ariaLabel": "Tabelle als XLSX exportieren",
+	"chat.exportTableButton.csv.label": "CSV exportieren",
+	"chat.exportTableButton.csv.ariaLabel": "Tabelle als CSV exportieren",
+	"chat.exportTableButton.sheetName": "Tabelle 1",
+	"chat.exportTableButton.emptyHeaderPrefix": "Spalte",
 
 	"chat.contextPill.webSearch.label": "Websuche",
 	"chat.contextPill.webSearch.ariaLabel": "Websuche entfernen",
@@ -1348,6 +1463,8 @@ export const Content = {
 	"footer.privacy.link": "/privacy-policy/",
 	"footer.termsOfUse": "Nutzungsbedingungen",
 	"footer.termsOfUse.link": "/terms-of-use/",
+	"footer.accessibilityStatement": "Erklärung zur Barrierefreiheit",
+	"footer.accessibilityStatement.link": "/accessibility-statement/",
 	"footer.citylabLogo.alt": "CityLAB Berlin",
 	"footer.citylabLogo.link": "https://citylab-berlin.org/",
 

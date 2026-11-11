@@ -9,7 +9,10 @@ import { config } from "../../config.ts";
 
 export async function uploadAndProcessDocument(
 	file: File,
-	updateFileUploadStatusCallback: (status: UploadStatusKeys) => void,
+	updateFileUploadStatusCallback: (
+		status: UploadStatusKeys,
+		existingFileName?: string,
+	) => void,
 ): Promise<number> {
 	const { session } = useAuthStore.getState();
 	const { currentFolder } = useCurrentFolderStore.getState();
@@ -94,7 +97,10 @@ export async function uploadAndProcessDocument(
 					continue;
 				}
 
-				updateFileUploadStatusCallback(status as UploadStatusKeys);
+				updateFileUploadStatusCallback(
+					status as UploadStatusKeys,
+					event.existingFileName,
+				);
 
 				if (status.startsWith("failed")) {
 					throw new Error(status);

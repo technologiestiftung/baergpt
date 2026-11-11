@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+	</head>
+	<body
+		style="
+			font-family: Arial, Helvetica, sans-serif;
+			background-color: #eef2f7;
+			margin: 0;
+			padding: 0;
+		"
+	>
+		<!-- Sent by supabase/scripts/process-inactive-users.ts, not by GoTrue: placeholders are filled in by renderTemplate, not Go templates -->
+		<table
+			width="100%"
+			cellpadding="0"
+			cellspacing="0"
+			style="background-color: #eef2f7"
+			class="email-wrapper"
+		>
+			<tr>
+				<td align="center" style="padding: 48px 16px">
+					<table
+						width="600"
+						cellpadding="0"
+						cellspacing="0"
+						style="
+							width: 100%;
+							max-width: 600px;
+							background-color: #ffffff;
+							border-radius: 3px;
+						"
+						class="email-content"
+					>
+						<tr>
+							<td
+								style="
+									padding: 40px;
+									font-family: Arial, Helvetica, sans-serif;
+									color: #0c2753;
+									font-size: 16px;
+									line-height: 24px;
+								"
+							>
+								<table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td align="center" style="padding-bottom: 40px">
+											<a href="{{app_url}}/">
+												<img
+													src="{{app_url}}/logos/baergpt-logo.svg"
+													alt="BärGPT Logo"
+													width="179"
+													height="42"
+													style="display: block; border: 0"
+												/>
+											</a>
+										</td>
+									</tr>
+								</table>
+
+								<p style="margin: 0 0 20px">{{greeting}}</p>
+
+								<p style="margin: 0 0 20px">
+									wir möchten Sie daran erinnern, dass Ihr BärGPT-Konto am
+									<strong>{{deletion_date}}</strong> wegen Inaktivität dauerhaft
+									gelöscht wird. Alle Chatverläufe, Dokumente und Einstellungen
+									werden dabei unwiderruflich entfernt.
+								</p>
+
+								<p style="margin: 0 0 20px">
+									Wenn Sie Ihr Konto behalten möchten, melden Sie sich bitte
+									vorher an:
+								</p>
+
+								<table cellpadding="0" cellspacing="0" style="margin: 0 0 32px">
+									<tr>
+										<td style="background-color: #0c2753; border-radius: 3px">
+											<a
+												href="{{app_url}}/login/"
+												target="_blank"
+												rel="noopener noreferrer"
+												style="
+													display: inline-block;
+													padding: 12px 20px;
+													font-size: 16px;
+													line-height: 24px;
+													color: #f5f8fc;
+													text-decoration: none;
+												"
+											>
+												Anmelden
+											</a>
+										</td>
+									</tr>
+								</table>
+
+								<p style="margin: 0 0 20px">
+									Andernfalls müssen Sie nichts tun.
+								</p>
+
+								<p style="margin: 0">
+									Mit freundlichen Grüßen<br />
+									Ihr BärGPT-Team
+								</p>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

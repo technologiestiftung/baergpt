@@ -3,6 +3,7 @@ import type { ChatMessage } from "../../../common.ts";
 import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { ChatItemPills } from "./chat-item-pills.tsx";
+import { CollapsiblePrompt } from "./collapsible-prompt.tsx";
 import { CopyToClipboardButton } from "./copy-to-clipboard-button.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 
@@ -51,9 +52,7 @@ export function UserMessage({ message, children }: UserMessageProps) {
 		>
 			<ChatItemPills items={foundItems} />
 
-			<div className="bg-hellblau-30 px-2.5 rounded-3px w-fit max-w-[85%] md:max-w-[80%] text-dunkelblau-100">
-				{children}
-			</div>
+			<CollapsiblePrompt messageId={message.id}>{children}</CollapsiblePrompt>
 			<div
 				className={`group-hover:opacity-100 focus-within:opacity-100 opacity-0 transition-opacity duration-150`}
 			>

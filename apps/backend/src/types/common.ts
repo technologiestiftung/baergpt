@@ -237,6 +237,16 @@ export class DefaultDocumentDeletionError extends Error {
 	}
 }
 
+export class DuplicateDocumentError extends Error {
+	existingFileName?: string;
+
+	constructor(existingFileName?: string) {
+		super("failed.duplicate");
+		this.existingFileName = existingFileName;
+		this.name = "DuplicateDocumentError";
+	}
+}
+
 export interface DocumentBufferResponse {
 	buffer: Uint8Array;
 	filename: string;

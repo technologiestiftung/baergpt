@@ -271,6 +271,13 @@ cp backups/configs/staging.env.example backups/configs/staging.env
 
 See the example file for all required variables (rclone remotes, SSH credentials, GPG recipient, retention policy).
 
+### Retention
+
+Each backup run prunes snapshots older than `RETENTION_DAYS`, which is **30 days** for production and staging. So data
+deleted from the live system, e.g. an [inactive account](../apps/backend/supabase/scripts/process-inactive-users.ts), is
+removed from all backups at the latest 30 days after deletion, plus the time until the next backup run. The storage
+mirror (`current_mirror`) drops deleted files on the next run. Raising `RETENTION_DAYS` raises this maximum, so update this section with it.
+
 ### Running Backups
 
 ```bash

@@ -4,6 +4,7 @@ import {
 	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
+	getListItemAction,
 	openDocumentsPanel,
 	uploadFileViaDragAndDropAndWait,
 } from "../fixtures/test-with-documents.ts";
@@ -161,10 +162,11 @@ test.describe("Chat", () => {
 		await openDocumentsPanel(page);
 
 		// Find the add-to-chat button for the specific document
-		const addButton = page
-			.getByRole("listitem")
-			.filter({ hasText: defaultDocumentName })
-			.getByLabel("In den Chat");
+		const addButton = await getListItemAction(
+			page,
+			defaultDocumentName,
+			"In den Chat",
+		);
 		await expect(addButton).toBeVisible();
 
 		// Click the add-to-chat button
@@ -226,6 +228,14 @@ test.describe("Chat", () => {
 				.poll(() => releaseProcessing !== undefined, { timeout: 15_000 })
 				.toBe(true);
 
+			const uploadPill = page.getByTestId(
+				`file-upload-pill-${secondaryDocumentName}`,
+			);
+			await expect(uploadPill).toBeVisible();
+			await expect(page.locator("#chat-form").getByRole("status")).toHaveText(
+				"Hochladen läuft",
+			);
+
 			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
 			await chatInput.fill("Worum geht es?");
 
@@ -263,6 +273,7 @@ test.describe("Chat", () => {
 			await expect(
 				page.getByTestId(`remove-item-${secondaryDocumentName}`),
 			).toBeVisible();
+			await expect(uploadPill).not.toBeVisible();
 
 			// Submit is unblocked again
 			await expect(sendButton).toBeEnabled();
@@ -283,10 +294,11 @@ test.describe("Chat", () => {
 
 			await openDocumentsPanel(page);
 
-			const menuButtonDocument = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Menü öffnen");
+			const menuButtonDocument = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"Menü öffnen",
+			);
 			await expect(menuButtonDocument).toBeVisible();
 
 			await menuButtonDocument.click();
@@ -319,10 +331,11 @@ test.describe("Chat", () => {
 			).toBeVisible();
 
 			// Add the folder and documents to the chat
-			const menuButtonFolder = page
-				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("Menü öffnen");
+			const menuButtonFolder = await getListItemAction(
+				page,
+				givenFolderName,
+				"Menü öffnen",
+			);
 			await expect(menuButtonFolder).toBeVisible();
 			await menuButtonFolder.click();
 
@@ -375,16 +388,12 @@ test.describe("Chat", () => {
 			).toBeVisible();
 
 			// Add the folder and documents to the chat
-			await page
-				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("In den Chat")
-				.click();
-			await page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat")
-				.click();
+			await (
+				await getListItemAction(page, givenFolderName, "In den Chat")
+			).click();
+			await (
+				await getListItemAction(page, defaultDocumentName, "In den Chat")
+			).click();
 
 			await expect(
 				page.getByTestId(`remove-item-${givenFolderName}`),
@@ -427,10 +436,11 @@ test.describe("Chat", () => {
 			await mockLlmCompletion(page, { textDelta: content, citations });
 
 			// Find the add-to-chat button for the specific document
-			const addButton = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat");
+			const addButton = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"In den Chat",
+			);
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -537,10 +547,11 @@ test.describe("Chat", () => {
 			await mockLlmCompletion(page, { textDelta: content, citations });
 
 			// Find the add-to-chat button
-			const addButton = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat");
+			const addButton = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"In den Chat",
+			);
 
 			// Click the add-to-chat button
 			await addButton.click();
@@ -795,7 +806,9 @@ test.describe("Chat", () => {
 
 			await openDocumentsPanel(page);
 
-			await page.getByRole("button", { name: "In den Chat" }).first().click();
+			await (
+				await getListItemAction(page, "Verwaltungswissen", "In den Chat")
+			).click();
 
 			const baseKnowledgeFolderInChat = page.getByTestId(
 				"remove-item-Verwaltungswissen",
@@ -937,11 +950,9 @@ test.describe("Chat", () => {
 			});
 			await expect(webSearchPill).toBeVisible();
 
-			await page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat")
-				.click();
+			await (
+				await getListItemAction(page, defaultDocumentName, "In den Chat")
+			).click();
 
 			await expect(webSearchPill).not.toBeVisible();
 
@@ -993,11 +1004,9 @@ test.describe("Chat", () => {
 			});
 			await expect(webSearchPill).toBeVisible();
 
-			await page
-				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("In den Chat")
-				.click();
+			await (
+				await getListItemAction(page, givenFolderName, "In den Chat")
+			).click();
 
 			await expect(webSearchPill).not.toBeVisible();
 
@@ -1206,10 +1215,11 @@ test.describe("Chat", () => {
 			const historyScopedInfoMessage = page.getByText("Chatverlauf pausiert");
 			await expect(historyScopedInfoMessage).toBeVisible();
 
-			const addDocumentToChatButton = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("In den Chat");
+			const addDocumentToChatButton = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"In den Chat",
+			);
 			await addDocumentToChatButton.click();
 
 			const toolDeactivatedInfoMessage = page.getByText(
@@ -1440,6 +1450,46 @@ test.describe("Chat", () => {
 			await expect(
 				page.getByRole("link", { name: /Berliner Straßenbaumkonzept/ }),
 			).toBeVisible();
+		},
+	);
+
+	testWithMockedLlm(
+		"Arrow keys browse previously sent prompts",
+		async ({ page }) => {
+			await page.goto("/");
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			for (const prompt of ["erste Frage", "zweite Frage"]) {
+				await chatInput.fill(prompt);
+				await sendAndWaitForLLMResponse(page);
+				await expect(
+					page.getByTestId("assistant-message-markdown-container").last(),
+				).not.toBeEmpty();
+			}
+
+			await chatInput.fill("Entwurf");
+
+			await chatInput.press("ArrowUp");
+			await expect(chatInput).toHaveValue("Entwurf");
+
+			await chatInput.evaluate((textarea: HTMLTextAreaElement) =>
+				textarea.setSelectionRange(0, 0),
+			);
+			await chatInput.press("ArrowUp");
+			await expect(chatInput).toHaveValue("zweite Frage");
+			await expect(chatInput).toHaveJSProperty("selectionStart", 12);
+
+			await chatInput.press("ArrowUp");
+			await expect(chatInput).toHaveValue("erste Frage");
+
+			await chatInput.press("ArrowUp");
+			await expect(chatInput).toHaveValue("erste Frage");
+
+			await chatInput.press("ArrowDown");
+			await expect(chatInput).toHaveValue("zweite Frage");
+
+			await chatInput.press("ArrowDown");
+			await expect(chatInput).toHaveValue("Entwurf");
 		},
 	);
 });

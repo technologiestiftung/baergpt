@@ -10,10 +10,15 @@ import React, {
 } from "react";
 import { useInferenceLoadingStatusStore } from "../../../store/use-inference-loading-status-store.ts";
 import { SelectedChatItemsCollapsible } from "../selected-chat-items/selected-chat-items-collapsible.tsx";
+import { FileUploadStatusAnnouncer } from "../selected-chat-items/file-upload-status-announcer.tsx";
 import { useChatStreamingStore } from "../../../store/use-chat-streaming-store.ts";
 import { useUserFolderStore } from "../../../store/use-user-folder-store.ts";
 import { useUserDocumentStore } from "../../../store/use-user-document-store.ts";
-import { useFileUploadsStore } from "../../../store/use-file-uploads-store.ts";
+import {
+	isPendingUpload,
+	useFileUploadsStore,
+} from "../../../store/use-file-uploads-store.ts";
+import { useChatFileUploads } from "../selected-chat-items/hooks/use-chat-file-uploads.ts";
 import Content from "../../../content.ts";
 import type { NewChatMessage } from "../../../common.ts";
 import { getCompletion } from "../../../api/chat/get-completion.ts";
@@ -30,10 +35,12 @@ import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 import { useCurrentChatIdStore } from "../../../store/current-chat-id-store.ts";
 import { ChatSubmitButton } from "./chat-submit-button.tsx";
+import {
+	getTextareaLineHeight,
+	usePromptHistory,
+} from "./hooks/use-prompt-history.ts";
 
 export const chatFormId = "chat-form";
-
-const singleLineHeightFallback = 24;
 
 interface ChatFormHandle {
 	focus: () => void;
@@ -70,7 +77,9 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		useChatsStore();
 	const { showInfoMessage } = useChatsStore.getState();
 	const { abortStreaming } = useChatStreamingStore.getState();
-	const { isUploadingOver } = useFileUploadsStore();
+	const hasPendingChatUploads = useChatFileUploads().some((fileUpload) =>
+		isPendingUpload(fileUpload.status),
+	);
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const shouldMoveCaretToEnd = useRef(false);
@@ -80,6 +89,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	const { currentChatId } = useCurrentChatIdStore();
 
 	const handleTextAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+		resetPromptHistory();
 		setTextareaContent(event.target.value);
 		onContentChange?.(event.target.value);
 	};
@@ -96,6 +106,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		focusTextArea();
 	};
 
+	const { handlePromptHistoryKeyDown, resetPromptHistory } = usePromptHistory({
+		content: textareaContent,
+		setContent,
+	});
+
 	useLayoutEffect(() => {
 		const textareaElement = textareaRef.current;
 		if (!textareaElement) {
@@ -106,9 +121,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		const contentHeight = textareaElement.scrollHeight;
 		textareaElement.style.height = `${contentHeight}px`;
 
-		const lineHeight =
-			Number.parseFloat(getComputedStyle(textareaElement).lineHeight) ||
-			singleLineHeightFallback;
+		const lineHeight = getTextareaLineHeight(textareaElement);
 
 		const overflowsSingleLine =
 			textareaElement.scrollWidth > textareaElement.clientWidth;
@@ -143,6 +156,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 	// Handle Enter key to submit the form
 	// and create a new line with Shift + Enter
 	const handleTextAreaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+		if (handlePromptHistoryKeyDown(event)) {
+			return;
+		}
+
 		const isEnterWithoutShiftPressed = event.key === "Enter" && !event.shiftKey;
 		if (isEnterWithoutShiftPressed) {
 			event.preventDefault();
@@ -150,7 +167,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 
 		const isSubmitEnabled =
 			!isLoading() &&
-			isUploadingOver() &&
+			!hasPendingChatUploads &&
 			event.currentTarget.value.trim().length > 0;
 		if (isEnterWithoutShiftPressed && isSubmitEnabled) {
 			event.currentTarget.form?.requestSubmit();
@@ -173,7 +190,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 
 		showInfoMessage(null);
 
+		useFileUploadsStore.getState().removeAllFileUploadsFromChat();
+
 		// Clear textarea on submit
+		resetPromptHistory();
 		setTextareaContent("");
 		onContentChange?.("");
 
@@ -259,6 +279,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 			id={chatFormId}
 		>
 			<SelectedChatItemsCollapsible />
+			<FileUploadStatusAnnouncer />
 			<ExternalToolWarningBanner />
 
 			<div
@@ -330,7 +351,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 					<ChatSubmitButton
 						showLoading={isLoading() && !hasError}
 						handleStop={handleStop}
-						isDisabled={!textareaContent.trim() || !isUploadingOver()}
+						isDisabled={!textareaContent.trim() || hasPendingChatUploads}
 					/>
 				</div>
 			</div>

@@ -441,6 +441,30 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			inactivity_notifications: {
+				Row: {
+					deletion_date: string;
+					last_active_at: string;
+					reminder_sent_at: string | null;
+					user_id: string;
+					warning_sent_at: string;
+				};
+				Insert: {
+					deletion_date: string;
+					last_active_at: string;
+					reminder_sent_at?: string | null;
+					user_id: string;
+					warning_sent_at: string;
+				};
+				Update: {
+					deletion_date?: string;
+					last_active_at?: string;
+					reminder_sent_at?: string | null;
+					user_id?: string;
+					warning_sent_at?: string;
+				};
+				Relationships: [];
+			};
 			maintenance_mode: {
 				Row: {
 					is_enabled: boolean;
@@ -573,6 +597,21 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			user_session_activity: {
+				Row: {
+					last_active_at: string;
+					user_id: string;
+				};
+				Insert: {
+					last_active_at: string;
+					user_id: string;
+				};
+				Update: {
+					last_active_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 		};
 		Views: {
 			[_ in never]: never;
@@ -606,6 +645,17 @@ export type Database = {
 			deactivate_allowed_domain: {
 				Args: { p_domain: string };
 				Returns: number;
+			};
+			delete_inactive_user: {
+				Args: {
+					expected_deletion_date: string;
+					expected_last_active_at: string;
+					target_user_id: string;
+				};
+				Returns: {
+					deleted: boolean;
+					documents: Json;
+				}[];
 			};
 			delete_user: { Args: never; Returns: undefined };
 			find_unprocessed_documents: {
@@ -695,6 +745,21 @@ export type Database = {
 					storage_version: string;
 				}[];
 			};
+			get_inactive_users: {
+				Args: { for_user_id?: string; inactive_since: string };
+				Returns: {
+					deletion_date: string;
+					email: string;
+					first_name: string;
+					is_banned: boolean;
+					last_active_at: string;
+					last_name: string;
+					notified_last_active_at: string;
+					reminder_sent_at: string;
+					user_id: string;
+					warning_sent_at: string;
+				}[];
+			};
 			get_maintenance_mode_status: { Args: never; Returns: boolean };
 			get_product_dashboard_stats: { Args: never; Returns: Json };
 			get_users: {
@@ -745,6 +810,14 @@ export type Database = {
 			};
 			is_application_admin: { Args: never; Returns: boolean };
 			is_current_user_banned_or_deleted: { Args: never; Returns: boolean };
+			is_document_file_name_taken: {
+				Args: {
+					p_excluded_document_id?: number;
+					p_file_name: string;
+					p_user_id: string;
+				};
+				Returns: boolean;
+			};
 			is_registration_completed: {
 				Args: { user_meta_data: Json };
 				Returns: boolean;

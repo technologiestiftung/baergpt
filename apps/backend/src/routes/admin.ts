@@ -4,9 +4,11 @@ import { captureError } from "../monitoring/capture-error";
 import { serviceRoleDbClient } from "../supabase";
 import { adminAuth } from "../middleware/admin-auth";
 import { RegistrationPendingError } from "../types/common";
+import matomo from "./matomo";
 
 const admin = new Hono();
 admin.use(adminAuth);
+admin.route("/", matomo);
 
 const serviceRoleAdminService = new PrivilegedDbService(serviceRoleDbClient);
 
