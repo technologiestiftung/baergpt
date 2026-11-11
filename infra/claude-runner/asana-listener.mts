@@ -1,4 +1,4 @@
-// Polls one Asana project for "@claude" in task comments and descriptions, starts
+// Polls one or more Asana projects for "@claude" in task comments and descriptions, starts
 // .github/workflows/claude-asana.yml for each, and posts Claude's reply back as a comment.
 // Runs as a LaunchAgent (see install.sh). Node >= 24, no dependencies.
 //
@@ -23,7 +23,7 @@ const REPO = env("REPO");
 const ORG = env("ORG");
 const GITHUB_APP_ID = env("GITHUB_APP_ID");
 const APP_KEY_SERVICE = env("KEYCHAIN_SERVICE");
-const ASANA_PROJECT_GID = env("ASANA_PROJECT_GID");
+const PROJECT_GIDS = env("ASANA_PROJECT_GIDS").split(",").map((gid) => gid.trim()).filter(Boolean);
 const ASANA_TOKEN_SERVICE = env("ASANA_KEYCHAIN_SERVICE", "baergpt-asana-token");
 const CONTEXT_KEY_SERVICE = env("ASANA_CONTEXT_KEY_SERVICE", "baergpt-asana-context-key");
 const WORKFLOW = env("ASANA_WORKFLOW", "claude-asana.yml");
@@ -37,7 +37,7 @@ const BOT_PREFIX = "🤖";
 const MAX_CONTEXT_BYTES = 45_000; // UTF-8 bytes; +28 B crypto header, base64 grows ~33%; inputs are capped at 65,535 chars
 const STATE_FILE = join(homedir(), ".config/baergpt-runner/asana-state.json");
 
-type State = { sync?: string; handled: string[] };
+type State = { sync: Record<string, string>; handled: string[] }; // sync token per project
 
 const log = (...args: unknown[]) => console.log(new Date().toISOString(), ...args);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -71,9 +71,11 @@ function decrypt(key: Buffer, b64: string): string {
 
 async function loadState(): Promise<State> {
 	try {
-		return JSON.parse(await readFile(STATE_FILE, "utf8"));
+		const state = JSON.parse(await readFile(STATE_FILE, "utf8"));
+		if (typeof state.sync !== "object" || state.sync === null) state.sync = {}; // pre multi-project state
+		return state;
 	} catch {
-		return { handled: [] };
+		return { sync: {}, handled: [] };
 	}
 }
 
@@ -122,24 +124,37 @@ function denied(userGid: string | undefined): string | undefined {
 
 // Returns new events since the last sync token. A missing or expired token yields a fresh
 // one and no events, so the listener only reacts to mentions written after it started.
-async function pollEvents(state: State): Promise<AsanaEvent[]> {
+async function pollEvents(state: State, project: string): Promise<AsanaEvent[]> {
 	const events: AsanaEvent[] = [];
 	for (;;) {
-		const query = new URLSearchParams({ resource: ASANA_PROJECT_GID });
-		if (state.sync) query.set("sync", state.sync);
+		const query = new URLSearchParams({ resource: project });
+		if (state.sync[project]) query.set("sync", state.sync[project]);
 		const res = await asana(`/events?${query}`);
 		const body = (await res.json()) as { data?: AsanaEvent[]; sync: string; has_more?: boolean };
 		if (res.status === 412) {
-			state.sync = body.sync;
-			log("Asana sync token (re)initialized");
+			state.sync[project] = body.sync;
+			log(`Asana sync token (re)initialized for project ${project}`);
 			return [];
 		}
 		// Keep the old token on other errors, so the next poll retries the same events.
-		if (!res.ok) throw new Error(`Asana events: ${res.status} ${JSON.stringify(body)}`);
-		state.sync = body.sync;
+		if (!res.ok) throw new Error(`Asana events (project ${project}): ${res.status} ${JSON.stringify(body)}`);
+		state.sync[project] = body.sync;
 		events.push(...(body.data ?? []));
 		if (!body.has_more) return events;
 	}
+}
+
+// Events of all projects. A failing project is skipped this round; the others still run.
+async function pollAllEvents(state: State): Promise<AsanaEvent[]> {
+	const events: AsanaEvent[] = [];
+	for (const project of PROJECT_GIDS) {
+		try {
+			events.push(...(await pollEvents(state, project)));
+		} catch (error) {
+			log("Poll failed:", error);
+		}
+	}
+	return events;
 }
 
 type Trigger = { key: string; taskGid: string; request: string; deniedUser?: string };
@@ -183,7 +198,9 @@ async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger
 			});
 		}
 	}
-	return triggers.filter((t) => !state.handled.includes(t.key));
+	// A task on several boards yields the same event once per board.
+	const unique = new Map(triggers.map((t) => [t.key, t]));
+	return [...unique.values()].filter((t) => !state.handled.includes(t.key));
 }
 
 async function buildContext(taskGid: string, request: string): Promise<{ markdown: string; url: string }> {
@@ -334,10 +351,10 @@ async function handle(trigger: Trigger): Promise<void> {
 }
 
 const state = await loadState();
-log(`Listening to Asana project ${ASANA_PROJECT_GID}, every ${POLL_SECONDS}s`);
+log(`Listening to Asana projects ${PROJECT_GIDS.join(", ")}, every ${POLL_SECONDS}s`);
 for (;;) {
 	try {
-		const triggers = await findTriggers(await pollEvents(state), state);
+		const triggers = await findTriggers(await pollAllEvents(state), state);
 		for (const trigger of triggers) {
 			state.handled.push(trigger.key); // before starting, so a crash never runs it twice
 			void handle(trigger);
