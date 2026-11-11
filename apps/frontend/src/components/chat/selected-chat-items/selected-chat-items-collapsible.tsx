@@ -56,7 +56,7 @@ export const SelectedChatItemsCollapsible: React.FC = () => {
 			)}
 
 			{isCollapsibleOpen && (
-				<div className="flex flex-wrap gap-2 max-h-20 overflow-auto pt-1 pl-1 pb-0.5">
+				<div className="flex flex-wrap gap-2 max-h-20 overflow-auto pt-1 pl-1 pb-0.5 chatsearch-scrollbar">
 					{selectedPublicChatFolders.map((item) => (
 						<SelectedItemPill
 							key={`${item.id}-${item.name}`}
