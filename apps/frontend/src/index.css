@@ -82,8 +82,102 @@
 		@apply font-arial;
 	}
 
-	.markdown-container pre {
+	.markdown-container pre:not(.code-block-pre) {
 		@apply ml-10 whitespace-pre-wrap w-[90%] my-10;
+	}
+
+	.code-block {
+		--code-block-surface: theme("colors.hellblau-30");
+		/*
+		 * mittelblau-100, not hellblau-50: a user message's own bubble
+		 * (user-message.tsx) is already bg-hellblau-30, so a code block
+		 * nested inside one needs a border that still reads against that
+		 * backdrop, not just against the assistant side's plain white.
+		 * mittelblau-100 clears ~3:1 (the non-text UI-boundary guideline)
+		 * against both.
+		 */
+		--code-block-border: theme("colors.mittelblau-100");
+		--code-block-text: theme("colors.dunkelblau-100");
+		--code-block-string: theme("colors.mittelgruen-130");
+		--code-block-number: theme("colors.warning-120");
+		--code-block-function: theme("colors.dunkelblau-80");
+		--code-block-comment: theme("colors.schwarz-60");
+
+		@apply my-4 w-full rounded-[3px] overflow-hidden border;
+		background-color: var(--code-block-surface);
+		border-color: var(--code-block-border);
+	}
+
+	.code-block-header {
+		@apply flex items-center justify-between gap-2 pl-3 pr-1 py-1 text-sm border-b;
+		border-color: var(--code-block-border);
+	}
+
+	.code-block-language {
+		@apply font-arial select-none;
+		color: var(--code-block-text);
+	}
+
+	.code-block-pre {
+		@apply m-0 overflow-x-auto px-4 py-3 text-sm leading-relaxed;
+		color: var(--code-block-text);
+		white-space: pre;
+	}
+
+	.code-block .code-block-pre code {
+		@apply font-mono;
+	}
+
+	.code-block-pre code.hljs {
+		background: transparent;
+	}
+
+	.code-block .hljs-keyword,
+	.code-block .hljs-selector-tag,
+	.code-block .hljs-doctag,
+	.code-block .hljs-name,
+	.code-block .hljs-tag {
+		color: var(--code-block-text);
+		font-weight: 600;
+	}
+
+	.code-block .hljs-string,
+	.code-block .hljs-regexp,
+	.code-block .hljs-addition,
+	.code-block .hljs-attr,
+	.code-block .hljs-attribute {
+		color: var(--code-block-string);
+	}
+
+	.code-block .hljs-number,
+	.code-block .hljs-literal,
+	.code-block .hljs-symbol,
+	.code-block .hljs-bullet,
+	.code-block .hljs-deletion {
+		color: var(--code-block-number);
+	}
+
+	.code-block .hljs-title,
+	.code-block .hljs-section,
+	.code-block .hljs-type,
+	.code-block .hljs-built_in,
+	.code-block .hljs-variable,
+	.code-block .hljs-template-variable {
+		color: var(--code-block-function);
+	}
+
+	.code-block .hljs-comment,
+	.code-block .hljs-quote,
+	.code-block .hljs-meta {
+		color: var(--code-block-comment);
+	}
+
+	.code-block .hljs-emphasis {
+		font-style: italic;
+	}
+
+	.code-block .hljs-strong {
+		font-weight: 700;
 	}
 
 	.markdown-container blockquote {
@@ -93,10 +187,6 @@
 	.markdown-container hr {
 		@apply m-3;
 	}
-
-	/* .markdown-container table {
-		@apply my-5 overflow-x-scroll block max-w-[80vw] sm:w-[604px] sm:max-w-[604px];
-	} */
 
 	.markdown-container table {
 		@apply w-full;
