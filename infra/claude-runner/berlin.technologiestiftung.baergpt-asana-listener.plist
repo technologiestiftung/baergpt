@@ -15,8 +15,8 @@
   <dict>
     <key>NODE_BIN</key>
     <string>__NODE_BIN__</string>
-    <key>ASANA_PROJECT_GID</key>
-    <string>__ASANA_PROJECT_GID__</string>
+    <key>ASANA_PROJECT_GIDS</key>
+    <string>__ASANA_PROJECT_GIDS__</string>
     <key>ASANA_ALLOWED_USERS</key>
     <string>__ASANA_ALLOWED_USERS__</string>
   </dict>

@@ -55,8 +55,8 @@ Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA f
 
 ## Asana
 
-Write `@claude` in a task comment or description on the configured Asana board.
-`asana-listener.mts` (LaunchAgent) polls the board every 10 s (`ASANA_POLL_SECONDS`) and starts `.github/workflows/claude-asana.yml` with the task as input.
+Write `@claude` in a task comment or description on one of the configured Asana boards.
+`asana-listener.mts` (LaunchAgent) polls the boards every 10 s (`ASANA_POLL_SECONDS`) and starts `.github/workflows/claude-asana.yml` with the task as input.
 Claude answers, or opens a PR against `staging`, or pushes to an existing PR. The listener posts the reply as an Asana comment starting with 🤖; those never re-trigger.
 The Asana token stays in the keychain on this Mac. It never reaches GitHub or Claude.
 
@@ -74,7 +74,7 @@ Setup:
    gh secret set ASANA_CONTEXT_KEY -R technologiestiftung/baergpt --env asana --body "$KEY"
    unset KEY
    ```
-4. Set `ASANA_PROJECT_GID` (the number in the board URL) and `ASANA_ALLOWED_USERS` (Asana user GIDs, comma-separated; command in `config.sh`) in `~/.config/baergpt-runner/env` (per host, not in git), or store them in 1Password and set `ASANA_PROJECT_GID_OP` / `ASANA_ALLOWED_USERS_OP` there instead (e.g. `op://Vault/Item/field`; `install.sh` reads them with `op read`). Then run `./install.sh`. Log: `~/Library/Logs/baergpt-runner/asana.log`.
+4. Set `ASANA_PROJECT_GIDS` (the number in each board URL, comma-separated) and `ASANA_ALLOWED_USERS` (Asana user GIDs, comma-separated; command in `config.sh`) in `~/.config/baergpt-runner/env` (per host, not in git), or store them in 1Password and set `ASANA_PROJECT_GIDS_OP` / `ASANA_ALLOWED_USERS_OP` there instead (e.g. `op://Vault/Item/field`; `install.sh` reads them with `op read`). Then run `./install.sh`. Log: `~/Library/Logs/baergpt-runner/asana.log`.
 5. `claude-asana.yml` must be on `main`: GitHub only starts manually dispatched workflows from the default branch.
 
 Only users in `ASANA_ALLOWED_USERS` can trigger Claude; other board members get a reply asking them to get their user ID added. To add someone, edit the env file and re-run `./install.sh`. The context still contains everyone's comments on that task.

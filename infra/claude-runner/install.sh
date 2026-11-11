@@ -30,25 +30,25 @@ op_resolve() {
   command -v op >/dev/null || { echo "1Password CLI missing: brew install 1password-cli"; exit 1; }
   printf -v "$name" '%s' "$(op read "${!ref_name}" | tr -d '[:space:]')"
 }
-op_resolve ASANA_PROJECT_GID
+op_resolve ASANA_PROJECT_GIDS
 op_resolve ASANA_ALLOWED_USERS
 
 ASANA_LABEL=berlin.technologiestiftung.baergpt-asana-listener
 launchctl bootout "gui/$(id -u)/$ASANA_LABEL" 2>/dev/null || true
-if [ -n "$ASANA_PROJECT_GID" ]; then
+if [ -n "$ASANA_PROJECT_GIDS" ]; then
   security find-generic-password -s "$ASANA_KEYCHAIN_SERVICE" -w >/dev/null 2>&1 \
     || { echo "Asana token missing. Run: security add-generic-password -a \"\$USER\" -s $ASANA_KEYCHAIN_SERVICE -w"; exit 1; }
-  [[ "$ASANA_PROJECT_GID" =~ ^[0-9]+$ ]] || { echo "ASANA_PROJECT_GID must be a number"; exit 1; }
+  [[ "$ASANA_PROJECT_GIDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || { echo "ASANA_PROJECT_GIDS: comma-separated Asana project GIDs"; exit 1; }
   [[ "$ASANA_ALLOWED_USERS" =~ ^[0-9]+(,[0-9]+)*$ ]] \
     || { echo "Set ASANA_ALLOWED_USERS (or ASANA_ALLOWED_USERS_OP): comma-separated Asana user GIDs"; exit 1; }
   security find-generic-password -s "$ASANA_CONTEXT_KEY_SERVICE" -w >/dev/null 2>&1 \
     || { echo "Asana context key missing. See README, Asana setup."; exit 1; }
   NODE_BIN="$(command -v node)" || { echo "node missing"; exit 1; }
   sed -e "s#__RUNNER_DIR__#$HERE#g" -e "s#__LOG_DIR__#$LOG_DIR#g" -e "s#__NODE_BIN__#$NODE_BIN#g" \
-    -e "s#__ASANA_PROJECT_GID__#$ASANA_PROJECT_GID#g" -e "s#__ASANA_ALLOWED_USERS__#$ASANA_ALLOWED_USERS#g" \
+    -e "s#__ASANA_PROJECT_GIDS__#$ASANA_PROJECT_GIDS#g" -e "s#__ASANA_ALLOWED_USERS__#$ASANA_ALLOWED_USERS#g" \
     "$HERE/$ASANA_LABEL.plist" > "$HOME/Library/LaunchAgents/$ASANA_LABEL.plist"
   launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/$ASANA_LABEL.plist"
-  echo "Asana listener started for project $ASANA_PROJECT_GID. Logs: $LOG_DIR/asana.log"
+  echo "Asana listener started for projects $ASANA_PROJECT_GIDS. Logs: $LOG_DIR/asana.log"
 fi
 echo "Runner loop started. Logs: tail -f $LOG_DIR/runner.log"
 echo "Nightly rebuild check at 03:00. Logs: $LOG_DIR/rebuild.log"
