@@ -107,6 +107,10 @@ export async function openDocumentsPanel(page: Page) {
 
 	await showButton.click();
 	await expect(hideButton).toBeVisible();
+	// Rows shift while the panel width animates
+	await panel.evaluate((element) =>
+		Promise.all(element.getAnimations().map((animation) => animation.finished)),
+	);
 }
 
 // Row actions are collapsed until the row is hovered or focused

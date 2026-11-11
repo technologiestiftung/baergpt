@@ -517,10 +517,11 @@ export abstract class BaseContentDbService {
 			if (isAbandonedUpload(document)) {
 				try {
 					await this.deleteDocumentById(document.id);
+					await this.updateUserDocumentCount(userId);
+					continue;
 				} catch (deleteError) {
 					captureError(deleteError);
 				}
-				continue;
 			}
 			await wait(IN_PROGRESS_UPLOAD_POLL_INTERVAL_MS);
 		}
