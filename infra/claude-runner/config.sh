@@ -19,14 +19,16 @@ VM_DISK_GB="${VM_DISK_GB:-60}"
 # Runner VMs: internet only, no host/LAN access. Needs `brew install openai/tools/softnet` with the SUID bit (see README).
 VM_NET_FLAGS="${VM_NET_FLAGS:---net-softnet}"
 SSH_KEY="${SSH_KEY:-$HOME/.config/baergpt-runner/id_ed25519}"
-# GitHub App that registers runners. Only permission: organization "Self-hosted runners: read/write".
+# GitHub App that registers runners and, for Asana, dispatches claude-asana.yml. Permissions:
+#   - organization "Self-hosted runners: Read and write" (always)
+#   - repository "Actions: Read and write", installation access to baergpt (only with Asana)
 # Its private key lives base64-encoded in the macOS keychain:
-#   security add-generic-password -a "$USER" -s baergpt-runner-app-key -w "$(base64 -i app.pem)"
+#   printf 'add-generic-password -U -a %s -s baergpt-runner-app-key -w %s\n' "$USER" "$(base64 -i app.pem)" | security -i   # stdin, not argv
 GITHUB_APP_ID="${GITHUB_APP_ID:-5593578}"
 KEYCHAIN_SERVICE="${KEYCHAIN_SERVICE:-baergpt-runner-app-key}"
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5"
 # Asana listener (optional): comma-separated projects (boards) to watch for "@claude". Empty disables it.
-# Token in the keychain: security add-generic-password -a "$USER" -s baergpt-asana-token -w
+# Token in the keychain (prompts): security add-generic-password -a "$USER" -s baergpt-asana-token -w
 ASANA_PROJECT_GIDS="${ASANA_PROJECT_GIDS:-}"
 ASANA_KEYCHAIN_SERVICE="${ASANA_KEYCHAIN_SERVICE:-baergpt-asana-token}"
 ASANA_CONTEXT_KEY_SERVICE="${ASANA_CONTEXT_KEY_SERVICE:-baergpt-asana-context-key}"  # same value as repo secret ASANA_CONTEXT_KEY
