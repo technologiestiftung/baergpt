@@ -97,6 +97,7 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 					onMouseDown={(event) => {
 						if (event.shiftKey) {
 							event.preventDefault();
+							event.currentTarget.focus();
 						}
 					}}
 					onKeyDown={(event) => {

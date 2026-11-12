@@ -11,6 +11,7 @@ import { useToastStore } from "../../../../store/use-toast-store";
 
 const deleteSelectedHistoryEntriesDialogId =
 	"delete-selected-history-entries-dialog";
+const deleteSelectedHistoryEntriesDialogTitleId = `${deleteSelectedHistoryEntriesDialogId}-title`;
 
 export function showDeleteSelectedHistoryEntriesDialog() {
 	(
@@ -60,10 +61,14 @@ export const DeleteSelectedHistoryEntriesDialog: React.FC = () => {
 	return (
 		<DefaultDialog
 			id={deleteSelectedHistoryEntriesDialogId}
+			ariaLabelledBy={deleteSelectedHistoryEntriesDialogTitleId}
 			className="w-full md:w-[29rem] gap-y-4 p-5"
 		>
 			<form className="flex flex-col gap-y-6" onSubmit={handleSubmit}>
-				<p className="text-dunkelblau-100 font-bold text-lg">
+				<p
+					id={deleteSelectedHistoryEntriesDialogTitleId}
+					className="text-dunkelblau-100 font-bold text-lg"
+				>
 					{Content["deleteSelectedHistoryEntriesDialog.title"].replace(
 						"{count}",
 						count,
