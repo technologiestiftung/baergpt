@@ -111,9 +111,7 @@ const STEP_LIMIT_INSTRUCTION = [
  * Appends the step limit instruction as the last message. At the end of the
  * system prompt the model ignored it and kept announcing further tool calls.
  */
-function appendStepLimitInstruction(
-	messages: ModelMessage[],
-): ModelMessage[] {
+function appendStepLimitInstruction(messages: ModelMessage[]): ModelMessage[] {
 	return [...messages, { role: "user", content: STEP_LIMIT_INSTRUCTION }];
 }
 
