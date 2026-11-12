@@ -888,6 +888,7 @@ export const Content = {
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
 	"fileUpload.clearUploads.ariaLabel": "Hochladen-Status schließen",
+	"fileUpload.list.ariaLabel": "Hochladen-Status",
 	"chat.dropZone.label": "Dateien ablegen, um sie zum Chat hinzuzufügen.",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Hochladen läuft",
