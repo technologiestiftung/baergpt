@@ -246,6 +246,39 @@ describe("domain allowlist RPCs", () => {
 		expect(signupAllowedError).toBeNull();
 	});
 
+	it("add_allowed_individual_email rejects emails with a registered account and accepts others", async () => {
+		const freeEmail = "individual-rpc-free@example.com";
+		await serviceRoleDbClient
+			.from("allowed_individual_emails")
+			.delete()
+			.in("email", [freeEmail, nonAdminEmail]);
+
+		try {
+			// Registered (case-insensitive, trimmed) -> rejected, nothing inserted
+			const { error } = await anonClient.rpc("add_allowed_individual_email", {
+				p_email: ` ${nonAdminEmail.toUpperCase()} `,
+			});
+			expect(error?.message).toBe("account_already_exists");
+			const { data: rejected } = await serviceRoleDbClient
+				.from("allowed_individual_emails")
+				.select("email")
+				.eq("email", nonAdminEmail);
+			expect(rejected).toEqual([]);
+
+			// No account -> still works
+			const { error: okError } = await anonClient.rpc(
+				"add_allowed_individual_email",
+				{ p_email: freeEmail },
+			);
+			expect(okError).toBeNull();
+		} finally {
+			await serviceRoleDbClient
+				.from("allowed_individual_emails")
+				.delete()
+				.in("email", [freeEmail, nonAdminEmail]);
+		}
+	});
+
 	it("rejects an authenticated non-admin caller on every admin RPC", async () => {
 		const nonAdminClient = createClient<Database>(
 			config.supabaseUrl,
