@@ -835,7 +835,6 @@ export const Content = {
 	"greyXIcon.imgAlt": "Ein graues X-Icon",
 	"loadingSpinnerIcon.imgAlt": "Ein sich drehendes Spinner-Icon",
 	"previewIcon.imgAlt": "Preview-Icon",
-	"yellowExclamationMarkIcon.imgAlt": "Ein gelbes Ausrufezeichen-Icon",
 	"redErrorIcon.imgAlt": "Ein Error Icon mit weißem ! in rotem Kreis",
 	"clockIcon.imgAlt": "Ein Uhr-Icon",
 	"downloadIcon.imgAlt": "Herunterladen-Icon",
@@ -889,6 +888,7 @@ export const Content = {
 	"fileUpload.upload": "Hochladen",
 	"fileUpload.cancel": "Abbrechen",
 	"fileUpload.clearUploads.ariaLabel": "Hochladen-Status schließen",
+	"fileUpload.list.ariaLabel": "Hochladen-Status",
 	"chat.dropZone.label": "Dateien ablegen, um sie zum Chat hinzuzufügen.",
 	//fileUploadButtonStatus
 	"fileUploadButtonStatus.uploading": "Hochladen läuft",

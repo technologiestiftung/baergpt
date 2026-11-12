@@ -123,7 +123,7 @@ export default {
 				"slide-in-bottom": "slide-in-bottom 0.3s ease-out",
 				"slide-out-bottom": "slide-out-bottom 0.2s ease-in forwards",
 				"fade-out-backdrop": "fade-out 0.2s ease-in forwards",
-				"fade-out": "fade-out 0.3s ease-out",
+				"fade-out": "fade-out 0.3s ease-out forwards",
 				"fade-in": "fade-in 0.2s ease-in",
 				"fade-out-tooltip": "fade-out 0.2s ease-out",
 			},

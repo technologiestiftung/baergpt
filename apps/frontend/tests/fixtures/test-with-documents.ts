@@ -4,6 +4,7 @@ import { expect, Page, type Route } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "../config.ts";
 import type { Database } from "@repo/db-schema";
+import Content from "../../src/content.ts";
 import {
 	defaultDocumentName,
 	defaultDocumentPath,
@@ -417,6 +418,7 @@ export function waitForProcessResponse(page: Page) {
 function uploadStatusItem(page: Page, fileName: string) {
 	return page
 		.locator("#desktop-documents-panel")
+		.getByRole("list", { name: Content["fileUpload.list.ariaLabel"] })
 		.getByRole("listitem")
 		.filter({ has: page.getByText(fileName, { exact: true }) });
 }
