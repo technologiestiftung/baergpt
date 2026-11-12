@@ -14,6 +14,7 @@ import {
 } from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";
 import { deleteChat as deleteChatFromDb } from "../api/chat/delete-chat.ts";
+import { deleteChats as deleteChatsFromDb } from "../api/chat/delete-chats.ts";
 import { renameChat as renameChatInDb } from "../api/chat/rename-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
@@ -60,6 +61,7 @@ interface ChatStore {
 	): Promise<ChatWithMessages>;
 	createChat(firstMessage: NewChatMessage): Promise<ChatWithMessages>;
 	deleteChat(chatId: number): Promise<void>;
+	deleteChats(chatIds: number[]): Promise<void>;
 	renameChat(chatId: number, newName: string): Promise<void>;
 	addMessageToChat(
 		chat: ChatWithMessages,
@@ -335,6 +337,34 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		set({ chats: updatedChats });
 
 		await deleteChatFromDb(chatId);
+	},
+
+	/**
+	 * Deletes the chats with the given ids, restoring them in the
+	 * list if the deletion fails
+	 */
+	async deleteChats(chatIds) {
+		const removedChats = get().chats.filter((chat) =>
+			chatIds.includes(chat.id),
+		);
+
+		set({
+			chats: get().chats.filter((chat) => !chatIds.includes(chat.id)),
+		});
+
+		const { deletedChatIds, error } = await deleteChatsFromDb(chatIds);
+
+		if (error) {
+			const notDeletedChats = removedChats.filter(
+				(chat) => !deletedChatIds.includes(chat.id),
+			);
+			// Chats are ordered by id descending
+			const restoredChats = [...get().chats, ...notDeletedChats].sort(
+				(a, b) => b.id - a.id,
+			);
+			set({ chats: restoredChats });
+			throw error;
+		}
 	},
 
 	/**

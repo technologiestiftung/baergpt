@@ -6,6 +6,7 @@ import { useDrawerStore } from "../../../store/drawer-store.ts";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
 import Content from "../../../content.ts";
 import { captureError } from "../../../monitoring/capture-error.ts";
+import { useHistorySelectionStore } from "../../../store/use-history-selection-store.ts";
 
 const removeMarkdownStyling = (name: string): string => {
 	return name.replace(/[#`>*]/g, "");
@@ -23,8 +24,14 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 	const [isRenamePending, setIsRenamePending] = useState(false);
 	const { setOpenDrawer } = useDrawerStore();
 	const inputRef = useRef<HTMLInputElement>(null);
+	const { selectedChatIds, selectRangeTo, clearSelection } =
+		useHistorySelectionStore();
 
-	const isSelected = currentChatId === chat.id;
+	const hasMultiSelection = selectedChatIds.length > 0;
+	const isInMultiSelection = selectedChatIds.includes(chat.id);
+	const isSelected = hasMultiSelection
+		? isInMultiSelection
+		: currentChatId === chat.id;
 	const displayedName = pendingName ?? chat.name;
 
 	const commitRename = () => {
@@ -81,7 +88,32 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 			) : (
 				<button
 					className="md:w-full h-full w-full mr-3 md:mr-0 truncate rounded-[3px] text-start text-hellblau-50 focus-visible:outline-default"
-					onClick={() => {
+					aria-keyshortcuts="Shift+Enter Shift+Space"
+					aria-description={
+						isInMultiSelection
+							? Content["historyEntry.selected.ariaDescription"]
+							: undefined
+					}
+					onMouseDown={(event) => {
+						if (event.shiftKey) {
+							event.preventDefault();
+						}
+					}}
+					onKeyDown={(event) => {
+						if (
+							event.shiftKey &&
+							(event.key === "Enter" || event.key === " ")
+						) {
+							event.preventDefault();
+							selectRangeTo(chat.id);
+						}
+					}}
+					onClick={(event) => {
+						if (event.shiftKey) {
+							selectRangeTo(chat.id);
+							return;
+						}
+						clearSelection();
 						if (typeof window !== "undefined" && window.innerWidth < 1024) {
 							setOpenDrawer(null); // Only close the drawer on mobile
 						}
@@ -94,6 +126,7 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 
 			<HistoryEntryDropdownButton
 				chat={chat}
+				selectedChatCount={isInMultiSelection ? selectedChatIds.length : 1}
 				onRename={() => {
 					if (isRenamePending) {
 						return;

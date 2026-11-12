@@ -8,6 +8,7 @@ import { HistoryGroupByDropdown } from "./history-group-by-dropdown.tsx";
 import { useHistoryGroupByStore } from "../../../store/use-history-group-by-store.ts";
 import { HistoryGroupsByNone } from "./history-groups/history-groups-by-none.tsx";
 import { ChevronIcon } from "../../primitives/icons/chevron-icon.tsx";
+import { useHistorySelectionStore } from "../../../store/use-history-selection-store.ts";
 
 export const History: React.FC = () => {
 	const { isFirstLoad, isLoading } = useChatsStore();
@@ -16,6 +17,15 @@ export const History: React.FC = () => {
 	const [isHistoryCollapsed, setIsHistoryCollapsed] = useState<boolean>(false);
 	const historyContainerRef = useRef<HTMLDivElement>(null);
 	const errorMessage = getUIError("chats-fetch");
+	const { selectedChatIds, clearSelection } = useHistorySelectionStore();
+
+	const selectionStatus =
+		selectedChatIds.length > 1
+			? Content["chatHistory.selection.status"].replace(
+					"{count}",
+					String(selectedChatIds.length),
+				)
+			: "";
 
 	const isGroupedByDate = groupBy === "date";
 
@@ -53,10 +63,21 @@ export const History: React.FC = () => {
 
 				<HistoryGroupByDropdown />
 			</div>
+			<span role="status" aria-live="polite" className="sr-only">
+				{selectionStatus}
+			</span>
 			{!isHistoryCollapsed && (
 				<div
 					ref={historyContainerRef}
 					className="flex flex-col grow min-h-0 overflow-y-auto pl-3 pr-4 md:pl-0 md:pr-2.5 history-scrollbar"
+					onKeyDown={(event) => {
+						if (event.defaultPrevented) {
+							return;
+						}
+						if (event.key === "Escape" && selectedChatIds.length > 0) {
+							clearSelection();
+						}
+					}}
 				>
 					<div className="w-full h-full">
 						<div
