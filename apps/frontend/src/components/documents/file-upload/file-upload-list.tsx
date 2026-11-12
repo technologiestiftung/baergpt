@@ -17,7 +17,10 @@ export function FileUploadList() {
 	const { fileUploads } = useFileUploadsStore();
 
 	return (
-		<ul className="overflow-y-auto max-h-[228px] relative rounded-b-3px">
+		<ul
+			className="overflow-y-auto max-h-[228px] relative rounded-b-3px"
+			aria-label={Content["fileUpload.list.ariaLabel"]}
+		>
 			<div className="flex flex-col py-1 px-2.5 bg-dunkelblau-100 rounded-b-3px">
 				{fileUploads.map(({ id, file, status, existingFileName }) => {
 					const statusLabel = getStatusLabel(status, existingFileName);
