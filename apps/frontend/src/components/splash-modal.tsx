@@ -38,7 +38,7 @@ export const SplashModal = () => {
 	return (
 		<DefaultDialog
 			id={splashModalId}
-			className="md:w-[600px] max-h-[650px] max-w-[90vw] text-dunkelblau-200"
+			className="md:w-[600px] max-h-[650px] max-w-[90vw] text-dunkelblau-200 chatsearch-scrollbar"
 			afterClose={markVersionAsSeen}
 		>
 			<div className="sticky top-0 bg-white flex flex-row items-center justify-between py-3 pl-[30px] pr-[23px] border-b-[0.5px] border-dunkelblau-50">
