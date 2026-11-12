@@ -342,6 +342,8 @@ export const Content = {
 		"Bitte geben Sie eine gültige E-Mail-Adresse ein.",
 	"addNewIndividualEmail.form.emailAlreadyExistsError":
 		"Diese E-Mail-Adresse ist bereits in der Allowlist.",
+	"addNewIndividualEmail.form.accountAlreadyExistsError":
+		"Für diese E-Mail-Adresse existiert bereits ein Account.",
 	"addNewIndividualEmail.form.wrongFormat": "Falsches E-Mail-Format.",
 	"addNewIndividualEmail.form.unsuccessful.error":
 		"Die E-Mail-Adresse konnte nicht hinzugefügt werden",
