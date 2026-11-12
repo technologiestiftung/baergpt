@@ -14,7 +14,7 @@ export function CitationItem({ citationId }: { citationId: number }) {
 		return null;
 	}
 
-	const isDocx = /\.docx$/i.test(citation.sourceUrl);
+	const hasNoPageNumbers = /\.(docx|md)$/i.test(citation.sourceUrl);
 
 	const handleClick = async () => {
 		const blob = await downloadDocument(citation);
@@ -48,7 +48,7 @@ export function CitationItem({ citationId }: { citationId: number }) {
 				</div>
 			</div>
 			<div className="flex flex-row items-center gap-2">
-				{!isDocx && (
+				{!hasNoPageNumbers && (
 					<div className="text-xs text-dunkelblau-40">
 						{Content["chat.citationsDialog.page"]} {citation.page}
 					</div>
