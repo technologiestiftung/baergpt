@@ -3,11 +3,13 @@ import { useDropdownKeyboard } from "../../../../hooks/use-dropdown-keyboard";
 import Content from "../../../../content";
 import type { Chat } from "../../../../common";
 import { showDeleteHistoryEntryDialog } from "../delete-history-entry/delete-history-entry-dialog";
+import { showDeleteSelectedHistoryEntriesDialog } from "../delete-history-entry/delete-selected-history-entries-dialog";
 import { useHistoryEntryDeleteStore } from "../../../../store/use-history-entry-delete-store";
 import { DeleteElementIcon } from "../../../primitives/icons/delete-element-icon";
 
 interface HistoryEntryDropdownProps {
 	chat: Chat;
+	selectedChatCount: number;
 	isOpen: boolean;
 	onClose: () => void;
 	onRename: () => void;
@@ -16,6 +18,7 @@ interface HistoryEntryDropdownProps {
 
 export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 	chat,
+	selectedChatCount,
 	isOpen,
 	onClose,
 	onRename,
@@ -70,7 +73,22 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 		showDeleteHistoryEntryDialog();
 	};
 
-	const dropdownItems = [
+	const handleDeleteSelected = () => {
+		onClose();
+		showDeleteSelectedHistoryEntriesDialog();
+	};
+
+	const deleteSelectedItem = {
+		action: handleDeleteSelected,
+		label: Content["historyEntryDropdown.selection.delete"].replace(
+			"{count}",
+			String(selectedChatCount),
+		),
+		style: "group/delete text-warning-100 hover:text-dunkelblau-80",
+		icon: <DeleteElementIcon />,
+	};
+
+	const singleChatItems = [
 		{
 			action: handleRename,
 			label: Content["historyEntryDropdown.rename"],
@@ -92,6 +110,9 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 			icon: <DeleteElementIcon />,
 		},
 	];
+
+	const dropdownItems =
+		selectedChatCount > 1 ? [deleteSelectedItem] : singleChatItems;
 
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
 		items: dropdownItems,

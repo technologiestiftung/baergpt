@@ -5,6 +5,7 @@ interface DefaultDialogProps {
 	children?: React.ReactNode;
 	className?: string;
 	id?: string;
+	ariaLabelledBy?: string;
 	afterClose?: () => void;
 }
 
@@ -12,6 +13,7 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 	children,
 	className,
 	id,
+	ariaLabelledBy,
 	afterClose,
 }) => {
 	const dialogRef = useRef<HTMLDialogElement | null>(null);
@@ -51,6 +53,7 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 		<dialog
 			ref={dialogRef}
 			id={id}
+			aria-labelledby={ariaLabelledBy}
 			onClose={closeDialog}
 			className={`${className} backdrop:bg-dunkelblau-100/30 backdrop:backdrop-blur-[2px] bg-white opacity-100 z-40 rounded-3px shadow-md`}
 		>
