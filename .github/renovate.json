@@ -16,10 +16,36 @@
 		"automerge": true
 	},
 
+	"kubernetes": {
+		"managerFilePatterns": ["/^infra/k8s/.+\\.ya?ml$/"]
+	},
+
+	"customManagers": [
+		{
+			"customType": "regex",
+			"description": "Container images inside Terraform Helm values, marked with a `# renovate:` comment above `repository`/`tag`/`digest`",
+			"managerFilePatterns": ["/^infra/terraform/.+\\.tf$/"],
+			"matchStrings": [
+				"# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+repository\\s*=\\s*\"[^\"]+\"\\s+tag\\s*=\\s*\"(?<currentValue>[^\"]+)\"\\s+digest\\s*=\\s*\"(?<currentDigest>sha256:[a-f0-9]{64})\""
+			]
+		}
+	],
+
 	"packageRules": [
 		{
 			"matchUpdateTypes": ["patch", "minor"],
 			"automerge": true
+		},
+		{
+			"description": "The collector chart and its image are released together and must be bumped together",
+			"groupName": "opentelemetry-collector",
+			"matchDepNames": ["opentelemetry-collector", "otel/opentelemetry-collector-contrib"]
+		},
+		{
+			"description": "Placeholder tag in infra/k8s; the SKE deploy workflow sets the real image at deploy time",
+			"matchManagers": ["kubernetes"],
+			"matchDepNames": ["ghcr.io/technologiestiftung/baergpt-backend"],
+			"enabled": false
 		}
 	]
 }
