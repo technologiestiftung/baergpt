@@ -39,7 +39,7 @@ function DatawrapperEmbed({ chartId, src }: { chartId: string; src: string }) {
 			title="Datawrapper-Diagramm"
 			src={src}
 			height={height}
-			sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+			sandbox="allow-scripts allow-same-origin allow-popups"
 			referrerPolicy="no-referrer"
 			loading="lazy"
 			className="block w-full border-0 my-2"
