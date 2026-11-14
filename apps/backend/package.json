@@ -45,7 +45,7 @@
 		"@langfuse/tracing": "5.10.0",
 		"@langfuse/vercel-ai-sdk": "5.10.0",
 		"@mistralai/mistralai": "2.6.3",
-		"@opentelemetry/instrumentation-http": "0.221.0",
+		"@opentelemetry/instrumentation-http": "0.222.0",
 		"@opentelemetry/instrumentation-undici": "0.31.0",
 		"@opentelemetry/sdk-node": "0.221.0",
 		"@opentelemetry/sdk-trace-node": "2.10.0",
