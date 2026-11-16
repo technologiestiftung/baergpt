@@ -9,40 +9,36 @@ import {
 	MarkdownExportableTable,
 	TableExportVisibleContext,
 } from "../../primitives/markdown/markdown-exportable-table.tsx";
-import {
-	type ComponentProps,
-	type JSX,
-	memo,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
+import type { PluggableList } from "unified";
+import { type JSX, memo, useEffect, useMemo, useState } from "react";
 import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
 import { config } from "../../../config.ts";
+import { captureError } from "../../../monitoring/capture-error.ts";
 import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
 
 interface ChatMessageProps {
 	message: ChatMessageType;
 }
 
-type RehypePlugins = NonNullable<
-	ComponentProps<typeof ReactMarkdown>["rehypePlugins"]
->;
-
 const CODE_FENCE_PATTERN = /```/;
 
 // Loaded lazily, and only for messages that actually contain a code fence,
 // so chats without code blocks never pay for the full language grammar
 // bundle on the first-paint path. Cached at module scope so it's fetched once.
-let rehypeHighlightPluginsPromise: Promise<RehypePlugins> | null = null;
-function loadRehypeHighlightPlugins(): Promise<RehypePlugins> {
+let rehypeHighlightPluginsPromise: Promise<PluggableList> | null = null;
+function loadRehypeHighlightPlugins(): Promise<PluggableList> {
 	rehypeHighlightPluginsPromise ??= Promise.all([
 		import("rehype-highlight"),
 		import("lowlight"),
-	]).then(([{ default: rehypeHighlight }, { common }]) => [
-		[rehypeHighlight, { languages: common }],
-	]);
+	])
+		.then(([{ default: rehypeHighlight }, { common }]): PluggableList => [
+			[rehypeHighlight, { languages: common }],
+		])
+		.catch((error: unknown) => {
+			rehypeHighlightPluginsPromise = null;
+			throw error;
+		});
 	return rehypeHighlightPluginsPromise;
 }
 
@@ -85,20 +81,14 @@ export const ChatMessage = memo(function ChatMessage({
 
 	const hasCodeFence = CODE_FENCE_PATTERN.test(content);
 	const [loadedRehypePlugins, setLoadedRehypePlugins] =
-		useState<RehypePlugins | null>(null);
+		useState<PluggableList | null>(null);
 	useEffect(() => {
 		if (!hasCodeFence || loadedRehypePlugins) {
-			return undefined;
+			return;
 		}
-		let cancelled = false;
-		loadRehypeHighlightPlugins().then((plugins) => {
-			if (!cancelled) {
-				setLoadedRehypePlugins(plugins);
-			}
-		});
-		return () => {
-			cancelled = true;
-		};
+		loadRehypeHighlightPlugins()
+			.then(setLoadedRehypePlugins)
+			.catch(captureError);
 	}, [hasCodeFence, loadedRehypePlugins]);
 
 	const rehypePlugins = loadedRehypePlugins ?? undefined;

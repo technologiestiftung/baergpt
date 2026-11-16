@@ -77,10 +77,11 @@ export const useTooltipStore = create<TooltipState>((set) => ({
 		const rect = element.getBoundingClientRect();
 
 		const isBottomEnd = anchor === "bottom-end";
-		const {
-			top: offsetTop = isBottomEnd ? 4 : 0,
-			right: offsetRight = isBottomEnd ? 0 : 4,
-		} = offset ?? {};
+		const defaultOffset = isBottomEnd
+			? { top: 4, right: 0 }
+			: { top: 0, right: 4 };
+		const offsetTop = offset ? (offset.top ?? 0) : defaultOffset.top;
+		const offsetRight = offset ? (offset.right ?? 0) : defaultOffset.right;
 		const top = isBottomEnd
 			? rect.bottom + window.scrollY + offsetTop
 			: rect.top + window.scrollY + offsetTop;
