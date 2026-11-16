@@ -17,8 +17,10 @@ jobs:
       - name: Only allow PRs from staging into main 🚦
         env:
           HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
         run: |
-          if [ "$HEAD_REF" != "staging" ]; then
-            echo "::error::PRs into main must come from staging (got: $HEAD_REF)"
+          if [ "$HEAD_REF" != "staging" ] || [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            echo "::error::PRs into main must come from staging in this repo (got: $HEAD_REPO:$HEAD_REF)"
             exit 1
           fi
