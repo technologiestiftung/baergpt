@@ -114,6 +114,17 @@ Import [`grafana/ske-cluster-dashboard.json`](./grafana/ske-cluster-dashboard.js
 the top. Panels: replica availability, restarts, quota usage, memory as % of limit, CPU, node
 usage, collector health, Warning events and logs.
 
+### Alerts
+
+Rules live in `infra/terraform/observability/alerts_ske.tf` (applied from that module's
+`production` workspace). Workload rules cover `prod` (critical) and `staging` (warning);
+`sandbox` has none. Node, certificate and collector rules are cluster-wide with a fixed
+severity set in each rule.
+
+The certificate alerts need cert-manager's metrics. `otel-collector-cluster` fetches them from
+cert-manager every minute (receiver `prometheus/cert-manager` in `observability.tf`) and keeps
+only the certificate expiry and ready series.
+
 ### Verify after an apply
 
 - `kubectl -n observability get pods -o wide`: one `otel-collector-…-agent` pod per node and one
