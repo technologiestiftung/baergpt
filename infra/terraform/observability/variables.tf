@@ -41,6 +41,7 @@ variable "target_source" {
 }
 
 # --- Thresholds (tune per environment via *.tfvars) ------------------------------
+# disk/mem/CPU feed the shared host group, so only production.tfvars sets them.
 
 variable "disk_used_ratio_max" {
   type        = number

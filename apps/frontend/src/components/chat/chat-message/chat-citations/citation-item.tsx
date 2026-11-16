@@ -14,6 +14,8 @@ export function CitationItem({ citationId }: { citationId: number }) {
 		return null;
 	}
 
+	const hasNoPageNumbers = /\.(docx|md)$/i.test(citation.sourceUrl);
+
 	const handleClick = async () => {
 		const blob = await downloadDocument(citation);
 
@@ -46,9 +48,11 @@ export function CitationItem({ citationId }: { citationId: number }) {
 				</div>
 			</div>
 			<div className="flex flex-row items-center gap-2">
-				<div className="text-xs text-dunkelblau-40">
-					{Content["chat.citationsDialog.page"]} {citation.page}
-				</div>
+				{!hasNoPageNumbers && (
+					<div className="text-xs text-dunkelblau-40">
+						{Content["chat.citationsDialog.page"]} {citation.page}
+					</div>
+				)}
 				<div
 					className={`${citation.sourceType === "public_document" ? "flex sm:hidden" : "hidden"}`}
 				>

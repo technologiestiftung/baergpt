@@ -1,0 +1,7 @@
+# Must match var.namespaces["sandbox"].hostname in infra/terraform/ske.
+- op: replace
+  path: /spec/hostnames/0
+  value: api-sandbox.baergpt-ske.stackit.rocks
+- op: replace
+  path: /spec/parentRefs/0/sectionName
+  value: https-sandbox

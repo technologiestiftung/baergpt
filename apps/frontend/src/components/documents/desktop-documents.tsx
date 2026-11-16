@@ -21,7 +21,7 @@ import {
 	useFileUploadsStore,
 } from "../../store/use-file-uploads-store.ts";
 
-const MIN_WIDTH = 350;
+const MIN_WIDTH = 390;
 const MAX_WIDTH = 700;
 const DEFAULT_WIDTH = 400;
 const COLLAPSED_WIDTH = 64;
@@ -172,7 +172,7 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 						)}
 
 						{(currentFolder === null || isUserFolder(currentFolder)) && (
-							<div className="hidden md:flex gap-4 items-center mt-4 mb-2">
+							<div className="hidden md:flex gap-2 items-center mt-4 mb-2">
 								<CreateFolderButton />
 								<MultiSelectForActionButton />
 							</div>
