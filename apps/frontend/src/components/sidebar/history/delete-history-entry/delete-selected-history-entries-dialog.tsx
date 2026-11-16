@@ -3,7 +3,7 @@ import { useChatsStore } from "../../../../store/use-chats-store";
 import { useHistorySelectionStore } from "../../../../store/use-history-selection-store";
 import { DefaultDialog } from "../../../primitives/dialogs/default-dialog";
 import { TertiaryButton } from "../../../primitives/buttons/tertiary-button";
-import { PrimaryButton } from "../../../primitives/buttons/primary-button";
+import { WarningButton } from "../../../primitives/buttons/warning-button";
 import Content from "../../../../content";
 import { useCurrentChatIdStore } from "../../../../store/current-chat-id-store";
 import { captureError } from "../../../../monitoring/capture-error";
@@ -64,33 +64,33 @@ export const DeleteSelectedHistoryEntriesDialog: React.FC = () => {
 			ariaLabelledBy={deleteSelectedHistoryEntriesDialogTitleId}
 			className="w-full md:w-[29rem] gap-y-4 p-5"
 		>
-			<form className="flex flex-col gap-y-6" onSubmit={handleSubmit}>
+			<form className="flex flex-col gap-y-1" onSubmit={handleSubmit}>
 				<p
 					id={deleteSelectedHistoryEntriesDialogTitleId}
-					className="text-dunkelblau-100 font-bold text-lg"
+					className="text-dunkelblau-100 font-bold text-lg leading-7"
 				>
 					{Content["deleteSelectedHistoryEntriesDialog.title"].replace(
 						"{count}",
 						count,
 					)}
 				</p>
-				<p>
+				<p className="text-dunkelblau-100 text-lg leading-7 font-normal">
 					{Content["deleteSelectedHistoryEntriesDialog.confirmation"].replace(
 						"{count}",
 						count,
 					)}
 				</p>
 
-				<div className="flex flex-row justify-end gap-4 mt-4">
+				<div className="flex flex-row justify-end gap-3 mt-6">
 					<TertiaryButton
 						type="button"
 						onClick={hideDeleteSelectedHistoryEntriesDialog}
 					>
 						{Content["deleteSelectedHistoryEntriesDialog.cancel"]}
 					</TertiaryButton>
-					<PrimaryButton type="submit">
+					<WarningButton type="submit">
 						{Content["deleteSelectedHistoryEntriesDialog.delete"]}
-					</PrimaryButton>
+					</WarningButton>
 				</div>
 			</form>
 		</DefaultDialog>

@@ -84,8 +84,16 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 			"{count}",
 			String(selectedChatCount),
 		),
-		style: "group/delete text-warning-100 hover:text-dunkelblau-80",
-		icon: <DeleteElementIcon />,
+		style: "text-warning-120 hover:bg-[#FDD2D6]",
+		icon: (
+			<img
+				src="/icons/bucket-outline-dark-red-icon.svg"
+				alt={Content["documentsList.delete.imgAlt"]}
+				className="size-5"
+				width={20}
+				height={20}
+			/>
+		),
 	};
 
 	const singleChatItems = [
@@ -111,8 +119,10 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 		},
 	];
 
-	const dropdownItems =
-		selectedChatCount > 1 ? [deleteSelectedItem] : singleChatItems;
+	const isSelectionMenu = selectedChatCount > 1;
+	const dropdownItems = isSelectionMenu
+		? [deleteSelectedItem]
+		: singleChatItems;
 
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
 		items: dropdownItems,
@@ -127,7 +137,7 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 
 	return (
 		<div
-			className="fixed z-50 w-fit bg-white rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1"
+			className={`fixed z-50 w-fit rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1 ${isSelectionMenu ? "bg-hellblau-30" : "bg-white"}`}
 			style={{ top: `${position.top}px`, right: `${position.right}px` }}
 			onKeyDown={handleKeyDown}
 			role="listbox"
@@ -144,12 +154,14 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 									optionButtonRefs.current.delete(index);
 								}
 							}}
-							className={`flex items-center w-full h-9 pl-1.5 pr-3 py-1 gap-x-2 text-left rounded-3px focus-visible:outline-2px ${item.style}`}
+							className={`flex items-center w-full text-left rounded-3px focus-visible:outline-2px ${isSelectionMenu ? "gap-x-1 pl-3 pr-[17px] py-2" : "h-9 pl-1.5 pr-3 py-1 gap-x-2"} ${item.style}`}
 							onClick={item.action}
 							aria-label={item.label}
 							role="option"
 						>
-							<div className="flex items-center justify-center rounded-3px shrink-0 size-8">
+							<div
+								className={`flex items-center justify-center rounded-3px shrink-0 ${isSelectionMenu ? "" : "size-8"}`}
+							>
 								{item.icon}
 							</div>
 							<span className="text-sm leading-5">{item.label}</span>

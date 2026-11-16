@@ -811,7 +811,7 @@ export const Content = {
 	"historyEntryDropdown.renameInput.ariaLabel": "Chat umbenennen",
 	"historyEntryDropdown.selection.menuIcon.ariaLabel":
 		"Optionen für {count} ausgewählte Chats",
-	"historyEntryDropdown.selection.delete": "{count} löschen",
+	"historyEntryDropdown.selection.delete": "{count} Chats löschen",
 	"historyEntry.selected.ariaDescription": "Ausgewählt",
 	"chatHistory.selection.status": "{count} Chats ausgewählt",
 	//profileButton
@@ -978,7 +978,7 @@ export const Content = {
 	//DeleteSelectedHistoryEntriesDialog
 	"deleteSelectedHistoryEntriesDialog.title": "{count} Chats löschen?",
 	"deleteSelectedHistoryEntriesDialog.confirmation":
-		"Möchten Sie die {count} ausgewählten Chats wirklich löschen?",
+		"Möchten Sie wirklich {count} Chats löschen? Dieser Schritt kann nicht rückgängig gemacht werden.",
 	"deleteSelectedHistoryEntriesDialog.delete": "Löschen",
 	"deleteSelectedHistoryEntriesDialog.cancel": "Abbrechen",
 	"deleteSelectedHistoryEntriesDialog.error":
