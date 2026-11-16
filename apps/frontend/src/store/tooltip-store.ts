@@ -1,15 +1,22 @@
 import { create } from "zustand";
 import React from "react";
 
-interface ShowTooltipArgs {
-	event?: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>;
-	target?: HTMLElement;
+interface ShowTooltipCommonArgs {
 	content: string;
 	width?: number | string;
 	isLight?: boolean;
 	offset?: { top?: number; right?: number };
 	anchor?: "right" | "bottom-end";
 }
+
+type ShowTooltipArgs = ShowTooltipCommonArgs &
+	(
+		| {
+				event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>;
+				target?: never;
+		  }
+		| { event?: never; target: HTMLElement }
+	);
 
 interface TooltipState {
 	visible: boolean;
@@ -20,6 +27,7 @@ interface TooltipState {
 	content: string;
 	width?: number | string;
 	isLight?: boolean;
+	target: HTMLElement | null;
 	showTooltip: (args: ShowTooltipArgs) => void;
 	hideTooltip: () => void;
 }
@@ -35,6 +43,7 @@ export const useTooltipStore = create<TooltipState>((set) => ({
 	content: "",
 	width: undefined,
 	isLight: false,
+	target: null,
 
 	hideTooltip: () => {
 		// Clear any existing fade-out timeout to prevent premature removal
@@ -67,28 +76,18 @@ export const useTooltipStore = create<TooltipState>((set) => ({
 		}
 		const rect = element.getBoundingClientRect();
 
-		if (anchor === "bottom-end") {
-			const { top: offsetTop = 4, right: offsetRight = 0 } = offset ?? {};
-			const top = rect.bottom + window.scrollY + offsetTop;
-			const right =
-				document.documentElement.clientWidth - rect.right - offsetRight;
-
-			set({
-				rendered: true,
-				visible: true,
-				isLight,
-				top,
-				left: undefined,
-				right,
-				content,
-				width,
-			});
-			return;
-		}
-
-		const { top: offsetTop = 0, right: offsetRight = 4 } = offset ?? {};
-		const top = rect.top + window.scrollY + offsetTop;
-		const left = rect.right + offsetRight;
+		const isBottomEnd = anchor === "bottom-end";
+		const {
+			top: offsetTop = isBottomEnd ? 4 : 0,
+			right: offsetRight = isBottomEnd ? 0 : 4,
+		} = offset ?? {};
+		const top = isBottomEnd
+			? rect.bottom + window.scrollY + offsetTop
+			: rect.top + window.scrollY + offsetTop;
+		const left = isBottomEnd ? undefined : rect.right + offsetRight;
+		const right = isBottomEnd
+			? document.documentElement.clientWidth - rect.right - offsetRight
+			: undefined;
 
 		set({
 			rendered: true,
@@ -96,9 +95,10 @@ export const useTooltipStore = create<TooltipState>((set) => ({
 			isLight,
 			top,
 			left,
-			right: undefined,
+			right,
 			content,
 			width,
+			target: element,
 		});
 	},
 }));

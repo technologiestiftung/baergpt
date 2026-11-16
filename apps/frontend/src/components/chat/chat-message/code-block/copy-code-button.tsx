@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { Content } from "../../../../content.ts";
 import { ChatButton } from "../../../primitives/buttons/chat-button.tsx";
 import { captureError } from "../../../../monitoring/capture-error.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
+import { useToastStore } from "../../../../store/use-toast-store.ts";
+import { useCopiedState } from "../../../../hooks/use-copied-state.ts";
 
 const COPIED_DURATION_MS = 2000;
 
@@ -11,45 +13,37 @@ interface CopyCodeButtonProps {
 }
 
 export function CopyCodeButton({ getCode }: CopyCodeButtonProps) {
-	const [isCopied, setIsCopied] = useState(false);
 	const buttonRef = useRef<HTMLButtonElement>(null);
-	const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const shownTooltipTargetRef = useRef<HTMLElement | null>(null);
 	const showTooltip = useTooltipStore((state) => state.showTooltip);
 	const hideTooltip = useTooltipStore((state) => state.hideTooltip);
 
-	useEffect(() => {
-		return () => {
-			if (resetTimeoutRef.current) {
-				clearTimeout(resetTimeoutRef.current);
-				hideTooltip();
-			}
-		};
-	}, []);
+	const [isCopied, triggerCopied] = useCopiedState(COPIED_DURATION_MS, () => {
+		if (useTooltipStore.getState().target === shownTooltipTargetRef.current) {
+			hideTooltip();
+		}
+	});
 
 	const handleCopy = async () => {
 		const code = getCode();
 		const target = buttonRef.current;
-		if (!code || !target) {
+		if (!target) {
 			return;
 		}
 		try {
 			await navigator.clipboard.writeText(code);
-			setIsCopied(true);
 			showTooltip({
 				target,
 				content: Content["chat.codeBlockCopyButton.tooltip.copied"],
 				anchor: "bottom-end",
 			});
-
-			if (resetTimeoutRef.current) {
-				clearTimeout(resetTimeoutRef.current);
-			}
-			resetTimeoutRef.current = setTimeout(() => {
-				setIsCopied(false);
-				hideTooltip();
-			}, COPIED_DURATION_MS);
+			shownTooltipTargetRef.current = target;
+			triggerCopied();
 		} catch (error) {
 			captureError(error);
+			useToastStore
+				.getState()
+				.addError(Content["chat.codeBlockCopyButton.error"]);
 		}
 	};
 

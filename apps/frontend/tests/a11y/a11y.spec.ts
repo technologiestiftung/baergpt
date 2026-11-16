@@ -145,10 +145,13 @@ test.describe("Accessibility - Code block", () => {
 				}),
 			).toBeVisible();
 
-			const clipboardText = await page.evaluate(() =>
-				navigator.clipboard.readText(),
-			);
-			expect(clipboardText).toBe("print('hello')");
+			// Firefox doesn't support navigator.clipboard.readText() for web pages.
+			if (browserName !== "firefox") {
+				const clipboardText = await page.evaluate(() =>
+					navigator.clipboard.readText(),
+				);
+				expect(clipboardText).toBe("print('hello')");
+			}
 		},
 	);
 });

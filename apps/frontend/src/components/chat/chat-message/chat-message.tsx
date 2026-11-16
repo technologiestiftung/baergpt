@@ -3,15 +3,20 @@ import ReactMarkdown from "react-markdown";
 import { UserMessage } from "./user-message.tsx";
 import type { ChatMessage as ChatMessageType } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
-import { common } from "lowlight";
 import { CodeBlock } from "./code-block/code-block.tsx";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
 import {
 	MarkdownExportableTable,
 	TableExportVisibleContext,
 } from "../../primitives/markdown/markdown-exportable-table.tsx";
-import { type ComponentProps, type JSX, memo, useMemo } from "react";
+import {
+	type ComponentProps,
+	type JSX,
+	memo,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
 import { config } from "../../../config.ts";
@@ -21,9 +26,25 @@ interface ChatMessageProps {
 	message: ChatMessageType;
 }
 
-const rehypePlugins: NonNullable<
+type RehypePlugins = NonNullable<
 	ComponentProps<typeof ReactMarkdown>["rehypePlugins"]
-> = [[rehypeHighlight, { languages: common }]];
+>;
+
+const CODE_FENCE_PATTERN = /```/;
+
+// Loaded lazily, and only for messages that actually contain a code fence,
+// so chats without code blocks never pay for the full language grammar
+// bundle on the first-paint path. Cached at module scope so it's fetched once.
+let rehypeHighlightPluginsPromise: Promise<RehypePlugins> | null = null;
+function loadRehypeHighlightPlugins(): Promise<RehypePlugins> {
+	rehypeHighlightPluginsPromise ??= Promise.all([
+		import("rehype-highlight"),
+		import("lowlight"),
+	]).then(([{ default: rehypeHighlight }, { common }]) => [
+		[rehypeHighlight, { languages: common }],
+	]);
+	return rehypeHighlightPluginsPromise;
+}
 
 /**
  * Memoized: while an answer streams, only the streaming message gets a new
@@ -61,6 +82,26 @@ export const ChatMessage = memo(function ChatMessage({
 		() => ({ ...customComponents, table: MarkdownExportableTable }),
 		[customComponents],
 	);
+
+	const hasCodeFence = CODE_FENCE_PATTERN.test(content);
+	const [loadedRehypePlugins, setLoadedRehypePlugins] =
+		useState<RehypePlugins | null>(null);
+	useEffect(() => {
+		if (!hasCodeFence || loadedRehypePlugins) {
+			return undefined;
+		}
+		let cancelled = false;
+		loadRehypeHighlightPlugins().then((plugins) => {
+			if (!cancelled) {
+				setLoadedRehypePlugins(plugins);
+			}
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [hasCodeFence, loadedRehypePlugins]);
+
+	const rehypePlugins = loadedRehypePlugins ?? undefined;
 
 	return (
 		<div className="flex flex-col" data-message-id={message.id}>
