@@ -34,6 +34,11 @@ let visibleInfoMessageTimeout: ReturnType<typeof setTimeout>;
 // Pages fetched while a deletion is in flight may still contain these chats
 const pendingDeletionChatIds = new Set<number>();
 const confirmedDeletedChatIds = new Set<number>();
+// Resumed by deleteChats once pending deletions settle
+let hasInterruptedPagination = false;
+
+const isDeletedChat = (chatId: number) =>
+	pendingDeletionChatIds.has(chatId) || confirmedDeletedChatIds.has(chatId);
 
 /**
  * Client-generated ids for not-yet-persisted messages. Always negative so
@@ -218,8 +223,9 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		const { chats } = get();
 
 		// An empty list resets the cursor to the first page, which would still
-		// contain the chats being deleted. deleteChats resumes once they are gone.
+		// contain the chats being deleted
 		if (chats.length === 0 && pendingDeletionChatIds.size > 0) {
+			hasInterruptedPagination = true;
 			return;
 		}
 
@@ -243,7 +249,21 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		const chatsWithMessages = await Promise.all(promises);
 
+		const chatCountBeforeSync = get().chats.length;
 		get().syncChats(chatsWithMessages);
+
+		// Nothing was added, so the list won't trigger loading the next page itself
+		const isPageDiscarded =
+			get().chats.length === chatCountBeforeSync &&
+			chatsWithMessages.some(({ id }) => isDeletedChat(id));
+
+		if (isPageDiscarded) {
+			if (pendingDeletionChatIds.size > 0) {
+				hasInterruptedPagination = true;
+			} else {
+				void get().getNextChatsPage();
+			}
+		}
 
 		if (get().isFirstLoad) {
 			set({ isFirstLoad: false });
@@ -259,10 +279,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		newChats.forEach((newChat) => {
 			const isDuplicate = existingChats.some((chat) => chat.id === newChat.id);
-			const isDeleted =
-				pendingDeletionChatIds.has(newChat.id) ||
-				confirmedDeletedChatIds.has(newChat.id);
-			if (isDuplicate || isDeleted) {
+			if (isDuplicate || isDeletedChat(newChat.id)) {
 				return;
 			}
 			synchronizedChats.push(newChat);
@@ -395,7 +412,11 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 			}
 		}
 
-		if (get().chats.length === 0 && pendingDeletionChatIds.size === 0) {
+		const shouldResumePagination =
+			hasInterruptedPagination || get().chats.length === 0;
+
+		if (pendingDeletionChatIds.size === 0 && shouldResumePagination) {
+			hasInterruptedPagination = false;
 			void get().getNextChatsPage();
 		}
 

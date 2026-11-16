@@ -91,6 +91,37 @@ describe("useChatsStore - deleteChats", () => {
 		expect(chatIdsInStore()).toEqual([50, 40, 20]);
 	});
 
+	it("resumes pagination after a page fetched during the deletion was discarded", async () => {
+		const deletedIds = Array.from({ length: 20 }, (_, index) => 120 - index);
+		useChatsStore.setState({ chats: toChats([300, ...deletedIds]) });
+		let finishDeletion: () => void = () => {};
+		vi.mocked(deleteChatsFromDb).mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					finishDeletion = () =>
+						resolve({ deletedChatIds: deletedIds, error: null });
+				}),
+		);
+		vi.mocked(getChatsFromDb)
+			.mockResolvedValueOnce(toChats(deletedIds))
+			.mockResolvedValueOnce(toChats([90]));
+
+		const deletion = useChatsStore.getState().deleteChats(deletedIds);
+		await useChatsStore.getState().getChatsFromDb(new AbortController().signal);
+
+		expect(chatIdsInStore()).toEqual([300]);
+		expect(useChatsStore.getState().hasMoreChats).toBe(true);
+
+		vi.useFakeTimers();
+		finishDeletion();
+		await deletion;
+		await vi.runAllTimersAsync();
+		vi.useRealTimers();
+
+		expect(getChatsFromDb).toHaveBeenLastCalledWith(300, expect.anything());
+		await vi.waitFor(() => expect(chatIdsInStore()).toEqual([300, 90]));
+	});
+
 	it("pauses pagination on an empty list until the deletion is done", async () => {
 		useChatsStore.setState({ chats: toChats([50, 40]) });
 		let finishDeletion: () => void = () => {};
