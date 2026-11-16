@@ -24,11 +24,14 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 	const [isRenamePending, setIsRenamePending] = useState(false);
 	const { setOpenDrawer } = useDrawerStore();
 	const inputRef = useRef<HTMLInputElement>(null);
-	const { selectedChatIds, selectRangeTo, clearSelection } =
-		useHistorySelectionStore();
+	const { selectRangeTo, clearSelection } = useHistorySelectionStore.getState();
+	const hasMultiSelection = useHistorySelectionStore(
+		({ selectedChatIds }) => selectedChatIds.length > 0,
+	);
+	const isInMultiSelection = useHistorySelectionStore(({ selectedChatIds }) =>
+		selectedChatIds.includes(chat.id),
+	);
 
-	const hasMultiSelection = selectedChatIds.length > 0;
-	const isInMultiSelection = selectedChatIds.includes(chat.id);
 	const isSelected = hasMultiSelection
 		? isInMultiSelection
 		: currentChatId === chat.id;
@@ -127,7 +130,6 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 
 			<HistoryEntryDropdownButton
 				chat={chat}
-				selectedChatCount={isInMultiSelection ? selectedChatIds.length : 1}
 				onRename={() => {
 					if (isRenamePending) {
 						return;

@@ -5,7 +5,6 @@ import { DefaultDialog } from "../../../primitives/dialogs/default-dialog";
 import { TertiaryButton } from "../../../primitives/buttons/tertiary-button";
 import { WarningButton } from "../../../primitives/buttons/warning-button";
 import Content from "../../../../content";
-import { useCurrentChatIdStore } from "../../../../store/current-chat-id-store";
 import { captureError } from "../../../../monitoring/capture-error";
 import { useToastStore } from "../../../../store/use-toast-store";
 
@@ -32,7 +31,6 @@ export function hideDeleteSelectedHistoryEntriesDialog() {
 export const DeleteSelectedHistoryEntriesDialog: React.FC = () => {
 	const { deleteChats } = useChatsStore();
 	const { selectedChatIds, clearSelection } = useHistorySelectionStore();
-	const { currentChatId, setCurrentChatId } = useCurrentChatIdStore();
 
 	const count = String(selectedChatIds.length);
 
@@ -50,10 +48,6 @@ export const DeleteSelectedHistoryEntriesDialog: React.FC = () => {
 				.getState()
 				.addError(Content["deleteSelectedHistoryEntriesDialog.error"]);
 		});
-
-		if (currentChatId !== null && selectedChatIds.includes(currentChatId)) {
-			setCurrentChatId(null);
-		}
 
 		clearSelection();
 	};

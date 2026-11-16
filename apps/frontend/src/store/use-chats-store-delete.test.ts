@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useChatsStore } from "./use-chats-store";
 import type { ChatWithMessages } from "../common";
+import { useCurrentChatIdStore } from "./current-chat-id-store";
 import { deleteChats as deleteChatsFromDb } from "../api/chat/delete-chats";
 import { getChats as getChatsFromDb } from "../api/chat/get-chats";
 
@@ -23,6 +24,36 @@ describe("useChatsStore - deleteChats", () => {
 		vi.mocked(deleteChatsFromDb).mockReset();
 		vi.mocked(getChatsFromDb).mockReset();
 		useChatsStore.setState({ chats: [], hasMoreChats: true });
+		useCurrentChatIdStore.setState({ currentChatId: null });
+	});
+
+	it("reopens the current chat when its deletion fails", async () => {
+		useChatsStore.setState({ chats: toChats([50, 45]) });
+		useCurrentChatIdStore.setState({ currentChatId: 45 });
+		vi.mocked(deleteChatsFromDb).mockResolvedValue({
+			deletedChatIds: [],
+			error: new Error("failed"),
+		});
+
+		const deletion = useChatsStore.getState().deleteChats([45]);
+		expect(useCurrentChatIdStore.getState().currentChatId).toBeNull();
+
+		await expect(deletion).rejects.toThrow("failed");
+		expect(useCurrentChatIdStore.getState().currentChatId).toBe(45);
+	});
+
+	it("keeps a chat opened while the failed deletion was in flight", async () => {
+		useChatsStore.setState({ chats: toChats([50, 45]) });
+		useCurrentChatIdStore.setState({ currentChatId: 45 });
+		vi.mocked(deleteChatsFromDb).mockImplementation(async () => {
+			useCurrentChatIdStore.setState({ currentChatId: 50 });
+			return { deletedChatIds: [], error: new Error("failed") };
+		});
+
+		await expect(useChatsStore.getState().deleteChats([45])).rejects.toThrow(
+			"failed",
+		);
+		expect(useCurrentChatIdStore.getState().currentChatId).toBe(50);
 	});
 
 	it("restores only chats that were not deleted and not already present", async () => {

@@ -13,7 +13,6 @@ import {
 	CHATS_PAGE_SIZE,
 } from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";
-import { deleteChat as deleteChatFromDb } from "../api/chat/delete-chat.ts";
 import { deleteChats as deleteChatsFromDb } from "../api/chat/delete-chats.ts";
 import { renameChat as renameChatInDb } from "../api/chat/rename-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
@@ -64,7 +63,6 @@ interface ChatStore {
 		chatMessage: NewChatMessage,
 	): Promise<ChatWithMessages>;
 	createChat(firstMessage: NewChatMessage): Promise<ChatWithMessages>;
-	deleteChat(chatId: number): Promise<void>;
 	deleteChats(chatIds: number[]): Promise<void>;
 	renameChat(chatId: number, newName: string): Promise<void>;
 	addMessageToChat(
@@ -343,24 +341,21 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	/**
-	 * Deletes the chat with the given id
-	 */
-	async deleteChat(chatId) {
-		const updatedChats = get().chats.filter((chat) => chat.id !== chatId);
-
-		set({ chats: updatedChats });
-
-		await deleteChatFromDb(chatId);
-	},
-
-	/**
 	 * Deletes the chats with the given ids, restoring them in the
-	 * list if the deletion fails
+	 * list (and reopening the current chat) if the deletion fails
 	 */
 	async deleteChats(chatIds) {
 		const removedChats = get().chats.filter((chat) =>
 			chatIds.includes(chat.id),
 		);
+		const { currentChatId, setCurrentChatId } =
+			useCurrentChatIdStore.getState();
+		const isDeletingCurrentChat =
+			currentChatId !== null && chatIds.includes(currentChatId);
+
+		if (isDeletingCurrentChat) {
+			setCurrentChatId(null);
+		}
 
 		chatIds.forEach((chatId) => pendingDeletionChatIds.add(chatId));
 		set({
@@ -384,6 +379,20 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 				(a, b) => b.id - a.id,
 			);
 			set({ chats: restoredChats });
+
+			const isCurrentChatRestored = notDeletedChats.some(
+				({ id }) => id === currentChatId,
+			);
+			const hasOpenedOtherChat =
+				useCurrentChatIdStore.getState().currentChatId !== null;
+
+			if (
+				isDeletingCurrentChat &&
+				isCurrentChatRestored &&
+				!hasOpenedOtherChat
+			) {
+				setCurrentChatId(currentChatId);
+			}
 		}
 
 		if (get().chats.length === 0 && pendingDeletionChatIds.size === 0) {

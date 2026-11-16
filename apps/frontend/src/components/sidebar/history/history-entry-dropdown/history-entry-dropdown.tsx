@@ -6,10 +6,10 @@ import { showDeleteHistoryEntryDialog } from "../delete-history-entry/delete-his
 import { showDeleteSelectedHistoryEntriesDialog } from "../delete-history-entry/delete-selected-history-entries-dialog";
 import { useHistoryEntryDeleteStore } from "../../../../store/use-history-entry-delete-store";
 import { DeleteElementIcon } from "../../../primitives/icons/delete-element-icon";
+import { useSelectedChatCount } from "../../../../store/use-history-selection-store";
 
 interface HistoryEntryDropdownProps {
 	chat: Chat;
-	selectedChatCount: number;
 	isOpen: boolean;
 	onClose: () => void;
 	onRename: () => void;
@@ -18,12 +18,12 @@ interface HistoryEntryDropdownProps {
 
 export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 	chat,
-	selectedChatCount,
 	isOpen,
 	onClose,
 	onRename,
 	triggerRef,
 }) => {
+	const selectedChatCount = useSelectedChatCount(chat.id);
 	const { setHistoryEntryToDeleteId, setHistoryEntryToDeleteName } =
 		useHistoryEntryDeleteStore();
 	const [position, setPosition] = useState<{ top: number; right: number }>({

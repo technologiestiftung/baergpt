@@ -974,6 +974,8 @@ export const Content = {
 	"deleteHistoryEntryDialog.confirmation.p2": "wirklich löschen?",
 	"deleteHistoryEntryDialog.delete": "Löschen",
 	"deleteHistoryEntryDialog.cancel": "Abbrechen",
+	"deleteHistoryEntryDialog.error":
+		"Der Chat konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
 
 	//DeleteSelectedHistoryEntriesDialog
 	"deleteSelectedHistoryEntriesDialog.title": "{count} Chats löschen?",

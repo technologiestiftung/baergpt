@@ -47,6 +47,11 @@ export const useHistorySelectionStore = create<HistorySelectionStore>()(
 	}),
 );
 
+export const useSelectedChatCount = (chatId: number) =>
+	useHistorySelectionStore(({ selectedChatIds }) =>
+		selectedChatIds.includes(chatId) ? selectedChatIds.length : 1,
+	);
+
 useCurrentChatIdStore.subscribe((state, previousState) => {
 	if (state.currentChatId !== previousState.currentChatId) {
 		useHistorySelectionStore.getState().clearSelection();

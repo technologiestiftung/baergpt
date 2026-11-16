@@ -3,16 +3,17 @@ import { useClickOutside } from "../../../../hooks/use-click-outside";
 import { HistoryEntryDropdown } from "./history-entry-dropdown";
 import Content from "../../../../content";
 import type { Chat } from "../../../../common";
+import { useSelectedChatCount } from "../../../../store/use-history-selection-store";
 
 interface HistoryEntryDropdownButtonProps {
 	chat: Chat;
-	selectedChatCount: number;
 	onRename: () => void;
 }
 
 export const HistoryEntryDropdownButton: React.FC<
 	HistoryEntryDropdownButtonProps
-> = ({ chat, selectedChatCount, onRename }) => {
+> = ({ chat, onRename }) => {
+	const selectedChatCount = useSelectedChatCount(chat.id);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
@@ -63,7 +64,6 @@ export const HistoryEntryDropdownButton: React.FC<
 			</button>
 			<HistoryEntryDropdown
 				chat={chat}
-				selectedChatCount={selectedChatCount}
 				isOpen={isDropdownOpen}
 				onClose={closeDropdown}
 				onRename={onRename}
