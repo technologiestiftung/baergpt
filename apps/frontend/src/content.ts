@@ -809,6 +809,11 @@ export const Content = {
 	"historyEntryDropdown.delete": "Löschen",
 	"historyEntryDropdown.delete.imgAlt": "Mülleimer-Icon",
 	"historyEntryDropdown.renameInput.ariaLabel": "Chat umbenennen",
+	"historyEntryDropdown.selection.menuIcon.ariaLabel":
+		"Optionen für {count} ausgewählte Chats",
+	"historyEntryDropdown.selection.delete": "{count} Chats löschen",
+	"historyEntry.selected.ariaDescription": "Ausgewählt",
+	"chatHistory.selection.status": "{count} Chats ausgewählt",
 	//profileButton
 	"profile.button.tooltipLabel": "Profil",
 	"profile.button.ariaLabel": "Profil öffnen",
@@ -969,6 +974,17 @@ export const Content = {
 	"deleteHistoryEntryDialog.confirmation.p2": "wirklich löschen?",
 	"deleteHistoryEntryDialog.delete": "Löschen",
 	"deleteHistoryEntryDialog.cancel": "Abbrechen",
+	"deleteHistoryEntryDialog.error":
+		"Der Chat konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+
+	//DeleteSelectedHistoryEntriesDialog
+	"deleteSelectedHistoryEntriesDialog.title": "{count} Chats löschen?",
+	"deleteSelectedHistoryEntriesDialog.confirmation":
+		"Möchten Sie wirklich {count} Chats löschen? Dieser Schritt kann nicht rückgängig gemacht werden.",
+	"deleteSelectedHistoryEntriesDialog.delete": "Löschen",
+	"deleteSelectedHistoryEntriesDialog.cancel": "Abbrechen",
+	"deleteSelectedHistoryEntriesDialog.error":
+		"Die Chats konnten nicht gelöscht werden. Bitte versuchen Sie es erneut.",
 	//ChatSearchDialog
 	"chatSearchDialog.placeholder": "Chats durchsuchen...",
 	"chatSearchDialog.lastChats": "Letzte Chats",

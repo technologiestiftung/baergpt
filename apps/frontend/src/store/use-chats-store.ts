@@ -13,7 +13,7 @@ import {
 	CHATS_PAGE_SIZE,
 } from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";
-import { deleteChat as deleteChatFromDb } from "../api/chat/delete-chat.ts";
+import { deleteChats as deleteChatsFromDb } from "../api/chat/delete-chats.ts";
 import { renameChat as renameChatInDb } from "../api/chat/rename-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
@@ -30,6 +30,15 @@ import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
 let visibleInfoMessageTimeout: ReturnType<typeof setTimeout>;
+
+// Pages fetched while a deletion is in flight may still contain these chats
+const pendingDeletionChatIds = new Set<number>();
+const confirmedDeletedChatIds = new Set<number>();
+// Resumed by deleteChats once pending deletions settle
+let hasInterruptedPagination = false;
+
+const isDeletedChat = (chatId: number) =>
+	pendingDeletionChatIds.has(chatId) || confirmedDeletedChatIds.has(chatId);
 
 /**
  * Client-generated ids for not-yet-persisted messages. Always negative so
@@ -59,7 +68,7 @@ interface ChatStore {
 		chatMessage: NewChatMessage,
 	): Promise<ChatWithMessages>;
 	createChat(firstMessage: NewChatMessage): Promise<ChatWithMessages>;
-	deleteChat(chatId: number): Promise<void>;
+	deleteChats(chatIds: number[]): Promise<void>;
 	renameChat(chatId: number, newName: string): Promise<void>;
 	addMessageToChat(
 		chat: ChatWithMessages,
@@ -211,11 +220,19 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	 * and their messages and sets them in the store
 	 */
 	async getChatsFromDb(signal) {
+		const { chats } = get();
+
+		// An empty list resets the cursor to the first page, which would still
+		// contain the chats being deleted
+		if (chats.length === 0 && pendingDeletionChatIds.size > 0) {
+			hasInterruptedPagination = true;
+			return;
+		}
+
 		set({ isLoading: true });
 
 		// Chats are appended oldest-last, so the last loaded chat's
 		// id is the cursor for the next (older) page.
-		const { chats } = get();
 		const cursor = chats.length > 0 ? chats[chats.length - 1].id : null;
 
 		// Clear any existing fetch error when starting a new fetch attempt
@@ -232,7 +249,21 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		const chatsWithMessages = await Promise.all(promises);
 
+		const chatCountBeforeSync = get().chats.length;
 		get().syncChats(chatsWithMessages);
+
+		// Nothing was added, so the list won't trigger loading the next page itself
+		const isPageDiscarded =
+			get().chats.length === chatCountBeforeSync &&
+			chatsWithMessages.some(({ id }) => isDeletedChat(id));
+
+		if (isPageDiscarded) {
+			if (pendingDeletionChatIds.size > 0) {
+				hasInterruptedPagination = true;
+			} else {
+				void get().getNextChatsPage();
+			}
+		}
 
 		if (get().isFirstLoad) {
 			set({ isFirstLoad: false });
@@ -248,7 +279,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		newChats.forEach((newChat) => {
 			const isDuplicate = existingChats.some((chat) => chat.id === newChat.id);
-			if (isDuplicate) {
+			if (isDuplicate || isDeletedChat(newChat.id)) {
 				return;
 			}
 			synchronizedChats.push(newChat);
@@ -327,14 +358,71 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	/**
-	 * Deletes the chat with the given id
+	 * Deletes the chats with the given ids, restoring them in the
+	 * list (and reopening the current chat) if the deletion fails
 	 */
-	async deleteChat(chatId) {
-		const updatedChats = get().chats.filter((chat) => chat.id !== chatId);
+	async deleteChats(chatIds) {
+		const removedChats = get().chats.filter((chat) =>
+			chatIds.includes(chat.id),
+		);
+		const { currentChatId, setCurrentChatId } =
+			useCurrentChatIdStore.getState();
+		const isDeletingCurrentChat =
+			currentChatId !== null && chatIds.includes(currentChatId);
 
-		set({ chats: updatedChats });
+		if (isDeletingCurrentChat) {
+			setCurrentChatId(null);
+		}
 
-		await deleteChatFromDb(chatId);
+		chatIds.forEach((chatId) => pendingDeletionChatIds.add(chatId));
+		set({
+			chats: get().chats.filter((chat) => !chatIds.includes(chat.id)),
+		});
+
+		const { deletedChatIds, error } = await deleteChatsFromDb(chatIds);
+
+		chatIds.forEach((chatId) => pendingDeletionChatIds.delete(chatId));
+		deletedChatIds.forEach((chatId) => confirmedDeletedChatIds.add(chatId));
+
+		if (error) {
+			const currentChats = get().chats;
+			const notDeletedChats = removedChats.filter(
+				(chat) =>
+					!deletedChatIds.includes(chat.id) &&
+					!currentChats.some(({ id }) => id === chat.id),
+			);
+			// Chats are ordered by id descending
+			const restoredChats = [...currentChats, ...notDeletedChats].sort(
+				(a, b) => b.id - a.id,
+			);
+			set({ chats: restoredChats });
+
+			const isCurrentChatRestored = notDeletedChats.some(
+				({ id }) => id === currentChatId,
+			);
+			const hasOpenedOtherChat =
+				useCurrentChatIdStore.getState().currentChatId !== null;
+
+			if (
+				isDeletingCurrentChat &&
+				isCurrentChatRestored &&
+				!hasOpenedOtherChat
+			) {
+				setCurrentChatId(currentChatId);
+			}
+		}
+
+		const shouldResumePagination =
+			hasInterruptedPagination || get().chats.length === 0;
+
+		if (pendingDeletionChatIds.size === 0 && shouldResumePagination) {
+			hasInterruptedPagination = false;
+			void get().getNextChatsPage();
+		}
+
+		if (error) {
+			throw error;
+		}
 	},
 
 	/**

@@ -5,7 +5,8 @@ import { DefaultDialog } from "../../../primitives/dialogs/default-dialog";
 import { TertiaryButton } from "../../../primitives/buttons/tertiary-button";
 import { PrimaryButton } from "../../../primitives/buttons/primary-button";
 import Content from "../../../../content";
-import { useCurrentChatIdStore } from "../../../../store/current-chat-id-store";
+import { captureError } from "../../../../monitoring/capture-error";
+import { useToastStore } from "../../../../store/use-toast-store";
 
 const deleteHistoryEntryDialogId = "delete-history-entry-dialog";
 
@@ -22,10 +23,9 @@ export function hideDeleteHistoryEntryDialog() {
 }
 
 export const DeleteHistoryEntryDialog: React.FC = () => {
-	const { deleteChat } = useChatsStore();
+	const { deleteChats } = useChatsStore();
 	const { historyEntryToDeleteId, historyEntryToDeleteName } =
 		useHistoryEntryDeleteStore();
-	const { currentChatId, setCurrentChatId } = useCurrentChatIdStore();
 
 	const truncatedHistoryEntryToDeleteName =
 		historyEntryToDeleteName.length > 80
@@ -40,11 +40,12 @@ export const DeleteHistoryEntryDialog: React.FC = () => {
 		}
 
 		hideDeleteHistoryEntryDialog();
-		deleteChat(historyEntryToDeleteId);
-
-		if (historyEntryToDeleteId === currentChatId) {
-			setCurrentChatId(null);
-		}
+		deleteChats([historyEntryToDeleteId]).catch((error) => {
+			captureError(error);
+			useToastStore
+				.getState()
+				.addError(Content["deleteHistoryEntryDialog.error"]);
+		});
 	};
 
 	return (

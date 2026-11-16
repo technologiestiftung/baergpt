@@ -1,8 +1,9 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useClickOutside } from "../../../../hooks/use-click-outside";
 import { HistoryEntryDropdown } from "./history-entry-dropdown";
 import Content from "../../../../content";
 import type { Chat } from "../../../../common";
+import { useSelectedChatCount } from "../../../../store/use-history-selection-store";
 
 interface HistoryEntryDropdownButtonProps {
 	chat: Chat;
@@ -12,9 +13,15 @@ interface HistoryEntryDropdownButtonProps {
 export const HistoryEntryDropdownButton: React.FC<
 	HistoryEntryDropdownButtonProps
 > = ({ chat, onRename }) => {
+	const selectedChatCount = useSelectedChatCount(chat.id);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	// The menu actions refer to the selection, so a stale menu must not stay open
+	useEffect(() => {
+		setIsDropdownOpen(false);
+	}, [selectedChatCount]);
 
 	useClickOutside(isDropdownOpen, () => setIsDropdownOpen(false), [
 		dropdownButtonRef,
@@ -37,9 +44,15 @@ export const HistoryEntryDropdownButton: React.FC<
 			<button
 				ref={dropdownButtonRef}
 				type="button"
-				aria-label={Content["historyEntryDropdown.menuIcon.ariaLabel"]}
+				aria-label={
+					selectedChatCount > 1
+						? Content[
+								"historyEntryDropdown.selection.menuIcon.ariaLabel"
+							].replace("{count}", String(selectedChatCount))
+						: Content["historyEntryDropdown.menuIcon.ariaLabel"]
+				}
 				aria-expanded={isDropdownOpen}
-				className="rounded-3px size-5 flex items-center justify-center hover:bg-dunkelblau-95 group-hover:opacity-100 group-focus-within:opacity-100 aria-expanded:opacity-100 focus-visible:outline-2px hoverable:opacity-0 transition-opacity duration-150"
+				className={`rounded-3px size-5 flex items-center justify-center hover:bg-dunkelblau-95 group-hover:opacity-100 group-focus-within:opacity-100 aria-expanded:opacity-100 focus-visible:outline-2px transition-opacity duration-150 ${selectedChatCount > 1 ? "" : "hoverable:opacity-0"}`}
 				onClick={() => setIsDropdownOpen((open) => !open)}
 			>
 				<img
