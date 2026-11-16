@@ -40,6 +40,7 @@ export type OpenDataCitationSource = {
 };
 
 type StreamEvent =
+	| { type: "start-step" }
 	| { type: "text-delta"; id: string; delta: string }
 	| { type: "reasoning-delta"; id: string; delta: string }
 	| { type: "tool-input-start"; toolCallId: string; toolName: string }
@@ -62,6 +63,9 @@ const traceToolByStreamName: Record<string, TraceTool> = {
 	create_visualization: "datawrapperMCPTools",
 	publish_visualization: "datawrapperMCPTools",
 };
+
+/** Held-back step text longer than this is shown as the answer. */
+const HELD_STEP_TEXT_MAX_LENGTH = 500;
 
 const activeToolsDict: Record<ChatTool, string[]> = {
 	parla: ["parlaMCPTools"],
@@ -207,15 +211,57 @@ export async function getCompletion(
 		let hasReceivedText = false;
 		let thinkingStartedAt: number | undefined;
 		let thinkingDurationSeconds: number | undefined;
+		let hasStepToolCall = false;
+		let startsNewTextTrace = false;
+		let answerStartedAt: number | undefined;
 
-		/** Appends to the open text trace, or opens a new one after a tool step. */
+		// With tools available, a step's first text may be a remark before a
+		// tool call rather than the answer. It is held back until that is
+		// decided, so it does not flash up as the answer and then disappear.
+		const canCallTools =
+			selectedChatTools.length > 0 ||
+			allowedDocumentIds.length > 0 ||
+			selectedFolderIds.length > 0;
+		let heldStepText = "";
+		let isStepTextReleased = false;
+
+		/**
+		 * Appends to the open text trace. Opens a new one at a step boundary, after
+		 * demoted step text, or when the last trace is not a text trace (a tool).
+		 */
 		const appendTraceText = (delta: string) => {
 			const lastTrace = traces.at(-1);
-			if (lastTrace?.type === "text") {
+			if (!startsNewTextTrace && lastTrace?.type === "text") {
 				lastTrace.text += delta;
-				return;
+			} else {
+				traces.push({ type: "text", text: delta });
 			}
-			traces.push({ type: "text", text: delta });
+			startsNewTextTrace = false;
+		};
+
+		/**
+		 * Text is only known to be intermediate once a tool call follows in the
+		 * same step. Until then it was held back or already shown as the answer,
+		 * so it is moved into the traces here and the answer starts over.
+		 */
+		const moveStepTextToTraces = () => {
+			hasStepToolCall = true;
+
+			const stepText = (currentText + heldStepText).trim();
+			heldStepText = "";
+			if (stepText) {
+				traces.push({ type: "text", text: stepText });
+				startsNewTextTrace = true;
+				thinkingStartedAt ??= answerStartedAt;
+			}
+
+			if (hasReceivedText) {
+				currentText = "";
+				hasReceivedText = false;
+				answerStartedAt = undefined;
+				thinkingDurationSeconds = undefined;
+				setStatus("waiting-for-response");
+			}
 		};
 
 		/**
@@ -249,6 +295,37 @@ export async function getCompletion(
 				running_tool: runningTool,
 			});
 
+		const appendAnswerText = (text: string) => {
+			// Set status to loading-text on first answer text
+			if (!hasReceivedText) {
+				setStatus("loading-text");
+				hasReceivedText = true;
+				answerStartedAt = Date.now();
+
+				if (thinkingStartedAt !== undefined) {
+					thinkingDurationSeconds = Math.max(
+						1,
+						Math.round((Date.now() - thinkingStartedAt) / 1000),
+					);
+				}
+			}
+
+			currentText += text;
+			writeMessage();
+		};
+
+		/** Shows the held-back step text as the answer; later text streams directly. */
+		const releaseHeldStepText = () => {
+			if (!heldStepText) {
+				return;
+			}
+
+			const text = heldStepText;
+			heldStepText = "";
+			isStepTextReleased = true;
+			appendAnswerText(text);
+		};
+
 		let isSettled = false;
 		settlePendingMessage = async ({ keepPartial }) => {
 			if (isSettled) {
@@ -256,8 +333,13 @@ export async function getCompletion(
 			}
 			isSettled = true;
 
-			// Persist whatever non-whitespace text the user has already seen, even
-			// if the stream broke off later — otherwise drop the placeholder.
+			if (keepPartial) {
+				releaseHeldStepText();
+			}
+
+			// Persist whatever non-whitespace answer text has arrived, including
+			// text that was still held back, even if the stream broke off later —
+			// otherwise drop the placeholder.
 			if (!keepPartial || !currentText.trim()) {
 				removePendingMessageFromMemory(currentChat, localMessageId);
 				return;
@@ -289,22 +371,34 @@ export async function getCompletion(
 		};
 
 		await parseStream(response.body, {
+			onStepStart: () => {
+				// Text the previous step left held back had no tool call after it.
+				releaseHeldStepText();
+				hasStepToolCall = false;
+				startsNewTextTrace = true;
+				isStepTextReleased = false;
+			},
 			onTextDelta: (delta: string) => {
-				// Set status to loading-text on first text delta
-				if (!hasReceivedText) {
-					setStatus("loading-text");
-					hasReceivedText = true;
-
-					if (thinkingStartedAt !== undefined) {
-						thinkingDurationSeconds = Math.max(
-							1,
-							Math.round((Date.now() - thinkingStartedAt) / 1000),
-						);
-					}
+				if (hasStepToolCall) {
+					appendTraceText(delta);
+					writeMessage();
+					return;
 				}
 
-				currentText += delta;
-				writeMessage();
+				if (!canCallTools || isStepTextReleased) {
+					appendAnswerText(delta);
+					return;
+				}
+
+				thinkingStartedAt ??= Date.now();
+				heldStepText += delta;
+
+				// Remarks before a tool call are short, but can look just like the
+				// start of an answer (heading plus paragraph), so only their length
+				// tells them apart. Longer text is taken to be the answer.
+				if (heldStepText.length > HELD_STEP_TEXT_MAX_LENGTH) {
+					releaseHeldStepText();
+				}
 			},
 			onReasoningDelta: (delta: string) => {
 				thinkingStartedAt ??= Date.now();
@@ -312,8 +406,11 @@ export async function getCompletion(
 				writeMessage();
 			},
 			onToolStart: (toolName: string, toolCallId: string) => {
+				moveStepTextToTraces();
+
 				const tool = traceToolByStreamName[toolName];
 				if (!tool) {
+					writeMessage();
 					return;
 				}
 
@@ -365,6 +462,7 @@ export async function getCompletion(
 				writeMessage();
 			},
 			onFinish: async () => {
+				releaseHeldStepText();
 				setStatus("idle");
 				setStreamingAbortController(null);
 				await settlePendingMessage?.({ keepPartial: true });
@@ -391,6 +489,7 @@ export async function getCompletion(
 async function processStreamLine(
 	line: string,
 	callbacks: {
+		onStepStart: () => void;
 		onTextDelta: (delta: string) => void;
 		onReasoningDelta: (delta: string) => void;
 		onToolStart: (toolName: string, toolCallId: string) => void;
@@ -416,6 +515,11 @@ async function processStreamLine(
 
 	try {
 		const event = JSON.parse(jsonStr) as StreamEvent;
+
+		if (event.type === "start-step") {
+			callbacks.onStepStart();
+			return false;
+		}
 
 		if (event.type === "text-delta") {
 			callbacks.onTextDelta(event.delta);
@@ -477,6 +581,7 @@ async function processStreamLine(
 async function parseStream(
 	body: ReadableStream<Uint8Array>,
 	callbacks: {
+		onStepStart: () => void;
 		onTextDelta: (delta: string) => void;
 		onReasoningDelta: (delta: string) => void;
 		onToolStart: (toolName: string, toolCallId: string) => void;

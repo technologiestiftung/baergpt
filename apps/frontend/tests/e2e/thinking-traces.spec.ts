@@ -3,11 +3,24 @@ import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
 import {
 	mockLlmCompletion,
 	sendAndWaitForLLMResponse,
+	type LlmStreamEvent,
 } from "../fixtures/mock-llm.ts";
 import { supabaseAdminClient } from "../supabase.ts";
 
 const TRACE_TEXT = "Ich prüfe zuerst die verfügbaren Quellen.";
+const SECOND_TRACE_TEXT = "Die Treffer reichen für eine Antwort.";
+const REMARK_TEXT = "Ich durchsuche jetzt das Web.";
 const ANSWER_TEXT = "Die Antwort lautet 42.";
+
+/** A step with a sentence before its tool call, then the answer step. */
+const REMARK_BEFORE_TOOL_CALL_EVENTS: LlmStreamEvent[] = [
+	{ type: "start-step" },
+	{ type: "text-delta", id: "1", delta: REMARK_TEXT },
+	{ type: "tool-input-start", toolCallId: "c1", toolName: "webSearchTool" },
+	{ type: "tool-output-available", toolCallId: "c1" },
+	{ type: "start-step" },
+	{ type: "text-delta", id: "2", delta: ANSWER_TEXT },
+];
 
 const summaryName = /Nachgedacht für \d+ Sekunden/;
 const summaryWithoutDurationName = "Gedankengang";
@@ -52,10 +65,36 @@ async function setExtendedThinking(page: Page, isEnabled: boolean) {
 	}, isEnabled);
 }
 
+/** The remark is only in the trace; the answer is the last step's text. */
+async function expectRemarkInTraceOnly(page: Page, userId: string) {
+	const answer = page.getByText(ANSWER_TEXT, { exact: true });
+	const remark = page.getByText(REMARK_TEXT);
+	const summary = page.getByRole("button", { name: summaryName });
+
+	await expect(answer).toBeVisible();
+	await expect(remark).toBeHidden();
+
+	await summary.click();
+	await expect(remark).toBeVisible();
+
+	await expect
+		.poll(() => getLatestTraces(userId))
+		.toEqual([
+			{
+				traces: [
+					{ type: "text", text: REMARK_TEXT },
+					{ type: "tool", tool: "webSearchTool" },
+				],
+				durationSeconds: expect.any(Number),
+			},
+		]);
+}
+
 /**
- * The reasoning-only phase (trace shown in full under "BärGPT überlegt...",
- * before any answer text arrives) is not covered here: Playwright buffers a
- * mocked stream body, so the page only ever sees the completed response.
+ * The live phases are not covered here: the reasoning-only phase (trace shown
+ * in full under "BärGPT überlegt...", before any answer text arrives) and the
+ * holding back of undecided step text. Playwright buffers a mocked stream
+ * body, so the page only ever sees the completed response.
  */
 test.describe("Thinking traces", () => {
 	testWithMockedLlm(
@@ -141,6 +180,8 @@ test.describe("Thinking traces", () => {
 						toolName: "search_berlin_datasets",
 					},
 					{ type: "tool-output-available", toolCallId: "c4" },
+					// The answer is a step of its own, as in a real stream.
+					{ type: "start-step" },
 					{ type: "text-delta", id: "1", delta: ANSWER_TEXT },
 				],
 			});
@@ -244,6 +285,7 @@ test.describe("Thinking traces", () => {
 						toolName: "webSearchTool",
 					},
 					{ type: "tool-output-available", toolCallId: "c1" },
+					{ type: "start-step" },
 					{ type: "text-delta", id: "1", delta: ANSWER_TEXT },
 				],
 			});
@@ -280,6 +322,7 @@ test.describe("Thinking traces", () => {
 						toolName: "webSearchTool",
 					},
 					{ type: "tool-output-available", toolCallId: "c1" },
+					{ type: "start-step" },
 					{ type: "text-delta", id: "1", delta: ANSWER_TEXT },
 				],
 			});
@@ -304,6 +347,100 @@ test.describe("Thinking traces", () => {
 						traces: [
 							{ type: "text", text: TRACE_TEXT },
 							{ type: "tool", tool: "webSearchTool" },
+						],
+						durationSeconds: expect.any(Number),
+					},
+				]);
+		},
+	);
+
+	testWithMockedLlm(
+		"moves text before a tool call into the trace instead of the answer",
+		async ({ page, account }) => {
+			await setExtendedThinking(page, true);
+			await mockLlmCompletion(page, {
+				events: REMARK_BEFORE_TOOL_CALL_EVENTS,
+			});
+			await page.goto("/");
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			await expectRemarkInTraceOnly(page, account.id);
+		},
+	);
+
+	testWithMockedLlm(
+		"moves text before a tool call into the trace when a tool is selected",
+		async ({ page, account, isMobile }) => {
+			testWithMockedLlm.skip(isMobile === true, "desktop-only menu flow");
+
+			if (process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED !== "true") {
+				testWithMockedLlm.skip();
+			}
+
+			await setExtendedThinking(page, true);
+			await mockLlmCompletion(page, {
+				events: REMARK_BEFORE_TOOL_CALL_EVENTS,
+			});
+			await page.goto("/");
+
+			// With a tool selected, step text is held back until it is decided.
+			const chatOptionsButton = page.getByRole("button", {
+				name: "Weitere Funktionen aktivieren",
+			});
+			await chatOptionsButton.click();
+
+			const webSearchOption = page.getByRole("menuitemcheckbox", {
+				name: "Websuche auswählen",
+			});
+			await webSearchOption.click();
+
+			const chatInput = page.getByPlaceholder("Das Web durchsuchen");
+			await chatInput.fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			await expectRemarkInTraceOnly(page, account.id);
+		},
+	);
+
+	testWithMockedLlm(
+		"keeps reasoning from different steps as separate trace entries",
+		async ({ page, account }) => {
+			await setExtendedThinking(page, true);
+			await mockLlmCompletion(page, {
+				events: [
+					{ type: "start-step" },
+					{ type: "reasoning-delta", id: "r1", delta: TRACE_TEXT },
+					// A tool without a trace step, so nothing separates the reasoning.
+					{
+						type: "tool-input-start",
+						toolCallId: "c1",
+						toolName: "search_berlin_datasets",
+					},
+					{ type: "tool-output-available", toolCallId: "c1" },
+					{ type: "start-step" },
+					{ type: "reasoning-delta", id: "r2", delta: SECOND_TRACE_TEXT },
+					{ type: "text-delta", id: "1", delta: ANSWER_TEXT },
+				],
+			});
+			await page.goto("/");
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByText(ANSWER_TEXT, { exact: true });
+			await expect(answer).toBeVisible();
+
+			await expect
+				.poll(() => getLatestTraces(account.id))
+				.toEqual([
+					{
+						traces: [
+							{ type: "text", text: TRACE_TEXT },
+							{ type: "text", text: SECOND_TRACE_TEXT },
 						],
 						durationSeconds: expect.any(Number),
 					},
