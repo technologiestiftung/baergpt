@@ -96,6 +96,27 @@ export function buildUserSystemPromptBlock(
 	return `\n\n${preamble}\n\n${userSystemPrompt}`;
 }
 
+const STEP_LIMIT_INSTRUCTION_PROMPT = "step-limit-instruction";
+
+/**
+ * Appends the step limit instruction as the last message. At the end of the
+ * system prompt the model ignored it and kept announcing further tool calls.
+ * The prompt is only fetched once the limit is actually reached.
+ */
+async function appendStepLimitInstruction(
+	messages: ModelMessage[],
+): Promise<ModelMessage[]> {
+	const stepLimitPromptClient = await getTextPrompt(
+		STEP_LIMIT_INSTRUCTION_PROMPT,
+		{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
+	);
+
+	return [
+		...messages,
+		{ role: "user", content: stepLimitPromptClient.compile({}) },
+	];
+}
+
 type RelevantTools = {
 	tools: Record<string, Tool>;
 	toolChoice: ToolChoice<Record<string, Tool>>;
@@ -364,6 +385,17 @@ export class GenerationService {
 								llmHandler.model === "experimental"
 									? isStepCount(EXPERIMENTAL_MAX_TOOL_CALL_STEPS)
 									: isLoopFinished(),
+							// The last step allowed by the step limit gets no tools, so the
+							// loop always ends on an answer instead of on a tool call. The
+							// model is told why, otherwise it claims the tools are missing.
+							prepareStep: async ({ steps, messages: stepMessages }) =>
+								llmHandler.model === "experimental" &&
+								steps.length >= EXPERIMENTAL_MAX_TOOL_CALL_STEPS - 1
+									? {
+											toolChoice: "none",
+											messages: await appendStepLimitInstruction(stepMessages),
+										}
+									: {},
 							providerOptions: {
 								mistral: {
 									presencePenalty: LLM_PARAMETERS.presencePenalty,
