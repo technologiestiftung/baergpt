@@ -87,22 +87,22 @@
 	}
 
 	.code-block {
-		--code-block-surface: theme("colors.hellblau-30");
-		--code-block-border: theme("colors.mittelblau-100");
+		--code-block-surface: theme("colors.white");
+		--code-block-border: theme("colors.hellblau-55");
 		--code-block-text: theme("colors.dunkelblau-100");
-		--code-block-string: theme("colors.mittelgruen-130");
-		--code-block-number: theme("colors.warning-120");
-		--code-block-function: theme("colors.dunkelblau-80");
-		--code-block-comment: theme("colors.schwarz-60");
+		--code-block-keyword: theme("colors.dunkelblau-100");
+		--code-block-string: theme("colors.mittelgruen-120");
+		--code-block-number: theme("colors.berlin-rot");
+		--code-block-function: theme("colors.orange-120");
+		--code-block-comment: theme("colors.dunkelblau-65");
 
-		@apply my-4 w-full rounded-[3px] overflow-hidden border;
+		@apply my-4 w-full rounded-[6px] overflow-hidden border;
 		background-color: var(--code-block-surface);
 		border-color: var(--code-block-border);
 	}
 
 	.code-block-header {
-		@apply flex items-center justify-between gap-2 pl-3 pr-1 py-1 text-sm border-b;
-		border-color: var(--code-block-border);
+		@apply flex items-center justify-between gap-2 pl-4 pr-2 py-2 text-sm;
 	}
 
 	.code-block-language {
@@ -111,7 +111,7 @@
 	}
 
 	.code-block-pre {
-		@apply m-0 overflow-x-auto px-4 py-3 text-sm leading-relaxed;
+		@apply m-0 overflow-x-auto px-4 py-2 text-sm leading-[22px];
 		color: var(--code-block-text);
 		white-space: pre;
 	}
@@ -129,8 +129,8 @@
 	.code-block .hljs-doctag,
 	.code-block .hljs-name,
 	.code-block .hljs-tag {
-		color: var(--code-block-text);
-		font-weight: 600;
+		color: var(--code-block-keyword);
+		font-weight: 700;
 	}
 
 	.code-block .hljs-string,
@@ -162,6 +162,7 @@
 	.code-block .hljs-quote,
 	.code-block .hljs-meta {
 		color: var(--code-block-comment);
+		font-style: italic;
 	}
 
 	.code-block .hljs-emphasis {

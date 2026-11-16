@@ -1133,7 +1133,8 @@ export const Content = {
 	"chat.userMessage.showMore": "Mehr anzeigen",
 	"chat.userMessage.showLess": "Weniger anzeigen",
 	"chat.codeBlockCopyButton.ariaLabel": "Code kopieren",
-	"chat.codeBlockCopyButton.ariaLabel.copied": "Code kopiert",
+	"chat.codeBlockCopyButton.ariaLabel.copied": "Code in Zwischenablage kopiert",
+	"chat.codeBlockCopyButton.tooltip.copied": "In Zwischenablage kopiert",
 	"chat.disclaimer.p1": "BärGPT kann",
 	"chat.disclaimer.p2": "Fehler",
 	"chat.disclaimer.p2.link":
