@@ -96,23 +96,25 @@ export function buildUserSystemPromptBlock(
 	return `\n\n${preamble}\n\n${userSystemPrompt}`;
 }
 
-const STEP_LIMIT_INSTRUCTION = [
-	"[Automatischer Systemhinweis, nicht von der nutzenden Person]",
-	"",
-	"# SCHRITTLIMIT ERREICHT",
-	"",
-	"Du hast die maximale Anzahl an Tool-Aufrufen für diese Anfrage erreicht und kannst jetzt keine weiteren Tools mehr aufrufen.",
-	"Die Tools sind weiterhin aktiviert; behaupte nicht, dass sie fehlen oder aktiviert werden müssen.",
-	"Beantworte die Anfrage jetzt mit den bisher gesammelten Ergebnissen.",
-	"Benenne klar, was noch offen ist, und schlage vor, die Anfrage einzugrenzen oder in einer neuen Nachricht fortzusetzen.",
-].join("\n");
+const STEP_LIMIT_INSTRUCTION_PROMPT = "step-limit-instruction";
 
 /**
  * Appends the step limit instruction as the last message. At the end of the
  * system prompt the model ignored it and kept announcing further tool calls.
+ * The prompt is only fetched once the limit is actually reached.
  */
-function appendStepLimitInstruction(messages: ModelMessage[]): ModelMessage[] {
-	return [...messages, { role: "user", content: STEP_LIMIT_INSTRUCTION }];
+async function appendStepLimitInstruction(
+	messages: ModelMessage[],
+): Promise<ModelMessage[]> {
+	const stepLimitPromptClient = await getTextPrompt(
+		STEP_LIMIT_INSTRUCTION_PROMPT,
+		{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
+	);
+
+	return [
+		...messages,
+		{ role: "user", content: stepLimitPromptClient.compile({}) },
+	];
 }
 
 type RelevantTools = {
@@ -386,12 +388,12 @@ export class GenerationService {
 							// The last step allowed by the step limit gets no tools, so the
 							// loop always ends on an answer instead of on a tool call. The
 							// model is told why, otherwise it claims the tools are missing.
-							prepareStep: ({ steps, messages: stepMessages }) =>
+							prepareStep: async ({ steps, messages: stepMessages }) =>
 								llmHandler.model === "experimental" &&
 								steps.length >= EXPERIMENTAL_MAX_TOOL_CALL_STEPS - 1
 									? {
 											toolChoice: "none",
-											messages: appendStepLimitInstruction(stepMessages),
+											messages: await appendStepLimitInstruction(stepMessages),
 										}
 									: {},
 							providerOptions: {
