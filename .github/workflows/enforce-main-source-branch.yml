@@ -1,0 +1,22 @@
+name: Enforce Main Source Branch
+
+permissions: {}
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, edited, synchronize]
+
+jobs:
+  check-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Only allow PRs from staging into main 🚦
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "staging" ]; then
+            echo "::error::PRs into main must come from staging (got: $HEAD_REF)"
+            exit 1
+          fi
