@@ -43,7 +43,9 @@ export const MultiSelectForActionButton: React.FC = () => {
 					<CheckboxIcon
 						state={hasItemsInCurrentFolder ? "checked" : "disabled"}
 					/>
-					{Content["selectItemsButton.label"]}
+					<span className="whitespace-nowrap">
+						{Content["selectItemsButton.label"]}
+					</span>
 				</SecondaryButton>
 			)}
 		</>

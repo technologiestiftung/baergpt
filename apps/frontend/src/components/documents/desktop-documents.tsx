@@ -77,12 +77,13 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 	return (
 		<>
 			<div
-				className={`hidden md:flex flex-col h-full pt-5 pb-5 bg-hellblau-50 will-change-[width] transition-[width] duration-300 ease-in-out
+				className={`hidden md:flex flex-col shrink-0 h-full pt-5 pb-5 bg-hellblau-50 will-change-[width] transition-[width] duration-300 ease-in-out
 					${isResizing && "transition-none"} ${isCollapsed ? "px-4 hover:bg-hellblau-60 cursor-pointer" : "px-6"}
 				`}
 				id="desktop-documents-panel"
 				style={{
 					width: isCollapsed ? COLLAPSED_WIDTH : `${width}px`,
+					minWidth: isCollapsed ? COLLAPSED_WIDTH : MIN_WIDTH,
 				}}
 				{...(isCollapsed && {
 					onClick: () => {
@@ -172,7 +173,7 @@ export function DesktopDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 						)}
 
 						{(currentFolder === null || isUserFolder(currentFolder)) && (
-							<div className="hidden md:flex gap-2 items-center mt-4 mb-2">
+							<div className="hidden md:flex flex-nowrap gap-2 items-center mt-4 mb-2">
 								<CreateFolderButton />
 								<MultiSelectForActionButton />
 							</div>
