@@ -111,9 +111,24 @@
 	}
 
 	.code-block-pre {
-		@apply m-0 overflow-x-auto px-4 py-2 text-sm leading-[22px];
+		@apply m-0 overflow-x-auto px-4 pt-2 pb-[13px] text-sm leading-[22px];
 		color: var(--code-block-text);
 		white-space: pre;
+		scrollbar-width: thin;
+		scrollbar-color: theme("colors.dunkelblau-40") transparent;
+	}
+
+	.code-block-pre::-webkit-scrollbar {
+		height: 6px;
+	}
+
+	.code-block-pre::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.code-block-pre::-webkit-scrollbar-thumb {
+		background-color: theme("colors.dunkelblau-40");
+		border-radius: 9999px;
 	}
 
 	.code-block .code-block-pre code {

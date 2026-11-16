@@ -21,7 +21,7 @@ interface ChatMessageProps {
 	message: ChatMessageType;
 }
 
-const CODE_FENCE_PATTERN = /```/;
+const CODE_FENCE_PATTERN = /^ {0,3}(`{3,}|~{3,})/m;
 
 // Loaded lazily, and only for messages that actually contain a code fence,
 // so chats without code blocks never pay for the full language grammar
