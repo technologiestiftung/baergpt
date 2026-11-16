@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gotenberg
+spec:
+  template:
+    spec:
+      containers:
+        - name: gotenberg
+          resources:
+            requests:
+              memory: 2Gi
