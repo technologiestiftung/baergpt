@@ -195,7 +195,7 @@
             "type": "prometheus",
             "uid": "${ds_metrics}"
           },
-          "expr": "count(k8s_pod_phase{source=\"ske\", k8s_namespace_name=\"$namespace\"} != 2) or vector(0)"
+          "expr": "count(k8s_pod_phase{source=\"ske\", k8s_namespace_name=\"$namespace\"} != 2 != 3) or vector(0)"
         }
       ],
       "description": "Pods in phase Pending, Failed or Unknown (k8s_pod_phase: 1 pending, 2 running, 3 succeeded, 4 failed, 5 unknown).",
