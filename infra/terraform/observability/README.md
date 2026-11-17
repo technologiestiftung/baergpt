@@ -21,6 +21,7 @@ live pipeline. Slack isn't supported by STACKIT's Alertmanager.
 | `alerts_logs.tf`          | Kong 5xx ratio (LogQL)                                                                        |
 | `alerts_anon_egress.tf`   | Tor/Mullvad blocklist stale / blocked share too high (LogQL)                                  |
 | `alerts_ske.tf`           | SKE cluster health, certificate expiry, Envoy 5xx, rejected pods; `production` workspace only |
+| `alerts_security.tf`      | attack signatures and scripts past auth on Kong, Render (`render_backend_resource`) and Envoy |
 | `set-email-receiver.sh`   | one-time API call to set the email receiver + route                                           |
 | `.op.env.observability.*` | 1Password `op://` refs for `op run` auth (real files gitignored)                              |
 | `*.tfvars.example`        | copy → `staging.tfvars` / `production.tfvars` (gitignored)                                    |
@@ -105,6 +106,12 @@ environment in Grafana → Explore before relying on it.
   over the threshold fires on apply.
 - `{service_name="supabase-<env>"}` on Loki — access lines match `|~ "\" 5\\d\\d "`. The 5xx
   ratio has no series when there are no 5xx, so an empty graph is healthy.
+- `{source="render", resource="<render_backend_resource>"} | logfmt | statusCode!=""` on Loki —
+  returns request lines; `path` and `method` are labels, `userAgent` and `clientIP` are in the line.
+- `{service_name="ske-envoy-gateway-system"} |= "httproute/<namespace>/backend/" | json` on Loki —
+  lines carry `route_name`, `method`, `response_code`, `x_envoy_origin_path` and `user_agent`.
+- Security rules are silent until something matches. After changing one, send a matching
+  request on staging (e.g. `GET /rest/v1/` with the anon key) and check that the email arrives.
 - `{service_name="supabase-<env>-anon-egress"} |= "\"status\": \"ok\""` on Loki — one line per
   hourly refresh. **Deploy the collector change before applying `alerts_anon_egress.tf`**: with
   no such line in the last 3h, `AnonEgressBlocklistStale` fires on apply.
