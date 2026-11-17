@@ -99,8 +99,9 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 					}
 					onMouseDown={(event) => {
 						if (event.shiftKey) {
+							// Prevent text selection; do not focus the button, as the
+							// programmatic focus would show the focus-visible outline.
 							event.preventDefault();
-							event.currentTarget.focus();
 						}
 					}}
 					onKeyDown={(event) => {
