@@ -17,7 +17,12 @@ favicon.get("/", async (c: Context) => {
 		);
 
 		if (!response.ok) {
-			captureError(new Error(`Failed to fetch favicon for domain: ${domain}`));
+			// 404: Google knows no favicon for this site, which is expected.
+			if (response.status !== 404) {
+				captureError(new Error("Failed to fetch favicon"), {
+					tags: { domain, statusCode: String(response.status) },
+				});
+			}
 			return c.json({ error: "Failed to fetch favicon" }, 502);
 		}
 
