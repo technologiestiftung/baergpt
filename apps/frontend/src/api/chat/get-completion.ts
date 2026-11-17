@@ -49,7 +49,9 @@ type StreamEvent =
 	| { type: "data-web-citations"; data: WebCitationSource[] }
 	| { type: "data-parla-citations"; data: ParlaCitationSource[] }
 	| { type: "data-open-data-citations"; data: OpenDataCitationSource[] }
-	| { type: "data-datawrapper-chart-ids"; data: string[] };
+	| { type: "data-datawrapper-chart-ids"; data: string[] }
+	// Generic text only, the backend hides error details.
+	| { type: "error"; errorText: string };
 
 /**
  * Tool names as they arrive on the stream — ours for the built-in tools, the
@@ -205,6 +207,8 @@ export async function getCompletion(
 		let datawrapperChartIds: string[] = [];
 
 		let hasReceivedText = false;
+		// The stream still ends with [DONE] after an error event.
+		let hasStreamError = false;
 		let thinkingStartedAt: number | undefined;
 		let thinkingDurationSeconds: number | undefined;
 
@@ -364,8 +368,12 @@ export async function getCompletion(
 				datawrapperChartIds = chartIds;
 				writeMessage();
 			},
+			onStreamError: () => {
+				hasStreamError = true;
+			},
 			onFinish: async () => {
-				setStatus("idle");
+				// On error: keep the partial text, show the error banner.
+				setStatus(hasStreamError ? "error" : "idle");
 				setStreamingAbortController(null);
 				await settlePendingMessage?.({ keepPartial: true });
 			},
@@ -400,6 +408,7 @@ async function processStreamLine(
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
 		onDatawrapperChartIds: (chartIds: string[]) => void;
+		onStreamError: () => void;
 		onFinish: () => void | Promise<void>;
 	},
 ): Promise<boolean> {
@@ -465,6 +474,11 @@ async function processStreamLine(
 			return false;
 		}
 
+		if (event.type === "error") {
+			callbacks.onStreamError();
+			return false;
+		}
+
 		return false;
 	} catch (_e) {
 		useErrorStore
@@ -486,6 +500,7 @@ async function parseStream(
 		onParlaCitations: (sources: ParlaCitationSource[]) => void;
 		onOpenDataCitations: (sources: OpenDataCitationSource[]) => void;
 		onDatawrapperChartIds: (chartIds: string[]) => void;
+		onStreamError: () => void;
 		onFinish: () => void | Promise<void>;
 	},
 ) {

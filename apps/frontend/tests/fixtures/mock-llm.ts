@@ -23,7 +23,8 @@ export type LlmStreamEvent =
 	| { type: "tool-output-available"; toolCallId: string; output?: unknown }
 	| { type: "data-citations"; data: number[] }
 	| { type: "data-web-citations"; data: LlmWebCitation[] }
-	| { type: "data-parla-citations"; data: LlmParlaCitation[] };
+	| { type: "data-parla-citations"; data: LlmParlaCitation[] }
+	| { type: "error"; errorText: string };
 
 export const DEFAULT_LLM_DELTA = "Test response.";
 

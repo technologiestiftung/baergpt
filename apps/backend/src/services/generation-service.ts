@@ -47,6 +47,7 @@ import {
 	webSearchTool,
 } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
+import { getStreamErrorContext } from "../monitoring/stream-error-context";
 import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
@@ -359,6 +360,14 @@ export class GenerationService {
 			activeTools,
 			userId,
 		});
+
+		const errorRequest = {
+			chatId: sessionId,
+			model: llmHandler.model,
+			languageModel: llmHandler.languageModel,
+			extendedThinking,
+			activeTools,
+		};
 
 		const nonEmptyAssistantMessage = (message: ModelMessage) =>
 			!(message.role === "assistant" && message.content === "");
@@ -701,14 +710,19 @@ export class GenerationService {
 									langfusePrompt: true,
 								},
 							},
-							onError: (error) => {
+							onError: ({ error }) => {
 								logMemory("chat:onError", memoryLogId);
-								captureError(error);
+								captureError(error, getStreamErrorContext(error, errorRequest));
 							},
 						}),
 				);
 
 				writer.merge(toUIMessageStream({ stream: streamResponse.stream }));
+			},
+			// Errors in `execute` outside streamText; client gets generic text.
+			onError: (error) => {
+				captureError(error, getStreamErrorContext(error, errorRequest));
+				return "An error occurred.";
 			},
 		});
 		return createUIMessageStreamResponse({ stream });
