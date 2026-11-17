@@ -42,6 +42,10 @@ max_client_conn = 100
 [db.migrations]
 schema_paths = ["./schemas/**/*.sql"]
 
+[db.seed]
+enabled = true
+sql_paths = ["./test-helpers.sql"]
+
 [realtime]
 enabled = true
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
