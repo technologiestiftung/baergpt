@@ -6,6 +6,36 @@ import {
 } from "../../store/use-file-uploads-store.ts";
 import { captureError } from "../../monitoring/capture-error.ts";
 import { config } from "../../config.ts";
+import { supabase } from "../../../supabase-client";
+import { useUserFolderStore } from "../../store/use-user-folder-store.ts";
+import { isUserFolder } from "../../components/documents/document-list/list-item/utils/is-user-folder.ts";
+
+/**
+ * The current folder may have been deleted elsewhere (e.g. in another tab).
+ * In that case fall back to the main file collection and refresh the folders.
+ */
+async function resolveFolderId(): Promise<number | null> {
+	const { currentFolder, setCurrentFolder } = useCurrentFolderStore.getState();
+	if (!currentFolder || !isUserFolder(currentFolder)) {
+		return currentFolder?.id ?? null;
+	}
+
+	const { data, error } = await supabase
+		.from("document_folders")
+		.select("id")
+		.eq("id", currentFolder.id)
+		.maybeSingle();
+
+	if (error || data) {
+		return currentFolder.id;
+	}
+
+	setCurrentFolder(null);
+	await useUserFolderStore
+		.getState()
+		.getUserFolders(new AbortController().signal);
+	return null;
+}
 
 export async function uploadAndProcessDocument(
 	file: File,
@@ -15,12 +45,12 @@ export async function uploadAndProcessDocument(
 	) => void,
 ): Promise<number> {
 	const { session } = useAuthStore.getState();
-	const { currentFolder } = useCurrentFolderStore.getState();
+	const folderId = await resolveFolderId();
 
 	// Create document metadata
 	const documentData = {
 		document: {
-			folderId: currentFolder?.id || null,
+			folderId,
 			sourceType: "personal_document",
 		},
 		llmModel: config.defaultDocumentProcessingModel,
