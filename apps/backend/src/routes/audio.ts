@@ -1,12 +1,18 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { transcribe } from "ai";
-import { getTranscriptionModel } from "../services/llm-provider";
+import { generateSpeech, transcribe } from "ai";
+import {
+	getSpeechModel,
+	getTranscriptionModel,
+	SPEECH_VOICE,
+} from "../services/llm-provider";
 import { captureError } from "../monitoring/capture-error";
 
 // PoC limit for dictation and uploaded audio files. Mistral's own maximum
 // file size/duration is not verified yet.
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+// PoC limit for read-aloud. Mistral's own TTS input limit is not verified yet.
+const MAX_SPEECH_CHARS = 10_000;
 
 const audio = new Hono();
 
@@ -38,6 +44,42 @@ audio.post("/transcriptions", async (c: Context) => {
 	} catch (error) {
 		captureError(error);
 		return c.json({ error: "Transcription failed" }, 502);
+	}
+});
+
+audio.post("/speech", async (c: Context) => {
+	const body = (await c.req.json().catch(() => null)) as {
+		text?: unknown;
+	} | null;
+	const text = typeof body?.text === "string" ? body.text.trim() : "";
+
+	if (!text) {
+		return c.json({ error: "Invalid request: text is required" }, 400);
+	}
+	if (text.length > MAX_SPEECH_CHARS) {
+		return c.json({ error: "Invalid request: text is too long" }, 413);
+	}
+
+	try {
+		const { audio: speech } = await generateSpeech({
+			model: getSpeechModel(),
+			text,
+			voice: SPEECH_VOICE,
+			outputFormat: "mp3",
+			abortSignal: c.req.raw.signal,
+		});
+
+		return c.body(speech.uint8Array as Uint8Array<ArrayBuffer>, 200, {
+			"Content-Type": speech.mediaType || "audio/mpeg",
+			"Cache-Control": "no-store",
+		});
+	} catch (error) {
+		if (c.req.raw.signal.aborted) {
+			// Client stopped the request; nobody reads this response.
+			return new Response(null, { status: 499 });
+		}
+		captureError(error);
+		return c.json({ error: "Speech generation failed" }, 502);
 	}
 });
 

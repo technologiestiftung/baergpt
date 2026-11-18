@@ -1,10 +1,16 @@
-import type { EmbeddingModel, LanguageModel, TranscriptionModel } from "ai";
+import type {
+	EmbeddingModel,
+	LanguageModel,
+	SpeechModel,
+	TranscriptionModel,
+} from "ai";
 import { createMistral, mistral } from "@ai-sdk/mistral";
 import WebSocket from "ws";
 import { config } from "../config";
 import {
 	mockEmbeddingModel,
 	mockLanguageModel,
+	mockSpeechModel,
 	mockTranscriptionModel,
 } from "./external-mocks";
 
@@ -57,4 +63,16 @@ export function getRealtimeTranscriptionModel(): TranscriptionModel {
 	}
 
 	return realtimeMistral.transcription("voxtral-mini-transcribe-realtime-3");
+}
+
+// Voxtral TTS (read-aloud PoC). voice_481 "Heidi" is Mistral's only German
+// preset voice; the language follows the voice and the text.
+export const SPEECH_VOICE = "voice_481";
+
+export function getSpeechModel(): SpeechModel {
+	if (isTestMode) {
+		return mockSpeechModel();
+	}
+
+	return mistral.speech("voxtral-mini-tts-3");
 }

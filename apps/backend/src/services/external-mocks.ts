@@ -7,10 +7,16 @@ import type {
 	LanguageModelV4Usage,
 	Experimental_TranscriptionModelV4StreamResult as TranscriptionModelV4StreamResult,
 } from "@ai-sdk/provider";
-import type { EmbeddingModel, LanguageModel, TranscriptionModel } from "ai";
+import type {
+	EmbeddingModel,
+	LanguageModel,
+	SpeechModel,
+	TranscriptionModel,
+} from "ai";
 import {
 	MockEmbeddingModelV4,
 	MockLanguageModelV4,
+	MockSpeechModelV4,
 	MockTranscriptionModelV4,
 } from "ai/test";
 import { simulateReadableStream } from "ai";
@@ -181,5 +187,16 @@ export function mockTranscriptionModel(): TranscriptionModel {
 				}) as unknown as TranscriptionModelV4StreamResult["stream"],
 			};
 		},
+	});
+}
+
+export function mockSpeechModel(): SpeechModel {
+	return new MockSpeechModelV4({
+		doGenerate: async () => ({
+			// "ID3" header bytes; enough for tests, not playable audio.
+			audio: new Uint8Array([0x49, 0x44, 0x33]),
+			warnings: [],
+			response: { timestamp: new Date(0), modelId: "mock-speech" },
+		}),
 	});
 }

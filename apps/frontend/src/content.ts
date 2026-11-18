@@ -1157,6 +1157,13 @@ export const Content = {
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
 	"chat.copyToClipboardButton.ariaLabel": "In Zwischenablage kopieren",
+	"chat.readAloudButton.label": "Vorlesen",
+	"chat.readAloudButton.label.loading": "Lädt …",
+	"chat.readAloudButton.label.stop": "Stopp",
+	"chat.readAloudButton.ariaLabel": "Antwort vorlesen",
+	"chat.readAloudButton.ariaLabel.loading":
+		"Sprachausgabe wird erzeugt, klicken zum Abbrechen",
+	"chat.readAloudButton.ariaLabel.stop": "Vorlesen beenden",
 	"chat.userMessage.showMore": "Mehr anzeigen",
 	"chat.userMessage.showLess": "Weniger anzeigen",
 	"chat.disclaimer.p1": "BärGPT kann",

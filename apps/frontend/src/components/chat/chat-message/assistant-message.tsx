@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { BaerIcon } from "../../primitives/icons/baer-icon.tsx";
 import { CopyToClipboardButton } from "./copy-to-clipboard-button.tsx";
+import { ReadAloudButton } from "./read-aloud-button.tsx";
 import { ExportChatMessageButton } from "./export-chat-message/export-chat-message-button.tsx";
 import { CitationsButton } from "./citations-button.tsx";
 import type { ChatMessage } from "../../../common.ts";
@@ -54,6 +55,7 @@ export function AssistantMessage({
 							generatedAnswer={content}
 							messageId={message.id}
 						/>
+						<ReadAloudButton generatedAnswer={content} />
 						<CitationsButton
 							messageId={message.id}
 							citations={citations}
