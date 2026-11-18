@@ -273,15 +273,21 @@ describe("Document Process Security Tests", () => {
 			events: Array<{ status: string; documentId?: number }>,
 		): Promise<number | null> {
 			const successful = events.find((e) => e.status === "successful");
-			expect(successful?.documentId).toBeDefined();
+			const documentId = successful?.documentId;
+			if (documentId === undefined) {
+				throw new Error("Document ID is undefined");
+			}
 
 			const { data, error } = await serviceRoleDbClient
 				.from("documents")
 				.select("folder_id")
-				.eq("id", successful!.documentId!)
+				.eq("id", documentId)
 				.single();
 			expect(error).toBeNull();
-			return data!.folder_id;
+			if (!data) {
+				throw new Error("Data is undefined");
+			}
+			return data.folder_id;
 		}
 
 		it("should reject processing document into another user's folder", async () => {

@@ -52,11 +52,14 @@ describe("documents.folder_id foreign key", () => {
 			.select("id")
 			.single();
 		expect(insertError).toBeNull();
+		if (!document) {
+			throw new Error("Document is undefined");
+		}
 
 		const { error } = await serviceRoleDbClient
 			.from("documents")
 			.update({ folder_id: DEAD_FOLDER_ID })
-			.eq("id", document!.id);
+			.eq("id", document.id);
 
 		expect(error?.code).toBe("23503");
 	});
@@ -68,27 +71,36 @@ describe("documents.folder_id foreign key", () => {
 			.select("id")
 			.single();
 		expect(folderError).toBeNull();
+		if (!folder) {
+			throw new Error("Folder is undefined");
+		}
 
 		const { data: document, error: insertError } = await serviceRoleDbClient
 			.from("documents")
-			.insert(documentRow(folder!.id))
+			.insert(documentRow(folder.id))
 			.select("id, folder_id")
 			.single();
 		expect(insertError).toBeNull();
-		expect(document!.folder_id).toBe(folder!.id);
+		if (!document) {
+			throw new Error("Document is undefined");
+		}
+		expect(document.folder_id).toBe(folder.id);
 
 		const { error: deleteError } = await serviceRoleDbClient
 			.from("document_folders")
 			.delete()
-			.eq("id", folder!.id);
+			.eq("id", folder.id);
 		expect(deleteError).toBeNull();
 
 		const { data: after, error: selectError } = await serviceRoleDbClient
 			.from("documents")
 			.select("folder_id")
-			.eq("id", document!.id)
+			.eq("id", document.id)
 			.single();
 		expect(selectError).toBeNull();
-		expect(after!.folder_id).toBeNull();
+		if (!after) {
+			throw new Error("Document is undefined");
+		}
+		expect(after.folder_id).toBeNull();
 	});
 });

@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { Hono, type Context } from "hono";
-import { streamSSE } from "hono/streaming";
+import { streamSSE, type SSEStreamingApi } from "hono/streaming";
 import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
 import { EmbeddingService } from "../services/embedding-service";
 import { GenerationService } from "../services/generation-service";
@@ -29,10 +29,7 @@ documents.post("/process", async (c: Context) =>
 		let documentId: number | null = null;
 
 		const userId: string = c.get("authenticatedUserId");
-		const reqId =
-			config.nodeEnv === "production"
-				? crypto.randomUUID().slice(0, 8)
-				: (userId?.slice(0, 8) ?? "no-user");
+		const reqId = getReqId(userId);
 
 		try {
 			logMemory("doc:start", reqId);
@@ -163,62 +160,90 @@ documents.post("/process", async (c: Context) =>
 				}),
 			});
 		} catch (error) {
-			logMemory("doc:error", reqId);
-			captureError(error);
-
-			if (error instanceof Error && error.message === "failed.format") {
-				return stream.writeSSE({
-					data: JSON.stringify({
-						status: "failed.format",
-					}),
-				});
-			}
-
-			if (error instanceof Error && error.message === "failed.size") {
-				return stream.writeSSE({
-					data: JSON.stringify({
-						status: "failed.size",
-					}),
-				});
-			}
-
-			if (error instanceof DuplicateDocumentError) {
-				return stream.writeSSE({
-					data: JSON.stringify({
-						status: "failed.duplicate",
-						existingFileName: error.existingFileName,
-					}),
-				});
-			}
-
-			// Handle Zod validation errors separately
-			if (error instanceof ZodError) {
-				const errors = error.issues
-					.map((e) => `${e.path.join(".")}: ${e.message}`)
-					.join("; ");
-				return stream.writeSSE({
-					data: JSON.stringify({
-						status: "failed.generic",
-						error: `Validation failed: ${errors}`,
-					}),
-				});
-			}
-
-			await cleanup({
+			return handleProcessingError(error, {
+				stream,
 				userScopedDbService,
 				userId,
 				documentId,
-			});
-
-			return stream.writeSSE({
-				data: JSON.stringify({
-					status: "failed.generic",
-					error: "Internal Server Error",
-				}),
+				reqId,
 			});
 		}
 	}),
 );
+
+function getReqId(userId: string | undefined): string {
+	if (config.nodeEnv === "production") {
+		return crypto.randomUUID().slice(0, 8);
+	}
+	return userId?.slice(0, 8) ?? "no-user";
+}
+
+async function handleProcessingError(
+	error: unknown,
+	args: {
+		stream: SSEStreamingApi;
+		userScopedDbService: UserScopedDbService;
+		userId: string;
+		documentId: number | null;
+		reqId: string;
+	},
+) {
+	const { stream, userScopedDbService, userId, documentId, reqId } = args;
+
+	logMemory("doc:error", reqId);
+	captureError(error);
+
+	if (error instanceof Error && error.message === "failed.format") {
+		return stream.writeSSE({
+			data: JSON.stringify({
+				status: "failed.format",
+			}),
+		});
+	}
+
+	if (error instanceof Error && error.message === "failed.size") {
+		return stream.writeSSE({
+			data: JSON.stringify({
+				status: "failed.size",
+			}),
+		});
+	}
+
+	if (error instanceof DuplicateDocumentError) {
+		return stream.writeSSE({
+			data: JSON.stringify({
+				status: "failed.duplicate",
+				existingFileName: error.existingFileName,
+			}),
+		});
+	}
+
+	// Handle Zod validation errors separately
+	if (error instanceof ZodError) {
+		const errors = error.issues
+			.map((e) => `${e.path.join(".")}: ${e.message}`)
+			.join("; ");
+		return stream.writeSSE({
+			data: JSON.stringify({
+				status: "failed.generic",
+				error: `Validation failed: ${errors}`,
+			}),
+		});
+	}
+
+	await cleanup({
+		userScopedDbService,
+		userId,
+		documentId,
+	});
+
+	return stream.writeSSE({
+		data: JSON.stringify({
+			status: "failed.generic",
+			error: "Internal Server Error",
+		}),
+	});
+}
 
 documents.delete("/:documentId", async (c: Context) => {
 	const userClient = c.get("UserScopedDbClient");
