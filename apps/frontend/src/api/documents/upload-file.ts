@@ -6,35 +6,12 @@ import {
 } from "../../store/use-file-uploads-store.ts";
 import { captureError } from "../../monitoring/capture-error.ts";
 import { config } from "../../config.ts";
-import { supabase } from "../../../supabase-client";
-import { useUserFolderStore } from "../../store/use-user-folder-store.ts";
-import { isUserFolder } from "../../components/documents/document-list/list-item/utils/is-user-folder.ts";
+import { revalidateCurrentFolder } from "../folders/revalidate-current-folder.ts";
+import { useToastStore } from "../../store/use-toast-store.ts";
+import Content from "../../content.ts";
 
-/**
- * The current folder may have been deleted elsewhere (e.g. in another tab).
- * In that case fall back to the main file collection and refresh the folders.
- */
-async function resolveFolderId(): Promise<number | null> {
-	const { currentFolder, setCurrentFolder } = useCurrentFolderStore.getState();
-	if (!currentFolder || !isUserFolder(currentFolder)) {
-		return currentFolder?.id ?? null;
-	}
-
-	const { data, error } = await supabase
-		.from("document_folders")
-		.select("id")
-		.eq("id", currentFolder.id)
-		.maybeSingle();
-
-	if (error || data) {
-		return currentFolder.id;
-	}
-
-	setCurrentFolder(null);
-	await useUserFolderStore
-		.getState()
-		.getUserFolders(new AbortController().signal);
-	return null;
+function notifyFolderMissing() {
+	useToastStore.getState().addInfo(Content["toast.upload.folderMissing"]);
 }
 
 export async function uploadAndProcessDocument(
@@ -45,7 +22,13 @@ export async function uploadAndProcessDocument(
 	) => void,
 ): Promise<number> {
 	const { session } = useAuthStore.getState();
-	const folderId = await resolveFolderId();
+	// Fall back early if the folder was deleted elsewhere; the backend also
+	// falls back and reports it via `folderFallback` as a safety net.
+	let hasNotifiedFolderMissing = await revalidateCurrentFolder();
+	if (hasNotifiedFolderMissing) {
+		notifyFolderMissing();
+	}
+	const folderId = useCurrentFolderStore.getState().currentFolder?.id ?? null;
 
 	// Create document metadata
 	const documentData = {
@@ -122,6 +105,11 @@ export async function uploadAndProcessDocument(
 				}
 
 				const status: unknown = event?.status;
+
+				if (event?.folderFallback === true && !hasNotifiedFolderMissing) {
+					hasNotifiedFolderMissing = true;
+					notifyFolderMissing();
+				}
 
 				if (typeof status !== "string" || !(status in UPLOAD_STATUS_MAP)) {
 					continue;

@@ -48,6 +48,7 @@ documents.post("/process", async (c: Context) =>
 				bucket,
 				file,
 				folderId,
+				folderFallback,
 				accessGroupId,
 			} = await validationService.validateDocumentRequest({
 				body,
@@ -57,6 +58,7 @@ documents.post("/process", async (c: Context) =>
 			await stream.writeSSE({
 				data: JSON.stringify({
 					status: "processing",
+					...(folderFallback && { folderFallback: true }),
 				}),
 			});
 
@@ -157,6 +159,7 @@ documents.post("/process", async (c: Context) =>
 				data: JSON.stringify({
 					status: "successful",
 					documentId,
+					...(folderFallback && { folderFallback: true }),
 				}),
 			});
 		} catch (error) {

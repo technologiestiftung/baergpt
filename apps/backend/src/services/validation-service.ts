@@ -117,7 +117,7 @@ export class ValidationService {
 		const parseResult = documentProcessSchema.parse(JSON.parse(metadata));
 
 		const {
-			document: { sourceType, accessGroupId, folderId },
+			document: { sourceType, accessGroupId, folderId: requestedFolderId },
 			llmModel,
 		} = parseResult;
 
@@ -152,16 +152,19 @@ export class ValidationService {
 			}
 		}
 
-		// Folder ownership validation
-		if (folderId !== null) {
+		// Folder ownership validation. A folder that was deleted, never existed or
+		// belongs to someone else is treated identically (no information leak):
+		// the document falls back to the user's main collection.
+		let folderId = requestedFolderId;
+		let folderFallback = false;
+		if (requestedFolderId !== null) {
 			const folderBelongsToUser = await this.dbService.validateFolderOwnership(
-				folderId,
+				requestedFolderId,
 				userId,
 			);
 			if (!folderBelongsToUser) {
-				throw new Error(
-					"Unauthorized: folder_id does not belong to the authenticated user",
-				);
+				folderId = null;
+				folderFallback = true;
 			}
 		}
 
@@ -169,6 +172,7 @@ export class ValidationService {
 			sourceUrl,
 			sourceType,
 			folderId,
+			folderFallback,
 			createdAt,
 			accessGroupId,
 			llmModel,

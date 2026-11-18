@@ -54,7 +54,7 @@ function createProcessRequest(
 // on a 200 response. Returns the parsed events (heartbeat pings are empty).
 async function readSseEvents(
 	response: Response,
-): Promise<Array<{ status: string; error?: string }>> {
+): Promise<Array<{ status: string; error?: string; folderFallback?: boolean }>> {
 	const text = await response.text();
 	return text
 		.split("\n")
@@ -210,16 +210,14 @@ describe("Document Process Security Tests", () => {
 			const res = await app.fetch(createProcessRequest(metadata, userBToken));
 
 			const events = await readSseEvents(res);
-			const statuses = events.map((e) => e.status);
-			// The route surfaces validation failures as a generic in-band error
-			// (the specific reason is only captured server-side, not exposed to the
-			// client), so we assert the failure status rather than the message.
-			expect(statuses).toContain("failed.generic");
-			// Validation must fail before processing begins.
-			expect(statuses).not.toContain("processing");
+			// Another user's folder is treated like a missing one: the request is
+			// not rejected (no information leak) and falls back to the main
+			// collection, so the document never lands in User A's folder.
+			const processing = events.find((e) => e.status === "processing");
+			expect(processing?.folderFallback).toBe(true);
 		});
 
-		it("should reject non-existent folder_id", async () => {
+		it("should fall back to the main collection for a non-existent folder_id", async () => {
 			const metadata = {
 				document: {
 					folderId: 999999, // Non-existent folder
@@ -231,10 +229,24 @@ describe("Document Process Security Tests", () => {
 			const res = await app.fetch(createProcessRequest(metadata, userAToken));
 
 			const events = await readSseEvents(res);
-			const statuses = events.map((e) => e.status);
-			expect(statuses).toContain("failed.generic");
-			// Validation must fail before processing begins.
-			expect(statuses).not.toContain("processing");
+			// Validation passes with the fallback flag set and processing begins
+			// (the dummy PDF may fail later, which is irrelevant for this check).
+			const processing = events.find((e) => e.status === "processing");
+			expect(processing?.folderFallback).toBe(true);
+		});
+
+		it("should not set the fallback flag for a valid own folder", async () => {
+			const metadata = {
+				document: { folderId: userAFolderId, sourceType: "personal_document" },
+				llmModel: config.defaultDocumentProcessingModel,
+			};
+
+			const res = await app.fetch(createProcessRequest(metadata, userAToken));
+
+			const events = await readSseEvents(res);
+			const processing = events.find((e) => e.status === "processing");
+			expect(processing).toBeDefined();
+			expect(processing?.folderFallback).toBeUndefined();
 		});
 	});
 
