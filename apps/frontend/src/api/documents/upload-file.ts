@@ -6,7 +6,6 @@ import {
 } from "../../store/use-file-uploads-store.ts";
 import { captureError } from "../../monitoring/capture-error.ts";
 import { config } from "../../config.ts";
-import { revalidateCurrentFolder } from "../folders/revalidate-current-folder.ts";
 import { useToastStore } from "../../store/use-toast-store.ts";
 import Content from "../../content.ts";
 
@@ -22,12 +21,9 @@ export async function uploadAndProcessDocument(
 	) => void,
 ): Promise<number> {
 	const { session } = useAuthStore.getState();
-	// Fall back early if the folder was deleted elsewhere; the backend also
-	// falls back and reports it via `folderFallback` as a safety net.
-	let hasNotifiedFolderMissing = await revalidateCurrentFolder();
-	if (hasNotifiedFolderMissing) {
-		notifyFolderMissing();
-	}
+	// The folder may have been deleted elsewhere; the backend falls back to
+	// the main collection and reports it via `folderFallback`.
+	let hasNotifiedFolderMissing = false;
 	const folderId = useCurrentFolderStore.getState().currentFolder?.id ?? null;
 
 	// Create document metadata
@@ -106,7 +102,11 @@ export async function uploadAndProcessDocument(
 
 				const status: unknown = event?.status;
 
-				if (event?.folderFallback === true && !hasNotifiedFolderMissing) {
+				if (
+					event?.folderFallback === true &&
+					event?.status === "successful" &&
+					!hasNotifiedFolderMissing
+				) {
 					hasNotifiedFolderMissing = true;
 					notifyFolderMissing();
 				}

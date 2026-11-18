@@ -1,10 +1,23 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import {
+	describe,
+	it,
+	expect,
+	beforeAll,
+	afterAll,
+	beforeEach,
+	afterEach,
+	vi,
+} from "vitest";
 import { createClient } from "@supabase/supabase-js";
+import { PDFDocument } from "pdf-lib";
 import type { Database } from "@repo/db-schema";
 import app from "../../index";
 import { config } from "../../config";
 import { serviceRoleDbClient } from "../../supabase";
 import { signInWithOtp } from "../fixtures/auth";
+import { UserScopedDbService } from "../../services/db-service/user-scoped-db-service";
+import { GenerationService } from "../../services/generation-service";
+import { EmbeddingService } from "../../services/embedding-service";
 
 const supabaseAnonClient = createClient<Database>(
 	config.supabaseUrl,
@@ -28,6 +41,37 @@ function pdfFile(): File {
 		type: "application/pdf",
 	});
 }
+
+// A real (parseable) PDF, needed for tests that must reach a "successful"
+// event and a real `documents` row rather than failing during extraction.
+async function validPdfFile(fileName = "valid.pdf"): Promise<File> {
+	const doc = await PDFDocument.create();
+	doc.addPage();
+	const bytes = await doc.save({ useObjectStreams: false });
+	return new File([bytes.slice()], fileName, { type: "application/pdf" });
+}
+
+// Mocked processing outputs so folder-fallback tests can reach a real DB
+// insert without hitting the LLM/embedding APIs. Embedding dimensions must
+// match the real vector(1024) column or the insert fails.
+const MOCK_EXTRACTION_RESULT = {
+	parsedPages: [{ content: "page content", tokenCount: 10, pageNumber: 1 }],
+	fileSize: 1234,
+	numPages: 1,
+};
+const MOCK_SUMMARY_DATA = {
+	summary: "A summary",
+	shortSummary: "Short",
+	tags: ["tag"],
+};
+const MOCK_EMBEDDINGS = [
+	{
+		content: "chunk",
+		embedding: new Array(config.mistralEmbeddingDimensions).fill(0),
+		chunkIndex: 0,
+		page: 1,
+	},
+];
 
 // The route now takes multipart (file + metadata) and generates the storage
 // path itself, so security is enforced on the metadata, not a client source_url.
@@ -197,6 +241,47 @@ describe("Document Process Security Tests", () => {
 			}
 		});
 
+		// These tests need a real `documents` row to check the persisted
+		// folder_id, so they use a valid PDF and mock the expensive steps
+		// (OCR/summary/embeddings) rather than hitting the LLM/embedding APIs.
+		beforeEach(() => {
+			vi.spyOn(
+				UserScopedDbService.prototype,
+				"extractDocument",
+			).mockImplementation(
+				async () =>
+					({
+						...MOCK_EXTRACTION_RESULT,
+						checksum: crypto.randomUUID(),
+					}) as never,
+			);
+			vi.spyOn(GenerationService.prototype, "summarize").mockResolvedValue(
+				MOCK_SUMMARY_DATA as never,
+			);
+			vi.spyOn(EmbeddingService.prototype, "batchEmbed").mockResolvedValue(
+				MOCK_EMBEDDINGS as never,
+			);
+		});
+
+		afterEach(() => {
+			vi.restoreAllMocks();
+		});
+
+		async function persistedFolderIdFor(
+			events: Array<{ status: string; documentId?: number }>,
+		): Promise<number | null> {
+			const successful = events.find((e) => e.status === "successful");
+			expect(successful?.documentId).toBeDefined();
+
+			const { data, error } = await serviceRoleDbClient
+				.from("documents")
+				.select("folder_id")
+				.eq("id", successful!.documentId!)
+				.single();
+			expect(error).toBeNull();
+			return data!.folder_id;
+		}
+
 		it("should reject processing document into another user's folder", async () => {
 			// User B tries to process a document into User A's folder
 			const metadata = {
@@ -207,7 +292,9 @@ describe("Document Process Security Tests", () => {
 				llmModel: config.defaultDocumentProcessingModel,
 			};
 
-			const res = await app.fetch(createProcessRequest(metadata, userBToken));
+			const res = await app.fetch(
+				createProcessRequest(metadata, userBToken, await validPdfFile()),
+			);
 
 			const events = await readSseEvents(res);
 			// Another user's folder is treated like a missing one: the request is
@@ -215,6 +302,7 @@ describe("Document Process Security Tests", () => {
 			// collection, so the document never lands in User A's folder.
 			const processing = events.find((e) => e.status === "processing");
 			expect(processing?.folderFallback).toBe(true);
+			expect(await persistedFolderIdFor(events)).toBeNull();
 		});
 
 		it("should fall back to the main collection for a non-existent folder_id", async () => {
@@ -226,13 +314,14 @@ describe("Document Process Security Tests", () => {
 				llmModel: config.defaultDocumentProcessingModel,
 			};
 
-			const res = await app.fetch(createProcessRequest(metadata, userAToken));
+			const res = await app.fetch(
+				createProcessRequest(metadata, userAToken, await validPdfFile()),
+			);
 
 			const events = await readSseEvents(res);
-			// Validation passes with the fallback flag set and processing begins
-			// (the dummy PDF may fail later, which is irrelevant for this check).
 			const processing = events.find((e) => e.status === "processing");
 			expect(processing?.folderFallback).toBe(true);
+			expect(await persistedFolderIdFor(events)).toBeNull();
 		});
 
 		it("should not set the fallback flag for a valid own folder", async () => {
@@ -241,12 +330,15 @@ describe("Document Process Security Tests", () => {
 				llmModel: config.defaultDocumentProcessingModel,
 			};
 
-			const res = await app.fetch(createProcessRequest(metadata, userAToken));
+			const res = await app.fetch(
+				createProcessRequest(metadata, userAToken, await validPdfFile()),
+			);
 
 			const events = await readSseEvents(res);
 			const processing = events.find((e) => e.status === "processing");
 			expect(processing).toBeDefined();
 			expect(processing?.folderFallback).toBeUndefined();
+			expect(await persistedFolderIdFor(events)).toBe(userAFolderId);
 		});
 	});
 

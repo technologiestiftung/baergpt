@@ -11,30 +11,32 @@ import { captureError } from "../monitoring/capture-error.ts";
  */
 export function useRefreshOnTabFocus() {
 	useEffect(() => {
-		let isRefreshing = false;
+		let controller: AbortController | null = null;
 
 		const refresh = async () => {
-			if (document.visibilityState !== "visible" || isRefreshing) {
+			if (document.visibilityState !== "visible") {
 				return;
 			}
-			isRefreshing = true;
+			// Abort a still-in-flight previous refresh instead of skipping this
+			// one, so a superseded request doesn't land after a newer one.
+			controller?.abort();
+			controller = new AbortController();
+			const { signal } = controller;
 			try {
-				const signal = new AbortController().signal;
 				await Promise.all([
 					useUserFolderStore.getState().getUserFolders(signal),
 					useUserDocumentStore.getState().getUserDocuments(signal),
 				]);
-				await revalidateCurrentFolder();
+				revalidateCurrentFolder();
 			} catch (error) {
 				captureError(error);
-			} finally {
-				isRefreshing = false;
 			}
 		};
 
 		document.addEventListener("visibilitychange", refresh);
 		window.addEventListener("focus", refresh);
 		return () => {
+			controller?.abort();
 			document.removeEventListener("visibilitychange", refresh);
 			window.removeEventListener("focus", refresh);
 		};

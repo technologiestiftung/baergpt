@@ -1,40 +1,32 @@
-import { supabase } from "../../../supabase-client";
 import { useCurrentFolderStore } from "../../store/use-current-folder-store.ts";
 import { useUserFolderStore } from "../../store/use-user-folder-store.ts";
 import { isUserFolder } from "../../components/documents/document-list/list-item/utils/is-user-folder.ts";
 
 /**
  * The current folder may have been deleted elsewhere (e.g. in another tab).
- * Checks that it still exists. If not, resets the current folder to the main
- * file collection and refreshes the folder list.
+ * Checks it against the already-fetched folder list. If it's gone, resets
+ * the current folder to the main file collection.
+ *
+ * Callers must refresh the folder list (getUserFolders) immediately before
+ * calling this, so the check can be done in-memory instead of a second
+ * network request.
  *
  * Returns true if the current folder was gone and has been reset.
  */
-export async function revalidateCurrentFolder(): Promise<boolean> {
+export function revalidateCurrentFolder(): boolean {
 	const { currentFolder, setCurrentFolder } = useCurrentFolderStore.getState();
 	if (!currentFolder || !isUserFolder(currentFolder)) {
 		return false;
 	}
 
-	const { data, error } = await supabase
-		.from("document_folders")
-		.select("id")
-		.eq("id", currentFolder.id)
-		.maybeSingle();
-
-	// On errors keep the folder, the backend still falls back safely.
-	if (error || data) {
-		return false;
-	}
-
-	// The user may have navigated while the request was running.
-	if (useCurrentFolderStore.getState().currentFolder?.id !== currentFolder.id) {
+	const { userFolders } = useUserFolderStore.getState();
+	const stillExists = userFolders.some(
+		(folder) => folder.id === currentFolder.id,
+	);
+	if (stillExists) {
 		return false;
 	}
 
 	setCurrentFolder(null);
-	await useUserFolderStore
-		.getState()
-		.getUserFolders(new AbortController().signal);
 	return true;
 }
