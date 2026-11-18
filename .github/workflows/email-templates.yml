@@ -1,0 +1,75 @@
+name: Email Templates
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "apps/backend/supabase/templates/**"
+      - "infra/ansible/roles/supabase/files/email_template_sync.py"
+      - ".github/workflows/email-templates.yml"
+  push:
+    branches:
+      - main
+      - staging
+    paths:
+      - "apps/backend/supabase/templates/**"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository ⬇️
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          persist-credentials: false
+
+      # The same checks email-template-sync runs before it deploys a template.
+      - name: Check templates 🔎
+        run: python3 infra/ansible/roles/supabase/files/email_template_sync.py --check apps/backend/supabase/templates
+
+  # The host pulls the templates itself (email-template-sync.timer); this job waits until its manifest matches the push.
+  verify-deployed:
+    if: github.event_name != 'pull_request' && (github.ref_name == 'staging' || github.ref_name == 'main')
+    needs: check
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
+    concurrency:
+      group: email-templates-${{ github.ref }}
+      cancel-in-progress: true
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository ⬇️
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          persist-credentials: false
+
+      - name: Wait for the host to serve these templates ⏳
+        working-directory: apps/backend/supabase/templates
+        env:
+          MANIFEST_URL: ${{ vars.SUPABASE_URL }}/email-templates.json
+        run: |
+          if [[ "$MANIFEST_URL" != https://* ]]; then
+            echo "::error::Set the SUPABASE_URL variable in this GitHub environment."
+            exit 1
+          fi
+          deadline=$((SECONDS + 12 * 60))
+          delay=15
+          while true; do
+            if manifest=$(curl -fsS --max-time 10 "$MANIFEST_URL") \
+              && echo "$manifest" | jq -e '.templates | length > 0' > /dev/null \
+              && echo "$manifest" | jq -r '.templates | to_entries[] | "\(.value)  \(.key)"' | sha256sum --check --strict --quiet; then
+              echo "Host serves the templates of commit $(echo "$manifest" | jq -r .commit)."
+              exit 0
+            fi
+            if (( SECONDS + delay > deadline )); then
+              echo "::error::The host does not serve these templates. Check: journalctl -u email-template-sync"
+              exit 1
+            fi
+            sleep "$delay"
+            delay=$((delay * 2 > 120 ? 120 : delay * 2))
+          done

@@ -89,21 +89,88 @@
     dest: "{{ supabase_dir }}/volumes/db/jwt.sql"
     mode: "0644"
 
-# Templates only: supabase.yml --tags email-templates.
+# email-template-sync keeps the templates in step with email_templates_branch (see infra/README.md).
+# Only these tasks: supabase.yml --tags email-templates.
+- name: Create the email template sync user
+  ansible.builtin.user:
+    name: "{{ email_templates_user }}"
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+  tags: [email-templates]
+
 - name: Ensure email template dir exists
   ansible.builtin.file:
     path: "{{ supabase_dir }}/volumes/email-templates"
     state: directory
+    owner: "{{ email_templates_user }}"
+    group: "{{ email_templates_user }}"
+    mode: "0755"
+  # Check mode doesn't create the user above, so the owner lookup fails on hosts that don't have it yet.
+  ignore_errors: "{{ ansible_check_mode }}"
+  tags: [email-templates]
+
+- name: Install email template sync script
+  ansible.builtin.copy:
+    src: email_template_sync.py
+    dest: /usr/local/sbin/email-template-sync
     mode: "0755"
   tags: [email-templates]
 
-- name: Upload email templates
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../../apps/backend/supabase/templates/{{ item }}.html"
-    dest: "{{ supabase_dir }}/volumes/email-templates/{{ item }}.html"
+- name: Install email template sync service
+  ansible.builtin.template:
+    src: email-template-sync.service.j2
+    dest: /etc/systemd/system/email-template-sync.service
     mode: "0644"
+  register: email_templates_service
+  tags: [email-templates]
+
+- name: Install email template sync timer
+  ansible.builtin.copy:
+    src: email-template-sync.timer
+    dest: /etc/systemd/system/email-template-sync.timer
+    mode: "0644"
+  register: email_templates_timer
+  tags: [email-templates]
+
+- name: Enable email template sync timer
+  ansible.builtin.systemd:
+    name: email-template-sync.timer
+    daemon_reload: "{{ email_templates_service.changed or email_templates_timer.changed }}"
+    enabled: true
+    state: started
+  when: not ansible_check_mode
+  tags: [email-templates]
+
+# A failed sync keeps the previous templates, so it only blocks the play on a host that has none yet.
+- name: Sync email templates now
+  ansible.builtin.command:
+    cmd: systemctl start email-template-sync.service
+  register: email_templates_sync
+  failed_when: false
+  changed_when: false
+  when: not ansible_check_mode
+  tags: [email-templates]
+
+- name: Warn when the email template sync failed
+  ansible.builtin.debug:
+    msg: "email-template-sync failed; the previous templates stay. See: journalctl -u email-template-sync"
+  when: email_templates_sync.rc | default(0) != 0
+  tags: [email-templates]
+
+- name: Check the email templates are in place
+  ansible.builtin.stat:
+    path: "{{ supabase_dir }}/volumes/email-templates/{{ item }}.html"
   loop: "{{ supabase_email_templates }}"
-  notify: Restart auth
+  register: email_templates_files
+  tags: [email-templates]
+
+- name: Require the email templates
+  ansible.builtin.assert:
+    that: email_templates_files.results | rejectattr('stat.exists') | list | length == 0
+    fail_msg: "Email templates are missing. See: journalctl -u email-template-sync"
+    quiet: true
+  when: not ansible_check_mode
   tags: [email-templates]
 
 - name: Upload email template server config
@@ -223,6 +290,7 @@
     cmd: "docker run --rm --entrypoint sh {{ supabase_postgres_image }} -c 'id -u postgres; id -g postgres'"
   register: supabase_postgres_ids
   changed_when: false
+  check_mode: false
 
 - name: Give the Postgres TLS cert to that user
   ansible.builtin.file:
