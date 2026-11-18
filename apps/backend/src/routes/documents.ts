@@ -54,6 +54,13 @@ documents.post("/process", async (c: Context) =>
 				userId,
 			});
 
+			// Logged before extraction, so an instance that dies while extracting
+			// still leaves a record of what it was processing
+			logMemory(
+				`doc:validated (type=${sourceUrl.split(".").pop()}, size=${file.size})`,
+				reqId,
+			);
+
 			await stream.writeSSE({
 				data: JSON.stringify({
 					status: "processing",
@@ -175,6 +182,14 @@ documents.post("/process", async (c: Context) =>
 				return stream.writeSSE({
 					data: JSON.stringify({
 						status: "failed.size",
+					}),
+				});
+			}
+
+			if (error instanceof Error && error.message === "failed.tooComplex") {
+				return stream.writeSSE({
+					data: JSON.stringify({
+						status: "failed.tooComplex",
 					}),
 				});
 			}

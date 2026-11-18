@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import app from "../../index";
 
@@ -36,6 +37,7 @@ import {
 } from "../../services/document-extraction-service";
 import { ExtractionResult } from "../../types/common";
 import { config } from "../../config";
+import { buildDocx, buildXlsx, buildZip, wordXmlOfSize } from "../fixtures/zip";
 
 const BASE_URL = "http://localhost/documents/process";
 
@@ -64,15 +66,20 @@ function pdfFile(): File {
 	});
 }
 
-function wordFile(): File {
-	return new File([DUMMY_BYTES], "some-document.docx", {
-		type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-	});
+const WORD_MIME_TYPE =
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const EXCEL_MIME_TYPE =
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+// .docx and .xlsx are ZIP files; their unpacked XML size is checked before
+// extraction, so they need to be real (small) ZIP archives.
+function wordFile(fileBytes: Uint8Array = buildDocx()): File {
+	return new File([fileBytes], "some-document.docx", { type: WORD_MIME_TYPE });
 }
 
-function excelFile(): File {
-	return new File([DUMMY_BYTES], "some-document.xlsx", {
-		type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+function excelFile(fileBytes: Uint8Array = buildXlsx()): File {
+	return new File([fileBytes], "some-document.xlsx", {
+		type: EXCEL_MIME_TYPE,
 	});
 }
 
@@ -424,6 +431,126 @@ describe("POST /documents/process – captureError is called for every error cas
 			expect(await getStatuses(actualResponse)).toContain("failed.generic");
 			expect(captureErrorMock).toHaveBeenCalledOnce();
 			expect(captureErrorMock).toHaveBeenCalledWith(givenError);
+		});
+	});
+
+	describe("unpacked XML budget for .docx and .xlsx", () => {
+		// Parsing costs ~35 MB of RAM per MB of unpacked XML, so files whose XML
+		// would exceed the budget are rejected before mammoth or SheetJS run.
+		// A 1 MB budget keeps the generated test files small and fast.
+		const GIVEN_BUDGET_MB = 1;
+		const OVER_BUDGET_BYTES = 2 * 1024 * 1024;
+		let originalBudgetMb: number;
+		let extractExcelDocumentSpy: ReturnType<typeof vi.spyOn>;
+
+		beforeEach(() => {
+			extractDocumentSpy.mockRestore();
+			extractExcelDocumentSpy = vi
+				.spyOn(ExcelExtractionService.prototype, "extractExcelDocument")
+				.mockResolvedValue(MOCK_EXTRACTION_RESULT.parsedPages);
+			vi.spyOn(
+				UserScopedDbService.prototype,
+				"savePdfPreview",
+			).mockResolvedValue();
+			originalBudgetMb = config.maxUnpackedXmlMb;
+			config.maxUnpackedXmlMb = GIVEN_BUDGET_MB;
+		});
+
+		afterEach(() => {
+			config.maxUnpackedXmlMb = originalBudgetMb;
+		});
+
+		it("emits failed.tooComplex for a .docx whose XML exceeds the budget, without extracting it", async () => {
+			const givenFile = wordFile(
+				buildDocx({ documentXml: wordXmlOfSize(OVER_BUDGET_BYTES) }),
+			);
+
+			const actualResponse = await app.fetch(
+				createRequest(VALID_WORD_BODY, givenFile),
+			);
+
+			expect(await getStatuses(actualResponse)).toContain("failed.tooComplex");
+			expect(extractWordDocumentSpy).not.toHaveBeenCalled();
+		});
+
+		it("emits failed.tooComplex for a .xlsx whose XML exceeds the budget, without extracting it", async () => {
+			const givenSheetXml = `<worksheet><sheetData>${"<row><c><v>1</v></c></row>".repeat(
+				Math.ceil(OVER_BUDGET_BYTES / 26),
+			)}</sheetData></worksheet>`;
+			const givenFile = excelFile(buildXlsx({ sheetXml: givenSheetXml }));
+
+			const actualResponse = await app.fetch(
+				createRequest(VALID_EXCEL_BODY, givenFile),
+			);
+
+			expect(await getStatuses(actualResponse)).toContain("failed.tooComplex");
+			expect(extractExcelDocumentSpy).not.toHaveBeenCalled();
+		});
+
+		it("extracts a .docx whose XML is within the budget", async () => {
+			const actualResponse = await app.fetch(
+				createRequest(VALID_WORD_BODY, wordFile()),
+			);
+
+			expect(await getStatuses(actualResponse)).not.toContain(
+				"failed.tooComplex",
+			);
+			expect(extractWordDocumentSpy).toHaveBeenCalledOnce();
+		});
+
+		it("does not count images toward the budget", async () => {
+			const givenFile = wordFile(
+				buildDocx({
+					media: [
+						{
+							name: "word/media/image1.png",
+							content: randomBytes(OVER_BUDGET_BYTES),
+						},
+					],
+				}),
+			);
+
+			const actualResponse = await app.fetch(
+				createRequest(VALID_WORD_BODY, givenFile),
+			);
+
+			expect(await getStatuses(actualResponse)).not.toContain(
+				"failed.tooComplex",
+			);
+			expect(extractWordDocumentSpy).toHaveBeenCalledOnce();
+		});
+
+		it("rejects a .docx whose header declares less XML than it contains, without extracting it", async () => {
+			// The header claims 1 KB, which passes the declared-size check; the
+			// real 2 MB only show up while unpacking.
+			const givenFile = wordFile(
+				buildZip([
+					{ name: "[Content_Types].xml", content: "<Types/>" },
+					{
+						name: "word/document.xml",
+						content: wordXmlOfSize(OVER_BUDGET_BYTES),
+						declaredSize: 1024,
+					},
+				]),
+			);
+
+			const actualResponse = await app.fetch(
+				createRequest(VALID_WORD_BODY, givenFile),
+			);
+
+			expect(await getStatuses(actualResponse)).toContain("failed.format");
+			expect(extractWordDocumentSpy).not.toHaveBeenCalled();
+		});
+
+		it("emits failed.format for a .docx that is not a valid ZIP file", async () => {
+			const givenFile = wordFile(DUMMY_BYTES);
+
+			const actualResponse = await app.fetch(
+				createRequest(VALID_WORD_BODY, givenFile),
+			);
+
+			expect(await getStatuses(actualResponse)).toContain("failed.format");
+			expect(extractWordDocumentSpy).not.toHaveBeenCalled();
 		});
 	});
 

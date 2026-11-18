@@ -9,6 +9,7 @@ import { captureError } from "../monitoring/capture-error";
 import { definePDFJSModule, getDocumentProxy } from "unpdf";
 import { ocrTempFileName } from "../constants";
 import { mockOcrPages, mockWordToPdf } from "./external-mocks";
+import { assertUnpackedXmlWithinBudget } from "./unpacked-xml-budget";
 
 const isTestMode = config.nodeEnv === "test";
 
@@ -26,8 +27,16 @@ export class DocumentExtractionService {
 		const fileName = document.source_url.split("/").pop();
 		const checksum = getHash(fileBytes);
 		const fileSize = fileBytes.byteLength;
+		const lowerCaseFileName = fileName.toLowerCase();
 
-		if (fileName.toLowerCase().endsWith(".docx")) {
+		if (
+			lowerCaseFileName.endsWith(".docx") ||
+			lowerCaseFileName.endsWith(".xlsx")
+		) {
+			await assertUnpackedXmlWithinBudget(fileBytes);
+		}
+
+		if (lowerCaseFileName.endsWith(".docx")) {
 			const wordExtractor = new WordDocumentExtractionService();
 			const wordContent = await wordExtractor.extractWordDocument(
 				createBufferView(fileBytes),
@@ -49,8 +58,8 @@ export class DocumentExtractionService {
 		}
 
 		if (
-			fileName.toLowerCase().endsWith(".xlsx") ||
-			fileName.toLowerCase().endsWith(".csv")
+			lowerCaseFileName.endsWith(".xlsx") ||
+			lowerCaseFileName.endsWith(".csv")
 		) {
 			const excelExtractor = new ExcelExtractionService();
 			const parsedExcelPages =
@@ -65,7 +74,7 @@ export class DocumentExtractionService {
 			};
 		}
 
-		if (fileName.toLowerCase().endsWith(".md")) {
+		if (lowerCaseFileName.endsWith(".md")) {
 			const markdownContent = extractMarkdownDocument(fileBytes);
 
 			return {

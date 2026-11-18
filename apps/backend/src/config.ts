@@ -14,6 +14,7 @@ export interface Config {
 	supabaseJwtKey: string;
 	port?: number;
 	fileUploadLimitMb?: number;
+	maxUnpackedXmlMb: number;
 	nodeEnv?: string;
 	modelTemperature: number;
 	fastModelIdentifier: string;
@@ -200,6 +201,9 @@ export const config: Config = {
 	supabaseJwtKey: process.env.SUPABASE_JWT_KEY,
 	port: parseInt(process.env.PORT, 10) || 3000,
 	fileUploadLimitMb: parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10),
+	// Max unpacked XML per .docx/.xlsx. Parsing costs ~35 MB of RAM per MB of
+	// XML, so 40 MB ≈ 1.4 GB. Size it to the container's memory limit.
+	maxUnpackedXmlMb: parseInt(process.env.UPLOAD_MAX_UNPACKED_XML_MB, 10) || 40,
 	nodeEnv: process.env.NODE_ENV,
 	modelTemperature: parseFloat(process.env.MODEL_TEMPERATURE),
 	fastModelIdentifier: process.env.FAST_MODEL_IDENTIFIER,

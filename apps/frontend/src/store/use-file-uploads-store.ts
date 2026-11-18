@@ -16,6 +16,7 @@ export const UPLOAD_STATUS_MAP = {
 	"failed.duplicate": "Datei existiert bereits",
 	"failed.format": "Falsches Format",
 	"failed.size": `Datei zu groß`,
+	"failed.tooComplex": `Zu umfangreich, bitte als PDF hochladen`,
 	"failed.tooMany": `Uploadlimit erreicht`,
 } as const;
 

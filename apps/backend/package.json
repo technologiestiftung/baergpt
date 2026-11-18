@@ -64,6 +64,7 @@
 		"pdfjs-dist": "6.2.108",
 		"unpdf": "1.8.0",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
+		"yauzl": "3.4.0",
 		"zod": "4.6.6"
 	},
 	"devDependencies": {
@@ -72,6 +73,7 @@
 		"@types/node": "22.5.0",
 		"@types/pdf-parse": "1.1.4",
 		"@types/supertest": "6.0.3",
+		"@types/yauzl": "3.4.0",
 		"date-fns": "4.1.0",
 		"globals": "15.15.0",
 		"nodemailer": "10.2.1",
