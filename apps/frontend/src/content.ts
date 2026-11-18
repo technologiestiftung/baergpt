@@ -1150,7 +1150,7 @@ export const Content = {
 	"chat.llmModel.reasoningEffort.medium.hint":
 		"Gründliches Planen für die meisten Aufgaben.",
 	"chat.llmModel.reasoningEffort.high.hint":
-		"Plant komplexe Antworten in mehreren Schritten. Dauert am längsten.",
+		"Plant komplexe Antworten in mehreren Schritten.",
 	"chat.llmModel.reasoningEffort.alwaysReasons.hint":
 		"GLM 5.3 denkt immer nach, „Aus“ ist nicht verfügbar.",
 

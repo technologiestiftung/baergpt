@@ -9,6 +9,8 @@ const LEGACY_STORAGE_KEY = "extended-thinking";
 export const REASONING_EFFORTS = ["none", "low", "medium", "high"] as const;
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
+export const DEFAULT_REASONING_EFFORT: ReasoningEffort = "low";
+
 export function isReasoningEffort(value: unknown): value is ReasoningEffort {
 	return REASONING_EFFORTS.includes(value as ReasoningEffort);
 }
@@ -17,9 +19,11 @@ function readLegacyReasoningEffort(): ReasoningEffort {
 	try {
 		const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
 		const legacy = raw ? JSON.parse(raw) : null;
-		return legacy?.state?.isExtendedThinkingEnabled === true ? "high" : "none";
+		return legacy?.state?.isExtendedThinkingEnabled === true
+			? "high"
+			: DEFAULT_REASONING_EFFORT;
 	} catch {
-		return "none";
+		return DEFAULT_REASONING_EFFORT;
 	}
 }
 
@@ -31,7 +35,7 @@ interface ReasoningEffortStore {
 export const useReasoningEffortStore = create<ReasoningEffortStore>()(
 	persist(
 		(set) => ({
-			reasoningEffort: "none",
+			reasoningEffort: DEFAULT_REASONING_EFFORT,
 
 			setReasoningEffort: (reasoningEffort: ReasoningEffort) => {
 				if (!config.featureFlagExtendedThinkingAllowed) {

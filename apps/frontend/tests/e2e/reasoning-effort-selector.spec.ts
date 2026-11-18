@@ -31,17 +31,17 @@ function captureReasoningEffort(page: Page): Promise<string> {
 
 testWithMockedLlm.describe("Reasoning effort slider", () => {
 	testWithMockedLlm(
-		"is a slider with four steps and defaults to Aus",
+		"is a slider with four steps and defaults to Niedrig",
 		async ({ page }) => {
 			await page.goto("/");
-			await openModelDropdown(page);
+			await openModelDropdown(page, "Schnell · Niedrig");
 
 			await expect(slider(page)).toBeVisible();
 			await expect(slider(page)).toHaveAttribute("aria-valuemin", "0");
 			await expect(slider(page)).toHaveAttribute("aria-valuemax", "3");
-			await expectLevel(page, "Aus");
+			await expectLevel(page, "Niedrig");
 			await expect(
-				page.getByText("Antwortet direkt, ohne vorher nachzudenken."),
+				page.getByText("Kurzes Überlegen für einfache Aufgaben."),
 			).toBeVisible();
 
 			await selectStep(page, "Mittel");
@@ -71,16 +71,16 @@ testWithMockedLlm.describe("Reasoning effort slider", () => {
 		async ({ page }) => {
 			await page.goto("/");
 			await openModelDropdown(page);
-			await selectStep(page, "Niedrig");
+			await selectStep(page, "Mittel");
 
 			// Picking a model closes the dropdown, so reopen it.
 			await page.getByRole("option", { name: preciseModelOptionName }).click();
 			await openModelDropdown(page, "Ausgewogen");
-			await expectLevel(page, "Niedrig");
+			await expectLevel(page, "Mittel");
 
 			await page.reload();
 			await openModelDropdown(page, "Ausgewogen");
-			await expectLevel(page, "Niedrig");
+			await expectLevel(page, "Mittel");
 		},
 	);
 
@@ -112,7 +112,7 @@ testWithMockedLlm.describe("Reasoning effort slider", () => {
 			const first = captureReasoningEffort(page);
 			await chatInput.fill("Erste Frage");
 			await sendAndWaitForLLMResponse(page);
-			expect(await first).toBe("none");
+			expect(await first).toBe("low");
 
 			await openModelDropdown(page);
 			await selectStep(page, "Mittel");
@@ -136,10 +136,9 @@ testWithMockedLlm.describe("Reasoning effort slider", () => {
 			await expect(slider(page)).toBeFocused();
 
 			await page.keyboard.press("ArrowRight");
-			await expectLevel(page, "Niedrig");
+			await expectLevel(page, "Mittel");
 			await expect(slider(page)).toBeFocused();
 
-			await page.keyboard.press("ArrowRight");
 			await page.keyboard.press("ArrowRight");
 			await expectLevel(page, "Hoch");
 
