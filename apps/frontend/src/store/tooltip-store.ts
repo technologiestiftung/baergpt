@@ -1,22 +1,33 @@
 import { create } from "zustand";
 import React from "react";
 
-interface ShowTooltipArgs {
-	event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>;
+interface ShowTooltipCommonArgs {
 	content: string;
 	width?: number | string;
 	isLight?: boolean;
 	offset?: { top?: number; right?: number };
+	anchor?: "right" | "bottom-end";
 }
+
+type ShowTooltipArgs = ShowTooltipCommonArgs &
+	(
+		| {
+				event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>;
+				target?: never;
+		  }
+		| { event?: never; target: HTMLElement }
+	);
 
 interface TooltipState {
 	visible: boolean;
 	rendered: boolean;
 	top: number;
-	left: number;
+	left?: number;
+	right?: number;
 	content: string;
 	width?: number | string;
 	isLight?: boolean;
+	target: HTMLElement | null;
 	showTooltip: (args: ShowTooltipArgs) => void;
 	hideTooltip: () => void;
 }
@@ -28,9 +39,11 @@ export const useTooltipStore = create<TooltipState>((set) => ({
 	rendered: false,
 	top: 0,
 	left: 0,
+	right: undefined,
 	content: "",
 	width: undefined,
 	isLight: false,
+	target: null,
 
 	hideTooltip: () => {
 		// Clear any existing fade-out timeout to prevent premature removal
@@ -45,28 +58,48 @@ export const useTooltipStore = create<TooltipState>((set) => ({
 
 	showTooltip: ({
 		event,
+		target,
 		content,
 		width,
 		isLight,
-		offset = { top: 0, right: 4 },
+		offset,
+		anchor = "right",
 	}) => {
 		// Clear any existing fade-out timeout
 		if (fadeOutTimeout) {
 			clearTimeout(fadeOutTimeout);
 		}
 
-		const rect = event.currentTarget.getBoundingClientRect();
-		const top = rect.top + window.scrollY + (offset.top || 0);
-		const left = rect.right + (offset.right || 0);
+		const element = target ?? event?.currentTarget;
+		if (!element) {
+			return;
+		}
+		const rect = element.getBoundingClientRect();
+
+		const isBottomEnd = anchor === "bottom-end";
+		const defaultOffset = isBottomEnd
+			? { top: 4, right: 0 }
+			: { top: 0, right: 4 };
+		const offsetTop = offset ? (offset.top ?? 0) : defaultOffset.top;
+		const offsetRight = offset ? (offset.right ?? 0) : defaultOffset.right;
+		const top = isBottomEnd
+			? rect.bottom + window.scrollY + offsetTop
+			: rect.top + window.scrollY + offsetTop;
+		const left = isBottomEnd ? undefined : rect.right + offsetRight;
+		const right = isBottomEnd
+			? document.documentElement.clientWidth - rect.right - offsetRight
+			: undefined;
 
 		set({
 			rendered: true,
 			visible: true,
-			isLight: isLight,
+			isLight,
 			top,
 			left,
+			right,
 			content,
 			width,
+			target: element,
 		});
 	},
 }));

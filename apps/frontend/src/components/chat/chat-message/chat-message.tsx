@@ -3,19 +3,43 @@ import ReactMarkdown from "react-markdown";
 import { UserMessage } from "./user-message.tsx";
 import type { ChatMessage as ChatMessageType } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
+import { CodeBlock } from "./code-block/code-block.tsx";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
 import {
 	MarkdownExportableTable,
 	TableExportVisibleContext,
 } from "../../primitives/markdown/markdown-exportable-table.tsx";
-import { type JSX, memo, useMemo } from "react";
+import type { PluggableList } from "unified";
+import { type JSX, memo, useEffect, useMemo, useState } from "react";
 import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
 import { config } from "../../../config.ts";
+import { captureError } from "../../../monitoring/capture-error.ts";
 import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
 
 interface ChatMessageProps {
 	message: ChatMessageType;
+}
+
+const CODE_FENCE_PATTERN = /^ {0,3}(`{3,}|~{3,})/m;
+
+// Loaded lazily, and only for messages that actually contain a code fence,
+// so chats without code blocks never pay for the full language grammar
+// bundle on the first-paint path. Cached at module scope so it's fetched once.
+let rehypeHighlightPluginsPromise: Promise<PluggableList> | null = null;
+function loadRehypeHighlightPlugins(): Promise<PluggableList> {
+	rehypeHighlightPluginsPromise ??= Promise.all([
+		import("rehype-highlight"),
+		import("lowlight"),
+	])
+		.then(([{ default: rehypeHighlight }, { common }]): PluggableList => [
+			[rehypeHighlight, { languages: common }],
+		])
+		.catch((error: unknown) => {
+			rehypeHighlightPluginsPromise = null;
+			throw error;
+		});
+	return rehypeHighlightPluginsPromise;
 }
 
 /**
@@ -45,6 +69,7 @@ export const ChatMessage = memo(function ChatMessage({
 			table: MarkdownWrapperScrollableTable,
 			a: createMarkdownLinkWithDatawrapperEmbed(allowedDatawrapperChartIds),
 			img: () => null,
+			pre: CodeBlock,
 		};
 	}, [datawrapperChartIds]);
 
@@ -53,6 +78,20 @@ export const ChatMessage = memo(function ChatMessage({
 		() => ({ ...customComponents, table: MarkdownExportableTable }),
 		[customComponents],
 	);
+
+	const hasCodeFence = CODE_FENCE_PATTERN.test(content);
+	const [loadedRehypePlugins, setLoadedRehypePlugins] =
+		useState<PluggableList | null>(null);
+	useEffect(() => {
+		if (!hasCodeFence || loadedRehypePlugins) {
+			return;
+		}
+		loadRehypeHighlightPlugins()
+			.then(setLoadedRehypePlugins)
+			.catch(captureError);
+	}, [hasCodeFence, loadedRehypePlugins]);
+
+	const rehypePlugins = loadedRehypePlugins ?? undefined;
 
 	return (
 		<div className="flex flex-col" data-message-id={message.id}>
@@ -68,6 +107,7 @@ export const ChatMessage = memo(function ChatMessage({
 							<TableExportVisibleContext.Provider value={hasChatButtons}>
 								<ReactMarkdown
 									remarkPlugins={[remarkGfm]}
+									rehypePlugins={rehypePlugins}
 									className="markdown-container"
 									components={assistantComponents}
 								>
@@ -83,6 +123,7 @@ export const ChatMessage = memo(function ChatMessage({
 				<UserMessage message={message}>
 					<ReactMarkdown
 						remarkPlugins={[remarkGfm]}
+						rehypePlugins={rehypePlugins}
 						className="markdown-container markdown-container-user"
 						components={customComponents}
 					>

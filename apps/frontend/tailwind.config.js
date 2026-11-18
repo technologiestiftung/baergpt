@@ -8,7 +8,9 @@ export default {
 		extend: {
 			colors: {
 				orange: "#E69736",
+				"orange-120": "#AF6409",
 				mittelgruen: "#4CA786",
+				"mittelgruen-120": "#008857",
 				"mittelgruen-130": "#35755E",
 				"berlin-rot": "#E40521",
 				"warning-120": "#B23636",
