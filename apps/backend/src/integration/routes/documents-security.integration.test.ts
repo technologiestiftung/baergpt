@@ -98,7 +98,9 @@ function createProcessRequest(
 // on a 200 response. Returns the parsed events (heartbeat pings are empty).
 async function readSseEvents(
 	response: Response,
-): Promise<Array<{ status: string; error?: string; folderFallback?: boolean }>> {
+): Promise<
+	Array<{ status: string; error?: string; folderFallback?: boolean }>
+> {
 	const text = await response.text();
 	return text
 		.split("\n")
