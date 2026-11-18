@@ -1,7 +1,12 @@
-import type { EmbeddingModel, LanguageModel } from "ai";
-import { mistral } from "@ai-sdk/mistral";
+import type { EmbeddingModel, LanguageModel, TranscriptionModel } from "ai";
+import { createMistral, mistral } from "@ai-sdk/mistral";
+import WebSocket from "ws";
 import { config } from "../config";
-import { mockEmbeddingModel, mockLanguageModel } from "./external-mocks";
+import {
+	mockEmbeddingModel,
+	mockLanguageModel,
+	mockTranscriptionModel,
+} from "./external-mocks";
 
 /**
  * Central factories for the Mistral models. In `test` mode they return static
@@ -29,4 +34,27 @@ export function getEmbeddingModel(): EmbeddingModel {
 	}
 
 	return mistral.embeddingModel(config.mistralEmbeddingModel);
+}
+
+// Voxtral batch transcription (dictation PoC). Mistral bills per audio minute.
+export const TRANSCRIPTION_MODEL = "voxtral-mini-transcribe-3";
+
+export function getTranscriptionModel(): TranscriptionModel {
+	if (isTestMode) {
+		return mockTranscriptionModel();
+	}
+
+	return mistral.transcription(TRANSCRIPTION_MODEL);
+}
+
+// Realtime transcription runs over a WebSocket to Mistral. Node's global
+// WebSocket cannot send the Authorization header, so we pass `ws`.
+const realtimeMistral = createMistral({ webSocket: WebSocket });
+
+export function getRealtimeTranscriptionModel(): TranscriptionModel {
+	if (isTestMode) {
+		return mockTranscriptionModel();
+	}
+
+	return realtimeMistral.transcription("voxtral-mini-transcribe-realtime-3");
 }

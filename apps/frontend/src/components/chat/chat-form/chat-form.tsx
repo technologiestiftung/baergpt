@@ -35,6 +35,13 @@ import { ExternalToolWarningBanner } from "./external-tool-warning-banner.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 import { useCurrentChatIdStore } from "../../../store/current-chat-id-store.ts";
 import { ChatSubmitButton } from "./chat-submit-button.tsx";
+import { DictationButton } from "./dictation-button.tsx";
+import { AudioFileButton } from "./audio-file-button.tsx";
+import {
+	isDictationSupported,
+	useRealtimeDictation,
+} from "./hooks/use-realtime-dictation.ts";
+import { useErrorStore } from "../../../store/error-store.ts";
 import {
 	getTextareaLineHeight,
 	usePromptHistory,
@@ -110,6 +117,45 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		content: textareaContent,
 		setContent,
 	});
+
+	const appendTranscript = (base: string, transcript: string) => {
+		const separator = base && !/\s$/.test(base) ? " " : "";
+		resetPromptHistory();
+		setContent(`${base}${separator}${transcript}`);
+	};
+
+	// Realtime: remember the text before dictation started and re-render the
+	// growing transcript after it on every update.
+	const dictationBaseRef = useRef<string | null>(null);
+	const realtimeDictation = useRealtimeDictation((transcript, isFinal) => {
+		dictationBaseRef.current ??= textareaRef.current?.value ?? "";
+		appendTranscript(dictationBaseRef.current, transcript);
+		if (isFinal) {
+			dictationBaseRef.current = null;
+		}
+	});
+	useEffect(() => {
+		if (realtimeDictation.status === "idle") {
+			dictationBaseRef.current = null;
+		}
+	}, [realtimeDictation.status]);
+
+	useEffect(() => {
+		if (realtimeDictation.error) {
+			useErrorStore.getState().handleError(realtimeDictation.error);
+		}
+	}, [realtimeDictation.error]);
+
+	const insertAudioFileTranscript = (fileName: string, text: string) => {
+		const current = textareaRef.current?.value ?? "";
+		const separator = current.trim() ? `${current.trimEnd()}\n\n` : "";
+		resetPromptHistory();
+		setContent(
+			`${separator}${Content["chat.audioFileButton.transcriptHeading"]} „${fileName}“:\n\n${text}`,
+		);
+	};
+
+	const isRealtimeActive = realtimeDictation.status !== "idle";
 
 	useLayoutEffect(() => {
 		const textareaElement = textareaRef.current;
@@ -191,6 +237,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 		showInfoMessage(null);
 
 		useFileUploadsStore.getState().removeAllFileUploadsFromChat();
+
+		// Stop dictation, so late transcript updates cannot refill the input
+		// with the message that is being sent.
+		realtimeDictation.cancel();
+		dictationBaseRef.current = null;
 
 		// Clear textarea on submit
 		resetPromptHistory();
@@ -348,6 +399,18 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 					}`}
 				>
 					<LlmModelToggleButton />
+					{isDictationSupported() && (
+						<DictationButton
+							status={realtimeDictation.status}
+							onClick={realtimeDictation.toggle}
+							isDisabled={isLoading()}
+						/>
+					)}
+					<AudioFileButton
+						isDisabled={isLoading() || isRealtimeActive}
+						onTranscript={insertAudioFileTranscript}
+						onError={(error) => useErrorStore.getState().handleError(error)}
+					/>
 					<ChatSubmitButton
 						showLoading={isLoading() && !hasError}
 						handleStop={handleStop}

@@ -5,12 +5,20 @@ import { config } from "../config";
 import { captureError } from "../monitoring/capture-error";
 import { createUserScopedDbClient } from "../supabase";
 
-const basicAuth = createMiddleware(async (c: Context, next: Next) => {
-	const authorizationHeader = c.req.header("authorization") || "";
-	const token = authorizationHeader.replace("Bearer ", "");
+type AuthenticatedSession = {
+	userId: string;
+	userClient: ReturnType<typeof createUserScopedDbClient>;
+};
 
+/**
+ * Verifies a Supabase session token and checks that the user is neither
+ * banned nor deleted. Returns null when the session is not valid.
+ */
+export async function authenticateToken(
+	token: string,
+): Promise<AuthenticatedSession | null> {
 	if (!token) {
-		return c.json({ error: "Unauthorized: Invalid or expired session" }, 401);
+		return null;
 	}
 
 	let decodedToken: null | { exp?: number; sub?: string } = null;
@@ -22,17 +30,17 @@ const basicAuth = createMiddleware(async (c: Context, next: Next) => {
 		};
 	} catch (error) {
 		captureError(error);
-		return c.json({ error: "Unauthorized: Invalid or expired session" }, 401);
+		return null;
 	}
 
 	if (decodedToken.exp && decodedToken.exp < Date.now() / 1000) {
 		captureError(new Error("Supabase session token expired"));
-		return c.json({ error: "Unauthorized: Invalid or expired session" }, 401);
+		return null;
 	}
 
 	if (!decodedToken.sub) {
 		captureError(new Error("Supabase session token missing user ID"));
-		return c.json({ error: "Unauthorized: Invalid or expired session" }, 401);
+		return null;
 	}
 
 	const userClient = createUserScopedDbClient(token);
@@ -42,16 +50,28 @@ const basicAuth = createMiddleware(async (c: Context, next: Next) => {
 
 	if (error) {
 		captureError(error);
-		return c.json({ error: "Unauthorized: Invalid or expired session" }, 401);
+		return null;
 	}
 
 	if (isUserBannedOrDeleted) {
 		captureError(new Error("User account was banned"));
+		return null;
+	}
+
+	return { userId: decodedToken.sub, userClient };
+}
+
+const basicAuth = createMiddleware(async (c: Context, next: Next) => {
+	const authorizationHeader = c.req.header("authorization") || "";
+	const token = authorizationHeader.replace("Bearer ", "");
+
+	const session = await authenticateToken(token);
+	if (!session) {
 		return c.json({ error: "Unauthorized: Invalid or expired session" }, 401);
 	}
 
-	c.set("UserScopedDbClient", userClient);
-	c.set("authenticatedUserId", decodedToken.sub);
+	c.set("UserScopedDbClient", session.userClient);
+	c.set("authenticatedUserId", session.userId);
 	return next();
 });
 

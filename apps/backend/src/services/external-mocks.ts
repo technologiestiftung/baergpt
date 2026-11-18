@@ -5,10 +5,16 @@ import type {
 	LanguageModelV4StreamPart,
 	LanguageModelV4StreamResult,
 	LanguageModelV4Usage,
+	Experimental_TranscriptionModelV4StreamResult as TranscriptionModelV4StreamResult,
 } from "@ai-sdk/provider";
-import type { EmbeddingModel, LanguageModel } from "ai";
-import { MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
+import type { EmbeddingModel, LanguageModel, TranscriptionModel } from "ai";
+import {
+	MockEmbeddingModelV4,
+	MockLanguageModelV4,
+	MockTranscriptionModelV4,
+} from "ai/test";
 import { simulateReadableStream } from "ai";
+import { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { ChatPromptClient, TextPromptClient } from "@langfuse/client";
 import { config } from "../config";
 import type { ParsedPage } from "../types/common";
@@ -144,4 +150,36 @@ export function mockChatPrompt(name: string): ChatPromptClient {
 		},
 		true,
 	);
+}
+
+export function mockTranscriptionModel(): TranscriptionModel {
+	return new MockTranscriptionModelV4({
+		doGenerate: async () => ({
+			text: "Mock transcription.",
+			segments: [],
+			language: "de",
+			durationInSeconds: 1,
+			warnings: [],
+			response: { timestamp: new Date(0), modelId: "mock-transcription" },
+		}),
+		// Realtime: drain the incoming audio, then emit one fixed transcript.
+		doStream: async ({ audio }) => {
+			// Backend tsconfig has no DOM lib, so use Node's web stream types.
+			const reader = (audio as unknown as NodeReadableStream).getReader();
+			const text = "Mock transcription.";
+			return {
+				stream: new NodeReadableStream({
+					async start(controller) {
+						controller.enqueue({ type: "stream-start", warnings: [] });
+						while (!(await reader.read()).done) {
+							// Discard audio chunks until the client stops.
+						}
+						controller.enqueue({ type: "transcript-delta", delta: text });
+						controller.enqueue({ type: "finish", text, segments: [] });
+						controller.close();
+					},
+				}) as unknown as TranscriptionModelV4StreamResult["stream"],
+			};
+		},
+	});
 }

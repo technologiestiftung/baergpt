@@ -62,6 +62,7 @@
 		"pdf-lib": "1.17.1",
 		"pdfjs-dist": "6.2.108",
 		"unpdf": "1.8.0",
+		"ws": "8.21.3",
 		"xlsx": "npm:@e965/xlsx@0.20.3",
 		"zod": "4.6.6"
 	},
@@ -71,6 +72,7 @@
 		"@types/node": "22.5.0",
 		"@types/pdf-parse": "1.1.4",
 		"@types/supertest": "6.0.3",
+		"@types/ws": "8.18.2",
 		"date-fns": "4.1.0",
 		"globals": "15.15.0",
 		"nodemailer": "10.2.1",

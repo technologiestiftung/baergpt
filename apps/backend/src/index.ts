@@ -1,4 +1,5 @@
 import "./monitoring/instrumentation";
+import type { Server } from "node:http";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
@@ -10,6 +11,8 @@ import { config, verifyConfig } from "./config";
 import admin from "./routes/admin";
 import favicon from "./routes/favicon";
 import integrations from "./routes/integrations";
+import audio from "./routes/audio";
+import { attachRealtimeTranscription } from "./routes/audio-realtime";
 import { captureError } from "./monitoring/capture-error";
 import { logMemory } from "./monitoring/memory-logger";
 import { configureAiSdkWarnings } from "./monitoring/ai-sdk-warnings";
@@ -48,6 +51,7 @@ app.route("/favicon", favicon);
 app.route("/llm", llms);
 app.route("/admin", admin);
 app.route("/integrations", integrations);
+app.route("/audio", audio);
 
 app.onError((error, c) => {
 	captureError(error);
@@ -58,10 +62,11 @@ app.onError((error, c) => {
 if (require.main === module) {
 	(async () => {
 		try {
-			serve({
+			const server = serve({
 				fetch: app.fetch,
 				port: config.port,
 			});
+			attachRealtimeTranscription(server as Server);
 			/* eslint-disable-next-line no-console */
 			console.info(`Server is running on port ${config.port}...`);
 			const memoryLogInterval = setInterval(
