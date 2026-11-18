@@ -27,8 +27,8 @@ interface ChatFormDropdownProps<T extends LlmModel> {
 	onClose: () => void;
 	reasoningEffort: ReasoningEffort;
 	onReasoningEffortChange: (reasoningEffort: ReasoningEffort) => void;
-	/** The selected model reasons even with "Aus"; says so in the hint. */
-	showAlwaysReasonsHint?: boolean;
+	/** The selected model always reasons, so "Aus" is greyed out. */
+	disableNoReasoning?: boolean;
 }
 
 const reasoningOptions = REASONING_EFFORTS.map((value) => ({
@@ -45,7 +45,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 	onClose,
 	reasoningEffort,
 	onReasoningEffortChange,
-	showAlwaysReasonsHint = false,
+	disableNoReasoning = false,
 }: ChatFormDropdownProps<T>) => {
 	const titleId = useId();
 	const reasoningLabelId = useId();
@@ -137,7 +137,10 @@ export const ChatFormDropdown = <T extends LlmModel>({
 							{Content["chat.llmModel.reasoningEffort.label"]}
 						</div>
 						<SegmentedControl
-							options={reasoningOptions}
+							options={reasoningOptions.map((option) => ({
+								...option,
+								disabled: disableNoReasoning && option.value === "none",
+							}))}
 							value={reasoningEffort}
 							onChange={onReasoningEffortChange}
 							ariaLabelledBy={reasoningLabelId}
@@ -149,9 +152,8 @@ export const ChatFormDropdown = <T extends LlmModel>({
 							className="text-xs leading-4 text-dunkelblau-65 w-0 min-w-full whitespace-normal"
 						>
 							{Content[`chat.llmModel.reasoningEffort.${reasoningEffort}.hint`]}
-							{showAlwaysReasonsHint &&
-								reasoningEffort === "none" &&
-								` ${Content["chat.llmModel.reasoningEffort.alwaysReasons.hint"]}`}
+							{disableNoReasoning &&
+								`${Content["chat.llmModel.reasoningEffort.alwaysReasons.hint"]}`}
 						</p>
 					</div>
 				</>

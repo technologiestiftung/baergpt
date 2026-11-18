@@ -3,6 +3,7 @@ import { useRef, type KeyboardEvent, type Ref } from "react";
 export interface SegmentedControlOption<T extends string> {
 	value: T;
 	label: string;
+	disabled?: boolean;
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -39,10 +40,18 @@ export const SegmentedControl = <T extends string>({
 
 		const currentIndex = options.findIndex((option) => option.value === value);
 		const step = event.key === "ArrowRight" ? 1 : -1;
-		const nextIndex = Math.min(
-			Math.max(currentIndex + step, 0),
-			options.length - 1,
-		);
+		// Skip disabled segments.
+		let nextIndex = currentIndex + step;
+		while (
+			nextIndex >= 0 &&
+			nextIndex < options.length &&
+			options[nextIndex].disabled
+		) {
+			nextIndex += step;
+		}
+		if (nextIndex < 0 || nextIndex >= options.length) {
+			return;
+		}
 		onChange(options[nextIndex].value);
 		radioRefs.current[nextIndex]?.focus();
 	};
@@ -56,6 +65,12 @@ export const SegmentedControl = <T extends string>({
 		>
 			{options.map((option, index) => {
 				const isSelected = option.value === value;
+				let segmentClass = "text-dunkelblau-90 hover:bg-hellblau-60";
+				if (isSelected) {
+					segmentClass = "bg-dunkelblau-90 text-white font-bold";
+				} else if (option.disabled) {
+					segmentClass = "text-dunkelblau-40 cursor-not-allowed";
+				}
 
 				return (
 					<button
@@ -63,6 +78,7 @@ export const SegmentedControl = <T extends string>({
 						type="button"
 						role="radio"
 						aria-checked={isSelected}
+						disabled={option.disabled}
 						tabIndex={isSelected ? 0 : -1}
 						ref={(el) => {
 							radioRefs.current[index] = el;
@@ -79,11 +95,7 @@ export const SegmentedControl = <T extends string>({
 						className={`
 							flex-1 px-3 py-1.5 rounded-3px text-sm leading-4 text-center
 							focus-visible:outline-default
-							${
-								isSelected
-									? "bg-aktiv-blau-100 text-white font-bold"
-									: "text-dunkelblau-90 hover:bg-hellblau-60"
-							}
+							${segmentClass}
 						`}
 					>
 						{option.label}

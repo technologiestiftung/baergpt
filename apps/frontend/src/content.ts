@@ -1152,7 +1152,7 @@ export const Content = {
 	"chat.llmModel.reasoningEffort.high.hint":
 		"Plant komplexe Antworten in mehreren Schritten. Dauert am längsten.",
 	"chat.llmModel.reasoningEffort.alwaysReasons.hint":
-		"GLM 5.3 denkt immer nach. „Aus“ entspricht hier „Niedrig“.",
+		"GLM 5.3 denkt immer nach, „Aus“ ist nicht verfügbar.",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",

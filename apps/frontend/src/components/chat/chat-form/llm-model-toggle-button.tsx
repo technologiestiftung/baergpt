@@ -18,7 +18,15 @@ export const LlmModelToggleButton: React.FC = () => {
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
 	const { selectedLlmModel, setSelectedLlmModel } = useLlmModelStore();
-	const { reasoningEffort, setReasoningEffort } = useReasoningEffortStore();
+	const { reasoningEffort: storedReasoningEffort, setReasoningEffort } =
+		useReasoningEffortStore();
+	// GLM 5.3 always reasons and "Aus" is unavailable; the provider sends "low"
+	// for "none", so show "Niedrig". The stored level stays untouched.
+	const alwaysReasons = selectedLlmModel === "experimental";
+	const reasoningEffort =
+		alwaysReasons && storedReasoningEffort === "none"
+			? "low"
+			: storedReasoningEffort;
 
 	const llmModelItems = [
 		{
@@ -104,7 +112,7 @@ export const LlmModelToggleButton: React.FC = () => {
 						onClose={handleClose}
 						reasoningEffort={reasoningEffort}
 						onReasoningEffortChange={setReasoningEffort}
-						showAlwaysReasonsHint={selectedLlmModel === "experimental"}
+						disableNoReasoning={alwaysReasons}
 					/>
 				</div>
 			)}
