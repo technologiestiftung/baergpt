@@ -24,12 +24,12 @@ export function useMinLoadingDuration(
 			}
 			startedAtRef.current = Date.now();
 			setIsVisible(true);
-			return;
+			return undefined;
 		}
 
 		if (startedAtRef.current === null) {
 			setIsVisible(false);
-			return;
+			return undefined;
 		}
 
 		const elapsed = Date.now() - startedAtRef.current;
@@ -38,7 +38,7 @@ export function useMinLoadingDuration(
 		if (remaining <= 0) {
 			startedAtRef.current = null;
 			setIsVisible(false);
-			return;
+			return undefined;
 		}
 
 		timeoutRef.current = setTimeout(() => {
