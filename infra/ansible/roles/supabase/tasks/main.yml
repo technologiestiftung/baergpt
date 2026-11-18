@@ -223,6 +223,7 @@
     cmd: "docker run --rm --entrypoint sh {{ supabase_postgres_image }} -c 'id -u postgres; id -g postgres'"
   register: supabase_postgres_ids
   changed_when: false
+  check_mode: false
 
 - name: Give the Postgres TLS cert to that user
   ansible.builtin.file:
