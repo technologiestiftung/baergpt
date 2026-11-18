@@ -52,6 +52,8 @@ export const StepSlider = <T extends string>({
 	const trackRef = useRef<HTMLDivElement>(null);
 	// Position (0..1) of the thumb while dragging; null when it rests on a step.
 	const [dragPosition, setDragPosition] = useState<number | null>(null);
+	// Ref mirror so pointermove does not depend on a re-render after pointerdown.
+	const isDragging = useRef(false);
 
 	const select = (index: number) => {
 		if (index < 0 || index > lastIndex) {
@@ -90,16 +92,20 @@ export const StepSlider = <T extends string>({
 
 	const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
 		event.currentTarget.setPointerCapture(event.pointerId);
+		isDragging.current = true;
 		dragTo(event);
 	};
 
 	const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-		if (dragPosition !== null) {
+		if (isDragging.current) {
 			dragTo(event);
 		}
 	};
 
-	const endDrag = () => setDragPosition(null);
+	const endDrag = () => {
+		isDragging.current = false;
+		setDragPosition(null);
+	};
 
 	const thumbPosition = dragPosition ?? currentIndex / Math.max(1, lastIndex);
 
@@ -147,7 +153,7 @@ export const StepSlider = <T extends string>({
 				onPointerMove={handlePointerMove}
 				onPointerUp={endDrag}
 				onPointerCancel={endDrag}
-				className="absolute left-[12.5%] right-[12.5%] top-1 h-[30px] cursor-pointer touch-none"
+				className="absolute z-10 left-[12.5%] right-[12.5%] top-1 h-[30px] cursor-pointer touch-none"
 			>
 				<div className="absolute inset-x-0 top-[10px] h-1 rounded-full bg-hellblau-100">
 					<div
