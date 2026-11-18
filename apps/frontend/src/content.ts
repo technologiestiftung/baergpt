@@ -821,7 +821,7 @@ export const Content = {
 	//toast
 	"toast.close.ariaLabel": "Meldung schließen",
 	"toast.upload.folderMissing":
-		"Der Ordner existiert nicht mehr. Die Datei wurde in der Hauptdateisammlung gespeichert.",
+		"Ordner nicht mehr vorhanden. Datei im Hauptordner gespeichert.",
 
 	/* -------------------- Icons Img Alt -------------------- */
 	"bucketIcon.imgAlt": "Mülleimer-Icon",
