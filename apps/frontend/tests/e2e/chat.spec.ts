@@ -116,6 +116,58 @@ test.describe("Chat", () => {
 	);
 
 	testWithMockedLlm(
+		"Error before any answer text shows error banner",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await mockLlmCompletion(page, {
+				events: [
+					{ type: "reasoning-delta", id: "1", delta: "Ich sollte suchen." },
+					{ type: "error", errorText: "An error occurred." },
+				],
+			});
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const errorBanner = page.getByText(
+				"Ihre Anfrage konnte gerade nicht bearbeitet werden.",
+			);
+			await expect(errorBanner).toBeVisible();
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).toHaveCount(0);
+		},
+	);
+
+	testWithMockedLlm(
+		"Error after partial answer keeps text and shows error banner",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await mockLlmCompletion(page, {
+				events: [
+					{ type: "text-delta", id: "1", delta: "Teilantwort" },
+					{ type: "error", errorText: "An error occurred." },
+				],
+			});
+
+			const chatInput = page.getByPlaceholder("Stellen Sie eine Frage");
+			await chatInput.fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const errorBanner = page.getByText(
+				"Ihre Anfrage konnte gerade nicht bearbeitet werden.",
+			);
+			await expect(errorBanner).toBeVisible();
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			await expect(answer).toHaveText("Teilantwort");
+		},
+	);
+
+	testWithMockedLlm(
 		"Copy text with markdown formatting as rich text and plain text",
 		async ({ page, browserName }) => {
 			await page.goto("/");
