@@ -46,8 +46,8 @@ locals {
         sum(count_over_time(${local.kong_log} ${local.kong_fields} | method="GET" | request=~`/rest/v1/?(\?.*)?` | status!~`401|2..` [2h])) > 0
       EOT
       )
-      summary     = "Database API schema requested with the anon key on ${var.target_source}"
-      description = "GET /rest/v1/ with the anon key was refused; nothing was returned. Someone is exploring the API by hand: check what else they requested in {service_name=\"${var.target_source}\"}."
+      summary     = "Database API schema requested but not returned on ${var.target_source}"
+      description = "GET /rest/v1/ got neither a 401 nor the schema. Usually a 403: a valid key that may not read it, so someone is exploring the API. See what else they requested in {service_name=\"${var.target_source}\"}."
       severity    = "warning"
     },
     {

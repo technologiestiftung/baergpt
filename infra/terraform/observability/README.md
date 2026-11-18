@@ -110,8 +110,11 @@ environment in Grafana → Explore before relying on it.
   returns request lines; `path` and `method` are labels, `userAgent` and `clientIP` are in the line.
 - `{service_name="ske-envoy-gateway-system"} |= "httproute/<namespace>/backend/" | json` on Loki —
   lines carry `route_name`, `method`, `response_code`, `x_envoy_origin_path` and `user_agent`.
-- Security rules are silent until something matches. After changing one, send a matching
-  request on staging (e.g. `GET /rest/v1/` with the anon key) and check that the email arrives.
+- Security rules are silent until something matches. After changing one, send a matching request
+  and check that the email names that rule and source. Kong: `GET /rest/v1/` with the anon key on
+  staging. Backend: a path containing `interact.sh`, on the staging backend for the SKE rules
+  (applied from the `production` workspace) or on production for the Render rules, which have no
+  staging group.
 - `{service_name="supabase-<env>-anon-egress"} |= "\"status\": \"ok\""` on Loki — one line per
   hourly refresh. **Deploy the collector change before applying `alerts_anon_egress.tf`**: with
   no such line in the last 3h, `AnonEgressBlocklistStale` fires on apply.
