@@ -25,7 +25,7 @@ export const Toast: React.FC<ToastProps> = ({
 	return (
 		<div className="pointer-events-auto">
 			<div
-				className={`flex w-fit flex-row items-center rounded-3px pl-3 pr-2 py-2.5 bg-white border border-l-[6px] ${borderColorByType[type]} text-base leading-6 font-normal ${isExiting ? "animate-fade-out" : "animate-slide-in-right"}`}
+				className={`flex w-fit flex-row items-center rounded-3px pl-3 pr-2 py-2.5 bg-white border border-l-[6px] ${borderColorByType[type]} text-dunkelblau-100 text-base leading-6 font-normal ${isExiting ? "animate-fade-out" : "animate-slide-in-right"}`}
 			>
 				{type === "success" && (
 					<img
