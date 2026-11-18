@@ -132,7 +132,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 					<div className="flex flex-col gap-2 px-3 pb-2 pt-2.5">
 						<div
 							id={reasoningLabelId}
-							className="text-sm leading-4 text-dunkelblau-90"
+							className="text-sm leading-4 text-dunkelblau-65"
 						>
 							{Content["chat.llmModel.reasoningEffort.label"]}
 						</div>

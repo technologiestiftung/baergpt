@@ -1,4 +1,10 @@
-import { type KeyboardEvent, type Ref } from "react";
+import {
+	type KeyboardEvent,
+	type PointerEvent,
+	type Ref,
+	useRef,
+	useState,
+} from "react";
 
 export interface StepSliderOption<T extends string> {
 	value: T;
@@ -43,6 +49,10 @@ export const StepSlider = <T extends string>({
 	);
 	const lastIndex = options.length - 1;
 
+	const trackRef = useRef<HTMLDivElement>(null);
+	// Position (0..1) of the thumb while dragging; null when it rests on a step.
+	const [dragPosition, setDragPosition] = useState<number | null>(null);
+
 	const select = (index: number) => {
 		if (index < 0 || index > lastIndex) {
 			return;
@@ -60,6 +70,38 @@ export const StepSlider = <T extends string>({
 		}
 		select(next);
 	};
+
+	const dragTo = (event: PointerEvent<HTMLDivElement>) => {
+		const rect = trackRef.current?.getBoundingClientRect();
+		if (!rect || rect.width === 0) {
+			return;
+		}
+		const position = Math.min(
+			1,
+			Math.max(0, (event.clientX - rect.left) / rect.width),
+		);
+		const minPosition = firstEnabled / Math.max(1, lastIndex);
+		const maxPosition = lastEnabled / Math.max(1, lastIndex);
+		setDragPosition(Math.min(maxPosition, Math.max(minPosition, position)));
+		// Keep the value (and the hint) in sync with the nearest step.
+		const nearest = Math.round(position * lastIndex);
+		select(Math.min(lastEnabled, Math.max(firstEnabled, nearest)));
+	};
+
+	const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+		event.currentTarget.setPointerCapture(event.pointerId);
+		dragTo(event);
+	};
+
+	const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+		if (dragPosition !== null) {
+			dragTo(event);
+		}
+	};
+
+	const endDrag = () => setDragPosition(null);
+
+	const thumbPosition = dragPosition ?? currentIndex / Math.max(1, lastIndex);
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
 		switch (event.key) {
@@ -97,16 +139,25 @@ export const StepSlider = <T extends string>({
 			onKeyDown={handleKeyDown}
 			className="relative rounded-3px py-1 focus-visible:outline-default"
 		>
-			{/* Track and filled part run from the first to the last step centre. */}
+			{/* Track and thumb run from the first to the last step centre. */}
 			<div
+				ref={trackRef}
 				aria-hidden="true"
-				className="absolute left-[12.5%] right-[12.5%] top-[14px] h-1 rounded-full bg-hellblau-100"
+				onPointerDown={handlePointerDown}
+				onPointerMove={handlePointerMove}
+				onPointerUp={endDrag}
+				onPointerCancel={endDrag}
+				className="absolute left-[12.5%] right-[12.5%] top-1 h-[30px] cursor-pointer touch-none"
 			>
-				<div
-					className="h-full rounded-full bg-dunkelblau-90"
-					style={{
-						width: `${(currentIndex / Math.max(1, lastIndex)) * 100}%`,
-					}}
+				<div className="absolute inset-x-0 top-[10px] h-1 rounded-full bg-hellblau-100">
+					<div
+						className="h-full rounded-full bg-dunkelblau-90"
+						style={{ width: `${thumbPosition * 100}%` }}
+					/>
+				</div>
+				<span
+					className="absolute top-[3px] h-4 w-4 -translate-x-1/2 rounded-full border-2 border-dunkelblau-90 bg-dunkelblau-90 ring-2 ring-hellblau-100"
+					style={{ left: `${thumbPosition * 100}%` }}
 				/>
 			</div>
 			<div
@@ -121,24 +172,16 @@ export const StepSlider = <T extends string>({
 					} else if (option.disabled) {
 						labelClass = "text-dunkelblau-40";
 					}
-					const isFilled = index <= currentIndex && !option.disabled;
 
 					return (
 						<div
 							key={option.value}
 							aria-hidden="true"
 							onClick={() => select(index)}
-							className={`flex flex-col items-center gap-1.5 text-sm leading-4 ${
+							className={`flex flex-col items-center pt-[30px] text-sm leading-4 ${
 								option.disabled ? "cursor-not-allowed" : "cursor-pointer"
 							}`}
 						>
-							<span
-								className={`mt-[7px] h-4 w-4 rounded-full border-2 ${
-									isFilled
-										? "bg-dunkelblau-90 border-dunkelblau-90"
-										: "bg-white border-hellblau-100"
-								} ${isSelected ? "ring-2 ring-hellblau-100" : ""}`}
-							/>
 							<span className={labelClass}>{option.label}</span>
 						</div>
 					);
