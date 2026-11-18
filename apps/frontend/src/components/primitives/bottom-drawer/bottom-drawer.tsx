@@ -8,7 +8,6 @@ interface BottomDrawerProps {
 	children: ReactNode;
 	style?: "dark" | "light";
 	classNames?: string;
-	isCompact?: boolean;
 }
 
 export function BottomDrawer({
@@ -18,7 +17,6 @@ export function BottomDrawer({
 	children,
 	classNames,
 	style = "light",
-	isCompact = false,
 }: BottomDrawerProps) {
 	const [isClosing, setIsClosing] = useState(false);
 	// Prevent body scroll when the drawer is open
@@ -36,20 +34,14 @@ export function BottomDrawer({
 
 	return (
 		<div
-			className={`fixed md:hidden inset-0 z-30 transition-opacity duration-300 ${
+			className={`fixed md:hidden inset-0 z-[60] transition-opacity duration-300 ${
 				isOpen ? "opacity-100 overflow-y-auto" : "opacity-0 pointer-events-none"
 			} ${classNames}`}
 			onClick={handleClose}
 		>
 			<div
-				className={`fixed left-0 w-full ${
-					isCompact
-						? "h-46 bottom-[84px]"
-						: "h-[calc(100%-calc(50px+18px)-84px)] top-[calc(50px+18px)]"
-				} flex flex-col rounded-t-2xl shadow-lg transition-transform duration-300 ease-in-out ${
-					isOpen
-						? "translate-y-0"
-						: "translate-y-[calc(100%-calc(50px+18px)-84px})]"
+				className={`fixed left-0 w-full bottom-0 h-fit flex flex-col rounded-t-2xl shadow-lg transition-transform duration-300 ease-in-out ${
+					isOpen ? "translate-y-0" : "translate-y-full"
 				} ${isClosing ? "translate-y-full" : ""}
                 ${style === "dark" ? "bg-dunkelblau-100" : "bg-hellblau-50"}`}
 				onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside

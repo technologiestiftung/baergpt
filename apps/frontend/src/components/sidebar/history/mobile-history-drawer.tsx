@@ -20,17 +20,15 @@ export function MobileHistoryDrawer() {
 				classNames="md:hidden"
 				style="dark"
 			>
-				<div className="flex flex-col justify-between h-full min-h-0 mt-[60px]">
+				<div className="flex flex-col justify-between h-full min-h-0 mt-8">
 					<History />
 
 					<div>
 						<div className="px-4 border-y border-dunkelblau-80">
 							<SidebarNavigation />
 						</div>
-						<div
-							className={`flex flex-col gap-1.5 md:h-[50px] justify-end py-4 md:pb-0 md:pt-3.5 px-6`}
-						>
-							<p className="text-dunkelblau-50 text-[10px] truncate">
+						<div className={`flex flex-row gap-1.5 justify-between py-3 px-5`}>
+							<p className="text-dunkelblau-50 text-[11px] truncate">
 								{Content["sidebar.citylab.label"]}
 							</p>
 
@@ -38,19 +36,19 @@ export function MobileHistoryDrawer() {
 								href={Content["sidebar.citylab.link"]}
 								target="_blank"
 								rel="noopener noreferrer"
-								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-[6.6px]`}
+								className={`focus-visible:outline-default rounded-3px w-fit h-[18px] flex flex-row items-center gap-[5.8px]`}
 								aria-label={Content["sidebar.citylab.ariaLabel"]}
 							>
 								<img
 									src="/icons/citylab-shape-icon.svg"
 									alt="citylab-icon"
-									width="16px"
+									width="14px"
 									className="flex shrink-0"
 								/>
 								<img
 									src="/icons/citylab-berlin.svg"
 									alt="citylab-icon"
-									width="38px"
+									width="33px"
 									className="flex shrink-0"
 								/>
 							</a>
