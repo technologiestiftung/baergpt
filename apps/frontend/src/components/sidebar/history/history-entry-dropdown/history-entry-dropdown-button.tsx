@@ -4,6 +4,7 @@ import { HistoryEntryDropdown } from "./history-entry-dropdown";
 import Content from "../../../../content";
 import type { Chat } from "../../../../common";
 import { useSelectedChatCount } from "../../../../store/use-history-selection-store";
+import { SettingsIcon } from "../../../primitives/icons/settings-icon";
 
 interface HistoryEntryDropdownButtonProps {
 	chat: Chat;
@@ -52,15 +53,10 @@ export const HistoryEntryDropdownButton: React.FC<
 						: Content["historyEntryDropdown.menuIcon.ariaLabel"]
 				}
 				aria-expanded={isDropdownOpen}
-				className={`rounded-3px size-5 flex items-center justify-center hover:bg-dunkelblau-95 group-hover:opacity-100 group-focus-within:opacity-100 aria-expanded:opacity-100 focus-visible:outline-2px transition-opacity duration-150 ${selectedChatCount > 1 ? "" : "hoverable:opacity-0"}`}
+				className={`rounded-3px size-6 flex items-center justify-center hover:bg-dunkelblau-95 group-hover:opacity-100 group-focus-within:opacity-100 aria-expanded:opacity-100 focus-visible:outline-2px transition-opacity duration-150 ${selectedChatCount > 1 ? "" : "hoverable:opacity-0"}`}
 				onClick={() => setIsDropdownOpen((open) => !open)}
 			>
-				<img
-					src="/icons/dot-menu-white-icon.svg"
-					alt={Content["historyEntryDropdown.menuIcon.imgAlt"]}
-					width={18}
-					height={18}
-				/>
+				<SettingsIcon />
 			</button>
 			<HistoryEntryDropdown
 				chat={chat}

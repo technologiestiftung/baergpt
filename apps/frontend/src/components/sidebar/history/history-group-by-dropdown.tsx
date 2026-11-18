@@ -64,7 +64,7 @@ export function HistoryGroupByDropdown() {
 				<button
 					ref={selectButtonRef}
 					type="button"
-					className="hover:bg-dunkelblau-90 text-2xl rounded-3px size-7 flex items-center justify-center focus-visible:outline-default"
+					className="hover:bg-dunkelblau-90 text-2xl rounded-3px size-6 flex items-center justify-center focus-visible:outline-default"
 					aria-expanded={isDropdownOpen}
 					aria-haspopup="menu"
 					aria-label={Content["chatHistory.groupBy.dropdown.ariaLabel"]}

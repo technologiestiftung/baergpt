@@ -9,6 +9,7 @@ import { useHistoryGroupByStore } from "../../../store/use-history-group-by-stor
 import { HistoryGroupsByNone } from "./history-groups/history-groups-by-none.tsx";
 import { ChevronIcon } from "../../primitives/icons/chevron-icon.tsx";
 import { useHistorySelectionStore } from "../../../store/use-history-selection-store.ts";
+import { useIsMobile } from "../../../hooks/use-mobile.tsx";
 
 export const History: React.FC = () => {
 	const { isFirstLoad, isLoading } = useChatsStore();
@@ -18,6 +19,7 @@ export const History: React.FC = () => {
 	const historyContainerRef = useRef<HTMLDivElement>(null);
 	const errorMessage = getUIError("chats-fetch");
 	const { selectedChatIds, clearSelection } = useHistorySelectionStore();
+	const isMobile = useIsMobile();
 
 	const selectionStatus =
 		selectedChatIds.length > 1
@@ -42,7 +44,7 @@ export const History: React.FC = () => {
 		<div
 			className={`flex flex-col w-full min-h-0 ${errorMessage ? "h-full" : ""}`}
 		>
-			<div className="flex justify-between items-center md:pl-2 md:pr-3 pb-2.5 px-5">
+			<div className="flex justify-between items-center md:pl-2 md:pr-3 pb-3 md:pb-2.5 px-5">
 				<h2 className="text-sm font-semibold text-hellblau-50  whitespace-nowrap">
 					<button
 						className={
@@ -51,13 +53,16 @@ export const History: React.FC = () => {
 						aria-expanded={!isHistoryCollapsed}
 						aria-description={toggleHistoryCollapseAriaDescription}
 						onClick={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
+						disabled={isMobile}
 					>
 						{Content["chatHistory.title"]}
 
-						<ChevronIcon
-							color={"dunkelblau-50"}
-							direction={isHistoryCollapsed ? "up" : "down"}
-						/>
+						<div className="hidden md:flex">
+							<ChevronIcon
+								color={"dunkelblau-50"}
+								direction={isHistoryCollapsed ? "up" : "down"}
+							/>
+						</div>
 					</button>
 				</h2>
 

@@ -24,7 +24,7 @@ export function LoadMoreChatsSpinner({
 	});
 
 	return (
-		<div className="flex justify-center pl-2 text-dunkelblau-50 text-xs mt-2 pb-8">
+		<div className="flex justify-center pl-2 text-dunkelblau-50 text-xs mt-8 md:mt-2 pb-8">
 			{hasLoadedAllChats && <span>{Content["chatHistory.allLoaded"]}</span>}
 
 			{!hasLoadedAllChats && (
