@@ -44,12 +44,15 @@ async function getLatestTraces(userId: string): Promise<Array<unknown>> {
 }
 
 async function setExtendedThinking(page: Page, isEnabled: boolean) {
-	await page.addInitScript((isExtendedThinkingEnabled) => {
-		localStorage.setItem(
-			"extended-thinking",
-			JSON.stringify({ state: { isExtendedThinkingEnabled }, version: 0 }),
-		);
-	}, isEnabled);
+	await page.addInitScript(
+		(reasoningEffort) => {
+			localStorage.setItem(
+				"reasoning-effort",
+				JSON.stringify({ state: { reasoningEffort }, version: 0 }),
+			);
+		},
+		isEnabled ? "high" : "none",
+	);
 }
 
 /**

@@ -2,8 +2,12 @@ import { useId, useRef } from "react";
 import Content from "../../../content";
 import type { LlmModel } from "../../../common";
 import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
-import { Switch } from "../../primitives/switch/switch";
+import { SegmentedControl } from "../../primitives/segmented-control/segmented-control";
 import { config } from "../../../config";
+import {
+	REASONING_EFFORTS,
+	type ReasoningEffort,
+} from "../../../store/use-reasoning-effort-store";
 
 // Referenced by the toggle button's aria-controls,
 // so screen readers can tie the button to the listbox it opens.
@@ -21,9 +25,16 @@ interface ChatFormDropdownProps<T extends LlmModel> {
 	onItemClick: (value: T) => void;
 	isOpen: boolean;
 	onClose: () => void;
-	isExtendedThinkingEnabled: boolean;
-	onExtendedThinkingChange: (isEnabled: boolean) => void;
+	reasoningEffort: ReasoningEffort;
+	onReasoningEffortChange: (reasoningEffort: ReasoningEffort) => void;
+	/** The selected model reasons even with "Aus"; says so in the hint. */
+	showAlwaysReasonsHint?: boolean;
 }
+
+const reasoningOptions = REASONING_EFFORTS.map((value) => ({
+	value,
+	label: Content[`chat.llmModel.reasoningEffort.${value}`],
+}));
 
 export const ChatFormDropdown = <T extends LlmModel>({
 	items,
@@ -32,11 +43,14 @@ export const ChatFormDropdown = <T extends LlmModel>({
 	onItemClick,
 	isOpen,
 	onClose,
-	isExtendedThinkingEnabled,
-	onExtendedThinkingChange,
+	reasoningEffort,
+	onReasoningEffortChange,
+	showAlwaysReasonsHint = false,
 }: ChatFormDropdownProps<T>) => {
 	const titleId = useId();
-	const extendedThinkingSwitchRef = useRef<HTMLInputElement>(null);
+	const reasoningLabelId = useId();
+	const reasoningHintId = useId();
+	const reasoningRadioRef = useRef<HTMLButtonElement>(null);
 	const isExtendedThinkingAllowed = config.featureFlagExtendedThinkingAllowed;
 
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
@@ -45,9 +59,8 @@ export const ChatFormDropdown = <T extends LlmModel>({
 		onClose,
 		onItemClick: (item) => onItemClick(item.value),
 		navigateWithTab: true,
-		trailingItemRef: extendedThinkingSwitchRef,
-		onTrailingItemActivate: () =>
-			onExtendedThinkingChange(!isExtendedThinkingEnabled),
+		// The selected segment is the control's single Tab stop.
+		trailingItemRef: reasoningRadioRef,
 	});
 
 	return (
@@ -116,21 +129,30 @@ export const ChatFormDropdown = <T extends LlmModel>({
 			{isExtendedThinkingAllowed && (
 				<>
 					<div className="mx-3 h-[0.5px] bg-hellblau-100" />
-					<div className="flex gap-4 items-center justify-between px-3 pb-2 pt-2.5">
-						<div className="flex flex-col gap-2">
-							<div className="text-sm leading-4 text-dunkelblau-90">
-								{Content["chat.llmModel.dropdown.li4.label"]}
-							</div>
-							<p className="text-xs leading-4 text-dunkelblau-65 max-w-[233px] w-full whitespace-normal">
-								{Content["chat.llmModel.dropdown.li4.description"]}
-							</p>
+					<div className="flex flex-col gap-2 px-3 pb-2 pt-2.5">
+						<div
+							id={reasoningLabelId}
+							className="text-sm leading-4 text-dunkelblau-90"
+						>
+							{Content["chat.llmModel.reasoningEffort.label"]}
 						</div>
-						<Switch
-							ref={extendedThinkingSwitchRef}
-							checked={isExtendedThinkingEnabled}
-							ariaLabel={Content["chat.llmModel.dropdown.li4.ariaLabel"]}
-							onChange={onExtendedThinkingChange}
+						<SegmentedControl
+							options={reasoningOptions}
+							value={reasoningEffort}
+							onChange={onReasoningEffortChange}
+							ariaLabelledBy={reasoningLabelId}
+							ariaDescribedBy={reasoningHintId}
+							selectedRadioRef={reasoningRadioRef}
 						/>
+						<p
+							id={reasoningHintId}
+							className="text-xs leading-4 text-dunkelblau-65 w-0 min-w-full whitespace-normal"
+						>
+							{Content[`chat.llmModel.reasoningEffort.${reasoningEffort}.hint`]}
+							{showAlwaysReasonsHint &&
+								reasoningEffort === "none" &&
+								` ${Content["chat.llmModel.reasoningEffort.alwaysReasons.hint"]}`}
+						</p>
 					</div>
 				</>
 			)}

@@ -82,8 +82,13 @@ export type ChatMessageBody = {
 	user_name: string;
 	active_tools: ActiveTools[];
 	llm_model: string;
+	/** Legacy flag of older clients; `true` maps to "high". */
 	extended_thinking?: boolean;
+	reasoning_effort?: ReasoningEffort;
 };
+
+export const REASONING_EFFORTS = ["none", "low", "medium", "high"] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
 export type ActiveTools =
 	| "ragSearchTool"

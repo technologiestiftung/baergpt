@@ -1,7 +1,39 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { config } from "../config";
-import type { ActiveTools, ChatMessageBody } from "../types/common";
+import {
+	REASONING_EFFORTS,
+	type ActiveTools,
+	type ChatMessageBody,
+	type ReasoningEffort,
+} from "../types/common";
+
+function isValidReasoningEffort(value: unknown): value is ReasoningEffort {
+	return REASONING_EFFORTS.includes(value as ReasoningEffort);
+}
+
+/**
+ * `reasoning_effort` wins over the legacy `extended_thinking` flag of older
+ * clients, where `true` means "high".
+ */
+function parseReasoningEffort(
+	body: Pick<ChatMessageBody, "extended_thinking" | "reasoning_effort">,
+): { reasoningEffort: ReasoningEffort } | { error: string } {
+	const legacyExtendedThinking = body.extended_thinking ?? false;
+	if (typeof legacyExtendedThinking !== "boolean") {
+		return { error: "Invalid request: extended_thinking must be a boolean" };
+	}
+
+	const reasoningEffort: unknown =
+		body.reasoning_effort ?? (legacyExtendedThinking ? "high" : "none");
+	if (!isValidReasoningEffort(reasoningEffort)) {
+		return {
+			error: `Invalid request: reasoning_effort must be one of ${REASONING_EFFORTS.join(", ")}`,
+		};
+	}
+
+	return { reasoningEffort };
+}
 
 const VALID_ACTIVE_TOOLS = new Set<ActiveTools>([
 	"ragSearchTool",
@@ -84,13 +116,11 @@ llms.post("/just-chatting", async (c: Context) => {
 			);
 		}
 
-		const extendedThinking = body.extended_thinking ?? false;
-		if (typeof extendedThinking !== "boolean") {
-			return c.json(
-				{ error: "Invalid request: extended_thinking must be a boolean" },
-				400,
-			);
+		const reasoning = parseReasoningEffort(body);
+		if ("error" in reasoning) {
+			return c.json({ error: reasoning.error }, 400);
 		}
+		const { reasoningEffort } = reasoning;
 
 		const rawActiveTools = body.active_tools ?? [];
 
@@ -151,7 +181,7 @@ llms.post("/just-chatting", async (c: Context) => {
 			allowedDocumentIds: allowedDocumentIds,
 			allowedFolderIds: allowedFolderIds,
 			activeTools,
-			extendedThinking,
+			reasoningEffort,
 		});
 
 		response.headers.set("Content-Type", "text/event-stream; charset=utf-8");

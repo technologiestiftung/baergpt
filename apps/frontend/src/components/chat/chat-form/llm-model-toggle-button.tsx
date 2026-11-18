@@ -7,7 +7,7 @@ import {
 	useLlmModelStore,
 	availableLlmModels,
 } from "../../../store/use-llm-model-store";
-import { useExtendedThinkingStore } from "../../../store/use-extended-thinking-store";
+import { useReasoningEffortStore } from "../../../store/use-reasoning-effort-store";
 import type { LlmModel } from "../../../common";
 
 const LLM_MODEL_DROPDOWN_DESCRIPTION_ID = "llm-model-dropdown-description-id";
@@ -18,8 +18,7 @@ export const LlmModelToggleButton: React.FC = () => {
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
 	const { selectedLlmModel, setSelectedLlmModel } = useLlmModelStore();
-	const { isExtendedThinkingEnabled, setIsExtendedThinkingEnabled } =
-		useExtendedThinkingStore();
+	const { reasoningEffort, setReasoningEffort } = useReasoningEffortStore();
 
 	const llmModelItems = [
 		{
@@ -82,6 +81,8 @@ export const LlmModelToggleButton: React.FC = () => {
 			>
 				<span className="text-sm leading-5 text-dunkelblau-80">
 					{selectedLlmModelLabel[selectedLlmModel]}
+					{reasoningEffort !== "none" &&
+						` · ${Content[`chat.llmModel.reasoningEffort.${reasoningEffort}`]}`}
 				</span>
 
 				<ChevronIcon
@@ -101,8 +102,9 @@ export const LlmModelToggleButton: React.FC = () => {
 						onItemClick={handleItemClick}
 						isOpen={isDropdownOpen}
 						onClose={handleClose}
-						isExtendedThinkingEnabled={isExtendedThinkingEnabled}
-						onExtendedThinkingChange={setIsExtendedThinkingEnabled}
+						reasoningEffort={reasoningEffort}
+						onReasoningEffortChange={setReasoningEffort}
+						showAlwaysReasonsHint={selectedLlmModel === "experimental"}
 					/>
 				</div>
 			)}

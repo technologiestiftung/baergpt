@@ -30,11 +30,13 @@ import {
 	EXPERIMENTAL_MAX_TOOL_CALL_STEPS,
 	MAX_OUTPUT_TOKENS,
 	MAX_OUTPUT_TOKENS_EXTENDED_THINKING,
+	REASONING_EFFORTS_WITH_EXTENDED_OUTPUT,
 } from "../constants";
 import type {
 	ActiveTools,
 	IncomingChatMessage,
 	ParsedPage,
+	ReasoningEffort,
 } from "../types/common";
 import { ragSearchTool } from "../tools/rag-search-tool";
 import {
@@ -329,7 +331,7 @@ export class GenerationService {
 		allowedDocumentIds: number[];
 		allowedFolderIds: number[];
 		activeTools: ActiveTools[];
-		extendedThinking: boolean;
+		reasoningEffort: ReasoningEffort;
 	}): Promise<Response> {
 		const {
 			messages,
@@ -340,7 +342,7 @@ export class GenerationService {
 			allowedDocumentIds,
 			allowedFolderIds,
 			activeTools,
-			extendedThinking,
+			reasoningEffort,
 		} = args;
 
 		const memoryLogId =
@@ -372,13 +374,15 @@ export class GenerationService {
 							model: llmHandler.languageModel,
 							messages: messages.filter(nonEmptyAssistantMessage),
 							allowSystemInMessages: true,
-							maxOutputTokens: extendedThinking
+							maxOutputTokens: REASONING_EFFORTS_WITH_EXTENDED_OUTPUT.includes(
+								reasoningEffort,
+							)
 								? MAX_OUTPUT_TOKENS_EXTENDED_THINKING
 								: MAX_OUTPUT_TOKENS,
 							temperature: LLM_PARAMETERS.temperature,
 							// Info: GLM 5.3 rejects "none" and always reasons; @ai-sdk/mistral
 							// sends "low" instead for these models.
-							reasoning: extendedThinking ? "high" : "none",
+							reasoning: reasoningEffort,
 							tools,
 							toolChoice,
 							stopWhen:

@@ -14,7 +14,7 @@ import { useFaviconStore } from "../../store/favicon-store.ts";
 import { useChatStreamingStore } from "../../store/use-chat-streaming-store.ts";
 import type { Span } from "@sentry/react";
 import { usePublicDocumentsStore } from "../../store/use-public-documents-store.ts";
-import { useExtendedThinkingStore } from "../../store/use-extended-thinking-store.ts";
+import { useReasoningEffortStore } from "../../store/use-reasoning-effort-store.ts";
 import { useLlmModelStore } from "../../store/use-llm-model-store.ts";
 import type { Trace, TraceTool } from "../../common.ts";
 
@@ -84,7 +84,7 @@ export async function getCompletion(
 	} = useChatsStore.getState();
 
 	// Read once up front, so toggling mid-stream cannot affect this turn.
-	const { isExtendedThinkingEnabled } = useExtendedThinkingStore.getState();
+	const { reasoningEffort } = useReasoningEffortStore.getState();
 	const { selectedLlmModel } = useLlmModelStore.getState();
 	const { getSelectedUserChatDocumentIds } = useUserDocumentStore.getState();
 	const { getSelectedUserChatFolderIds } = useUserFolderStore.getState();
@@ -157,7 +157,7 @@ export async function getCompletion(
 						(option) => activeToolsDict[option] ?? [],
 					),
 					llm_model: selectedLlmModel,
-					extended_thinking: isExtendedThinkingEnabled,
+					reasoning_effort: reasoningEffort,
 				}),
 			},
 		);
@@ -219,14 +219,14 @@ export async function getCompletion(
 		};
 
 		/**
-		 * The toggle controls how much the model reasons, not whether a trace is
+		 * The effort controls how much the model reasons, not whether a trace is
 		 * shown: GLM 5.3 always reasons (lowest effort "low"), while Mistral
 		 * models send no reasoning with "none". So a trace is kept whenever
-		 * thinking is enabled or the response actually carries reasoning.
+		 * reasoning was requested or the response actually carries reasoning.
 		 */
 		const getTracesToKeep = () => {
 			const hasReasoning = traces.some(({ type }) => type === "text");
-			return traces.length && (isExtendedThinkingEnabled || hasReasoning)
+			return traces.length && (reasoningEffort !== "none" || hasReasoning)
 				? { traces, durationSeconds: thinkingDurationSeconds }
 				: null;
 		};
