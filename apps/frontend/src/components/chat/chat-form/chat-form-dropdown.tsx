@@ -2,7 +2,7 @@ import { useId, useRef } from "react";
 import Content from "../../../content";
 import type { LlmModel } from "../../../common";
 import { useDropdownKeyboard } from "../../../hooks/use-dropdown-keyboard";
-import { SegmentedControl } from "../../primitives/segmented-control/segmented-control";
+import { StepSlider } from "../../primitives/slider/step-slider";
 import { config } from "../../../config";
 import {
 	REASONING_EFFORTS,
@@ -50,7 +50,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 	const titleId = useId();
 	const reasoningLabelId = useId();
 	const reasoningHintId = useId();
-	const reasoningRadioRef = useRef<HTMLButtonElement>(null);
+	const reasoningRadioRef = useRef<HTMLDivElement>(null);
 	const isExtendedThinkingAllowed = config.featureFlagExtendedThinkingAllowed;
 
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
@@ -59,7 +59,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 		onClose,
 		onItemClick: (item) => onItemClick(item.value),
 		navigateWithTab: true,
-		// The selected segment is the control's single Tab stop.
+		// The slider is the control's single Tab stop.
 		trailingItemRef: reasoningRadioRef,
 	});
 
@@ -136,7 +136,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 						>
 							{Content["chat.llmModel.reasoningEffort.label"]}
 						</div>
-						<SegmentedControl
+						<StepSlider
 							options={reasoningOptions.map((option) => ({
 								...option,
 								disabled: disableNoReasoning && option.value === "none",
@@ -145,7 +145,7 @@ export const ChatFormDropdown = <T extends LlmModel>({
 							onChange={onReasoningEffortChange}
 							ariaLabelledBy={reasoningLabelId}
 							ariaDescribedBy={reasoningHintId}
-							selectedRadioRef={reasoningRadioRef}
+							sliderRef={reasoningRadioRef}
 						/>
 						<p
 							id={reasoningHintId}

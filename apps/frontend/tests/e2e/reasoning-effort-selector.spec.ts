@@ -9,12 +9,17 @@ function openModelDropdown(page: Page, triggerLabel = fastModelLabel) {
 	return page.getByRole("button", { name: triggerLabel, exact: false }).click();
 }
 
-function reasoningGroup(page: Page) {
-	return page.getByRole("radiogroup", { name: "Denkaufwand" });
+function slider(page: Page) {
+	return page.getByRole("slider", { name: "Denkaufwand" });
 }
 
-function radio(page: Page, name: string) {
-	return reasoningGroup(page).getByRole("radio", { name, exact: true });
+/** Clicks the step with the given label on the slider. */
+function selectStep(page: Page, name: string) {
+	return slider(page).getByText(name, { exact: true }).click();
+}
+
+function expectLevel(page: Page, name: string) {
+	return expect(slider(page)).toHaveAttribute("aria-valuetext", name);
 }
 
 /** Reads `reasoning_effort` off the next completion request the page makes. */
@@ -24,22 +29,23 @@ function captureReasoningEffort(page: Page): Promise<string> {
 		.then((request) => request.postDataJSON().reasoning_effort as string);
 }
 
-testWithMockedLlm.describe("Reasoning effort selector", () => {
+testWithMockedLlm.describe("Reasoning effort slider", () => {
 	testWithMockedLlm(
-		"is a radiogroup with four levels and defaults to Aus",
+		"is a slider with four steps and defaults to Aus",
 		async ({ page }) => {
 			await page.goto("/");
 			await openModelDropdown(page);
 
-			await expect(reasoningGroup(page)).toBeVisible();
-			await expect(reasoningGroup(page).getByRole("radio")).toHaveCount(4);
-			await expect(radio(page, "Aus")).toBeChecked();
+			await expect(slider(page)).toBeVisible();
+			await expect(slider(page)).toHaveAttribute("aria-valuemin", "0");
+			await expect(slider(page)).toHaveAttribute("aria-valuemax", "3");
+			await expectLevel(page, "Aus");
 			await expect(
 				page.getByText("Antwortet direkt, ohne vorher nachzudenken."),
 			).toBeVisible();
 
-			await radio(page, "Mittel").click();
-			await expect(radio(page, "Mittel")).toBeChecked();
+			await selectStep(page, "Mittel");
+			await expectLevel(page, "Mittel");
 			await expect(
 				page.getByText("Gründliches Planen für die meisten Aufgaben."),
 			).toBeVisible();
@@ -51,7 +57,7 @@ testWithMockedLlm.describe("Reasoning effort selector", () => {
 		async ({ page }) => {
 			await page.goto("/");
 			await openModelDropdown(page);
-			await radio(page, "Hoch").click();
+			await selectStep(page, "Hoch");
 			await page.keyboard.press("Escape");
 
 			await expect(
@@ -65,16 +71,16 @@ testWithMockedLlm.describe("Reasoning effort selector", () => {
 		async ({ page }) => {
 			await page.goto("/");
 			await openModelDropdown(page);
-			await radio(page, "Niedrig").click();
+			await selectStep(page, "Niedrig");
 
 			// Picking a model closes the dropdown, so reopen it.
 			await page.getByRole("option", { name: preciseModelOptionName }).click();
 			await openModelDropdown(page, "Ausgewogen");
-			await expect(radio(page, "Niedrig")).toBeChecked();
+			await expectLevel(page, "Niedrig");
 
 			await page.reload();
 			await openModelDropdown(page, "Ausgewogen");
-			await expect(radio(page, "Niedrig")).toBeChecked();
+			await expectLevel(page, "Niedrig");
 		},
 	);
 
@@ -93,7 +99,7 @@ testWithMockedLlm.describe("Reasoning effort selector", () => {
 			await page.goto("/");
 			await openModelDropdown(page, "Schnell · Hoch");
 
-			await expect(radio(page, "Hoch")).toBeChecked();
+			await expectLevel(page, "Hoch");
 		},
 	);
 
@@ -109,7 +115,7 @@ testWithMockedLlm.describe("Reasoning effort selector", () => {
 			expect(await first).toBe("none");
 
 			await openModelDropdown(page);
-			await radio(page, "Mittel").click();
+			await selectStep(page, "Mittel");
 			await page.keyboard.press("Escape");
 
 			const second = captureReasoningEffort(page);
@@ -120,39 +126,44 @@ testWithMockedLlm.describe("Reasoning effort selector", () => {
 	);
 
 	testWithMockedLlm(
-		"is operated with ArrowLeft/Right and is a single Tab stop",
+		"is operated with the arrow keys and is a single Tab stop",
 		async ({ page }) => {
 			await page.goto("/");
 			await openModelDropdown(page);
 
-			// Opening focuses the first option; ArrowUp wraps to the selected radio.
+			// Opening focuses the first option; ArrowUp wraps to the slider.
 			await page.keyboard.press("ArrowUp");
-			await expect(radio(page, "Aus")).toBeFocused();
+			await expect(slider(page)).toBeFocused();
 
 			await page.keyboard.press("ArrowRight");
-			await expect(radio(page, "Niedrig")).toBeChecked();
-			await expect(radio(page, "Niedrig")).toBeFocused();
+			await expectLevel(page, "Niedrig");
+			await expect(slider(page)).toBeFocused();
 
 			await page.keyboard.press("ArrowRight");
 			await page.keyboard.press("ArrowRight");
-			await expect(radio(page, "Hoch")).toBeFocused();
+			await expectLevel(page, "Hoch");
 
 			await page.keyboard.press("ArrowLeft");
-			await expect(radio(page, "Mittel")).toBeChecked();
+			await expectLevel(page, "Mittel");
 
-			// Only the selected segment is tabbable.
-			await expect(radio(page, "Mittel")).toHaveAttribute("tabindex", "0");
-			await expect(radio(page, "Hoch")).toHaveAttribute("tabindex", "-1");
+			await page.keyboard.press("Home");
+			await expectLevel(page, "Aus");
+			await page.keyboard.press("End");
+			await expectLevel(page, "Hoch");
+
+			// Exactly one slider, and it is the only tabbable part of the control.
+			await expect(page.getByRole("slider")).toHaveCount(1);
+			await expect(slider(page)).toHaveAttribute("tabindex", "0");
 
 			// ArrowUp/Down still move between the dropdown rows.
 			await page.keyboard.press("ArrowUp");
 			await expect(page.getByRole("option").last()).toBeFocused();
 			await page.keyboard.press("ArrowDown");
-			await expect(radio(page, "Mittel")).toBeFocused();
+			await expect(slider(page)).toBeFocused();
 
 			// Escape still closes the dropdown.
 			await page.keyboard.press("Escape");
-			await expect(reasoningGroup(page)).toBeHidden();
+			await expect(slider(page)).toBeHidden();
 		},
 	);
 });
