@@ -322,6 +322,22 @@ describe("POST /documents/process – captureError is called for every error cas
 			expect(actualResponse.status).toBe(200);
 			expect(await getStatuses(actualResponse)).toContain("processing");
 		});
+
+		it("lets an upload above the 4 MB default body limit through to processing", async () => {
+			config.fileUploadLimitMb = 8;
+			const givenFile = new File(
+				[new Uint8Array(5 * MB)],
+				"some-document.pdf",
+				{ type: "application/pdf" },
+			);
+
+			const actualResponse = await app.fetch(
+				createRequest(VALID_PDF_BODY, givenFile),
+			);
+
+			expect(actualResponse.status).toBe(200);
+			expect(await getStatuses(actualResponse)).toContain("processing");
+		});
 	});
 
 	it("emits failed.format for an unsupported mime type", async () => {
