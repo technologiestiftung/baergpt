@@ -7,7 +7,11 @@
 				{ "key": "X-Frame-Options", "value": "DENY" },
 				{
 					"key": "Content-Security-Policy",
-					"value": "frame-ancestors 'none'; frame-src 'self' blob: https://player.vimeo.com https://datawrapper.dwcdn.net; img-src 'self' data: blob: https://logos.citylab-berlin.org"
+					"value": "frame-ancestors 'none'; frame-src 'self' blob: https://player.vimeo.com https://datawrapper.dwcdn.net; img-src 'self' data: blob: https://logos.citylab-berlin.org https://stats.ts.berlin"
+				},
+				{
+					"key": "Content-Security-Policy-Report-Only",
+					"value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://stats.ts.berlin; style-src 'self'; img-src 'self' data: blob: https://logos.citylab-berlin.org https://stats.ts.berlin; font-src 'self'; connect-src 'self' blob: data: https://baergpt-dns.stackit.rocks https://baergpt-staging.stackit.rocks https://api.baergpt.berlin https://api.baergpt-ske.stackit.rocks https://api-staging.baergpt-ske.stackit.rocks https://api-sandbox.baergpt-ske.stackit.rocks https://baer-gpt-v2-api-database.onrender.com https://technologiestiftung.bugsink.com https://stats.ts.berlin https://raw.githubusercontent.com/technologiestiftung/baergpt-release-update/ https://api.github.com/repos/technologiestiftung/baergpt-release-update/; frame-src 'self' blob: https://player.vimeo.com https://datawrapper.dwcdn.net; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 				}
 			]
 		}

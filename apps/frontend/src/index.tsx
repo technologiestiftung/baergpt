@@ -15,6 +15,9 @@ import { RegistrationError } from "./routes/registration-error";
 import { TermsOfUsePage } from "./routes/terms-of-use";
 import { AccessibilityStatementPage } from "./routes/accessibility-statement";
 import { sentryCreateBrowserRouter } from "./monitoring/sentry.ts";
+import { initMatomo } from "./analytics/matomo.ts";
+
+initMatomo();
 
 const router = sentryCreateBrowserRouter([
 	{
