@@ -1,3 +1,4 @@
+import { ReadableStream } from "node:stream/web";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import app from "../../index";
 
@@ -253,6 +254,74 @@ describe("POST /documents/process – captureError is called for every error cas
 		} finally {
 			config.fileUploadLimitMb = originalLimit;
 		}
+	});
+
+	describe("request body limit", () => {
+		const MB = 1024 * 1024;
+		const GIVEN_OVERSIZED_BYTES = 16 * MB;
+		let originalLimit: number | undefined;
+
+		beforeEach(() => {
+			originalLimit = config.fileUploadLimitMb;
+			config.fileUploadLimitMb = 1;
+		});
+
+		afterEach(() => {
+			config.fileUploadLimitMb = originalLimit;
+		});
+
+		it("answers 413 without reading the body when Content-Length exceeds the limit", async () => {
+			const givenRequest = new Request(BASE_URL, {
+				method: "POST",
+				headers: {
+					Authorization: "Bearer mock-token",
+					"Content-Type": "multipart/form-data; boundary=given-boundary",
+					"Content-Length": String(GIVEN_OVERSIZED_BYTES),
+				},
+				body: "irrelevant",
+			});
+
+			const actualResponse = await app.fetch(givenRequest);
+
+			expect(actualResponse.status).toBe(413);
+			expect(givenRequest.bodyUsed).toBe(false);
+		});
+
+		it("answers 413 and stops reading when a body without Content-Length exceeds the limit", async () => {
+			const givenChunk = new Uint8Array(64 * 1024);
+			let actualBytesRead = 0;
+			const givenBody = new ReadableStream<Uint8Array>({
+				pull(controller) {
+					if (actualBytesRead >= GIVEN_OVERSIZED_BYTES) {
+						controller.close();
+						return;
+					}
+					actualBytesRead += givenChunk.length;
+					controller.enqueue(givenChunk);
+				},
+			});
+			const givenRequest = new Request(BASE_URL, {
+				method: "POST",
+				headers: {
+					Authorization: "Bearer mock-token",
+					"Content-Type": "multipart/form-data; boundary=given-boundary",
+				},
+				body: givenBody,
+				duplex: "half",
+			});
+
+			const actualResponse = await app.fetch(givenRequest);
+
+			expect(actualResponse.status).toBe(413);
+			expect(actualBytesRead).toBeLessThan(GIVEN_OVERSIZED_BYTES);
+		});
+
+		it("lets an upload that fits the limit through to processing", async () => {
+			const actualResponse = await app.fetch(createRequest(VALID_PDF_BODY));
+
+			expect(actualResponse.status).toBe(200);
+			expect(await getStatuses(actualResponse)).toContain("processing");
+		});
 	});
 
 	it("emits failed.format for an unsupported mime type", async () => {

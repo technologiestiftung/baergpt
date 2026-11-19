@@ -1,5 +1,6 @@
 import crypto from "crypto";
-import { Hono, type Context } from "hono";
+import { Hono, type Context, type MiddlewareHandler } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { streamSSE } from "hono/streaming";
 import { UserScopedDbService } from "../services/db-service/user-scoped-db-service";
 import { EmbeddingService } from "../services/embedding-service";
@@ -18,7 +19,18 @@ import { config } from "../config";
 
 const documents = new Hono();
 
-documents.post("/process", async (c: Context) =>
+// Besides the file, the body carries the multipart boundaries and the metadata part.
+const MULTIPART_OVERHEAD_BYTES = 1024 * 1024;
+
+// parseBody() buffers the whole request in memory, so an oversized one has to be refused before it runs.
+const limitUploadBody: MiddlewareHandler = (c, next) =>
+	bodyLimit({
+		maxSize: config.fileUploadLimitMb * 1024 * 1024 + MULTIPART_OVERHEAD_BYTES,
+		onError: (errorContext) =>
+			errorContext.json({ error: "Payload Too Large" }, 413),
+	})(c, next);
+
+documents.post("/process", limitUploadBody, async (c: Context) =>
 	streamSSE(c, async (stream) => {
 		const userClient = c.get("UserScopedDbClient");
 		const userScopedDbService = new UserScopedDbService(userClient);

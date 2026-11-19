@@ -98,6 +98,19 @@ describe("Document Process Security Tests", () => {
 		]);
 	});
 
+	describe("Authentication", () => {
+		it("should reject a request without a token before reading its body", async () => {
+			const form = new FormData();
+			form.append("file", pdfFile());
+			const request = new Request(PROCESS_URL, { method: "POST", body: form });
+
+			const response = await app.fetch(request);
+
+			expect(response.status).toBe(401);
+			expect(request.bodyUsed).toBe(false);
+		});
+	});
+
 	describe("Request Validation", () => {
 		it("should reject requests with invalid sourceType", async () => {
 			const metadata = {
