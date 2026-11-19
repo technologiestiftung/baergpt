@@ -3,7 +3,10 @@ import { Content } from "../../../content";
 import { ChatButton } from "../../primitives/buttons/chat-button";
 import { generateSpeech } from "../../../api/audio/generate-speech.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
-import { markdownToSpeechText } from "./markdown-to-speech-text.ts";
+import {
+	markdownToSpeechText,
+	splitSpeechText,
+} from "./markdown-to-speech-text.ts";
 
 type ReadAloudStatus = "idle" | "loading" | "playing";
 
@@ -65,6 +68,33 @@ const SpinnerIcon = () => (
 	</svg>
 );
 
+/** Resolves when the audio ends or playback is stopped; rejects on error. */
+function waitForEnd(audio: HTMLAudioElement, signal: AbortSignal) {
+	return new Promise<void>((resolve, reject) => {
+		if (signal.aborted) {
+			resolve();
+			return;
+		}
+		const done = () => {
+			audio.onended = null;
+			audio.onerror = null;
+			signal.removeEventListener("abort", done);
+		};
+		audio.onended = () => {
+			done();
+			resolve();
+		};
+		audio.onerror = () => {
+			done();
+			reject(new Error("Audio playback failed"));
+		};
+		signal.addEventListener("abort", () => {
+			done();
+			resolve();
+		});
+	});
+}
+
 const labels: Record<ReadAloudStatus, string> = {
 	idle: Content["chat.readAloudButton.label"],
 	loading: Content["chat.readAloudButton.label.loading"],
@@ -90,23 +120,23 @@ export const ReadAloudButton: React.FC<ReadAloudButtonProps> = ({
 	const stop = () => stopRef.current?.();
 
 	const play = async () => {
-		const text = markdownToSpeechText(generatedAnswer);
-		if (!text) {
+		const chunks = splitSpeechText(markdownToSpeechText(generatedAnswer));
+		if (chunks.length === 0) {
 			return;
 		}
 
 		stopActivePlayback?.();
 
 		const controller = new AbortController();
-		let audio: HTMLAudioElement | null = null;
-		let objectUrl: string | null = null;
+		// One element for all chunks keeps the browser's autoplay permission.
+		const audio = new Audio();
+		const objectUrls = new Set<string>();
 
 		const cleanUp = () => {
 			controller.abort();
-			audio?.pause();
-			if (objectUrl) {
-				URL.revokeObjectURL(objectUrl);
-			}
+			audio.pause();
+			objectUrls.forEach((url) => URL.revokeObjectURL(url));
+			objectUrls.clear();
 			if (stopActivePlayback === cleanUp) {
 				stopActivePlayback = null;
 			}
@@ -120,17 +150,35 @@ export const ReadAloudButton: React.FC<ReadAloudButtonProps> = ({
 		stopActivePlayback = cleanUp;
 		setStatus("loading");
 
-		try {
+		const fetchChunk = async (text: string) => {
 			const blob = await generateSpeech(text, controller.signal);
-			if (controller.signal.aborted) {
-				return;
+			const url = URL.createObjectURL(blob);
+			objectUrls.add(url);
+			return url;
+		};
+
+		try {
+			let next: Promise<string> | null = fetchChunk(chunks[0]);
+			for (let index = 0; index < chunks.length && next; index++) {
+				const url: string = await next;
+				if (controller.signal.aborted) {
+					return;
+				}
+				// Prefetch the next chunk while this one plays.
+				next = index + 1 < chunks.length ? fetchChunk(chunks[index + 1]) : null;
+				next?.catch(() => {}); // Handled when awaited.
+
+				audio.src = url;
+				await audio.play();
+				setStatus("playing");
+				await waitForEnd(audio, controller.signal);
+				URL.revokeObjectURL(url);
+				objectUrls.delete(url);
+				if (controller.signal.aborted) {
+					return;
+				}
 			}
-			objectUrl = URL.createObjectURL(blob);
-			audio = new Audio(objectUrl);
-			audio.onended = cleanUp;
-			audio.onerror = cleanUp;
-			await audio.play();
-			setStatus("playing");
+			cleanUp();
 		} catch (error) {
 			if (!controller.signal.aborted) {
 				useErrorStore.getState().handleError(error);
