@@ -4,6 +4,12 @@ geo $anon_egress {
     include /etc/nginx/anon-egress-blocklist.conf;
 }
 
+# Envoy's Basic challenge uses the request URL as realm, so browsers re-prompt on every new path.
+map $upstream_http_www_authenticate $basic_auth_challenge {
+    default $upstream_http_www_authenticate;
+    "~^Basic " 'Basic realm="Supabase Studio"';
+}
+
 server {
     listen 80;
     listen [::]:80 default_server;
@@ -25,6 +31,7 @@ server {
     add_header Content-Security-Policy "frame-ancestors 'none'" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Strict-Transport-Security "max-age=86400; includeSubDomains" always;
+    add_header WWW-Authenticate $basic_auth_challenge always;
 
     if ($anon_egress) {
         return 403;
@@ -70,6 +77,7 @@ server {
 
     location / {
         proxy_pass http://127.0.0.1:8000;
+        proxy_hide_header WWW-Authenticate;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
