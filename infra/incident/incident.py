@@ -71,6 +71,7 @@ FILTER_OP = re.compile(r'^(?:not\.)?(?:eq|neq|gt|gte|lt|lte|like|ilike|is|in|cs|
 SNAKE_IDENT = re.compile(r'^[a-z]+(_[a-z0-9]+)+$')
 SAFE_KEY = re.compile(r'^[A-Za-z0-9_.\-]{1,40}$')
 SAFE_TOKEN = re.compile(r'^[A-Za-z0-9._\-]{1,30}$')
+CREDENTIAL_KEY = re.compile(r'token|secret|password|authorization|cookie|api_?key', re.I)
 
 TOOL_UAS = [(n, re.compile(p, re.I)) for n, p in [
     ("curl", r"curl/|libcurl"), ("wget", r"wget"), ("python-requests", r"python-requests"),
@@ -157,16 +158,15 @@ class Scrubber:
 
     def storage_path(self, path):
         segs = path.split("/")[3:]
-        kept = 0
-        while kept < len(segs) and segs[kept] in STORAGE_WORDS:
-            kept += 1
-        if kept < len(segs) and BUCKET.match(segs[kept]) and "resumable" not in segs[:kept]:
-            kept += 1
+        kept = storage_prefix(segs)
         out = segs[:kept]
         for seg in segs[kept:]:
             name = urllib.parse.unquote(seg)
-            if not name or UUID.fullmatch(name):
+            if not name:
                 out.append(seg)
+            elif UUID.fullmatch(name):
+                # Decoded, or the identifier pass would miss an id sent as 123e4567%2De89b….
+                out.append(name)
             else:
                 ext = FILE_EXT.search(name)
                 out.append("file_" + self.tok(name) + (ext.group(0).lower() if ext else ""))
@@ -352,6 +352,16 @@ def parse_record(labels, line):
             "target": rec["path"], "status": rec["status"], "ua": rec["ua"] or "", "event": event}
 
 
+def storage_prefix(segs):
+    """How many of the segments after /storage/v1/ are endpoint words and the bucket; the rest name a file."""
+    kept = 0
+    while kept < len(segs) and segs[kept] in STORAGE_WORDS:
+        kept += 1
+    if kept < len(segs) and BUCKET.match(segs[kept]) and "resumable" not in segs[:kept]:
+        kept += 1
+    return kept
+
+
 def norm_segment(seg):
     dec = urllib.parse.unquote(seg)
     if "@" in dec:
@@ -379,10 +389,13 @@ def path_template(target):
     path, _, query = target.partition("?")
     if "://" in path:
         path = urllib.parse.urlsplit(path).path or "/"
-    segs = [norm_segment(s) for s in path.split("/") if s]
-    if segs[:3] == ["storage", "v1", "object"] and len(segs) > 5:
-        segs = segs[:5] + [":path"]
-    tpl = "/" + "/".join(segs)
+    raw = [s for s in path.split("/") if s]
+    segs = [norm_segment(s) for s in raw]
+    if raw[:2] == ["storage", "v1"]:
+        kept = 2 + storage_prefix(raw[2:])
+        segs = segs[:kept] + ([":path"] if kept < len(raw) else [])
+    # A decoded segment can hold terminal control sequences (%1B%5B2J clears the screen).
+    tpl = "".join(c if c.isprintable() else c.encode("unicode_escape").decode() for c in "/" + "/".join(segs))
     keys = sorted({k if SAFE_KEY.match(k) else ":k"
                    for k, _ in urllib.parse.parse_qsl(query, keep_blank_values=True)})
     return tpl + ("?" + "&".join(keys) if keys else "")
@@ -504,8 +517,16 @@ def write_private(path, text, append=False):
         fh.write(text)
 
 
+def without_credentials(obj):
+    if isinstance(obj, dict):
+        return {k: "(removed)" if CREDENTIAL_KEY.search(k) else without_credentials(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [without_credentials(v) for v in obj]
+    return obj
+
+
 def auth_record(line):
-    """GoTrue's audit and login lines as a dict, else None. Fixed fields, apart from the actor's name."""
+    """GoTrue's audit and login lines as a dict, else None, without the actor's name and credential fields."""
     if not line.startswith("{"):
         return None
     try:
@@ -520,7 +541,7 @@ def auth_record(line):
     for event in events:
         if "actor_name" in event:
             event["actor_name"] = "(removed)"
-    return obj
+    return without_credentials(obj)
 
 
 def auth_actor(record):
@@ -572,6 +593,16 @@ def record(out, run_dir, title, rows):
             d.rmdir()
 
 
+def checksum_copied(out):
+    """Add the files copied into raw/ by hand to SHA256SUMS; only alert and pull rebuild it."""
+    sums, raw = out / "SHA256SUMS", out / "raw"
+    listed = {row.split("  ", 1)[1] for row in sums.read_text().splitlines() if "  " in row} if sums.exists() else set()
+    new = [p for p in sorted(raw.rglob("*")) if p.is_file() and p.relative_to(raw).as_posix() not in listed]
+    if new:
+        write_private(sums, "".join(f"{sha256(p)}  {p.relative_to(raw).as_posix()}\n" for p in new), append=True)
+        note(f"added {len(new)} files to SHA256SUMS")
+
+
 def sha256(path):
     h = hashlib.sha256()
     with open(path, "rb") as fh:
@@ -580,11 +611,15 @@ def sha256(path):
     return h.hexdigest()
 
 
+def is_jsonl(path):
+    return path.name.removesuffix(".gz").endswith(".jsonl")
+
+
 def read_evidence(path):
-    """Yield (ts_ns or None, labels, line) from a pulled .jsonl or a plain (optionally gzipped) log."""
+    """Yield (ts_ns or None, labels, line) from a pulled .jsonl or a plain log, gzipped or not."""
     opener = gzip.open if path.suffix == ".gz" else open
     with opener(path, "rt", encoding="utf-8", errors="replace") as fh:
-        if path.suffix == ".jsonl":
+        if is_jsonl(path):
             for raw in fh:
                 row = json.loads(raw)
                 yield row["ts"], row["labels"], row["line"]
@@ -683,6 +718,7 @@ def cmd_export(a, start, end):
     files = sorted(p for p in (out / "raw").rglob("*") if p.is_file())
     if not files:
         die(f"nothing in {out}/raw: run pull first, and copy the nginx access log there")
+    checksum_copied(out)
     dest, scrub = export_dir(a.dest, out), Scrubber.load()
     print("lines · of them readable · file")
     for path in files:
@@ -698,7 +734,7 @@ def cmd_export(a, start, end):
         with os.fdopen(fd, "w") as fh:
             for ts, labels, line in read_evidence(path):
                 text, is_kept = scrubbed_line(scrub, labels, line)
-                if path.suffix == ".jsonl":
+                if is_jsonl(path):
                     text = json.dumps({"ts": ts, "labels": scrub.walk(labels), "line": text}, ensure_ascii=False)
                 fh.write(text + "\n")
                 total, kept = total + 1, kept + is_kept
@@ -712,11 +748,13 @@ def needle_patterns(a):
     pats = []
     for ip in a.ip or []:
         try:
-            ipaddress.ip_address(ip)
+            addr = ipaddress.ip_address(ip)
         except ValueError:
             die(f"--ip {ip!r} is not an address")
         edge = (r"(?<![\d.])", r"(?!\d|\.\d)") if "." in ip else (r"(?<![0-9a-f:])", r"(?![0-9a-f:])")
-        pats.append(re.compile(edge[0] + re.escape(ip) + edge[1], re.I))
+        # Logs write IPv6 in its short form (2001:db8::1), whatever spelling was typed.
+        for text in sorted({ip, addr.compressed}):
+            pats.append(re.compile(edge[0] + re.escape(text) + edge[1], re.I))
     pats += [re.compile(re.escape(v), re.I) for v in (a.user or []) + (a.ua or []) + (a.match or [])]
     if not pats:
         die("give at least one of --ip, --user, --ua, --match")
@@ -728,6 +766,7 @@ def cmd_actor(a, start, end):
     files = sorted(p for p in (out / "raw").rglob("*") if p.is_file() and "-alert-" not in p.parent.name)
     if not files:
         die(f"nothing in {out}/raw: run pull first, and copy the nginx access log there")
+    checksum_copied(out)
     pats, scrub = needle_patterns(a), Scrubber.load()
     hits, first_file, preflights = [], {}, 0
     seen_with = {"addresses": Counter(), "accounts": Counter(),

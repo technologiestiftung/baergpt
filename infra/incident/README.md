@@ -54,7 +54,8 @@ With the nginx log copied, a gateway request from the pulled window appears twic
 
 Kong's log records the proxy's address, not the client's. To follow a client through
 Supabase, copy `/var/log/nginx/access.log*` from the Supabase VM into the incident's `raw/`
-folder; `actor` reads plain and gzipped files there.
+folder; `actor` reads plain and gzipped files there. `actor` and `export` add files copied this
+way to `SHA256SUMS` when they start.
 
 **4. Make a scrubbed copy to work on outside the incident folder.**
 
@@ -73,12 +74,12 @@ if git ignores it.
 repository is refused). Give every incident its own name, e.g. `--incident 2026-11-18-session`;
 without one, everything from the same day lands in one folder.
 
-| Path          | Content                                                                 |
-| ------------- | ----------------------------------------------------------------------- |
-| `raw/`        | lines as logged, one JSON object per line (`ts`, `labels`, `line`)      |
-| `scrubbed/`   | the same files with identifiers replaced                                |
-| `manifest.md` | one section per run: window, queries, line counts, first and last time  |
-| `SHA256SUMS`  | checksums of everything in `raw/`; verify with `sha256sum -c` in `raw/` |
+| Path          | Content                                                                                 |
+| ------------- | --------------------------------------------------------------------------------------- |
+| `raw/`        | lines as logged, one JSON object per line (`ts`, `labels`, `line`)                      |
+| `scrubbed/`   | the same files with identifiers replaced                                                |
+| `manifest.md` | one section per run: window, queries, line counts, first and last time                  |
+| `SHA256SUMS`  | checksums of everything in `raw/`; verify with `(cd raw && sha256sum -c ../SHA256SUMS)` |
 
 Every `alert` and `pull` run writes to a new subfolder named after the time it ran, such as
 `raw/20261118T143002Z-pull/`, so a later run never overwrites an earlier one. A stream or rule
