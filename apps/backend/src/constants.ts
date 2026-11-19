@@ -34,6 +34,14 @@ export const EXPERIMENTAL_MAX_TOOL_CALL_STEPS = 30;
  */
 export const MAX_OUTPUT_TOKENS = 8192;
 export const MAX_OUTPUT_TOKENS_EXTENDED_THINKING = 24_576;
+/**
+ * "low" keeps the normal cap: it reasons briefly, and GLM 5.3 (which always
+ * reasons, at "low" at minimum) already runs within it with reasoning off.
+ */
+export const REASONING_EFFORTS_WITH_EXTENDED_OUTPUT: readonly string[] = [
+	"medium",
+	"high",
+];
 
 export const allowedSourceTypes = [
 	"personal_document",

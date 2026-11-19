@@ -114,6 +114,56 @@ describe("POST /llm/just-chatting active_tools validation", () => {
 		expect(body).toContain("mock reasoning");
 	});
 
+	it("rejects an unknown reasoning_effort with 400", async () => {
+		const res = await postJustChatting({
+			llm_model: "fast",
+			messages: [{ role: "user", content: "hallo" }],
+			reasoning_effort: "extreme",
+		});
+
+		expect(res.status).toBe(400);
+		const responseBody = (await res.json()) as { error?: string };
+		expect(responseBody.error).toContain("reasoning_effort must be one of");
+	});
+
+	it.each(["low", "medium", "high"])(
+		"streams reasoning parts for reasoning_effort %s",
+		async (reasoningEffort) => {
+			const res = await postJustChatting({
+				llm_model: "fast",
+				messages: [{ role: "user", content: "hallo" }],
+				reasoning_effort: reasoningEffort,
+			});
+
+			expect(res.status).toBe(200);
+			const body = await res.text();
+			expect(body).toContain('"type":"reasoning-delta"');
+		},
+	);
+
+	it('streams no reasoning parts for reasoning_effort "none"', async () => {
+		const res = await postJustChatting({
+			llm_model: "fast",
+			messages: [{ role: "user", content: "hallo" }],
+			reasoning_effort: "none",
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.text()).not.toContain("reasoning");
+	});
+
+	it("lets reasoning_effort win over the legacy extended_thinking", async () => {
+		const res = await postJustChatting({
+			llm_model: "fast",
+			messages: [{ role: "user", content: "hallo" }],
+			extended_thinking: true,
+			reasoning_effort: "none",
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.text()).not.toContain("reasoning");
+	});
+
 	it("streams no reasoning parts when extended_thinking is omitted", async () => {
 		const res = await postJustChatting({
 			llm_model: "fast",

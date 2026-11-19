@@ -1138,10 +1138,21 @@ export const Content = {
 	"chat.llmModel.dropdown.li3.labelExtended": "GLM 5.3 (präzise)",
 	"chat.llmModel.dropdown.li3.description": "Für komplexe Analysen",
 	"chat.llmModel.dropdown.li3.ariaLabel": "GLM 5.3 (präzise) auswählen",
-	"chat.llmModel.dropdown.li4.label": "Länger nachdenken",
-	"chat.llmModel.dropdown.li4.description":
-		"BärGPT plant komplexe Antworten in mehreren Schritten, bevor es antwortet. ",
-	"chat.llmModel.dropdown.li4.ariaLabel": "Länger nachdenken auswählen",
+	"chat.llmModel.reasoningEffort.label": "Denkaufwand",
+	"chat.llmModel.reasoningEffort.none": "Aus",
+	"chat.llmModel.reasoningEffort.low": "Niedrig",
+	"chat.llmModel.reasoningEffort.medium": "Mittel",
+	"chat.llmModel.reasoningEffort.high": "Hoch",
+	"chat.llmModel.reasoningEffort.none.hint":
+		"Antwortet direkt, ohne vorher nachzudenken.",
+	"chat.llmModel.reasoningEffort.low.hint":
+		"Kurzes Überlegen für einfache Aufgaben.",
+	"chat.llmModel.reasoningEffort.medium.hint":
+		"Gründliches Planen für die meisten Aufgaben.",
+	"chat.llmModel.reasoningEffort.high.hint":
+		"Plant komplexe Antworten in mehreren Schritten.",
+	"chat.llmModel.reasoningEffort.alwaysReasons.hint":
+		"GLM 5.3 denkt immer nach, „Aus“ ist nicht verfügbar.",
 
 	"chat.copyToClipboardButton.label": "Kopieren",
 	"chat.copyToClipboardButton.label.copied": "Kopiert",
