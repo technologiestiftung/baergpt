@@ -53,6 +53,9 @@ ALTER TABLE ONLY "public"."documents"
 ADD CONSTRAINT "documents_access_group_id_fkey" FOREIGN KEY ("access_group_id") REFERENCES "public"."access_groups" ("id") ON DELETE SET NULL;
 
 ALTER TABLE ONLY "public"."documents"
+ADD CONSTRAINT "documents_folder_id_fkey" FOREIGN KEY ("folder_id") REFERENCES "public"."document_folders" ("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."documents"
 ADD CONSTRAINT "documents_owner_user_id_fkey" FOREIGN KEY ("owned_by_user_id") REFERENCES "auth"."users" ("id") ON DELETE CASCADE;
 
 ALTER TABLE ONLY "public"."documents"

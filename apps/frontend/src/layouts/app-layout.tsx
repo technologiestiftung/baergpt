@@ -2,6 +2,7 @@ import React from "react";
 import { Main } from "../components/main";
 import { Tooltip } from "../components/primitives/tooltip/tooltip.tsx";
 import { useSessionRedirect } from "../hooks/use-session-redirect.tsx";
+import { useRefreshOnTabFocus } from "../hooks/use-refresh-on-tab-focus.ts";
 import { ToastContainer } from "../components/primitives/toasts/toast-container.tsx";
 
 interface AppLayoutProps {
@@ -10,6 +11,7 @@ interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 	useSessionRedirect();
+	useRefreshOnTabFocus();
 
 	return (
 		<div className="flex font-arial text-dunkelblau-200 lining-nums proportional-nums">

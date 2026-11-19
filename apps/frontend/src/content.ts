@@ -820,6 +820,8 @@ export const Content = {
 	"profile.button.mobile": "Profileinstellungen",
 	//toast
 	"toast.close.ariaLabel": "Meldung schließen",
+	"toast.upload.folderMissing":
+		"Ordner nicht mehr vorhanden. Datei im Hauptordner gespeichert.",
 
 	/* -------------------- Icons Img Alt -------------------- */
 	"bucketIcon.imgAlt": "Mülleimer-Icon",

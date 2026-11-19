@@ -595,11 +595,10 @@ export abstract class BaseContentDbService {
 			.single();
 
 		if (error) {
-			// PGRST116 = no rows returned (folder doesn't exist or doesn't belong to user)
-			if (error.code === "PGRST116") {
-				return false;
-			}
-			throw error;
+			// Any failure to confirm ownership (not found, deleted, or a transient
+			// DB error) is treated as "not owned" so the caller falls back to the
+			// main collection instead of hard-failing the whole request.
+			return false;
 		}
 
 		return data !== null;

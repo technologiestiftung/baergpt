@@ -424,6 +424,13 @@ export type Database = {
 						referencedRelation: "access_groups";
 						referencedColumns: ["id"];
 					},
+					{
+						foreignKeyName: "documents_folder_id_fkey";
+						columns: ["folder_id"];
+						isOneToOne: false;
+						referencedRelation: "document_folders";
+						referencedColumns: ["id"];
+					},
 				];
 			};
 			favorite_documents: {

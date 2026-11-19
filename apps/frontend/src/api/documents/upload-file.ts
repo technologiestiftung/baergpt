@@ -6,6 +6,74 @@ import {
 } from "../../store/use-file-uploads-store.ts";
 import { captureError } from "../../monitoring/capture-error.ts";
 import { config } from "../../config.ts";
+import { useToastStore } from "../../store/use-toast-store.ts";
+import Content from "../../content.ts";
+
+function notifyFolderMissing() {
+	useToastStore.getState().addInfo(Content["toast.upload.folderMissing"]);
+}
+
+type ProcessEvent = {
+	status?: unknown;
+	folderFallback?: boolean;
+	existingFileName?: string;
+	documentId?: number;
+};
+
+function parseSseLine(line: string): ProcessEvent | undefined {
+	const prefix = "data: ";
+	if (!line.startsWith(prefix)) {
+		return undefined;
+	}
+
+	const payload = line.slice(prefix.length).trim();
+	if (!payload) {
+		return undefined;
+	}
+
+	try {
+		return JSON.parse(payload) as ProcessEvent;
+	} catch {
+		return undefined; // ignore anything unparseable, it can be just a heartbeat
+	}
+}
+
+function handleProcessEvent(
+	event: ProcessEvent,
+	state: { hasNotifiedFolderMissing: boolean; documentId: number | null },
+	updateFileUploadStatusCallback: (
+		status: UploadStatusKeys,
+		existingFileName?: string,
+	) => void,
+) {
+	const { status } = event;
+
+	if (
+		event.folderFallback === true &&
+		status === "successful" &&
+		!state.hasNotifiedFolderMissing
+	) {
+		state.hasNotifiedFolderMissing = true;
+		notifyFolderMissing();
+	}
+
+	if (typeof status !== "string" || !(status in UPLOAD_STATUS_MAP)) {
+		return;
+	}
+
+	updateFileUploadStatusCallback(
+		status as UploadStatusKeys,
+		event.existingFileName,
+	);
+
+	if (status.startsWith("failed")) {
+		throw new Error(status);
+	}
+
+	if (status === "successful") {
+		state.documentId = event.documentId ?? null;
+	}
+}
 
 export async function uploadAndProcessDocument(
 	file: File,
@@ -15,12 +83,14 @@ export async function uploadAndProcessDocument(
 	) => void,
 ): Promise<number> {
 	const { session } = useAuthStore.getState();
-	const { currentFolder } = useCurrentFolderStore.getState();
+	// The folder may have been deleted elsewhere; the backend falls back to
+	// the main collection and reports it via `folderFallback`.
+	const folderId = useCurrentFolderStore.getState().currentFolder?.id ?? null;
 
 	// Create document metadata
 	const documentData = {
 		document: {
-			folderId: currentFolder?.id || null,
+			folderId,
 			sourceType: "personal_document",
 		},
 		llmModel: config.defaultDocumentProcessingModel,
@@ -59,7 +129,10 @@ export async function uploadAndProcessDocument(
 	const reader = response.body.getReader();
 	const decoder = new TextDecoder();
 	let buffer = "";
-	let documentId: number | null = null;
+	const state: {
+		hasNotifiedFolderMissing: boolean;
+		documentId: number | null;
+	} = { hasNotifiedFolderMissing: false, documentId: null };
 
 	try {
 		while (true) {
@@ -74,50 +147,21 @@ export async function uploadAndProcessDocument(
 			buffer = lines.pop() ?? "";
 
 			for (const line of lines) {
-				const prefix = "data: ";
-				if (!line.startsWith(prefix)) {
+				const event = parseSseLine(line);
+				if (event === undefined) {
 					continue;
 				}
 
-				const payload = line.slice(prefix.length).trim();
-				if (!payload) {
-					continue;
-				}
-
-				let event;
-				try {
-					event = JSON.parse(payload);
-				} catch {
-					continue; // ignore anything unparseable, it can be just a heartbeat
-				}
-
-				const status: unknown = event?.status;
-
-				if (typeof status !== "string" || !(status in UPLOAD_STATUS_MAP)) {
-					continue;
-				}
-
-				updateFileUploadStatusCallback(
-					status as UploadStatusKeys,
-					event.existingFileName,
-				);
-
-				if (status.startsWith("failed")) {
-					throw new Error(status);
-				}
-
-				if (event.status === "successful") {
-					documentId = event.documentId;
-				}
+				handleProcessEvent(event, state, updateFileUploadStatusCallback);
 			}
 		}
 	} finally {
 		reader.cancel().catch((error) => captureError(error));
 	}
 
-	if (documentId === null) {
+	if (state.documentId === null) {
 		throw new Error("Stream finished without receiving a documentId");
 	}
 
-	return documentId;
+	return state.documentId;
 }
