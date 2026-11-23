@@ -7,7 +7,7 @@ import { isDocument } from "../utils/is-document";
 import { toggleItemInChat } from "../utils/toggle-item-in-chat";
 import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
 import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
-import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
+import { BucketIcon } from "../../../../primitives/icons/bucket-icon";
 import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
 import { useIsMobile } from "../../../../../hooks/use-mobile";
 import { isPublicFolder } from "../utils/is-public-folder.ts";
@@ -196,8 +196,8 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		action: () => handleDeleteItem(item),
 		label: Content["documentsList.delete"],
 		ariaLabel: Content[`documentsList.${deleteItemKey}`],
-		style: "group/delete text-warning-100 hover:text-dunkelblau-80",
-		icon: <DeleteElementIcon />,
+		style: "group/delete text-warning-120 hover:bg-warning-50",
+		icon: <BucketIcon className="size-5" />,
 	};
 
 	const dropdownItems = [
@@ -220,7 +220,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	return (
 		<div
-			className="fixed z-50 bg-white rounded-3px shadow-md min-w-[200px]"
+			className="fixed z-50 bg-white rounded-3px shadow-md min-w-[200px] p-1"
 			style={{
 				top: `${position.top - (isMobile ? 68 : 0)}px`, // -68px on mobile to account for the bottom drawer top-[calc(50px+18px)]
 				right: `${position.right}px`,
@@ -240,13 +240,13 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 									optionButtonRefs.current.delete(index);
 								}
 							}}
-							className={`flex items-center w-full h-9 px-1.5 py-1 gap-x-2 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
+							className={`flex items-center w-full px-3 py-2 gap-x-1 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
 								${dropdownItem.style}`}
 							onClick={dropdownItem.action}
 							aria-label={dropdownItem.ariaLabel}
 							role="option"
 						>
-							<div className="flex items-center justify-center rounded-3px shrink-0 size-8 relative">
+							<div className="flex items-center justify-center rounded-3px shrink-0 size-5 relative">
 								{dropdownItem.icon}
 							</div>
 							<span className={`text-sm leading-5 `}>{dropdownItem.label}</span>

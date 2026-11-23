@@ -1,7 +1,12 @@
 import React from "react";
 import type { ButtonProps } from "./button-types";
 
-export const TertiaryButton: React.FC<ButtonProps> = ({
+interface TertiaryButtonProps extends ButtonProps {
+	ref?: React.Ref<HTMLButtonElement>;
+}
+
+export const TertiaryButton: React.FC<TertiaryButtonProps> = ({
+	ref,
 	onClick,
 	disabled,
 	type = "button",
@@ -11,6 +16,7 @@ export const TertiaryButton: React.FC<ButtonProps> = ({
 }) => {
 	return (
 		<button
+			ref={ref}
 			className={`
 			flex rounded-3px h-9 w-fit items-center px-2.5 gap-2
 			hover:bg-hellblau-100 disabled:text-dunkelblau-40

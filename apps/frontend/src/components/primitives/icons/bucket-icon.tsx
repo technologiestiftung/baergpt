@@ -1,36 +1,20 @@
 import React from "react";
 import Content from "../../../content";
 
-export const BucketIcon: React.FC<{
-	disabled?: boolean;
-	isLight?: boolean;
-	className?: string;
-}> = ({ disabled = false, isLight = false, className = "" }) => {
-	return (
-		<>
-			<img
-				src="/icons/bucket-enabled-icon.svg"
-				alt={Content["bucketIcon.imgAlt"]}
-				width={16}
-				height={16}
-				className={`${className} ${!disabled && !isLight ? "block" : "hidden"}`}
-			/>
-
-			<img
-				src="/icons/bucket-disabled-icon.svg"
-				alt={Content["bucketIcon.imgAlt"]}
-				width={16}
-				height={16}
-				className={`${className} ${disabled ? "block" : "hidden"}`}
-			/>
-
-			<img
-				src="/icons/bucket-light-icon.svg"
-				alt={Content["bucketIcon.imgAlt"]}
-				width={16}
-				height={16}
-				className={`${className} ${isLight && !disabled ? "block" : "hidden"}`}
-			/>
-		</>
-	);
+const iconSrc = {
+	red: "/icons/bucket-outline-dark-red-icon.svg",
+	darkBlue: "/icons/bucket-dark-blue-icon.svg",
 };
+
+export const BucketIcon: React.FC<{
+	color?: keyof typeof iconSrc;
+	className?: string;
+}> = ({ color = "red", className = "" }) => (
+	<img
+		src={iconSrc[color]}
+		alt={Content["bucketIcon.imgAlt"]}
+		width={16}
+		height={16}
+		className={className}
+	/>
+);

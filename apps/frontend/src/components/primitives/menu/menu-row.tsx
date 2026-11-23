@@ -1,11 +1,11 @@
 import type React from "react";
 import type { KeyboardEvent } from "react";
-import Content from "../../../../content.ts";
+import Content from "../../../content.ts";
 
-interface ChatMenuRowProps {
+interface MenuRowProps {
 	label: string;
 	ariaLabel: string;
-	icon: string | React.ReactNode;
+	icon?: string | React.ReactNode;
 	isSelected: boolean;
 	isActive?: boolean;
 	isCheckbox?: boolean;
@@ -16,7 +16,7 @@ interface ChatMenuRowProps {
 	hasSubmenu?: boolean;
 }
 
-export function ChatMenuRow({
+export function MenuRow({
 	label,
 	ariaLabel,
 	icon,
@@ -28,7 +28,7 @@ export function ChatMenuRow({
 	onKeyDown,
 	optionButtonRef,
 	hasSubmenu = false,
-}: ChatMenuRowProps) {
+}: MenuRowProps) {
 	return (
 		<button
 			type="button"
@@ -44,15 +44,16 @@ export function ChatMenuRow({
 			aria-expanded={hasSubmenu ? isActive : undefined}
 		>
 			<div className="flex items-center gap-1 pr-[5px]">
-				{typeof icon === "string" ? (
-					<img src={icon} alt={label} width={20} height={20} />
-				) : (
-					<div
-						className={`size-5 flex items-center justify-center ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
-					>
-						{icon}
-					</div>
-				)}
+				{icon &&
+					(typeof icon === "string" ? (
+						<img src={icon} alt={label} width={20} height={20} />
+					) : (
+						<div
+							className={`size-5 flex items-center justify-center ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
+						>
+							{icon}
+						</div>
+					))}
 				<div
 					className={`text-sm leading-5 ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
 				>

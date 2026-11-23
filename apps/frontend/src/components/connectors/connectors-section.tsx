@@ -16,6 +16,7 @@ import { ConnectorInfo } from "./connector-info.tsx";
 import { builtInConnectors, datawrapperConnector } from "./connectors.ts";
 import { formatMaskedToken } from "./format-masked-token.ts";
 import { DatawrapperConnectButton } from "./datawrapper-connect-button.tsx";
+import { BucketIcon } from "../primitives/icons/bucket-icon.tsx";
 
 export function ConnectorsSection() {
 	const datawrapperIntegration = useIntegrationsStore((state) =>
@@ -124,12 +125,7 @@ export function ConnectorsSection() {
 											onClick={showDatawrapperDisconnectDialog}
 											className="flex items-center justify-center size-8 rounded-3px hover:bg-hellblau-60 focus-visible:outline-default"
 										>
-											<img
-												src="/icons/bucket-dark-blue-icon.svg"
-												alt=""
-												width={32}
-												height={32}
-											/>
+											<BucketIcon color="darkBlue" className="size-8" />
 										</button>
 									</>
 								) : (

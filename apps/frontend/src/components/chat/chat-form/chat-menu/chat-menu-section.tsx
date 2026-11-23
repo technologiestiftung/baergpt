@@ -7,7 +7,7 @@ import { useFileUploadsStore } from "../../../../store/use-file-uploads-store.ts
 import { useErrorStore } from "../../../../store/error-store.ts";
 import { WebSearchIcon } from "../../../primitives/icons/web-search-icon.tsx";
 import type { ChatToolsMenuItemId } from "../../../../common.ts";
-import { ChatMenuRow } from "./chat-menu-row.tsx";
+import { MenuRow } from "../../../primitives/menu/menu-row.tsx";
 import { config } from "../../../../config.ts";
 import { SUPPORTED_UPLOAD_FILE_ACCEPT } from "../../../../lib/upload-file-types.ts";
 
@@ -170,7 +170,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 										className="relative"
 										onMouseEnter={openConnectorsSubmenu}
 									>
-										<ChatMenuRow
+										<MenuRow
 											label={item.label}
 											ariaLabel={item.ariaLabel}
 											icon={item.icon}
@@ -204,7 +204,7 @@ export const ChatMenuSection: React.FC<ChatMenuSectionProps> = ({
 						return (
 							<React.Fragment key={item.id}>
 								<li role="none">
-									<ChatMenuRow
+									<MenuRow
 										label={item.label}
 										ariaLabel={item.ariaLabel}
 										icon={item.icon}
