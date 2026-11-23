@@ -19,4 +19,9 @@ supabase_release_file: "{{ supabase_dir }}/.baergpt-release"
 supabase_compose_cmd: "docker compose -f docker-compose.yml -f docker-compose.monitoring.yml"
 
 # Email templates GoTrue uses (apps/backend/supabase/templates/<name>.html; URLs in the compose file).
+# Keep the list in .github/workflows/email-templates.yml equal to this one.
 supabase_email_templates: [invite, confirmation, recovery, magic_link, email_change]
+# email-template-sync fetches them from this repository and branch as this system user.
+email_templates_repo: technologiestiftung/baergpt
+email_templates_branch: "{{ 'main' if baergpt_env == 'production' else 'staging' }}"
+email_templates_user: email-template-sync
