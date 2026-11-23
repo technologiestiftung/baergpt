@@ -3,9 +3,12 @@ import { PrivilegedDbService } from "../services/db-service/privileged-db-servic
 import { captureError } from "../monitoring/capture-error";
 import { serviceRoleDbClient } from "../supabase";
 import { adminAuth } from "../middleware/admin-auth";
+import { RegistrationPendingError } from "../types/common";
+import matomo from "./matomo";
 
 const admin = new Hono();
 admin.use(adminAuth);
+admin.route("/", matomo);
 
 const serviceRoleAdminService = new PrivilegedDbService(serviceRoleDbClient);
 
@@ -38,6 +41,14 @@ admin.put("/users/:userId/profile", async (c) => {
 			);
 		}
 
+		const isBlankName = [firstName, lastName].some(
+			(name) =>
+				name !== undefined && (typeof name !== "string" || !name.trim()),
+		);
+		if (isBlankName) {
+			return c.json({ error: "firstName and lastName must not be empty" }, 400);
+		}
+
 		// Update profile fields (requires service role for auth.admin.updateUserById)
 		await serviceRoleAdminService.updateUserProfile({
 			userId,
@@ -50,6 +61,10 @@ admin.put("/users/:userId/profile", async (c) => {
 
 		return c.json({ message: "Profile updated successfully" });
 	} catch (error) {
+		if (error instanceof RegistrationPendingError) {
+			return c.json({ error: error.message }, 409);
+		}
+
 		captureError(error);
 
 		if (error instanceof SyntaxError) {

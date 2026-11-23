@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- LaunchAgent (not Daemon): Tart's Virtualization.framework needs a logged-in user session.
+     install.sh replaces __RUNNER_DIR__ and __LOG_DIR__. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>berlin.technologiestiftung.baergpt-runner</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__RUNNER_DIR__/runner-loop.sh</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Interactive</string>
+  <key>StandardOutPath</key>
+  <string>__LOG_DIR__/runner.log</string>
+  <key>StandardErrorPath</key>
+  <string>__LOG_DIR__/runner.log</string>
+</dict>
+</plist>

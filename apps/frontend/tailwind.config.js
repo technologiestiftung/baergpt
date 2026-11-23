@@ -8,8 +8,12 @@ export default {
 		extend: {
 			colors: {
 				orange: "#E69736",
+				"orange-120": "#AF6409",
 				mittelgruen: "#4CA786",
+				"mittelgruen-120": "#008857",
+				"mittelgruen-130": "#35755E",
 				"berlin-rot": "#E40521",
+				"warning-120": "#B23636",
 				"warning-100": "#DF4343",
 				"warning-85": "#E45F5F",
 				"warning-10": "#FEF4F5",
@@ -81,6 +85,22 @@ export default {
 						opacity: "1",
 					},
 				},
+				"slide-in-bottom": {
+					"0%": {
+						transform: "translateY(100%)",
+					},
+					"100%": {
+						transform: "translateY(0)",
+					},
+				},
+				"slide-out-bottom": {
+					"0%": {
+						transform: "translateY(0)",
+					},
+					"100%": {
+						transform: "translateY(100%)",
+					},
+				},
 				"fade-out": {
 					"0%": {
 						opacity: "1",
@@ -102,7 +122,10 @@ export default {
 				"gradient-move": "gradient-move 3s linear infinite",
 				"shrink-grow": "shrink-grow 1s ease-in-out infinite",
 				"slide-in-right": "slide-in-right 0.3s ease-out",
-				"fade-out": "fade-out 0.3s ease-out",
+				"slide-in-bottom": "slide-in-bottom 0.3s ease-out",
+				"slide-out-bottom": "slide-out-bottom 0.2s ease-in forwards",
+				"fade-out-backdrop": "fade-out 0.2s ease-in forwards",
+				"fade-out": "fade-out 0.3s ease-out forwards",
 				"fade-in": "fade-in 0.2s ease-in",
 				"fade-out-tooltip": "fade-out 0.2s ease-out",
 			},
@@ -112,7 +135,7 @@ export default {
 		},
 	},
 	plugins: [
-		plugin(function ({ addComponents, addVariant }) {
+		plugin(function ({ addComponents, addVariant, theme }) {
 			addComponents({
 				".outline-default": {
 					outlineWidth: "3px",
@@ -128,6 +151,10 @@ export default {
 			});
 			addVariant("user-invalid", "&:user-invalid");
 			addVariant("user-valid", "&:user-valid");
+			addVariant(
+				"hoverable",
+				`@media (min-width: ${theme("screens.md")}) and (hover: hover)`,
+			);
 		}),
 	],
 };

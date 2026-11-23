@@ -23,6 +23,7 @@ import {
 	AccordionContent,
 } from "../ui/accordion";
 import { FileUploadStatus } from "./file-upload-status";
+import { SUPPORTED_UPLOAD_FILE_ACCEPT } from "@/lib/upload-file-types.ts";
 
 const getStatusText = (status: keyof typeof UPLOAD_STATUS_MAP): string => {
 	return UPLOAD_STATUS_MAP[status] || "";
@@ -105,7 +106,7 @@ export const UploadDocument: React.FC = () => {
 							ref={fileInputRef}
 							id="document-upload"
 							type="file"
-							accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+							accept={SUPPORTED_UPLOAD_FILE_ACCEPT}
 							multiple
 							className="hidden"
 							onChange={handleFileSelect}

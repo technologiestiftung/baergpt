@@ -12,8 +12,10 @@ import favicon from "./routes/favicon";
 import integrations from "./routes/integrations";
 import { captureError } from "./monitoring/capture-error";
 import { logMemory } from "./monitoring/memory-logger";
+import { configureAiSdkWarnings } from "./monitoring/ai-sdk-warnings";
 
 verifyConfig();
+configureAiSdkWarnings();
 
 const app = new Hono();
 

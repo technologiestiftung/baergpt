@@ -41,7 +41,7 @@ export const DocumentsList: React.FC = () => {
 					{(isFirstLoad || isLoading) && <DocumentListSkeleton count={8} />}
 
 					{isPublicFolder(currentFolder) &&
-						publicDocuments.map((item) => (
+						getSortedItems(publicDocuments).map((item) => (
 							<ListItem key={getUniqueId(item)} item={item} />
 						))}
 

@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 
 const isParlaAllowed =
@@ -6,10 +6,35 @@ const isParlaAllowed =
 const isWebSearchAllowed =
 	process.env.VITE_FEATURE_FLAG_WEB_SEARCH_ALLOWED === "true";
 
+/**
+ * Context pills are hidden on mobile, where the selected tool only shows
+ * as the textarea placeholder.
+ */
+function getSelectedToolIndicator(
+	page: Page,
+	isMobile: boolean,
+	tool: "parla" | "webSearch",
+) {
+	const indicators = {
+		parla: {
+			pill: "Parla Berlin entfernen",
+			placeholder: "Parla Berlin durchsuchen",
+		},
+		webSearch: {
+			pill: "Websuche entfernen",
+			placeholder: "Das Web durchsuchen",
+		},
+	};
+
+	return isMobile
+		? page.getByPlaceholder(indicators[tool].placeholder)
+		: page.getByRole("button", { name: indicators[tool].pill });
+}
+
 testWithLoggedInUser.describe("Welcome screen prompt starters", () => {
 	testWithLoggedInUser(
 		"replaces the previously selected tool instead of stacking",
-		async ({ page }) => {
+		async ({ page, isMobile }) => {
 			testWithLoggedInUser.skip(
 				!isParlaAllowed || !isWebSearchAllowed,
 				"needs both Parla and web search feature flags",
@@ -17,12 +42,12 @@ testWithLoggedInUser.describe("Welcome screen prompt starters", () => {
 
 			await page.goto("/");
 
-			const parlaPill = page.getByRole("button", {
-				name: "Parla Berlin entfernen",
-			});
-			const webSearchPill = page.getByRole("button", {
-				name: "Websuche entfernen",
-			});
+			const parlaPill = getSelectedToolIndicator(page, isMobile, "parla");
+			const webSearchPill = getSelectedToolIndicator(
+				page,
+				isMobile,
+				"webSearch",
+			);
 
 			await page.getByRole("button", { name: "Parla durchsuchen" }).click();
 			await expect(parlaPill).toBeVisible();
@@ -46,7 +71,7 @@ testWithLoggedInUser.describe("Welcome screen prompt starters", () => {
 
 	testWithLoggedInUser(
 		"keeps a starter selected when it is picked twice",
-		async ({ page }) => {
+		async ({ page, isMobile }) => {
 			testWithLoggedInUser.skip(
 				!isWebSearchAllowed,
 				"needs the web search feature flag",
@@ -57,9 +82,11 @@ testWithLoggedInUser.describe("Welcome screen prompt starters", () => {
 			const webSearchStarter = page.getByRole("button", {
 				name: "Im Web recherchieren",
 			});
-			const webSearchPill = page.getByRole("button", {
-				name: "Websuche entfernen",
-			});
+			const webSearchPill = getSelectedToolIndicator(
+				page,
+				isMobile,
+				"webSearch",
+			);
 
 			await webSearchStarter.click();
 			await expect(webSearchPill).toBeVisible();

@@ -41,6 +41,7 @@ variable "target_source" {
 }
 
 # --- Thresholds (tune per environment via *.tfvars) ------------------------------
+# disk/mem/CPU feed the shared host group, so only production.tfvars sets them.
 
 variable "disk_used_ratio_max" {
   type        = number
@@ -116,5 +117,27 @@ variable "anon_egress_blocked_min_30m" {
   validation {
     condition     = floor(var.anon_egress_blocked_min_30m) == var.anon_egress_blocked_min_30m && var.anon_egress_blocked_min_30m >= 1
     error_message = "anon_egress_blocked_min_30m is a whole-number count >= 1."
+  }
+}
+
+variable "render_backend_resource" {
+  type        = string
+  default     = null
+  description = "Render service id of the backend (srv-…). Null disables the security rules on the Render log."
+
+  validation {
+    condition     = var.render_backend_resource == null || can(regex("^srv-[a-z0-9]+$", var.render_backend_resource))
+    error_message = "render_backend_resource is a Render service id (srv- followed by lowercase letters and digits), or null."
+  }
+}
+
+variable "security_requests_per_ip_max_5m" {
+  type        = number
+  default     = null
+  description = "Alert when one client IP sends more backend requests than this in 5 minutes. Required in production, unused in staging."
+
+  validation {
+    condition     = var.security_requests_per_ip_max_5m == null || try(floor(var.security_requests_per_ip_max_5m) == var.security_requests_per_ip_max_5m && var.security_requests_per_ip_max_5m >= 1, false)
+    error_message = "security_requests_per_ip_max_5m is a whole-number count >= 1."
   }
 }

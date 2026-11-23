@@ -3,7 +3,28 @@ import { usePreviewDocumentStore } from "../../store/use-preview-document-store.
 import { useErrorStore } from "../../store/error-store";
 import { CloseIcon } from "../primitives/icons/close-icon";
 import { SpreadsheetPreview } from "../spreadsheet/spreadsheet-preview.tsx";
+import { MarkdownPreview } from "./markdown-preview.tsx";
 import Content from "../../content";
+
+type PreviewType = "pdf" | "docx" | "spreadsheet" | "markdown";
+
+function getPreviewType(
+	sourceUrl: string | null | undefined,
+	fileName: string | null | undefined,
+): PreviewType {
+	const lowerCasePath = (sourceUrl || fileName)?.toLowerCase() ?? "";
+
+	if (lowerCasePath.endsWith(".docx")) {
+		return "docx";
+	}
+	if ([".xlsx", ".csv"].some((suffix) => lowerCasePath.endsWith(suffix))) {
+		return "spreadsheet";
+	}
+	if ([".md", ".markdown"].some((suffix) => lowerCasePath.endsWith(suffix))) {
+		return "markdown";
+	}
+	return "pdf";
+}
 
 export const DocumentPreviewSection: React.FC = () => {
 	const {
@@ -21,13 +42,11 @@ export const DocumentPreviewSection: React.FC = () => {
 		return null;
 	}
 
-	const isDocxFormat = selectedPreviewDocument.file_name
-		?.toLowerCase()
-		.endsWith(".docx");
-
-	const isSpreadsheet = [".xlsx", ".csv"].some((suffix) =>
-		selectedPreviewDocument.file_name?.toLowerCase().endsWith(suffix),
+	const previewType = getPreviewType(
+		selectedPreviewDocument.source_url,
+		selectedPreviewDocument.file_name,
 	);
+	const isDocxFormat = previewType === "docx";
 
 	return (
 		<section className="absolute h-full inset-0 z-30 flex flex-col bg-hellblau-30">
@@ -86,7 +105,7 @@ export const DocumentPreviewSection: React.FC = () => {
 					</p>
 				)}
 				{!isLoadingPreviewDocument &&
-					!isSpreadsheet &&
+					(previewType === "pdf" || isDocxFormat) &&
 					selectedPreviewDocumentPreviewUrl && (
 						<>
 							<p
@@ -106,10 +125,20 @@ export const DocumentPreviewSection: React.FC = () => {
 					)}
 
 				{!isLoadingPreviewDocument &&
-					isSpreadsheet &&
+					previewType === "spreadsheet" &&
 					selectedPreviewDocumentPreviewUrl && (
 						<div className="w-full h-full min-h-0 self-stretch py-2">
 							<SpreadsheetPreview
+								downloadUrl={selectedPreviewDocumentPreviewUrl}
+							/>
+						</div>
+					)}
+
+				{!isLoadingPreviewDocument &&
+					previewType === "markdown" &&
+					selectedPreviewDocumentPreviewUrl && (
+						<div className="w-full h-full min-h-0 self-stretch py-2">
+							<MarkdownPreview
 								downloadUrl={selectedPreviewDocumentPreviewUrl}
 							/>
 						</div>

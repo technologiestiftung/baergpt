@@ -2,13 +2,45 @@ import { documentProcessSchema } from "../schemas/document-process-schema";
 import { BaseContentDbService } from "./db-service/base-db-service";
 import { config } from "../config";
 
-const EXTENSION_BY_MIME: Record<string, string> = {
-	"application/pdf": "pdf",
-	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-		"docx",
-	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
-	"text/csv": "csv",
-};
+const SUPPORTED_FILE_TYPES = [
+	{ mimeType: "application/pdf", extensions: ["pdf"] },
+	{
+		mimeType:
+			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		extensions: ["docx"],
+	},
+	{
+		mimeType:
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		extensions: ["xlsx"],
+	},
+	{ mimeType: "text/csv", extensions: ["csv"] },
+	{ mimeType: "text/markdown", extensions: ["md", "markdown"] },
+];
+
+function getSupportedFile(file: File) {
+	const nameExtension = file.name.split(".").pop()?.toLowerCase() ?? "";
+	const fileType =
+		SUPPORTED_FILE_TYPES.find(({ mimeType }) => mimeType === file.type) ??
+		SUPPORTED_FILE_TYPES.find(({ extensions }) =>
+			extensions.includes(nameExtension),
+		);
+
+	if (!fileType) {
+		return null;
+	}
+
+	return {
+		fileExtension: fileType.extensions[0],
+		file:
+			file.type === fileType.mimeType
+				? file
+				: new File([file], file.name, {
+						type: fileType.mimeType,
+						lastModified: file.lastModified,
+					}),
+	};
+}
 
 export class ValidationService {
 	private readonly dbService: BaseContentDbService;
@@ -66,13 +98,15 @@ export class ValidationService {
 			});
 		}
 
-		const fileExtension = EXTENSION_BY_MIME[file.type];
+		const supportedFile = getSupportedFile(file);
 
-		if (!fileExtension) {
+		if (!supportedFile) {
 			throw new Error("failed.format", {
-				cause: `file extension ${file.type} not supported`,
+				cause: `file type ${file.type} of ${file.name} not supported`,
 			});
 		}
+
+		const { fileExtension } = supportedFile;
 
 		const metadata = body["metadata"];
 
@@ -139,7 +173,7 @@ export class ValidationService {
 			accessGroupId,
 			llmModel,
 			bucket,
-			file,
+			file: supportedFile.file,
 		};
 	}
 }

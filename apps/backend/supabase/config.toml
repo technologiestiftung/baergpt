@@ -42,6 +42,10 @@ max_client_conn = 100
 [db.migrations]
 schema_paths = ["./schemas/**/*.sql"]
 
+[db.seed]
+enabled = true
+sql_paths = ["./test-helpers.sql"]
+
 [realtime]
 enabled = true
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
@@ -63,7 +67,8 @@ enabled = true
 # Port to use for the email testing server web interface.
 port = 54324
 # Uncomment to expose additional ports for testing user applications that send emails.
-# smtp_port = 54325
+# Used by supabase/scripts/process-inactive-users.ts
+smtp_port = 54325
 # pop3_port = 54326
 
 [storage]
@@ -130,7 +135,7 @@ email_sent = 1000
 
 # Uncomment to customize email template
 [auth.email.template.confirmation]
-subject = "Willkommen bei BärGPT - Bestätige deine E-Mail-Adresse"
+subject = "Ihr Einmalcode – BärGPT Konto eröffnen"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
@@ -138,7 +143,8 @@ subject = "Einmaliger Anmelde-Code für Ihr Konto"
 content_path = "./supabase/templates/recovery.html"
 
 [auth.email.template.magic_link]
-subject = "Einmaliger Anmelde-Code für Ihr Konto"
+# Same registration check as magic_link.html
+subject = "Ihr Einmalcode – {{ if and .Data.first_name .Data.last_name }}Bei BärGPT anmelden{{ else }}BärGPT Konto eröffnen{{ end }}"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.email.template.invite]

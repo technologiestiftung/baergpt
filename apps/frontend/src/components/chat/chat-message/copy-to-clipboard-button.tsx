@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { Content } from "../../../content";
 import { ChatButton } from "../../primitives/buttons/chat-button";
+import { useCopiedState } from "../../../hooks/use-copied-state.ts";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
@@ -24,7 +25,7 @@ const markdownToHtml = async (markdown: string): Promise<string> => {
 export const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
 	generatedAnswer,
 }) => {
-	const [isCopiedToClipboard, setIsCopiedToClipboard] = useState(false);
+	const [isCopiedToClipboard, triggerCopied] = useCopiedState();
 
 	const copyToClipboard = async () => {
 		const html = await markdownToHtml(generatedAnswer);
@@ -37,10 +38,7 @@ export const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
 		});
 
 		await navigator.clipboard.write([clipboardItem]);
-		setIsCopiedToClipboard(true);
-		setTimeout(() => {
-			setIsCopiedToClipboard(false);
-		}, 2000);
+		triggerCopied();
 	};
 
 	return (

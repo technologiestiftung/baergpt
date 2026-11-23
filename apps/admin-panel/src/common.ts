@@ -14,7 +14,8 @@ export type User = {
 	num_embedding_tokens: number;
 	academic_title?: string | null;
 	personal_title?: string | null;
-	status?: "active" | "banned" | "admin";
+	is_registration_pending?: boolean;
+	status?: "active" | "banned" | "admin" | "pending";
 };
 
 export type UserProfile = {

@@ -47,6 +47,7 @@ import {
 	webSearchTool,
 } from "../tools/web-search";
 import { captureError } from "../monitoring/capture-error";
+import { getStreamErrorContext } from "../monitoring/stream-error-context";
 import {
 	citationAnswerSchema,
 	webCitationAnswerSchema,
@@ -67,7 +68,10 @@ import {
 	type OpenDataCitationSource,
 	type OpenDataToolInput,
 } from "../tools/mcp/open-data-mcp-tools";
-import { datawrapperMCPTools } from "../tools/mcp/datawrapper-mcp-tools";
+import {
+	datawrapperMCPTools,
+	getEmbeddableDatawrapperChartIds,
+} from "../tools/mcp/datawrapper-mcp-tools";
 
 const modelService = new ModelService();
 
@@ -91,6 +95,27 @@ export function buildUserSystemPromptBlock(
 	].join("\n");
 
 	return `\n\n${preamble}\n\n${userSystemPrompt}`;
+}
+
+const STEP_LIMIT_INSTRUCTION_PROMPT = "step-limit-instruction";
+
+/**
+ * Appends the step limit instruction as the last message. At the end of the
+ * system prompt the model ignored it and kept announcing further tool calls.
+ * The prompt is only fetched once the limit is actually reached.
+ */
+async function appendStepLimitInstruction(
+	messages: ModelMessage[],
+): Promise<ModelMessage[]> {
+	const stepLimitPromptClient = await getTextPrompt(
+		STEP_LIMIT_INSTRUCTION_PROMPT,
+		{ label: config.nodeEnv === "test" ? "development" : config.nodeEnv },
+	);
+
+	return [
+		...messages,
+		{ role: "user", content: stepLimitPromptClient.compile({}) },
+	];
 }
 
 type RelevantTools = {
@@ -336,6 +361,14 @@ export class GenerationService {
 			userId,
 		});
 
+		const errorRequest = {
+			chatId: sessionId,
+			model: llmHandler.model,
+			languageModel: llmHandler.languageModel,
+			extendedThinking,
+			activeTools,
+		};
+
 		const nonEmptyAssistantMessage = (message: ModelMessage) =>
 			!(message.role === "assistant" && message.content === "");
 
@@ -352,7 +385,8 @@ export class GenerationService {
 								? MAX_OUTPUT_TOKENS_EXTENDED_THINKING
 								: MAX_OUTPUT_TOKENS,
 							temperature: LLM_PARAMETERS.temperature,
-							// Info: GLM 5.3 ignores "none" and has reasoning always turned on.
+							// Info: GLM 5.3 rejects "none" and always reasons; @ai-sdk/mistral
+							// sends "low" instead for these models.
 							reasoning: extendedThinking ? "high" : "none",
 							tools,
 							toolChoice,
@@ -360,6 +394,17 @@ export class GenerationService {
 								llmHandler.model === "experimental"
 									? isStepCount(EXPERIMENTAL_MAX_TOOL_CALL_STEPS)
 									: isLoopFinished(),
+							// The last step allowed by the step limit gets no tools, so the
+							// loop always ends on an answer instead of on a tool call. The
+							// model is told why, otherwise it claims the tools are missing.
+							prepareStep: async ({ steps, messages: stepMessages }) =>
+								llmHandler.model === "experimental" &&
+								steps.length >= EXPERIMENTAL_MAX_TOOL_CALL_STEPS - 1
+									? {
+											toolChoice: "none",
+											messages: await appendStepLimitInstruction(stepMessages),
+										}
+									: {},
 							providerOptions: {
 								mistral: {
 									presencePenalty: LLM_PARAMETERS.presencePenalty,
@@ -416,6 +461,7 @@ export class GenerationService {
 											messages: compiledDocumentCitationExtractionPrompts,
 											allowSystemInMessages: true,
 											temperature: LLM_PARAMETERS.temperature,
+											reasoning: "none",
 											output: Output.object({
 												schema: citationAnswerSchema,
 											}),
@@ -480,6 +526,7 @@ export class GenerationService {
 												messages: compiledWebCitationExtractionPrompts,
 												allowSystemInMessages: true,
 												temperature: LLM_PARAMETERS.temperature,
+												reasoning: "none",
 												output: Output.object({
 													schema: webCitationAnswerSchema,
 												}),
@@ -545,6 +592,7 @@ export class GenerationService {
 												messages: compiledParlaCitationPrompts,
 												allowSystemInMessages: true,
 												temperature: LLM_PARAMETERS.temperature,
+												reasoning: "none",
 												output: Output.object({
 													schema: parlaCitationAnswerSchema,
 												}),
@@ -629,6 +677,23 @@ export class GenerationService {
 									});
 								}
 
+								const embeddableDatawrapperChartIds = activeTools.includes(
+									"datawrapperMCPTools",
+								)
+									? await getEmbeddableDatawrapperChartIds({
+											userId,
+											text: steps.map((step) => step.text).join("\n"),
+											toolResults: steps.flatMap((step) => step.toolResults),
+										})
+									: [];
+
+								if (embeddableDatawrapperChartIds.length > 0) {
+									writer.write({
+										type: "data-datawrapper-chart-ids",
+										data: embeddableDatawrapperChartIds,
+									});
+								}
+
 								logMemory("chat:onFinish-complete", memoryLogId);
 
 								await this.dbService.updateUsage(userId, usage.totalTokens);
@@ -645,14 +710,19 @@ export class GenerationService {
 									langfusePrompt: true,
 								},
 							},
-							onError: (error) => {
+							onError: ({ error }) => {
 								logMemory("chat:onError", memoryLogId);
-								captureError(error);
+								captureError(error, getStreamErrorContext(error, errorRequest));
 							},
 						}),
 				);
 
 				writer.merge(toUIMessageStream({ stream: streamResponse.stream }));
+			},
+			// Errors in `execute` outside streamText; client gets generic text.
+			onError: (error) => {
+				captureError(error, getStreamErrorContext(error, errorRequest));
+				return "An error occurred.";
 			},
 		});
 		return createUIMessageStreamResponse({ stream });
@@ -891,6 +961,7 @@ export class GenerationService {
 					messages: compiledOpenDataCitationExtractionPrompts,
 					allowSystemInMessages: true,
 					temperature: LLM_PARAMETERS.temperature,
+					reasoning: "none",
 					output: Output.object({ schema: openDataCitationAnswerSchema }),
 					runtimeContext: {
 						sessionId: sessionId ? sessionId : "unknown",

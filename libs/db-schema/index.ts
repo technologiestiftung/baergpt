@@ -169,6 +169,7 @@ export type Database = {
 					citations: Json | null;
 					content: string;
 					created_at: string;
+					datawrapper_chart_ids: Json | null;
 					external_tool_context: boolean;
 					id: number;
 					open_data_citations: Json | null;
@@ -185,6 +186,7 @@ export type Database = {
 					citations?: Json | null;
 					content: string;
 					created_at?: string;
+					datawrapper_chart_ids?: Json | null;
 					external_tool_context?: boolean;
 					id?: number;
 					open_data_citations?: Json | null;
@@ -201,6 +203,7 @@ export type Database = {
 					citations?: Json | null;
 					content?: string;
 					created_at?: string;
+					datawrapper_chart_ids?: Json | null;
 					external_tool_context?: boolean;
 					id?: number;
 					open_data_citations?: Json | null;
@@ -438,6 +441,30 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			inactivity_notifications: {
+				Row: {
+					deletion_date: string;
+					last_active_at: string;
+					reminder_sent_at: string | null;
+					user_id: string;
+					warning_sent_at: string;
+				};
+				Insert: {
+					deletion_date: string;
+					last_active_at: string;
+					reminder_sent_at?: string | null;
+					user_id: string;
+					warning_sent_at: string;
+				};
+				Update: {
+					deletion_date?: string;
+					last_active_at?: string;
+					reminder_sent_at?: string | null;
+					user_id?: string;
+					warning_sent_at?: string;
+				};
+				Relationships: [];
+			};
 			maintenance_mode: {
 				Row: {
 					is_enabled: boolean;
@@ -570,6 +597,21 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			user_session_activity: {
+				Row: {
+					last_active_at: string;
+					user_id: string;
+				};
+				Insert: {
+					last_active_at: string;
+					user_id: string;
+				};
+				Update: {
+					last_active_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 		};
 		Views: {
 			[_ in never]: never;
@@ -603,6 +645,17 @@ export type Database = {
 			deactivate_allowed_domain: {
 				Args: { p_domain: string };
 				Returns: number;
+			};
+			delete_inactive_user: {
+				Args: {
+					expected_deletion_date: string;
+					expected_last_active_at: string;
+					target_user_id: string;
+				};
+				Returns: {
+					deleted: boolean;
+					documents: Json;
+				}[];
 			};
 			delete_user: { Args: never; Returns: undefined };
 			find_unprocessed_documents: {
@@ -692,6 +745,21 @@ export type Database = {
 					storage_version: string;
 				}[];
 			};
+			get_inactive_users: {
+				Args: { for_user_id?: string; inactive_since: string };
+				Returns: {
+					deletion_date: string;
+					email: string;
+					first_name: string;
+					is_banned: boolean;
+					last_active_at: string;
+					last_name: string;
+					notified_last_active_at: string;
+					reminder_sent_at: string;
+					user_id: string;
+					warning_sent_at: string;
+				}[];
+			};
 			get_maintenance_mode_status: { Args: never; Returns: boolean };
 			get_product_dashboard_stats: { Args: never; Returns: Json };
 			get_users: {
@@ -703,6 +771,7 @@ export type Database = {
 					first_name: string;
 					invited_at: string;
 					is_admin: boolean;
+					is_registration_pending: boolean;
 					last_login_at: string;
 					last_name: string;
 					num_documents: number;
@@ -741,6 +810,18 @@ export type Database = {
 			};
 			is_application_admin: { Args: never; Returns: boolean };
 			is_current_user_banned_or_deleted: { Args: never; Returns: boolean };
+			is_document_file_name_taken: {
+				Args: {
+					p_excluded_document_id?: number;
+					p_file_name: string;
+					p_user_id: string;
+				};
+				Returns: boolean;
+			};
+			is_registration_completed: {
+				Args: { user_meta_data: Json };
+				Returns: boolean;
+			};
 			match_jina_document_chunks: {
 				Args: {
 					allowed_document_ids: number[];
@@ -811,6 +892,10 @@ export type Database = {
 			reject_password_verification: { Args: { event: Json }; Returns: Json };
 			remove_allowed_individual_email: {
 				Args: { p_email: string };
+				Returns: undefined;
+			};
+			replace_default_document: {
+				Args: { p_new_document_id: number; p_old_document_ids: number[] };
 				Returns: undefined;
 			};
 			search_chat_messages: {

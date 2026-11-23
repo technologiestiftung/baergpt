@@ -45,8 +45,10 @@ export const useIndividualEmailStore = create<IndividualEmailStore>(
 					error.message ===
 					'new row for relation "allowed_individual_emails" violates check constraint "allowed_individual_emails_format"';
 
+				const hasAccount = error.message === "account_already_exists";
+
 				// These error messages are mapped to specific human-readable error messages
-				if (isDuplicate || isWrongFormat) {
+				if (isDuplicate || isWrongFormat || hasAccount) {
 					useUserErrorStore.getState().handleError(new Error(error.message));
 					return;
 				}

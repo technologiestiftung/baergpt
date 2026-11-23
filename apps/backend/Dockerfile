@@ -3,7 +3,7 @@
 #   docker buildx build --platform linux/amd64 -f apps/backend/Dockerfile -t <tag> .
 
 # ---- base -------------------------------------------------------------------
-FROM node:24.18.0-slim AS base
+FROM node:24.22.1-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS base
 
 # ---- reduce the monorepo to just baergpt-backend + its deps ----------
 FROM base AS pruner
@@ -29,7 +29,8 @@ FROM base AS runner
 WORKDIR /app
 RUN groupadd --system --gid 1001 nodejs \
 	&& useradd --system --uid 1001 --gid nodejs hono
-COPY --from=builder --chown=hono:nodejs /app ./
+# Root-owned: the app user can read and run its code but not rewrite it.
+COPY --from=builder /app ./
 USER hono
 WORKDIR /app/apps/backend
 # for documentation only, does not publish the port. Locally use `-p 3000:3000`.

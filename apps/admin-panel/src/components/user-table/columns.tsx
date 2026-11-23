@@ -17,6 +17,7 @@ export const badgeColors = new Map<User["status"], string>([
 		"bg-amber-100/30 text-amber-600 dark:text-amber-200 border-amber-200",
 	],
 	["admin", "bg-slate-200 border-slate-400 text-slate-800"],
+	["pending", "bg-sky-100/50 text-sky-700 dark:text-sky-300 border-sky-300"],
 ]);
 
 export const columns: ColumnDef<User>[] = [
@@ -84,8 +85,13 @@ export const columns: ColumnDef<User>[] = [
 
 			// Get the user's status
 			const userStatus = row.original.status;
+			const filterStatus = filterValue.toLowerCase();
 
-			return userStatus === filterValue.toLowerCase();
+			if (filterStatus === "pending" && userStatus === "admin") {
+				return Boolean(row.original.is_registration_pending);
+			}
+
+			return userStatus === filterStatus;
 		},
 	},
 	{

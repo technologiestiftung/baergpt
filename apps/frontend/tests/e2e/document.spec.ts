@@ -5,6 +5,7 @@ import {
 	fulfillProcessedDocumentSse,
 	mockDocumentProcessing,
 	mockDocumentUpload,
+	getListItemAction,
 	openDocumentsPanel,
 	attemptFileUploadViaFileChooser,
 	attemptMultipleFilesViaFileChooser,
@@ -22,6 +23,9 @@ import {
 	defaultSourceType,
 	longFileName,
 	longFilePath,
+	markdownDocumentName,
+	markdownDocumentPath,
+	markdownDocumentType,
 	msExcelDocumentName,
 	msExcelDocumentPath,
 	msExcelDocumentType,
@@ -155,8 +159,13 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
-		"Should reject uploading a file with a name that already exists",
+		"Should suffix the name of a different file uploaded under an existing name",
 		async ({ page, browserName }) => {
+			const suffixedDocumentName = secondaryDocumentName.replace(
+				/\.pdf$/,
+				" (2).pdf",
+			);
+
 			await uploadFileViaFileChooserAndWait({
 				page,
 				fileName: secondaryDocumentName,
@@ -173,14 +182,45 @@ test.describe("Documents", () => {
 			});
 
 			await expect(
-				page
-					.locator("#desktop-documents-panel")
-					.getByText(`${secondaryDocumentName}Datei existiert bereits`, {
-						exact: true,
-					}),
+				page.locator("#desktop-documents-panel").getByRole("button", {
+					name: `Dokumente-Icon ${suffixedDocumentName}`,
+				}),
 			).toBeVisible();
 
+			await deleteFileViaUI({ page, fileName: suffixedDocumentName });
 			await deleteFileViaUI({ page, fileName: secondaryDocumentName });
+		},
+	);
+
+	testDesktopOnly(
+		"Should reject uploading a file whose content already exists and name the existing file",
+		async ({ page, browserName }) => {
+			await page.route("**/documents/process", (route) =>
+				route.fulfill({
+					status: 200,
+					headers: { "content-type": "text/event-stream; charset=utf-8" },
+					body: `data: ${JSON.stringify({
+						status: "failed.duplicate",
+						existingFileName: defaultDocumentName,
+					})}\n\n`,
+				}),
+			);
+
+			await attemptFileUploadViaFileChooser({
+				page,
+				filePath: secondaryDocumentPath,
+				browserName,
+				uploadButtonName: "Datei hochladen",
+			});
+
+			await expect(
+				page
+					.locator("#desktop-documents-panel")
+					.getByText(
+						`${secondaryDocumentName}Bereits vorhanden als „${defaultDocumentName}“`,
+						{ exact: true },
+					),
+			).toBeVisible();
 		},
 	);
 
@@ -662,10 +702,11 @@ test.describe("Documents", () => {
 
 			await openDocumentsPanel(page);
 
-			const menuButtonDocument = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Menü öffnen");
+			const menuButtonDocument = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"Menü öffnen",
+			);
 			await expect(menuButtonDocument).toBeVisible();
 
 			await menuButtonDocument.click();
@@ -703,10 +744,11 @@ test.describe("Documents", () => {
 				page.getByRole("listitem").filter({ hasText: givenFolderName }),
 			).toBeVisible();
 
-			const menuButtonFolder = page
-				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("Menü öffnen");
+			const menuButtonFolder = await getListItemAction(
+				page,
+				givenFolderName,
+				"Menü öffnen",
+			);
 			await expect(menuButtonFolder).toBeVisible();
 
 			await menuButtonFolder.click();
@@ -752,10 +794,11 @@ test.describe("Documents", () => {
 		});
 		await expect(folderElement).toBeVisible();
 
-		const menuButtonFolder = page
-			.getByRole("listitem")
-			.filter({ hasText: givenFolderName })
-			.getByLabel("Menü öffnen");
+		const menuButtonFolder = await getListItemAction(
+			page,
+			givenFolderName,
+			"Menü öffnen",
+		);
 		await menuButtonFolder.click();
 
 		// Expect rename button in dropdown to be visible and click it
@@ -807,10 +850,11 @@ test.describe("Documents", () => {
 				.click();
 
 			// Open the rename dialog via the dropdown
-			const menuButtonFolder = page
-				.getByRole("listitem")
-				.filter({ hasText: givenFolderName })
-				.getByLabel("Menü öffnen");
+			const menuButtonFolder = await getListItemAction(
+				page,
+				givenFolderName,
+				"Menü öffnen",
+			);
 			await menuButtonFolder.click();
 			await page.getByRole("option", { name: "Ordner umbenennen" }).click();
 
@@ -833,26 +877,365 @@ test.describe("Documents", () => {
 		},
 	);
 
+	testDesktopOnly("Rename a document via dropdown", async ({ page }) => {
+		const expectedDocumentName = "renamed_document.pdf";
+
+		await page.goto("/");
+
+		await openDocumentsPanel(page);
+
+		await (
+			await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+		).click();
+		await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+		const renameInput = page.getByRole("textbox", {
+			name: "Dokument umbenennen",
+		});
+		await expect(renameInput).toHaveValue(defaultDocumentName);
+
+		await renameInput.fill("renamed_document");
+		await page.getByRole("button", { name: "Umbenennen", exact: true }).click();
+
+		await expect(page.getByRole("dialog")).not.toBeVisible();
+		const renamedDocument = page.getByRole("button", {
+			name: `Dokumente-Icon ${expectedDocumentName}`,
+		});
+		await expect(renamedDocument).toBeVisible();
+
+		await page.reload();
+		await openDocumentsPanel(page);
+		await renamedDocument.click();
+		await expect(
+			page.getByRole("heading", { name: expectedDocumentName }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("button", {
+				name: `Dokumente-Icon ${defaultDocumentName}`,
+			}),
+		).not.toBeVisible();
+	});
+
 	testDesktopOnly(
-		"Documents cannot be renamed via dropdown",
+		"Renaming a document to an empty name is rejected",
 		async ({ page }) => {
 			await page.goto("/");
 
 			await openDocumentsPanel(page);
 
-			const menuButtonDocument = page
+			await (
+				await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+			).click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill("   ");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Renaming a document to a different file type is rejected",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await (
+				await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+			).click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill("renamed_document.docx");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await expect(
+				page.getByRole("button", {
+					name: "Dokumente-Icon renamed_document.docx",
+				}),
+			).not.toBeVisible();
+			await expect(
+				page.getByRole("button", {
+					name: "Dokumente-Icon renamed_document.pdf",
+				}),
+			).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Renaming a document to the name of another document is rejected",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await (
+				await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+			).click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill(seedDefaultDocumentName);
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${defaultDocumentName}`,
+				}),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Renaming accepts up to 100 characters including emoji and rejects longer names",
+		async ({ page }) => {
+			const maxLengthBaseName = "😀".repeat(96);
+
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await (
+				await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+			).click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			const renameInput = page.getByRole("textbox", {
+				name: "Dokument umbenennen",
+			});
+			await renameInput.fill(`${maxLengthBaseName}😀.pdf`);
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+			await expect(page.getByRole("dialog")).toBeVisible();
+
+			await renameInput.fill(`${maxLengthBaseName}.pdf`);
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+			await expect(page.getByRole("dialog")).not.toBeVisible();
+			await expect(
+				page.getByRole("button", {
+					name: `Dokumente-Icon ${maxLengthBaseName}.pdf`,
+				}),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Submitting an unchanged name longer than the limit closes the rename dialog",
+		async ({ page, account, session }) => {
+			const tooLongFileName = `${"a".repeat(120)}.pdf`;
+			await mockDocumentUpload({
+				userId: account.id,
+				accessToken: session.access_token,
+				accessGroupId: null,
+				fileName: tooLongFileName,
+				filePath: defaultDocumentPath,
+				sourceType: defaultSourceType,
+				bucketName: defaultBucketName,
+			});
+
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await (
+				await getListItemAction(page, tooLongFileName, "Menü öffnen")
+			).click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await expect(
+				page.getByRole("textbox", { name: "Dokument umbenennen" }),
+			).toHaveValue(tooLongFileName);
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(page.getByRole("dialog")).not.toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"A failed document rename shows an error and keeps the dialog open",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await (
+				await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+			).click();
+			await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+
+			await page.route("**/rest/v1/documents*", (route) =>
+				route.request().method() === "PATCH"
+					? route.fulfill({
+							status: 500,
+							contentType: "application/json",
+							body: JSON.stringify({ message: "internal error" }),
+						})
+					: route.continue(),
+			);
+
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill("renamed_document.pdf");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+
+			await expect(
+				page.getByText("Das Dokument konnte nicht umbenannt werden."),
+			).toBeVisible();
+			await expect(page.getByRole("dialog")).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"Renames of the same document are applied in the order they were submitted",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			const renameTo = async (newName: string) => {
+				await (
+					await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+				).click();
+				await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+				await page
+					.getByRole("textbox", { name: "Dokument umbenennen" })
+					.fill(newName);
+				await page
+					.getByRole("button", { name: "Umbenennen", exact: true })
+					.click();
+			};
+
+			let releaseFirstRename = () => {};
+			const firstRenameReleased = new Promise<void>((resolve) => {
+				releaseFirstRename = resolve;
+			});
+			const renameRequests: string[] = [];
+			await page.route("**/rest/v1/documents*", async (route) => {
+				if (route.request().method() !== "PATCH") {
+					return route.continue();
+				}
+				renameRequests.push(route.request().postDataJSON().file_name);
+				if (renameRequests.length === 1) {
+					await firstRenameReleased;
+				}
+				return route.continue();
+			});
+
+			await renameTo("first_name.pdf");
+			await page.getByRole("button", { name: "Abbrechen" }).click();
+			await renameTo("second_name.pdf");
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+			expect(renameRequests).toEqual(["first_name.pdf"]);
+
+			releaseFirstRename();
+
+			await expect(page.getByRole("dialog")).not.toBeVisible();
+			expect(renameRequests).toEqual(["first_name.pdf", "second_name.pdf"]);
+			await expect(
+				page.getByRole("button", { name: "Dokumente-Icon second_name.pdf" }),
+			).toBeVisible();
+		},
+	);
+
+	testDesktopOnly(
+		"A rename that finishes after the dialog was reopened does not close it",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			const openRenameDialog = async () => {
+				await (
+					await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+				).click();
+				await page.getByRole("option", { name: "Dokument umbenennen" }).click();
+			};
+
+			let releaseRename = () => {};
+			const renameReleased = new Promise<void>((resolve) => {
+				releaseRename = resolve;
+			});
+			await page.route("**/rest/v1/documents*", async (route) => {
+				if (route.request().method() !== "PATCH") {
+					return route.continue();
+				}
+				await renameReleased;
+				return route.continue();
+			});
+
+			await openRenameDialog();
+			await page
+				.getByRole("textbox", { name: "Dokument umbenennen" })
+				.fill("renamed_document.pdf");
+			await page
+				.getByRole("button", { name: "Umbenennen", exact: true })
+				.click();
+			await page.getByRole("button", { name: "Abbrechen" }).click();
+			await expect(page.getByRole("dialog")).not.toBeVisible();
+
+			await openRenameDialog();
+			const patchResponse = page.waitForResponse(
+				(response) => response.request().method() === "PATCH",
+			);
+			releaseRename();
+			await patchResponse;
+
+			await expect(page.getByRole("dialog")).toBeVisible();
+			await expect(
+				page.getByRole("button", { name: "Umbenennen", exact: true }),
+			).toBeEnabled();
+		},
+	);
+
+	testDesktopOnly(
+		"Default documents cannot be renamed via dropdown",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			const seedDefaultDocumentItem = page
+				.locator("#desktop-documents-panel")
 				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Menü öffnen");
-			await menuButtonDocument.click();
+				.filter({ hasText: seedDefaultDocumentName })
+				.first();
+			await seedDefaultDocumentItem.hover();
+			await seedDefaultDocumentItem.getByLabel("Menü öffnen").click();
 
 			await expect(
 				page.getByRole("option", { name: "Dokument anzeigen" }),
 			).toBeVisible();
 
-			// Renaming is only available for the user's own folders
 			await expect(
-				page.getByRole("option", { name: "Ordner umbenennen" }),
+				page.getByRole("option", { name: "Dokument umbenennen" }),
 			).not.toBeVisible();
 		},
 	);
@@ -977,10 +1360,11 @@ test.describe("Documents", () => {
 
 			await openDocumentsPanel(page);
 
-			const menuButtonDocument = page
-				.getByRole("listitem")
-				.filter({ hasText: defaultDocumentName })
-				.getByLabel("Menü öffnen");
+			const menuButtonDocument = await getListItemAction(
+				page,
+				defaultDocumentName,
+				"Menü öffnen",
+			);
 			await expect(menuButtonDocument).toBeVisible();
 
 			await menuButtonDocument.click();
@@ -997,6 +1381,27 @@ test.describe("Documents", () => {
 			).toBeVisible();
 		},
 	);
+
+	testDesktopOnly("Download document via dropdown", async ({ page }) => {
+		await page.goto("/");
+
+		await openDocumentsPanel(page);
+
+		await (
+			await getListItemAction(page, defaultDocumentName, "Menü öffnen")
+		).click();
+
+		const downloadOption = page.getByRole("option", { name: "Herunterladen" });
+		await expect(downloadOption).toBeVisible();
+
+		const downloadPromise = page.waitForEvent("download");
+		await downloadOption.click();
+		const download = await downloadPromise;
+
+		expect(download.suggestedFilename()).toBe(defaultDocumentName);
+		expect(await download.path()).toBeTruthy();
+		await expect(downloadOption).not.toBeVisible();
+	});
 
 	testDesktopOnly(
 		"Upload word document, open it in the preview, then download it",
@@ -1101,6 +1506,58 @@ test.describe("Documents", () => {
 	);
 
 	testDesktopOnly(
+		"Upload markdown document, open it in the preview, then download it",
+		async ({ page }) => {
+			await page.goto("/");
+
+			await openDocumentsPanel(page);
+
+			await uploadFileViaDragAndDropAndWait({
+				page,
+				fileName: markdownDocumentName,
+				filePath: markdownDocumentPath,
+				fileType: markdownDocumentType,
+			});
+
+			await page
+				.getByRole("button", { name: `Dokumente-Icon ${markdownDocumentName}` })
+				.click();
+
+			await expect(
+				page.getByRole("heading", { name: markdownDocumentName }),
+			).toBeVisible();
+
+			const preview = page.getByTestId("markdown-preview");
+			await expect(
+				preview.getByRole("heading", { name: "Eine Markdown Datei" }),
+			).toBeVisible();
+			await expect(preview.locator("strong")).toHaveText("fettem Text");
+
+			await expect(preview.getByText("<script>")).toBeVisible();
+			await expect(preview.locator("script, img")).toHaveCount(0);
+			expect(
+				await page.evaluate(
+					() =>
+						(window as unknown as { __markdownInjected?: boolean })
+							.__markdownInjected,
+				),
+			).toBeUndefined();
+
+			const downloadPromise = page.waitForEvent("download", {
+				predicate: (download) =>
+					download.suggestedFilename() === markdownDocumentName,
+			});
+			await page
+				.getByRole("link", { name: `${markdownDocumentName} herunterladen` })
+				.click();
+			const download = await downloadPromise;
+
+			expect(download).toBeDefined();
+			expect(await download.path()).toBeTruthy();
+		},
+	);
+
+	testDesktopOnly(
 		"Upload csv document, open it in the preview, then download it",
 		async ({ page }) => {
 			await page.goto("/");
@@ -1177,7 +1634,6 @@ test.describe("Documents", () => {
 			}
 
 			await page.goto("/");
-			await page.waitForLoadState("networkidle");
 
 			await openDocumentsPanel(page);
 
@@ -1221,7 +1677,6 @@ test.describe("Documents", () => {
 			}
 
 			await page.goto("/");
-			await page.waitForLoadState("networkidle");
 
 			await openDocumentsPanel(page);
 

@@ -68,13 +68,17 @@ export function useChatScrolling(
 
 	/**
 	 * Scroll to a specific message after opening a chat from search.
+	 * Waits a frame so a collapsed prompt can expand before the match is measured.
 	 */
 	useEffect(() => {
 		if (pendingScrollToMessage === null || currentChatId === null) {
-			return;
+			return () => {};
 		}
 		const { messageId, query } = pendingScrollToMessage;
-		scrollToMessage(messageId, query);
+		const frame = requestAnimationFrame(() =>
+			scrollToMessage(messageId, query),
+		);
+		return () => cancelAnimationFrame(frame);
 	}, [pendingScrollToMessage, currentChatId, scrollToMessage]);
 
 	/**

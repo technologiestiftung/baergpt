@@ -1,0 +1,21 @@
+# Only the backend in the same namespace (staging's overlay adds sandbox). No egress:
+# conversion needs no network.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gotenberg-allow-backend
+spec:
+  podSelector:
+    matchLabels:
+      app: gotenberg
+  policyTypes:
+    - Ingress
+    - Egress
+  egress: []
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - port: http

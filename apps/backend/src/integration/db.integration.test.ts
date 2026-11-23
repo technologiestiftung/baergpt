@@ -25,51 +25,94 @@ const supabaseAnonClient = createClient<Database>(
 );
 
 describe("Integration tests for DB", async () => {
-	describe("registration meta-data", () => {
-		it("should create a profile with the first_name and last_name from the meta-data", async () => {
-			const givenEmail = "example@ts.berlin";
-			const givenFirstName = "John";
-			const givenLastName = "Doe";
+	describe("registration", () => {
+		const givenFirstName = "John";
+		const givenLastName = "Doe";
+
+		async function getProfileAndAccessGroupCount(userId: string) {
+			const { data: profile, error: profileError } = await serviceRoleDbClient
+				.from("profiles")
+				.select("first_name, last_name")
+				.eq("id", userId)
+				.maybeSingle();
+			expect(profileError).toBeNull();
+
+			const { count, error: membershipError } = await serviceRoleDbClient
+				.from("access_group_members")
+				.select("*", { count: "exact", head: true })
+				.eq("user_id", userId);
+			expect(membershipError).toBeNull();
+
+			return { profile, accessGroupCount: count };
+		}
+
+		it("should not create a profile for users signing up on the login page", async () => {
+			const givenEmail = "otp-signup@ts.berlin";
 
 			const { error: signupError } =
 				await supabaseAnonClient.auth.signInWithOtp({
 					email: givenEmail,
 					options: {
 						shouldCreateUser: true,
-						data: {
-							first_name: givenFirstName,
-							last_name: givenLastName,
-						},
+						data: { pending_registration: true },
 					},
 				});
 			expect(signupError).toBeNull();
 
-			// signInWithOtp does not return the created user, so verify the code to get it
 			const { data } = await signInWithOtp(supabaseAnonClient, givenEmail);
-			await supabaseAnonClient.auth.signOut();
 
 			if (!data.user) {
 				throw new Error("User is undefined");
 			}
 
-			const { data: actualProfile, error: profileError } =
-				await serviceRoleDbClient
+			try {
+				expect(await getProfileAndAccessGroupCount(data.user.id)).toStrictEqual(
+					{ profile: null, accessGroupCount: 0 },
+				);
+
+				const { error: upsertError } = await supabaseAnonClient
 					.from("profiles")
-					.select("first_name, last_name")
-					.eq("id", data.user.id)
-					.single();
+					.upsert({
+						id: data.user.id,
+						first_name: givenFirstName,
+						last_name: givenLastName,
+					});
+				expect(upsertError).toBeNull();
 
-			const expectedProfile = {
-				first_name: givenFirstName,
-				last_name: givenLastName,
-			};
-
-			expect(profileError).toBeNull();
-			expect(actualProfile).toStrictEqual(expectedProfile);
-
-			const { error: deleteError } =
+				expect(await getProfileAndAccessGroupCount(data.user.id)).toStrictEqual(
+					{
+						profile: { first_name: givenFirstName, last_name: givenLastName },
+						accessGroupCount: 1,
+					},
+				);
+			} finally {
+				await supabaseAnonClient.auth.signOut();
 				await serviceRoleDbClient.auth.admin.deleteUser(data.user.id);
-			expect(deleteError).toBeNull();
+			}
+		});
+
+		it("should create a profile with the names from the meta-data for users created by an admin", async () => {
+			const { data, error } = await serviceRoleDbClient.auth.admin.createUser({
+				email: "admin-created@ts.berlin",
+				email_confirm: true,
+				user_metadata: { first_name: givenFirstName, last_name: givenLastName },
+			});
+			expect(error).toBeNull();
+
+			if (!data.user) {
+				throw new Error("User is undefined");
+			}
+
+			try {
+				expect(await getProfileAndAccessGroupCount(data.user.id)).toStrictEqual(
+					{
+						profile: { first_name: givenFirstName, last_name: givenLastName },
+						accessGroupCount: 1,
+					},
+				);
+			} finally {
+				await serviceRoleDbClient.auth.admin.deleteUser(data.user.id);
+			}
 		});
 	});
 

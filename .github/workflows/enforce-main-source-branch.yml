@@ -1,0 +1,26 @@
+name: Enforce Main Source Branch
+
+permissions: {}
+
+on:
+  # Runs the workflow from main, so a PR can't edit it to pass. Safe because it
+  # has no permissions, no secrets, and never checks out PR code.
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, edited, synchronize]
+
+jobs:
+  check-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Only allow PRs from staging into main 🚦
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_REF" != "staging" ] || [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            echo "::error::PRs into main must come from staging in this repo (got: $HEAD_REPO:$HEAD_REF)"
+            exit 1
+          fi

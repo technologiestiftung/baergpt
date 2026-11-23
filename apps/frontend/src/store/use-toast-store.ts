@@ -17,12 +17,13 @@ interface ToastStore {
 	removeToast: (id: string) => void;
 	addError: (message: string) => string;
 	addSuccess: (message: string) => string;
+	addInfo: (message: string) => string;
 }
 
 export const useToastStore = create<ToastStore>((set, get) => ({
 	toasts: [],
 	addToast: (toast) => {
-		const id = Date.now().toString();
+		const id = crypto.randomUUID();
 		const newToast = {
 			...toast,
 			id,
@@ -42,6 +43,9 @@ export const useToastStore = create<ToastStore>((set, get) => ({
 	},
 	addSuccess: (message: string) => {
 		return get().addToast({ message, type: "success" });
+	},
+	addInfo: (message: string) => {
+		return get().addToast({ message, type: "info" });
 	},
 	removeToast: (id) => {
 		const { toasts } = get();

@@ -11,7 +11,7 @@ export type Document = {
 	file_size?: number;
 	num_pages?: number;
 	folder_id?: number;
-	processing_finished_at?: string;
+	processing_finished_at?: string | null;
 	created_at: string;
 	uploaded_by_user_id?: string;
 };
@@ -221,10 +221,29 @@ export class DocumentNotFoundError extends Error {
 	}
 }
 
+export class RegistrationPendingError extends Error {
+	constructor(userId: string) {
+		super(
+			`User ${userId} has not completed the registration, so their name and titles cannot be changed.`,
+		);
+		this.name = "RegistrationPendingError";
+	}
+}
+
 export class DefaultDocumentDeletionError extends Error {
 	constructor(documentId: number) {
 		super(`Default document ${documentId} cannot be deleted.`);
 		this.name = "DefaultDocumentDeletionError";
+	}
+}
+
+export class DuplicateDocumentError extends Error {
+	existingFileName?: string;
+
+	constructor(existingFileName?: string) {
+		super("failed.duplicate");
+		this.existingFileName = existingFileName;
+		this.name = "DuplicateDocumentError";
 	}
 }
 

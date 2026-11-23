@@ -1,0 +1,32 @@
+name: Process Inactive User Accounts
+
+# Warns, reminds and deletes accounts without a login for 18 months.
+# See apps/backend/supabase/scripts/process-inactive-users.ts.
+on:
+  schedule:
+    - cron: "0 4 * * *" # Daily at 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to process
+        type: choice
+        options:
+          - Staging
+          - Production
+      dry-run:
+        description: Only print what would happen
+        type: boolean
+        default: true
+
+jobs:
+  process-inactive-users:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Scheduled runs always start from the default branch, so they cover both environments
+        environment: ${{ fromJSON(github.event_name == 'schedule' && '["Staging","Production"]' || format('["{0}"]', inputs.environment)) }}
+    uses: ./.github/workflows/process-inactive-users-in-environment.yml
+    with:
+      environment: ${{ matrix.environment }}
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}
+    secrets: inherit

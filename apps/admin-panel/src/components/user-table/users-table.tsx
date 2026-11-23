@@ -25,6 +25,7 @@ const USER_STATUS_OPTIONS = [
 	"Active",
 	"Banned",
 	"Admin",
+	"Pending",
 ];
 import type { User } from "../../common";
 import { useUserStore } from "../../store/use-user-store";

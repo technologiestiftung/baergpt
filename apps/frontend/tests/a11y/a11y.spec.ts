@@ -1,7 +1,13 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { testWithLoggedInUser } from "../fixtures/test-with-logged-in-user.ts";
 import { testWithoutSplashScreen } from "../fixtures/test-without-splash-screen.ts";
+import { testWithMockedLlm } from "../fixtures/test-with-mocked-llm.ts";
+import {
+	mockLlmCompletion,
+	sendAndWaitForLLMResponse,
+} from "../fixtures/mock-llm.ts";
+import Content from "../../src/content.ts";
 
 testWithoutSplashScreen.describe("Accessibility - Chat form", () => {
 	testWithLoggedInUser(
@@ -35,40 +41,117 @@ testWithoutSplashScreen.describe("Accessibility - Auth Flow", () => {
 	);
 });
 
-test.describe("Accessibility - Public Pages", () => {
-	// test accessibility for register page
-	test("Register page should be accessible", async ({ page }) => {
-		await page.goto("/register/");
+testWithoutSplashScreen.describe("Accessibility - Public Pages", () => {
+	// test accessibility for login page
+	testWithoutSplashScreen(
+		"Login page should be accessible",
+		async ({ page }) => {
+			await page.goto("/login/");
 
-		// Wait for page to be fully loaded
-		await page.waitForLoadState("networkidle");
+			// The page is static, so wait for it to render before scanning
+			await expect(page.getByRole("main")).toBeVisible();
 
-		// Run accessibility scan on the privacy policy page
-		const a11yResults = await new AxeBuilder({ page }).analyze();
-		expect(a11yResults.violations).toEqual([]);
-	});
+			// Run accessibility scan on the privacy policy page
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
 
 	// test accessibility for privacy policy page
-	test("Privacy policy page should be accessible", async ({ page }) => {
-		await page.goto("/privacy-policy/");
+	testWithoutSplashScreen(
+		"Privacy policy page should be accessible",
+		async ({ page }) => {
+			await page.goto("/privacy-policy/");
 
-		// Wait for page to be fully loaded
-		await page.waitForLoadState("networkidle");
+			// The page is static, so wait for it to render before scanning
+			await expect(page.getByRole("main")).toBeVisible();
 
-		// Run accessibility scan on the privacy policy page
-		const a11yResults = await new AxeBuilder({ page }).analyze();
-		expect(a11yResults.violations).toEqual([]);
-	});
+			// Run accessibility scan on the privacy policy page
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
 
 	// test accessibility for terms of use page
-	test("Terms of use page should be accessible", async ({ page }) => {
-		await page.goto("/terms-of-use/");
+	testWithoutSplashScreen(
+		"Terms of use page should be accessible",
+		async ({ page }) => {
+			await page.goto("/terms-of-use/");
 
-		// Wait for page to be fully loaded
-		await page.waitForLoadState("networkidle");
+			// The page is static, so wait for it to render before scanning
+			await expect(page.getByRole("main")).toBeVisible();
 
-		// Run accessibility scan on the terms of use page
-		const a11yResults = await new AxeBuilder({ page }).analyze();
-		expect(a11yResults.violations).toEqual([]);
-	});
+			// Run accessibility scan on the terms of use page
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
+
+	// test accessibility for accessibility statement page
+	testWithoutSplashScreen(
+		"Accessibility statement page should be accessible",
+		async ({ page }) => {
+			await page.goto("/accessibility-statement/");
+
+			// The page is static, so wait for it to render before scanning
+			await expect(page.getByRole("main")).toBeVisible();
+
+			// Run accessibility scan on the accessibility statement page
+			const a11yResults = await new AxeBuilder({ page }).analyze();
+			expect(a11yResults.violations).toEqual([]);
+		},
+	);
+});
+
+test.describe("Accessibility - Code block", () => {
+	testWithMockedLlm(
+		"Code block copy button is keyboard-operable and copies plain text",
+		async ({ page, browserName }) => {
+			await mockLlmCompletion(page, {
+				textDelta: "```python\nprint('hello')\n```",
+			});
+
+			await page.goto("/");
+			await page.getByPlaceholder("Stellen Sie eine Frage").fill("hallo");
+			await sendAndWaitForLLMResponse(page);
+
+			const answer = page.getByTestId("assistant-message-markdown-container");
+			const codeBlock = answer.locator(".code-block");
+			await expect(codeBlock).toBeVisible();
+			await expect(codeBlock.locator(".code-block-language")).toHaveText(
+				"python",
+			);
+
+			const a11yResults = await new AxeBuilder({ page })
+				.include('[data-testid="assistant-message-markdown-container"]')
+				.analyze();
+			expect(a11yResults.violations).toEqual([]);
+
+			if (browserName === "webkit") {
+				return;
+			}
+
+			const copyButton = codeBlock.getByRole("button", {
+				name: Content["chat.codeBlockCopyButton.ariaLabel"],
+			});
+
+			await copyButton.focus();
+			await expect(copyButton).toBeFocused();
+			await copyButton.press("Enter");
+
+			await expect(
+				codeBlock.getByRole("button", {
+					name: Content["chat.codeBlockCopyButton.ariaLabel.copied"],
+				}),
+			).toBeVisible();
+
+			// Firefox doesn't support navigator.clipboard.readText() for web pages.
+			if (browserName !== "firefox") {
+				const clipboardText = await page.evaluate(() =>
+					navigator.clipboard.readText(),
+				);
+				expect(clipboardText).toBe("print('hello')");
+			}
+		},
+	);
 });

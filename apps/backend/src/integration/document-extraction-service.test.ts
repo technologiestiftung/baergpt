@@ -29,6 +29,7 @@ vi.mock("../monitoring/capture-error", () => ({
 
 import {
 	DocumentExtractionService,
+	extractMarkdownDocument,
 	MistralOCRService,
 } from "../services/document-extraction-service";
 import { captureError } from "../monitoring/capture-error";
@@ -170,5 +171,75 @@ describe("DocumentExtractionService CSV extraction", () => {
 		expect(result.parsedPages[0].content).toContain("| Name | Age | City |");
 		expect(result.parsedPages[0].content).toContain("| Alice | 30 | Berlin |");
 		expect(result.parsedPages[0].content).toContain("| Bob | 25 | Hamburg |");
+	});
+});
+
+describe("DocumentExtractionService Markdown extraction", () => {
+	const service = new DocumentExtractionService();
+
+	it("keeps a Markdown file as a single page of its original text", async () => {
+		const markdownText =
+			"﻿# Notizen\n\nEin Absatz mit **Fettdruck**.\n\n## Abschnitt\n\n- Punkt";
+		const markdownBytes = new TextEncoder().encode(markdownText);
+		const document: Document = {
+			id: 1,
+			source_url: "user-123/notes.md",
+			source_type: "personal_document",
+			created_at: new Date().toISOString(),
+		};
+
+		const result = await service.extractDocument(markdownBytes, document);
+
+		expect(result.numPages).toBe(1);
+		expect(result.parsedPages).toHaveLength(1);
+		expect(result.parsedPages[0].pageNumber).toBe(1);
+		expect(result.parsedPages[0].content).toBe(
+			"# Notizen\n\nEin Absatz mit **Fettdruck**.\n\n## Abschnitt\n\n- Punkt",
+		);
+		expect(result.parsedPages[0].tokenCount).toBeGreaterThan(0);
+	});
+});
+
+describe("extractMarkdownDocument", () => {
+	it("reads a Windows-1252 file without losing umlauts", () => {
+		// "Größe für Bäume" in Windows-1252, which is not valid UTF-8
+		const givenBytes = new Uint8Array([
+			0x47, 0x72, 0xf6, 0xdf, 0x65, 0x20, 0x66, 0xfc, 0x72, 0x20, 0x42, 0xe4,
+			0x75, 0x6d, 0x65,
+		]);
+
+		expect(extractMarkdownDocument(givenBytes)).toBe("Größe für Bäume");
+	});
+
+	it("reads a UTF-16 file with byte order mark", () => {
+		const givenText = "# Überschrift";
+		const givenBytes = new Uint8Array(2 + givenText.length * 2);
+		givenBytes.set([0xff, 0xfe]);
+		for (let index = 0; index < givenText.length; index++) {
+			givenBytes[2 + index * 2] = givenText.charCodeAt(index) & 0xff;
+			givenBytes[3 + index * 2] = givenText.charCodeAt(index) >> 8;
+		}
+
+		expect(extractMarkdownDocument(givenBytes)).toBe(givenText);
+	});
+
+	it("rejects binary content renamed to .md", () => {
+		const givenBytes = new Uint8Array([
+			...new TextEncoder().encode("%PDF-1.7\n"),
+			0x00,
+			0x01,
+			0x02,
+			0x8f,
+			0x9d,
+			0x00,
+		]);
+
+		expect(() => extractMarkdownDocument(givenBytes)).toThrow("failed.format");
+	});
+
+	it("rejects an empty or whitespace-only file", () => {
+		expect(() =>
+			extractMarkdownDocument(new TextEncoder().encode(" \n\t\n")),
+		).toThrow("failed.format");
 	});
 });

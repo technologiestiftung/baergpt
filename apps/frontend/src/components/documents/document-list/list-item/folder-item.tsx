@@ -7,6 +7,7 @@ import { DroppableFolderName } from "./droppable-folder-name.tsx";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
 import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
+import { ItemActions } from "./item-actions.tsx";
 import { usePublicDocumentsStore } from "../../../../store/use-public-documents-store.ts";
 import { isUserFolder } from "./utils/is-user-folder.ts";
 import { isPublicFolder } from "./utils/is-public-folder.ts";
@@ -68,16 +69,17 @@ const FolderItem: React.FC<FolderItemProps> = ({ item }) => {
 			</div>
 
 			<div
-				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow  group`}
+				className={`h-11 gap-x-1 flex justify-between items-center w-0 grow group`}
 			>
 				<DroppableFolderName item={item} />
 
-				<ToggleChatItemButton
-					handleToggleChatItem={handleToggleChatItem}
-					isSelectedForChat={isSelectedForChat}
-				/>
-
-				<ItemDropdownButton item={item} />
+				<ItemActions isSelectedForChat={isSelectedForChat}>
+					<ToggleChatItemButton
+						handleToggleChatItem={handleToggleChatItem}
+						isSelectedForChat={isSelectedForChat}
+					/>
+					<ItemDropdownButton item={item} />
+				</ItemActions>
 			</div>
 		</div>
 	);

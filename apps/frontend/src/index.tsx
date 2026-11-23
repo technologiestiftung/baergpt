@@ -13,7 +13,11 @@ import { AccountDeleted } from "./routes/account-deleted";
 import { PrivacyPolicyPage } from "./routes/privacy-policy";
 import { RegistrationError } from "./routes/registration-error";
 import { TermsOfUsePage } from "./routes/terms-of-use";
+import { AccessibilityStatementPage } from "./routes/accessibility-statement";
 import { sentryCreateBrowserRouter } from "./monitoring/sentry.ts";
+import { initMatomo } from "./analytics/matomo.ts";
+
+initMatomo();
 
 const router = sentryCreateBrowserRouter([
 	{
@@ -50,6 +54,10 @@ const router = sentryCreateBrowserRouter([
 	},
 	{ path: "/privacy-policy/", element: <PrivacyPolicyPage /> },
 	{ path: "/terms-of-use/", element: <TermsOfUsePage /> },
+	{
+		path: "/accessibility-statement/",
+		element: <AccessibilityStatementPage />,
+	},
 ]);
 
 function render() {

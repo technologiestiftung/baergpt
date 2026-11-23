@@ -20,6 +20,17 @@ export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
 		dropdownRef,
 	]);
 
+	const closeDropdown = () => {
+		// Closing unmounts the focused option, so focus would fall back to <body>
+		const isFocusInDropdown = dropdownRef.current?.contains(
+			document.activeElement,
+		);
+		setIsDropdownOpen(false);
+		if (isFocusInDropdown) {
+			dropdownButtonRef.current?.focus();
+		}
+	};
+
 	const handleOpenMenu = () => {
 		setIsDropdownOpen(!isDropdownOpen);
 	};
@@ -29,8 +40,9 @@ export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
 			<button
 				ref={dropdownButtonRef}
 				type="button"
-				className="flex items-center p-[7px] hover:bg-hellblau-100 rounded-3px group-hover:opacity-100 focus-visible:outline-2px focus-within:opacity-100 md:opacity-0 transition-opacity duration-150"
+				className="flex items-center p-[7px] hover:bg-hellblau-100 rounded-3px group-hover:opacity-100 focus-visible:outline-2px group-focus-within:opacity-100 aria-expanded:opacity-100 hoverable:opacity-0 transition-opacity duration-150"
 				aria-label={Content["documentsList.menuIcon.ariaLabel"]}
+				aria-expanded={isDropdownOpen}
 				onClick={handleOpenMenu}
 			>
 				<img
@@ -43,7 +55,7 @@ export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
 			<ItemDropdown
 				item={item}
 				isOpen={isDropdownOpen}
-				onClose={() => setIsDropdownOpen(false)}
+				onClose={closeDropdown}
 				triggerRef={dropdownButtonRef}
 			/>
 		</div>

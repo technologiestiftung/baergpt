@@ -2,3 +2,5 @@
 .branches
 .temp
 .env
+# Supabase Studio scratch queries
+snippets/

@@ -1,0 +1,7 @@
+# Must match var.namespaces["staging"].hostname in infra/terraform/ske.
+- op: replace
+  path: /spec/hostnames/0
+  value: api-staging.baergpt-ske.stackit.rocks
+- op: replace
+  path: /spec/parentRefs/0/sectionName
+  value: https-staging

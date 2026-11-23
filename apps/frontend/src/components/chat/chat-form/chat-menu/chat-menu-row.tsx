@@ -33,7 +33,7 @@ export function ChatMenuRow({
 		<button
 			type="button"
 			ref={optionButtonRef}
-			className={`flex items-center justify-between w-full px-1.5 py-0.5 text-left gap-6 hover:bg-hellblau-30 focus-visible:bg-hellblau-30 focus-visible:outline-default rounded-3px ${isActive ? "bg-hellblau-30" : ""}`}
+			className={`flex items-center justify-between w-full px-3 py-2 text-left gap-2 hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default rounded-3px ${isActive ? "bg-hellblau-60" : ""}`}
 			onClick={onClick}
 			onMouseEnter={onMouseEnter}
 			onKeyDown={onKeyDown}
@@ -43,24 +43,18 @@ export function ChatMenuRow({
 			aria-haspopup={hasSubmenu ? "menu" : undefined}
 			aria-expanded={hasSubmenu ? isActive : undefined}
 		>
-			<div className="flex items-center">
+			<div className="flex items-center gap-1 pr-[5px]">
 				{typeof icon === "string" ? (
-					<img
-						src={icon}
-						alt={label}
-						width={20}
-						height={20}
-						className="m-1.5"
-					/>
+					<img src={icon} alt={label} width={20} height={20} />
 				) : (
 					<div
-						className={`m-1.5 size-5 flex items-center justify-center ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
+						className={`size-5 flex items-center justify-center ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
 					>
 						{icon}
 					</div>
 				)}
 				<div
-					className={`text-sm leading-6 ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
+					className={`text-sm leading-5 ${isSelected ? "text-aktiv-blau-100" : "text-dunkelblau-80"}`}
 				>
 					{label}
 				</div>
@@ -69,15 +63,15 @@ export function ChatMenuRow({
 			<img
 				src="/icons/check-active-icon.svg"
 				alt={Content["chat.options.selected.icon.imgAlt"]}
-				width={24}
-				height={24}
+				width={20}
+				height={20}
 				className={`${isSelected ? "block" : "hidden"}`}
 			/>
 			<img
-				src="/icons/chevron-small-right.svg"
+				src="/icons/chevron-right-icon.svg"
 				alt=""
-				width={16}
-				height={16}
+				width={20}
+				height={20}
 				className={`${hasSubmenu ? "block" : "hidden"}`}
 				aria-hidden="true"
 			/>

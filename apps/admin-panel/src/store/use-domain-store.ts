@@ -32,9 +32,18 @@ export const useDomainStore = create<DomainStore>((set, get) => ({
 		}
 	},
 	addAllowedEmailDomain: async (domain: string) => {
-		const success = await addAllowedEmailDomain(domain.toLowerCase());
+		const { error } = await addAllowedEmailDomain(domain.toLowerCase());
 
-		if (!success) {
+		if (error) {
+			const isDuplicate =
+				error.message ===
+				'duplicate key value violates unique constraint "allowed_email_domains_domain_key"';
+
+			if (isDuplicate) {
+				useUserErrorStore.getState().handleError(new Error(error.message));
+				return false;
+			}
+
 			useUserErrorStore
 				.getState()
 				.handleError(new Error("Failed to add allowed email domain"));

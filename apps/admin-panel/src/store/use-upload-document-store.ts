@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { useDocumentStore } from "./use-document-store.ts";
 import { uploadAndProcessDocument } from "@/api/documents/upload-file.ts";
+import { isSupportedUploadFile } from "@/lib/upload-file-types.ts";
 
 export const UPLOAD_STATUS_MAP = {
 	uploading: "wird hochgeladen",
@@ -9,7 +10,8 @@ export const UPLOAD_STATUS_MAP = {
 	canceled: "hochladen abgebrochen",
 	"failed.generic": "hochladen fehlgeschlagen",
 	"failed.duplicate": "Datei existiert bereits",
-	"failed.format": "Ungültiges Dateiformat (nur PDF, Word, Excel oder CSV)",
+	"failed.format":
+		"Ungültiges Dateiformat (nur PDF, Word, Excel, CSV oder Markdown)",
 	"failed.size": `Datei zu groß (max. ${import.meta.env.VITE_UPLOAD_FILE_SIZE_LIMIT_MB} MB)`,
 } as const;
 
@@ -54,16 +56,7 @@ export const useFileUploadsStore = create<UseFileUploadsStore>((set, get) => ({
 				throw new Error("failed.duplicate");
 			}
 
-			if (
-				!file.type.includes("pdf") &&
-				!file.type.includes(
-					"vnd.openxmlformats-officedocument.wordprocessingml.document",
-				) &&
-				!file.type.includes(
-					"vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-				) &&
-				!file.type.includes("csv")
-			) {
+			if (!isSupportedUploadFile(file)) {
 				throw new Error("failed.format");
 			}
 

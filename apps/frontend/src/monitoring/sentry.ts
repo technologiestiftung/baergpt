@@ -32,7 +32,7 @@ Sentry.init({
 	tracePropagationTargets: config.tracePropagationTargets,
 	ignoreErrors: Array.from(NON_REPORTABLE_ERRORS),
 	sendDefaultPii: false,
-	enabled: ["production", "staging", "test"].includes(config.env),
+	enabled: ["production", "staging"].includes(config.env),
 });
 
 // Call this AFTER Sentry.init()

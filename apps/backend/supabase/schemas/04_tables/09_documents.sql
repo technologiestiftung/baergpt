@@ -44,6 +44,10 @@ CREATE INDEX "idx_documents_owned_by_user_id" ON "public"."documents" USING "btr
 
 CREATE INDEX "idx_documents_source_type" ON "public"."documents" USING "btree" ("source_type");
 
+CREATE UNIQUE INDEX "idx_documents_personal_checksum_unique" ON "public"."documents" USING "btree" ("owned_by_user_id", "file_checksum")
+WHERE
+    ("source_type" = 'personal_document');
+
 -- FOREIGN KEYS
 ALTER TABLE ONLY "public"."documents"
 ADD CONSTRAINT "documents_access_group_id_fkey" FOREIGN KEY ("access_group_id") REFERENCES "public"."access_groups" ("id") ON DELETE SET NULL;

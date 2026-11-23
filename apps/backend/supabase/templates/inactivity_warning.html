@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+	</head>
+	<body
+		style="
+			font-family: Arial, Helvetica, sans-serif;
+			background-color: #eef2f7;
+			margin: 0;
+			padding: 0;
+		"
+	>
+		<!-- Sent by supabase/scripts/process-inactive-users.ts, not by GoTrue: placeholders are filled in by renderTemplate, not Go templates -->
+		<table
+			width="100%"
+			cellpadding="0"
+			cellspacing="0"
+			style="background-color: #eef2f7"
+			class="email-wrapper"
+		>
+			<tr>
+				<td align="center" style="padding: 48px 16px">
+					<table
+						width="600"
+						cellpadding="0"
+						cellspacing="0"
+						style="
+							width: 100%;
+							max-width: 600px;
+							background-color: #ffffff;
+							border-radius: 3px;
+						"
+						class="email-content"
+					>
+						<tr>
+							<td
+								style="
+									padding: 40px;
+									font-family: Arial, Helvetica, sans-serif;
+									color: #0c2753;
+									font-size: 16px;
+									line-height: 24px;
+								"
+							>
+								<table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td align="center" style="padding-bottom: 40px">
+											<a href="{{app_url}}/">
+												<img
+													src="{{app_url}}/logos/baergpt-logo.svg"
+													alt="BärGPT Logo"
+													width="179"
+													height="42"
+													style="display: block; border: 0"
+												/>
+											</a>
+										</td>
+									</tr>
+								</table>
+
+								<p style="margin: 0 0 20px">{{greeting}}</p>
+
+								<p style="margin: 0 0 20px">
+									Sie haben sich seit über {{months_inactive}} Monaten nicht
+									mehr bei BärGPT angemeldet. Aus Datenschutzgründen löschen wir
+									Konten, die {{inactivity_months}} Monate lang nicht genutzt
+									wurden.
+								</p>
+
+								<p style="margin: 0 0 32px">
+									Ihr Konto wird am <strong>{{deletion_date}}</strong> dauerhaft
+									gelöscht. Dabei werden alle zugehörigen Daten entfernt,
+									einschließlich Chatverläufe, hochgeladene Dokumente und
+									persönlichen Einstellungen. Die Löschung kann nicht rückgängig
+									gemacht werden.
+								</p>
+
+								<p style="margin: 0 0 8px">
+									<strong>Sie möchten BärGPT weiter nutzen?</strong>
+								</p>
+								<p style="margin: 0 0 20px">
+									Melden Sie sich einfach bis zum {{deletion_date}} an. Ihr
+									Konto bleibt dann erhalten.
+								</p>
+
+								<table cellpadding="0" cellspacing="0" style="margin: 0 0 32px">
+									<tr>
+										<td style="background-color: #0c2753; border-radius: 3px">
+											<a
+												href="{{app_url}}/login/"
+												target="_blank"
+												rel="noopener noreferrer"
+												style="
+													display: inline-block;
+													padding: 12px 20px;
+													font-size: 16px;
+													line-height: 24px;
+													color: #f5f8fc;
+													text-decoration: none;
+												"
+											>
+												Anmelden
+											</a>
+										</td>
+									</tr>
+								</table>
+
+								<p style="margin: 0 0 8px">
+									<strong>Sie benötigen BärGPT nicht mehr?</strong>
+								</p>
+								<p style="margin: 0 0 20px">
+									Dann müssen Sie nichts tun. Ihr Konto und Ihre Daten werden
+									automatisch gelöscht.
+								</p>
+
+								<p style="margin: 0 0 20px">
+									Weitere Informationen finden Sie in unserer
+									<a
+										href="{{app_url}}/privacy-policy/"
+										target="_blank"
+										rel="noopener noreferrer"
+										style="color: #0c2753"
+										>Datenschutzerklärung</a
+									>. Bei Fragen erreichen Sie uns unter
+									<a href="mailto:support@baergpt.berlin" style="color: #0c2753"
+										>support@baergpt.berlin</a
+									>.
+								</p>
+
+								<p style="margin: 0">
+									Mit freundlichen Grüßen<br />
+									Ihr BärGPT-Team
+								</p>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

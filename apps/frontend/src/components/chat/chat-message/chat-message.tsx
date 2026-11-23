@@ -1,43 +1,119 @@
 import { AssistantMessage } from "./assistant-message.tsx";
 import ReactMarkdown from "react-markdown";
 import { UserMessage } from "./user-message.tsx";
-import type { ChatMessage } from "../../../common.ts";
+import type { ChatMessage as ChatMessageType } from "../../../common.ts";
 import remarkGfm from "remark-gfm";
+import { CodeBlock } from "./code-block/code-block.tsx";
 import { MarkdownWrapperScrollableTable } from "../../primitives/markdown/markdown-wrapper-scrollable-table.tsx";
-import type { JSX } from "react";
-import { MarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
+import {
+	MarkdownExportableTable,
+	TableExportVisibleContext,
+} from "../../primitives/markdown/markdown-exportable-table.tsx";
+import type { PluggableList } from "unified";
+import { type JSX, memo, useEffect, useMemo, useState } from "react";
+import { createMarkdownLinkWithDatawrapperEmbed } from "../../primitives/markdown/datawrapper-embed.tsx";
 import { ThinkingTraces } from "./thinking-traces.tsx";
+import { config } from "../../../config.ts";
+import { captureError } from "../../../monitoring/capture-error.ts";
+import { useChatButtonsVisibility } from "../hooks/use-chat-buttons-visibility.ts";
 
 interface ChatMessageProps {
-	message: ChatMessage;
+	message: ChatMessageType;
 }
 
-const customComponents = {
-	table: MarkdownWrapperScrollableTable,
-	a: MarkdownLinkWithDatawrapperEmbed,
-	img: () => null,
-};
+const CODE_FENCE_PATTERN = /^ {0,3}(`{3,}|~{3,})/m;
 
-export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
+// Loaded lazily, and only for messages that actually contain a code fence,
+// so chats without code blocks never pay for the full language grammar
+// bundle on the first-paint path. Cached at module scope so it's fetched once.
+let rehypeHighlightPluginsPromise: Promise<PluggableList> | null = null;
+function loadRehypeHighlightPlugins(): Promise<PluggableList> {
+	rehypeHighlightPluginsPromise ??= Promise.all([
+		import("rehype-highlight"),
+		import("lowlight"),
+	])
+		.then(([{ default: rehypeHighlight }, { common }]): PluggableList => [
+			[rehypeHighlight, { languages: common }],
+		])
+		.catch((error: unknown) => {
+			rehypeHighlightPluginsPromise = null;
+			throw error;
+		});
+	return rehypeHighlightPluginsPromise;
+}
+
+/**
+ * Memoized: while an answer streams, only the streaming message gets a new
+ * object (see `updateMessage`), so the markdown of all others is not re-parsed.
+ */
+export const ChatMessage = memo(function ChatMessage({
+	message,
+}: ChatMessageProps): JSX.Element {
 	const { role, content, traces } = message;
 	// An assistant message with traces but no content yet is still streaming
 	// its reasoning, so it has to render before the answer arrives.
 	const hasAssistantContent = content !== "" || Boolean(traces);
 
+	const datawrapperChartIds = message.datawrapper_chart_ids;
+
+	// A new link component type on every render would remount (and reload)
+	// each embedded chart while streaming, so only rebuild when the ids change
+	const customComponents = useMemo(() => {
+		// Only ids this message's own `publish_visualization` calls produced may
+		// auto-embed — never whatever the model's text happens to reproduce
+		const allowedDatawrapperChartIds = config.featureFlagMcpDatawrapperAllowed
+			? (datawrapperChartIds ?? [])
+			: [];
+
+		return {
+			table: MarkdownWrapperScrollableTable,
+			a: createMarkdownLinkWithDatawrapperEmbed(allowedDatawrapperChartIds),
+			img: () => null,
+			pre: CodeBlock,
+		};
+	}, [datawrapperChartIds]);
+
+	const { isLastMessage, hasChatButtons } = useChatButtonsVisibility(message);
+	const assistantComponents = useMemo(
+		() => ({ ...customComponents, table: MarkdownExportableTable }),
+		[customComponents],
+	);
+
+	const hasCodeFence = CODE_FENCE_PATTERN.test(content);
+	const [loadedRehypePlugins, setLoadedRehypePlugins] =
+		useState<PluggableList | null>(null);
+	useEffect(() => {
+		if (!hasCodeFence || loadedRehypePlugins) {
+			return;
+		}
+		loadRehypeHighlightPlugins()
+			.then(setLoadedRehypePlugins)
+			.catch(captureError);
+	}, [hasCodeFence, loadedRehypePlugins]);
+
+	const rehypePlugins = loadedRehypePlugins ?? undefined;
+
 	return (
 		<div className="flex flex-col" data-message-id={message.id}>
 			{role === "assistant" && hasAssistantContent && (
 				<div className="mb-8">
-					<AssistantMessage message={message}>
+					<AssistantMessage
+						message={message}
+						isLastMessage={isLastMessage}
+						hasChatButtons={hasChatButtons}
+					>
 						<ThinkingTraces message={message} />
 						{content !== "" && (
-							<ReactMarkdown
-								remarkPlugins={[remarkGfm]}
-								className="markdown-container"
-								components={customComponents}
-							>
-								{content}
-							</ReactMarkdown>
+							<TableExportVisibleContext.Provider value={hasChatButtons}>
+								<ReactMarkdown
+									remarkPlugins={[remarkGfm]}
+									rehypePlugins={rehypePlugins}
+									className="markdown-container"
+									components={assistantComponents}
+								>
+									{content}
+								</ReactMarkdown>
+							</TableExportVisibleContext.Provider>
 						)}
 					</AssistantMessage>
 				</div>
@@ -47,6 +123,7 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 				<UserMessage message={message}>
 					<ReactMarkdown
 						remarkPlugins={[remarkGfm]}
+						rehypePlugins={rehypePlugins}
 						className="markdown-container markdown-container-user"
 						components={customComponents}
 					>
@@ -56,4 +133,4 @@ export function ChatMessage({ message }: ChatMessageProps): JSX.Element {
 			)}
 		</div>
 	);
-}
+});

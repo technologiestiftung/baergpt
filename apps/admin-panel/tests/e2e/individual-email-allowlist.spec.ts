@@ -122,6 +122,34 @@ test.describe("Individual Email Allowlist", () => {
 		await expect(row.getByText("Nein", { exact: true })).toBeVisible();
 	});
 
+	test("shows error when adding an email that already has an account", async ({
+		page,
+		adminAccount,
+	}) => {
+		await gotoIndividualEmailAllowlist(page);
+
+		await page.locator("#email").fill(adminAccount.email);
+		await page.getByRole("button", { name: "E-Mail hinzufügen" }).click();
+
+		await expect(
+			page.getByText("Für diese E-Mail-Adresse existiert bereits ein Account."),
+		).toBeVisible();
+		await expect(
+			page.getByRole("button", { name: "E-Mail hinzugefügt" }),
+		).not.toBeVisible();
+	});
+
+	test("adds an email without an account", async ({ page, testEmail }) => {
+		await gotoIndividualEmailAllowlist(page);
+
+		await page.locator("#email").fill(testEmail);
+		await page.getByRole("button", { name: "E-Mail hinzufügen" }).click();
+
+		await expect(
+			page.getByRole("button", { name: "E-Mail hinzugefügt" }),
+		).toBeVisible();
+	});
+
 	test("shows error when adding an email that already exists in the allowlist", async ({
 		page,
 		testEmail,

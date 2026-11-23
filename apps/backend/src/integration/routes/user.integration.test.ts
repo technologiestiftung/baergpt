@@ -15,6 +15,7 @@ import { PDFDocument } from "pdf-lib";
 import { serviceRoleDbClient } from "../../supabase";
 import { Database } from "@repo/db-schema";
 import { UserScopedDbService } from "../../services/db-service/user-scoped-db-service";
+import { PrivilegedDbService } from "../../services/db-service/privileged-db-service";
 import { GenerationService } from "../../services/generation-service";
 import { EmbeddingService } from "../../services/embedding-service";
 import { signInWithOtp } from "../fixtures/auth";
@@ -41,7 +42,12 @@ const generatePdfBytesFromText = async (text: string): Promise<Uint8Array> => {
 const pdfFileFromBytes = (bytes: Uint8Array, fileName: string): File =>
 	new File([bytes.slice()], fileName, { type: "application/pdf" });
 
-type SseEvent = { status: string; error?: string; documentId?: number };
+type SseEvent = {
+	status: string;
+	error?: string;
+	documentId?: number;
+	existingFileName?: string;
+};
 
 // Failures/success are delivered in-band as SSE events on a 200 response.
 const readSseEvents = async (response: Response): Promise<SseEvent[]> => {
@@ -259,7 +265,13 @@ describe("Integration Tests for Routes", () => {
 		vi.spyOn(
 			UserScopedDbService.prototype,
 			"extractDocument",
-		).mockResolvedValue(MOCK_EXTRACTION_RESULT as never);
+		).mockImplementation(
+			async () =>
+				({
+					...MOCK_EXTRACTION_RESULT,
+					checksum: crypto.randomUUID(),
+				}) as never,
+		);
 		vi.spyOn(GenerationService.prototype, "summarize").mockResolvedValue(
 			MOCK_SUMMARY_DATA as never,
 		);
@@ -303,6 +315,314 @@ describe("Integration Tests for Routes", () => {
 			expect(events.map((e) => e.status)).toContain("successful");
 		}
 	}, 20_000);
+
+	it("POST /documents/process should reject a file the user already uploaded under another name", async () => {
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({
+			...MOCK_EXTRACTION_RESULT,
+			checksum: crypto.randomUUID(),
+		} as never);
+		const pdfBytes = await generatePdfBytesFromText("Duplicate Document");
+
+		const firstEvents = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(pdfBytes, "original.pdf"),
+		});
+		const secondEvents = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(pdfBytes, "renamed.pdf"),
+		});
+
+		const firstDocumentId = firstEvents.find(
+			(e) => e.status === "successful",
+		)?.documentId;
+		expect(firstDocumentId).toBeDefined();
+		const { data: firstDocument } = await serviceRoleDbClient
+			.from("documents")
+			.select("file_name")
+			.eq("id", firstDocumentId as number)
+			.single();
+
+		expect(secondEvents).toContainEqual({
+			status: "failed.duplicate",
+			existingFileName: firstDocument?.file_name,
+		});
+	}, 20_000);
+
+	it("POST /documents/process should suffix the name of a different file uploaded under an existing name", async () => {
+		const baseName = `same-name-${crypto.randomUUID()}`;
+		const fileName = `${baseName}.pdf`;
+		const uploadedFileNames = [
+			fileName,
+			fileName,
+			fileName,
+			`${baseName} (2).pdf`,
+		];
+		const documentIds: number[] = [];
+
+		for (const [index, uploadedFileName] of uploadedFileNames.entries()) {
+			const events = await processViaRoute({
+				metadata: personalMetadata,
+				token: validToken,
+				file: pdfFileFromBytes(
+					await generatePdfBytesFromText(`Content ${index}`),
+					uploadedFileName,
+				),
+			});
+			const documentId = events.find(
+				(e) => e.status === "successful",
+			)?.documentId;
+			expect(documentId).toBeDefined();
+			documentIds.push(documentId as number);
+		}
+
+		const { data: documents } = await serviceRoleDbClient
+			.from("documents")
+			.select("id, file_name")
+			.in("id", documentIds)
+			.order("id");
+
+		expect(documents?.map((d) => d.file_name)).toEqual([
+			fileName,
+			`${baseName} (2).pdf`,
+			`${baseName} (3).pdf`,
+			`${baseName} (4).pdf`,
+		]);
+	}, 20_000);
+
+	it("POST /documents/process should suffix the name of a file uploaded under a default document's name", async () => {
+		const baseName = `default-name-${crypto.randomUUID()}`;
+		const fileName = `${baseName}.pdf`;
+		const { data: accessGroup } = await serviceRoleDbClient
+			.from("access_groups")
+			.select("id")
+			.eq("name", "Alle")
+			.single();
+		const { data: defaultDocument, error: insertError } =
+			await serviceRoleDbClient
+				.from("documents")
+				.insert({
+					source_url: `default/${fileName}`,
+					source_type: "default_document",
+					file_name: fileName,
+					file_checksum: crypto.randomUUID(),
+					access_group_id: accessGroup?.id,
+				})
+				.select("id")
+				.single();
+		expect(insertError).toBeNull();
+
+		try {
+			const events = await processViaRoute({
+				metadata: personalMetadata,
+				token: validToken,
+				file: pdfFileFromBytes(
+					await generatePdfBytesFromText("Own content"),
+					fileName,
+				),
+			});
+			const documentId = events.find(
+				(e) => e.status === "successful",
+			)?.documentId;
+			expect(documentId).toBeDefined();
+
+			const { data: document } = await serviceRoleDbClient
+				.from("documents")
+				.select("file_name")
+				.eq("id", documentId as number)
+				.single();
+			expect(document?.file_name).toBe(`${baseName} (2).pdf`);
+		} finally {
+			await serviceRoleDbClient
+				.from("documents")
+				.delete()
+				.eq("id", defaultDocument?.id as number);
+		}
+	}, 20_000);
+
+	it("POST /documents/process should reject a duplicate that slips past the checksum check", async () => {
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({
+			...MOCK_EXTRACTION_RESULT,
+			checksum: crypto.randomUUID(),
+		} as never);
+		vi.spyOn(UserScopedDbService.prototype, "findDocumentByChecksum")
+			.mockResolvedValueOnce(null)
+			.mockResolvedValueOnce(null);
+		const pdfBytes = await generatePdfBytesFromText("Concurrent Document");
+
+		const firstEvents = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(pdfBytes, "first.pdf"),
+		});
+		const secondEvents = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(pdfBytes, "second.pdf"),
+		});
+
+		const firstDocumentId = firstEvents.find(
+			(e) => e.status === "successful",
+		)?.documentId;
+		expect(firstDocumentId).toBeDefined();
+		const { data: firstDocument } = await serviceRoleDbClient
+			.from("documents")
+			.select("file_name")
+			.eq("id", firstDocumentId as number)
+			.single();
+
+		expect(secondEvents).toContainEqual({
+			status: "failed.duplicate",
+			existingFileName: firstDocument?.file_name,
+		});
+	}, 20_000);
+
+	const insertInProgressDocument = async (
+		checksum: string,
+		createdAt = new Date().toISOString(),
+	) => {
+		const { data, error } = await serviceRoleDbClient
+			.from("documents")
+			.insert({
+				owned_by_user_id: OWNER_USER_ID,
+				source_type: "personal_document",
+				source_url: `${OWNER_USER_ID}/in-progress-${checksum}.pdf`,
+				file_name: `in-progress-${checksum}.pdf`,
+				file_checksum: checksum,
+				processing_finished_at: null,
+				created_at: createdAt,
+			})
+			.select("id, file_name")
+			.single();
+		expect(error).toBeNull();
+		return data as { id: number; file_name: string };
+	};
+
+	it("POST /documents/process should upload a file once a matching in-progress upload fails", async () => {
+		const checksum = crypto.randomUUID();
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({ ...MOCK_EXTRACTION_RESULT, checksum } as never);
+		const inProgressDocument = await insertInProgressDocument(checksum);
+
+		const eventsPromise = processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(
+				await generatePdfBytesFromText("Retried Document"),
+				"retried.pdf",
+			),
+		});
+		await new Promise((resolve) => setTimeout(resolve, 1_500));
+		await serviceRoleDbClient
+			.from("documents")
+			.delete()
+			.eq("id", inProgressDocument.id);
+
+		const events = await eventsPromise;
+		expect(events.find((e) => e.status === "successful")).toBeDefined();
+	}, 20_000);
+
+	it("POST /documents/process should reject a duplicate once a matching in-progress upload finishes", async () => {
+		const checksum = crypto.randomUUID();
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({ ...MOCK_EXTRACTION_RESULT, checksum } as never);
+		const inProgressDocument = await insertInProgressDocument(checksum);
+
+		try {
+			const eventsPromise = processViaRoute({
+				metadata: personalMetadata,
+				token: validToken,
+				file: pdfFileFromBytes(
+					await generatePdfBytesFromText("Waiting Document"),
+					"waiting.pdf",
+				),
+			});
+			await new Promise((resolve) => setTimeout(resolve, 1_500));
+			await serviceRoleDbClient
+				.from("documents")
+				.update({ processing_finished_at: new Date().toISOString() })
+				.eq("id", inProgressDocument.id);
+
+			expect(await eventsPromise).toContainEqual({
+				status: "failed.duplicate",
+				existingFileName: inProgressDocument.file_name,
+			});
+		} finally {
+			await serviceRoleDbClient
+				.from("documents")
+				.delete()
+				.eq("id", inProgressDocument.id);
+		}
+	}, 20_000);
+
+	it("POST /documents/process should replace an abandoned upload with the same content", async () => {
+		const checksum = crypto.randomUUID();
+		vi.spyOn(
+			UserScopedDbService.prototype,
+			"extractDocument",
+		).mockResolvedValue({ ...MOCK_EXTRACTION_RESULT, checksum } as never);
+		const abandonedDocument = await insertInProgressDocument(
+			checksum,
+			new Date(Date.now() - 60 * 60_000).toISOString(),
+		);
+
+		const events = await processViaRoute({
+			metadata: personalMetadata,
+			token: validToken,
+			file: pdfFileFromBytes(
+				await generatePdfBytesFromText("Recovered Document"),
+				"recovered.pdf",
+			),
+		});
+
+		expect(events.find((e) => e.status === "successful")).toBeDefined();
+		const { data: remaining } = await serviceRoleDbClient
+			.from("documents")
+			.select("id")
+			.eq("id", abandonedDocument.id);
+		expect(remaining).toEqual([]);
+	}, 20_000);
+
+	it("deleteAbandonedUpload should keep an upload that finished before the cleanup", async () => {
+		const inProgressDocument = await insertInProgressDocument(
+			crypto.randomUUID(),
+			new Date(Date.now() - 60 * 60_000).toISOString(),
+		);
+
+		try {
+			await serviceRoleDbClient
+				.from("documents")
+				.update({ processing_finished_at: new Date().toISOString() })
+				.eq("id", inProgressDocument.id);
+
+			const deleted = await new PrivilegedDbService(
+				serviceRoleDbClient,
+			).deleteAbandonedUpload(inProgressDocument.id);
+
+			expect(deleted).toBe(false);
+			const { data: remaining } = await serviceRoleDbClient
+				.from("documents")
+				.select("id")
+				.eq("id", inProgressDocument.id);
+			expect(remaining).toHaveLength(1);
+		} finally {
+			await serviceRoleDbClient
+				.from("documents")
+				.delete()
+				.eq("id", inProgressDocument.id);
+		}
+	});
 
 	it("POST /llm/just-chatting should handle a valid request", async () => {
 		// Mock prompt assembly and the LLM stream so the

@@ -1,4 +1,4 @@
-import React, { type ReactNode, useState } from "react";
+import React, { type ReactNode, useCallback, useState } from "react";
 import { useUserDocumentStore } from "../../store/use-user-document-store.ts";
 import type { UserDocument } from "../../common.ts";
 import { useDrop } from "react-dnd";
@@ -54,8 +54,19 @@ export function DropZoneWrapperChat({
 		},
 	});
 
+	const dropRefCallback = useCallback(
+		(node: HTMLElement | null) => {
+			dropRef(node);
+		},
+		[dropRef],
+	);
+
 	return (
-		<section className={`relative ${className}`} style={style} ref={dropRef}>
+		<section
+			className={`relative ${className}`}
+			style={style}
+			ref={dropRefCallback}
+		>
 			<div
 				className={`absolute h-full w-full top-0 left-0 right-0 z-20 bg-hellblau-100/90 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none 
 				transition-opacity duration-200 ${isHoveringOverChat ? "opacity-100" : "opacity-0"}`}

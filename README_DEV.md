@@ -81,6 +81,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
   - [Gotenberg](https://github.com/gotenberg/gotenberg) (PDF conversion)
   - [mammoth](https://github.com/mwilliamson/mammoth.js) (DOCX parsing)
   - [xlsx](https://github.com/SheetJS/sheetjs) (Excel parsing)
+  - Markdown (`.md`) is read as UTF-8 text without a parser
   - [@opendocsg/pdf2md](https://github.com/opendocsg/pdf2md) (PDF to Markdown)
 - **Observability**:
   - [Langfuse](https://github.com/langfuse/langfuse) (LLM tracing and monitoring)
@@ -119,7 +120,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 
 - **Monorepo Tool**: [Turborepo](https://github.com/vercel/turbo)
 - **Package Manager**: [npm](https://github.com/npm/cli) 11.4.2
-- **Node Version**: 22.14.0
+- **Node Version**: 24.22.1
 - **Database & Auth**: [Supabase](https://github.com/supabase/supabase) (PostgreSQL + Auth + Storage + Realtime)
 - **Deployment**: [Vercel](https://github.com/vercel/vercel) (frontend apps), self-hosted options available (backend)
 - **Containerization**: [Docker](https://github.com/docker) (backend)
@@ -128,7 +129,7 @@ You'll find here the [frontend](./apps/frontend), [backend](./apps/backend), [ad
 
 ### Required
 
-- **Node.js**: Version 22.14.0 (specified in [`.nvmrc`](./.nvmrc))
+- **Node.js**: Version 24.22.1 (specified in [`.nvmrc`](./.nvmrc))
   - Install via: `nvm install && nvm use`
 - **Supabase CLI**: Version specified in [`.tool-versions`](./.tool-versions)
   - Install: https://supabase.com/docs/guides/cli

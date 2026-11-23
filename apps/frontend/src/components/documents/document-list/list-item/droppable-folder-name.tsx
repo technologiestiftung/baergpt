@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { FolderIcon } from "../../../primitives/icons/folder-icon.tsx";
 import { getListItemName } from "./utils/get-list-item-name.ts";
 import { getDragAndDropId } from "./utils/get-drag-and-drop-id.ts";
@@ -33,6 +33,10 @@ export function DroppableFolderName({ item }: DroppableFolderNameProps) {
 
 		const truncatedTextWidth = span?.offsetWidth ?? 0;
 
+		if (tooltipTimeoutRef.current) {
+			clearTimeout(tooltipTimeoutRef.current);
+		}
+
 		tooltipTimeoutRef.current = window.setTimeout(() => {
 			showTooltip({
 				event: syntheticEvent,
@@ -49,6 +53,14 @@ export function DroppableFolderName({ item }: DroppableFolderNameProps) {
 		}
 		hideTooltip();
 	};
+
+	useEffect(() => {
+		return () => {
+			if (tooltipTimeoutRef.current) {
+				clearTimeout(tooltipTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	return (
 		<button

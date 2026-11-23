@@ -1,0 +1,21 @@
+name: Install dependencies from golden image
+description: On the Tart runner, reuse the golden VM's node_modules when the lockfile matches; else npm ci from the baked cache
+
+runs:
+  using: composite
+  steps:
+    # The golden VM holds an installed checkout of staging. If the lockfile matches, move its
+    # node_modules into place (instant, same disk); otherwise install from the baked npm cache.
+    - name: Install dependencies 📦
+      shell: bash
+      run: |
+        WARM=/home/admin/warm/baergpt
+        if [ -d "$WARM" ] && cmp -s package-lock.json "$WARM/package-lock.json"; then
+          echo "Lockfile matches golden image, reusing node_modules"
+          (cd "$WARM" && find . -maxdepth 3 -name node_modules -type d -prune) | while read -r d; do
+            mkdir -p "$(dirname "$d")" && mv "$WARM/$d" "$d"
+          done
+        else
+          echo "Lockfile differs from golden image, running npm ci"
+          npm ci --prefer-offline --no-audit --no-fund
+        fi

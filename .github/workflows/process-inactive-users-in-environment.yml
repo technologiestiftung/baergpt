@@ -1,0 +1,126 @@
+name: Process Inactive User Accounts in Environment
+
+# Called by process-inactive-users.yml once per environment. A matrix job can't
+# pass a separate output per environment on to the approval job.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      dry-run:
+        type: boolean
+        required: true
+
+jobs:
+  notify-inactive-users:
+    runs-on: ubuntu-latest
+    # Scopes OP_SERVICE_ACCOUNT_TOKEN/OP_VAULT_ID to the environment secrets;
+    # the repo-level ones only reach the CI test vault.
+    environment: ${{ inputs.environment }}
+    # Shared with the deletion job, so runs never write the same rows at once
+    concurrency:
+      group: process-inactive-users-${{ inputs.environment }}
+      cancel-in-progress: false
+    outputs:
+      has_deletions: ${{ steps.notify.outputs.has_deletions }}
+      plan_date: ${{ steps.notify.outputs.plan_date }}
+      sha: ${{ steps.checkout.outputs.commit }}
+
+    steps:
+      - name: Checkout code ⬇️
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          # Run the code that is deployed to the environment, matching its database schema
+          ref: ${{ inputs.environment == 'Production' && 'main' || 'staging' }}
+
+      - name: Setup environment ⚙️
+        uses: ./.github/actions/setup
+        with:
+          install-1password: "true"
+
+      - name: Set environment item ID 🌿
+        id: env-config
+        run: |
+          if [[ "${{ inputs.environment }}" == "Production" ]]; then
+            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
+          else
+            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch .env from 1Password ⬇️
+        run: |
+          cd apps/backend
+          echo "Fetching .env from 1Password..."
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > .env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Assess inactive users 🔬
+        if: inputs.dry-run
+        working-directory: apps/backend
+        run: npm run auth:assess-inactive-users
+
+      - name: Send warnings and reminders 📧
+        id: notify
+        if: ${{ !inputs.dry-run }}
+        working-directory: apps/backend
+        run: npm run auth:notify-inactive-users
+
+  manual-approve:
+    name: Waiting for Approval to Delete Inactive Users
+    runs-on: ubuntu-latest
+    needs: notify-inactive-users
+    # always() so a failed email doesn't block deletions that are already due
+    if: ${{ always() && needs.notify-inactive-users.outputs.has_deletions == 'true' }}
+    environment: cleanup-approval
+    steps:
+      - name: Approval granted
+        run: |
+          echo "Approval received to delete inactive users in ${{ inputs.environment }}. Proceeding with deletion..."
+
+  delete-inactive-users:
+    runs-on: ubuntu-latest
+    needs: [notify-inactive-users, manual-approve]
+    # Without it, a failed notify job would skip the approved deletion
+    if: ${{ !cancelled() && needs.manual-approve.result == 'success' }}
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: process-inactive-users-${{ inputs.environment }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout code ⬇️
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, pinned to commit sha to avoid sha-hulud like attacks
+        with:
+          # The commit that planned the approved deletions, even if the branch moved since
+          ref: ${{ needs.notify-inactive-users.outputs.sha }}
+
+      - name: Setup environment ⚙️
+        uses: ./.github/actions/setup
+        with:
+          install-1password: "true"
+
+      - name: Set environment item ID 🌿
+        id: env-config
+        run: |
+          if [[ "${{ inputs.environment }}" == "Production" ]]; then
+            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_PRODUCTION_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
+          else
+            echo "env_item_id=${{ secrets.OP_CLEANUP_ORPHANS_STAGING_ENV_ITEM_ID }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch .env from 1Password ⬇️
+        run: |
+          cd apps/backend
+          echo "Fetching .env from 1Password..."
+          op read "op://${{ secrets.OP_VAULT_ID }}/${{ steps.env-config.outputs.env_item_id }}/notesPlain" > .env
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      # Plans again with the approved date, so accounts that logged in while the
+      # approval was pending are kept and none that became due since are deleted
+      - name: Delete inactive users 🗑️
+        working-directory: apps/backend
+        run: npm run auth:delete-inactive-users -- --plan-date=${{ needs.notify-inactive-users.outputs.plan_date }}

@@ -9,6 +9,7 @@ import {
 	Document,
 	DefaultDocumentDeletionError,
 	DocumentNotFoundError,
+	DuplicateDocumentError,
 } from "../types/common";
 import { ZodError } from "zod";
 import { ValidationService } from "../services/validation-service";
@@ -76,6 +77,19 @@ documents.post("/process", async (c: Context) =>
 				reqId,
 			);
 
+			if (sourceType === "personal_document") {
+				const existingDocument =
+					await userScopedDbService.findAvailableDocumentByChecksum(
+						userId,
+						extractionResult.checksum,
+					);
+				if (existingDocument) {
+					throw new DuplicateDocumentError(
+						existingDocument.file_name ?? undefined,
+					);
+				}
+			}
+
 			// Step 2: Process document (embed and summarize)
 			// Always use authenticated user ID, never trust client input for owned_by_user_id
 			const documentForProcessing: Document = {
@@ -92,6 +106,8 @@ documents.post("/process", async (c: Context) =>
 				file_checksum: extractionResult.checksum,
 				file_size: extractionResult.fileSize,
 				num_pages: extractionResult.numPages,
+				processing_finished_at:
+					sourceType === "personal_document" ? null : undefined,
 			};
 
 			const parsedPages = extractionResult.parsedPages;
@@ -132,6 +148,11 @@ documents.post("/process", async (c: Context) =>
 				});
 			}
 
+			// Users can't update public documents
+			if (sourceType === "personal_document") {
+				await userScopedDbService.markDocumentProcessed(documentId);
+			}
+
 			return stream.writeSSE({
 				data: JSON.stringify({
 					status: "successful",
@@ -154,6 +175,15 @@ documents.post("/process", async (c: Context) =>
 				return stream.writeSSE({
 					data: JSON.stringify({
 						status: "failed.size",
+					}),
+				});
+			}
+
+			if (error instanceof DuplicateDocumentError) {
+				return stream.writeSSE({
+					data: JSON.stringify({
+						status: "failed.duplicate",
+						existingFileName: error.existingFileName,
 					}),
 				});
 			}

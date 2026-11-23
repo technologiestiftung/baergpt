@@ -1,6 +1,6 @@
-import { useAuthStore } from "../../store/auth-store.ts";
 import Content from "../../content.ts";
 import { FooterLogoBanner } from "./footer-logo-banner.tsx";
+import { useCookieBannerStore } from "../../store/use-cookie-banner-store.ts";
 
 const topLinks = {
 	section1: [
@@ -34,15 +34,19 @@ const topLinks = {
 			href: Content["footer.termsOfUse.link"],
 			text: Content["footer.termsOfUse"],
 		},
+		{
+			href: Content["footer.accessibilityStatement.link"],
+			text: Content["footer.accessibilityStatement"],
+		},
 	],
 };
 
-export function Footer() {
-	const { session } = useAuthStore();
+interface FooterProps {
+	showCookieSettings?: boolean;
+}
 
-	if (session) {
-		return null;
-	}
+export function Footer({ showCookieSettings = false }: FooterProps) {
+	const { openBanner } = useCookieBannerStore();
 
 	return (
 		<footer className="flex flex-col">
@@ -54,7 +58,7 @@ export function Footer() {
 					height={44}
 					className="self-start"
 				/>
-				<div className="flex justify-between md:justify-normal md:gap-[60px] lg:gap-14">
+				<div className="flex flex-col gap-3 md:flex-row md:justify-normal md:gap-[60px] lg:gap-14">
 					<ul className="flex flex-col gap-3 w-fit">
 						{topLinks.section1.map((link, index) => (
 							<li key={index}>
@@ -91,6 +95,17 @@ export function Footer() {
 								</a>
 							</li>
 						))}
+						{showCookieSettings && (
+							<li>
+								<button
+									onClick={() => openBanner(true)}
+									aria-label={Content["footer.cookieSettings.ariaLabel"]}
+									className="text-white text-base leading-6 font-normal w-fit rounded-3px focus-visible:outline-default hover:underline hover:underline-offset-4"
+								>
+									{Content["footer.cookieSettings"]}
+								</button>
+							</li>
+						)}
 					</ul>
 				</div>
 			</div>

@@ -60,7 +60,7 @@ export function AdminSidebar({
 		.find((item) => item.url === location.pathname)?.title;
 
 	return (
-		<SidebarProvider>
+		<SidebarProvider className="h-full min-h-0">
 			<Sidebar {...props}>
 				<SidebarHeader>
 					<SidebarMenu>

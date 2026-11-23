@@ -1,0 +1,83 @@
+<svg width="55" height="20" viewBox="0 0 55 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<style>
+svg { overflow: visible; }
+@keyframes kf_Rectangle_339_opacity_0 {
+  0% {
+    animation-timing-function: linear;
+    opacity: 0;
+  }
+  2% {
+    animation-timing-function: linear;
+    opacity: 1;
+  }
+  22.5% {
+    animation-timing-function: linear;
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+#Rectangle_339 {
+  animation: kf_Rectangle_339_opacity_0 2s linear 1 forwards;
+}
+@keyframes kf_Group_8_transform_0 {
+  0% {
+    transform: translateX(17.5px) translateX(10px) translateY(10px) translate(10px, 10px) scaleX(0) scaleY(0) translate(-10px, -10px);
+  }
+  22.5% {
+    animation-timing-function: cubic-bezier(0.45, 1.45, 0.8, 1);
+    transform: translateX(17.5px) translateX(10px) translateY(10px) translate(10px, 10px) scaleX(0) scaleY(0) translate(-10px, -10px);
+  }
+  33% {
+    animation-timing-function: ease-out;
+    transform: translateX(17.5px) translateX(-1.5px) translateY(-1.5px) translate(10px, 10px) scaleX(1.15) scaleY(1.15) translate(-10px, -10px);
+  }
+  41% {
+    transform: translateX(17.5px) translateX(0px) translateY(0px) translate(10px, 10px) scaleX(1) scaleY(1) translate(-10px, -10px);
+  }
+  100% {
+    transform: translateX(17.5px) translateX(0px) translateY(0px) translate(10px, 10px) scaleX(1) scaleY(1) translate(-10px, -10px);
+  }
+}
+@keyframes kf_Group_8_opacity_0 {
+  0% {
+    animation-timing-function: linear;
+    opacity: 0;
+  }
+  22.5% {
+    animation-timing-function: ease-out;
+    opacity: 0;
+  }
+  28% {
+    animation-timing-function: linear;
+    opacity: 1;
+  }
+  41% {
+    animation-timing-function: linear;
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+#Group_8 {
+  transform-origin: 0 0;
+  animation:
+    kf_Group_8_transform_0 2s linear 1 forwards,
+    kf_Group_8_opacity_0 2s linear 1 forwards;
+}
+</style>
+<g id="Line_Icon_Motion">
+<rect id="Rectangle_339" transform="translate(0 8.25)" width="55" height="3.5" fill="#4CA786">
+<animate attributeName="width" values="0.1; 0.79; 1.469; 2.142; 2.808; 3.469; 4.126; 4.778; 5.425; 6.069; 6.708; 7.343; 7.975; 14.244; 20.162; 25.734; 30.952; 35.795; 40.234; 44.23; 47.729; 50.665; 52.945; 54.448; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55; 55" keyTimes="0; 0.0017; 0.0033; 0.005; 0.0067; 0.0083; 0.01; 0.0117; 0.0133; 0.015; 0.0167; 0.0183; 0.02; 0.0371; 0.0542; 0.0712; 0.0883; 0.1054; 0.1225; 0.1396; 0.1567; 0.1737; 0.1908; 0.2079; 0.225; 0.2296; 0.2342; 0.2388; 0.2433; 0.2479; 0.2525; 0.2571; 0.2617; 0.2663; 0.2708; 0.2754; 0.28; 0.2842; 0.2883; 0.2925; 0.2967; 0.3008; 0.305; 0.3092; 0.3133; 0.3175; 0.3217; 0.3258; 0.33; 0.3367; 0.3433; 0.35; 0.3567; 0.3633; 0.37; 0.3767; 0.3833; 0.39; 0.3967; 0.4033; 0.41; 0.4592; 0.5083; 0.5575; 0.6067; 0.6558; 0.705; 0.7542; 0.8033; 0.8525; 0.9017; 0.9508; 1" dur="2s" calcMode="linear" repeatCount="1" fill="freeze" />
+
+</rect>
+<g id="Group_8" transform="translate(17.5)">
+<g id="Group_7">
+<path id="Vector" d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="#4CA786"/>
+<path id="Exclude" transform="translate(2.78906 4.25781)" d="M5.20801 10.8545L14.583 1.47949L13.1143 0L5.20801 7.90625L1.46875 4.17773L0 5.64648L5.20801 10.8545Z" fill="white"/>
+</g>
+</g>
+</g>
+</svg>

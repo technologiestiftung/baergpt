@@ -4,6 +4,7 @@ import Content from "../../../content.ts";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 import { useCurrentFolderStore } from "../../../store/use-current-folder-store.ts";
 import { ItemDropdownButton } from "./list-item/dropdown/item-dropdown-button.tsx";
+import { ItemActions } from "./list-item/item-actions.tsx";
 
 export function PublicFolders() {
 	const {
@@ -12,6 +13,10 @@ export function PublicFolders() {
 		togglePublicChatFolder,
 	} = usePublicDocumentsStore();
 	const { setCurrentFolder } = useCurrentFolderStore();
+
+	const isBaseKnowledgeFolderSelectedForChat = selectedPublicChatFolders.some(
+		(folder) => folder.id === baseKnowledgeFolder.id,
+	);
 
 	return (
 		<>
@@ -31,18 +36,17 @@ export function PublicFolders() {
 							{baseKnowledgeFolder.name}
 						</span>
 					</button>
-					<ToggleChatItemButton
-						handleToggleChatItem={() =>
-							togglePublicChatFolder(baseKnowledgeFolder)
-						}
-						isSelectedForChat={selectedPublicChatFolders.some(
-							(folder) => folder.id === baseKnowledgeFolder.id,
-						)}
-					/>
-
-					<div className="md:hidden">
-						<ItemDropdownButton item={baseKnowledgeFolder} />
-					</div>
+					<ItemActions isSelectedForChat={isBaseKnowledgeFolderSelectedForChat}>
+						<ToggleChatItemButton
+							handleToggleChatItem={() =>
+								togglePublicChatFolder(baseKnowledgeFolder)
+							}
+							isSelectedForChat={isBaseKnowledgeFolderSelectedForChat}
+						/>
+						<div className="hoverable:hidden">
+							<ItemDropdownButton item={baseKnowledgeFolder} />
+						</div>
+					</ItemActions>
 				</li>
 			</ul>
 		</>

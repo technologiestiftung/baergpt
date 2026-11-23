@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS "public"."chat_messages" (
     "parla_citations" "jsonb",
     "open_data_citations" "jsonb",
     "external_tool_context" BOOLEAN DEFAULT FALSE NOT NULL,
-    "traces" "jsonb"
+    "traces" "jsonb",
+    "datawrapper_chart_ids" "jsonb"
 );
 
 ALTER TABLE "public"."chat_messages" OWNER TO "postgres";

@@ -7,6 +7,7 @@ import { DraggableDocumentName } from "./draggable-document-name.tsx";
 import Content from "../../../../content.ts";
 import { ToggleChatItemButton } from "./toggle-chat-item-button.tsx";
 import { ItemDropdownButton } from "./dropdown/item-dropdown-button.tsx";
+import { ItemActions } from "./item-actions.tsx";
 import { usePreviewDocumentStore } from "../../../../store/use-preview-document-store.ts";
 import { usePublicDocumentsStore } from "../../../../store/use-public-documents-store.ts";
 import { isUserDocument } from "./utils/is-user-document.ts";
@@ -81,11 +82,13 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ item }) => {
 			>
 				<DraggableDocumentName item={item} />
 
-				<ToggleChatItemButton
-					handleToggleChatItem={handleToggleChatItem}
-					isSelectedForChat={isSelectedForChat}
-				/>
-				<ItemDropdownButton item={item} />
+				<ItemActions isSelectedForChat={isSelectedForChat}>
+					<ToggleChatItemButton
+						handleToggleChatItem={handleToggleChatItem}
+						isSelectedForChat={isSelectedForChat}
+					/>
+					<ItemDropdownButton item={item} />
+				</ItemActions>
 			</div>
 		</div>
 	);

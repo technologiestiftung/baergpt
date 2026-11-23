@@ -43,6 +43,9 @@ export interface Config {
 	staanSearchApiUrl?: string;
 	staanSearchMaxRPS?: number;
 	webSearchProvider?: string;
+	matomoUrl?: string;
+	matomoSiteId?: string;
+	matomoTokenAuth?: string;
 }
 
 /* eslint-disable-next-line complexity */
@@ -234,4 +237,7 @@ export const config: Config = {
 	staanSearchApiUrl: process.env.STAAN_SEARCH_API_URL,
 	staanSearchMaxRPS: parseInt(process.env.STAAN_SEARCH_MAX_RPS, 10),
 	webSearchProvider: process.env.WEB_SEARCH_PROVIDER,
+	matomoUrl: process.env.MATOMO_URL,
+	matomoSiteId: process.env.MATOMO_SITE_ID,
+	matomoTokenAuth: process.env.MATOMO_TOKEN_AUTH,
 };

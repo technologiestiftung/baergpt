@@ -19,6 +19,7 @@ export async function insertMessage(
 			web_citations: chatMessage.web_citations,
 			parla_citations: chatMessage.parla_citations,
 			open_data_citations: chatMessage.open_data_citations,
+			datawrapper_chart_ids: chatMessage.datawrapper_chart_ids,
 			external_tool_context: chatMessage.external_tool_context,
 			traces: chatMessage.traces,
 		})

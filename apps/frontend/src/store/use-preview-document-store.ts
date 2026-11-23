@@ -14,6 +14,8 @@ interface PreviewDocumentStore {
 	unselectPreviewDocument: () => void;
 }
 
+let latestSelectionRequestId = 0;
+
 export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 	selectedPreviewDocument: null,
 	selectedPreviewDocumentPreviewUrl: null,
@@ -21,6 +23,9 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 	isLoadingPreviewDocument: false,
 
 	selectPreviewDocument: async (document: Document | null) => {
+		const requestId = ++latestSelectionRequestId;
+		const isStale = () => requestId !== latestSelectionRequestId;
+
 		const {
 			selectedPreviewDocumentDownloadUrl,
 			selectedPreviewDocumentPreviewUrl,
@@ -31,6 +36,7 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 		if (selectedPreviewDocumentPreviewUrl) {
 			URL.revokeObjectURL(selectedPreviewDocumentPreviewUrl);
 		}
+		useErrorStore.getState().clearUIError("document-download");
 
 		set({
 			selectedPreviewDocument: document,
@@ -48,6 +54,13 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 			sourceType: document.source_type,
 		});
 
+		if (isStale()) {
+			if (previewUrl) {
+				URL.revokeObjectURL(previewUrl);
+			}
+			return;
+		}
+
 		set({
 			selectedPreviewDocumentPreviewUrl: previewUrl,
 			isLoadingPreviewDocument: false,
@@ -58,7 +71,14 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 			sourceType: document.source_type,
 		});
 
+		if (isStale()) {
+			return;
+		}
+
 		if (!blob) {
+			useErrorStore
+				.getState()
+				.setUIError("document-download", "document_download_failed");
 			return;
 		}
 
@@ -67,6 +87,7 @@ export const usePreviewDocumentStore = create<PreviewDocumentStore>((set) => ({
 		set({ selectedPreviewDocumentDownloadUrl: downloadUrl });
 	},
 	unselectPreviewDocument: () => {
+		latestSelectionRequestId++;
 		useErrorStore.getState().clearUIError("document-download");
 		set({
 			selectedPreviewDocument: null,

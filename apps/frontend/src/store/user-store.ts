@@ -8,6 +8,7 @@ import { updateUserMetadata } from "../api/auth/update-user-metadata.ts";
 import { useErrorStore } from "./error-store.ts";
 import { updateAddressedFormal } from "../api/user/update-addressed-formal.ts";
 import { updatePersonalPrompt } from "../api/user/update-personal-prompt.ts";
+import { createProfile } from "../api/user/create-profile.ts";
 
 interface UserStore {
 	user: User | null;
@@ -15,9 +16,13 @@ interface UserStore {
 	updateUser: (args: {
 		first_name: string;
 		last_name: string;
-		academic_title: string;
-		personal_title: string;
-	}) => Promise<void>;
+		academic_title?: string;
+		personal_title?: string;
+	}) => Promise<{ error: Error | null }>;
+	completeRegistration: (args: {
+		first_name: string;
+		last_name: string;
+	}) => Promise<{ error: Error | null }>;
 	deleteAccount: () => Promise<{ error: Error | null }>;
 	updateAddressedFormal: (
 		isAddressedFormal: boolean,
@@ -47,9 +52,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
 	async updateUser({ first_name, last_name, academic_title, personal_title }) {
 		try {
-			// Update user metadata
-			await updateUserMetadata(first_name, last_name);
-
 			// Update user profile in database
 			await updateProfilesTable({
 				first_name,
@@ -58,13 +60,17 @@ export const useUserStore = create<UserStore>((set, get) => ({
 				personal_title,
 			});
 
+			// Update user metadata last, as its names mark the registration as completed
+			await updateUserMetadata(first_name, last_name);
+
 			await get().getUser(new AbortController().signal);
+
+			return { error: null };
 		} catch (error) {
-			useErrorStore
-				.getState()
-				.handleError(
-					error instanceof Error ? error : new Error("User update failed"),
-				);
+			const updateError =
+				error instanceof Error ? error : new Error("User update failed");
+			useErrorStore.getState().handleError(updateError);
+			return { error: updateError };
 		}
 	},
 
@@ -90,6 +96,25 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
 		await get().getUser(new AbortController().signal);
 		return { error: null };
+	},
+
+	async completeRegistration({ first_name, last_name }) {
+		try {
+			// Creating the profile also adds the user to the default access group
+			await createProfile({ first_name, last_name });
+
+			// Update user metadata last, as its names mark the registration as completed
+			await updateUserMetadata(first_name, last_name);
+
+			await get().getUser(new AbortController().signal);
+
+			return { error: null };
+		} catch (error) {
+			const registrationError =
+				error instanceof Error ? error : new Error("Registration failed");
+			useErrorStore.getState().handleError(registrationError);
+			return { error: registrationError };
+		}
 	},
 
 	deleteAccount: async () => {

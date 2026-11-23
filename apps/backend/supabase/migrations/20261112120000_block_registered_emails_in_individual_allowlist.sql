@@ -1,0 +1,20 @@
+CREATE OR REPLACE FUNCTION "public"."add_allowed_individual_email" ("p_email" "text") RETURNS "void" LANGUAGE "plpgsql" SECURITY DEFINER
+SET
+    "search_path" TO '' AS $$
+BEGIN
+    IF NOT public.is_application_admin() THEN
+        RAISE EXCEPTION 'Permission denied: only admins may call this function';
+END IF;
+
+IF EXISTS (
+    SELECT 1 FROM auth.users u WHERE lower(u.email) = lower(trim(p_email))
+) THEN
+    RAISE EXCEPTION 'account_already_exists';
+END IF;
+
+INSERT INTO public.allowed_individual_emails (email, created_by)
+VALUES (lower(trim(p_email)), auth.uid());
+END;
+$$;
+
+COMMENT ON FUNCTION "public"."add_allowed_individual_email" ("p_email" "text") IS 'Adds an individual email to the allowlist (active by default). Raises account_already_exists if a registered account exists. Format enforced by CHECK constraint.';

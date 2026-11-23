@@ -12,8 +12,12 @@ const errorMessages: { [key: string]: string } = {
 		Content["addNewDomain.form.unsuccessful.error"],
 	"Failed to add individual email":
 		Content["addNewIndividualEmail.form.unsuccessful.error"],
+	'duplicate key value violates unique constraint "allowed_email_domains_domain_key"':
+		Content["addNewDomain.form.domainAlreadyExistsError"],
 	'duplicate key value violates unique constraint "allowed_individual_emails_email_key"':
 		Content["addNewIndividualEmail.form.emailAlreadyExistsError"],
+	account_already_exists:
+		Content["addNewIndividualEmail.form.accountAlreadyExistsError"],
 	'new row for relation "allowed_individual_emails" violates check constraint "allowed_individual_emails_format"':
 		Content["addNewIndividualEmail.form.wrongFormat"],
 };

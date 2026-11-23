@@ -7,6 +7,7 @@ import {
 	vi,
 	onTestFinished,
 } from "vitest";
+import { asSchema } from "ai";
 import type { FlexibleSchema, Tool, ToolExecutionOptions } from "ai";
 import type { JSONObject } from "@ai-sdk/provider";
 
@@ -130,6 +131,25 @@ vi.mock("@ai-sdk/mcp", async () => {
 					return { url: "https://datawrapper.dwcdn.net/mock-chart-id" };
 				}),
 			};
+			const { jsonSchema } = await import("ai");
+			mockTools["list_visualizations"] = {
+				description: "List Datawrapper visualizations",
+				inputSchema: jsonSchema({
+					type: "object",
+					properties: {
+						api_key: { type: "string" },
+						search: { type: "string" },
+					},
+					required: ["api_key"],
+				}),
+				execute: vi.fn(async () => ({
+					content: [{ type: "text", text: "1 chart" }],
+				})),
+			};
+			mockTools["delete_visualization"] = {
+				description: "Delete Datawrapper visualization",
+				execute: vi.fn(async () => ({ content: [] })),
+			};
 		}
 
 		return {
@@ -185,6 +205,7 @@ import {
 import type { OpenDataMCPToolsResult } from "../tools/mcp/open-data-mcp-tools";
 import {
 	datawrapperMCPTools,
+	getEmbeddableDatawrapperChartIds,
 	DATAWRAPPER_API_KEY_MISSING_SCOPES_MESSAGE,
 	INVALID_DATAWRAPPER_API_KEY_MESSAGE,
 	MISSING_DATAWRAPPER_API_KEY_MESSAGE,
@@ -645,6 +666,39 @@ describe("Datawrapper MCP Tools Integration", () => {
 		expect(params.shape).toHaveProperty("chart_id");
 	});
 
+	it("should not expose api_key in the schema of other MCP tools", async () => {
+		const listTool = mcpResult?.tools["list_visualizations"];
+		expect(listTool).toBeDefined();
+
+		const schema = await asSchema(listTool?.inputSchema).jsonSchema;
+
+		expect(schema.properties).not.toHaveProperty("api_key");
+		expect(schema.properties).toHaveProperty("search");
+		expect(schema.required).not.toContain("api_key");
+	});
+
+	it("should add the stored api_key to other MCP tool calls server-side", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		const result = await datawrapperMCPTools(TEST_USER_ID);
+		const rawTools = await getLatestRawMcpTools();
+		const { execute } = requireToolExecute(
+			result?.tools["list_visualizations"],
+			"list_visualizations",
+		);
+
+		await execute({ search: "Bezirk" }, toolCallOptions);
+
+		expect(rawTools["list_visualizations"].execute).toHaveBeenCalledWith(
+			{ search: "Bezirk", api_key: TEST_DATAWRAPPER_API_KEY },
+			toolCallOptions,
+		);
+		await result?.cleanup();
+	});
+
+	it("should not offer delete_visualization to the model", () => {
+		expect(mcpResult?.tools).not.toHaveProperty("delete_visualization");
+	});
+
 	it("should add the stored api_key to the MCP call server-side", async () => {
 		const getDecryptedKeySpy = mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
 		const result = await datawrapperMCPTools(TEST_USER_ID);
@@ -892,5 +946,119 @@ describe("Datawrapper MCP Tools Integration", () => {
 			await expect(mcpResult.cleanup()).resolves.not.toThrow();
 			await expect(mcpResult.cleanup()).resolves.not.toThrow();
 		}
+	});
+});
+
+describe("getEmbeddableDatawrapperChartIds", () => {
+	/** Stubs the Datawrapper API: the given ids are own published charts. */
+	function mockDatawrapperApi(ownPublishedChartIds: string[]) {
+		const fetchSpy = vi
+			.spyOn(globalThis, "fetch")
+			.mockImplementation(async (input) => {
+				const chartId = String(input).split("/").at(-1) ?? "";
+				return ownPublishedChartIds.includes(chartId)
+					? Response.json({ id: chartId, publicVersion: 1 })
+					: new Response("Forbidden", { status: 403 });
+			});
+		onTestFinished(() => fetchSpy.mockRestore());
+		return fetchSpy;
+	}
+
+	const publishResult = (chartId: string) => ({
+		toolName: "publish_visualization",
+		input: { chart_id: chartId },
+		output: { content: [{ type: "text", text: "Published" }] },
+	});
+
+	it("trusts charts published in this answer without an API call", async () => {
+		const fetchSpy = mockDatawrapperApi([]);
+
+		const ids = await getEmbeddableDatawrapperChartIds({
+			userId: TEST_USER_ID,
+			text: "https://datawrapper.dwcdn.net/aBcDe/1/",
+			toolResults: [publishResult("aBcDe")],
+		});
+
+		expect(ids).toEqual(["aBcDe"]);
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
+	it("ignores failed publish calls", async () => {
+		mockStoredApiKey(null);
+
+		const ids = await getEmbeddableDatawrapperChartIds({
+			userId: TEST_USER_ID,
+			text: "",
+			toolResults: [
+				{ ...publishResult("aBcDe"), output: { error: "Forbidden" } },
+			],
+		});
+
+		expect(ids).toEqual([]);
+	});
+
+	it("embeds linked charts only when they are published in the user's own account", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		const fetchSpy = mockDatawrapperApi(["own01"]);
+
+		const ids = await getEmbeddableDatawrapperChartIds({
+			userId: TEST_USER_ID,
+			text: "Dein Chart: https://datawrapper.dwcdn.net/own01/3/ und ein fremder: https://datawrapper.dwcdn.net/frmd1/1/",
+			toolResults: [],
+		});
+
+		expect(ids).toEqual(["own01"]);
+		expect(fetchSpy).toHaveBeenCalledWith(
+			"https://api.datawrapper.de/v3/charts/own01",
+			expect.objectContaining({
+				headers: { Authorization: `Bearer ${TEST_DATAWRAPPER_API_KEY}` },
+			}),
+		);
+	});
+
+	it("does not embed own charts that aren't published", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		const fetchSpy = vi
+			.spyOn(globalThis, "fetch")
+			.mockResolvedValue(Response.json({ id: "draft", publicVersion: 0 }));
+		onTestFinished(() => fetchSpy.mockRestore());
+
+		const ids = await getEmbeddableDatawrapperChartIds({
+			userId: TEST_USER_ID,
+			text: "https://datawrapper.dwcdn.net/draft/",
+			toolResults: [],
+		});
+
+		expect(ids).toEqual([]);
+	});
+
+	it("does not embed linked charts when the check fails", async () => {
+		mockStoredApiKey(TEST_DATAWRAPPER_API_KEY);
+		const fetchSpy = vi
+			.spyOn(globalThis, "fetch")
+			.mockRejectedValue(new Error("timeout"));
+		onTestFinished(() => fetchSpy.mockRestore());
+
+		const ids = await getEmbeddableDatawrapperChartIds({
+			userId: TEST_USER_ID,
+			text: "https://datawrapper.dwcdn.net/own01/",
+			toolResults: [publishResult("pub01")],
+		});
+
+		expect(ids).toEqual(["pub01"]);
+	});
+
+	it("does not call the API without a stored key", async () => {
+		mockStoredApiKey(null);
+		const fetchSpy = mockDatawrapperApi(["own01"]);
+
+		const ids = await getEmbeddableDatawrapperChartIds({
+			userId: TEST_USER_ID,
+			text: "https://datawrapper.dwcdn.net/own01/",
+			toolResults: [],
+		});
+
+		expect(ids).toEqual([]);
+		expect(fetchSpy).not.toHaveBeenCalled();
 	});
 });

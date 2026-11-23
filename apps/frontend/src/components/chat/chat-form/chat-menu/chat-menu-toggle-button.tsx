@@ -3,12 +3,16 @@ import Content from "../../../../content.ts";
 import { CHAT_TOOLS_MENU_ID, ChatMenuSection } from "./chat-menu-section.tsx";
 import { useClickOutside } from "../../../../hooks/use-click-outside.ts";
 import { useTooltipStore } from "../../../../store/tooltip-store.ts";
+import { useChatsStore } from "../../../../store/use-chats-store.ts";
+import { config } from "../../../../config.ts";
+import { DatawrapperConnectDialog } from "../../../connectors/datawrapper-connect-dialog.tsx";
 
 export const ChatMenuToggleButton: React.FC = () => {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const selectButtonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const { showTooltip, hideTooltip } = useTooltipStore();
+	const { toggleChatTool } = useChatsStore();
 
 	const handleShowTooltip = (
 		event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
@@ -66,6 +70,12 @@ export const ChatMenuToggleButton: React.FC = () => {
 					</div>
 				)}
 			</div>
+			{config.featureFlagMcpDatawrapperAllowed && (
+				<DatawrapperConnectDialog
+					mode="connect"
+					onSuccess={() => toggleChatTool("datawrapper")}
+				/>
+			)}
 		</>
 	);
 };

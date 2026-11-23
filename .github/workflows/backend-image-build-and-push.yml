@@ -27,7 +27,7 @@ jobs:
       - name: Compute image tag 🏷️
         id: tag
         run: |
-          echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
+          echo "tag=content-sha-${{ hashFiles('apps/backend/**', '!apps/backend/node_modules/**', 'libs/db-schema/**', 'libs/typescript-config/**', 'turbo.json', 'package.json', 'package-lock.json', '.npmrc', '.dockerignore') }}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry 🔑
         uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2, pinned to commit sha to avoid sha-hulud like attacks

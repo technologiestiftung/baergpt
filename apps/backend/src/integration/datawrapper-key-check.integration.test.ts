@@ -12,7 +12,7 @@ const { checkKey } = integrationProviders.datawrapper;
  *
  * Opt-in (skipped unless the env vars are set), since it needs real tokens
  * and network access:
- * - DATAWRAPPER_TEST_KEY_ALL_SCOPES: chart:read, chart:write, theme:read, visualization:read
+ * - DATAWRAPPER_TEST_KEY_ALL_SCOPES: chart:read, chart:write, theme:read
  * - DATAWRAPPER_TEST_KEY_MISSING_SCOPE: same, but without at least one of them
  */
 describe.skipIf(!allScopesKey)("datawrapper key check (live API)", () => {

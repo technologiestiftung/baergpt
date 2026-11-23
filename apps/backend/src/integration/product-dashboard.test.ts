@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { serviceRoleDbClient } from "../supabase";
 import type { Database } from "@repo/db-schema";
 import { subDays } from "date-fns";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 import { config } from "../config";
 import { signInWithOtp } from "./fixtures/auth";
 
@@ -67,6 +67,42 @@ describe("get_product_dashboard_stats", () => {
 				expect(error).toBeNull();
 			}
 		}, TIMEOUT);
+
+		it("does not count users who have not completed the registration", async () => {
+			const getMau = async () => {
+				const { data, error } = await applicationAdminDbClient.rpc(
+					"get_product_dashboard_stats",
+				);
+				expect(error).toBeNull();
+				return (data as ProductDashboardStats).mau;
+			};
+
+			const mauBefore = await getMau();
+
+			const givenPendingUserId = crypto.randomUUID();
+			const { error: createUserError } =
+				await serviceRoleDbClient.auth.admin.createUser({
+					id: givenPendingUserId,
+					email: "pending-registration-product-dashboard@ts.berlin",
+					email_confirm: true,
+				});
+			expect(createUserError).toBeNull();
+
+			try {
+				const { error: updateUserError } = await serviceRoleDbClient.rpc(
+					"update_user_last_sign_in_at",
+					{
+						user_id: givenPendingUserId,
+						new_last_sign_in_at: new Date().toISOString(),
+					},
+				);
+				expect(updateUserError).toBeNull();
+
+				expect(await getMau()).toBe(mauBefore);
+			} finally {
+				await serviceRoleDbClient.auth.admin.deleteUser(givenPendingUserId);
+			}
+		});
 
 		it("returns the expected top-level keys", async () => {
 			const { data, error } = await applicationAdminDbClient.rpc(
@@ -375,6 +411,8 @@ describe("auth.users helper functions are restricted to the service role", () =>
 	});
 });
 
+const registeredUserMetadata = { first_name: "Test", last_name: "User" };
+
 async function registerAdmin(params: { id: string; email: string }) {
 	const { id, email } = params;
 
@@ -383,6 +421,7 @@ async function registerAdmin(params: { id: string; email: string }) {
 			id,
 			email,
 			email_confirm: true,
+			user_metadata: registeredUserMetadata,
 		});
 
 	if (createUserError) {
@@ -443,6 +482,7 @@ async function registerManyUsers() {
 				id: user.id,
 				email: user.email,
 				email_confirm: true,
+				user_metadata: registeredUserMetadata,
 			});
 
 		if (createUserError) {
@@ -488,6 +528,7 @@ async function registerNonAdminUser(param: {
 			id,
 			email,
 			email_confirm: true,
+			user_metadata: registeredUserMetadata,
 		});
 
 	expect(createUserError).toBeNull();
@@ -549,18 +590,34 @@ async function insertChatsAndMessages(param: {
 }
 
 async function getExpectedAverageInferencesPerUser() {
-	const { count: chatMessageCount, error: chatMessageCountError } =
-		await serviceRoleDbClient
-			.from("chat_messages")
-			.select("*", { count: "exact", head: true })
-			.eq("role", "user");
-
-	expect(chatMessageCountError).toBeNull();
-
 	const { data, error: userCountError } =
-		await serviceRoleDbClient.auth.admin.listUsers();
+		await serviceRoleDbClient.auth.admin.listUsers({ perPage: 1000 });
 
 	expect(userCountError).toBeNull();
 
-	return chatMessageCount / data.users.length;
+	const countedUserIds = new Set(
+		data.users
+			.filter(
+				(user: User) =>
+					user.email_confirmed_at &&
+					user.user_metadata.first_name?.trim() &&
+					user.user_metadata.last_name?.trim() &&
+					(!user.banned_until || new Date(user.banned_until) < new Date()),
+			)
+			.map((user: User) => user.id),
+	);
+
+	const { data: chatMessages, error: chatMessagesError } =
+		await serviceRoleDbClient
+			.from("chat_messages")
+			.select("chats!inner(user_id)")
+			.eq("role", "user");
+
+	expect(chatMessagesError).toBeNull();
+
+	const countedChatMessages = chatMessages.filter(({ chats }) =>
+		countedUserIds.has(chats.user_id),
+	);
+
+	return countedChatMessages.length / countedUserIds.size;
 }

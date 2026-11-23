@@ -1,0 +1,13 @@
+# request = limit, so staging and sandbox pods are evicted first under memory pressure.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  template:
+    spec:
+      containers:
+        - name: backend
+          resources:
+            requests:
+              memory: 4Gi

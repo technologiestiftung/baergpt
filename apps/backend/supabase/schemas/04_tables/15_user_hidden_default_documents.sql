@@ -12,7 +12,7 @@ ADD CONSTRAINT "user_hidden_default_documents_pkey" PRIMARY KEY ("user_id", "doc
 
 -- FOREIGN KEYS
 ALTER TABLE ONLY "public"."user_hidden_default_documents"
-ADD CONSTRAINT "user_hidden_default_documents_document_id_fkey" FOREIGN KEY ("document_id") REFERENCES "public"."documents" ("id");
+ADD CONSTRAINT "user_hidden_default_documents_document_id_fkey" FOREIGN KEY ("document_id") REFERENCES "public"."documents" ("id") ON DELETE CASCADE;
 
 ALTER TABLE ONLY "public"."user_hidden_default_documents"
 ADD CONSTRAINT "user_hidden_default_documents_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles" ("id") ON DELETE CASCADE;
