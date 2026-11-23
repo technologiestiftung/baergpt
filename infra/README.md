@@ -206,9 +206,12 @@ merged templates within 12 minutes. It reads `https://<supabase domain>/email-te
 
 The sync refuses templates whose URLs point anywhere but `https://baergpt.berlin` or `https://www.baergpt.berlin`, and
 template expressions other than `.ConfirmationURL`, `.SiteURL`, `.Token`, `.Email`, `.NewEmail`, `.Data.first_name`
-and `.Data.last_name`. The previous templates then stay. Mail clients load images from template URLs on their own, so
-one link elsewhere could leak login codes. The same check runs on pull requests. To allow another host or expression,
-change `email_template_sync.py` in the supabase role.
+and `.Data.last_name`, plus `if`/`else`/`end` blocks that test those. The previous templates then stay. Mail clients
+load images from template URLs on their own, so one link elsewhere could leak login codes. The same check runs on pull
+requests; the template names are listed in `supabase_email_templates` (`ansible/group_vars/all.yml`) and in
+`.github/workflows/email-templates.yml`. To allow another host or expression, change `email_template_sync.py` in the
+supabase role. The hosts keep their installed script and template list until `supabase.yml` runs with
+`--tags email-templates`.
 
 To sync at once or look at a failure:
 

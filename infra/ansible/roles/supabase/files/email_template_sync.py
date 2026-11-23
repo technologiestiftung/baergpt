@@ -14,6 +14,7 @@ Standard library only.
 import argparse
 import hashlib
 import html
+import itertools
 import json
 import os
 import re
@@ -41,6 +42,8 @@ TEMPLATE_EXPRESSIONS = {
     ".Data.first_name": "x",
     ".Data.last_name": "x",
 }
+# Every combination of branches is checked, so the number of renderings doubles with each condition.
+MAX_CONDITIONS = 4
 
 
 class SyncError(Exception):
@@ -51,23 +54,44 @@ class SyncError(Exception):
 # Template checks
 # ---------------------------------------------------------------------------
 
-def template_problems(text):
-    """Return what makes a template unsafe to deploy; empty when it is fine."""
+def is_condition(words):
+    """True for `if X`, `if and X Y` and `if or X Y` over the allowed expressions."""
+    if words[:1] != ["if"]:
+        return False
+    combined = words[1:2] in (["and"], ["or"])
+    operands = words[2:] if combined else words[1:]
+    return (bool(operands) if combined else len(operands) == 1) and all(o in TEMPLATE_EXPRESSIONS for o in operands)
+
+
+def render(parts, taken, problems):
+    """Fill in the stand-ins and keep the branches `taken` selects. parts alternates text and expressions."""
+    rendered = []
+    open_ifs = []
+    for index, part in enumerate(parts):
+        expression = " ".join(part.split())
+        if index % 2 == 0:
+            if all(open_ifs):
+                rendered.append(part)
+        elif expression in TEMPLATE_EXPRESSIONS:
+            if all(open_ifs):
+                rendered.append(TEMPLATE_EXPRESSIONS[expression])
+        elif expression in taken:
+            open_ifs.append(taken[expression])
+        elif expression == "else" and open_ifs:
+            open_ifs[-1] = not open_ifs[-1]
+        elif expression == "end" and open_ifs:
+            open_ifs.pop()
+        else:
+            problems.append("template expression %r is not allowed" % ("{{" + part + "}}"))
+    if open_ifs:
+        problems.append("an if has no end")
+    return "".join(rendered)
+
+
+def url_problems(rendered):
     problems = []
-
-    def expand(match):
-        expression = match.group(1).strip()
-        if expression not in TEMPLATE_EXPRESSIONS:
-            problems.append(f"template expression {match.group(0)!r} is not allowed")
-            return ""
-        return TEMPLATE_EXPRESSIONS[expression]
-
-    expanded = re.sub(r"\{\{(.*?)\}\}", expand, text, flags=re.S)
-    if "{{" in expanded or "}}" in expanded:
-        problems.append("unbalanced template delimiters")
-
     # Read the URLs the way a mail client does: entities decoded, tabs and newlines dropped, any case.
-    url_text = re.sub(r"[\t\r\n]", "", html.unescape(expanded)).lower()
+    url_text = re.sub(r"[\t\r\n]", "", html.unescape(rendered)).lower()
     if "\\" in url_text:
         problems.append("backslashes are not allowed")
     for match in re.finditer(r"https?:", url_text):
@@ -78,6 +102,22 @@ def template_problems(text):
         if not url_text[:match.start()].endswith("https:"):
             problems.append(f"URL {url_text[max(match.start() - 20, 0):match.start() + 40]!r} has no https scheme")
     return problems
+
+
+def template_problems(text):
+    """Return what makes a template unsafe to deploy; empty when it is fine."""
+    parts = re.split(r"\{\{(.*?)\}\}", text, flags=re.S)
+    if any("{{" in part or "}}" in part for part in parts[0::2]):
+        return ["unbalanced template delimiters"]
+    conditions = sorted({" ".join(part.split()) for part in parts[1::2] if is_condition(part.split())})
+    if len(conditions) > MAX_CONDITIONS:
+        return [f"more than {MAX_CONDITIONS} different conditions"]
+
+    problems = []
+    # A URL can be safe in one branch and not in the other, so each combination is checked as its own mail.
+    for values in itertools.product([True, False], repeat=len(conditions)):
+        problems += url_problems(render(parts, dict(zip(conditions, values)), problems))
+    return list(dict.fromkeys(problems))
 
 
 def check_templates(templates):
@@ -199,23 +239,25 @@ def sync(args):
 
 
 def check(args):
-    templates = {path.name: path.read_text(encoding="utf-8") for path in sorted(Path(args.check).glob("*.html"))}
-    if not templates:
-        raise SyncError(f"no templates in {args.check}")
+    try:
+        templates = {f"{name}.html": Path(args.check, f"{name}.html").read_text(encoding="utf-8") for name in args.templates}
+    except OSError as error:
+        raise SyncError(str(error)) from error
     check_templates(templates)
     return {"status": "ok", "checked": sorted(templates)}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", metavar="DIR", help="only check the *.html templates in DIR")
+    parser.add_argument("--check", metavar="DIR", help="only check the templates in DIR")
     parser.add_argument("--repo", help="GitHub repository, owner/name")
     parser.add_argument("--branch")
     parser.add_argument("--dest", help="directory the templates are served from")
-    parser.add_argument("--templates", type=lambda value: value.split(","), help="comma-separated template names")
+    parser.add_argument("--templates", required=True, type=lambda value: value.split(","),
+                        help="comma-separated template names")
     args = parser.parse_args()
-    if not args.check and not all([args.repo, args.branch, args.dest, args.templates]):
-        parser.error("--repo, --branch, --dest and --templates are required unless --check is given")
+    if not args.check and not all([args.repo, args.branch, args.dest]):
+        parser.error("--repo, --branch and --dest are required unless --check is given")
 
     try:
         result = check(args) if args.check else sync(args)

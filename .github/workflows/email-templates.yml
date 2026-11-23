@@ -28,8 +28,12 @@ jobs:
           persist-credentials: false
 
       # The same checks email-template-sync runs before it deploys a template.
+      # Keep the list equal to supabase_email_templates in infra/ansible/group_vars/all.yml.
       - name: Check templates 🔎
-        run: python3 infra/ansible/roles/supabase/files/email_template_sync.py --check apps/backend/supabase/templates
+        run: >-
+          python3 infra/ansible/roles/supabase/files/email_template_sync.py
+          --check apps/backend/supabase/templates
+          --templates invite,confirmation,recovery,magic_link,email_change
 
   # The host pulls the templates itself (email-template-sync.timer); this job waits until its manifest matches the push.
   verify-deployed:
