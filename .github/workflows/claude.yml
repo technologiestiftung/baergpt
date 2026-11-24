@@ -27,6 +27,7 @@ jobs:
       ) && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
         github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association)
     runs-on: [self-hosted, tart, baergpt-claude]
+    environment: claude
     timeout-minutes: 60
     permissions:
       contents: write
