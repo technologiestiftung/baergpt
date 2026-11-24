@@ -112,9 +112,6 @@ runs:
     - name: Install dependencies 📦
       if: steps.cache-npm-deps.outputs.cache-hit != 'true'
       shell: bash
-      # Skip install scripts so a malicious package can't run code in jobs that read secrets.
-      # CI needs none of them: tsx/esbuild/sentry-cli ship binaries as optional deps, and the
-      # Supabase CLI comes from asdf instead of the npm package's postinstall download.
       run: npm ci --ignore-scripts
 
     - name: Install 1Password CLI 🔐
