@@ -88,7 +88,6 @@ async function rechunkDocuments(targetDocIds: number[]) {
 			const embeddings = await embeddingService.batchEmbed(
 				extractionResult.parsedPages,
 				docForEmbed,
-				{ chunkingTechnique: "markdown" },
 			);
 
 			// 5. Log new chunks/embeddings with original ownership

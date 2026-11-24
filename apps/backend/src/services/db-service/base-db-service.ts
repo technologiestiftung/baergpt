@@ -13,7 +13,10 @@ import {
 	DefaultDocumentDeletionError,
 	DuplicateDocumentError,
 } from "../../types/common";
-import { ragSearchDefaults } from "../../constants";
+import {
+	DOCUMENT_PROCESSING_VERSION,
+	ragSearchDefaults,
+} from "../../constants";
 import {
 	DocumentExtractionService,
 	WordDocumentExtractionService,
@@ -198,6 +201,7 @@ export abstract class BaseContentDbService {
 					created_at: document.created_at || new Date().toISOString(),
 					access_group_id: document.access_group_id || null,
 					uploaded_by_user_id: document.uploaded_by_user_id || null,
+					processing_version: DOCUMENT_PROCESSING_VERSION,
 				})
 				.select("*");
 

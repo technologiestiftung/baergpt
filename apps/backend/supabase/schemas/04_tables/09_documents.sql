@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS "public"."documents" (
     "created_at" TIMESTAMP WITH TIME ZONE DEFAULT "now" (),
     "access_group_id" "uuid",
     "uploaded_by_user_id" "uuid",
+    "processing_version" INTEGER,
     CONSTRAINT "chk_documents_ownership" CHECK (
         (
             (

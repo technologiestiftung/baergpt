@@ -108,7 +108,10 @@ export type EmbeddingResult = {
 };
 
 export type Chunk = {
+	/** Stored; exact slice of the page */
 	content: string;
+	/** Embedded; may carry a table-header prefix */
+	embeddingInput: string;
 	page: number;
 	chunkIndex: number;
 	tokenCount: number;

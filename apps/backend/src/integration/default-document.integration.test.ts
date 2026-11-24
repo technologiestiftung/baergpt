@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@repo/db-schema";
 import { resolve } from "node:path";
 import { config } from "../config";
+import { DOCUMENT_PROCESSING_VERSION } from "../constants";
 import { GenerationService } from "../services/generation-service";
 import { EmbeddingService } from "../services/embedding-service";
 import type { Document } from "../types/common";
@@ -211,9 +212,6 @@ describe("Default Document Integration Tests", () => {
 			embeddingService.batchEmbed(
 				extractionResult.parsedPages,
 				documentForProcessing,
-				{
-					chunkingTechnique: "markdown",
-				},
 			),
 		]);
 
@@ -249,6 +247,7 @@ describe("Default Document Integration Tests", () => {
 		expect(verifiedDoc?.source_url).toBe(sourceUrl);
 		expect(verifiedDoc?.file_name).toBe(DEFAULT_DOCUMENT_FILE_NAME);
 		expect(verifiedDoc?.processing_finished_at).not.toBeNull();
+		expect(verifiedDoc?.processing_version).toBe(DOCUMENT_PROCESSING_VERSION);
 
 		// Verify it's associated with the default access group
 		expect(verifiedDoc?.access_group_id).toBe(accessGroupId);
@@ -487,4 +486,77 @@ describe("Default Document Replacement Integration Tests", () => {
 		});
 		expect(error?.code).toBe("42501");
 	});
+});
+
+describe("Lossless chunk storage", () => {
+	const dbService = new PrivilegedDbService(serviceRoleDbClient);
+	const embeddingService = new EmbeddingService(dbService);
+	const tableHeader = "| Bezirk | Einwohner |\n|---|---|\n";
+	const tableRows = Array.from(
+		{ length: 300 },
+		(_, index) => `| Bezirk Nummer ${index} | ${100000 + index} |\n`,
+	).join("");
+	const parsedPages = [
+		{
+			content: `# Bericht\n\n${"Die Senatsverwaltung prüft den Antrag. ".repeat(200)}\n\n## Tabelle\n\n${tableHeader}${tableRows}`,
+			pageNumber: 1,
+			tokenCount: 0,
+		},
+		{ content: "  \n\nKurze zweite Seite.\n", pageNumber: 2, tokenCount: 0 },
+	];
+	let documentId: number | undefined;
+
+	afterAll(async () => {
+		if (documentId) {
+			await serviceRoleDbClient
+				.from("document_summaries")
+				.delete()
+				.eq("document_id", documentId);
+			await serviceRoleDbClient.from("documents").delete().eq("id", documentId);
+		}
+	});
+
+	it("stores chunks that reassemble each page exactly, without the embedding prefix", async () => {
+		const { data: accessGroup } = await serviceRoleDbClient
+			.from("access_groups")
+			.select("id")
+			.eq("name", "Alle")
+			.single();
+		const document: Document = {
+			source_url: `${randomUUID()}/lossless-chunks.md`,
+			source_type: DEFAULT_DOCUMENT_SOURCE_TYPE,
+			file_name: "lossless-chunks.md",
+			created_at: new Date().toISOString(),
+			access_group_id: accessGroup?.id,
+		};
+
+		const embeddings = await embeddingService.batchEmbed(parsedPages, document);
+		documentId = await dbService.logProcessedDocument(
+			document,
+			MOCK_SUMMARY_DATA,
+			embeddings,
+		);
+
+		const { data: chunks, error } = await serviceRoleDbClient
+			.from("document_chunks")
+			.select("page, chunk_index, content")
+			.eq("document_id", documentId)
+			.order("page")
+			.order("chunk_index");
+
+		expect(error).toBeNull();
+		expect(chunks?.filter(({ page }) => page === 1).length).toBeGreaterThan(2);
+		for (const { content, pageNumber } of parsedPages) {
+			const reassembled = (chunks ?? [])
+				.filter(({ page }) => page === pageNumber)
+				.map(({ content: chunkContent }) => chunkContent)
+				.join("");
+			expect(reassembled).toBe(content);
+		}
+		// The repeated table header lives only in the embedding input
+		const headerCount = (chunks ?? []).filter(({ content }) =>
+			content.includes("|---|"),
+		).length;
+		expect(headerCount).toBe(1);
+	}, 30_000);
 });

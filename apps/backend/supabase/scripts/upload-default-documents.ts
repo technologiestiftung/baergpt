@@ -166,9 +166,6 @@ async function processDocument(
 			embeddingService.batchEmbed(
 				extractionResult.parsedPages,
 				documentForProcessing,
-				{
-					chunkingTechnique: "markdown",
-				},
 			),
 		]);
 
