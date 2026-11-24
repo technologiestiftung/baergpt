@@ -334,10 +334,6 @@ turbo build
 # Build specific app
 cd apps/[app-name]
 npm run build
-
-# Backend with Sentry source maps
-cd apps/backend
-npm run build:prod
 ```
 
 **Build output locations:**
