@@ -229,7 +229,7 @@ export class ExcelExtractionService {
 	// Hard caps for work done per sheet to avoid pathological sizes
 	// MAX_ROWS / MAX_COLS cap the decoded !ref (0-based, inclusive) relative to the start
 	// CELL_MAX limits per-cell text (after trim) before we escape and render to Markdown
-	private static readonly MAX_ROWS = 2000;
+	private static readonly MAX_ROWS = 10000;
 	private static readonly MAX_COLS = 64;
 	private static readonly CELL_MAX = 1024;
 
@@ -316,8 +316,8 @@ export class ExcelExtractionService {
 		// 0) Determine a capped range from !ref
 		// !ref is the A1-style sheet bounds. We decode to 0-based row/col (inclusive),
 		// then cap the end row/col to at most (start + MAX_* - 1). Finally we re-encode.
-		// Example: if !ref="A1:ZZ100000", MAX_ROWS=2000, MAX_COLS=64 and start is A1,
-		// cappedRef becomes "A1:BL2000".
+		// Example: if !ref="A1:ZZ100000", MAX_ROWS=10000, MAX_COLS=64 and start is A1,
+		// cappedRef becomes "A1:BL10000".
 		const ref = worksheet["!ref"] || "A1";
 		const range = XLSX.utils.decode_range(ref);
 		const {
@@ -332,6 +332,14 @@ export class ExcelExtractionService {
 			endColIndex,
 			startColIndex + ExcelExtractionService.MAX_COLS - 1,
 		);
+		// Report cut-off sheets, to see how often the limits are reached
+		if (cappedEndRowIndex < endRowIndex || cappedEndColIndex < endColIndex) {
+			captureError(
+				new Error(
+					`Spreadsheet truncated: ${endRowIndex - startRowIndex + 1} rows × ${endColIndex - startColIndex + 1} columns exceeds the limit of ${ExcelExtractionService.MAX_ROWS} × ${ExcelExtractionService.MAX_COLS}`,
+				),
+			);
+		}
 		range.e.r = cappedEndRowIndex;
 		range.e.c = cappedEndColIndex;
 		const cappedRef = XLSX.utils.encode_range(range);
