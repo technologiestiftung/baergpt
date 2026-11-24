@@ -23,7 +23,7 @@ on:
 jobs:
   claude:
     runs-on: [self-hosted, tart, baergpt-claude]
-    environment: asana
+    environment: claude
     timeout-minutes: 60
     permissions:
       contents: write
