@@ -39,7 +39,6 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-1password: "true"
-          ignore-scripts: "true"
 
       - name: Set environment item ID 🌿
         id: env-config
@@ -102,7 +101,6 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-1password: "true"
-          ignore-scripts: "true"
 
       - name: Set environment item ID 🌿
         id: env-config
