@@ -8,6 +8,9 @@ inputs:
   install-1password:
     description: Install 1Password CLI
     default: "false"
+  ignore-scripts:
+    description: Install dependencies with --ignore-scripts, for jobs that read secrets later on
+    default: "false"
   github-token:
     description: Token used to log in to ghcr.io, where the Supabase images are pulled from
     default: ${{ github.token }}
@@ -107,12 +110,14 @@ runs:
       with:
         path: |
           **/node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        # Separate cache for --ignore-scripts installs: they lack install-script output
+        # (e.g. the Supabase CLI binary) that the other jobs need.
+        key: ${{ runner.os }}-node-${{ inputs.ignore-scripts == 'true' && 'no-scripts-' || '' }}${{ hashFiles('**/package-lock.json') }}
 
     - name: Install dependencies 📦
       if: steps.cache-npm-deps.outputs.cache-hit != 'true'
       shell: bash
-      run: npm ci
+      run: npm ci ${{ inputs.ignore-scripts == 'true' && '--ignore-scripts' || '' }}
 
     - name: Install 1Password CLI 🔐
       if: inputs.install-1password == 'true'
