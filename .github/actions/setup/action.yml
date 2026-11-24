@@ -107,8 +107,7 @@ runs:
       with:
         path: |
           **/node_modules
-        # "no-scripts" keeps old caches built with install scripts from being restored.
-        key: ${{ runner.os }}-node-no-scripts-${{ hashFiles('**/package-lock.json') }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
 
     - name: Install dependencies 📦
       if: steps.cache-npm-deps.outputs.cache-hit != 'true'
