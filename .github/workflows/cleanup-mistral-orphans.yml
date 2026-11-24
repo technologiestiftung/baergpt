@@ -26,7 +26,6 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-1password: "true"
-          ignore-scripts: "true"
 
       - name: Set environment item ID based on branch 🌿
         id: env-config
@@ -85,7 +84,6 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-1password: "true"
-          ignore-scripts: "true"
 
       - name: Set environment item ID based on branch 🌿
         id: env-config
