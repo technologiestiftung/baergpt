@@ -12,6 +12,7 @@ import { LoadingSpinnerIcon } from "../../../primitives/icons/loading-spinner-ic
 import Content from "../../../../content";
 import { captureError } from "../../../../monitoring/capture-error";
 import { useToastStore } from "../../../../store/use-toast-store";
+import { removeMarkdownStyling } from "../../chat-search/chat-search-utils";
 
 const deleteHistoryEntriesDialogId = "delete-history-entries-dialog";
 const deleteHistoryEntriesDialogTitleId = `${deleteHistoryEntriesDialogId}-title`;
@@ -43,7 +44,7 @@ export function hideDeleteHistoryEntriesDialog() {
 }
 
 function formatChatName(chatName: string) {
-	const sanitized = chatName.replace(/[#`>*]/g, "");
+	const sanitized = removeMarkdownStyling(chatName);
 	return sanitized.length > maxChatNameLength
 		? `${sanitized.slice(0, maxChatNameLength)}…`
 		: sanitized;
@@ -58,10 +59,60 @@ export const DeleteHistoryEntriesDialog: React.FC = () => {
 
 	const count = String(selectedChatIds.length);
 
-	const handleDeleteError = (errorMessage: string) => (error: unknown) => {
-		captureError(error);
-		useToastStore.getState().addError(errorMessage);
+	const getVariantConfig = (): {
+		title: string;
+		confirmation: ReactNode;
+		errorMessage: string;
+		action: () => Promise<void>;
+		shouldClearSelection: boolean;
+	} => {
+		switch (target.type) {
+			case "single":
+				return {
+					title: Content["deleteHistoryEntriesDialog.title.single"],
+					confirmation: (
+						<>
+							{Content["deleteHistoryEntriesDialog.confirmation.single.p1"]}{" "}
+							<span className="underline">
+								{formatChatName(target.chatName)}
+							</span>{" "}
+							{Content["deleteHistoryEntriesDialog.confirmation.single.p2"]}
+						</>
+					),
+					errorMessage: Content["deleteHistoryEntriesDialog.error.single"],
+					action: () => deleteChats([target.chatId]),
+					shouldClearSelection: selectedChatIds.includes(target.chatId),
+				};
+			case "selected":
+				return {
+					title: Content["deleteHistoryEntriesDialog.title.selected"].replace(
+						"{count}",
+						count,
+					),
+					confirmation: Content[
+						"deleteHistoryEntriesDialog.confirmation.selected"
+					].replace("{count}", count),
+					errorMessage: Content["deleteHistoryEntriesDialog.error.multiple"],
+					action: () => deleteChats(selectedChatIds),
+					shouldClearSelection: true,
+				};
+			case "all":
+				return {
+					title: Content["deleteHistoryEntriesDialog.title.all"],
+					confirmation: Content["deleteHistoryEntriesDialog.confirmation.all"],
+					errorMessage: Content["deleteHistoryEntriesDialog.error.multiple"],
+					action: deleteAllChats,
+					shouldClearSelection: true,
+				};
+			default: {
+				const unhandledTarget: never = target;
+				throw new Error(`Unhandled delete target: ${unhandledTarget}`);
+			}
+		}
 	};
+
+	const { title, confirmation, errorMessage, action, shouldClearSelection } =
+		getVariantConfig();
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -73,58 +124,21 @@ export const DeleteHistoryEntriesDialog: React.FC = () => {
 		setIsDeleting(true);
 
 		try {
-			if (target.type === "single") {
-				await deleteChats([target.chatId]);
-			} else if (target.type === "all") {
-				await deleteAllChats();
-			} else {
-				await deleteChats(selectedChatIds);
-			}
-
-			if (target.type !== "single") {
+			await action();
+			if (shouldClearSelection) {
 				clearSelection();
 			}
 			hideDeleteHistoryEntriesDialog();
 		} catch (error) {
-			handleDeleteError(
-				target.type === "single"
-					? Content["deleteHistoryEntriesDialog.error.single"]
-					: Content["deleteHistoryEntriesDialog.error.multiple"],
-			)(error);
+			if (shouldClearSelection) {
+				clearSelection();
+			}
+			hideDeleteHistoryEntriesDialog();
+			captureError(error);
+			useToastStore.getState().addError(errorMessage);
 		} finally {
 			setIsDeleting(false);
 		}
-	};
-
-	const getTitle = (): string => {
-		if (target.type === "single") {
-			return Content["deleteHistoryEntriesDialog.title.single"];
-		}
-		if (target.type === "selected") {
-			return Content["deleteHistoryEntriesDialog.title.selected"].replace(
-				"{count}",
-				count,
-			);
-		}
-		return Content["deleteHistoryEntriesDialog.title.all"];
-	};
-
-	const getConfirmation = (): ReactNode => {
-		if (target.type === "single") {
-			return (
-				<>
-					{Content["deleteHistoryEntriesDialog.confirmation.single.p1"]}{" "}
-					<span className="underline">{formatChatName(target.chatName)}</span>{" "}
-					{Content["deleteHistoryEntriesDialog.confirmation.single.p2"]}
-				</>
-			);
-		}
-		if (target.type === "selected") {
-			return Content[
-				"deleteHistoryEntriesDialog.confirmation.selected"
-			].replace("{count}", count);
-		}
-		return Content["deleteHistoryEntriesDialog.confirmation.all"];
 	};
 
 	return (
@@ -139,10 +153,10 @@ export const DeleteHistoryEntriesDialog: React.FC = () => {
 					id={deleteHistoryEntriesDialogTitleId}
 					className="text-dunkelblau-100 font-bold text-lg leading-7"
 				>
-					{getTitle()}
+					{title}
 				</p>
 				<p className="text-dunkelblau-100 text-lg leading-7 font-normal">
-					{getConfirmation()}
+					{confirmation}
 				</p>
 
 				<div className="flex flex-row justify-end gap-3 mt-6">

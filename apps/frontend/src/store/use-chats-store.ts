@@ -237,10 +237,11 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		const chatsWithMessages = await Promise.all(promises);
 
+		set({ hasMoreChats: chatsFromDb.length === CHATS_PAGE_SIZE });
+
 		// A delete may have committed while this fetch was in flight, so its
 		// result could contain chats that no longer exist
 		if (deletionEpoch === epochAtStart) {
-			set({ hasMoreChats: chatsFromDb.length === CHATS_PAGE_SIZE });
 			get().syncChats(chatsWithMessages);
 		}
 

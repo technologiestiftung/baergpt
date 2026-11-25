@@ -24,17 +24,13 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 	const [isRenamePending, setIsRenamePending] = useState(false);
 	const { setOpenDrawer } = useDrawerStore();
 	const inputRef = useRef<HTMLInputElement>(null);
-	const { selectRangeTo, clearSelection } = useHistorySelectionStore.getState();
-	const hasMultiSelection = useHistorySelectionStore(
-		({ selectedChatIds }) => selectedChatIds.length > 0,
-	);
+	const { selectRangeTo, toggleChatSelection, clearSelection } =
+		useHistorySelectionStore.getState();
 	const isInMultiSelection = useHistorySelectionStore(({ selectedChatIds }) =>
 		selectedChatIds.includes(chat.id),
 	);
 
-	const isSelected = hasMultiSelection
-		? isInMultiSelection
-		: currentChatId === chat.id;
+	const isSelected = isInMultiSelection || currentChatId === chat.id;
 	const displayedName = pendingName ?? chat.name;
 
 	const commitRename = () => {
@@ -91,31 +87,38 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 			) : (
 				<button
 					className="md:w-full h-full w-full mr-3 md:mr-0 truncate rounded-[3px] text-start text-hellblau-50 focus-visible:outline-default"
-					aria-keyshortcuts="Shift+Enter Shift+Space"
+					aria-keyshortcuts="Shift+Enter Shift+Space Control+Enter Control+Space"
 					aria-description={
 						isInMultiSelection
 							? Content["historyEntry.selected.ariaDescription"]
 							: undefined
 					}
 					onMouseDown={(event) => {
-						if (event.shiftKey) {
-							// Prevent text selection; do not focus the button, as the
-							// programmatic focus would show the focus-visible outline.
+						if (event.shiftKey || event.metaKey || event.ctrlKey) {
 							event.preventDefault();
 						}
 					}}
 					onKeyDown={(event) => {
-						if (
-							event.shiftKey &&
-							(event.key === "Enter" || event.key === " ")
-						) {
+						if (event.key !== "Enter" && event.key !== " ") {
+							return;
+						}
+						if (event.shiftKey) {
 							event.preventDefault();
 							selectRangeTo(chat.id);
+							return;
+						}
+						if (event.metaKey || event.ctrlKey) {
+							event.preventDefault();
+							toggleChatSelection(chat.id);
 						}
 					}}
 					onClick={(event) => {
 						if (event.shiftKey) {
 							selectRangeTo(chat.id);
+							return;
+						}
+						if (event.metaKey || event.ctrlKey) {
+							toggleChatSelection(chat.id);
 							return;
 						}
 						clearSelection();

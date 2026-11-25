@@ -149,7 +149,7 @@ export function HistoryGroupByDropdown() {
 					style={!isMobile && dropdownPosition ? dropdownPosition : undefined}
 					onKeyDown={handleDropdownKeyDown}
 					role="menu"
-					aria-label={Content["chatHistory.groupBy.dropdown.ariaLabel"]}
+					aria-label={Content["chatHistory.groupBy.dropdown.menuAriaLabel"]}
 				>
 					{isMobile && isGroupBySubmenuOpen ? (
 						<HistoryGroupBySubmenu

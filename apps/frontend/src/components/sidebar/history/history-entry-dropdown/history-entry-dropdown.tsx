@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useDropdownKeyboard } from "../../../../hooks/use-dropdown-keyboard";
 import { useIsMobile } from "../../../../hooks/use-mobile.tsx";
+import useExportDropdownPosition from "../../../chat/hooks/use-export-dropdown-position.ts";
 import Content from "../../../../content";
 import type { Chat } from "../../../../common";
 import {
@@ -30,27 +31,18 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 }) => {
 	const selectedChatCount = useSelectedChatCount(chat.id);
 	const isMobile = useIsMobile();
-	const [position, setPosition] = useState<React.CSSProperties>({
-		top: 0,
-		right: 0,
-	});
-
-	const calculatePosition = (): React.CSSProperties => {
-		if (triggerRef.current) {
-			const rect = triggerRef.current.getBoundingClientRect();
-			return isMobile
-				? { top: rect.bottom + 4, right: window.innerWidth - rect.right }
-				: { top: rect.bottom + 4, left: rect.left };
-		}
-		return { top: 0, right: 0 };
-	};
+	const { coords, updateCoords } = useExportDropdownPosition(
+		triggerRef,
+		menuRef,
+		isMobile ? "right" : "left",
+	);
 
 	useEffect(() => {
 		if (isOpen) {
-			setPosition(calculatePosition());
+			updateCoords();
 
 			const handleScroll = () => {
-				setPosition(calculatePosition());
+				updateCoords();
 			};
 
 			const scrollContainer = document.querySelector(".history-scrollbar");
@@ -135,7 +127,7 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 		<div
 			ref={menuRef}
 			className={`fixed z-[70] w-fit rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1 bg-hellblau-30`}
-			style={position}
+			style={{ top: coords?.top, left: coords?.left }}
 			onKeyDown={handleKeyDown}
 			role="listbox"
 		>

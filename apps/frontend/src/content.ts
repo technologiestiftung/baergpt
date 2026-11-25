@@ -768,6 +768,7 @@ export const Content = {
 	"chatHistory.collapseToggle.expandChats": "Chats aufklappen",
 	"chatHistory.groupBy.dropdown.ariaLabel":
 		"Dropdown-Menü zum Gruppieren von Chats",
+	"chatHistory.groupBy.dropdown.menuAriaLabel": "Chatverlauf-Optionen",
 	"chatHistory.groupBy.dropdown.tooltip": "Gruppierung ändern",
 	"chatHistory.groupBy.dropdown.label": "Gruppieren nach",
 	"chatHistory.groupBy.options.none": "Keine",
