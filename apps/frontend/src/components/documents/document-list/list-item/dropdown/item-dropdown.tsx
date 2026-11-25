@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
+import { useIsMobile } from "../../../../../hooks/use-mobile.tsx";
 import { usePreviewDocumentStore } from "../../../../../store/use-preview-document-store.ts";
 import type { Document, PublicFolder, UserFolder } from "../../../../../common";
 import Content from "../../../../../content";
@@ -40,6 +41,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		top: number;
 		right: number;
 	}>({ top: 0, right: 0 });
+	const isMobile = useIsMobile();
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
@@ -79,6 +81,12 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		}
 		return undefined;
 	}, [isOpen, triggerRef]);
+
+	useEffect(() => {
+		if (isOpen) {
+			onClose();
+		}
+	}, [isMobile]);
 
 	const handleAddToChat = () => {
 		onClose();

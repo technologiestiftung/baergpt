@@ -36,6 +36,14 @@ let visibleInfoMessageTimeout: ReturnType<typeof setTimeout>;
 let deletionEpoch = 0;
 
 /**
+ * Bumped whenever a chat deletion commits. Callers that fetch chat data
+ * outside of `getChatsFromDb` (e.g. chat search) can capture this before an
+ * async fetch and compare it after, to detect that a chat may have been
+ * deleted in the meantime instead of blindly syncing stale data back in.
+ */
+export const getChatsDeletionEpoch = () => deletionEpoch;
+
+/**
  * Client-generated ids for not-yet-persisted messages. Always negative so
  * they never collide with real (positive) DB ids.
  */
@@ -237,12 +245,11 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		const chatsWithMessages = await Promise.all(promises);
 
-		set({ hasMoreChats: chatsFromDb.length === CHATS_PAGE_SIZE });
-
-		// A delete may have committed while this fetch was in flight, so its
-		// result could contain chats that no longer exist
 		if (deletionEpoch === epochAtStart) {
+			set({ hasMoreChats: chatsFromDb.length === CHATS_PAGE_SIZE });
 			get().syncChats(chatsWithMessages);
+		} else {
+			void get().getNextChatsPage();
 		}
 
 		if (get().isFirstLoad) {

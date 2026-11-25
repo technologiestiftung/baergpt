@@ -7,6 +7,9 @@ import {
 } from "../../../store/use-history-group-by-store.ts";
 
 const options: GroupingOption[] = ["date", "none"];
+const BACK_ITEM = "back" as const;
+
+type SubmenuItem = GroupingOption | typeof BACK_ITEM;
 
 interface HistoryGroupBySubmenuProps {
 	isOpen: boolean;
@@ -37,11 +40,23 @@ export const HistoryGroupBySubmenu: React.FC<HistoryGroupBySubmenuProps> = ({
 		}
 	};
 
+	const items: SubmenuItem[] =
+		variant === "inline" ? [BACK_ITEM, ...options] : options;
+	const optionIndexOffset = variant === "inline" ? 1 : 0;
+
+	const handleItemClick = (item: SubmenuItem) => {
+		if (item === BACK_ITEM) {
+			closeAndRefocusTrigger();
+			return;
+		}
+		handleSelect(item);
+	};
+
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
-		items: options,
+		items,
 		isOpen,
 		onClose: closeAndRefocusTrigger,
-		onItemClick: handleSelect,
+		onItemClick: handleItemClick,
 		closeOnArrowLeft: true,
 		navigateWithTab: true,
 	});
@@ -61,6 +76,13 @@ export const HistoryGroupBySubmenu: React.FC<HistoryGroupBySubmenuProps> = ({
 				<>
 					<button
 						type="button"
+						ref={(el) => {
+							if (el) {
+								optionButtonRefs.current.set(0, el);
+							} else {
+								optionButtonRefs.current.delete(0);
+							}
+						}}
 						className="flex items-center gap-1 w-full px-3 py-2 text-left hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default rounded-3px"
 						onClick={closeAndRefocusTrigger}
 					>
@@ -90,10 +112,11 @@ export const HistoryGroupBySubmenu: React.FC<HistoryGroupBySubmenuProps> = ({
 							<button
 								type="button"
 								ref={(el) => {
+									const refIndex = index + optionIndexOffset;
 									if (el) {
-										optionButtonRefs.current.set(index, el);
+										optionButtonRefs.current.set(refIndex, el);
 									} else {
-										optionButtonRefs.current.delete(index);
+										optionButtonRefs.current.delete(refIndex);
 									}
 								}}
 								className="flex items-center justify-between w-full px-3 py-2 text-left gap-2 hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default rounded-3px"

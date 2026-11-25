@@ -29,8 +29,13 @@ export const HistoryEntry: React.FC<HistoryEntryProps> = ({ chat }) => {
 	const isInMultiSelection = useHistorySelectionStore(({ selectedChatIds }) =>
 		selectedChatIds.includes(chat.id),
 	);
+	const hasActiveSelection = useHistorySelectionStore(
+		({ selectedChatIds }) => selectedChatIds.length > 0,
+	);
 
-	const isSelected = isInMultiSelection || currentChatId === chat.id;
+	const isSelected = hasActiveSelection
+		? isInMultiSelection
+		: currentChatId === chat.id;
 	const displayedName = pendingName ?? chat.name;
 
 	const commitRename = () => {

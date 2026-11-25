@@ -97,6 +97,34 @@ describe("useChatsStore - deleteAllChats", () => {
 		expect(chatIdsInStore()).toEqual([]);
 	});
 
+	it("does not resurrect hasMoreChats from a full stale page that resolves after deleteAllChats", async () => {
+		useChatsStore.setState({ chats: toChats([50, 40]), hasMoreChats: true });
+		let resolveApiGetChats: (chats: ChatWithMessages[]) => void = () => {};
+		vi.mocked(getChatsFromDb).mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					resolveApiGetChats = resolve;
+				}),
+		);
+		vi.mocked(deleteAllChatsFromDb).mockResolvedValue({ error: null });
+
+		const fetch = useChatsStore
+			.getState()
+			.getChatsFromDb(new AbortController().signal);
+		await useChatsStore.getState().deleteAllChats();
+
+		expect(useChatsStore.getState().hasMoreChats).toBe(false);
+
+		// A full page looks like there could be more chats, but this fetch
+		// started before deleteAllChats committed, so it must not reopen
+		// pagination that deleteAllChats already closed.
+		resolveApiGetChats(toChats(Array.from({ length: 20 }, (_, i) => 30 - i)));
+		await fetch;
+
+		expect(chatIdsInStore()).toEqual([]);
+		expect(useChatsStore.getState().hasMoreChats).toBe(false);
+	});
+
 	it("throws if there is no authenticated user, without touching the chat list", async () => {
 		useChatsStore.setState({ chats: toChats([50]) });
 		useAuthStore.setState({ session: null });
