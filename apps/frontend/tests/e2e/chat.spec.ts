@@ -816,18 +816,22 @@ test.describe("Chat", () => {
 			const groupByDropdown = page.getByRole("button", {
 				name: "Dropdown-Menü zum Gruppieren von Chats",
 			});
+			const groupByMenuItem = page.getByRole("menuitem", {
+				name: "Gruppieren nach",
+			});
+			const noneOption = page.getByRole("menuitemradio", { name: "Keine" });
+			const dateOption = page.getByRole("menuitemradio", { name: "Datum" });
+
 			await groupByDropdown.click();
+			await groupByMenuItem.click();
 
 			// "Keine" is default — it should have aria-checked="true"
-			const noneOption = page.getByRole("menuitemradio", { name: "Keine" });
 			await expect(noneOption).toHaveAttribute("aria-checked", "true");
 
-			const dateOption = page.getByRole("menuitemradio", { name: "Datum" });
 			await dateOption.click();
 
 			// Dropdown closes after selection
-			const openDropdownLabel = page.getByText("Gruppieren nach..");
-			await expect(openDropdownLabel).not.toBeVisible();
+			await expect(noneOption).not.toBeVisible();
 
 			// At least one date group label should be visible (e.g. "Heute")
 			await expect(dateGroupHeader).toBeVisible();
@@ -840,6 +844,7 @@ test.describe("Chat", () => {
 
 			// Switch back to none
 			await groupByDropdown.click();
+			await groupByMenuItem.click();
 
 			// The "Datum" option should now be selected
 			await expect(dateOption).toHaveAttribute("aria-checked", "true");
