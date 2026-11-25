@@ -115,6 +115,8 @@ environment in Grafana → Explore before relying on it.
   staging. Backend: a path containing `interact.sh`, on the staging backend for the SKE rules
   (applied from the `production` workspace) or on production for the Render rules, which have no
   staging group.
+- `infra/incident/incident.py alert <Name>` shows the lines a security rule matched. It reads the
+  rule lists in `alerts_security.tf` by their layout: run it once after restructuring that file.
 - `{service_name="supabase-<env>-anon-egress"} |= "\"status\": \"ok\""` on Loki — one line per
   hourly refresh. **Deploy the collector change before applying `alerts_anon_egress.tf`**: with
   no such line in the last 3h, `AnonEgressBlocklistStale` fires on apply.
