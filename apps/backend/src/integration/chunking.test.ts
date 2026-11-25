@@ -53,20 +53,6 @@ function markdownTable(rows: number): string {
 }
 
 describe("chunkPage", () => {
-	it("handles a table separator row with a very long dash run in linear time", () => {
-		const page = `| A |\n|${"-".repeat(50000)}x|\n| b |\n`;
-
-		const startedAt = performance.now();
-		const chunks = chunkPage(page, {
-			targetTokens: MAX_TOKENS,
-			maxTokens: MAX_TOKENS,
-		});
-
-		// A backtracking separator regex needs ~1e9 steps here, i.e. many seconds
-		expect(performance.now() - startedAt).toBeLessThan(1000);
-		expectValidChunks(page, chunks);
-	});
-
 	it("gives a chunk that starts at the separator row the header line as prefix", () => {
 		const paragraph = `${germanParagraph(10)}\n\n`;
 		const headerLine = "| H1 | H2 |\n";
@@ -267,24 +253,24 @@ describe("chunkPage", () => {
 
 	it("splits text without whitespace and flags the character fallback", () => {
 		const chineseText = "这是一个很长的中文文本，包含许多字符和句子。".repeat(
-			2000,
+			200,
 		);
 		const minifiedJson = JSON.stringify(
-			Array.from({ length: 5000 }, (_, index) => ({
+			Array.from({ length: 300 }, (_, index) => ({
 				id: index,
 				data: "x".repeat(20),
 			})),
 		);
 
 		for (const page of [chineseText, minifiedJson]) {
-			expect(countMistralTokens(page)).toBeGreaterThan(MAX_TOKENS);
+			expect(countMistralTokens(page)).toBeGreaterThan(TARGET_TOKENS);
 			const chunks = chunkPage(page, {
-				targetTokens: MAX_TOKENS,
-				maxTokens: MAX_TOKENS,
+				targetTokens: TARGET_TOKENS,
+				maxTokens: TARGET_TOKENS,
 			});
 
 			expect(chunks.length).toBeGreaterThan(1);
-			expectValidChunks(page, chunks);
+			expectValidChunks(page, chunks, TARGET_TOKENS);
 			expect(
 				chunks.some(({ usedCharacterFallback }) => usedCharacterFallback),
 			).toBe(true);

@@ -30,6 +30,16 @@ type TableBlock = {
 
 type Prefix = { text: string; tokens: number };
 
+type PageContext = {
+	pageContent: string;
+	target: number;
+	maxTokens: number;
+	getPrefix: (offset: number) => Prefix;
+};
+
+/** Part of the page and where it starts; tokens if already counted */
+type Segment = { text: string; offset: number; tokens?: number };
+
 const NO_PREFIX: Prefix = { text: "", tokens: 0 };
 
 // Coarse to fine; separators stay with the preceding piece.
@@ -87,12 +97,11 @@ export function chunkPage(
 		return prefixes.get(text) ?? NO_PREFIX;
 	};
 
-	const pieces = splitIntoPieces(pageContent, 0, 0, target);
-	const groups = fillGroups(pageContent, pieces, target, getPrefix);
+	const context: PageContext = { pageContent, target, maxTokens, getPrefix };
+	const pieces = splitIntoPieces({ text: pageContent, offset: 0 }, 0, target);
+	const groups = fillGroups(pieces, context);
 
-	return groups.flatMap((group) =>
-		buildChunks(pageContent, group, maxTokens, getPrefix),
-	);
+	return groups.flatMap((group) => buildChunks(group, context));
 }
 
 /** Count without BOS/EOS, +1 margin: a piece alone may need one token fewer than in context */
@@ -106,11 +115,9 @@ function isWhitespace(text: string): boolean {
 
 /** Contiguous pieces that each fit the target, split at the coarsest working boundary */
 function splitIntoPieces(
-	text: string,
-	offset: number,
+	{ text, offset, tokens: knownTokens }: Segment,
 	level: number,
 	target: number,
-	knownTokens?: number,
 ): Piece[] {
 	const tokens = knownTokens ?? estimateTokens(text);
 	// tokens + 1 = real count
@@ -125,18 +132,24 @@ function splitIntoPieces(
 		];
 	}
 	if (level >= BOUNDARIES.length) {
-		return splitByCharacters(text, offset, tokens, target);
+		return splitByCharacters({ text, offset, tokens }, target);
 	}
 
 	const parts = text.split(BOUNDARIES[level]);
 	if (parts.length === 1) {
-		return splitIntoPieces(text, offset, level + 1, target, tokens);
+		return splitIntoPieces({ text, offset, tokens }, level + 1, target);
 	}
 
 	const pieces: Piece[] = [];
 	let partOffset = offset;
 	for (const part of parts) {
-		pieces.push(...splitIntoPieces(part, partOffset, level + 1, target));
+		for (const piece of splitIntoPieces(
+			{ text: part, offset: partOffset },
+			level + 1,
+			target,
+		)) {
+			pieces.push(piece);
+		}
 		partOffset += part.length;
 	}
 	return pieces;
@@ -144,9 +157,7 @@ function splitIntoPieces(
 
 /** Last resort for text without whitespace; keeps surrogate pairs intact */
 function splitByCharacters(
-	text: string,
-	offset: number,
-	tokens: number,
+	{ text, offset, tokens }: Required<Segment>,
 	target: number,
 ): Piece[] {
 	const characters = Array.from(text);
@@ -166,9 +177,12 @@ function splitByCharacters(
 			pieceTokens + BOS_EOS_TOKENS - 1 > target &&
 			charactersPerPiece < characters.length
 		) {
-			pieces.push(
-				...splitByCharacters(pieceText, pieceOffset, pieceTokens, target),
-			);
+			for (const piece of splitByCharacters(
+				{ text: pieceText, offset: pieceOffset, tokens: pieceTokens },
+				target,
+			)) {
+				pieces.push(piece);
+			}
 		} else {
 			pieces.push({
 				start: pieceOffset,
@@ -184,10 +198,8 @@ function splitByCharacters(
 
 /** Fills groups up to the target; whitespace pieces join the current group */
 function fillGroups(
-	text: string,
 	pieces: Piece[],
-	target: number,
-	getPrefix: (offset: number) => Prefix,
+	{ pageContent: text, target, getPrefix }: PageContext,
 ): Piece[][] {
 	const groups: Piece[][] = [];
 	let current: Piece[] = [];
@@ -217,7 +229,9 @@ function fillGroups(
 	// Trailing whitespace belongs to the previous chunk
 	const lastGroup = groups.at(-1);
 	if (!currentHasText && lastGroup) {
-		lastGroup.push(...current);
+		for (const piece of current) {
+			lastGroup.push(piece);
+		}
 	} else if (current.length > 0) {
 		groups.push(current);
 	}
@@ -226,12 +240,11 @@ function fillGroups(
 
 /** Checks the real count; over the limit: split in half, then drop the prefix. Never cuts. */
 function buildChunks(
-	text: string,
 	group: Piece[],
-	maxTokens: number,
-	getPrefix: (offset: number) => Prefix,
+	context: PageContext,
 	withPrefix: boolean = true,
 ): PageChunk[] {
+	const { pageContent: text, maxTokens, getPrefix } = context;
 	const start = group[0].start;
 	const content = text.slice(start, group.at(-1)?.end);
 	const firstTextOffset = start + (content.length - content.trimStart().length);
@@ -258,12 +271,12 @@ function buildChunks(
 	if (splittable.length > 1) {
 		const middle = group.indexOf(splittable[Math.floor(splittable.length / 2)]);
 		return [
-			...buildChunks(text, group.slice(0, middle), maxTokens, getPrefix),
-			...buildChunks(text, group.slice(middle), maxTokens, getPrefix),
+			...buildChunks(group.slice(0, middle), context),
+			...buildChunks(group.slice(middle), context),
 		];
 	}
 	if (prefix) {
-		return buildChunks(text, group, maxTokens, getPrefix, false);
+		return buildChunks(group, context, false);
 	}
 	throw new Error(
 		`Chunk exceeds the embedding limit (${tokenCount} > ${maxTokens} tokens) and cannot be split further`,
