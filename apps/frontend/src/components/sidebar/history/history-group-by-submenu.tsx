@@ -13,6 +13,7 @@ interface HistoryGroupBySubmenuProps {
 	onClose: () => void;
 	onItemSelect: () => void;
 	groupByButtonRef: RefObject<HTMLButtonElement | null>;
+	variant?: "flyout" | "inline";
 }
 
 export const HistoryGroupBySubmenu: React.FC<HistoryGroupBySubmenuProps> = ({
@@ -20,6 +21,7 @@ export const HistoryGroupBySubmenu: React.FC<HistoryGroupBySubmenuProps> = ({
 	onClose,
 	onItemSelect,
 	groupByButtonRef,
+	variant = "flyout",
 }) => {
 	const { groupBy, setGroupBy } = useHistoryGroupByStore();
 
@@ -28,13 +30,17 @@ export const HistoryGroupBySubmenu: React.FC<HistoryGroupBySubmenuProps> = ({
 		onItemSelect();
 	};
 
+	const closeAndRefocusTrigger = () => {
+		onClose();
+		if (variant === "flyout") {
+			groupByButtonRef.current?.focus();
+		}
+	};
+
 	const { optionButtonRefs, handleKeyDown } = useDropdownKeyboard({
 		items: options,
 		isOpen,
-		onClose: () => {
-			onClose();
-			groupByButtonRef.current?.focus();
-		},
+		onClose: closeAndRefocusTrigger,
 		onItemClick: handleSelect,
 		closeOnArrowLeft: true,
 		navigateWithTab: true,
@@ -42,11 +48,39 @@ export const HistoryGroupBySubmenu: React.FC<HistoryGroupBySubmenuProps> = ({
 
 	return (
 		<div
-			className="p-1 rounded-3px bg-hellblau-30 shadow-md min-w-max"
+			className={
+				variant === "flyout"
+					? "p-1 rounded-3px bg-hellblau-30 shadow-md min-w-max"
+					: "flex flex-col"
+			}
 			onKeyDown={handleKeyDown}
 			role="menu"
 			aria-label={Content["chatHistory.groupBy.dropdown.label"]}
 		>
+			{variant === "inline" && (
+				<>
+					<button
+						type="button"
+						className="flex items-center gap-1 w-full px-3 py-2 text-left hover:bg-hellblau-60 focus-visible:bg-hellblau-60 focus-visible:outline-default rounded-3px"
+						onClick={closeAndRefocusTrigger}
+					>
+						<img
+							src="/icons/chevron-right-icon.svg"
+							alt=""
+							width={20}
+							height={20}
+							className="rotate-180"
+							aria-hidden="true"
+						/>
+						<span className="text-sm leading-5 text-dunkelblau-80">
+							{Content["chatHistory.groupBy.submenu.back"]}
+						</span>
+					</button>
+					<div role="separator" className="px-1.5 py-0.5">
+						<div className="h-px bg-hellblau-100" />
+					</div>
+				</>
+			)}
 			<ul role="none" className="flex flex-col">
 				{options.map((option, index) => {
 					const isSelected = groupBy === option;

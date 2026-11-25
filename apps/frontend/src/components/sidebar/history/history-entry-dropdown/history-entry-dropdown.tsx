@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDropdownKeyboard } from "../../../../hooks/use-dropdown-keyboard";
+import { useIsMobile } from "../../../../hooks/use-mobile.tsx";
 import Content from "../../../../content";
 import type { Chat } from "../../../../common";
 import {
@@ -15,6 +17,7 @@ interface HistoryEntryDropdownProps {
 	onClose: () => void;
 	onRename: () => void;
 	triggerRef: React.RefObject<HTMLButtonElement | null>;
+	menuRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
@@ -23,17 +26,21 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 	onClose,
 	onRename,
 	triggerRef,
+	menuRef,
 }) => {
 	const selectedChatCount = useSelectedChatCount(chat.id);
-	const [position, setPosition] = useState<{ top: number; right: number }>({
+	const isMobile = useIsMobile();
+	const [position, setPosition] = useState<React.CSSProperties>({
 		top: 0,
 		right: 0,
 	});
 
-	const calculatePosition = () => {
+	const calculatePosition = (): React.CSSProperties => {
 		if (triggerRef.current) {
 			const rect = triggerRef.current.getBoundingClientRect();
-			return { top: rect.bottom, right: window.innerWidth - rect.right };
+			return isMobile
+				? { top: rect.bottom + 4, right: window.innerWidth - rect.right }
+				: { top: rect.bottom + 4, left: rect.left };
 		}
 		return { top: 0, right: 0 };
 	};
@@ -58,7 +65,7 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 			};
 		}
 		return undefined;
-	}, [isOpen, triggerRef]);
+	}, [isOpen, triggerRef, isMobile]);
 
 	const handleRename = () => {
 		onClose();
@@ -124,10 +131,11 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 		return null;
 	}
 
-	return (
+	return createPortal(
 		<div
-			className={`fixed z-50 w-fit rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1 bg-hellblau-30`}
-			style={{ top: `${position.top}px`, right: `${position.right}px` }}
+			ref={menuRef}
+			className={`fixed z-[70] w-fit rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1 bg-hellblau-30`}
+			style={position}
 			onKeyDown={handleKeyDown}
 			role="listbox"
 		>
@@ -158,6 +166,7 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 					</li>
 				))}
 			</ul>
-		</div>
+		</div>,
+		document.body,
 	);
 };

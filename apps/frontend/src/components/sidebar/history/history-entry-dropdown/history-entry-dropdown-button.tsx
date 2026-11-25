@@ -17,7 +17,7 @@ export const HistoryEntryDropdownButton: React.FC<
 	const selectedChatCount = useSelectedChatCount(chat.id);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownButtonRef = useRef<HTMLButtonElement>(null);
-	const dropdownRef = useRef<HTMLDivElement>(null);
+	const menuRef = useRef<HTMLDivElement>(null);
 
 	// The menu actions refer to the selection, so a stale menu must not stay open
 	useEffect(() => {
@@ -26,12 +26,12 @@ export const HistoryEntryDropdownButton: React.FC<
 
 	useClickOutside(isDropdownOpen, () => setIsDropdownOpen(false), [
 		dropdownButtonRef,
-		dropdownRef,
+		menuRef,
 	]);
 
 	const closeDropdown = () => {
 		// Closing unmounts the focused option, so focus would fall back to <body>
-		const isFocusInDropdown = dropdownRef.current?.contains(
+		const isFocusInDropdown = menuRef.current?.contains(
 			document.activeElement,
 		);
 		setIsDropdownOpen(false);
@@ -41,7 +41,7 @@ export const HistoryEntryDropdownButton: React.FC<
 	};
 
 	return (
-		<div className="relative" ref={dropdownRef}>
+		<div className="relative">
 			<button
 				ref={dropdownButtonRef}
 				type="button"
@@ -64,6 +64,7 @@ export const HistoryEntryDropdownButton: React.FC<
 				onClose={closeDropdown}
 				onRename={onRename}
 				triggerRef={dropdownButtonRef}
+				menuRef={menuRef}
 			/>
 		</div>
 	);

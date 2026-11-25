@@ -772,6 +772,7 @@ export const Content = {
 	"chatHistory.groupBy.dropdown.label": "Gruppieren nach",
 	"chatHistory.groupBy.options.none": "Keine",
 	"chatHistory.groupBy.options.date": "Datum",
+	"chatHistory.groupBy.submenu.back": "Zurück",
 	"chatHistory.deleteAll.label": "Alle löschen",
 	"chatHistory.emptyState.title": "Noch keine Chats erstellt",
 
