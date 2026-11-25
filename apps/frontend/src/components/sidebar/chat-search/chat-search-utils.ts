@@ -4,6 +4,7 @@ import { useCurrentChatIdStore } from "../../../store/current-chat-id-store";
 import {
 	useChatsStore,
 	getChatsDeletionEpoch,
+	wasChatDeleted,
 } from "../../../store/use-chats-store";
 import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store";
 import Content from "../../../content";
@@ -43,10 +44,7 @@ export async function openChatFromSearch(
 		const epochAtStart = getChatsDeletionEpoch();
 		try {
 			const messages = await getMessages(chat.id, new AbortController().signal);
-			if (
-				inFlightChatId !== chat.id ||
-				getChatsDeletionEpoch() !== epochAtStart
-			) {
+			if (inFlightChatId !== chat.id || wasChatDeleted(chat.id, epochAtStart)) {
 				return;
 			}
 			syncChats([{ ...chat, messages }]);

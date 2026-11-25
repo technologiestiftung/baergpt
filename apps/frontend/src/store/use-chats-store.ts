@@ -34,14 +34,24 @@ let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
 let visibleInfoMessageTimeout: ReturnType<typeof setTimeout>;
 
 let deletionEpoch = 0;
+const deletedChatIdSet = new Set<number>();
+let allChatsDeletedAtEpoch: number | null = null;
 
-/**
- * Bumped whenever a chat deletion commits. Callers that fetch chat data
- * outside of `getChatsFromDb` (e.g. chat search) can capture this before an
- * async fetch and compare it after, to detect that a chat may have been
- * deleted in the meantime instead of blindly syncing stale data back in.
- */
+/** Bumped on every committed chat deletion; capture before an async fetch. */
 export const getChatsDeletionEpoch = () => deletionEpoch;
+
+export const wasChatDeleted = (chatId: number, epochAtStart: number) => {
+	if (deletionEpoch === epochAtStart) {
+		return false;
+	}
+	if (
+		allChatsDeletedAtEpoch !== null &&
+		allChatsDeletedAtEpoch > epochAtStart
+	) {
+		return true;
+	}
+	return deletedChatIdSet.has(chatId);
+};
 
 /**
  * Client-generated ids for not-yet-persisted messages. Always negative so
@@ -353,6 +363,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		if (deletedChatIds.length > 0) {
 			deletionEpoch++;
+			deletedChatIds.forEach((id) => deletedChatIdSet.add(id));
 
 			set({
 				chats: get().chats.filter((chat) => !deletedChatIds.includes(chat.id)),
@@ -391,6 +402,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		}
 
 		deletionEpoch++;
+		allChatsDeletedAtEpoch = deletionEpoch;
 		useCurrentChatIdStore.getState().setCurrentChatId(null);
 		set({ chats: [], hasMoreChats: false });
 	},
