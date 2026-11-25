@@ -18,7 +18,7 @@ image and applies the overlay:
 | Environment | Started by                                                      |
 | ----------- | --------------------------------------------------------------- |
 | `staging`   | every push to `staging`                                         |
-| `prod`      | Actions → Run workflow on `main`                                |
+| `prod`      | every push to `main`                                            |
 | `sandbox`   | Actions → Run workflow on `staging` or `main`, target `sandbox` |
 
 Every run builds the image fresh, also when only the env changed.
@@ -54,8 +54,7 @@ ready, so the cause is usually DNS or the certificate. The new version stays liv
 Revert the commit and deploy. Re-running an old workflow run is refused.
 
 If the revert needs the old env (the bad change renamed or removed variables): restore the 1Password
-note first, from the item's history, then revert. On `staging` the revert deploys as soon as it's
-pushed.
+note first, from the item's history, then revert. The revert deploys as soon as it's pushed.
 
 `kubectl rollout undo` by hand restores the env only one deploy back. The Secret before that has been
 overwritten.
