@@ -106,7 +106,7 @@ resource "stackit_public_ip" "gateway" {
   }
 }
 
-# Settings for the LoadBalancer Service that Envoy Gateway creates.
+# Settings for the proxy pods and the LoadBalancer Service that Envoy Gateway creates.
 resource "kubernetes_manifest" "envoy_proxy" {
   manifest = {
     apiVersion = "gateway.envoyproxy.io/v1alpha1"
@@ -119,6 +119,26 @@ resource "kubernetes_manifest" "envoy_proxy" {
       provider = {
         type = "Kubernetes"
         kubernetes = {
+          # Two pods on different nodes, so a node drain doesn't take every environment offline.
+          envoyDeployment = {
+            replicas = 2
+            pod = {
+              topologySpreadConstraints = [{
+                maxSkew           = 1
+                topologyKey       = "kubernetes.io/hostname"
+                whenUnsatisfiable = "DoNotSchedule"
+                labelSelector = {
+                  matchLabels = {
+                    "gateway.envoyproxy.io/owning-gateway-name"      = "baergpt"
+                    "gateway.envoyproxy.io/owning-gateway-namespace" = kubernetes_namespace_v1.gateway.metadata[0].name
+                  }
+                }
+              }]
+            }
+          }
+          envoyPDB = {
+            maxUnavailable = 1
+          }
           envoyService = {
             annotations = {
               # Only applied when the Service is created.
