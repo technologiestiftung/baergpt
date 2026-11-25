@@ -36,13 +36,21 @@ op_resolve() {
 }
 op_resolve ASANA_PROJECT_GIDS
 op_resolve ASANA_ALLOWED_USERS
+# Bot user token: copied from 1Password into the keychain via stdin (not argv), then dropped from the shell.
+ASANA_PERSONAL_ACCESS_TOKEN=""
+op_resolve ASANA_PERSONAL_ACCESS_TOKEN
+if [ -n "$ASANA_PERSONAL_ACCESS_TOKEN" ]; then
+  printf 'add-generic-password -U -a %s -s %s -w %s\n' "$USER" "$ASANA_KEYCHAIN_SERVICE" "$ASANA_PERSONAL_ACCESS_TOKEN" | security -i
+  echo "Asana bot user token copied from 1Password to keychain service $ASANA_KEYCHAIN_SERVICE."
+fi
+unset ASANA_PERSONAL_ACCESS_TOKEN
 
 ASANA_LABEL=berlin.technologiestiftung.baergpt-asana-listener
 ASANA_PLIST="$HOME/Library/LaunchAgents/$ASANA_LABEL.plist"
 if [ -n "$ASANA_PROJECT_GIDS" ]; then
   # Validate everything first: on failure the running listener stays untouched.
   security find-generic-password -s "$ASANA_KEYCHAIN_SERVICE" -w >/dev/null 2>&1 \
-    || { echo "Asana token missing. Run: security add-generic-password -a \"\$USER\" -s $ASANA_KEYCHAIN_SERVICE -w"; exit 1; }
+    || { echo "Asana bot user token missing. Set ASANA_PERSONAL_ACCESS_TOKEN_OP, or run: security add-generic-password -U -a \"\$USER\" -s $ASANA_KEYCHAIN_SERVICE -w"; exit 1; }
   [[ "$ASANA_PROJECT_GIDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || { echo "ASANA_PROJECT_GIDS: comma-separated Asana project GIDs"; exit 1; }
   [[ "$ASANA_ALLOWED_USERS" =~ ^[0-9]+(,[0-9]+)*$ ]] \
     || { echo "Set ASANA_ALLOWED_USERS (or ASANA_ALLOWED_USERS_OP): comma-separated Asana user GIDs"; exit 1; }
