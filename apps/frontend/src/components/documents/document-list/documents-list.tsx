@@ -10,6 +10,7 @@ import { DocumentListHeader } from "./document-list-header.tsx";
 import { usePublicDocumentsStore } from "../../../store/use-public-documents-store.ts";
 import { useCurrentFolderStore } from "../../../store/use-current-folder-store.ts";
 import { isPublicFolder } from "./list-item/utils/is-public-folder.ts";
+import { useMinLoadingDuration } from "../../../hooks/use-min-loading-duration.ts";
 
 export const DocumentsList: React.FC = () => {
 	const { currentFolder } = useCurrentFolderStore();
@@ -20,6 +21,7 @@ export const DocumentsList: React.FC = () => {
 		useUserDocumentStore();
 
 	const isFirstLoad = isDocumentFirstLoad || isUserFolderFirstLoad;
+	const showSkeleton = useMinLoadingDuration(isFirstLoad || isLoading);
 
 	const userItemsInCurrentFolder = getUserItemsInCurrentFolder();
 
@@ -38,15 +40,14 @@ export const DocumentsList: React.FC = () => {
 
 			<div className="flex flex-col w-full h-full">
 				<ul className="relative grow h-0 overflow-y-auto mt-2 md:mt-0 filesection-scrollbar">
-					{(isFirstLoad || isLoading) && <DocumentListSkeleton count={8} />}
+					{showSkeleton && <DocumentListSkeleton count={8} />}
 
 					{isPublicFolder(currentFolder) &&
 						getSortedItems(publicDocuments).map((item) => (
 							<ListItem key={getUniqueId(item)} item={item} />
 						))}
 
-					{!isFirstLoad &&
-						!isLoading &&
+					{!showSkeleton &&
 						!isPublicFolder(currentFolder) &&
 						filteredItems.map((item) => (
 							<ListItem key={getUniqueId(item)} item={item} />
