@@ -133,9 +133,7 @@ describe("useHistorySelectionStore", () => {
 		it("works with no current chat and no prior selection", () => {
 			useHistorySelectionStore.getState().toggleChatSelection(20);
 
-			expect(useHistorySelectionStore.getState().selectedChatIds).toEqual([
-				20,
-			]);
+			expect(useHistorySelectionStore.getState().selectedChatIds).toEqual([20]);
 			expect(useHistorySelectionStore.getState().anchorChatId).toBe(20);
 		});
 

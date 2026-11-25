@@ -31,9 +31,7 @@ export const HistoryEntryDropdownButton: React.FC<
 
 	const closeDropdown = () => {
 		// Closing unmounts the focused option, so focus would fall back to <body>
-		const isFocusInDropdown = menuRef.current?.contains(
-			document.activeElement,
-		);
+		const isFocusInDropdown = menuRef.current?.contains(document.activeElement);
 		setIsDropdownOpen(false);
 		if (isFocusInDropdown) {
 			dropdownButtonRef.current?.focus();

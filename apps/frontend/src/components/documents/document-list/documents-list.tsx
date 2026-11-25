@@ -30,7 +30,8 @@ export const DocumentsList: React.FC = () => {
 		(item) => !isDocument(item) || !deletedDefaultDocumentIds.includes(item.id),
 	);
 
-	const height = currentFolder || filteredItems.length > 0 ? "grow min-h-0" : "h-fit";
+	const height =
+		currentFolder || filteredItems.length > 0 ? "grow min-h-0" : "h-fit";
 
 	return (
 		<div className={`flex flex-col w-full ${height}`}>

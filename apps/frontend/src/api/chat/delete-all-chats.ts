@@ -8,10 +8,7 @@ import { supabase } from "../../../supabase-client.ts";
 export async function deleteAllChats(
 	userId: string,
 ): Promise<{ error: Error | null }> {
-	const { error } = await supabase
-		.from("chats")
-		.delete()
-		.eq("user_id", userId);
+	const { error } = await supabase.from("chats").delete().eq("user_id", userId);
 
 	return { error };
 }
