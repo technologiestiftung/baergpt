@@ -27,17 +27,20 @@ SSH_KEY="${SSH_KEY:-$HOME/.config/baergpt-runner/id_ed25519}"
 GITHUB_APP_ID="${GITHUB_APP_ID:-5593578}"
 KEYCHAIN_SERVICE="${KEYCHAIN_SERVICE:-baergpt-runner-app-key}"
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5"
-# Asana listener (optional): comma-separated projects (boards) to watch for "@claude". Empty disables it.
-# Token in the keychain (prompts): security add-generic-password -a "$USER" -s baergpt-asana-token -w
+# Asana listener (optional): comma-separated projects (boards) to watch for @-mentions of the bot user. Empty disables it.
+# PAT of the bot user "Claude (Prototyping)" in the keychain (prompts): security add-generic-password -U -a "$USER" -s baergpt-asana-token -w
 ASANA_PROJECT_GIDS="${ASANA_PROJECT_GIDS:-}"
 ASANA_KEYCHAIN_SERVICE="${ASANA_KEYCHAIN_SERVICE:-baergpt-asana-token}"
 ASANA_CONTEXT_KEY_SERVICE="${ASANA_CONTEXT_KEY_SERVICE:-baergpt-asana-context-key}"  # same value as repo secret ASANA_CONTEXT_KEY
-# Comma-separated Asana user GIDs allowed to trigger Claude (required; set it in the env file above). Find yours:
+# Comma-separated Asana user GIDs allowed to trigger Claude (required; set it in the env file above). Find them:
 #   curl -s -H "Authorization: Bearer $(security find-generic-password -s baergpt-asana-token -w)" \
-#     https://app.asana.com/api/1.0/users/me | jq -r .data.gid
+#     "https://app.asana.com/api/1.0/users?workspace=<workspace gid>" | jq -r '.data[] | "\(.gid) \(.name)"'
 ASANA_ALLOWED_USERS="${ASANA_ALLOWED_USERS:-}"
 # Instead of the two values above: 1Password references. install.sh reads them with `op read`
 # (Touch ID, so run it at the Mac) and hands the values to the listener.
 ASANA_PROJECT_GIDS_OP="${ASANA_PROJECT_GIDS_OP:-}"
 ASANA_ALLOWED_USERS_OP="${ASANA_ALLOWED_USERS_OP:-}"
+# Optional 1Password reference to the bot user's token. install.sh copies it into the keychain
+# (service ASANA_KEYCHAIN_SERVICE), replacing the stored one; the listener only reads the keychain.
+ASANA_PERSONAL_ACCESS_TOKEN_OP="${ASANA_PERSONAL_ACCESS_TOKEN_OP:-}"
 ASANA_POLL_SECONDS="${ASANA_POLL_SECONDS:-10}"   # 1 Asana request per poll; limit is 1,500/min per token

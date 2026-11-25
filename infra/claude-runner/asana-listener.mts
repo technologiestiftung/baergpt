@@ -1,11 +1,19 @@
-// Polls one or more Asana projects for "@claude" in task comments and descriptions, starts
+// Polls one or more Asana projects for @-mentions of the Claude bot user (`@Claude (Prototyping)`) in task comments and descriptions, starts
 // .github/workflows/claude-asana.yml for each, and posts Claude's reply back as a comment.
 // Runs as a LaunchAgent (see install.sh). Node >= 24, no dependencies.
 //
-// Secrets stay on this Mac (keychain): the Asana token never reaches GitHub or Claude.
+// The Asana token is a PAT of a dedicated bot user, so Claude can be @-mentioned like a person
+// and its replies come from that user. Secrets stay on this Mac (keychain): the token never reaches GitHub or Claude.
 
 import { execFile } from "node:child_process";
-import { createCipheriv, createDecipheriv, createHash, createSign, randomBytes, randomUUID } from "node:crypto";
+import {
+	createCipheriv,
+	createDecipheriv,
+	createHash,
+	createSign,
+	randomBytes,
+	randomUUID,
+} from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
@@ -23,27 +31,50 @@ const REPO = env("REPO");
 const ORG = env("ORG");
 const GITHUB_APP_ID = env("GITHUB_APP_ID");
 const APP_KEY_SERVICE = env("KEYCHAIN_SERVICE");
-const PROJECT_GIDS = env("ASANA_PROJECT_GIDS").split(",").map((gid) => gid.trim()).filter(Boolean);
-const ASANA_TOKEN_SERVICE = env("ASANA_KEYCHAIN_SERVICE", "baergpt-asana-token");
-const CONTEXT_KEY_SERVICE = env("ASANA_CONTEXT_KEY_SERVICE", "baergpt-asana-context-key");
+const PROJECT_GIDS = env("ASANA_PROJECT_GIDS")
+	.split(",")
+	.map((gid) => gid.trim())
+	.filter(Boolean);
+const ASANA_TOKEN_SERVICE = env(
+	"ASANA_KEYCHAIN_SERVICE",
+	"baergpt-asana-token",
+);
+const CONTEXT_KEY_SERVICE = env(
+	"ASANA_CONTEXT_KEY_SERVICE",
+	"baergpt-asana-context-key",
+);
 const WORKFLOW = env("ASANA_WORKFLOW", "claude-asana.yml");
 const WORKFLOW_REF = env("ASANA_WORKFLOW_REF", "main");
 const POLL_SECONDS = Number(env("ASANA_POLL_SECONDS", "10"));
 // Only these Asana users can trigger Claude. Board membership alone is not trusted.
-const ALLOWED_USERS = new Set(env("ASANA_ALLOWED_USERS").split(",").map((gid) => gid.trim()).filter(Boolean));
+const ALLOWED_USERS = new Set(
+	env("ASANA_ALLOWED_USERS")
+		.split(",")
+		.map((gid) => gid.trim())
+		.filter(Boolean),
+);
 
-const TRIGGER = /@claude\b/i;
-const BOT_PREFIX = "🤖";
+// Set at startup from /users/me: the bot user that owns the token.
+let botGid = "";
+// Rich text (html_text, html_notes) marks a mention as <a ... data-asana-gid="<user gid>" ...>.
+const mentionsBot = (html: string | undefined) =>
+	!!html && new RegExp(`<a\\b[^>]*\\bdata-asana-gid="${botGid}"`).test(html);
 const MAX_CONTEXT_BYTES = 45_000; // UTF-8 bytes; +28 B crypto header, base64 grows ~33%; inputs are capped at 65,535 chars
 const STATE_FILE = join(homedir(), ".config/baergpt-runner/asana-state.json");
 
 type State = { sync: Record<string, string>; handled: string[] }; // sync token per project
 
-const log = (...args: unknown[]) => console.log(new Date().toISOString(), ...args);
+const log = (...args: unknown[]) =>
+	console.log(new Date().toISOString(), ...args);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function keychain(service: string): Promise<string> {
-	const { stdout } = await run("security", ["find-generic-password", "-s", service, "-w"]);
+	const { stdout } = await run("security", [
+		"find-generic-password",
+		"-s",
+		service,
+		"-w",
+	]);
 	return stdout.trim();
 }
 
@@ -51,7 +82,8 @@ async function keychain(service: string): Promise<string> {
 // Run logs and artifacts of the public repo are public. Task and reply travel as
 // base64(iv[12] | tag[16] | AES-256-GCM ciphertext); claude-asana.yml uses the same format.
 
-const contextKey = async () => Buffer.from(await keychain(CONTEXT_KEY_SERVICE), "base64");
+const contextKey = async () =>
+	Buffer.from(await keychain(CONTEXT_KEY_SERVICE), "base64");
 
 function encrypt(key: Buffer, text: string): string {
 	const iv = randomBytes(12);
@@ -64,7 +96,10 @@ function decrypt(key: Buffer, b64: string): string {
 	const raw = Buffer.from(b64, "base64");
 	const decipher = createDecipheriv("aes-256-gcm", key, raw.subarray(0, 12));
 	decipher.setAuthTag(raw.subarray(12, 28));
-	return Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]).toString("utf8");
+	return Buffer.concat([
+		decipher.update(raw.subarray(28)),
+		decipher.final(),
+	]).toString("utf8");
 }
 
 // ---------- state ----------
@@ -91,22 +126,28 @@ async function asana(path: string, init: RequestInit = {}): Promise<Response> {
 	const token = await keychain(ASANA_TOKEN_SERVICE);
 	return fetch(`https://app.asana.com/api/1.0${path}`, {
 		...init,
-		headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init.headers },
+		headers: {
+			Authorization: `Bearer ${token}`,
+			"Content-Type": "application/json",
+			...init.headers,
+		},
 	});
 }
 
 async function asanaJson<T>(path: string): Promise<T> {
 	const res = await asana(path);
-	if (!res.ok) throw new Error(`Asana ${path}: ${res.status} ${await res.text()}`);
+	if (!res.ok)
+		throw new Error(`Asana ${path}: ${res.status} ${await res.text()}`);
 	return ((await res.json()) as { data: T }).data;
 }
 
 async function comment(taskGid: string, text: string): Promise<void> {
 	const res = await asana(`/tasks/${taskGid}/stories`, {
 		method: "POST",
-		body: JSON.stringify({ data: { text: `${BOT_PREFIX} ${text}` } }),
+		body: JSON.stringify({ data: { text } }),
 	});
-	if (!res.ok) throw new Error(`Asana comment: ${res.status} ${await res.text()}`);
+	if (!res.ok)
+		throw new Error(`Asana comment: ${res.status} ${await res.text()}`);
 }
 
 type AsanaEvent = {
@@ -118,25 +159,37 @@ type AsanaEvent = {
 
 // undefined if the user may trigger Claude, else the user's GID (or "unknown").
 function denied(userGid: string | undefined): string | undefined {
-	return userGid && ALLOWED_USERS.has(userGid) ? undefined : (userGid ?? "unknown");
+	return userGid && ALLOWED_USERS.has(userGid)
+		? undefined
+		: (userGid ?? "unknown");
 }
 
 // Returns new events since the last sync token. A missing or expired token yields a fresh
 // one and no events, so the listener only reacts to mentions written after it started.
-async function pollEvents(state: State, project: string): Promise<AsanaEvent[]> {
+async function pollEvents(
+	state: State,
+	project: string,
+): Promise<AsanaEvent[]> {
 	const events: AsanaEvent[] = [];
 	for (;;) {
 		const query = new URLSearchParams({ resource: project });
 		if (state.sync[project]) query.set("sync", state.sync[project]);
 		const res = await asana(`/events?${query}`);
-		const body = (await res.json()) as { data?: AsanaEvent[]; sync: string; has_more?: boolean };
+		const body = (await res.json()) as {
+			data?: AsanaEvent[];
+			sync: string;
+			has_more?: boolean;
+		};
 		if (res.status === 412) {
 			state.sync[project] = body.sync;
 			log(`Asana sync token (re)initialized for project ${project}`);
 			return [];
 		}
 		// Keep the old token on other errors, so the next poll retries the same events.
-		if (!res.ok) throw new Error(`Asana events (project ${project}): ${res.status} ${JSON.stringify(body)}`);
+		if (!res.ok)
+			throw new Error(
+				`Asana events (project ${project}): ${res.status} ${JSON.stringify(body)}`,
+			);
 		state.sync[project] = body.sync;
 		events.push(...(body.data ?? []));
 		if (!body.has_more) return events;
@@ -159,41 +212,78 @@ async function pollAllEvents(state: State): Promise<AsanaEvent[]> {
 // The current description and who wrote it: the author of the latest "notes_changed" story,
 // or the task's creator if it was never edited. Not the event's user, which can be an older edit.
 // Returns undefined if the description changed while reading; that edit's own event retries it.
-async function currentNotes(taskGid: string): Promise<{ notes: string; editor?: string } | undefined> {
-	type Story = { gid: string; resource_subtype: string; created_by?: { gid: string } | null };
+async function currentNotes(
+	taskGid: string,
+): Promise<{ notes: string; html: string; editor?: string } | undefined> {
+	type Story = {
+		gid: string;
+		resource_subtype: string;
+		created_by?: { gid: string } | null;
+	};
 	const lastEdit = async () =>
-		(await asanaJson<Story[]>(`/tasks/${taskGid}/stories?opt_fields=resource_subtype,created_by.gid`))
+		(
+			await asanaJson<Story[]>(
+				`/tasks/${taskGid}/stories?opt_fields=resource_subtype,created_by.gid`,
+			)
+		)
 			.filter((story) => story.resource_subtype === "notes_changed")
 			.at(-1);
 
 	const before = await lastEdit();
-	const task = await asanaJson<{ notes: string; created_by?: { gid: string } | null }>(
-		`/tasks/${taskGid}?opt_fields=notes,created_by.gid`,
-	);
+	const task = await asanaJson<{
+		notes: string;
+		html_notes: string;
+		created_by?: { gid: string } | null;
+	}>(`/tasks/${taskGid}?opt_fields=notes,html_notes,created_by.gid`);
 	const after = await lastEdit();
 	if (before?.gid !== after?.gid) {
-		log(`Description of task ${taskGid} changed while reading it; waiting for the next event`);
+		log(
+			`Description of task ${taskGid} changed while reading it; waiting for the next event`,
+		);
 		return undefined;
 	}
 	// No created_by (deleted user, integration) leaves editor undefined, so denied() refuses it.
-	return { notes: task.notes, editor: after ? after.created_by?.gid : task.created_by?.gid };
+	return {
+		notes: task.notes,
+		html: task.html_notes,
+		editor: after ? after.created_by?.gid : task.created_by?.gid,
+	};
 }
 
-type Trigger = { key: string; taskGid: string; request: string; deniedUser?: string };
+type Trigger = {
+	key: string;
+	taskGid: string;
+	request: string;
+	deniedUser?: string;
+};
 
-async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger[]> {
+async function findTriggers(
+	events: AsanaEvent[],
+	state: State,
+): Promise<Trigger[]> {
 	const triggers: Trigger[] = [];
 	const seen = new Set<string>();
 
 	for (const event of events) {
 		const { resource, parent } = event;
 
-		if (resource.resource_type === "story" && event.action === "added" && parent?.resource_type === "task") {
-			const story = await asanaJson<{ text: string; resource_subtype: string; created_by?: { gid: string } | null }>(
-				`/stories/${resource.gid}?opt_fields=text,resource_subtype,created_by.gid`,
+		if (
+			resource.resource_type === "story" &&
+			event.action === "added" &&
+			parent?.resource_type === "task"
+		) {
+			const story = await asanaJson<{
+				text: string;
+				html_text?: string;
+				resource_subtype: string;
+				created_by?: { gid: string } | null;
+			}>(
+				`/stories/${resource.gid}?opt_fields=text,html_text,resource_subtype,created_by.gid`,
 			);
 			if (story.resource_subtype !== "comment_added") continue;
-			if (story.text.startsWith(BOT_PREFIX) || !TRIGGER.test(story.text)) continue;
+			// The bot's own replies never re-trigger.
+			if (story.created_by?.gid === botGid || !mentionsBot(story.html_text))
+				continue;
 			triggers.push({
 				key: `story:${resource.gid}`,
 				taskGid: parent.gid,
@@ -204,15 +294,19 @@ async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger
 
 		const notesChanged =
 			resource.resource_type === "task" &&
-			(event.action === "added" || (event.action === "changed" && event.change?.field === "notes"));
+			(event.action === "added" ||
+				(event.action === "changed" && event.change?.field === "notes"));
 		// One check per task and batch is enough: it reads the current description and its editor,
 		// independent of which event led here.
 		if (notesChanged && !seen.has(resource.gid)) {
 			seen.add(resource.gid);
 			const current = await currentNotes(resource.gid);
-			if (!current || !TRIGGER.test(current.notes)) continue;
+			if (!current || !mentionsBot(current.html)) continue;
 			// Key on the description's content, so editing it again re-triggers but saving it unchanged does not.
-			const hash = createHash("sha256").update(current.notes).digest("hex").slice(0, 16);
+			const hash = createHash("sha256")
+				.update(current.notes)
+				.digest("hex")
+				.slice(0, 16);
 			triggers.push({
 				key: `notes:${resource.gid}:${hash}`,
 				taskGid: resource.gid,
@@ -226,16 +320,31 @@ async function findTriggers(events: AsanaEvent[], state: State): Promise<Trigger
 	return [...unique.values()].filter((t) => !state.handled.includes(t.key));
 }
 
-async function buildContext(taskGid: string, request: string): Promise<{ markdown: string; url: string }> {
-	const task = await asanaJson<{ name: string; notes: string; permalink_url: string }>(
-		`/tasks/${taskGid}?opt_fields=name,notes,permalink_url`,
-	);
-	const stories = await asanaJson<{ text: string; resource_subtype: string; created_at: string; created_by?: { name: string } }[]>(
+async function buildContext(
+	taskGid: string,
+	request: string,
+): Promise<{ markdown: string; url: string }> {
+	const task = await asanaJson<{
+		name: string;
+		notes: string;
+		permalink_url: string;
+	}>(`/tasks/${taskGid}?opt_fields=name,notes,permalink_url`);
+	const stories = await asanaJson<
+		{
+			text: string;
+			resource_subtype: string;
+			created_at: string;
+			created_by?: { name: string };
+		}[]
+	>(
 		`/tasks/${taskGid}/stories?opt_fields=text,resource_subtype,created_at,created_by.name`,
 	);
 	const comments = stories
 		.filter((s) => s.resource_subtype === "comment_added")
-		.map((s) => `- ${s.created_at.slice(0, 16)} ${s.created_by?.name ?? "?"}: ${s.text}`)
+		.map(
+			(s) =>
+				`- ${s.created_at.slice(0, 16)} ${s.created_by?.name ?? "?"}: ${s.text}`,
+		)
 		.join("\n");
 
 	let markdown = [
@@ -261,21 +370,34 @@ async function buildContext(taskGid: string, request: string): Promise<{ markdow
 
 // ---------- GitHub (as the runner App) ----------
 
-const b64url = (data: Buffer | string) => (typeof data === "string" ? Buffer.from(data) : data).toString("base64url");
+const b64url = (data: Buffer | string) =>
+	(typeof data === "string" ? Buffer.from(data) : data).toString("base64url");
 
 async function githubToken(): Promise<string> {
-	const key = Buffer.from(await keychain(APP_KEY_SERVICE), "base64").toString("utf8");
+	const key = Buffer.from(await keychain(APP_KEY_SERVICE), "base64").toString(
+		"utf8",
+	);
 	const now = Math.floor(Date.now() / 1000);
 	const unsigned = `${b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }))}.${b64url(
 		JSON.stringify({ iat: now - 60, exp: now + 540, iss: GITHUB_APP_ID }),
 	)}`;
 	const jwt = `${unsigned}.${b64url(createSign("RSA-SHA256").update(unsigned).sign(key))}`;
-	const installation = (await (await gh(jwt, `/orgs/${ORG}/installation`)).json()) as { id: number };
-	const res = await gh(jwt, `/app/installations/${installation.id}/access_tokens`, { method: "POST" });
+	const installation = (await (
+		await gh(jwt, `/orgs/${ORG}/installation`)
+	).json()) as { id: number };
+	const res = await gh(
+		jwt,
+		`/app/installations/${installation.id}/access_tokens`,
+		{ method: "POST" },
+	);
 	return ((await res.json()) as { token: string }).token;
 }
 
-async function gh(token: string, path: string, init: RequestInit = {}): Promise<Response> {
+async function gh(
+	token: string,
+	path: string,
+	init: RequestInit = {},
+): Promise<Response> {
 	const res = await fetch(`https://api.github.com${path}`, {
 		...init,
 		headers: {
@@ -285,22 +407,37 @@ async function gh(token: string, path: string, init: RequestInit = {}): Promise<
 			...init.headers,
 		},
 	});
-	if (!res.ok) throw new Error(`GitHub ${path}: ${res.status} ${await res.text()}`);
+	if (!res.ok)
+		throw new Error(`GitHub ${path}: ${res.status} ${await res.text()}`);
 	return res;
 }
 
-async function dispatchAndWait(context: string, taskUrl: string, onStarted: (url: string) => Promise<void>) {
+async function dispatchAndWait(
+	context: string,
+	taskUrl: string,
+	onStarted: (url: string) => Promise<void>,
+) {
 	const requestId = randomUUID();
 	let token = await githubToken();
 	await gh(token, `/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
 		method: "POST",
 		body: JSON.stringify({
 			ref: WORKFLOW_REF,
-			inputs: { request_id: requestId, task_url: taskUrl, context_enc: encrypt(await contextKey(), context) },
+			inputs: {
+				request_id: requestId,
+				task_url: taskUrl,
+				context_enc: encrypt(await contextKey(), context),
+			},
 		}),
 	});
 
-	type Run = { id: number; html_url: string; status: string; conclusion: string | null; display_title: string };
+	type Run = {
+		id: number;
+		html_url: string;
+		status: string;
+		conclusion: string | null;
+		display_title: string;
+	};
 	let found: Run | undefined;
 	const deadline = Date.now() + 75 * 60_000;
 	let tokenAge = Date.now();
@@ -312,32 +449,59 @@ async function dispatchAndWait(context: string, taskUrl: string, onStarted: (url
 		}
 		if (!found) {
 			const runs = (await (
-				await gh(token, `/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=20`)
+				await gh(
+					token,
+					`/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=20`,
+				)
 			).json()) as { workflow_runs: Run[] };
-			found = runs.workflow_runs.find((r) => r.display_title.includes(requestId));
+			found = runs.workflow_runs.find((r) =>
+				r.display_title.includes(requestId),
+			);
 			// The progress comment is optional: if it fails, keep tracking the run and still post the reply.
-			if (found) await onStarted(found.html_url).catch((error) => log("Failed to post progress comment:", error));
+			if (found)
+				await onStarted(found.html_url).catch((error) =>
+					log("Failed to post progress comment:", error),
+				);
 			continue;
 		}
-		const current = (await (await gh(token, `/repos/${REPO}/actions/runs/${found.id}`)).json()) as Run;
+		const current = (await (
+			await gh(token, `/repos/${REPO}/actions/runs/${found.id}`)
+		).json()) as Run;
 		if (current.status !== "completed") continue;
 		return { run: current, reply: await downloadReply(token, current.id) };
 	}
-	throw new Error(found ? `Run timed out: ${found.html_url}` : "Run never started");
+	throw new Error(
+		found ? `Run timed out: ${found.html_url}` : "Run never started",
+	);
 }
 
-async function downloadReply(token: string, runId: number): Promise<string | undefined> {
-	const { artifacts } = (await (await gh(token, `/repos/${REPO}/actions/runs/${runId}/artifacts`)).json()) as {
+async function downloadReply(
+	token: string,
+	runId: number,
+): Promise<string | undefined> {
+	const { artifacts } = (await (
+		await gh(token, `/repos/${REPO}/actions/runs/${runId}/artifacts`)
+	).json()) as {
 		artifacts: { name: string; archive_download_url: string }[];
 	};
 	const artifact = artifacts.find((a) => a.name === "asana-reply");
 	if (!artifact) return undefined;
-	const zip = Buffer.from(await (await gh(token, new URL(artifact.archive_download_url).pathname)).arrayBuffer());
+	const zip = Buffer.from(
+		await (
+			await gh(token, new URL(artifact.archive_download_url).pathname)
+		).arrayBuffer(),
+	);
 	const dir = await mkdtemp(join(tmpdir(), "asana-reply-"));
 	try {
 		await writeFile(join(dir, "reply.zip"), zip);
-		const { stdout } = await run("unzip", ["-p", join(dir, "reply.zip"), "reply.enc"]);
-		return stdout.trim() ? decrypt(await contextKey(), stdout.trim()).trim() || undefined : undefined;
+		const { stdout } = await run("unzip", [
+			"-p",
+			join(dir, "reply.zip"),
+			"reply.enc",
+		]);
+		return stdout.trim()
+			? decrypt(await contextKey(), stdout.trim()).trim() || undefined
+			: undefined;
 	} finally {
 		await rm(dir, { recursive: true, force: true });
 	}
@@ -347,7 +511,9 @@ async function downloadReply(token: string, runId: number): Promise<string | und
 
 async function handle(trigger: Trigger): Promise<void> {
 	if (trigger.deniedUser) {
-		log(`Denied ${trigger.key}: user ${trigger.deniedUser} is not in ASANA_ALLOWED_USERS`);
+		log(
+			`Denied ${trigger.key}: user ${trigger.deniedUser} is not in ASANA_ALLOWED_USERS`,
+		);
 		await comment(
 			trigger.taskGid,
 			`Claude only answers allowlisted users. Ask the BärGPT dev team to add your Asana user ID ${trigger.deniedUser} to ASANA_ALLOWED_USERS.`,
@@ -356,26 +522,46 @@ async function handle(trigger: Trigger): Promise<void> {
 	}
 	log(`Trigger ${trigger.key} on task ${trigger.taskGid}`);
 	try {
-		const { markdown, url } = await buildContext(trigger.taskGid, trigger.request);
-		const { run: finished, reply } = await dispatchAndWait(markdown, url, (runUrl) =>
-			comment(trigger.taskGid, `Claude is working on it: ${runUrl}`),
+		const { markdown, url } = await buildContext(
+			trigger.taskGid,
+			trigger.request,
+		);
+		const { run: finished, reply } = await dispatchAndWait(
+			markdown,
+			url,
+			(runUrl) =>
+				comment(trigger.taskGid, `Claude is working on it: ${runUrl}`),
 		);
 		if (finished.conclusion === "success" && reply) {
 			await comment(trigger.taskGid, reply);
 		} else {
-			await comment(trigger.taskGid, `Claude run ended with "${finished.conclusion}": ${finished.html_url}`);
+			await comment(
+				trigger.taskGid,
+				`Claude run ended with "${finished.conclusion}": ${finished.html_url}`,
+			);
 		}
 		log(`Done ${trigger.key}: ${finished.conclusion}`);
 	} catch (error) {
 		log(`Failed ${trigger.key}:`, error);
-		await comment(trigger.taskGid, `Claude could not process this request (${(error as Error).message.slice(0, 200)}).`).catch(
-			() => {},
-		);
+		await comment(
+			trigger.taskGid,
+			`Claude could not process this request (${(error as Error).message.slice(0, 200)}).`,
+		).catch(() => {});
 	}
 }
 
 const state = await loadState();
-log(`Listening to Asana projects ${PROJECT_GIDS.join(", ")}, every ${POLL_SECONDS}s`);
+botGid = (
+	await asanaJson<{ gid: string; name: string }>(
+		"/users/me?opt_fields=gid,name",
+	)
+).gid;
+if (!/^\d+$/.test(botGid))
+	throw new Error(`Unexpected bot user GID: ${botGid}`);
+log(`Asana bot user ${botGid}`);
+log(
+	`Listening to Asana projects ${PROJECT_GIDS.join(", ")}, every ${POLL_SECONDS}s`,
+);
 for (;;) {
 	try {
 		const triggers = await findTriggers(await pollAllEvents(state), state);

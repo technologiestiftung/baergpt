@@ -1,8 +1,8 @@
 name: Claude (Asana)
 run-name: Claude Asana ${{ inputs.request_id }}
 
-# Started by infra/claude-runner/asana-listener.mts when someone writes "@claude" in a task
-# on the Asana board. The listener passes the task as input and posts asana-reply.md back to
+# Started by infra/claude-runner/asana-listener.mts when someone @-mentions the Claude bot user `@Claude (Prototyping)`
+# in a task on the Asana board. The listener passes the task as input and posts asana-reply.md back to
 # Asana itself, so no Asana token reaches GitHub or Claude.
 # Logs and artifacts of this public repo are public, so the task and the reply are encrypted
 # (AES-256-GCM, key in the ASANA_CONTEXT_KEY secret of the `asana` environment and in the host keychain).

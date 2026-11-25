@@ -56,18 +56,20 @@ Bun and Claude Code at the versions pinned inside the `claude-code-action` SHA f
 
 ## Asana
 
-Write `@claude` in a task comment or description on one of the configured Asana boards.
+@-mention the bot user `Claude (Prototyping)` in a task comment or description on one of the configured Asana boards. Plain text "@claude" does not trigger.
 `asana-listener.mts` (LaunchAgent) polls the boards every 10 s (`ASANA_POLL_SECONDS`) and starts `.github/workflows/claude-asana.yml` with the task as input.
-Claude answers, or opens a PR against `staging`, or pushes to an existing PR. The listener posts the reply as an Asana comment starting with 🤖; those never re-trigger.
-The Asana token stays in the keychain on this Mac. It never reaches GitHub or Claude.
+Claude answers, or opens a PR against `staging`, or pushes to an existing PR. The listener posts the reply as a comment by the bot user; its own comments never re-trigger.
+The bot user's token stays in the keychain on this Mac. It never reaches GitHub or Claude.
 
 Setup:
 
 1. Runner App: add repository permission **Actions: Read and write**, and give its installation access to `baergpt`.
-2. Store an Asana personal access token:
+2. Log in to Asana as the bot user `Claude (Prototyping)`, add it to every configured board, and create a personal access token for it (My settings → Apps → Developer apps). Store the token (`-U` replaces an old one):
    ```sh
-   security add-generic-password -a "$USER" -s baergpt-asana-token -w   # prompts for the token
+   security add-generic-password -U -a "$USER" -s baergpt-asana-token -w   # prompts for the token
    ```
+   Or store it in 1Password and set `ASANA_PERSONAL_ACCESS_TOKEN_OP` (e.g. `op://Vault/Item/ASANA_PERSONAL_ACCESS_TOKEN`) in `~/.config/baergpt-runner/env`; `install.sh` then copies it into the keychain on every run.
+   The listener reads the bot's user GID from the token at startup (`/users/me`).
 3. Create the key that encrypts tasks and replies (run logs and artifacts are public). It goes to the keychain and the secret `ASANA_CONTEXT_KEY` of the environment `asana` (deployment branches: `main` only), and never appears on screen:
    ```sh
    KEY="$(openssl rand -base64 32)"
@@ -78,8 +80,8 @@ Setup:
 4. Set `ASANA_PROJECT_GIDS` (the number in each board URL, comma-separated) and `ASANA_ALLOWED_USERS` (Asana user GIDs, comma-separated; command in `config.sh`) in `~/.config/baergpt-runner/env` (per host, not in git), or store them in 1Password and set `ASANA_PROJECT_GIDS_OP` / `ASANA_ALLOWED_USERS_OP` there instead (e.g. `op://Vault/Item/field`; `install.sh` reads them with `op read`). Then run `./install.sh`. Log: `~/Library/Logs/baergpt-runner/asana.log`.
 5. `claude-asana.yml` must be on `main`: GitHub only starts manually dispatched workflows from the default branch.
 6. First test (check `asana.log`):
-   - Comment `@claude` as an allowed user: Claude replies. As a user not in the list: the denial reply appears.
-   - Edit a description to contain `@claude`, once as an allowed user and once as another user. The listener attributes it to the author of the latest `notes_changed` story; confirm Asana returns those stories with `created_by`, else every description request is denied.
+   - Mention `@Claude (Prototyping)` in a comment as an allowed user: Claude replies. As a user not in the list: the denial reply appears.
+   - Edit a description to mention the bot, once as an allowed user and once as another user. The listener attributes it to the author of the latest `notes_changed` story; confirm Asana returns those stories with `created_by`, else every description request is denied.
 
 Only users in `ASANA_ALLOWED_USERS` can trigger Claude; other board members get a reply asking them to get their user ID added. To add someone, edit the env file and re-run `./install.sh`. The context still contains everyone's comments on that task.
 Tasks on that board are sent to the Claude API. Keep personal and confidential data out of them.
