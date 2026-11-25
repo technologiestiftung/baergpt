@@ -56,6 +56,7 @@ const BOUNDARIES: RegExp[] = [
 ];
 
 const BOS_EOS_TOKENS = 2;
+const HEADING_LINE = /^#{1,6}[ \t]/;
 const TABLE_LINE = /^[^\S\n]*\|/;
 const TABLE_SEPARATOR_CHARACTERS = /^[^\S\n]*\|[\s|:-]*$/;
 
@@ -68,7 +69,10 @@ export function buildEmbeddingInput(content: string, prefix: string): string {
 	return `${prefix}${content.trim()}`;
 }
 
-/** Chunks of about `targetTokens`, never over `maxTokens`; never crosses the page */
+/**
+ * Chunks of about `targetTokens`, never over `maxTokens`; never crosses the page.
+ * With a target below the limit (non-PDF), a chunk never ends with a heading.
+ */
 export function chunkPage(
 	pageContent: string,
 	{ targetTokens, maxTokens }: { targetTokens: number; maxTokens: number },
@@ -196,10 +200,38 @@ function splitByCharacters(
 	return pieces;
 }
 
+function isHeadingOnly(text: string): boolean {
+	const lines = text.trim().split("\n");
+	return lines.every((line) => HEADING_LINE.test(line.trim()));
+}
+
+/** Where trailing headings start, so a chunk never ends with a heading; group length if none or nothing precedes them */
+function trailingHeadingsStart(group: Piece[], text: string): number {
+	let index = group.length;
+	let hasHeading = false;
+	while (index > 0) {
+		const { start, end } = group[index - 1];
+		const pieceText = text.slice(start, end);
+		if (!isWhitespace(pieceText) && !isHeadingOnly(pieceText)) {
+			break;
+		}
+		hasHeading ||= !isWhitespace(pieceText);
+		index--;
+	}
+	if (index === 0 || !hasHeading) {
+		return group.length;
+	}
+	// Separators stay with the previous chunk
+	while (isWhitespace(text.slice(group[index].start, group[index].end))) {
+		index++;
+	}
+	return index;
+}
+
 /** Fills groups up to the target; whitespace pieces join the current group */
 function fillGroups(
 	pieces: Piece[],
-	{ pageContent: text, target, getPrefix }: PageContext,
+	{ pageContent: text, target, maxTokens, getPrefix }: PageContext,
 ): Piece[][] {
 	const groups: Piece[][] = [];
 	let current: Piece[] = [];
@@ -213,10 +245,19 @@ function fillGroups(
 			pieceHasText &&
 			currentTokens + piece.tokens > target
 		) {
-			groups.push(current);
-			current = [];
-			currentTokens = 0;
-			currentHasText = false;
+			// PDF pages (target = limit) are split by size only
+			const cut =
+				target < maxTokens
+					? trailingHeadingsStart(current, text)
+					: current.length;
+			groups.push(current.slice(0, cut));
+			current = current.slice(cut);
+			currentHasText = current.length > 0;
+			currentTokens = currentHasText
+				? BOS_EOS_TOKENS +
+					getPrefix(current[0].start).tokens +
+					current.reduce((sum, { tokens }) => sum + tokens, 0)
+				: 0;
 		}
 		if (pieceHasText && !currentHasText) {
 			currentTokens += BOS_EOS_TOKENS + getPrefix(piece.start).tokens;

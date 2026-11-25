@@ -89,6 +89,56 @@ describe("chunkPage", () => {
 		).toBe(true);
 	});
 
+	it("never ends a chunk with headings, they move to the next chunk", () => {
+		const text = `${germanParagraph(20)}\n\n`;
+		const heading = "## 2 Förderung\n\n";
+		const subheading = "### 2.1 Antrag\n\n";
+		const page = `${text}${heading}${subheading}${germanParagraph(40)}`;
+		// Text and both headings fit, the following paragraph doesn't
+		const targetTokens =
+			countMistralTokens(text) +
+			countMistralTokens(heading) +
+			countMistralTokens(subheading);
+
+		const chunks = chunkPage(page, { targetTokens, maxTokens: MAX_TOKENS });
+
+		expectValidChunks(page, chunks);
+		expect(chunks[0].content).toBe(text);
+		expect(chunks[1].content.startsWith(heading + subheading)).toBe(true);
+	});
+
+	it("does not move headings on PDF pages (target equals the limit)", () => {
+		const text = `${germanParagraph(10)}\n\n`;
+		const heading = "## Kapitel 2\n\n";
+		const paragraph = germanParagraph(15);
+		const page = text + heading + paragraph;
+		const maxTokens = countMistralTokens(paragraph);
+		expect(countMistralTokens(text + heading)).toBeLessThan(maxTokens);
+
+		const chunks = chunkPage(page, { targetTokens: maxTokens, maxTokens });
+
+		expectValidChunks(page, chunks, maxTokens);
+		expect(chunks.map(({ content }) => content)).toEqual([
+			text + heading,
+			paragraph,
+		]);
+	});
+
+	it("keeps chunks that consist only of headings, like a table of contents", () => {
+		const page = Array.from(
+			{ length: 200 },
+			(_, index) => `## Punkt ${index}\n\n`,
+		).join("");
+
+		const chunks = chunkPage(page, {
+			targetTokens: 200,
+			maxTokens: MAX_TOKENS,
+		});
+
+		expect(chunks.length).toBeGreaterThan(1);
+		expectValidChunks(page, chunks);
+	});
+
 	it("keeps a page under the target as one chunk", () => {
 		const page = "# Titel\n\nKurzer Absatz.\n";
 		const chunks = chunkPage(page, {
