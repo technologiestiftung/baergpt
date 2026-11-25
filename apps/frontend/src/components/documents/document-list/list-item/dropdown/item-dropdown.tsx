@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
 import { usePreviewDocumentStore } from "../../../../../store/use-preview-document-store.ts";
 import type { Document, PublicFolder, UserFolder } from "../../../../../common";
@@ -9,7 +10,6 @@ import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
 import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
 import { BucketIcon } from "../../../../primitives/icons/bucket-icon";
 import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
-import { useIsMobile } from "../../../../../hooks/use-mobile";
 import { isPublicFolder } from "../utils/is-public-folder.ts";
 import { isPublicDocument } from "../utils/is-public-document.ts";
 import { isUserFolder } from "../utils/is-user-folder.ts";
@@ -23,6 +23,7 @@ interface ItemDropdownProps {
 	isOpen: boolean;
 	onClose: () => void;
 	triggerRef: React.RefObject<HTMLButtonElement | null>;
+	menuRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ItemDropdown: React.FC<ItemDropdownProps> = ({
@@ -30,6 +31,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	isOpen,
 	onClose,
 	triggerRef,
+	menuRef,
 }) => {
 	const { selectPreviewDocument } = usePreviewDocumentStore();
 	const { setSingleItemSelectedForAction } = useDocumentsListStore();
@@ -41,7 +43,6 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
-	const isMobile = useIsMobile();
 	const isReadOnly =
 		isPublicFolder(item) || (isDoc && item.source_type === "public_document");
 	const isRenamable = isUserFolder(item) || isPersonalDocument(item);
@@ -218,11 +219,12 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		return null;
 	}
 
-	return (
+	return createPortal(
 		<div
-			className="fixed z-50 bg-white rounded-3px shadow-md min-w-[200px] p-1"
+			ref={menuRef}
+			className="fixed z-[70] bg-white rounded-3px shadow-md min-w-[200px] p-1"
 			style={{
-				top: `${position.top - (isMobile ? 68 : 0)}px`, // -68px on mobile to account for the bottom drawer top-[calc(50px+18px)]
+				top: `${position.top}px`,
 				right: `${position.right}px`,
 			}}
 			onKeyDown={handleKeyDown}
@@ -254,6 +256,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 					</li>
 				))}
 			</ul>
-		</div>
+		</div>,
+		document.body,
 	);
 };

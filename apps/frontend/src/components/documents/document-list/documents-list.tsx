@@ -30,29 +30,27 @@ export const DocumentsList: React.FC = () => {
 		(item) => !isDocument(item) || !deletedDefaultDocumentIds.includes(item.id),
 	);
 
-	const height = currentFolder || filteredItems.length > 0 ? "h-full" : "h-fit";
+	const height = currentFolder || filteredItems.length > 0 ? "grow min-h-0" : "h-fit";
 
 	return (
 		<div className={`flex flex-col w-full ${height}`}>
 			<DocumentListHeader />
 
-			<div className="flex flex-col w-full h-full">
-				<ul className="relative grow h-0 overflow-y-auto mt-2 md:mt-0 filesection-scrollbar">
-					{(isFirstLoad || isLoading) && <DocumentListSkeleton count={8} />}
+			<ul className="relative grow min-h-0 overflow-y-auto mt-2 md:mt-0 filesection-scrollbar">
+				{(isFirstLoad || isLoading) && <DocumentListSkeleton count={8} />}
 
-					{isPublicFolder(currentFolder) &&
-						getSortedItems(publicDocuments).map((item) => (
-							<ListItem key={getUniqueId(item)} item={item} />
-						))}
+				{isPublicFolder(currentFolder) &&
+					getSortedItems(publicDocuments).map((item) => (
+						<ListItem key={getUniqueId(item)} item={item} />
+					))}
 
-					{!isFirstLoad &&
-						!isLoading &&
-						!isPublicFolder(currentFolder) &&
-						filteredItems.map((item) => (
-							<ListItem key={getUniqueId(item)} item={item} />
-						))}
-				</ul>
-			</div>
+				{!isFirstLoad &&
+					!isLoading &&
+					!isPublicFolder(currentFolder) &&
+					filteredItems.map((item) => (
+						<ListItem key={getUniqueId(item)} item={item} />
+					))}
+			</ul>
 		</div>
 	);
 };

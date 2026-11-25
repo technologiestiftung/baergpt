@@ -13,16 +13,16 @@ export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
 }) => {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownButtonRef = useRef<HTMLButtonElement>(null);
-	const dropdownRef = useRef<HTMLDivElement>(null);
+	const dropdownMenuRef = useRef<HTMLDivElement>(null);
 
 	useClickOutside(isDropdownOpen, () => setIsDropdownOpen(false), [
 		dropdownButtonRef,
-		dropdownRef,
+		dropdownMenuRef,
 	]);
 
 	const closeDropdown = () => {
 		// Closing unmounts the focused option, so focus would fall back to <body>
-		const isFocusInDropdown = dropdownRef.current?.contains(
+		const isFocusInDropdown = dropdownMenuRef.current?.contains(
 			document.activeElement,
 		);
 		setIsDropdownOpen(false);
@@ -36,7 +36,7 @@ export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
 	};
 
 	return (
-		<div className="relative" ref={dropdownRef}>
+		<div className="relative">
 			<button
 				ref={dropdownButtonRef}
 				type="button"
@@ -57,6 +57,7 @@ export const ItemDropdownButton: React.FC<ItemDropdownButtonProps> = ({
 				isOpen={isDropdownOpen}
 				onClose={closeDropdown}
 				triggerRef={dropdownButtonRef}
+				menuRef={dropdownMenuRef}
 			/>
 		</div>
 	);

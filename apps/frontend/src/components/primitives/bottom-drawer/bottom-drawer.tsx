@@ -21,7 +21,7 @@ export function BottomDrawer({
 	const [isClosing, setIsClosing] = useState(false);
 	// Prevent body scroll when the drawer is open
 	useEffect(() => {
-		document.body.classList.toggle("overflow-hidden");
+		document.body.classList.toggle("overflow-hidden", isOpen);
 		// Cleanup when component unmounts
 		return () => document.body.classList.remove("overflow-hidden");
 	}, [isOpen]);
@@ -40,7 +40,7 @@ export function BottomDrawer({
 			onClick={handleClose}
 		>
 			<div
-				className={`fixed left-0 w-full bottom-0 h-fit flex flex-col rounded-t-2xl shadow-lg transition-transform duration-300 ease-in-out ${
+				className={`fixed left-0 w-full bottom-0 h-fit max-h-[calc(100%-calc(50px+18px)-84px)] flex flex-col rounded-t-2xl shadow-lg transition-transform duration-300 ease-in-out ${
 					isOpen ? "translate-y-0" : "translate-y-full"
 				} ${isClosing ? "translate-y-full" : ""}
                 ${style === "dark" ? "bg-dunkelblau-100" : "bg-hellblau-50"}`}
@@ -60,7 +60,7 @@ export function BottomDrawer({
 					</button>
 				</div>
 
-				{children}
+				<div className="flex flex-col grow min-h-0">{children}</div>
 			</div>
 		</div>
 	);

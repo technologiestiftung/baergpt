@@ -52,7 +52,7 @@ export function MobileDocuments({ hasUserItems }: { hasUserItems: boolean }) {
 				</div>
 			)}
 
-			<div className="flex flex-col h-full px-5">
+			<div className="flex flex-col grow min-h-0 px-5">
 				<DocumentsList />
 
 				{hasUserItems && <DocumentDragPreview />}
