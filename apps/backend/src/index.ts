@@ -2,8 +2,10 @@ import "./monitoring/instrumentation";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
+import { except } from "hono/combine";
 import { sentryTracing } from "./middleware/sentry-tracing";
 import basicAuth from "./middleware/basic-auth";
+import { limitBody } from "./middleware/body-limit";
 import documents from "./routes/documents";
 import llms from "./routes/llms";
 import { config, verifyConfig } from "./config";
@@ -16,6 +18,8 @@ import { configureAiSdkWarnings } from "./monitoring/ai-sdk-warnings";
 
 verifyConfig();
 configureAiSdkWarnings();
+
+const DEFAULT_BODY_LIMIT_BYTES = 4 * 1024 * 1024;
 
 const app = new Hono();
 
@@ -41,6 +45,14 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 app.use("*", sentryTracing);
 
 app.use("*", basicAuth);
+
+app.use(
+	"*",
+	except(
+		"/documents/process",
+		limitBody(() => DEFAULT_BODY_LIMIT_BYTES),
+	),
+);
 
 // Route modules
 app.route("/documents", documents);

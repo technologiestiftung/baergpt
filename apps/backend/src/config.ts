@@ -76,6 +76,12 @@ export function verifyConfig(): void {
 	if (!process.env.UPLOAD_FILE_SIZE_LIMIT_MB && !process.env.CI) {
 		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be defined");
 	}
+	if (
+		process.env.UPLOAD_FILE_SIZE_LIMIT_MB &&
+		!(parseInt(process.env.UPLOAD_FILE_SIZE_LIMIT_MB, 10) > 0)
+	) {
+		throw new Error("UPLOAD_FILE_SIZE_LIMIT_MB must be a positive integer");
+	}
 	if (!process.env.SUPABASE_URL) {
 		throw new Error("SUPABASE_URL must be defined");
 	}
