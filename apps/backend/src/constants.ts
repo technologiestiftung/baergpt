@@ -20,6 +20,13 @@ export const ragSearchDefaults = {
 	chunk_limit: 10,
 };
 
+/**
+ * Version of the pipeline that produced a document's chunks (extraction → chunking → embedding input).
+ * NULL in the DB = processed before versioning;
+ * Bump only when stored chunks change in a way readers or reprocessing must distinguish.
+ */
+export const DOCUMENT_PROCESSING_VERSION = 1;
+
 export const PAGE_SEPARATOR = "[PAGE_BREAK]";
 export const enc = get_encoding("o200k_base");
 

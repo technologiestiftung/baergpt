@@ -501,14 +501,11 @@ describe("POST /documents/process – captureError is called for every error cas
 	});
 
 	describe("batchEmbed() errors", () => {
-		let markdownStructuralChunkingSpy: ReturnType<typeof vi.spyOn>;
+		let chunkPagesSpy: ReturnType<typeof vi.spyOn>;
 		let generateMistralBatchEmbeddingsSpy: ReturnType<typeof vi.spyOn>;
 
 		beforeEach(() => {
-			markdownStructuralChunkingSpy = vi.spyOn(
-				EmbeddingService.prototype,
-				"markdownStructuralChunking",
-			);
+			chunkPagesSpy = vi.spyOn(EmbeddingService.prototype, "chunkPages");
 			generateMistralBatchEmbeddingsSpy = vi.spyOn(
 				EmbeddingService.prototype,
 				"generateMistralBatchEmbeddings",
@@ -518,9 +515,9 @@ describe("POST /documents/process – captureError is called for every error cas
 			batchEmbedSpy.mockRestore();
 		});
 
-		it("calls captureError when markdownStructuralChunking throws", async () => {
+		it("calls captureError when chunkPages throws", async () => {
 			const givenError = new Error("Given Error");
-			markdownStructuralChunkingSpy.mockImplementationOnce(() => {
+			chunkPagesSpy.mockImplementationOnce(() => {
 				throw givenError;
 			});
 
