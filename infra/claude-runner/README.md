@@ -69,7 +69,7 @@ Setup:
    security add-generic-password -U -a "$USER" -s baergpt-asana-token -w   # prompts for the token
    ```
    Or store it in 1Password and set `ASANA_PERSONAL_ACCESS_TOKEN_OP` (e.g. `op://Vault/Item/ASANA_PERSONAL_ACCESS_TOKEN`) in `~/.config/baergpt-runner/env`; `install.sh` then copies it into the keychain on every run.
-   The listener reads the bot's user GID from the token at startup (`/users/me`).
+   The listener reads the token and the bot's user GID (`/users/me`) once at startup. After changing the token, restart it: `launchctl kickstart -k gui/$(id -u)/berlin.technologiestiftung.baergpt-asana-listener`.
 3. Create the key that encrypts tasks and replies (run logs and artifacts are public). It goes to the keychain and the secret `ASANA_CONTEXT_KEY` of the environment `asana` (deployment branches: `main` only), and never appears on screen:
    ```sh
    KEY="$(openssl rand -base64 32)"
