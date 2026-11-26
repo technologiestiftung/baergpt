@@ -206,14 +206,10 @@ export class WordDocumentExtractionService {
 			"/forms/libreoffice/convert",
 			config.gotenbergUrl,
 		).toString();
-		const authHeader = `Basic ${Buffer.from(
-			`${config.gotenbergApiBasicAuthUsername}:${config.gotenbergApiBasicAuthPassword}`,
-		).toString("base64")}`;
 
 		const res = await fetch(endpoint, {
 			method: "POST",
 			headers: {
-				Authorization: authHeader,
 				Accept: "application/pdf",
 			},
 			body: form,

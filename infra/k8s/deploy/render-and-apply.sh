@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
-# Renders an environment's overlay with this deploy's image and env Secrets, and applies it.
+# Renders an environment's overlay with this deploy's image and env Secret, and applies it.
 #
 # The overlay is wrapped in a temporary kustomization, so the checked-out files stay unchanged.
 # Before applying, it records each Deployment's revision, so roll-back.sh can undo exactly what
 # this deploy changed.
 #
-# Inputs: NAMESPACE, OVERLAY (path to infra/k8s/overlays/<namespace>), IMAGE_NAME, DIGEST,
-# BACKEND_SECRET, and GOTENBERG_SECRET (empty where the overlay has no Gotenberg).
+# Inputs: NAMESPACE, OVERLAY (path to infra/k8s/overlays/<namespace>), IMAGE_NAME, DIGEST and
+# BACKEND_SECRET.
 # Writes to the current directory, for wait-for-rollout.sh and roll-back.sh:
 #   rendered.yaml, applied.txt, deployments.txt, revisions-before.txt
 set -euo pipefail
 
 : "${NAMESPACE:?}" "${OVERLAY:?}" "${IMAGE_NAME:?}" "${DIGEST:?}" "${BACKEND_SECRET:?}"
-GOTENBERG_SECRET=${GOTENBERG_SECRET:-}
 
 main() {
   kustomize_dir=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/render.XXXXXX")
@@ -45,9 +44,6 @@ images:
 patches:
 EOF
   use_env_secret backend "$BACKEND_SECRET" >> "$dir/kustomization.yaml"
-  if [[ -n "$GOTENBERG_SECRET" ]]; then
-    use_env_secret gotenberg "$GOTENBERG_SECRET" >> "$dir/kustomization.yaml"
-  fi
 }
 
 # A patch that points the app's Deployment at the given env Secret. The `test` fails the

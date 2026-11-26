@@ -165,7 +165,6 @@ jobs:
           OVERLAY: ${{ steps.target.outputs.overlay }}
           DIGEST: ${{ needs.build.outputs.digest }}
           BACKEND_SECRET: ${{ steps.secrets.outputs.backend }}
-          GOTENBERG_SECRET: ${{ steps.secrets.outputs.gotenberg }}
         run: bash infra/k8s/deploy/render-and-apply.sh
 
       - name: Wait for rollout ⏳

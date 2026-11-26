@@ -23,8 +23,6 @@ export interface Config {
 	defaultDocumentProcessingModel: string;
 	sentryDsn: string;
 	gotenbergUrl: string;
-	gotenbergApiBasicAuthUsername: string;
-	gotenbergApiBasicAuthPassword: string;
 	presencePenalty: number;
 	frequencyPenalty: number;
 	featureFlagMcpParlaAllowed: boolean;
@@ -117,12 +115,6 @@ export function verifyConfig(): void {
 	if (!process.env.GOTENBERG_URL && !process.env.CI) {
 		throw new Error("GOTENBERG_URL must be defined");
 	}
-	if (!process.env.GOTENBERG_API_BASIC_AUTH_USERNAME && !process.env.CI) {
-		throw new Error("GOTENBERG_API_BASIC_AUTH_USERNAME must be defined");
-	}
-	if (!process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD && !process.env.CI) {
-		throw new Error("GOTENBERG_API_BASIC_AUTH_PASSWORD must be defined");
-	}
 	if (
 		process.env.FEATURE_FLAG_MCP_PARLA_ALLOWED === "true" &&
 		!process.env.MCP_PARLA_URL
@@ -210,8 +202,6 @@ export const config: Config = {
 	defaultDocumentProcessingModel: process.env.DEFAULT_DOCUMENT_PROCESSING_MODEL,
 	sentryDsn: process.env.SENTRY_DSN,
 	gotenbergUrl: process.env.GOTENBERG_URL,
-	gotenbergApiBasicAuthUsername: process.env.GOTENBERG_API_BASIC_AUTH_USERNAME,
-	gotenbergApiBasicAuthPassword: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
 	presencePenalty: parseFloat(process.env.PRESENCE_PENALTY || "0"),
 	frequencyPenalty: parseFloat(process.env.FREQUENCY_PENALTY || "0"),
 	featureFlagMcpParlaAllowed:

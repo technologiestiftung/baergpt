@@ -142,7 +142,7 @@ You'll need accounts and API keys for:
 #### Required for Backend
 
 - **Mistral AI**: API key from https://console.mistral.ai/
-- **Gotenberg**: URL and credentials for Gotenberg service (PDF conversion)
+- **Gotenberg**: runs locally in Docker, no account needed. Set `GOTENBERG_URL=http://localhost:3001` (see [Development](#-development))
 - **Sentry**: DSN from https://sentry.io/ (for error monitoring)
 - **Redis**: Connection string (for the API rate limiting queue)
 
@@ -241,6 +241,10 @@ Edit `.env` and fill in the required values. See `.env.sample` for all available
 No environment configuration needed. This is a static page displayed during maintenance.
 
 ## 💻 Development
+
+The backend's `npm run dev` (also via `turbo dev`) first starts Gotenberg in Docker on
+`http://localhost:3001` (`compose.yml`), so Docker must be running. Stop it with
+`docker compose stop gotenberg`.
 
 **Using Turborepo (recommended):**
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Writes an environment's env from its 1Password note into the app Secrets and reports which
-# Secret each Deployment should use (GitHub step outputs `backend` and `gotenberg`).
+# Writes an environment's env from its 1Password note into the backend Secret and reports which
+# Secret the Deployment should use (GitHub step output `backend`).
 #
-# Each app has two Secrets, <app>-env-a and <app>-env-b. A changed env goes into the one not
+# The app has two Secrets, <app>-env-a and <app>-env-b. A changed env goes into the one not
 # in use, so the other keeps the previous env and `kubectl rollout undo` restores code and env
 # together. An unchanged env keeps the Secret in use, so the pods don't restart.
 #
@@ -17,23 +17,18 @@ main() {
   trap 'rm -rf "$work_dir"' EXIT
 
   op read "$ENV_NOTE_REF" > "$work_dir/note.env"
-  split_note "$work_dir/note.env" "$work_dir/backend.env" "$work_dir/gotenberg.env"
+  backend_env_from_note "$work_dir/note.env" "$work_dir/backend.env"
 
   sync_app backend "$work_dir/backend.env"
-  # Sandbox uses staging's Gotenberg.
-  if [[ "$NAMESPACE" != "sandbox" ]]; then
-    sync_app gotenberg "$work_dir/gotenberg.env"
-  fi
 }
 
 # The backend gets every variable except the Cloud Foundry sizing keys in the same note.
-# Gotenberg only reads its basic-auth credentials. The note is read again on every deploy,
-# so a variable removed from it disappears from the Secret too.
-split_note() {
-  local note=$1 backend_env=$2 gotenberg_env=$3
+# The note is read again on every deploy, so a variable removed from it disappears from the
+# Secret too.
+backend_env_from_note() {
+  local note=$1 backend_env=$2
   local line key value
   : > "$backend_env"
-  : > "$gotenberg_env"
   while IFS= read -r line || [[ -n "$line" ]]; do
     line=${line%$'\r'} # tolerate a CRLF-edited note
     if is_blank_or_comment "$line"; then
@@ -47,9 +42,6 @@ split_note() {
       CF_* | GOTENBERG_MEMORY) continue ;;
     esac
     echo "$key=$value" >> "$backend_env"
-    if [[ "$key" == GOTENBERG_API_BASIC_AUTH_* ]]; then
-      echo "$key=$value" >> "$gotenberg_env"
-    fi
   done < "$note"
 }
 
