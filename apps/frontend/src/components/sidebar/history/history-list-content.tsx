@@ -31,7 +31,7 @@ export const HistoryListContent: React.FC<{
 
 	if (!hasError && isHistoryEmpty) {
 		return (
-			<p className="overflow-hidden text-ellipsis pl-2 text-xs leading-4 font-normal text-dunkelblau-70 lining-nums proportional-nums">
+			<p className="overflow-hidden text-ellipsis pl-2 text-xs leading-4 font-normal text-dunkelblau-50 lining-nums proportional-nums">
 				{Content["chatHistory.emptyState.title"]}
 			</p>
 		);
