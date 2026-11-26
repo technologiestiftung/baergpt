@@ -77,7 +77,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ hasItems }) => {
 			)}
 
 			{hasItemsOrHasFileUploads && (
-				<div className="bg-hellblau-50 flex flex-col gap-y-3 pt-6">
+				<div className="bg-hellblau-50 flex flex-col gap-y-3">
 					{hasFileUploads ? (
 						<FileUploadStatusCollapsible />
 					) : (
