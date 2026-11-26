@@ -33,7 +33,8 @@
 		"auth:rotate-passwords": "tsx supabase/scripts/rotate-user-passwords.ts",
 		"auth:assess-inactive-users": "tsx supabase/scripts/process-inactive-users.ts -- --dry-run",
 		"auth:notify-inactive-users": "tsx supabase/scripts/process-inactive-users.ts -- --skip-deletions",
-		"auth:delete-inactive-users": "tsx supabase/scripts/process-inactive-users.ts -- --deletions-only"
+		"auth:delete-inactive-users": "tsx supabase/scripts/process-inactive-users.ts -- --deletions-only",
+		"predev": "docker compose -f ../../compose.yml up -d --quiet-pull gotenberg"
 	},
 	"dependencies": {
 		"@ai-sdk/mcp": "2.0.91",

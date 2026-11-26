@@ -48,15 +48,12 @@ spec:
               drop: ["ALL"]
           # 8.37.0+: older LibreOffice has memory bugs in the DOCX import.
           image: gotenberg/gotenberg:8.37.0@sha256:f29984bd1e226bf1b93ba90af06000afa8b315853e99d27b9aaa41b93f15c769
-          # The backend only uses the LibreOffice route.
-          args: ["gotenberg", "--api-enable-basic-auth", "--chromium-disable-routes"]
+          # The backend only uses the LibreOffice route. No basic auth: the NetworkPolicy lets
+          # only the backend reach Gotenberg.
+          args: ["gotenberg", "--chromium-disable-routes"]
           ports:
             - name: http
               containerPort: 3000
-          envFrom:
-            # The deploy workflow replaces this with gotenberg-env-a or -b, filled from 1Password.
-            - secretRef:
-                name: gotenberg-env # GOTENBERG_API_BASIC_AUTH_USERNAME/PASSWORD
           volumeMounts:
             - name: tmp
               mountPath: /tmp

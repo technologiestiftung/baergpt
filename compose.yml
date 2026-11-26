@@ -25,6 +25,10 @@ services:
     # can keep localhost for `turbo dev`. A real env var beats the mounted .env
     environment:
       SUPABASE_URL: http://host.docker.internal:54321
+      GOTENBERG_URL: http://gotenberg:3000
+    depends_on:
+      gotenberg:
+        condition: service_healthy
     # Liveness probe. Using fetch since the slim image ships no curl/wget.
     healthcheck:
       test:
@@ -40,3 +44,20 @@ services:
       start_period: 10s
     mem_limit: 2g
     cpus: 1
+
+  # Document → PDF conversion. `npm run dev` in apps/backend starts it on its own (predev).
+  gotenberg:
+    container_name: baergpt-gotenberg
+    # Keep in sync with infra/k8s/base/gotenberg/deployment.yaml.
+    image: gotenberg/gotenberg:8.37.0@sha256:f29984bd1e226bf1b93ba90af06000afa8b315853e99d27b9aaa41b93f15c769
+    command: ["gotenberg", "--chromium-disable-routes"]
+    ports:
+      # 3000 is the backend's. Loopback only, as Gotenberg has no auth.
+      - "127.0.0.1:3001:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 10s
+    mem_limit: 2g
