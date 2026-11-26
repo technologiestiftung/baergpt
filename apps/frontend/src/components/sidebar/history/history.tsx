@@ -1,23 +1,22 @@
 import React, { useRef, useState } from "react";
 import { useChatsStore } from "../../../store/use-chats-store.ts";
-import { HistoryGroupsByDate } from "./history-groups/history-groups-by-date.tsx";
-import { Skeleton } from "../../primitives/skeletons/skeleton.tsx";
 import Content from "../../../content.ts";
 import { useErrorStore } from "../../../store/error-store.ts";
 import { HistoryGroupByDropdown } from "./history-group-by-dropdown.tsx";
-import { useHistoryGroupByStore } from "../../../store/use-history-group-by-store.ts";
-import { HistoryGroupsByNone } from "./history-groups/history-groups-by-none.tsx";
 import { ChevronIcon } from "../../primitives/icons/chevron-icon.tsx";
 import { useHistorySelectionStore } from "../../../store/use-history-selection-store.ts";
+import { useIsMobile } from "../../../hooks/use-mobile.tsx";
+import { HistoryListContent } from "./history-list-content.tsx";
 
 export const History: React.FC = () => {
 	const { isFirstLoad, isLoading } = useChatsStore();
 	const { getUIError } = useErrorStore();
-	const { groupBy } = useHistoryGroupByStore();
 	const [isHistoryCollapsed, setIsHistoryCollapsed] = useState<boolean>(false);
 	const historyContainerRef = useRef<HTMLDivElement>(null);
 	const errorMessage = getUIError("chats-fetch");
 	const { selectedChatIds, clearSelection } = useHistorySelectionStore();
+	const isMobile = useIsMobile();
+	const hasChats = useChatsStore((state) => state.chats.length >= 1);
 
 	const selectionStatus =
 		selectedChatIds.length > 1
@@ -26,8 +25,6 @@ export const History: React.FC = () => {
 					String(selectedChatIds.length),
 				)
 			: "";
-
-	const isGroupedByDate = groupBy === "date";
 
 	const toggleHistoryCollapseAriaDescription = isHistoryCollapsed
 		? Content["chatHistory.collapseToggle.expandChats"]
@@ -42,7 +39,7 @@ export const History: React.FC = () => {
 		<div
 			className={`flex flex-col w-full min-h-0 ${errorMessage ? "h-full" : ""}`}
 		>
-			<div className="flex justify-between items-center md:pl-2 md:pr-3 pb-2.5 px-5">
+			<div className="flex justify-between items-center md:pl-2 md:pr-2.5 pb-3 md:pb-2.5 px-5">
 				<h2 className="text-sm font-semibold text-hellblau-50  whitespace-nowrap">
 					<button
 						className={
@@ -51,17 +48,20 @@ export const History: React.FC = () => {
 						aria-expanded={!isHistoryCollapsed}
 						aria-description={toggleHistoryCollapseAriaDescription}
 						onClick={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
+						disabled={isMobile}
 					>
 						{Content["chatHistory.title"]}
 
-						<ChevronIcon
-							color={"dunkelblau-50"}
-							direction={isHistoryCollapsed ? "up" : "down"}
-						/>
+						<div className="hidden md:flex">
+							<ChevronIcon
+								color={"dunkelblau-50"}
+								direction={isHistoryCollapsed ? "up" : "down"}
+							/>
+						</div>
 					</button>
 				</h2>
 
-				<HistoryGroupByDropdown />
+				{hasChats && <HistoryGroupByDropdown />}
 			</div>
 			<span role="status" aria-live="polite" className="sr-only">
 				{selectionStatus}
@@ -83,26 +83,11 @@ export const History: React.FC = () => {
 						<div
 							className={`w-full ${errorMessage ? "h-full overflow-hidden" : "h-fit"}`}
 						>
-							{isFirstLoad && (
-								<div className="flex flex-col gap-1 md:px-2">
-									<Skeleton className="w-full px-2 h-7" />
-									<Skeleton className="w-full px-2  h-7" />
-									<Skeleton className="w-full px-2  h-7" />
-									<Skeleton className="w-full px-2  h-7" />
-								</div>
-							)}
-
-							{!isFirstLoad && isGroupedByDate && (
-								<HistoryGroupsByDate
-									historyContainerRef={historyContainerRef}
-								/>
-							)}
-
-							{!isFirstLoad && !isGroupedByDate && (
-								<HistoryGroupsByNone
-									historyContainerRef={historyContainerRef}
-								/>
-							)}
+							<HistoryListContent
+								isFirstLoad={isFirstLoad}
+								hasError={Boolean(errorMessage)}
+								historyContainerRef={historyContainerRef}
+							/>
 
 							{errorMessage && !isLoading && !isFirstLoad && (
 								<div className="flex flex-col gap-3 text-sm leading-5 font-normal text-hellblau-30 text-center items-center justify-center h-full w-40 mx-auto">

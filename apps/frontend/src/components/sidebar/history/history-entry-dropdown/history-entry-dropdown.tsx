@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useDropdownKeyboard } from "../../../../hooks/use-dropdown-keyboard";
+import { useIsMobile } from "../../../../hooks/use-mobile.tsx";
+import useExportDropdownPosition from "../../../chat/hooks/use-export-dropdown-position.ts";
 import Content from "../../../../content";
 import type { Chat } from "../../../../common";
-import { showDeleteHistoryEntryDialog } from "../delete-history-entry/delete-history-entry-dialog";
-import { showDeleteSelectedHistoryEntriesDialog } from "../delete-history-entry/delete-selected-history-entries-dialog";
-import { useHistoryEntryDeleteStore } from "../../../../store/use-history-entry-delete-store";
-import { DeleteElementIcon } from "../../../primitives/icons/delete-element-icon";
+import {
+	showDeleteHistoryEntryDialog,
+	showDeleteSelectedHistoryEntriesDialog,
+} from "../delete-history-entry/delete-history-entries-dialog";
 import { useSelectedChatCount } from "../../../../store/use-history-selection-store";
+import { BucketIcon } from "../../../primitives/icons/bucket-icon.tsx";
 
 interface HistoryEntryDropdownProps {
 	chat: Chat;
@@ -14,6 +18,7 @@ interface HistoryEntryDropdownProps {
 	onClose: () => void;
 	onRename: () => void;
 	triggerRef: React.RefObject<HTMLButtonElement | null>;
+	menuRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
@@ -22,29 +27,22 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 	onClose,
 	onRename,
 	triggerRef,
+	menuRef,
 }) => {
 	const selectedChatCount = useSelectedChatCount(chat.id);
-	const { setHistoryEntryToDeleteId, setHistoryEntryToDeleteName } =
-		useHistoryEntryDeleteStore();
-	const [position, setPosition] = useState<{ top: number; right: number }>({
-		top: 0,
-		right: 0,
-	});
-
-	const calculatePosition = () => {
-		if (triggerRef.current) {
-			const rect = triggerRef.current.getBoundingClientRect();
-			return { top: rect.bottom, right: window.innerWidth - rect.right };
-		}
-		return { top: 0, right: 0 };
-	};
+	const isMobile = useIsMobile();
+	const { coords, updateCoords } = useExportDropdownPosition(
+		triggerRef,
+		menuRef,
+		isMobile ? "right" : "left",
+	);
 
 	useEffect(() => {
 		if (isOpen) {
-			setPosition(calculatePosition());
+			updateCoords();
 
 			const handleScroll = () => {
-				setPosition(calculatePosition());
+				updateCoords();
 			};
 
 			const scrollContainer = document.querySelector(".history-scrollbar");
@@ -59,7 +57,7 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 			};
 		}
 		return undefined;
-	}, [isOpen, triggerRef]);
+	}, [isOpen, triggerRef, isMobile]);
 
 	const handleRename = () => {
 		onClose();
@@ -68,9 +66,7 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 
 	const handleDelete = () => {
 		onClose();
-		setHistoryEntryToDeleteId(chat.id);
-		setHistoryEntryToDeleteName(chat.name.replace(/[#`>*]/g, ""));
-		showDeleteHistoryEntryDialog();
+		showDeleteHistoryEntryDialog(chat.id, chat.name);
 	};
 
 	const handleDeleteSelected = () => {
@@ -84,16 +80,8 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 			"{count}",
 			String(selectedChatCount),
 		),
-		style: "text-warning-120 hover:bg-[#FDD2D6]",
-		icon: (
-			<img
-				src="/icons/bucket-outline-dark-red-icon.svg"
-				alt={Content["documentsList.delete.imgAlt"]}
-				className="size-5"
-				width={20}
-				height={20}
-			/>
-		),
+		style: "hover:bg-warning-50 text-warning-120",
+		icon: <BucketIcon className="size-5" />,
 	};
 
 	const singleChatItems = [
@@ -114,8 +102,8 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 		{
 			action: handleDelete,
 			label: Content["historyEntryDropdown.delete"],
-			style: "group/delete text-warning-100 hover:text-dunkelblau-80",
-			icon: <DeleteElementIcon />,
+			style: "hover:bg-warning-50 text-warning-120",
+			icon: <BucketIcon className="size-5" />,
 		},
 	];
 
@@ -135,10 +123,11 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 		return null;
 	}
 
-	return (
+	return createPortal(
 		<div
-			className={`fixed z-50 w-fit rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1 ${isSelectionMenu ? "bg-hellblau-30" : "bg-white"}`}
-			style={{ top: `${position.top}px`, right: `${position.right}px` }}
+			ref={menuRef}
+			className={`fixed z-[70] w-fit rounded-3px shadow-custom-shadow shadow-dunkelblau-100/10 p-1 bg-hellblau-30`}
+			style={{ top: coords?.top, left: coords?.left }}
 			onKeyDown={handleKeyDown}
 			role="listbox"
 		>
@@ -154,13 +143,13 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 									optionButtonRefs.current.delete(index);
 								}
 							}}
-							className={`flex items-center w-full text-left rounded-3px focus-visible:outline-2px ${isSelectionMenu ? "gap-x-1 pl-3 pr-[17px] py-2" : "h-9 pl-1.5 pr-3 py-1 gap-x-2"} ${item.style}`}
+							className={`flex items-center w-full text-left rounded-3px focus-visible:outline-2px gap-x-1 py-2 px-3 ${item.style}`}
 							onClick={item.action}
 							aria-label={item.label}
 							role="option"
 						>
 							<div
-								className={`flex items-center justify-center rounded-3px shrink-0 ${isSelectionMenu ? "" : "size-8"}`}
+								className={`flex items-center justify-center rounded-3px shrink-0`}
 							>
 								{item.icon}
 							</div>
@@ -169,6 +158,7 @@ export const HistoryEntryDropdown: React.FC<HistoryEntryDropdownProps> = ({
 					</li>
 				))}
 			</ul>
-		</div>
+		</div>,
+		document.body,
 	);
 };

@@ -7,6 +7,7 @@ interface DefaultDialogProps {
 	id?: string;
 	ariaLabelledBy?: string;
 	afterClose?: () => void;
+	initialFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 export const DefaultDialog: React.FC<DefaultDialogProps> = ({
@@ -15,6 +16,7 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 	id,
 	ariaLabelledBy,
 	afterClose,
+	initialFocusRef,
 }) => {
 	const dialogRef = useRef<HTMLDialogElement | null>(null);
 
@@ -25,6 +27,10 @@ export const DefaultDialog: React.FC<DefaultDialogProps> = ({
 			document.removeEventListener("mousedown", handleClickListener);
 		};
 	}, []);
+
+	useEffect(() => {
+		initialFocusRef?.current?.setAttribute("autofocus", "");
+	}, [initialFocusRef]);
 
 	const handleClickListener = (event: MouseEvent) => {
 		if (!dialogRef.current) {

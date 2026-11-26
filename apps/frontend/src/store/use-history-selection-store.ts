@@ -6,6 +6,7 @@ interface HistorySelectionStore {
 	selectedChatIds: number[];
 	anchorChatId: number | null;
 	selectRangeTo: (chatId: number) => void;
+	toggleChatSelection: (chatId: number) => void;
 	clearSelection: () => void;
 }
 
@@ -38,6 +39,27 @@ export const useHistorySelectionStore = create<HistorySelectionStore>()(
 			set({
 				selectedChatIds: orderedChatIds.slice(start, end + 1),
 				anchorChatId,
+			});
+		},
+
+		toggleChatSelection: (chatId) => {
+			const { selectedChatIds, anchorChatId } = get();
+			const { currentChatId } = useCurrentChatIdStore.getState();
+
+			const baseSelection =
+				selectedChatIds.length > 0
+					? selectedChatIds
+					: [currentChatId].filter((id): id is number => id !== null);
+
+			const isRemovingFromExistingSelection =
+				selectedChatIds.length > 0 && baseSelection.includes(chatId);
+			const nextSelection = baseSelection.includes(chatId)
+				? baseSelection.filter((id) => id !== chatId)
+				: [...baseSelection, chatId];
+
+			set({
+				selectedChatIds: nextSelection,
+				anchorChatId: isRemovingFromExistingSelection ? anchorChatId : chatId,
 			});
 		},
 

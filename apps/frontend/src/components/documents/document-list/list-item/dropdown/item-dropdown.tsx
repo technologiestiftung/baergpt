@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useDropdownKeyboard } from "../../../../../hooks/use-dropdown-keyboard";
+import { useIsMobile } from "../../../../../hooks/use-mobile.tsx";
 import { usePreviewDocumentStore } from "../../../../../store/use-preview-document-store.ts";
 import type { Document, PublicFolder, UserFolder } from "../../../../../common";
 import Content from "../../../../../content";
@@ -7,9 +9,8 @@ import { isDocument } from "../utils/is-document";
 import { toggleItemInChat } from "../utils/toggle-item-in-chat";
 import { isItemSelectedForChat } from "../utils/is-item-selected-for-chat";
 import { showDeleteDialog } from "../../../delete-item/delete-item-dialog";
-import { DeleteElementIcon } from "../../../../primitives/icons/delete-element-icon";
+import { BucketIcon } from "../../../../primitives/icons/bucket-icon";
 import { useDocumentsListStore } from "../../../../../store/use-documents-list-store";
-import { useIsMobile } from "../../../../../hooks/use-mobile";
 import { isPublicFolder } from "../utils/is-public-folder.ts";
 import { isPublicDocument } from "../utils/is-public-document.ts";
 import { isUserFolder } from "../utils/is-user-folder.ts";
@@ -23,6 +24,7 @@ interface ItemDropdownProps {
 	isOpen: boolean;
 	onClose: () => void;
 	triggerRef: React.RefObject<HTMLButtonElement | null>;
+	menuRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ItemDropdown: React.FC<ItemDropdownProps> = ({
@@ -30,6 +32,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 	isOpen,
 	onClose,
 	triggerRef,
+	menuRef,
 }) => {
 	const { selectPreviewDocument } = usePreviewDocumentStore();
 	const { setSingleItemSelectedForAction } = useDocumentsListStore();
@@ -38,10 +41,10 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		top: number;
 		right: number;
 	}>({ top: 0, right: 0 });
+	const isMobile = useIsMobile();
 
 	const isDoc = isDocument(item);
 	const isSelectedForChat = isItemSelectedForChat(item);
-	const isMobile = useIsMobile();
 	const isReadOnly =
 		isPublicFolder(item) || (isDoc && item.source_type === "public_document");
 	const isRenamable = isUserFolder(item) || isPersonalDocument(item);
@@ -78,6 +81,12 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		}
 		return undefined;
 	}, [isOpen, triggerRef]);
+
+	useEffect(() => {
+		if (isOpen) {
+			onClose();
+		}
+	}, [isMobile]);
 
 	const handleAddToChat = () => {
 		onClose();
@@ -196,8 +205,8 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		action: () => handleDeleteItem(item),
 		label: Content["documentsList.delete"],
 		ariaLabel: Content[`documentsList.${deleteItemKey}`],
-		style: "group/delete text-warning-100 hover:text-dunkelblau-80",
-		icon: <DeleteElementIcon />,
+		style: "group/delete text-warning-120 hover:bg-warning-50",
+		icon: <BucketIcon className="size-5" />,
 	};
 
 	const dropdownItems = [
@@ -218,11 +227,12 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 		return null;
 	}
 
-	return (
+	return createPortal(
 		<div
-			className="fixed z-50 bg-white rounded-3px shadow-md min-w-[200px]"
+			ref={menuRef}
+			className="fixed z-[70] bg-white rounded-3px shadow-md min-w-[200px] p-1"
 			style={{
-				top: `${position.top - (isMobile ? 68 : 0)}px`, // -68px on mobile to account for the bottom drawer top-[calc(50px+18px)]
+				top: `${position.top}px`,
 				right: `${position.right}px`,
 			}}
 			onKeyDown={handleKeyDown}
@@ -240,13 +250,13 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 									optionButtonRefs.current.delete(index);
 								}
 							}}
-							className={`flex items-center w-full h-9 px-1.5 py-1 gap-x-2 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
+							className={`flex items-center w-full px-3 py-2 gap-x-1 text-left hover:bg-hellblau-50 focus-visible:outline-2px rounded-3px
 								${dropdownItem.style}`}
 							onClick={dropdownItem.action}
 							aria-label={dropdownItem.ariaLabel}
 							role="option"
 						>
-							<div className="flex items-center justify-center rounded-3px shrink-0 size-8 relative">
+							<div className="flex items-center justify-center rounded-3px shrink-0 size-5 relative">
 								{dropdownItem.icon}
 							</div>
 							<span className={`text-sm leading-5 `}>{dropdownItem.label}</span>
@@ -254,6 +264,7 @@ export const ItemDropdown: React.FC<ItemDropdownProps> = ({
 					</li>
 				))}
 			</ul>
-		</div>
+		</div>,
+		document.body,
 	);
 };

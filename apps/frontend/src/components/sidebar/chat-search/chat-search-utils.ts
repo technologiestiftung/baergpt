@@ -1,7 +1,11 @@
 import type { Chat } from "../../../common";
 import { getMessages } from "../../../api/message/get-messages";
 import { useCurrentChatIdStore } from "../../../store/current-chat-id-store";
-import { useChatsStore } from "../../../store/use-chats-store";
+import {
+	useChatsStore,
+	getChatsDeletionEpoch,
+	wasChatDeleted,
+} from "../../../store/use-chats-store";
 import { useChatScrollingStore } from "../../../store/use-chat-scrolling-store";
 import Content from "../../../content";
 import { isToday, format, isThisYear } from "date-fns";
@@ -37,9 +41,10 @@ export async function openChatFromSearch(
 		loadedChat?.messages.some((m) => m.id === messageId) ?? false;
 
 	if (!loadedChat || !targetMessageLoaded) {
+		const epochAtStart = getChatsDeletionEpoch();
 		try {
 			const messages = await getMessages(chat.id, new AbortController().signal);
-			if (inFlightChatId !== chat.id) {
+			if (inFlightChatId !== chat.id || wasChatDeleted(chat.id, epochAtStart)) {
 				return;
 			}
 			syncChats([{ ...chat, messages }]);

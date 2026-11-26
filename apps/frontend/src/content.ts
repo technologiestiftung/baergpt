@@ -768,10 +768,14 @@ export const Content = {
 	"chatHistory.collapseToggle.expandChats": "Chats aufklappen",
 	"chatHistory.groupBy.dropdown.ariaLabel":
 		"Dropdown-Menü zum Gruppieren von Chats",
+	"chatHistory.groupBy.dropdown.menuAriaLabel": "Chatverlauf-Optionen",
 	"chatHistory.groupBy.dropdown.tooltip": "Gruppierung ändern",
-	"chatHistory.groupBy.dropdown.label": "Gruppieren nach..",
+	"chatHistory.groupBy.dropdown.label": "Gruppieren nach",
 	"chatHistory.groupBy.options.none": "Keine",
 	"chatHistory.groupBy.options.date": "Datum",
+	"chatHistory.groupBy.submenu.back": "Zurück",
+	"chatHistory.deleteAll.label": "Alle löschen",
+	"chatHistory.emptyState.title": "Noch keine Chats erstellt",
 
 	/* -------------------- Buttons -------------------- */
 	//documentsToggleButton
@@ -968,23 +972,24 @@ export const Content = {
 		"Der Dateityp kann nicht geändert werden. Bitte geben Sie den Namen ohne Dateiendung ein.",
 	"renameDocumentDialog.error.failed":
 		"Das Dokument konnte nicht umbenannt werden. Bitte versuchen Sie es erneut.",
-	//DeleteHistoryEntryDialog
-	"deleteHistoryEntryDialog.title": "Chat löschen?",
-	"deleteHistoryEntryDialog.confirmation.p1": "Möchten Sie",
-	"deleteHistoryEntryDialog.confirmation.p2": "wirklich löschen?",
-	"deleteHistoryEntryDialog.delete": "Löschen",
-	"deleteHistoryEntryDialog.cancel": "Abbrechen",
-	"deleteHistoryEntryDialog.error":
-		"Der Chat konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
-
-	//DeleteSelectedHistoryEntriesDialog
-	"deleteSelectedHistoryEntriesDialog.title": "{count} Chats löschen?",
-	"deleteSelectedHistoryEntriesDialog.confirmation":
+	//DeleteHistoryEntriesDialog
+	"deleteHistoryEntriesDialog.title.single": "Chat löschen?",
+	"deleteHistoryEntriesDialog.title.selected": "{count} Chats löschen?",
+	"deleteHistoryEntriesDialog.title.all": "Alle Chats löschen?",
+	"deleteHistoryEntriesDialog.confirmation.single.p1": "Möchten Sie",
+	"deleteHistoryEntriesDialog.confirmation.single.p2": "wirklich löschen?",
+	"deleteHistoryEntriesDialog.confirmation.selected":
 		"Möchten Sie wirklich {count} Chats löschen? Dieser Schritt kann nicht rückgängig gemacht werden.",
-	"deleteSelectedHistoryEntriesDialog.delete": "Löschen",
-	"deleteSelectedHistoryEntriesDialog.cancel": "Abbrechen",
-	"deleteSelectedHistoryEntriesDialog.error":
+	"deleteHistoryEntriesDialog.confirmation.all":
+		"Möchten Sie wirklich alle Chats löschen? Dieser Schritt kann nicht rückgängig gemacht werden.",
+	"deleteHistoryEntriesDialog.delete": "Löschen",
+	"deleteHistoryEntriesDialog.deleting": "Wird gelöscht",
+	"deleteHistoryEntriesDialog.cancel": "Abbrechen",
+	"deleteHistoryEntriesDialog.error.single":
+		"Der Chat konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+	"deleteHistoryEntriesDialog.error.multiple":
 		"Die Chats konnten nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+
 	//ChatSearchDialog
 	"chatSearchDialog.placeholder": "Chats durchsuchen...",
 	"chatSearchDialog.lastChats": "Letzte Chats",

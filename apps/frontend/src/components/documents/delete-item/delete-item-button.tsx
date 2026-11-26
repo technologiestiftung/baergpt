@@ -36,7 +36,7 @@ export const DeleteItemButton: React.FC = () => {
 		<>
 			{itemsToDelete.length > 0 && (
 				<button
-					className={`flex rounded-3px w-fit items-center p-[7px]
+					className={`flex rounded-3px w-fit items-center
 				hover:bg-hellblau-100 disabled:text-dunkelblau-40 disabled:hover:bg-hellblau-60
 				focus-visible:outline-default text-dunkelblau-100`}
 					aria-label={Content["deleteItemButton.ariaLabel"]}
@@ -46,7 +46,7 @@ export const DeleteItemButton: React.FC = () => {
 					onFocus={handleShowTooltip}
 					onBlur={hideTooltip}
 				>
-					<BucketIcon className="size-[18px]" />
+					<BucketIcon color="darkBlue" className="size-8" />
 				</button>
 			)}
 		</>

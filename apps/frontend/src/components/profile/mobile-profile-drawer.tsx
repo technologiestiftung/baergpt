@@ -27,7 +27,6 @@ export const MobileProfileDrawer = () => {
 			title={`${first_name} ${last_name}`}
 			classNames="md:hidden"
 			style="dark"
-			isCompact
 		>
 			{session && (
 				<div className={`w-full px-5 mt-7 mb-2 h-fit mx-auto`}>

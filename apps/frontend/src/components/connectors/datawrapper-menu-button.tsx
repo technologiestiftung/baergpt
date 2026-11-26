@@ -2,6 +2,7 @@ import { useId, useRef, useState } from "react";
 import Content from "../../content.ts";
 import { BottomSheet } from "../primitives/bottom-sheet/bottom-sheet.tsx";
 import { ConnectorLogo } from "./connector-logo.tsx";
+import { BucketIcon } from "../primitives/icons/bucket-icon.tsx";
 import { showDatawrapperConnectDialog } from "./datawrapper-connect-dialog.tsx";
 import { showDatawrapperDisconnectDialog } from "./datawrapper-disconnect-dialog.tsx";
 
@@ -22,12 +23,20 @@ export function DatawrapperMenuButton() {
 	const menuItems = [
 		{
 			label: Content["connectors.datawrapper.menu.edit"],
-			icon: "/icons/edit-icon.svg",
+			icon: (
+				<img
+					src="/icons/edit-icon.svg"
+					alt=""
+					width={32}
+					height={32}
+					className="max-w-none"
+				/>
+			),
 			action: showDatawrapperConnectDialog,
 		},
 		{
 			label: Content["connectors.datawrapper.menu.disconnect"],
-			icon: "/icons/bucket-dark-blue-icon.svg",
+			icon: <BucketIcon color="darkBlue" className="size-8 max-w-none" />,
 			action: showDatawrapperDisconnectDialog,
 		},
 	];
@@ -90,17 +99,12 @@ export function DatawrapperMenuButton() {
 						<li key={item.label}>
 							<button
 								type="button"
+								aria-label={item.label}
 								onClick={() => handleItemClick(item)}
 								className="flex items-center gap-5 w-full h-12 text-left text-base leading-6 font-normal focus-visible:outline-default rounded-3px"
 							>
 								<span className="flex items-center justify-center shrink-0 size-5">
-									<img
-										src={item.icon}
-										alt=""
-										width={32}
-										height={32}
-										className="max-w-none"
-									/>
+									{item.icon}
 								</span>
 								{item.label}
 							</button>

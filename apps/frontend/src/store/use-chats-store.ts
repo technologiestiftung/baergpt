@@ -14,9 +14,11 @@ import {
 } from "../api/chat/get-chats.ts";
 import { insertChat as insertChatIntoDb } from "../api/chat/insert-chat.ts";
 import { deleteChats as deleteChatsFromDb } from "../api/chat/delete-chats.ts";
+import { deleteAllChats as deleteAllChatsFromDb } from "../api/chat/delete-all-chats.ts";
 import { renameChat as renameChatInDb } from "../api/chat/rename-chat.ts";
 import { getMessages as getMessagesFromDb } from "../api/message/get-messages.ts";
 import { insertMessage as insertMessageIntoDb } from "../api/message/insert-message.ts";
+import { useAuthStore } from "./auth-store.ts";
 import { useErrorStore } from "./error-store.ts";
 import { useFileUploadsStore } from "./use-file-uploads-store.ts";
 import type {
@@ -31,14 +33,25 @@ import { usePublicDocumentsStore } from "./use-public-documents-store.ts";
 let getChatsDebounceTimeout: ReturnType<typeof setTimeout>;
 let visibleInfoMessageTimeout: ReturnType<typeof setTimeout>;
 
-// Pages fetched while a deletion is in flight may still contain these chats
-const pendingDeletionChatIds = new Set<number>();
-const confirmedDeletedChatIds = new Set<number>();
-// Resumed by deleteChats once pending deletions settle
-let hasInterruptedPagination = false;
+let deletionEpoch = 0;
+const deletedChatIdSet = new Set<number>();
+let allChatsDeletedAtEpoch: number | null = null;
 
-const isDeletedChat = (chatId: number) =>
-	pendingDeletionChatIds.has(chatId) || confirmedDeletedChatIds.has(chatId);
+/** Bumped on every committed chat deletion; capture before an async fetch. */
+export const getChatsDeletionEpoch = () => deletionEpoch;
+
+export const wasChatDeleted = (chatId: number, epochAtStart: number) => {
+	if (deletionEpoch === epochAtStart) {
+		return false;
+	}
+	if (
+		allChatsDeletedAtEpoch !== null &&
+		allChatsDeletedAtEpoch > epochAtStart
+	) {
+		return true;
+	}
+	return deletedChatIdSet.has(chatId);
+};
 
 /**
  * Client-generated ids for not-yet-persisted messages. Always negative so
@@ -69,6 +82,7 @@ interface ChatStore {
 	): Promise<ChatWithMessages>;
 	createChat(firstMessage: NewChatMessage): Promise<ChatWithMessages>;
 	deleteChats(chatIds: number[]): Promise<void>;
+	deleteAllChats(): Promise<void>;
 	renameChat(chatId: number, newName: string): Promise<void>;
 	addMessageToChat(
 		chat: ChatWithMessages,
@@ -222,13 +236,6 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	async getChatsFromDb(signal) {
 		const { chats } = get();
 
-		// An empty list resets the cursor to the first page, which would still
-		// contain the chats being deleted
-		if (chats.length === 0 && pendingDeletionChatIds.size > 0) {
-			hasInterruptedPagination = true;
-			return;
-		}
-
 		set({ isLoading: true });
 
 		// Chats are appended oldest-last, so the last loaded chat's
@@ -238,9 +245,8 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 		// Clear any existing fetch error when starting a new fetch attempt
 		useErrorStore.getState().clearUIError("chats-fetch");
 
+		const epochAtStart = deletionEpoch;
 		const chatsFromDb = await getChatsFromDb(cursor, signal);
-
-		set({ hasMoreChats: chatsFromDb.length === CHATS_PAGE_SIZE });
 
 		const promises = chatsFromDb.map(async (chat) => {
 			const messages = await getMessagesFromDb(chat.id, signal);
@@ -249,20 +255,11 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		const chatsWithMessages = await Promise.all(promises);
 
-		const chatCountBeforeSync = get().chats.length;
-		get().syncChats(chatsWithMessages);
-
-		// Nothing was added, so the list won't trigger loading the next page itself
-		const isPageDiscarded =
-			get().chats.length === chatCountBeforeSync &&
-			chatsWithMessages.some(({ id }) => isDeletedChat(id));
-
-		if (isPageDiscarded) {
-			if (pendingDeletionChatIds.size > 0) {
-				hasInterruptedPagination = true;
-			} else {
-				void get().getNextChatsPage();
-			}
+		if (deletionEpoch === epochAtStart) {
+			set({ hasMoreChats: chatsFromDb.length === CHATS_PAGE_SIZE });
+			get().syncChats(chatsWithMessages);
+		} else {
+			void get().getNextChatsPage();
 		}
 
 		if (get().isFirstLoad) {
@@ -279,7 +276,7 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 
 		newChats.forEach((newChat) => {
 			const isDuplicate = existingChats.some((chat) => chat.id === newChat.id);
-			if (isDuplicate || isDeletedChat(newChat.id)) {
+			if (isDuplicate) {
 				return;
 			}
 			synchronizedChats.push(newChat);
@@ -358,71 +355,56 @@ export const useChatsStore = create<ChatStore>()((set, get) => ({
 	},
 
 	/**
-	 * Deletes the chats with the given ids, restoring them in the
-	 * list (and reopening the current chat) if the deletion fails
+	 * Deletes the chats with the given ids. A batch can partly fail, so only
+	 * the confirmed deletions are removed from the list.
 	 */
 	async deleteChats(chatIds) {
-		const removedChats = get().chats.filter((chat) =>
-			chatIds.includes(chat.id),
-		);
-		const { currentChatId, setCurrentChatId } =
-			useCurrentChatIdStore.getState();
-		const isDeletingCurrentChat =
-			currentChatId !== null && chatIds.includes(currentChatId);
-
-		if (isDeletingCurrentChat) {
-			setCurrentChatId(null);
-		}
-
-		chatIds.forEach((chatId) => pendingDeletionChatIds.add(chatId));
-		set({
-			chats: get().chats.filter((chat) => !chatIds.includes(chat.id)),
-		});
-
 		const { deletedChatIds, error } = await deleteChatsFromDb(chatIds);
 
-		chatIds.forEach((chatId) => pendingDeletionChatIds.delete(chatId));
-		deletedChatIds.forEach((chatId) => confirmedDeletedChatIds.add(chatId));
+		if (deletedChatIds.length > 0) {
+			deletionEpoch++;
+			deletedChatIds.forEach((id) => deletedChatIdSet.add(id));
 
-		if (error) {
-			const currentChats = get().chats;
-			const notDeletedChats = removedChats.filter(
-				(chat) =>
-					!deletedChatIds.includes(chat.id) &&
-					!currentChats.some(({ id }) => id === chat.id),
-			);
-			// Chats are ordered by id descending
-			const restoredChats = [...currentChats, ...notDeletedChats].sort(
-				(a, b) => b.id - a.id,
-			);
-			set({ chats: restoredChats });
+			set({
+				chats: get().chats.filter((chat) => !deletedChatIds.includes(chat.id)),
+			});
 
-			const isCurrentChatRestored = notDeletedChats.some(
-				({ id }) => id === currentChatId,
-			);
-			const hasOpenedOtherChat =
-				useCurrentChatIdStore.getState().currentChatId !== null;
-
-			if (
-				isDeletingCurrentChat &&
-				isCurrentChatRestored &&
-				!hasOpenedOtherChat
-			) {
-				setCurrentChatId(currentChatId);
+			const { currentChatId, setCurrentChatId } =
+				useCurrentChatIdStore.getState();
+			if (currentChatId !== null && deletedChatIds.includes(currentChatId)) {
+				setCurrentChatId(null);
 			}
-		}
 
-		const shouldResumePagination =
-			hasInterruptedPagination || get().chats.length === 0;
-
-		if (pendingDeletionChatIds.size === 0 && shouldResumePagination) {
-			hasInterruptedPagination = false;
-			void get().getNextChatsPage();
+			if (get().chats.length === 0 && get().hasMoreChats) {
+				void get().getNextChatsPage();
+			}
 		}
 
 		if (error) {
 			throw error;
 		}
+	},
+
+	/**
+	 * Deletes every chat owned by the current user in a single atomic request.
+	 */
+	async deleteAllChats() {
+		const userId = useAuthStore.getState().session?.user.id;
+
+		if (!userId) {
+			throw new Error("User not authenticated");
+		}
+
+		const { error } = await deleteAllChatsFromDb(userId);
+
+		if (error) {
+			throw error;
+		}
+
+		deletionEpoch++;
+		allChatsDeletedAtEpoch = deletionEpoch;
+		useCurrentChatIdStore.getState().setCurrentChatId(null);
+		set({ chats: [], hasMoreChats: false });
 	},
 
 	/**
