@@ -99,6 +99,7 @@ export function DatawrapperMenuButton() {
 						<li key={item.label}>
 							<button
 								type="button"
+								aria-label={item.label}
 								onClick={() => handleItemClick(item)}
 								className="flex items-center gap-5 w-full h-12 text-left text-base leading-6 font-normal focus-visible:outline-default rounded-3px"
 							>
