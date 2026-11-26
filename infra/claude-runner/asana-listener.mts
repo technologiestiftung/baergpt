@@ -54,7 +54,10 @@ const ALLOWED_USERS = new Set(
 		.filter(Boolean),
 );
 
-// Set at startup from /users/me: the bot user that owns the token.
+// Read once at startup and kept for the listener's lifetime, so the token used by asana() always
+// belongs to botGid. A changed keychain entry (manual, or a failed install.sh) takes effect on restart.
+let asanaToken = "";
+// Set at startup from /users/me: the bot user that owns asanaToken.
 let botGid = "";
 // Rich text (html_text, html_notes) marks a mention as <a ... data-asana-gid="<user gid>" ...>.
 const mentionsBot = (html: string | undefined) =>
@@ -123,11 +126,10 @@ async function saveState(state: State): Promise<void> {
 // ---------- Asana ----------
 
 async function asana(path: string, init: RequestInit = {}): Promise<Response> {
-	const token = await keychain(ASANA_TOKEN_SERVICE);
 	return fetch(`https://app.asana.com/api/1.0${path}`, {
 		...init,
 		headers: {
-			Authorization: `Bearer ${token}`,
+			Authorization: `Bearer ${asanaToken}`,
 			"Content-Type": "application/json",
 			...init.headers,
 		},
@@ -551,6 +553,7 @@ async function handle(trigger: Trigger): Promise<void> {
 }
 
 const state = await loadState();
+asanaToken = await keychain(ASANA_TOKEN_SERVICE);
 botGid = (
 	await asanaJson<{ gid: string; name: string }>(
 		"/users/me?opt_fields=gid,name",
