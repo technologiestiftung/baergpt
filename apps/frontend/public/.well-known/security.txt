@@ -1,0 +1,5 @@
+Contact: mailto:security@baergpt.berlin
+Expires: 2027-11-30T23:59:59.000Z
+Canonical: https://www.baergpt.berlin/.well-known/security.txt
+Policy: https://www.baergpt.berlin/terms-of-use/
+Preferred-Languages: de, en
